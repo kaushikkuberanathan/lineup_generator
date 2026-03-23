@@ -10,7 +10,16 @@
       "Bash(node:*)",
       "Bash(npx kill-port:*)",
       "Bash(git config:*)",
-      "Bash(git remote:*)"
+      "Bash(git remote:*)",
+      "Bash(curl:*)",
+      "Read(//c/Users/KKUBERANA1/Downloads/**)",
+      "Bash(unzip -o \"lineup-generator-deploy.zip\" -d lineup-generator-deploy)",
+      "Bash(SRC=\"/c/Users/KKUBERANA1/Downloads/lineup-generator-deploy/mudhens-lineup\")",
+      "Bash(cp -r \"$SRC/src\" frontend/)",
+      "Bash(cp -r \"$SRC/public\" frontend/)",
+      "Bash(cp \"$SRC/index.html\" frontend/)",
+      "Bash(cp \"$SRC/vite.config.js\" frontend/)",
+      "Bash(npm run:*)"
     ]
   }
 }
