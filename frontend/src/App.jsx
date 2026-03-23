@@ -1,5 +1,7 @@
 // v2.1
 import { useState, useMemo, useCallback } from "react";
+import { isSupabaseEnabled, dbSaveTeams, dbDeleteTeam,
+         dbLoadTeams, dbLoadTeamData, dbSaveTeamData } from './supabase.js';
 
 // ============================================================
 // CONSTANTS
@@ -704,21 +706,48 @@ var S = {
 
 export default function App() {
 
-  // --- Team / App level state ---
-  var initTeams = loadJSON("app:teams", null);
-  if (!initTeams) {
-    initTeams = [{ id:"mudhens-8u", name:"Mud Hens", ageGroup:"8U", year:2026 }];
-    saveJSON("app:teams", initTeams);
-    // Seed the full 2026 schedule for Mud Hens on first load
-    saveJSON("team:mudhens-8u:schedule", MUD_HENS_SCHEDULE);
-    saveJSON("ui:activeTeam", "mudhens-8u");
+  var _syncStatus = useState("idle");
+  var syncStatus = _syncStatus[0]; var setSyncStatus = _syncStatus[1];
+
+  function dbSync(fn) {
+    setSyncStatus("syncing");
+    fn().then(function() {
+      setSyncStatus("synced");
+      setTimeout(function() { setSyncStatus("idle"); }, 2000);
+    }).catch(function(e) {
+      setSyncStatus("error");
+      console.warn("[DB] sync error:", e);
+    });
   }
+
+  // --- Team / App level state ---
+  var initTeams    = loadJSON("app:teams", null) || [];
   var initActiveId = loadJSON("ui:activeTeam", null);
-  var initRoster   = initActiveId ? migrateRoster(loadJSON("team:" + initActiveId + ":roster",   DEFAULT_ROSTER)) : DEFAULT_ROSTER;
-  var initSchedule = initActiveId ? migrateSchedule(loadJSON("team:" + initActiveId + ":schedule", MUD_HENS_SCHEDULE)) : MUD_HENS_SCHEDULE;
-  var initPractice = initActiveId ? loadJSON("team:" + initActiveId + ":practices",[]) : [];
-  var initInnings  = initActiveId ? (loadJSON("team:" + initActiveId + ":innings",  6) || 6) : 6;
+  var initRoster   = initActiveId ? migrateRoster(loadJSON("team:" + initActiveId + ":roster", [])) : [];
+  var initSchedule = initActiveId ? migrateSchedule(loadJSON("team:" + initActiveId + ":schedule", [])) : [];
+  var initPractice = initActiveId ? loadJSON("team:" + initActiveId + ":practices", []) : [];
+  var initInnings  = initActiveId ? (loadJSON("team:" + initActiveId + ":innings", 6) || 6) : 6;
   var initGrid_    = initActiveId ? migrateGrid(loadJSON("team:" + initActiveId + ":grid", null), initRoster, initInnings) : null;
+
+  if (!window._lineupDbBooted && isSupabaseEnabled) {
+    window._lineupDbBooted = true;
+    dbLoadTeams().then(function(dbTeams) {
+      if (!dbTeams) { return; }
+      var localTeams = loadJSON("app:teams", []) || [];
+      var merged = dbTeams.slice();
+      for (var li = 0; li < localTeams.length; li++) {
+        var found = false;
+        for (var di = 0; di < merged.length; di++) {
+          if (merged[di].id === localTeams[li].id) { found = true; break; }
+        }
+        if (!found) { merged.push(localTeams[li]); }
+      }
+      if (merged.length > 0) {
+        saveJSON("app:teams", merged);
+        setTeams(merged);
+      }
+    }).catch(function() {});
+  }
 
   var _sc = useState("home");  // Always land on home — greeting + team picker
   var screen = _sc[0]; var setScreen = _sc[1];
@@ -845,16 +874,20 @@ export default function App() {
 
   // --- Persistence helpers ---
   function persistRoster(next) {
-    // Push current roster onto undo stack (keep last 20 states)
     setRosterHistory(function(hist) {
-      var h = hist.slice(-19);
-      h.push(roster);
-      return h;
+      var h = hist.slice(-19); h.push(roster); return h;
     });
     setRoster(next);
     setLineupDirty(true);
-    if (activeTeamId) { saveJSON("team:" + activeTeamId + ":roster", next); }
+    if (activeTeamId) {
+      saveJSON("team:" + activeTeamId + ":roster", next);
+      dbSync(function() { return dbSaveTeamData(activeTeamId, {
+        roster: next, schedule: schedule, practices: practices,
+        battingOrder: battingOrder, grid: grid, innings: innings, locked: lineupLocked
+      }); });
+    }
   }
+
   function undoRoster() {
     setRosterHistory(function(hist) {
       if (hist.length === 0) { return hist; }
@@ -862,34 +895,81 @@ export default function App() {
       var next = hist.slice(0, -1);
       setRoster(prev);
       setLineupDirty(true);
-      if (activeTeamId) { saveJSON("team:" + activeTeamId + ":roster", prev); }
+      if (activeTeamId) {
+        saveJSON("team:" + activeTeamId + ":roster", prev);
+        dbSync(function() { return dbSaveTeamData(activeTeamId, {
+          roster: prev, schedule: schedule, practices: practices,
+          battingOrder: battingOrder, grid: grid, innings: innings, locked: lineupLocked
+        }); });
+      }
       return next;
     });
   }
+
   function persistSchedule(next) {
     setSchedule(next);
-    if (activeTeamId) { saveJSON("team:" + activeTeamId + ":schedule", next); }
+    if (activeTeamId) {
+      saveJSON("team:" + activeTeamId + ":schedule", next);
+      dbSync(function() { return dbSaveTeamData(activeTeamId, {
+        roster: roster, schedule: next, practices: practices,
+        battingOrder: battingOrder, grid: grid, innings: innings, locked: lineupLocked
+      }); });
+    }
   }
+
   function persistPractices(next) {
     setPractices(next);
-    if (activeTeamId) { saveJSON("team:" + activeTeamId + ":practices", next); }
+    if (activeTeamId) {
+      saveJSON("team:" + activeTeamId + ":practices", next);
+      dbSync(function() { return dbSaveTeamData(activeTeamId, {
+        roster: roster, schedule: schedule, practices: next,
+        battingOrder: battingOrder, grid: grid, innings: innings, locked: lineupLocked
+      }); });
+    }
   }
+
   function persistBatting(next) {
     setBattingOrder(next);
-    if (activeTeamId) { saveJSON("team:" + activeTeamId + ":batting", next); }
+    if (activeTeamId) {
+      saveJSON("team:" + activeTeamId + ":batting", next);
+      dbSync(function() { return dbSaveTeamData(activeTeamId, {
+        roster: roster, schedule: schedule, practices: practices,
+        battingOrder: next, grid: grid, innings: innings, locked: lineupLocked
+      }); });
+    }
   }
+
   function persistGrid(next) {
     setGrid(next);
-    if (activeTeamId) { saveJSON("team:" + activeTeamId + ":grid", next); }
+    if (activeTeamId) {
+      saveJSON("team:" + activeTeamId + ":grid", next);
+      dbSync(function() { return dbSaveTeamData(activeTeamId, {
+        roster: roster, schedule: schedule, practices: practices,
+        battingOrder: battingOrder, grid: next, innings: innings, locked: lineupLocked
+      }); });
+    }
   }
+
   function persistInnings(n) {
     setInnings(n);
-    if (activeTeamId) { saveJSON("team:" + activeTeamId + ":innings", n); }
+    if (activeTeamId) {
+      saveJSON("team:" + activeTeamId + ":innings", n);
+      dbSync(function() { return dbSaveTeamData(activeTeamId, {
+        roster: roster, schedule: schedule, practices: practices,
+        battingOrder: battingOrder, grid: grid, innings: n, locked: lineupLocked
+      }); });
+    }
   }
 
   function persistLineupLocked(val) {
     setLineupLocked(val);
-    if (activeTeamId) { saveJSON("team:" + activeTeamId + ":locked", val); }
+    if (activeTeamId) {
+      saveJSON("team:" + activeTeamId + ":locked", val);
+      dbSync(function() { return dbSaveTeamData(activeTeamId, {
+        roster: roster, schedule: schedule, practices: practices,
+        battingOrder: battingOrder, grid: grid, innings: innings, locked: val
+      }); });
+    }
   }
 
   function shareCurrentLineup() {
@@ -982,12 +1062,14 @@ export default function App() {
 
   // --- Team management ---
   function loadTeam(team) {
-    var r = migrateRoster(loadJSON("team:" + team.id + ":roster",    DEFAULT_ROSTER));
-    var s = migrateSchedule(loadJSON("team:" + team.id + ":schedule",  []));
+    var r = migrateRoster(loadJSON("team:" + team.id + ":roster", []));
+    var s = migrateSchedule(loadJSON("team:" + team.id + ":schedule", []));
     var p = loadJSON("team:" + team.id + ":practices", []);
-    var b = loadJSON("team:" + team.id + ":batting",   r.map(function(x) { return x.name; }));
+    var b = loadJSON("team:" + team.id + ":batting", r.map(function(x) { return x.name; }));
     var savedInnings = loadJSON("team:" + team.id + ":innings", 6) || 6;
     var savedGrid = migrateGrid(loadJSON("team:" + team.id + ":grid", null), r, savedInnings);
+    var savedLocked = loadJSON("team:" + team.id + ":locked", false) || false;
+
     setActiveTeamId(team.id);
     saveJSON("ui:activeTeam", team.id);
     setRoster(r);
@@ -995,21 +1077,47 @@ export default function App() {
     setBattingOrder(b);
     setSchedule(s);
     setPractices(p);
-    // These are load-path restores, not mutations — no persist needed
     setGrid(savedGrid || initGrid(r, savedInnings));
     setInnings(savedInnings);
     setLineupDirty(false);
-    setLineupLocked(loadJSON("team:" + team.id + ":locked", false) || false);
+    setLineupLocked(savedLocked);
     setTab("roster");
     setScreen("app");
+
+    if (isSupabaseEnabled) {
+      dbLoadTeamData(team.id).then(function(dbData) {
+        if (!dbData) { return; }
+        saveJSON("team:" + team.id + ":roster",    dbData.roster);
+        saveJSON("team:" + team.id + ":schedule",  dbData.schedule);
+        saveJSON("team:" + team.id + ":practices", dbData.practices);
+        saveJSON("team:" + team.id + ":batting",   dbData.battingOrder);
+        saveJSON("team:" + team.id + ":grid",      dbData.grid);
+        saveJSON("team:" + team.id + ":innings",   dbData.innings);
+        saveJSON("team:" + team.id + ":locked",    dbData.locked);
+        setRoster(migrateRoster(dbData.roster));
+        setSchedule(migrateSchedule(dbData.schedule));
+        setPractices(dbData.practices);
+        setBattingOrder(dbData.battingOrder.length ? dbData.battingOrder : dbData.roster.map(function(x) { return x.name; }));
+        setGrid(migrateGrid(dbData.grid, dbData.roster, dbData.innings));
+        setInnings(dbData.innings);
+        setLineupLocked(dbData.locked);
+      }).catch(function() {});
+    }
   }
 
   function createTeam() {
     if (!newTeam.name.trim()) { return; }
-    var t = { id: Date.now() + "", name: newTeam.name.trim(), ageGroup: newTeam.ageGroup.trim(), year: newTeam.year };
+    var t = {
+      id: Date.now() + "",
+      name: newTeam.name.trim(),
+      ageGroup: newTeam.ageGroup.trim(),
+      year: newTeam.year,
+      sport: "baseball"
+    };
     var next = teams.concat([t]);
     setTeams(next);
     saveJSON("app:teams", next);
+    dbSync(function() { return dbSaveTeams([t]); });
     loadTeam(t);
   }
 
@@ -1017,6 +1125,7 @@ export default function App() {
     var next = teams.filter(function(t) { return t.id !== id; });
     setTeams(next);
     saveJSON("app:teams", next);
+    dbSync(function() { return dbDeleteTeam(id); });
     if (activeTeamId === id) {
       saveJSON("ui:activeTeam", null);
       setActiveTeamId(null);
@@ -4297,6 +4406,12 @@ export default function App() {
           <div>
             <div style={S.logoTitle}>{activeTeam ? activeTeam.name : "Lineup Generator"}</div>
             <div style={S.logoSub}>{activeTeam ? (activeTeam.ageGroup || "") + " " + (activeTeam.year || "") : "tap to switch team"}</div>
+            {isSupabaseEnabled ? (
+              <div title={syncStatus === "synced" ? "Saved to cloud" : syncStatus === "syncing" ? "Saving..." : syncStatus === "error" ? "Sync error — data saved locally" : ""}
+                style={{ width:"7px", height:"7px", borderRadius:"50%", marginTop:"3px",
+                  background: syncStatus === "synced" ? "#27ae60" : syncStatus === "syncing" ? "#f5c842" : syncStatus === "error" ? "#c8102e" : "rgba(255,255,255,0.15)" }}>
+              </div>
+            ) : null}
           </div>
         </div>
         <div style={{ display:"flex", gap:"4px", flexWrap:"wrap", alignItems:"center" }}>
