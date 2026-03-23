@@ -710,6 +710,7 @@ export default function App() {
   var syncStatus = _syncStatus[0]; var setSyncStatus = _syncStatus[1];
 
   function dbSync(fn) {
+    window._lastLocalWrite = Date.now();
     setSyncStatus("syncing");
     fn().then(function() {
       setSyncStatus("synced");
@@ -874,6 +875,7 @@ export default function App() {
 
   // --- Persistence helpers ---
   function persistRoster(next) {
+    window._lastLocalWrite = Date.now();
     setRosterHistory(function(hist) {
       var h = hist.slice(-19); h.push(roster); return h;
     });
@@ -889,6 +891,7 @@ export default function App() {
   }
 
   function undoRoster() {
+    window._lastLocalWrite = Date.now();
     setRosterHistory(function(hist) {
       if (hist.length === 0) { return hist; }
       var prev = hist[hist.length - 1];
@@ -907,6 +910,7 @@ export default function App() {
   }
 
   function persistSchedule(next) {
+    window._lastLocalWrite = Date.now();
     setSchedule(next);
     if (activeTeamId) {
       saveJSON("team:" + activeTeamId + ":schedule", next);
@@ -918,6 +922,7 @@ export default function App() {
   }
 
   function persistPractices(next) {
+    window._lastLocalWrite = Date.now();
     setPractices(next);
     if (activeTeamId) {
       saveJSON("team:" + activeTeamId + ":practices", next);
@@ -929,6 +934,7 @@ export default function App() {
   }
 
   function persistBatting(next) {
+    window._lastLocalWrite = Date.now();
     setBattingOrder(next);
     if (activeTeamId) {
       saveJSON("team:" + activeTeamId + ":batting", next);
@@ -940,6 +946,7 @@ export default function App() {
   }
 
   function persistGrid(next) {
+    window._lastLocalWrite = Date.now();
     setGrid(next);
     if (activeTeamId) {
       saveJSON("team:" + activeTeamId + ":grid", next);
@@ -951,6 +958,7 @@ export default function App() {
   }
 
   function persistInnings(n) {
+    window._lastLocalWrite = Date.now();
     setInnings(n);
     if (activeTeamId) {
       saveJSON("team:" + activeTeamId + ":innings", n);
@@ -962,6 +970,7 @@ export default function App() {
   }
 
   function persistLineupLocked(val) {
+    window._lastLocalWrite = Date.now();
     setLineupLocked(val);
     if (activeTeamId) {
       saveJSON("team:" + activeTeamId + ":locked", val);
@@ -1085,8 +1094,18 @@ export default function App() {
     setScreen("app");
 
     if (isSupabaseEnabled) {
+      var loadTimestamp = Date.now();
       dbLoadTeamData(team.id).then(function(dbData) {
         if (!dbData) { return; }
+        // Only hydrate if no local changes have been made since
+        // this load was triggered (prevents overwriting coach edits)
+        // We detect this by comparing the load timestamp against
+        // window._lastLocalWrite which is set by every persist call
+        var lastWrite = window._lastLocalWrite || 0;
+        if (lastWrite > loadTimestamp) {
+          // Coach already made changes — skip DB hydration
+          return;
+        }
         saveJSON("team:" + team.id + ":roster",    dbData.roster);
         saveJSON("team:" + team.id + ":schedule",  dbData.schedule);
         saveJSON("team:" + team.id + ":practices", dbData.practices);
@@ -1097,7 +1116,9 @@ export default function App() {
         setRoster(migrateRoster(dbData.roster));
         setSchedule(migrateSchedule(dbData.schedule));
         setPractices(dbData.practices);
-        setBattingOrder(dbData.battingOrder.length ? dbData.battingOrder : dbData.roster.map(function(x) { return x.name; }));
+        setBattingOrder(dbData.battingOrder && dbData.battingOrder.length
+          ? dbData.battingOrder
+          : dbData.roster.map(function(x) { return x.name; }));
         setGrid(migrateGrid(dbData.grid, dbData.roster, dbData.innings));
         setInnings(dbData.innings);
         setLineupLocked(dbData.locked);
