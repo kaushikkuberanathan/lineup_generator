@@ -82,19 +82,7 @@ var BAT_SKILLS = {
 var DISLIKE_PENALTY = -50;
 
 // Default roster
-var DEFAULT_ROSTER = [
-  { name:"Aiden",    skills:["gameAware"],                    tags:[], dislikes:[], prefs:[], batSkills:[] },
-  { name:"Benji",    skills:["strongArm","goodGlove"],        tags:[], dislikes:[], prefs:[], batSkills:[] },
-  { name:"Cassius",  skills:["developing"],                   tags:[], dislikes:[], prefs:[], batSkills:[] },
-  { name:"Connor",   skills:["developing"],                   tags:[], dislikes:[], prefs:[], batSkills:[] },
-  { name:"Eshaan",   skills:["gameAware","strongArm"],        tags:[], dislikes:[], prefs:[], batSkills:[] },
-  { name:"Ezra",     skills:["strongArm"],                    tags:[], dislikes:[], prefs:[], batSkills:[] },
-  { name:"Jackson",  skills:["gameAware","fastRunner"],       tags:[], dislikes:[], prefs:[], batSkills:[] },
-  { name:"Leighton", skills:["gameAware","goodGlove"],        tags:[], dislikes:[], prefs:[], batSkills:[] },
-  { name:"Levi",     skills:["strongArm"],                    tags:[], dislikes:[], prefs:[], batSkills:[] },
-  { name:"Myles",    skills:["strongArm","goodGlove"],        tags:[], dislikes:[], prefs:[], batSkills:[] },
-  { name:"Ranvir",   skills:["gameAware","strongArm"],        tags:[], dislikes:[], prefs:[], batSkills:[] }
-];
+var DEFAULT_ROSTER = [];
 
 // ============================================================
 // STORAGE - localStorage with in-memory fallback
