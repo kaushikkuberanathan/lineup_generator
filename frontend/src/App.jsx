@@ -1,17 +1,718 @@
-import { useState, useMemo } from "react";
-import {
-  COUNTY_SCHEDULE_URL,
-  ALL_POSITIONS, FIELD_POSITIONS, INFIELD, OUTFIELD,
-  POS_COLORS, SKILLS, TAGS, BAT_SKILLS, DISLIKE_PENALTY,
-  DEFAULT_ROSTER, MUD_HENS_SCHEDULE
-} from "./engine/index.js";
-import { scorePosition } from "./engine/scoring.js";
-import { validateGrid, initGrid } from "./engine/validate.js";
-import { autoAssign, autoAssignWithRetryFallback } from "./engine/autoAssign.js";
-import {
-  loadJSON, saveJSON,
-  migrateRoster, migrateSchedule, migrateGrid
-} from "./storage/localStore.js";
+// v2.1
+import { useState, useMemo, useCallback } from "react";
+
+// ============================================================
+// CONSTANTS
+// ============================================================
+
+var COUNTY_SCHEDULE_URL = "https://forsythcounty.kaizendemos.app/schedule/2026-youth-baseball-and-softball-mmt6617n";
+
+var ALL_POSITIONS    = ["P","C","1B","2B","3B","SS","LF","CF","RF","Bench"];
+var FIELD_POSITIONS  = ["P","C","1B","2B","3B","SS","LF","CF","RF"];
+var INFIELD          = ["P","C","1B","2B","3B","SS"];
+var OUTFIELD         = ["LF","CF","RF"];
+
+var POS_COLORS = {
+  P:"#e05c2a", C:"#7f3f3f", "1B":"#2471a3", "2B":"#2980b9",
+  "3B":"#6c3483", SS:"#8e44ad", LF:"#1e8449", CF:"#27ae60",
+  RF:"#239b56", Bench:"#555"
+};
+
+// Skill badges - fielding only
+// ── FIELDING SKILLS (ability) ──────────────────────────────────────────────
+// Each key must survive across saved rosters — do not rename existing keys.
+// Adding new keys is safe; removing/renaming breaks saved data.
+var SKILLS = {
+  // Fielding Ability
+  strongArm:      { label:"Strong Arm",       group:"Fielding",    color:"#2980b9", weights:{ P:18,SS:16,"3B":15,"2B":13,CF:12,"1B":8,LF:7,RF:7,C:6 } },
+  goodGlove:      { label:"Good Glove",       group:"Fielding",    color:"#16a085", weights:{ SS:18,"2B":16,"3B":14,"1B":12,CF:10,C:8,P:6,LF:5,RF:5 } },
+  accurateThrower:{ label:"Accurate Throw",   group:"Fielding",    color:"#2471a3", weights:{ P:16,SS:14,"3B":13,"2B":11,CF:10,"1B":6,LF:5,RF:5,C:8 } },
+  quickRelease:   { label:"Quick Release",    group:"Fielding",    color:"#1a5276", weights:{ C:18,SS:14,"2B":13,"3B":10,P:12,"1B":7,CF:8,LF:4,RF:4 } },
+  naturalCatcher: { label:"Natural Catcher",  group:"Fielding",    color:"#7f3f3f", weights:{ C:22,"1B":10,"3B":6,SS:4,"2B":4,P:4,LF:2,CF:1,RF:2 } },
+  bigKid:         { label:"Big/Strong",       group:"Fielding",    color:"#c0392b", weights:{ "1B":20,C:14,"3B":12,LF:8,RF:8,"2B":5,SS:3,CF:4,P:6 } },
+  leftHanded:     { label:"Left Handed",      group:"Fielding",    color:"#d4a017", weights:{ "1B":22,LF:14,P:12,CF:10,RF:10,"3B":2,"2B":1,SS:1,C:1 } },
+  // Game IQ
+  gameAware:      { label:"Knows Where to Throw", group:"Game IQ", color:"#e05c2a", weights:{ P:20,SS:18,"2B":10,"3B":9,"1B":7,C:4,CF:3,LF:1,RF:1 } },
+  callsForBall:   { label:"Calls for Ball",   group:"Game IQ",     color:"#d35400", weights:{ CF:18,SS:14,"2B":12,"3B":10,P:10,C:6,"1B":4,LF:8,RF:8 } },
+  backsUpPlays:   { label:"Backs Up Plays",   group:"Game IQ",     color:"#ca6f1e", weights:{ P:14,CF:13,SS:12,"2B":10,"3B":8,"1B":6,C:4,LF:6,RF:6 } },
+  // Effort and Behavior
+  highEnergy:     { label:"High Energy",      group:"Effort",      color:"#f39c12", weights:{ P:14,SS:13,CF:13,"2B":11,"3B":10,"1B":8,C:8,LF:5,RF:5 } },
+  hustles:        { label:"Hustles Always",   group:"Effort",      color:"#e67e22", weights:{ CF:12,SS:11,"2B":10,"3B":9,P:8,"1B":7,C:6,LF:7,RF:7 } },
+  developing:     { label:"Developing",       group:"Effort",      color:"#8e44ad", weights:{ LF:16,RF:16,C:14,CF:12,"1B":6,"2B":3,"3B":3,SS:1,P:1 } },
+  // Base Running
+  fastRunner:     { label:"Fast Runner",      group:"Base Running",color:"#27ae60", weights:{ CF:20,SS:16,"2B":14,LF:10,RF:10,P:8,"3B":7,"1B":5,C:2 } },
+  smartOnBases:   { label:"Smart on Bases",   group:"Base Running",color:"#1e8449", weights:{ SS:12,CF:11,"2B":10,"3B":8,P:8,"1B":6,LF:7,RF:7,C:4 } },
+  // Legacy key preserved for backward compatibility with saved rosters
+  needsRoutine:   { label:"Needs Routine (Legacy)", group:"Fielding", color:"#7f8c8d", weights:{ "1B":16,RF:14,LF:14,C:8,"3B":6,CF:6,"2B":5,SS:3,P:2 } }
+};
+
+// ── COACH NOTES / BEHAVIOR TAGS ───────────────────────────────────────────
+// Tags affect position scoring (mods) and bench selection (benchOnce).
+// Grouped for display — group field used by the UI only.
+var TAGS = {
+  // Confidence
+  confidentPlayer:      { label:"Confident",       group:"Confidence",   color:"#27ae60", mods:{ P:10,SS:7,C:9,"2B":3,"3B":4,"1B":2,CF:2,LF:1,RF:1 } },
+  fearfulOfBall:        { label:"Fearful of Ball",  group:"Confidence",   color:"#7f8c8d", mods:{ LF:10,RF:10,"1B":5,CF:-2,C:-14,P:-14,SS:-8,"2B":-6,"3B":-8 } },
+  hesitates:            { label:"Hesitates",        group:"Confidence",   color:"#95a5a6", mods:{ P:-10,SS:-8,C:-8,CF:-4,"2B":-4,"3B":-4,"1B":4,LF:6,RF:6 } },
+  // Effort and Behavior (coach-observed)
+  goodCoachability:     { label:"Coachable",        group:"Behavior",     color:"#2ecc71", mods:{ P:4,SS:3,C:4,"2B":4,"3B":4,"1B":4,CF:3,LF:3,RF:3 } },
+  inconsistentAttention:{ label:"Needs Focus",      group:"Behavior",     color:"#8e44ad", mods:{ RF:8,LF:8,"1B":5,P:-12,SS:-10,C:-8,CF:-4,"2B":-4,"3B":-4 } },
+  // Physical / Throwing
+  weakThrower:          { label:"Weak Thrower",     group:"Physical",     color:"#e74c3c", mods:{ P:-16,SS:-12,"3B":-10,"2B":-6,"1B":5,LF:5,RF:5,CF:-2,C:-4 } },
+  slowRunner:           { label:"Slow Runner",      group:"Physical",     color:"#bdc3c7", mods:{ "1B":8,C:5,LF:3,RF:3,CF:-8,SS:-5,"2B":-3,"3B":-2,P:-1 } },
+  // Base Running coaching
+  needsBaseCoaching:    { label:"Needs Base Coaching", group:"Base Running", color:"#e67e22", mods:{ SS:-2,"2B":-2,CF:-2,P:-2,"3B":-1,"1B":4,LF:3,RF:3,C:2 } },
+  // Lineup control
+  benchOnce:            { label:"Bench Once Only",  group:"Lineup",       color:"#f5c842", mods:{} },
+  absent:               { label:"Out This Game",     group:"Lineup",       color:"#e74c3c", mods:{} }
+};
+
+// Batting skills
+var BAT_SKILLS = {
+  contactHitter:  { label:"Contact",    color:"#d4a017", bonus:3 },
+  powerHitter:    { label:"Power",      color:"#c8102e", bonus:4 },
+  patientEye:     { label:"Patient",    color:"#2980b9", bonus:5 },
+  fastBaseRunner: { label:"Fast",       color:"#27ae60", bonus:5 },
+  clutch:         { label:"Clutch",     color:"#e05c2a", bonus:2 },
+  freeSwinger:    { label:"Free Swing", color:"#8e44ad", bonus:-3 },
+  slowBat:        { label:"Slow Bat",   color:"#7f8c8d", bonus:-2 },
+  nervous:        { label:"Nervous",    color:"#95a5a6", bonus:-2 }
+};
+
+var DISLIKE_PENALTY = -50;
+
+// Default roster
+var DEFAULT_ROSTER = [
+  { name:"Aiden",    skills:["gameAware"],                    tags:[], dislikes:[], prefs:[], batSkills:[] },
+  { name:"Benji",    skills:["strongArm","goodGlove"],        tags:[], dislikes:[], prefs:[], batSkills:[] },
+  { name:"Cassius",  skills:["developing"],                   tags:[], dislikes:[], prefs:[], batSkills:[] },
+  { name:"Connor",   skills:["developing"],                   tags:[], dislikes:[], prefs:[], batSkills:[] },
+  { name:"Eshaan",   skills:["gameAware","strongArm"],        tags:[], dislikes:[], prefs:[], batSkills:[] },
+  { name:"Ezra",     skills:["strongArm"],                    tags:[], dislikes:[], prefs:[], batSkills:[] },
+  { name:"Jackson",  skills:["gameAware","fastRunner"],       tags:[], dislikes:[], prefs:[], batSkills:[] },
+  { name:"Leighton", skills:["gameAware","goodGlove"],        tags:[], dislikes:[], prefs:[], batSkills:[] },
+  { name:"Levi",     skills:["strongArm"],                    tags:[], dislikes:[], prefs:[], batSkills:[] },
+  { name:"Myles",    skills:["strongArm","goodGlove"],        tags:[], dislikes:[], prefs:[], batSkills:[] },
+  { name:"Ranvir",   skills:["gameAware","strongArm"],        tags:[], dislikes:[], prefs:[], batSkills:[] }
+];
+
+// ============================================================
+// STORAGE - localStorage with in-memory fallback
+// ============================================================
+
+// Storage: localStorage with in-memory fallback
+var _mem = {};
+var SCHEMA_VERSION = 1;
+
+function loadJSON(key, def) {
+  try {
+    var raw = localStorage.getItem(key);
+    if (raw) { return JSON.parse(raw); }
+  } catch (e) {
+    try { var mv = _mem[key]; if (mv) { return JSON.parse(mv); } } catch (e2) {}
+  }
+  return def;
+}
+
+function saveJSON(key, val) {
+  var str = JSON.stringify(val);
+  try { localStorage.setItem(key, str); } catch (e) { _mem[key] = str; }
+}
+
+function removeJSON(key) {
+  try { localStorage.removeItem(key); } catch (e) { delete _mem[key]; }
+}
+
+// Schema migration: run on every load, safe to call repeatedly
+function migrateTeamData(data, key) {
+  if (!data || typeof data !== "object") { return data; }
+  var version = data.schemaVersion || 0;
+  // v0 -> v1: add schemaVersion field to all team sub-objects
+  if (version < 1) {
+    data = Object.assign({}, data, { schemaVersion: 1 });
+    saveJSON(key, data);
+  }
+  return data;
+}
+
+function migrateRoster(roster) {
+  if (!Array.isArray(roster)) { return roster; }
+  return roster.map(function(p) {
+    var skills = p.skills || [];
+    // Legacy migration: needsRoutine was renamed to developing in v2 badge redesign
+    if (skills.indexOf("needsRoutine") >= 0) {
+      if (skills.indexOf("developing") < 0) {
+        skills = skills.map(function(s) { return s === "needsRoutine" ? "developing" : s; });
+      } else {
+        skills = skills.filter(function(s) { return s !== "needsRoutine"; });
+      }
+    }
+    return {
+      name:      p.name      || "",
+      skills:    skills,
+      tags:      p.tags      || [],
+      dislikes:  p.dislikes  || [],
+      prefs:     p.prefs     || [],
+      batSkills: p.batSkills || []
+    };
+  });
+}
+
+function migrateSchedule(schedule) {
+  if (!Array.isArray(schedule)) { return schedule; }
+  return schedule.map(function(g) {
+    return {
+      id:          g.id          || (Date.now() + Math.random() + ""),
+      date:        g.date        || "",
+      time:        g.time        || "",
+      location:    g.location    || "",
+      opponent:    g.opponent    || "",
+      home:        g.home        || false,
+      result:      g.result      || "",
+      ourScore:    g.ourScore    || "",
+      theirScore:  g.theirScore  || "",
+      battingPerf: g.battingPerf || {}
+    };
+  });
+}
+
+function migrateGrid(grid, roster, innings) {
+  if (!grid || typeof grid !== "object") { return initGrid(roster, innings); }
+  // Ensure all current roster players have rows, prune removed players
+  var ng = {};
+  var players = roster.map(function(r) { return r.name; });
+  for (var pi = 0; pi < players.length; pi++) {
+    var pname = players[pi];
+    var existing = grid[pname] || [];
+    var row = [];
+    for (var i = 0; i < innings; i++) { row.push(existing[i] || ""); }
+    ng[pname] = row;
+  }
+  return ng;
+}
+
+
+// ============================================================
+// MUD HENS 2026 SEASON SCHEDULE
+// ============================================================
+
+var MUD_HENS_SCHEDULE = [
+  { id:"g1",  date:"2026-03-17", time:"7:30 PM",  location:"JV 2", opponent:"Party Animals",   home:true,  result:"X", ourScore:"", theirScore:"", battingPerf:{} },
+  { id:"g2",  date:"2026-03-19", time:"6:00 PM",  location:"JV 2", opponent:"Firefighters",    home:false, result:"", ourScore:"", theirScore:"", battingPerf:{} },
+  { id:"g3",  date:"2026-03-26", time:"6:00 PM",  location:"JV 2", opponent:"Timber Rattlers", home:false, result:"", ourScore:"", theirScore:"", battingPerf:{} },
+  { id:"g4",  date:"2026-03-31", time:"7:30 PM",  location:"FP 4", opponent:"Bananas",          home:false, result:"", ourScore:"", theirScore:"", battingPerf:{} },
+  { id:"g5",  date:"2026-04-02", time:"7:30 PM",  location:"JV 2", opponent:"Party Animals",   home:false, result:"", ourScore:"", theirScore:"", battingPerf:{} },
+  { id:"g6",  date:"2026-04-15", time:"6:00 PM",  location:"JV 2", opponent:"Firefighters",    home:true,  result:"", ourScore:"", theirScore:"", battingPerf:{} },
+  { id:"g7",  date:"2026-04-18", time:"1:00 PM",  location:"FP 2", opponent:"Blue Wahoos",     home:false, result:"", ourScore:"", theirScore:"", battingPerf:{} },
+  { id:"g8",  date:"2026-04-23", time:"7:00 PM",  location:"JV 3", opponent:"Bananas",          home:true,  result:"", ourScore:"", theirScore:"", battingPerf:{} },
+  { id:"g9",  date:"2026-04-25", time:"11:30 AM", location:"FP 2", opponent:"Timber Rattlers", home:true,  result:"", ourScore:"", theirScore:"", battingPerf:{} },
+  { id:"g10", date:"2026-05-04", time:"6:00 PM",  location:"JV 3", opponent:"Blue Wahoos",     home:true,  result:"", ourScore:"", theirScore:"", battingPerf:{} }
+];
+
+// ============================================================
+// SCORING ENGINE
+// ============================================================
+
+function scorePosition(playerName, pos, inning, grid, roster) {
+  var info = null;
+  for (var ri = 0; ri < roster.length; ri++) {
+    if (roster[ri].name === playerName) { info = roster[ri]; break; }
+  }
+  if (!info) { return 0; }
+
+  // Layer 1 - outfield hard block
+  if (OUTFIELD.indexOf(pos) >= 0) {
+    var ofCount = 0;
+    var pGrid = grid[playerName] || [];
+    for (var gi = 0; gi < pGrid.length; gi++) {
+      if (pGrid[gi] === pos) { ofCount++; }
+    }
+    if (ofCount > 0) { return -999; }
+  }
+
+  var score = 0;
+
+  // Layer 2 - skill weights (averaged)
+  var playerSkills = info.skills || [];
+  if (playerSkills.length > 0) {
+    var totalWeight = 0;
+    for (var si = 0; si < playerSkills.length; si++) {
+      var sk = SKILLS[playerSkills[si]];
+      if (sk && sk.weights && sk.weights[pos] !== undefined) {
+        totalWeight += sk.weights[pos];
+      }
+    }
+    score += totalWeight / playerSkills.length;
+  }
+
+  // Layer 3 - preferred positions (ranked, graduated bonus)
+  // 1st pref: +30, 2nd: +24, 3rd: +18, 4th: +12, 5th+: +8
+  // Each rank still meaningfully higher than the next, never zero.
+  var prefs = info.prefs || [];
+  var prefBonuses = [30, 24, 18, 12, 8];
+  for (var prefi = 0; prefi < prefs.length; prefi++) {
+    if (prefs[prefi] === pos) {
+      score += prefBonuses[prefi] !== undefined ? prefBonuses[prefi] : 8;
+      break;
+    }
+  }
+
+  // Layer 4 - coach tags
+  var playerTags = info.tags || [];
+  for (var ti = 0; ti < playerTags.length; ti++) {
+    var tag = TAGS[playerTags[ti]];
+    if (tag && tag.mods && tag.mods[pos] !== undefined) {
+      score += tag.mods[pos];
+    }
+  }
+
+  // Layer 5 - dislikes
+  var dislikes = info.dislikes || [];
+  if (dislikes.indexOf(pos) >= 0) { score += DISLIKE_PENALTY; }
+
+  // Layer 6 - consecutive innings hard block (max 1 inning at same infield position in a row)
+  var pGrid2 = grid[playerName] || [];
+  if (INFIELD.indexOf(pos) >= 0 && inning >= 1) {
+    if (pGrid2[inning - 1] === pos) {
+      return -998; // hard block: already played this infield position last inning
+    }
+  }
+
+  // Layer 7 - spread penalty (stronger: -10 per prior inning to prevent monopoly)
+  var priorCount = 0;
+  for (var pi = 0; pi < inning; pi++) {
+    if (pGrid2[pi] === pos) { priorCount++; }
+  }
+  score -= priorCount * 10;
+
+  // Layer 8 - bench equity bonus
+  var benchCount = 0;
+  for (var bi = 0; bi < inning; bi++) {
+    if (pGrid2[bi] === "Bench") { benchCount++; }
+  }
+  score += benchCount * 4;
+
+  return score;
+}
+
+function autoAssign(roster, innings) {
+  var players = roster.map(function(r) { return r.name; });
+  var n = players.length;
+  var grid = {};
+  for (var pi = 0; pi < players.length; pi++) {
+    grid[players[pi]] = [];
+    for (var ii = 0; ii < innings; ii++) { grid[players[pi]].push(""); }
+  }
+
+  var infieldOrder = ["P","SS","C","1B","2B","3B"];
+  var ofOrder      = ["CF","LF","RF"];
+
+  function hasPlayedPos(pName, pos) {
+    var pg = grid[pName] || [];
+    for (var i = 0; i < pg.length; i++) { if (pg[i] === pos) { return true; } }
+    return false;
+  }
+
+  function totalOFCount(pName) {
+    var pg = grid[pName] || [];
+    var cnt = 0;
+    for (var i = 0; i < pg.length; i++) {
+      if (OUTFIELD.indexOf(pg[i]) >= 0) { cnt++; }
+    }
+    return cnt;
+  }
+
+  function benchCount(pName, upToInning) {
+    var pg = grid[pName] || [];
+    var cnt = 0;
+    for (var i = 0; i < upToInning; i++) { if (pg[i] === "Bench") { cnt++; } }
+    return cnt;
+  }
+
+  // Identify absent players (tagged "absent") — they sit Out every inning
+  var absentSet = {};
+  for (var absi = 0; absi < roster.length; absi++) {
+    if ((roster[absi].tags || []).indexOf("absent") >= 0) {
+      absentSet[roster[absi].name] = true;
+    }
+  }
+  var activePlayers = players.filter(function(p) { return !absentSet[p]; });
+  var activeN = activePlayers.length;
+
+  for (var inning = 0; inning < innings; inning++) {
+    // Mark absent players Out for this inning
+    for (var abni = 0; abni < players.length; abni++) {
+      if (absentSet[players[abni]]) { grid[players[abni]][inning] = "Out"; }
+    }
+
+    // benchSlots = active players beyond 9
+    var benchSlots = activeN - 9;
+    if (benchSlots < 0) { benchSlots = 0; }
+
+    // Players who were benched last inning must play this inning
+    var mustPlay = [];
+    if (inning > 0) {
+      for (var mp = 0; mp < activePlayers.length; mp++) {
+        if (grid[activePlayers[mp]][inning - 1] === "Bench") { mustPlay.push(activePlayers[mp]); }
+      }
+    }
+
+    // Select bench players.
+    // Players with the "benchOnce" tag may only be benched once per game.
+    // They are excluded from candidacy after their first bench inning.
+    // Fallback: if not enough non-protected candidates, allow protected players
+    // to sit again (unavoidable with very small rosters).
+    function hasBenchOnce(pName) {
+      for (var ri = 0; ri < roster.length; ri++) {
+        if (roster[ri].name === pName) {
+          return (roster[ri].tags || []).indexOf("benchOnce") >= 0;
+        }
+      }
+      return false;
+    }
+    var benchCandidates = [];
+    for (var bp = 0; bp < activePlayers.length; bp++) {
+      var pn = activePlayers[bp];
+      if (mustPlay.indexOf(pn) >= 0) { continue; }
+      var bc = benchCount(pn, inning);
+      var protected_ = hasBenchOnce(pn);
+      // Skip protected players who have already sat once
+      if (protected_ && bc >= 1) { continue; }
+      benchCandidates.push({ name: pn, bc: bc, protected_: protected_ });
+    }
+    // Sort: unprotected first (they take bench first), then by fewest bench innings
+    benchCandidates.sort(function(a, b) {
+      if (a.protected_ !== b.protected_) { return a.protected_ ? 1 : -1; }
+      return a.bc - b.bc;
+    });
+    // Fallback: if still not enough candidates, include protected players who have sat
+    if (benchCandidates.length < benchSlots) {
+      var fallback = [];
+      for (var fbp = 0; fbp < activePlayers.length; fbp++) {
+        var fpn = activePlayers[fbp];
+        if (mustPlay.indexOf(fpn) >= 0) { continue; }
+        var alreadyIn = false;
+        for (var fbi = 0; fbi < benchCandidates.length; fbi++) {
+          if (benchCandidates[fbi].name === fpn) { alreadyIn = true; break; }
+        }
+        if (!alreadyIn) { fallback.push({ name: fpn, bc: benchCount(fpn, inning), protected_: true }); }
+      }
+      fallback.sort(function(a, b) { return a.bc - b.bc; });
+      benchCandidates = benchCandidates.concat(fallback);
+    }
+    var benched = [];
+    for (var bsi = 0; bsi < benchSlots; bsi++) {
+      if (benchCandidates[bsi]) { benched.push(benchCandidates[bsi].name); }
+    }
+    for (var bni = 0; bni < benched.length; bni++) {
+      grid[benched[bni]][inning] = "Bench";
+    }
+
+    var available = [];
+    for (var ai = 0; ai < activePlayers.length; ai++) {
+      if (benched.indexOf(activePlayers[ai]) < 0) { available.push(activePlayers[ai]); }
+    }
+
+    // Fill outfield FIRST using rotation to prevent repeats
+    // Priority: hasn't played this OF position > fewest total OF appearances > bench equity
+    for (var ofi = 0; ofi < ofOrder.length; ofi++) {
+      var ofPos = ofOrder[ofi];
+      if (available.length === 0) { break; }
+      var ofRanked = [];
+      for (var ori = 0; ori < available.length; ori++) {
+        var pName = available[ori];
+        var alreadyPlayed = hasPlayedPos(pName, ofPos) ? 1 : 0;
+        var totalOF = totalOFCount(pName);
+        var bc = benchCount(pName, inning);
+        ofRanked.push({ name: pName, score: -alreadyPlayed * 1000 - totalOF * 10 + bc });
+      }
+      ofRanked.sort(function(a, b) { return b.score - a.score; });
+      var ofWinner = ofRanked[0].name;
+      grid[ofWinner][inning] = ofPos;
+      var owIdx = available.indexOf(ofWinner);
+      if (owIdx >= 0) { available.splice(owIdx, 1); }
+    }
+
+    // Fill infield using skill-based scoring
+    // Sort infield positions by most-constrained-first:
+    // positions with fewest non-blocked candidates get filled before
+    // positions with many options, preventing last-position deadlocks.
+    var ifPositionsToFill = infieldOrder.slice();
+    while (ifPositionsToFill.length > 0 && available.length > 0) {
+      // Score each remaining position by number of valid (non-blocked) candidates
+      var ifConstraint = [];
+      for (var ifci = 0; ifci < ifPositionsToFill.length; ifci++) {
+        var ifc = ifPositionsToFill[ifci];
+        var validCount = 0;
+        for (var ifvi = 0; ifvi < available.length; ifvi++) {
+          if (scorePosition(available[ifvi], ifc, inning, grid, roster) > -998) { validCount++; }
+        }
+        ifConstraint.push({ pos: ifc, validCount: validCount });
+      }
+      // Fill most constrained position first (fewest valid candidates)
+      ifConstraint.sort(function(a, b) { return a.validCount - b.validCount; });
+      var ifPos = ifConstraint[0].pos;
+      ifPositionsToFill.splice(ifPositionsToFill.indexOf(ifPos), 1);
+      var ifRanked = [];
+      for (var ifri = 0; ifri < available.length; ifri++) {
+        ifRanked.push({ name: available[ifri], score: scorePosition(available[ifri], ifPos, inning, grid, roster) });
+      }
+      ifRanked.sort(function(a, b) { return b.score - a.score; });
+      // If all candidates are blocked, pick the one who played this position least recently
+      if (ifRanked[0].score <= -998) {
+        ifRanked.sort(function(a, b) {
+          var pgA = grid[a.name] || []; var pgB = grid[b.name] || [];
+          var lastA = -1; var lastB = -1;
+          for (var li = inning - 1; li >= 0; li--) {
+            if (pgA[li] === ifPos && lastA < 0) { lastA = li; }
+            if (pgB[li] === ifPos && lastB < 0) { lastB = li; }
+          }
+          return lastA - lastB;
+        });
+      }
+      var ifWinner = ifRanked[0].name;
+      grid[ifWinner][inning] = ifPos;
+      var iwIdx = available.indexOf(ifWinner);
+      if (iwIdx >= 0) { available.splice(iwIdx, 1); }
+    }
+
+    // Any remaining overflow players go to Bench
+    for (var ovi = 0; ovi < available.length; ovi++) {
+      grid[available[ovi]][inning] = "Bench";
+    }
+  }
+
+  return grid;
+}
+
+
+// ─────────────────────────────────────────────────────────────────
+// autoAssign        — primary heuristic (most-constrained-first)
+// autoAssignWithRetryFallback — production entry point with observability
+//
+// Output contract:
+//   grid        {Record<playerName, string[]>}  — complete defensive grid
+//   warnings    {Warning[]}                     — remaining constraint violations ([] = clean)
+//   attempts    {number}                        — how many runs were needed (1 = clean first try)
+//   usedFallback {boolean}                      — true if retry loop fired
+//   isValid     {boolean}                       — true iff warnings.length === 0
+//   explain     {string}                        — human-readable status for debugging
+// ─────────────────────────────────────────────────────────────────
+function autoAssignWithRetryFallback(roster, innings) {
+  var startTime = Date.now();
+
+  // Attempt 1: primary heuristic on original roster order
+  var grid = autoAssign(roster, innings);
+  var warnings = validateGrid(grid, roster, innings);
+
+  if (warnings.length === 0) {
+    return {
+      grid:        grid,
+      warnings:    [],
+      attempts:    1,
+      usedFallback: false,
+      isValid:     true,
+      explain:     "Clean on first attempt (" + (Date.now() - startTime) + "ms)"
+    };
+  }
+
+  // Attempts 2–8: shuffle roster order to escape local minima
+  var best = grid;
+  var bestWarnings = warnings;
+  var shuffled = roster.slice();
+  var attempt = 1;
+
+  for (; attempt < 8; attempt++) {
+    // Fisher-Yates shuffle
+    for (var si = shuffled.length - 1; si > 0; si--) {
+      var sj = Math.floor(Math.random() * (si + 1));
+      var tmp = shuffled[si]; shuffled[si] = shuffled[sj]; shuffled[sj] = tmp;
+    }
+    var ng = autoAssign(shuffled, innings);
+    var nw = validateGrid(ng, roster, innings);
+    if (nw.length < bestWarnings.length) { best = ng; bestWarnings = nw; }
+    if (bestWarnings.length === 0) { break; }
+  }
+
+  var elapsed = Date.now() - startTime;
+  var isValid = bestWarnings.length === 0;
+  var explain = isValid
+    ? "Clean after " + (attempt + 1) + " attempts (" + elapsed + "ms)"
+    : "Best result after " + (attempt + 1) + " attempts has " + bestWarnings.length
+      + " warning(s): " + bestWarnings.map(function(w) { return w.msg; }).join("; ")
+      + " (" + elapsed + "ms)";
+
+  return {
+    grid:        best,
+    warnings:    bestWarnings,
+    attempts:    attempt + 1,
+    usedFallback: true,
+    isValid:     isValid,
+    explain:     explain
+  };
+}
+
+// Backward-compatible alias so any direct autoAssignWithFallback calls still work
+var autoAssignWithFallback = autoAssignWithRetryFallback;
+
+function validateGrid(grid, roster, innings) {
+  var warnings = [];
+  var players = roster.map(function(r) { return r.name; });
+
+  for (var i = 0; i < innings; i++) {
+    var assigned = {};
+    var benchCount = 0;
+    for (var pi = 0; pi < players.length; pi++) {
+      var p = players[pi];
+      var pos = grid[p] ? grid[p][i] : "";
+      if (!pos) {
+        warnings.push({ type:"missing", msg: p + " unassigned in inning " + (i + 1) });
+        continue;
+      }
+      if (pos === "Bench") {
+        benchCount++;
+        if (i > 0 && grid[p][i - 1] === "Bench") {
+          warnings.push({ type:"backtoback", msg: p + " benched back-to-back innings " + i + " and " + (i + 1) });
+        }
+      } else {
+        if (assigned[pos]) {
+          warnings.push({ type:"conflict", msg: "Both " + assigned[pos] + " and " + p + " at " + pos + " inning " + (i + 1) });
+        }
+        assigned[pos] = p;
+      }
+    }
+    if (benchCount > 2) {
+      warnings.push({ type:"bench", msg: "Inning " + (i + 1) + ": " + benchCount + " players benched (max 2)" });
+    }
+  }
+
+  // Outfield repeats
+  for (var opi = 0; opi < players.length; opi++) {
+    var p2 = players[opi];
+    var pGrid = grid[p2] || [];
+    for (var ofi = 0; ofi < OUTFIELD.length; ofi++) {
+      var ofPos = OUTFIELD[ofi];
+      var count = 0;
+      for (var gi = 0; gi < pGrid.length; gi++) { if (pGrid[gi] === ofPos) { count++; } }
+      if (count > 1) {
+        warnings.push({ type:"outfield", msg: p2 + " plays " + ofPos + " " + count + " times" });
+      }
+    }
+  }
+
+  return warnings;
+}
+
+function initGrid(roster, innings) {
+  var grid = {};
+  for (var i = 0; i < roster.length; i++) {
+    grid[roster[i].name] = [];
+    for (var j = 0; j < innings; j++) { grid[roster[i].name].push(""); }
+  }
+  return grid;
+}
+
+
+// ============================================================
+// STYLES
+// ============================================================
+
+var C = {
+  navy: "#0f1f3d", navyLight: "#1a3260", red: "#c8102e", redDark: "#9b0c22",
+  gold: "#f5c842", cream: "#fdf6ec", white: "#ffffff", text: "#1a1a2e",
+  textMuted: "#6a7a9a", border: "rgba(15,31,61,0.1)", cardBg: "#ffffff",
+  // Field/game colors
+  win: "#27ae60", loss: "#c8102e", tie: "#d4a017", canceled: "#7f8c8d",
+  // Common UI values referenced inline throughout
+  overlayBg: "rgba(0,0,0,0.5)", subtleBg: "rgba(15,31,61,0.06)",
+  subtleBorder: "rgba(15,31,61,0.08)", subtleText: "rgba(15,31,61,0.3)"
+};
+
+function ss(obj) { return obj; }
+
+var S = {
+  app: { minHeight:"100vh", background:C.cream, fontFamily:"Georgia,'Times New Roman',serif", color:C.text },
+  header: {
+    background:"linear-gradient(135deg,#0f1f3d 0%,#1a3260 100%)",
+    borderBottom:"4px solid " + C.red,
+    padding:"12px 20px", display:"flex", alignItems:"center",
+    justifyContent:"space-between", gap:"12px", flexWrap:"wrap"
+  },
+  logoWrap: { display:"flex", alignItems:"center", gap:"10px", cursor:"pointer" },
+  logoCircle: {
+    width:"42px", height:"42px", borderRadius:"50%",
+    background:C.red, border:"2.5px solid " + C.gold,
+    display:"flex", alignItems:"center", justifyContent:"center",
+    fontSize:"18px", fontWeight:"bold", color:C.gold, fontFamily:"Georgia,serif", flexShrink:0
+  },
+  logoTitle: { fontSize:"18px", fontWeight:"bold", color:C.gold, letterSpacing:"0.04em" },
+  logoSub: { fontSize:"10px", color:"rgba(255,255,255,0.5)", letterSpacing:"0.08em" },
+  tabs: { display:"flex", gap:"2px", flexWrap:"wrap" },
+  tab: function(active) {
+    return {
+      padding:"7px 14px", borderRadius:"6px", border:"none", cursor:"pointer",
+      fontSize:"11px", fontWeight:"bold", fontFamily:"Georgia,serif",
+      letterSpacing:"0.06em", textTransform:"uppercase", transition:"all 0.12s",
+      background: active ? C.red : "transparent",
+      color: active ? "#fff" : "rgba(255,255,255,0.55)"
+    };
+  },
+  body: { padding:"20px 24px", maxWidth:"1400px", margin:"0 auto" },
+  card: {
+    background:C.white, borderRadius:"10px", padding:"16px 18px",
+    boxShadow:"0 2px 8px rgba(15,31,61,0.06)", marginBottom:"14px",
+    border:"1px solid " + C.border
+  },
+  sectionTitle: {
+    fontSize:"11px", letterSpacing:"0.18em", textTransform:"uppercase",
+    color:C.red, fontWeight:"bold", marginBottom:"14px"
+  },
+  btn: function(v) {
+    var bg = "rgba(15,31,61,0.08)";
+    var col = C.text;
+    var bdr = "none";
+    var shadow = "none";
+    if (v === "primary") { bg = "linear-gradient(135deg,"+C.red+","+C.redDark+")"; col="#fff"; shadow="0 2px 8px rgba(200,16,46,0.3)"; }
+    else if (v === "gold")  { bg = "linear-gradient(135deg,#c8902e,#a07010)"; col="#fff"; }
+    else if (v === "ghost") { bg = "transparent"; col = C.textMuted; bdr = "1px solid " + C.border; }
+    else if (v === "danger"){ bg = C.red; col = "#fff"; }
+    return {
+      padding:"8px 16px", borderRadius:"6px", border:bdr, cursor:"pointer",
+      fontSize:"11px", letterSpacing:"0.08em", textTransform:"uppercase",
+      fontWeight:"bold", fontFamily:"Georgia,serif", transition:"all 0.12s",
+      background:bg, color:col, boxShadow:shadow
+    };
+  },
+  posTag: function(pos) {
+    return {
+      display:"inline-block", padding:"2px 6px", borderRadius:"4px",
+      fontSize:"10px", fontWeight:"bold", margin:"1px",
+      background:(POS_COLORS[pos] || "#0f1f3d") + "cc", color:"#fff"
+    };
+  },
+  input: {
+    background:"#f8f4ee", border:"1.5px solid rgba(15,31,61,0.15)",
+    borderRadius:"6px", padding:"7px 10px", color:C.text,
+    fontFamily:"Georgia,serif", fontSize:"12px", outline:"none",
+    width:"100%", boxSizing:"border-box"
+  },
+  badge: function(color, active) {
+    return {
+      display:"inline-flex", alignItems:"center", gap:"4px",
+      padding:"3px 8px", borderRadius:"10px", cursor:"pointer",
+      fontSize:"10px", fontWeight:"bold", margin:"2px", transition:"all 0.1s",
+      background: active ? color + "dd" : color + "18",
+      color: active ? "#fff" : color,
+      border: "1px solid " + color + (active ? "ff" : "44")
+    };
+  }
+};
+
+
+
+// ============================================================
+// MAIN COMPONENT
+// ============================================================
 
 export default function App() {
 
@@ -443,7 +1144,7 @@ export default function App() {
 
   // --- AI schedule parser ---
   function callAI(messages) {
-    return fetch("https://lineup-generator-backend.onrender.com/api/ai", {
+    return fetch("https://api.anthropic.com/v1/messages", {
       method:"POST",
       headers:{ "Content-Type":"application/json" },
       body: JSON.stringify({
@@ -489,7 +1190,7 @@ export default function App() {
       userContent = "Parse this game result. Extract final score and batting stats for " + teamName + " players.\n\n" + sourceData;
     }
 
-    return fetch("https://lineup-generator-backend.onrender.com/api/ai", {
+    return fetch("https://api.anthropic.com/v1/messages", {
       method:"POST",
       headers:{ "Content-Type":"application/json" },
       body: JSON.stringify({
