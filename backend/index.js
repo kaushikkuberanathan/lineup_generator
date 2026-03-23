@@ -80,6 +80,10 @@ app.post('/api/ai', async (req, res) => {
   res.status(anthropicRes.status).json(data);
 });
 
+app.get('/ping', function(req, res) {
+  res.json({ status: 'ok', time: new Date().toISOString() });
+});
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

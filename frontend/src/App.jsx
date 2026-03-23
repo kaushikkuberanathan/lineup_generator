@@ -1406,20 +1406,22 @@ export default function App() {
 
   // --- AI schedule parser ---
   function callAI(messages) {
-    return fetch("https://lineup-generator-backend.onrender.com/api/ai", {
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
+    var BACKEND = "https://lineup-generator-backend.onrender.com";
+    return fetch(BACKEND + "/api/ai", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         type: "schedule",
-        systemPrompt:"You are a baseball schedule parser. Return ONLY a valid JSON array of game objects. " +
-               "Each object: { date:'YYYY-MM-DD', time:'HH:MM AM/PM', opponent:'Team Name', location:'Field', result:'', ourScore:'', theirScore:'', battingPerf:{} }. " +
-               "No markdown, no explanation. Empty array if no games found.",
+        systemPrompt: "You are a baseball schedule parser. Return ONLY a valid JSON array of game objects. Each object: { date:'YYYY-MM-DD', time:'HH:MM AM/PM', opponent:'Team Name', location:'Field', result:'', ourScore:'', theirScore:'', battingPerf:{} }. No markdown, no explanation. Empty array if no games found.",
         userContent: messages[0].content
       })
-    }).then(function(res) { return res.json(); }).then(function(data) {
+    }).then(function(res) {
+      if (!res.ok) { throw new Error("Backend error " + res.status); }
+      return res.json();
+    }).then(function(data) {
       var block = data.content && data.content.filter(function(b) { return b.type === "text"; })[0];
       var text = block ? block.text : "[]";
-      var clean = text.replace(/^```[\w]*\n?/i,"").replace(/\n?```$/i,"").trim();
+      var clean = text.replace(/^```[\w]*\n?/i, "").replace(/\n?```$/i, "").trim();
       return JSON.parse(clean);
     });
   }
@@ -1451,18 +1453,22 @@ export default function App() {
       userContent = "Parse this game result. Extract final score and batting stats for " + teamName + " players.\n\n" + sourceData;
     }
 
-    return fetch("https://lineup-generator-backend.onrender.com/api/ai", {
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
+    var BACKEND = "https://lineup-generator-backend.onrender.com";
+    return fetch(BACKEND + "/api/ai", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         type: "result",
         systemPrompt: systemPrompt,
         userContent: userContent
       })
-    }).then(function(res) { return res.json(); }).then(function(data) {
+    }).then(function(res) {
+      if (!res.ok) { throw new Error("Backend error " + res.status); }
+      return res.json();
+    }).then(function(data) {
       var block = data.content && data.content.filter(function(b) { return b.type === "text"; })[0];
       var text = block ? block.text : "{}";
-      var clean = text.replace(/^```[a-zA-Z0-9]*\n?/i,"").replace(/\n?```$/i,"").trim();
+      var clean = text.replace(/^```[a-zA-Z0-9]*\n?/i, "").replace(/\n?```$/i, "").trim();
       return JSON.parse(clean);
     });
   }
