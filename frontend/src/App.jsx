@@ -187,7 +187,7 @@ function migrateGrid(grid, roster, innings) {
 // ============================================================
 
 var MUD_HENS_SCHEDULE = [
-  { id:"g1",  date:"2026-03-17", time:"7:30 PM",  location:"JV 2", opponent:"Party Animals",   home:true,  result:"X", ourScore:"", theirScore:"", battingPerf:{} },
+  { id:"g1",  date:"2026-03-17", time:"7:30 PM",  location:"JV 2", opponent:"Party Animals",   home:true,  result:"",  ourScore:"", theirScore:"", battingPerf:{} },
   { id:"g2",  date:"2026-03-19", time:"6:00 PM",  location:"JV 2", opponent:"Firefighters",    home:false, result:"", ourScore:"", theirScore:"", battingPerf:{} },
   { id:"g3",  date:"2026-03-26", time:"6:00 PM",  location:"JV 2", opponent:"Timber Rattlers", home:false, result:"", ourScore:"", theirScore:"", battingPerf:{} },
   { id:"g4",  date:"2026-03-31", time:"7:30 PM",  location:"FP 4", opponent:"Bananas",          home:false, result:"", ourScore:"", theirScore:"", battingPerf:{} },
@@ -196,7 +196,73 @@ var MUD_HENS_SCHEDULE = [
   { id:"g7",  date:"2026-04-18", time:"1:00 PM",  location:"FP 2", opponent:"Blue Wahoos",     home:false, result:"", ourScore:"", theirScore:"", battingPerf:{} },
   { id:"g8",  date:"2026-04-23", time:"7:00 PM",  location:"JV 3", opponent:"Bananas",          home:true,  result:"", ourScore:"", theirScore:"", battingPerf:{} },
   { id:"g9",  date:"2026-04-25", time:"11:30 AM", location:"FP 2", opponent:"Timber Rattlers", home:true,  result:"", ourScore:"", theirScore:"", battingPerf:{} },
-  { id:"g10", date:"2026-05-04", time:"6:00 PM",  location:"JV 3", opponent:"Blue Wahoos",     home:true,  result:"", ourScore:"", theirScore:"", battingPerf:{} }
+  { id:"g10", date:"2026-05-04", time:"6:00 PM",  location:"JV 3", opponent:"Blue Wahoos",     home:true,  result:"", ourScore:"", theirScore:"", battingPerf:{} },
+  { id:"g11", date:"2026-05-06", time:"7:30 PM",  location:"JV 2", opponent:"Party Animals",   home:false, result:"", ourScore:"", theirScore:"", battingPerf:{} }
+];
+
+var BANANAS_8U_SCHEDULE = [
+  { id:"ba-g1",  date:"2026-03-19", time:"7:00 PM",  location:"JV 3", opponent:"Blue Wahoos",     home:false, result:"",  ourScore:"",   theirScore:"",   battingPerf:{} },
+  { id:"ba-g2",  date:"2026-03-26", time:"7:30 PM",  location:"JV 2", opponent:"Firefighters",    home:true,  result:"",  ourScore:"",   theirScore:"",   battingPerf:{} },
+  { id:"ba-g3",  date:"2026-03-31", time:"7:30 PM",  location:"FP 4", opponent:"Mud Hens",        home:false, result:"",  ourScore:"",   theirScore:"",   battingPerf:{} },
+  { id:"ba-g4",  date:"2026-04-02", time:"6:00 PM",  location:"JV 2", opponent:"Timber Rattlers", home:true,  result:"",  ourScore:"",   theirScore:"",   battingPerf:{} },
+  { id:"ba-g5",  date:"2026-04-15", time:"7:00 PM",  location:"JV 3", opponent:"Blue Wahoos",     home:true,  result:"",  ourScore:"",   theirScore:"",   battingPerf:{} },
+  { id:"ba-g6",  date:"2026-04-18", time:"11:30 AM", location:"FP 2", opponent:"Party Animals",   home:false, result:"",  ourScore:"",   theirScore:"",   battingPerf:{} },
+  { id:"ba-g7",  date:"2026-04-23", time:"7:00 PM",  location:"JV 3", opponent:"Mud Hens",        home:true,  result:"",  ourScore:"",   theirScore:"",   battingPerf:{} },
+  { id:"ba-g8",  date:"2026-04-25", time:"10:00 AM", location:"FP 2", opponent:"Firefighters",    home:false, result:"",  ourScore:"",   theirScore:"",   battingPerf:{} },
+  { id:"ba-g9",  date:"2026-05-04", time:"7:30 PM",  location:"JV 2", opponent:"Party Animals",   home:true,  result:"",  ourScore:"",   theirScore:"",   battingPerf:{} },
+  { id:"ba-g10", date:"2026-05-06", time:"6:00 PM",  location:"JV 2", opponent:"Timber Rattlers", home:false, result:"",  ourScore:"",   theirScore:"",   battingPerf:{} }
+];
+
+var BLUE_WAHOOS_8U_SCHEDULE = [
+  { id:"bw-g1",  date:"2026-03-19", time:"7:00 PM",  location:"JV 3", opponent:"Bananas",         home:true,  result:"",  ourScore:"",   theirScore:"",   battingPerf:{} },
+  { id:"bw-g2",  date:"2026-03-26", time:"7:00 PM",  location:"JV 3", opponent:"Party Animals",   home:false, result:"",  ourScore:"",   theirScore:"",   battingPerf:{} },
+  { id:"bw-g3",  date:"2026-03-31", time:"7:30 PM",  location:"JV 2", opponent:"Timber Rattlers", home:false, result:"",  ourScore:"",   theirScore:"",   battingPerf:{} },
+  { id:"bw-g4",  date:"2026-04-02", time:"7:00 PM",  location:"JV 3", opponent:"Firefighters",    home:true,  result:"",  ourScore:"",   theirScore:"",   battingPerf:{} },
+  { id:"bw-g5",  date:"2026-04-15", time:"7:00 PM",  location:"JV 3", opponent:"Bananas",         home:false, result:"",  ourScore:"",   theirScore:"",   battingPerf:{} },
+  { id:"bw-g6",  date:"2026-04-18", time:"1:00 PM",  location:"FP 2", opponent:"Mud Hens",        home:false, result:"",  ourScore:"",   theirScore:"",   battingPerf:{} },
+  { id:"bw-g7",  date:"2026-04-23", time:"7:30 PM",  location:"JV 2", opponent:"Timber Rattlers", home:true,  result:"",  ourScore:"",   theirScore:"",   battingPerf:{} },
+  { id:"bw-g8",  date:"2026-04-25", time:"1:00 PM",  location:"FP 2", opponent:"Party Animals",   home:true,  result:"",  ourScore:"",   theirScore:"",   battingPerf:{} },
+  { id:"bw-g9",  date:"2026-05-04", time:"6:00 PM",  location:"JV 3", opponent:"Mud Hens",        home:true,  result:"",  ourScore:"",   theirScore:"",   battingPerf:{} },
+  { id:"bw-g10", date:"2026-05-06", time:"6:00 PM",  location:"JV 3", opponent:"Firefighters",    home:false, result:"",  ourScore:"",   theirScore:"",   battingPerf:{} }
+];
+
+var FIREFIGHTERS_8U_SCHEDULE = [
+  { id:"fi-g1",  date:"2026-03-19", time:"6:00 PM",  location:"JV 2", opponent:"Mud Hens",        home:false, result:"L", ourScore:"11", theirScore:"14", battingPerf:{} },
+  { id:"fi-g2",  date:"2026-03-26", time:"7:30 PM",  location:"JV 2", opponent:"Bananas",         home:false, result:"",  ourScore:"",   theirScore:"",   battingPerf:{} },
+  { id:"fi-g3",  date:"2026-03-31", time:"6:00 PM",  location:"JV 2", opponent:"Party Animals",   home:true,  result:"",  ourScore:"",   theirScore:"",   battingPerf:{} },
+  { id:"fi-g4",  date:"2026-04-02", time:"7:00 PM",  location:"JV 3", opponent:"Blue Wahoos",     home:false, result:"",  ourScore:"",   theirScore:"",   battingPerf:{} },
+  { id:"fi-g5",  date:"2026-04-15", time:"6:00 PM",  location:"JV 2", opponent:"Mud Hens",        home:true,  result:"",  ourScore:"",   theirScore:"",   battingPerf:{} },
+  { id:"fi-g6",  date:"2026-04-18", time:"10:00 AM", location:"FP 2", opponent:"Timber Rattlers", home:false, result:"",  ourScore:"",   theirScore:"",   battingPerf:{} },
+  { id:"fi-g7",  date:"2026-04-23", time:"6:00 PM",  location:"JV 2", opponent:"Party Animals",   home:false, result:"",  ourScore:"",   theirScore:"",   battingPerf:{} },
+  { id:"fi-g8",  date:"2026-04-25", time:"10:00 AM", location:"FP 2", opponent:"Bananas",         home:true,  result:"",  ourScore:"",   theirScore:"",   battingPerf:{} },
+  { id:"fi-g9",  date:"2026-05-04", time:"6:00 PM",  location:"JV 2", opponent:"Timber Rattlers", home:true,  result:"",  ourScore:"",   theirScore:"",   battingPerf:{} },
+  { id:"fi-g10", date:"2026-05-06", time:"6:00 PM",  location:"JV 3", opponent:"Blue Wahoos",     home:true,  result:"",  ourScore:"",   theirScore:"",   battingPerf:{} }
+];
+
+var PARTY_ANIMALS_8U_SCHEDULE = [
+  { id:"pa-g1",  date:"2026-03-19", time:"7:30 PM",  location:"JV 2", opponent:"Timber Rattlers", home:false, result:"W", ourScore:"14", theirScore:"7",  battingPerf:{} },
+  { id:"pa-g2",  date:"2026-03-26", time:"7:00 PM",  location:"JV 3", opponent:"Blue Wahoos",     home:true,  result:"",  ourScore:"",   theirScore:"",   battingPerf:{} },
+  { id:"pa-g3",  date:"2026-03-31", time:"6:00 PM",  location:"JV 2", opponent:"Firefighters",    home:false, result:"",  ourScore:"",   theirScore:"",   battingPerf:{} },
+  { id:"pa-g4",  date:"2026-04-02", time:"7:30 PM",  location:"JV 2", opponent:"Mud Hens",        home:false, result:"",  ourScore:"",   theirScore:"",   battingPerf:{} },
+  { id:"pa-g5",  date:"2026-04-15", time:"7:30 PM",  location:"JV 2", opponent:"Timber Rattlers", home:true,  result:"",  ourScore:"",   theirScore:"",   battingPerf:{} },
+  { id:"pa-g6",  date:"2026-04-18", time:"11:30 AM", location:"FP 2", opponent:"Bananas",         home:true,  result:"",  ourScore:"",   theirScore:"",   battingPerf:{} },
+  { id:"pa-g7",  date:"2026-04-23", time:"6:00 PM",  location:"JV 2", opponent:"Firefighters",    home:true,  result:"",  ourScore:"",   theirScore:"",   battingPerf:{} },
+  { id:"pa-g8",  date:"2026-04-25", time:"1:00 PM",  location:"FP 2", opponent:"Blue Wahoos",     home:false, result:"",  ourScore:"",   theirScore:"",   battingPerf:{} },
+  { id:"pa-g9",  date:"2026-05-04", time:"7:30 PM",  location:"JV 2", opponent:"Bananas",         home:false, result:"",  ourScore:"",   theirScore:"",   battingPerf:{} },
+  { id:"pa-g10", date:"2026-05-06", time:"7:30 PM",  location:"JV 2", opponent:"Mud Hens",        home:true,  result:"",  ourScore:"",   theirScore:"",   battingPerf:{} }
+];
+
+var TIMBER_RATTLERS_8U_SCHEDULE = [
+  { id:"ti-g1",  date:"2026-03-19", time:"7:30 PM",  location:"JV 2", opponent:"Party Animals",   home:true,  result:"L", ourScore:"7",  theirScore:"14", battingPerf:{} },
+  { id:"ti-g2",  date:"2026-03-26", time:"6:00 PM",  location:"JV 2", opponent:"Mud Hens",        home:false, result:"",  ourScore:"",   theirScore:"",   battingPerf:{} },
+  { id:"ti-g3",  date:"2026-03-31", time:"7:30 PM",  location:"JV 2", opponent:"Blue Wahoos",     home:true,  result:"",  ourScore:"",   theirScore:"",   battingPerf:{} },
+  { id:"ti-g4",  date:"2026-04-02", time:"6:00 PM",  location:"JV 2", opponent:"Bananas",         home:false, result:"",  ourScore:"",   theirScore:"",   battingPerf:{} },
+  { id:"ti-g5",  date:"2026-04-15", time:"7:30 PM",  location:"JV 2", opponent:"Party Animals",   home:false, result:"",  ourScore:"",   theirScore:"",   battingPerf:{} },
+  { id:"ti-g6",  date:"2026-04-18", time:"10:00 AM", location:"FP 2", opponent:"Firefighters",    home:true,  result:"",  ourScore:"",   theirScore:"",   battingPerf:{} },
+  { id:"ti-g7",  date:"2026-04-23", time:"7:30 PM",  location:"JV 2", opponent:"Blue Wahoos",     home:false, result:"",  ourScore:"",   theirScore:"",   battingPerf:{} },
+  { id:"ti-g8",  date:"2026-04-25", time:"11:30 AM", location:"FP 2", opponent:"Mud Hens",        home:true,  result:"",  ourScore:"",   theirScore:"",   battingPerf:{} },
+  { id:"ti-g9",  date:"2026-05-04", time:"6:00 PM",  location:"JV 2", opponent:"Firefighters",    home:false, result:"",  ourScore:"",   theirScore:"",   battingPerf:{} },
+  { id:"ti-g10", date:"2026-05-06", time:"6:00 PM",  location:"JV 2", opponent:"Bananas",         home:true,  result:"",  ourScore:"",   theirScore:"",   battingPerf:{} }
 ];
 
 // ============================================================
@@ -733,9 +799,8 @@ export default function App() {
   if (!window._lineupDbBooted && isSupabaseEnabled) {
     window._lineupDbBooted = true;
     dbLoadTeams().then(function(dbTeams) {
-      if (!dbTeams) { return; }
       var localTeams = loadJSON("app:teams", []) || [];
-      var merged = dbTeams.slice();
+      var merged = dbTeams ? dbTeams.slice() : [];
       for (var li = 0; li < localTeams.length; li++) {
         var found = false;
         for (var di = 0; di < merged.length; di++) {
@@ -746,6 +811,62 @@ export default function App() {
       if (merged.length > 0) {
         saveJSON("app:teams", merged);
         setTeams(merged);
+      }
+
+      // MIGRATION: seed division teams that do not yet exist in DB
+      // Each team gets a migration version stamp. If the stamp matches
+      // the current version, skip — do not overwrite coach edits.
+      // Coaches can freely edit schedules via the Schedule tab after seeding.
+      var MIGRATION_VERSION = "2026-official-v1";
+      var existingIds = merged.map(function(t) { return t.id; });
+
+      var migrationTargets = [
+        { id:"bananas-8u",         name:"Bananas",         ageGroup:"8U", year:2026, schedule:BANANAS_8U_SCHEDULE         },
+        { id:"blue-wahoos-8u",     name:"Blue Wahoos",     ageGroup:"8U", year:2026, schedule:BLUE_WAHOOS_8U_SCHEDULE     },
+        { id:"firefighters-8u",    name:"Firefighters",    ageGroup:"8U", year:2026, schedule:FIREFIGHTERS_8U_SCHEDULE    },
+        { id:"party-animals-8u",   name:"Party Animals",   ageGroup:"8U", year:2026, schedule:PARTY_ANIMALS_8U_SCHEDULE   },
+        { id:"timber-rattlers-8u", name:"Timber Rattlers", ageGroup:"8U", year:2026, schedule:TIMBER_RATTLERS_8U_SCHEDULE }
+      ];
+
+      var toCreate = [];
+      for (var mi = 0; mi < migrationTargets.length; mi++) {
+        var mt = migrationTargets[mi];
+        var migKey = "migration:" + mt.id + ":version";
+        var alreadyMigrated = loadJSON(migKey, null);
+        if (alreadyMigrated === MIGRATION_VERSION) { continue; } // already done
+        if (existingIds.indexOf(mt.id) >= 0) {
+          // Team exists in DB — mark as migrated so we don't touch it again
+          saveJSON(migKey, MIGRATION_VERSION);
+          continue;
+        }
+        toCreate.push(mt);
+      }
+
+      if (toCreate.length > 0) {
+        // Add new teams to the local list immediately
+        var withNew = merged.concat(toCreate.map(function(t) {
+          return { id:t.id, name:t.name, ageGroup:t.ageGroup, year:t.year };
+        }));
+        saveJSON("app:teams", withNew);
+        setTeams(withNew);
+
+        // Persist each team to Supabase and localStorage
+        for (var ci = 0; ci < toCreate.length; ci++) {
+          var ct = toCreate[ci];
+          var migKey2 = "migration:" + ct.id + ":version";
+          // Save team record
+          dbSaveTeams([{ id:ct.id, name:ct.name, ageGroup:ct.ageGroup, year:ct.year }]);
+          // Save team data with official schedule, empty roster
+          dbSaveTeamData(ct.id, {
+            roster: [], schedule: ct.schedule, practices: [],
+            battingOrder: [], grid: {}, innings: 6, locked: false
+          });
+          // Seed localStorage for offline access
+          saveJSON("team:" + ct.id + ":schedule", ct.schedule);
+          saveJSON("team:" + ct.id + ":roster", []);
+          // Stamp migration version so this never runs again for this team
+          saveJSON(migKey2, MIGRATION_VERSION);
+        }
       }
     }).catch(function() {});
   }
