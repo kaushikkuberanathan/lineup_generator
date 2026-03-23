@@ -4,7 +4,7 @@ const cors = require('cors');
 const app = express();
 const PORT = 5000;
 
-app.use(cors());
+app.use(cors({ origin: 'https://line-up-generator.vercel.app' }));
 app.use(express.json());
 
 app.get('/', (req, res) => {
@@ -41,6 +41,12 @@ app.post('/api/ai', async (req, res) => {
     return res.status(413).json({ error: 'Request too large (max 5MB)' });
   }
 
+  const { type, systemPrompt, userContent } = req.body;
+  const allowed = ['schedule', 'result'];
+  if (!allowed.includes(type)) {
+    return res.status(400).json({ error: 'Invalid type' });
+  }
+
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
@@ -53,7 +59,12 @@ app.post('/api/ai', async (req, res) => {
         'x-api-key': apiKey,
         'anthropic-version': '2023-06-01'
       },
-      body: JSON.stringify(req.body),
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        system: (systemPrompt || '').slice(0, 2000),
+        messages: [{ role: 'user', content: userContent }]
+      }),
       signal: controller.signal
     });
   } catch (e) {

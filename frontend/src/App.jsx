@@ -1241,16 +1241,15 @@ export default function App() {
 
   // --- AI schedule parser ---
   function callAI(messages) {
-    return fetch("https://api.anthropic.com/v1/messages", {
+    return fetch("https://lineup-generator-backend.onrender.com/api/ai", {
       method:"POST",
       headers:{ "Content-Type":"application/json" },
       body: JSON.stringify({
-        model:"claude-sonnet-4-20250514",
-        max_tokens:1000,
-        system:"You are a baseball schedule parser. Return ONLY a valid JSON array of game objects. " +
+        type: "schedule",
+        systemPrompt:"You are a baseball schedule parser. Return ONLY a valid JSON array of game objects. " +
                "Each object: { date:'YYYY-MM-DD', time:'HH:MM AM/PM', opponent:'Team Name', location:'Field', result:'', ourScore:'', theirScore:'', battingPerf:{} }. " +
                "No markdown, no explanation. Empty array if no games found.",
-        messages: messages
+        userContent: messages[0].content
       })
     }).then(function(res) { return res.json(); }).then(function(data) {
       var block = data.content && data.content.filter(function(b) { return b.type === "text"; })[0];
@@ -1287,14 +1286,13 @@ export default function App() {
       userContent = "Parse this game result. Extract final score and batting stats for " + teamName + " players.\n\n" + sourceData;
     }
 
-    return fetch("https://api.anthropic.com/v1/messages", {
+    return fetch("https://lineup-generator-backend.onrender.com/api/ai", {
       method:"POST",
       headers:{ "Content-Type":"application/json" },
       body: JSON.stringify({
-        model:"claude-sonnet-4-20250514",
-        max_tokens:1000,
-        system: systemPrompt,
-        messages:[{ role:"user", content: userContent }]
+        type: "result",
+        systemPrompt: systemPrompt,
+        userContent: userContent
       })
     }).then(function(res) { return res.json(); }).then(function(data) {
       var block = data.content && data.content.filter(function(b) { return b.type === "text"; })[0];
