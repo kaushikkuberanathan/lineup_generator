@@ -817,7 +817,7 @@ export default function App() {
       // Each team gets a migration version stamp. If the stamp matches
       // the current version, skip — do not overwrite coach edits.
       // Coaches can freely edit schedules via the Schedule tab after seeding.
-      var MIGRATION_VERSION = "2026-official-v1";
+      var MIGRATION_VERSION = "2026-official-v2";
       var existingIds = merged.map(function(t) { return t.id; });
 
       var migrationTargets = [
@@ -835,8 +835,33 @@ export default function App() {
         var alreadyMigrated = loadJSON(migKey, null);
         if (alreadyMigrated === MIGRATION_VERSION) { continue; } // already done
         if (existingIds.indexOf(mt.id) >= 0) {
-          // Team exists in DB — mark as migrated so we don't touch it again
-          saveJSON(migKey, MIGRATION_VERSION);
+          // Team exists — update schedule only if not yet on this version
+          if (alreadyMigrated !== MIGRATION_VERSION) {
+            dbLoadTeamData(mt.id).then(function(existing) {
+              var captured = mt;
+              var preservedRoster    = existing && existing.roster       ? existing.roster       : [];
+              var preservedBatting   = existing && existing.battingOrder ? existing.battingOrder : [];
+              var preservedGrid      = existing && existing.grid         ? existing.grid          : {};
+              var preservedPractices = existing && existing.practices    ? existing.practices     : [];
+              var preservedInnings   = existing && existing.innings      ? existing.innings       : 6;
+              var preservedLocked    = existing                          ? existing.locked        : false;
+              dbSaveTeamData(captured.id, {
+                roster:       preservedRoster,
+                schedule:     captured.schedule,
+                battingOrder: preservedBatting,
+                grid:         preservedGrid,
+                practices:    preservedPractices,
+                innings:      preservedInnings,
+                locked:       preservedLocked
+              });
+              saveJSON("team:" + captured.id + ":schedule", captured.schedule);
+              saveJSON("migration:" + captured.id + ":version", MIGRATION_VERSION);
+            }).catch(function() {
+              saveJSON("migration:" + captured.id + ":version", MIGRATION_VERSION);
+            });
+          } else {
+            saveJSON(migKey, MIGRATION_VERSION);
+          }
           continue;
         }
         toCreate.push(mt);
@@ -1223,10 +1248,8 @@ export default function App() {
         // We detect this by comparing the load timestamp against
         // window._lastLocalWrite which is set by every persist call
         var lastWrite = window._lastLocalWrite || 0;
-        if (lastWrite > loadTimestamp) {
-          // Coach already made changes — skip DB hydration
-          return;
-        }
+        if (lastWrite > loadTimestamp) { return; }
+        if (!dbData.roster || dbData.roster.length === 0) { return; }
         saveJSON("team:" + team.id + ":roster",    dbData.roster);
         saveJSON("team:" + team.id + ":schedule",  dbData.schedule);
         saveJSON("team:" + team.id + ":practices", dbData.practices);
