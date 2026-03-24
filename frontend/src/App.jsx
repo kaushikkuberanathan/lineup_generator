@@ -817,16 +817,15 @@ export default function App() {
       // Each team gets a migration version stamp. If the stamp matches
       // the current version, skip — do not overwrite coach edits.
       // Coaches can freely edit schedules via the Schedule tab after seeding.
-      var MIGRATION_VERSION = "2026-official-v4";
+      var MIGRATION_VERSION = "2026-official-v5";
       var existingIds = merged.map(function(t) { return t.id; });
 
       var migrationTargets = [
-        { id:"mudhens-8u",         name:"Mud Hens",        ageGroup:"8U", year:2026, schedule:MUD_HENS_SCHEDULE          },
-        { id:"bananas-8u",         name:"Bananas",         ageGroup:"8U", year:2026, schedule:BANANAS_8U_SCHEDULE        },
-        { id:"blue-wahoos-8u",     name:"Blue Wahoos",     ageGroup:"8U", year:2026, schedule:BLUE_WAHOOS_8U_SCHEDULE    },
-        { id:"firefighters-8u",    name:"Firefighters",    ageGroup:"8U", year:2026, schedule:FIREFIGHTERS_8U_SCHEDULE   },
-        { id:"party-animals-8u",   name:"Party Animals",   ageGroup:"8U", year:2026, schedule:PARTY_ANIMALS_8U_SCHEDULE  },
-        { id:"timber-rattlers-8u", name:"Timber Rattlers", ageGroup:"8U", year:2026, schedule:TIMBER_RATTLERS_8U_SCHEDULE}
+        { id:"bananas-8u",         name:"Bananas",         ageGroup:"8U", year:2026, schedule:BANANAS_8U_SCHEDULE         },
+        { id:"blue-wahoos-8u",     name:"Blue Wahoos",     ageGroup:"8U", year:2026, schedule:BLUE_WAHOOS_8U_SCHEDULE     },
+        { id:"firefighters-8u",    name:"Firefighters",    ageGroup:"8U", year:2026, schedule:FIREFIGHTERS_8U_SCHEDULE    },
+        { id:"party-animals-8u",   name:"Party Animals",   ageGroup:"8U", year:2026, schedule:PARTY_ANIMALS_8U_SCHEDULE   },
+        { id:"timber-rattlers-8u", name:"Timber Rattlers", ageGroup:"8U", year:2026, schedule:TIMBER_RATTLERS_8U_SCHEDULE }
       ];
 
       var toCreate = [];
@@ -886,6 +885,34 @@ export default function App() {
           saveJSON("team:" + ct.id + ":roster", []);
           // Stamp migration version so this never runs again for this team
           saveJSON(migKey2, MIGRATION_VERSION);
+        }
+      }
+      // One-time patch: find Mud Hens by name and push official
+      // schedule to whatever ID it was actually created with.
+      // This handles the case where the team was created via UI
+      // with a timestamp ID instead of the hardcoded "mudhens-8u".
+      var MH_PATCH_KEY = "migration:mudhens:schedule-patch-v5";
+      if (loadJSON(MH_PATCH_KEY, null) !== "done") {
+        var mhTeam = null;
+        for (var mhi = 0; mhi < merged.length; mhi++) {
+          if (merged[mhi].name === "Mud Hens") { mhTeam = merged[mhi]; break; }
+        }
+        if (mhTeam) {
+          (function(capturedTeam) {
+            dbLoadTeamData(capturedTeam.id).then(function(existing) {
+              dbSaveTeamData(capturedTeam.id, {
+                roster:       existing && existing.roster       ? existing.roster       : [],
+                schedule:     MUD_HENS_SCHEDULE,
+                practices:    existing && existing.practices    ? existing.practices    : [],
+                battingOrder: existing && existing.battingOrder ? existing.battingOrder : [],
+                grid:         existing && existing.grid         ? existing.grid         : {},
+                innings:      existing && existing.innings      ? existing.innings      : 6,
+                locked:       existing                          ? existing.locked       : false
+              });
+              saveJSON("team:" + capturedTeam.id + ":schedule", MUD_HENS_SCHEDULE);
+              saveJSON(MH_PATCH_KEY, "done");
+            }).catch(function() {});
+          })(mhTeam);
         }
       }
     }).catch(function() {});
