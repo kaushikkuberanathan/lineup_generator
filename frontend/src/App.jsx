@@ -1867,9 +1867,6 @@ export default function App() {
                   ⬇
                 </button>
               ) : null}
-              <button onClick={function() { if (confirm("Delete " + team.name + "?")) { deleteTeam(team.id); } }} style={{ padding:"8px 10px", borderRadius:"8px", border:"1px solid rgba(255,255,255,0.15)", cursor:"pointer", fontSize:"13px", fontFamily:"inherit", background:"transparent", color:"rgba(255,255,255,0.4)" }}>
-                ✕
-              </button>
             </div>
           </div>
           <div style={pillStyle}>{pill}</div>
