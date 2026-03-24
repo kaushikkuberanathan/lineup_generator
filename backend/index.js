@@ -1,5 +1,9 @@
+require('./src/lib/env');
 const express = require('express');
 const cors = require('cors');
+
+const authRouter = require('./src/routes/auth');
+const adminRouter = require('./src/routes/admin');
 
 const app = express();
 const PORT = 5000;
@@ -84,6 +88,14 @@ app.get('/ping', function(req, res) {
   res.json({ status: 'ok', time: new Date().toISOString() });
 });
 
+app.use('/api/v1/auth', authRouter);
+app.use('/api/v1', adminRouter);
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+});
+
+app.use((err, req, res, next) => {
+  console.error('[ERROR]', err.message);
+  res.status(500).json({ error: 'INTERNAL_ERROR' });
 });
