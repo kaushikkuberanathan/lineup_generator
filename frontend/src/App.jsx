@@ -3920,7 +3920,13 @@ export default function App() {
             var fpos = [];
             for (var fii = 0; fii < innings; fii++) {
               var fp = (grid[bname] || [])[fii];
-              if (fp && fp !== "Bench") { fpos.push(fp); }
+              if (!fp || fp === "") {
+                fpos.push("-");
+              } else if (fp === "Bench") {
+                fpos.push("–");
+              } else {
+                fpos.push(fp);
+              }
             }
             if (fpos.length > 0) {
               doc.setTextColor(120, 130, 150);
@@ -4225,7 +4231,13 @@ export default function App() {
                   var fieldPos = [];
                   for (var ii = 0; ii < innings; ii++) {
                     var pos = (grid[name] || [])[ii];
-                    if (pos && pos !== "Bench") { fieldPos.push(pos); }
+                    if (!pos || pos === "") {
+                      fieldPos.push("-");
+                    } else if (pos === "Bench") {
+                      fieldPos.push("–");
+                    } else {
+                      fieldPos.push(pos);
+                    }
                   }
                   return (
                     <div key={name} style={{ display:"flex", alignItems:"center", gap:"8px", padding:"6px 10px", border:"1px solid rgba(15,31,61,0.1)", borderRadius:"6px", background:"#fff" }}>
@@ -4508,7 +4520,13 @@ export default function App() {
                   var fieldPos = [];
                   for (var ii = 0; ii < innCount; ii++) {
                     var pos = (payload.grid[name] || [])[ii];
-                    if (pos && pos !== "Bench") { fieldPos.push(pos); }
+                    if (!pos || pos === "") {
+                      fieldPos.push("-");
+                    } else if (pos === "Bench") {
+                      fieldPos.push("–");
+                    } else {
+                      fieldPos.push(pos);
+                    }
                   }
                   return (
                     <div key={name} style={{ display:"flex", alignItems:"center", gap:"8px", padding:"7px 10px", border:"1px solid rgba(15,31,61,0.08)", borderRadius:"6px" }}>
