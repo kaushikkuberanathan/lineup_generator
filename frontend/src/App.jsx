@@ -1895,9 +1895,6 @@ export default function App() {
                 + Create New Team
               </button>
               <div style={{ textAlign:"center" }}>
-                <a href={COUNTY_SCHEDULE_URL} target="_blank" rel="noopener noreferrer" style={{ display:"inline-flex", alignItems:"center", gap:"6px", padding:"8px 16px", borderRadius:"20px", background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.18)", color:"rgba(255,255,255,0.65)", fontSize:"12px", textDecoration:"none", marginBottom:"12px" }}>
-                  County Official Game Schedule
-                </a>
                 <div style={{ fontSize:"10px", color:"rgba(255,255,255,0.18)" }}>All data saved locally on this device</div>
               </div>
             </div>
@@ -4242,6 +4239,76 @@ export default function App() {
   }
 
   // ============================================================
+  // LINKS TAB
+  // ============================================================
+  function renderLinks() {
+    var LINKS = [
+      {
+        group: "Schedule & Registration",
+        items: [
+          {
+            label: "County Official Game Schedule",
+            desc: "Forsyth County 2026 Youth Baseball & Softball — full season schedule",
+            url: COUNTY_SCHEDULE_URL,
+            emoji: "📅"
+          },
+          {
+            label: "Field & Cage Request",
+            desc: "Request field or batting cage time from Forsyth County Parks",
+            url: "https://docs.google.com/forms/d/e/1FAIpQLSeCIvqZlGsxonkWpFJ52q_6PWrOl3mmOTjTdiPGcz3ZQGzJDQ/viewform",
+            emoji: "⚾"
+          }
+        ]
+      },
+      {
+        group: "Weather & Alerts",
+        items: [
+          {
+            label: "Inclement Weather Updates",
+            desc: "Forsyth County Parks — field closures and weather delays",
+            url: "https://parks.forsythco.com/Athletic-Leagues/Inclement-Weather-Information",
+            emoji: "⛈️"
+          },
+          {
+            label: "Status Me Auto Alerts",
+            desc: "Sign up for automatic game status notifications",
+            url: "https://statusme.com/",
+            emoji: "🔔"
+          }
+        ]
+      }
+    ];
+
+    return (
+      <div>
+        {LINKS.map(function(section) {
+          return (
+            <div key={section.group} style={S.card}>
+              <div style={S.sectionTitle}>{section.group}</div>
+              {section.items.map(function(link, li) {
+                return (
+                  <a key={li} href={link.url} target="_blank" rel="noopener noreferrer"
+                    style={{ display:"flex", alignItems:"flex-start", gap:"12px", padding:"12px 0",
+                      borderBottom: li < section.items.length - 1 ? "1px solid rgba(15,31,61,0.07)" : "none",
+                      textDecoration:"none", color:"inherit" }}>
+                    <span style={{ fontSize:"22px", lineHeight:"1", marginTop:"2px", flexShrink:0 }}>{link.emoji}</span>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:"13px", fontWeight:"700", color:C.navy, marginBottom:"3px" }}>{link.label}</div>
+                      <div style={{ fontSize:"11px", color:C.textMuted, lineHeight:"1.5", marginBottom:"5px" }}>{link.desc}</div>
+                      <div style={{ fontSize:"10px", color:C.red, wordBreak:"break-all", opacity:0.8 }}>{link.url}</div>
+                    </div>
+                    <span style={{ fontSize:"14px", color:C.textMuted, flexShrink:0, marginTop:"4px" }}>↗</span>
+                  </a>
+                );
+              })}
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  // ============================================================
   // ABOUT TAB
   // ============================================================
   function renderAbout() {
@@ -4863,6 +4930,7 @@ export default function App() {
     { key:"schedule", label:"Schedule" },
     { key:"feedback", label:"Feedback" },
     { key:"print",    label:"Print"    },
+    { key:"links",    label:"Links"    },
     { key:"about",    label:"About"    }
   ];
 
@@ -4874,6 +4942,7 @@ export default function App() {
       {tab === "schedule" ? renderSchedule() : null}
       {tab === "feedback" ? renderFeedback() : null}
       {tab === "print"    ? renderPrint()    : null}
+      {tab === "links"    ? renderLinks()    : null}
       {tab === "about"    ? renderAbout()    : null}
     </div>
   );
