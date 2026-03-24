@@ -49,6 +49,15 @@
 - 10-player field configuration: LC + RC replace CF in outfield; 1 bench slot per inning (schema v2, migration auto-remaps saved CF→LC)
 - First-time coach onboarding modal (5-step in-app walkthrough, localStorage completion tracking, always re-accessible via "Getting Started" button in Roster tab)
 
+### v1.1.0 — March 24, 2026
+- Replaced Practice tab with Feedback tab (free-form feedback + bug reporting with localStorage persistence)
+- Added About tab (app info, version history, inline onboarding guide)
+- APP_VERSION constant + VERSION_HISTORY array in codebase
+- Fixed LC/RC position colors (blue/purple, high contrast)
+- Schema v2 + CF→LC migration
+- 10-player field configuration (LC + RC replace CF)
+- First-time coach onboarding modal (5-step)
+
 ---
 
 ## 🔴 P1 — Bugs / Critical Gaps
@@ -106,13 +115,13 @@
 
 ## 🗓 Recommended Next Sprint (Sequenced)
 
-1. **Verify 10-player auto-assign on live roster** — open Mud Hens, run Auto-Assign across 6 innings, confirm 1 bench/inning and no CF
+1. ✅ **Verify 10-player auto-assign on live roster** — open Mud Hens, run Auto-Assign across 6 innings, confirm 1 bench/inning and no CF
 2. **Player absent flag** — ~2–3 hrs, high game-day utility
 3. **Mobile batting reorder arrow fallback** — ~1–2 hrs, biggest UX gap at the field
 4. **Print card metadata** (team name, date, opponent) — ~1 hr
 5. **`Confident` vs `goodCoachability` weight fix** — ~30 min, correctness issue
 6. **"Revert to Generated" button** — ~1–2 hrs
-7. **Verify onboarding modal on live app** — open app in a fresh browser session (or clear localStorage), create a new team, confirm 5-step modal appears; complete it and confirm it does not reappear on reload; confirm "Getting Started" button reopens it on demand
+7. ✅ **Verify onboarding modal on live app** — open app in a fresh browser session (or clear localStorage), create a new team, confirm 5-step modal appears; complete it and confirm it does not reappear on reload; confirm "Getting Started" button reopens it on demand
 
 > **Note:** File split (P3 code quality) should happen in parallel with or just before Phase 3 auth work. It will reduce new feature implementation time by ~40%.
 
