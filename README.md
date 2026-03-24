@@ -32,6 +32,9 @@ Drag-to-reorder with full touch support on mobile. Season batting stats (AVG, AB
 - Share via iOS/Android OS share sheet
 - Generate a read-only share link for assistant coaches and score keepers — shows diamond view, batting order, inning filter, no editing possible
 
+### Links
+Quick-access tab with external resources — county game schedule, field/cage request form, Sharon Springs Athletics, inclement weather updates, and Status Me alert sign-up.
+
 ### Feedback & bug reporting
 In-app tab for free-form coach feedback and bug reports. Submissions are persisted in localStorage and visible to the developer.
 

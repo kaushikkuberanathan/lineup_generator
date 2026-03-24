@@ -49,6 +49,9 @@
 - 10-player field configuration: LC + RC replace CF in outfield; 1 bench slot per inning (schema v2, migration auto-remaps saved CF→LC)
 - First-time coach onboarding modal (5-step in-app walkthrough, localStorage completion tracking, always re-accessible via "Getting Started" button in Roster tab)
 
+### v1.2.1 — March 24, 2026
+- Added Sharon Springs Athletics link to Links tab (sharonspringsathletics.org)
+
 ### v1.2.0 — March 24, 2026
 - Redesigned diamond view: SVG field with green background, outfield arc, dirt infield ellipse, base diamond, pitcher mound, and realistic position coordinates
 - Dual-zone position boxes: dark header band (per position group color) + low-opacity player name area

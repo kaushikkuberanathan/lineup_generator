@@ -126,9 +126,16 @@ var DEFAULT_ROSTER = [];
 var _mem = {};
 var SCHEMA_VERSION = 2;
 
-var APP_VERSION = "1.2.0";
+var APP_VERSION = "1.2.1";
 
 var VERSION_HISTORY = [
+  {
+    version: "1.2.1",
+    date: "March 24, 2026",
+    changes: [
+      "Added Sharon Springs Athletics link to Links tab (sharonspringsathletics.org)"
+    ]
+  },
   {
     version: "1.2.0",
     date: "March 24, 2026",
@@ -4257,6 +4264,17 @@ export default function App() {
             desc: "Request field or batting cage time from Forsyth County Parks",
             url: "https://docs.google.com/forms/d/e/1FAIpQLSeCIvqZlGsxonkWpFJ52q_6PWrOl3mmOTjTdiPGcz3ZQGzJDQ/viewform",
             emoji: "⚾"
+          }
+        ]
+      },
+      {
+        group: "League & Club",
+        items: [
+          {
+            label: "Sharon Springs Athletics",
+            desc: "Sharon Springs community athletics — league info, teams, and events",
+            url: "https://sharonspringsathletics.org/",
+            emoji: "🏆"
           }
         ]
       },
