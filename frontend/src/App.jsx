@@ -819,7 +819,7 @@ export default function App() {
       // Each team gets a migration version stamp. If the stamp matches
       // the current version, skip — do not overwrite coach edits.
       // Coaches can freely edit schedules via the Schedule tab after seeding.
-      var MIGRATION_VERSION = "2026-official-v5";
+      var MIGRATION_VERSION = "2026-official-v6";
       var existingIds = merged.map(function(t) { return t.id; });
 
       var migrationTargets = [
@@ -842,7 +842,26 @@ export default function App() {
               dbLoadTeamData(captured.id).then(function(existing) {
                 dbSaveTeamData(captured.id, {
                   roster:       existing && existing.roster        ? existing.roster        : [],
-                  schedule:     captured.schedule,
+                  schedule:     (function() {
+                    var exGames = existing && existing.schedule ? existing.schedule : [];
+                    var exById = {};
+                    for (var ei = 0; ei < exGames.length; ei++) {
+                      if (exGames[ei].id) { exById[exGames[ei].id] = exGames[ei]; }
+                    }
+                    return captured.schedule.map(function(g) {
+                      var prev = exById[g.id];
+                      if (!prev) { return g; }
+                      return {
+                        id: g.id, date: g.date, time: g.time,
+                        location: g.location, opponent: g.opponent, home: g.home,
+                        result:      prev.result      || g.result,
+                        ourScore:    prev.ourScore    || g.ourScore,
+                        theirScore:  prev.theirScore  || g.theirScore,
+                        battingPerf: prev.battingPerf && Object.keys(prev.battingPerf).length > 0
+                                     ? prev.battingPerf : (g.battingPerf || {})
+                      };
+                    });
+                  })(),
                   practices:    existing && existing.practices     ? existing.practices     : [],
                   battingOrder: existing && existing.battingOrder  ? existing.battingOrder  : [],
                   grid:         existing && existing.grid          ? existing.grid          : {},
@@ -902,16 +921,31 @@ export default function App() {
         if (mhTeam) {
           (function(capturedTeam) {
             dbLoadTeamData(capturedTeam.id).then(function(existing) {
+              var existingGames = existing && existing.schedule ? existing.schedule : [];
+              var existingById = {};
+              for (var ei = 0; ei < existingGames.length; ei++) {
+                existingById[existingGames[ei].id] = existingGames[ei];
+              }
+              var mergedSchedule = MUD_HENS_SCHEDULE.map(function(og) {
+                var prev = existingById[og.id];
+                if (!prev) return og;
+                return Object.assign({}, og, {
+                  result:      prev.result      !== undefined ? prev.result      : og.result,
+                  ourScore:    prev.ourScore     !== undefined ? prev.ourScore    : og.ourScore,
+                  theirScore:  prev.theirScore   !== undefined ? prev.theirScore  : og.theirScore,
+                  battingPerf: prev.battingPerf  && prev.battingPerf.length > 0 ? prev.battingPerf : og.battingPerf
+                });
+              });
               dbSaveTeamData(capturedTeam.id, {
                 roster:       existing && existing.roster       ? existing.roster       : [],
-                schedule:     MUD_HENS_SCHEDULE,
+                schedule:     mergedSchedule,
                 practices:    existing && existing.practices    ? existing.practices    : [],
                 battingOrder: existing && existing.battingOrder ? existing.battingOrder : [],
                 grid:         existing && existing.grid         ? existing.grid         : {},
                 innings:      existing && existing.innings      ? existing.innings      : 6,
                 locked:       existing                          ? existing.locked       : false
               });
-              saveJSON("team:" + capturedTeam.id + ":schedule", MUD_HENS_SCHEDULE);
+              saveJSON("team:" + capturedTeam.id + ":schedule", mergedSchedule);
               saveJSON(MH_PATCH_KEY, "done");
             }).catch(function() {});
           })(mhTeam);
