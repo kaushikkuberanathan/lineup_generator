@@ -5,6 +5,15 @@ import { isSupabaseEnabled, dbSaveTeams, dbDeleteTeam,
          dbLoadTeams, dbLoadTeamData, dbSaveTeamData } from './supabase.js';
 
 // ============================================================
+// HELPERS
+// ============================================================
+
+function firstName(name) {
+  if (!name) return name;
+  return name.split(" ")[0];
+}
+
+// ============================================================
 // CONSTANTS
 // ============================================================
 
@@ -1853,7 +1862,7 @@ export default function App() {
                     var top = getTopPositions(info);
                     return (
                       <tr key={info.name} style={{ borderBottom:"1px solid rgba(15,31,61,0.05)" }}>
-                        <td style={{ padding:"8px 10px", fontWeight:"bold" }}>{info.name}</td>
+                        <td style={{ padding:"8px 10px", fontWeight:"bold" }}>{firstName(info.name)}</td>
                         <td style={{ padding:"8px 10px" }}>
                           <div style={{ display:"flex", gap:"3px", flexWrap:"wrap" }}>
                             {(info.skills || []).map(function(sk) {
@@ -2211,13 +2220,13 @@ export default function App() {
             <div key={row.inn} style={{ fontSize:"12px", fontWeight: row.name ? "bold" : "normal",
               color: row.name ? "#0f1f3d" : "#bbb", textAlign:"center", padding:"1px 0",
               overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-              {row.name || "-"}
+              {row.name ? firstName(row.name) : "-"}
             </div>
           ) : (
             <div key={row.inn} style={{ display:"flex", gap:"2px", alignItems:"baseline", fontSize:"9.5px", lineHeight:"1.5", overflow:"hidden" }}>
               <span style={{ color:"#aaa", fontSize:"7.5px", minWidth:"8px", textAlign:"right", flexShrink:0 }}>{row.inn}</span>
               <span style={{ fontWeight: row.name ? "bold" : "normal", color: row.name ? "#0f1f3d" : "#ccc",
-                overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", minWidth:0, flex:1 }}>{row.name || "-"}</span>
+                overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", minWidth:0, flex:1 }}>{row.name ? firstName(row.name) : "-"}</span>
             </div>
           );
         })}
@@ -2403,7 +2412,7 @@ export default function App() {
                   return (
                     <tr key={info.name}>
                       <td style={{ padding:"6px 12px", fontWeight:"bold", fontSize:"12px", position:"sticky", left:0, background:rowBg, zIndex:1, borderBottom:"1px solid rgba(15,31,61,0.04)" }}>
-                        {info.name}
+                        {firstName(info.name)}
                       </td>
                       {innArr.map(function(i) {
                         var pos = (grid[info.name] || [])[i] || "";
@@ -2767,7 +2776,7 @@ export default function App() {
                     var avgColor = avg !== null && avg >= 0.300 ? C.win : avg !== null && avg >= 0.200 ? "#d4a017" : C.text;
                     return (
                       <tr key={name} style={{ borderBottom:"1px solid rgba(15,31,61,0.04)" }}>
-                        <td style={{ padding:"6px 8px", fontWeight:"bold" }}>{idx + 1}. {name}</td>
+                        <td style={{ padding:"6px 8px", fontWeight:"bold" }}>{idx + 1}. {firstName(name)}</td>
                         <td style={{ padding:"6px 8px", textAlign:"center", color:C.textMuted }}>{st.games}</td>
                         <td style={{ padding:"6px 8px", textAlign:"center" }}>{st.ab}</td>
                         <td style={{ padding:"6px 8px", textAlign:"center" }}>{st.h}</td>
@@ -2855,7 +2864,7 @@ export default function App() {
                 </div>
 
                 <div style={{ flex:1 }}>
-                  <div style={{ fontWeight:"bold", fontSize:"13px", marginBottom:"2px" }}>{name}</div>
+                  <div style={{ fontWeight:"bold", fontSize:"13px", marginBottom:"2px" }}>{firstName(name)}</div>
                   <div style={{ display:"flex", gap:"3px", flexWrap:"wrap" }}>
                     {bs.map(function(key) {
                       var b = BAT_SKILLS[key]; if (!b) { return null; }
@@ -3323,7 +3332,7 @@ export default function App() {
                         var inputStyle = { width:"40px", padding:"3px 4px", borderRadius:"4px", border:"1px solid rgba(15,31,61,0.12)", textAlign:"center", fontSize:"12px", fontFamily:"inherit", background:"#f8f4ee" };
                         return (
                           <tr key={info.name}>
-                            <td style={{ padding:"5px 8px", fontWeight:"bold", fontSize:"12px", borderBottom:"1px solid rgba(15,31,61,0.04)" }}>{info.name}</td>
+                            <td style={{ padding:"5px 8px", fontWeight:"bold", fontSize:"12px", borderBottom:"1px solid rgba(15,31,61,0.04)" }}>{firstName(info.name)}</td>
                             {["ab","h","r","rbi","bb"].map(function(field) {
                               return (
                                 <td key={field} style={cellStyle}>
@@ -3587,7 +3596,7 @@ export default function App() {
                         background: present ? C.win : "rgba(15,31,61,0.06)",
                         color: present ? "#fff" : C.textMuted,
                         border: "1px solid " + (present ? C.win : "rgba(15,31,61,0.1)") }}>
-                      {name}
+                      {firstName(name)}
                     </span>
                   );
                 })}
@@ -3777,7 +3786,7 @@ export default function App() {
                   doc.setFont("helvetica","normal");
                 }
                 doc.setFontSize(6.5);
-                doc.text(pFound || "-", pl2.cx + 8, pRowY + 1);
+                doc.text(pFound ? firstName(pFound) : "-", pl2.cx + 8, pRowY + 1);
               }
             }
             y += 192;
@@ -3820,7 +3829,7 @@ export default function App() {
                   doc.setTextColor(25,30,60);
                   doc.setFont("helvetica","bold");
                   doc.setFontSize(6.5);
-                  doc.text(pBName, margin + pbi3*pBColW + pBColW/2, y + 4, {align:"center"});
+                  doc.text(firstName(pBName), margin + pbi3*pBColW + pBColW/2, y + 4, {align:"center"});
                 }
               }
               y += pBRowH;
@@ -3865,7 +3874,7 @@ export default function App() {
             doc.setFontSize(8.5);
             doc.setFont("helvetica","bold");
             doc.setTextColor(navy[0], navy[1], navy[2]);
-            doc.text(info2.name, margin + 3, y + 5.2);
+            doc.text(firstName(info2.name), margin + 3, y + 5.2);
 
             doc.setFont("helvetica","normal");
             for (var ci = 0; ci < innArr2.length; ci++) {
@@ -3934,7 +3943,7 @@ export default function App() {
             doc.setTextColor(navy[0], navy[1], navy[2]);
             doc.setFontSize(9);
             doc.setFont("helvetica","bold");
-            doc.text(bname, bx + 11, by + 5);
+            doc.text(firstName(bname), bx + 11, by + 5);
 
             // Field positions
             var fpos = [];
@@ -4212,7 +4221,7 @@ export default function App() {
                     return (
                       <tr key={info.name} style={{ background: ri % 2 === 0 ? "#fff" : "#faf8f5" }}>
                         <td style={{ padding:"6px 10px", fontWeight:"bold", borderBottom:"1px solid rgba(15,31,61,0.06)" }}>
-                          {info.name}
+                          {firstName(info.name)}
                         </td>
                         {innArr.map(function(i) {
                           var pos = (grid[info.name] || [])[i] || "";
@@ -4264,7 +4273,7 @@ export default function App() {
                         {idx + 1}
                       </div>
                       <div style={{ flex:1 }}>
-                        <div style={{ fontWeight:"bold", fontSize:"12px" }}>{name}</div>
+                        <div style={{ fontWeight:"bold", fontSize:"12px" }}>{firstName(name)}</div>
                         {fieldPos.length > 0 ? (
                           <div style={{ fontSize:"9px", color:"#8a9aaa" }}>{fieldPos.join(", ")}</div>
                         ) : null}
@@ -4323,13 +4332,13 @@ export default function App() {
               <div key={row.inn} style={{ fontSize:"12px", fontWeight: row.name ? "bold" : "normal",
                 color: row.name ? C.navy : "#bbb", textAlign:"center", padding:"1px 0",
                 overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-                {row.name || "-"}
+                {row.name ? firstName(row.name) : "-"}
               </div>
             ) : (
               <div key={row.inn} style={{ display:"flex", gap:"2px", alignItems:"baseline", fontSize:"9.5px", lineHeight:"1.5", overflow:"hidden" }}>
                 <span style={{ color:"#aaa", fontSize:"7.5px", minWidth:"8px", textAlign:"right", flexShrink:0 }}>{row.inn}</span>
                 <span style={{ fontWeight: row.name ? "bold" : "normal", color: row.name ? C.navy : "#ccc",
-                  overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", minWidth:0, flex:1 }}>{row.name || "-"}</span>
+                  overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", minWidth:0, flex:1 }}>{row.name ? firstName(row.name) : "-"}</span>
               </div>
             );
           })}
@@ -4512,7 +4521,7 @@ export default function App() {
                     {rosterNames.map(function(name, ri) {
                       return (
                         <tr key={name} style={{ background: ri%2===0 ? "#fff" : "#faf8f5" }}>
-                          <td style={{ padding:"6px 12px", fontWeight:"bold", position:"sticky", left:0, background: ri%2===0?"#fff":"#faf8f5", borderBottom:"1px solid rgba(15,31,61,0.04)" }}>{name}</td>
+                          <td style={{ padding:"6px 12px", fontWeight:"bold", position:"sticky", left:0, background: ri%2===0?"#fff":"#faf8f5", borderBottom:"1px solid rgba(15,31,61,0.04)" }}>{firstName(name)}</td>
                           {(svInn !== null ? [svInn] : innArr).map(function(i) {
                             var pos = (payload.grid[name] || [])[i] || "";
                             return (
@@ -4551,7 +4560,7 @@ export default function App() {
                     <div key={name} style={{ display:"flex", alignItems:"center", gap:"8px", padding:"7px 10px", border:"1px solid rgba(15,31,61,0.08)", borderRadius:"6px" }}>
                       <div style={{ width:"20px", height:"20px", borderRadius:"50%", background:C.navy, color:"#fff", fontSize:"10px", fontWeight:"bold", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{idx+1}</div>
                       <div style={{ minWidth:0 }}>
-                        <div style={{ fontWeight:"bold", fontSize:"12px", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{name}</div>
+                        <div style={{ fontWeight:"bold", fontSize:"12px", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{firstName(name)}</div>
                         {fieldPos.length > 0 ? <div style={{ fontSize:"9px", color:C.textMuted }}>{fieldPos.join(", ")}</div> : null}
                       </div>
                     </div>
