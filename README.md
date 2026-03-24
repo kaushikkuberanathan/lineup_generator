@@ -14,7 +14,10 @@ A Progressive Web App that auto-generates defensive lineups, tracks batting orde
 The engine scores every player for every position using multiple layers of logic — skill badges, preferred positions, coach tags, dislike penalties, consecutive inning rules, outfield repeat prevention, and bench equity. It runs up to 8 attempts with shuffled ordering and returns the best valid result with warnings for any violations.
 
 ### Diamond view
-Visual field layout showing all 10 positions. Filter to a single inning (tap "4" to see only inning 4 assignments) or view all innings at once. Works in both the Defense tab and the Print/Share view.
+Visual field layout showing all 10 positions on a realistic green field with dirt infield and outfield arc. Filter to a single inning (tap "4" to see only inning 4 assignments) or view all innings at once. Works in both the Defense tab and the Print/Share view.
+
+### Realistic field diamond view
+Green field background with dirt infield, outfield arc, base paths, and pitcher mound. Positions placed at true field coordinates — LF/LC/RC/RF in the outfield arc, SS/2B flanking second base, 3B/P/1B near the base corners, C below home plate.
 
 ### Batting order
 Drag-to-reorder with full touch support on mobile. Season batting stats (AVG, AB, H, R, RBI) tracked per player from game results. AVG is calculated automatically from H ÷ AB and color-coded live.
@@ -31,6 +34,9 @@ Log sessions with focus areas, drills, attendance, and notes.
 - Download a branded PDF of the lineup card
 - Share via iOS/Android OS share sheet
 - Generate a read-only share link for assistant coaches and score keepers — shows diamond view, batting order, inning filter, no editing possible
+
+### Feedback & bug reporting
+In-app tab for free-form coach feedback and bug reports. Submissions are persisted in localStorage and visible to the developer.
 
 ### Export / Import backup
 Download the full team as a JSON file. Restore from backup on any device.
@@ -170,6 +176,9 @@ Outfield is filled first (LC → RC → LF → RF) using a hard block on repeat 
 
 The engine runs up to 8 times with shuffled roster order and returns the attempt with the fewest validation violations.
 
+**Field layout (diamond view)**
+The diamond view renders an SVG field (680×640 viewBox) with a green background, outfield arc, dirt infield ellipse, base diamond, and pitcher mound. All 10 position boxes are placed at true field coordinates. In single-inning mode, each box shows the assigned player's first name. In all-innings mode, each box shows a numbered list of assignments across all innings.
+
 ---
 
 ## Documentation
@@ -177,6 +186,7 @@ The engine runs up to 8 times with shuffled roster order and returns the attempt
 - [Roadmap](docs/product/ROADMAP.md)
 - [User Personas](docs/product/PERSONAS.md)
 - [Coach Onboarding Guide](docs/product/ONBOARDING.md)
+- [Pre-Deploy Test Checklist](docs/testing/PRE_DEPLOY_CHECKLIST.md)
 
 ---
 
