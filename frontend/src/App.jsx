@@ -2378,68 +2378,111 @@ export default function App() {
   // FIELD SVG DIAMOND (shared by grid tab, print tab, share link)
   // ============================================================
   function renderFieldSVG(getPlayerFn, selectedInning, localInnArr) {
-    var SVG_POSITIONS = [
-      { pos:"LF", x:42,  y:160, w:112, h:56 },
-      { pos:"LC", x:170, y:120, w:112, h:56 },
-      { pos:"RC", x:398, y:120, w:112, h:56 },
-      { pos:"RF", x:526, y:160, w:112, h:56 },
-      { pos:"SS", x:190, y:300, w:112, h:56 },
-      { pos:"2B", x:378, y:300, w:112, h:56 },
-      { pos:"3B", x:148, y:415, w:112, h:56 },
-      { pos:"P",  x:284, y:405, w:112, h:56 },
-      { pos:"1B", x:420, y:415, w:112, h:56 },
-      { pos:"C",  x:284, y:555, w:112, h:56 }
-    ];
     var isSingle = selectedInning !== null && selectedInning !== undefined;
+    var HDR_COLORS = {
+      "LF":"#1a6e3a", "RF":"#1a6e3a",
+      "LC":"#1a5580",
+      "RC":"#5c2878",
+      "SS":"#8a4a0a", "2B":"#8a4a0a",
+      "3B":"#7a1a10", "P":"#7a1a10", "1B":"#7a1a10",
+      "C":"#14406e"
+    };
+    var BOX_H = isSingle ? 54 : 82;
+    var VB_H  = isSingle ? 640 : 680;
+    var SVG_POSITIONS = isSingle ? [
+      { pos:"LF", x:42,  y:175, w:112, h:BOX_H },
+      { pos:"LC", x:170, y:138, w:112, h:BOX_H },
+      { pos:"RC", x:398, y:138, w:112, h:BOX_H },
+      { pos:"RF", x:526, y:175, w:112, h:BOX_H },
+      { pos:"SS", x:190, y:300, w:112, h:BOX_H },
+      { pos:"2B", x:378, y:300, w:112, h:BOX_H },
+      { pos:"3B", x:148, y:415, w:112, h:BOX_H },
+      { pos:"P",  x:284, y:405, w:112, h:BOX_H },
+      { pos:"1B", x:420, y:415, w:112, h:BOX_H },
+      { pos:"C",  x:284, y:555, w:112, h:BOX_H }
+    ] : [
+      { pos:"LF", x:42,  y:165, w:112, h:BOX_H },
+      { pos:"LC", x:170, y:128, w:112, h:BOX_H },
+      { pos:"RC", x:398, y:128, w:112, h:BOX_H },
+      { pos:"RF", x:526, y:165, w:112, h:BOX_H },
+      { pos:"SS", x:190, y:300, w:112, h:BOX_H },
+      { pos:"2B", x:378, y:300, w:112, h:BOX_H },
+      { pos:"3B", x:148, y:415, w:112, h:BOX_H },
+      { pos:"P",  x:284, y:405, w:112, h:BOX_H },
+      { pos:"1B", x:420, y:415, w:112, h:BOX_H },
+      { pos:"C",  x:284, y:555, w:112, h:BOX_H }
+    ];
+    var benchPlayer = isSingle ? getPlayerFn("Bench", selectedInning) : "";
     return (
       <div style={{ position:"relative", width:"100%", maxWidth:"680px", margin:"0 auto", marginBottom:"10px" }}>
-        <svg viewBox="0 0 680 640" width="100%" style={{ display:"block" }}>
-          <rect x="0" y="0" width="680" height="640" rx="8" fill="#2d7a3a"/>
+        <svg viewBox={"0 0 680 " + VB_H} width="100%" style={{ display:"block" }}>
+          <rect x="0" y="0" width="680" height={VB_H} rx="8" fill="#2d7a3a"/>
           <path d="M 60 580 Q 340 30 620 580 Z" fill="#3a9147" fillOpacity="0.5" stroke="#3a9147" strokeOpacity="0.18" strokeWidth="1"/>
           <line x1="340" y1="565" x2="60" y2="580" stroke="white" strokeOpacity="0.3" strokeDasharray="6,4" strokeWidth="1.5"/>
           <line x1="340" y1="565" x2="620" y2="580" stroke="white" strokeOpacity="0.3" strokeDasharray="6,4" strokeWidth="1.5"/>
           <ellipse cx="340" cy="430" rx="170" ry="140" fill="#b5845a" fillOpacity="0.85"/>
           <polygon points="340,555 490,415 340,275 190,415" fill="#c49a6c" fillOpacity="0.6" stroke="#e8d5b0" strokeOpacity="0.8" strokeWidth="2"/>
           <circle cx="340" cy="435" r="18" fill="#c9a070" fillOpacity="0.9"/>
+          {isSingle && (
+            <g>
+              <rect x="300" y="8" width="80" height="22" rx="11" fill="rgba(0,0,0,0.35)"/>
+              <text x="340" y="23" textAnchor="middle" fontSize="10" fontWeight="600" fill="white" fontFamily="system-ui,sans-serif">
+                {"Inning " + (selectedInning + 1)}
+              </text>
+            </g>
+          )}
           {SVG_POSITIONS.map(function(slot) {
             var pc = POS_COLORS[slot.pos] || "#555555";
+            var hc = HDR_COLORS[slot.pos] || "#2a2a2a";
+            var cx = slot.x + slot.w / 2;
+            var hdrFs = isSingle ? "10" : "8.5";
             return (
               <g key={slot.pos}>
-                <rect x={slot.x} y={slot.y} width={slot.w} height={slot.h} rx="8"
-                  fill={pc} fillOpacity="0.82"
-                  stroke="white" strokeOpacity="0.5" strokeWidth="1"/>
+                <rect x={slot.x} y={slot.y} width={slot.w} height={slot.h} rx="6"
+                  fill={pc} fillOpacity="0.22"
+                  stroke={pc} strokeOpacity="0.55" strokeWidth="0.5"/>
+                <rect x={slot.x} y={slot.y} width={slot.w} height="20" rx="6"
+                  fill={hc} fillOpacity="0.88"/>
+                <rect x={slot.x} y={slot.y + 10} width={slot.w} height="10" rx="0"
+                  fill={hc} fillOpacity="0.88"/>
+                <text x={cx} y={slot.y + 13} textAnchor="middle"
+                  fontSize={hdrFs} fontWeight="700" fill="white" fillOpacity="0.92"
+                  fontFamily="system-ui,sans-serif">
+                  {slot.pos}
+                </text>
                 {isSingle ? (
-                  <g>
-                    <text x={slot.x + slot.w / 2} y={slot.y + 17} textAnchor="middle"
-                      fontSize="10" fill="white" fillOpacity="0.8" fontFamily="system-ui,sans-serif">
-                      {slot.pos}
-                    </text>
-                    <text x={slot.x + slot.w / 2} y={slot.y + 38} textAnchor="middle"
-                      fontSize="13" fontWeight="600" fill="white" fontFamily="system-ui,sans-serif">
-                      {(function() { var n = getPlayerFn(slot.pos, selectedInning); return n ? firstName(n) : slot.pos; })()}
-                    </text>
-                  </g>
+                  <text x={cx} y={slot.y + 40} textAnchor="middle"
+                    fontSize="14" fontWeight="700" fill="white"
+                    fontFamily="system-ui,sans-serif">
+                    {(function() { var n = getPlayerFn(slot.pos, selectedInning); return n ? firstName(n) : "-"; })()}
+                  </text>
                 ) : (
-                  <g>
-                    <text x={slot.x + slot.w / 2} y={slot.y + 12} textAnchor="middle"
-                      fontSize="9" fill="white" fillOpacity="0.8" fontFamily="system-ui,sans-serif">
-                      {slot.pos}
-                    </text>
-                    {localInnArr.map(function(ii) {
-                      var n = getPlayerFn(slot.pos, ii);
-                      return (
-                        <text key={ii} x={slot.x + slot.w / 2} y={slot.y + 22 + ii * 6.5} textAnchor="middle"
-                          fontSize="7.5" fill="white" fillOpacity={n ? "1" : "0.4"}
-                          fontFamily="system-ui,sans-serif">
-                          {(ii + 1) + "." + (n ? firstName(n) : "-")}
-                        </text>
-                      );
-                    })}
-                  </g>
+                  localInnArr.slice(0, Math.min(4, localInnArr.length)).map(function(ii, i) {
+                    var n = getPlayerFn(slot.pos, ii);
+                    return (
+                      <text key={ii} x={cx} y={slot.y + 30 + (i * 11)} textAnchor="middle"
+                        fontSize="7.5" fill="white" fillOpacity={n ? "1" : "0.4"}
+                        fontFamily="system-ui,sans-serif">
+                        {n ? firstName(n) : "-"}
+                      </text>
+                    );
+                  })
                 )}
               </g>
             );
           })}
+          {isSingle && benchPlayer && (
+            <g>
+              <rect x="430" y="570" width="130" height="24" rx="12"
+                fill="rgba(0,0,0,0.28)" stroke="white" strokeOpacity="0.15"
+                strokeDasharray="3 2" strokeWidth="1"/>
+              <text x="495" y="586" textAnchor="middle"
+                fontSize="9" fill="rgba(255,255,255,0.7)"
+                fontFamily="system-ui,sans-serif">
+                {"Bench: " + firstName(benchPlayer)}
+              </text>
+            </g>
+          )}
         </svg>
       </div>
     );
