@@ -172,6 +172,13 @@ The engine runs up to 8 times with shuffled roster order and returns the attempt
 
 ---
 
+## Documentation
+
+- [Roadmap](docs/product/ROADMAP.md)
+- [User Personas](docs/product/PERSONAS.md)
+
+---
+
 ## Roadmap
 
 - **Phase 3a** — Supabase Auth (magic link login, no passwords)
