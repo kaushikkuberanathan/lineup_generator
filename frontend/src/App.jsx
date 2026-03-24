@@ -3,6 +3,28 @@ import { useState, useMemo, useCallback } from "react";
 import { jsPDF } from "jspdf";
 import { isSupabaseEnabled, dbSaveTeams, dbDeleteTeam,
          dbLoadTeams, dbLoadTeamData, dbSaveTeamData } from './supabase.js';
+import mixpanel from 'mixpanel-browser';
+
+var MIXPANEL_TOKEN = "YOUR_MIXPANEL_TOKEN";
+if (MIXPANEL_TOKEN !== "YOUR_MIXPANEL_TOKEN") {
+  mixpanel.init(MIXPANEL_TOKEN, {
+    track_pageview: true,
+    persistence: "localStorage",
+    ignore_dnt: false,
+    opt_out_tracking_by_default: false
+  });
+}
+
+function track(event, props) {
+  try {
+    if (MIXPANEL_TOKEN !== "YOUR_MIXPANEL_TOKEN") {
+      mixpanel.track(event, props || {});
+    }
+    if (window.location.hostname === "localhost") {
+      console.log("[analytics]", event, props || {});
+    }
+  } catch (e) {}
+}
 
 // ============================================================
 // HELPERS
@@ -1193,9 +1215,13 @@ export default function App() {
         battingOrder: battingOrder, grid: grid, innings: innings, locked: val
       }); });
     }
+    if (val) {
+      track("finalize_lineup", { roster_size: roster.length, innings: innings });
+    }
   }
 
   function shareCurrentLineup() {
+    track("share_link", {});
     var payload = {
       team:    activeTeam ? activeTeam.name + (activeTeam.ageGroup ? " " + activeTeam.ageGroup : "") : "Lineup",
       game:    null,
@@ -1306,6 +1332,7 @@ export default function App() {
     setLineupLocked(savedLocked);
     setTab("roster");
     setScreen("app");
+    track("load_team", { team_id: team.id, team_name: team.name });
 
     if (isSupabaseEnabled) {
       var loadTimestamp = Date.now();
@@ -1350,6 +1377,7 @@ export default function App() {
     var next = teams.concat([t]);
     setTeams(next);
     saveJSON("app:teams", next);
+    track("create_team", { age_group: t.ageGroup || "" });
     dbSync(function() { return dbSaveTeams([t]); });
     loadTeam(t);
   }
@@ -1373,6 +1401,7 @@ export default function App() {
     var p = { name:n, skills:["developing"], tags:[], dislikes:[], prefs:[], batSkills:[] };
     var next = roster.concat([p]);
     persistRoster(next);
+    track("add_player", { roster_size: next.length });
     persistBatting(battingOrder.concat([n]));
     var ng = {};
     for (var k in grid) { ng[k] = grid[k].slice(); }
@@ -1407,6 +1436,13 @@ export default function App() {
     setLastAutoGrid(result.grid);
     setLineupDirty(false);
     setTab("grid");
+    track("auto_assign", {
+      attempts: result.attempts || 1,
+      warnings: (result.warnings || []).length,
+      valid: result.isValid ? "yes" : "no",
+      roster_size: roster.length,
+      innings: innings
+    });
     if (result.usedFallback || !result.isValid) {
       console.warn("[Lineup Engine]", result.explain);
     }
@@ -1549,6 +1585,7 @@ export default function App() {
           var gp = {}; for (var k in g) { gp[k] = g[k]; } gp.id = Date.now() + Math.random() + "";
           return gp;
         });
+        track("import_schedule_text", { games_found: games.length });
         setImportState({ mode:"text", text:text, image:null, loading:false, error:"", preview:preview });
       })
       .catch(function() {
@@ -1567,6 +1604,7 @@ export default function App() {
           var gp = {}; for (var k in g) { gp[k] = g[k]; } gp.id = Date.now() + Math.random() + "";
           return gp;
         });
+        track("import_schedule_photo", { games_found: games.length });
         setImportState({ mode:"image", text:"", image:{ b64:b64, mediaType:mediaType }, loading:false, error:"", preview:preview });
       })
       .catch(function() {
@@ -2274,6 +2312,13 @@ export default function App() {
       var result = autoAssignWithRetryFallback(roster, innings);
       persistGrid(result.grid);
       setLineupDirty(false);
+      track("auto_assign", {
+        attempts: result.attempts || 1,
+        warnings: (result.warnings || []).length,
+        valid: result.isValid ? "yes" : "no",
+        roster_size: roster.length,
+        innings: innings
+      });
       if (result.usedFallback || !result.isValid) {
         console.warn("[Lineup Engine] autoFix:", result.explain);
       }
@@ -2726,6 +2771,9 @@ export default function App() {
       });
       scored.sort(function(a, b) { return b.score - a.score; });
       persistBatting(scored.map(function(x) { return x.name; }));
+      track("suggest_batting_order", {
+        has_stats: Object.keys(seasonStats || {}).length > 0 ? "yes" : "no"
+      });
     }
 
     // Aggregate season stats per player across all played games
@@ -3237,6 +3285,7 @@ export default function App() {
                             var sType = file.type === "application/pdf" ? "pdf" : "image";
                             parseGameResult(sType, b64, file.type)
                               .then(function(parsed) {
+                                track(sType === "text" ? "import_result_text" : "import_result_photo", {});
                                 var g = {}; for (var k in newGame) { g[k] = newGame[k]; }
                                 if (parsed.result)     { g.result     = parsed.result; }
                                 if (parsed.ourScore)   { g.ourScore   = parsed.ourScore; }
@@ -3270,6 +3319,7 @@ export default function App() {
                             var b64 = ev.target.result.split(",")[1];
                             parseGameResult("image", b64, file.type)
                               .then(function(parsed) {
+                                track("import_result_photo", {});
                                 var g = {}; for (var k in newGame) { g[k] = newGame[k]; }
                                 if (parsed.result)     { g.result     = parsed.result; }
                                 if (parsed.ourScore)   { g.ourScore   = parsed.ourScore; }
@@ -3998,6 +4048,7 @@ export default function App() {
 
         // ── Save or Share ────────────────────────────────────────
         var filename = teamName.replace(/[^a-z0-9]/gi, "-").toLowerCase() + "-lineup-" + new Date().toISOString().slice(0,10) + ".pdf";
+        track(mode === "share" ? "share_pdf" : "download_pdf", {});
 
         if (mode === "share") {
           // Web Share API v2 file sharing.
