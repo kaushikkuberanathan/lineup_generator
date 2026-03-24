@@ -3307,7 +3307,7 @@ export default function App() {
                   <table style={{ width:"100%", borderCollapse:"collapse", fontSize:"12px" }}>
                     <thead>
                       <tr style={{ background:"#f5efe4" }}>
-                        {["Player","AB","H","R","RBI","BB"].map(function(h) {
+                        {["Player","AB","H","R","RBI","Avg"].map(function(h) {
                           return <th key={h} style={{ padding:"5px 8px", textAlign: h==="Player" ? "left" : "center", fontSize:"10px", color:C.textMuted, letterSpacing:"0.08em", textTransform:"uppercase", borderBottom:"1px solid rgba(15,31,61,0.1)", whiteSpace:"nowrap" }}>{h}</th>;
                         })}
                       </tr>
@@ -3333,7 +3333,7 @@ export default function App() {
                         return (
                           <tr key={info.name}>
                             <td style={{ padding:"5px 8px", fontWeight:"bold", fontSize:"12px", borderBottom:"1px solid rgba(15,31,61,0.04)" }}>{firstName(info.name)}</td>
-                            {["ab","h","r","rbi","bb"].map(function(field) {
+                            {["ab","h","r","rbi"].map(function(field) {
                               return (
                                 <td key={field} style={cellStyle}>
                                   <input type="number" min="0" max="20" value={perf[field] || ""}
@@ -3342,6 +3342,11 @@ export default function App() {
                                 </td>
                               );
                             })}
+                            <td style={cellStyle}>
+                              <span style={{ fontSize:"12px", fontWeight:"bold", color: perf.ab > 0 ? (perf.h/perf.ab >= 0.300 ? C.win : perf.h/perf.ab >= 0.200 ? "#d4a017" : C.text) : C.textMuted }}>
+                                {perf.ab > 0 ? (perf.h / perf.ab).toFixed(3).replace(/^0/, "") : "—"}
+                              </span>
+                            </td>
                           </tr>
                         );
                       })}
@@ -3677,6 +3682,22 @@ export default function App() {
             );
           })}
         </div>
+
+        {/* Stats legend */}
+        <div style={{ marginTop:"24px", padding:"10px 14px", borderRadius:"8px", background:"rgba(15,31,61,0.04)", border:"1px solid rgba(15,31,61,0.08)" }}>
+          <div style={{ fontSize:"10px", fontWeight:"bold", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"6px" }}>Stats Key</div>
+          <div style={{ display:"flex", gap:"12px", flexWrap:"wrap" }}>
+            {[["AB","At Bats"],["H","Hits"],["R","Runs Scored"],["RBI","Runs Batted In"],["Avg","Batting Average (H ÷ AB)"]].map(function(row) {
+              return (
+                <div key={row[0]} style={{ display:"flex", gap:"4px", alignItems:"baseline" }}>
+                  <span style={{ fontSize:"10px", fontWeight:"bold", color:C.navy }}>{row[0]}</span>
+                  <span style={{ fontSize:"10px", color:C.textMuted }}>{row[1]}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
       </div>
     );
   }
