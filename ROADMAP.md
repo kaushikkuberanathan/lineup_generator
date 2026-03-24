@@ -46,6 +46,7 @@
 - Vercel frontend deploy with CI/CD
 - PWA — installable on iOS + Android, offline-capable after first visit
 - Export / Import backup (JSON)
+- 10-player field configuration: LC + RC replace CF in outfield; 1 bench slot per inning (schema v2, migration auto-remaps saved CF→LC)
 
 ---
 
@@ -104,7 +105,7 @@
 
 ## 🗓 Recommended Next Sprint (Sequenced)
 
-1. **Mud Hens g2 SQL restore** — ~10 min, unblocks stats accuracy
+1. **Verify 10-player auto-assign on live roster** — open Mud Hens, run Auto-Assign across 6 innings, confirm 1 bench/inning and no CF
 2. **Player absent flag** — ~2–3 hrs, high game-day utility
 3. **Mobile batting reorder arrow fallback** — ~1–2 hrs, biggest UX gap at the field
 4. **Print card metadata** (team name, date, opponent) — ~1 hr
