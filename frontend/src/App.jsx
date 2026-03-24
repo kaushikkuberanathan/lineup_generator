@@ -2375,6 +2375,77 @@ export default function App() {
   }
 
   // ============================================================
+  // FIELD SVG DIAMOND (shared by grid tab, print tab, share link)
+  // ============================================================
+  function renderFieldSVG(getPlayerFn, selectedInning, localInnArr) {
+    var SVG_POSITIONS = [
+      { pos:"LF", x:42,  y:160, w:112, h:56 },
+      { pos:"LC", x:170, y:120, w:112, h:56 },
+      { pos:"RC", x:398, y:120, w:112, h:56 },
+      { pos:"RF", x:526, y:160, w:112, h:56 },
+      { pos:"SS", x:190, y:300, w:112, h:56 },
+      { pos:"2B", x:378, y:300, w:112, h:56 },
+      { pos:"3B", x:148, y:415, w:112, h:56 },
+      { pos:"P",  x:284, y:405, w:112, h:56 },
+      { pos:"1B", x:420, y:415, w:112, h:56 },
+      { pos:"C",  x:284, y:555, w:112, h:56 }
+    ];
+    var isSingle = selectedInning !== null && selectedInning !== undefined;
+    return (
+      <div style={{ position:"relative", width:"100%", maxWidth:"680px", margin:"0 auto", marginBottom:"10px" }}>
+        <svg viewBox="0 0 680 640" width="100%" style={{ display:"block" }}>
+          <rect x="0" y="0" width="680" height="640" rx="8" fill="#2d7a3a"/>
+          <path d="M 60 580 Q 340 30 620 580 Z" fill="#3a9147" fillOpacity="0.5" stroke="#3a9147" strokeOpacity="0.18" strokeWidth="1"/>
+          <line x1="340" y1="565" x2="60" y2="580" stroke="white" strokeOpacity="0.3" strokeDasharray="6,4" strokeWidth="1.5"/>
+          <line x1="340" y1="565" x2="620" y2="580" stroke="white" strokeOpacity="0.3" strokeDasharray="6,4" strokeWidth="1.5"/>
+          <ellipse cx="340" cy="430" rx="170" ry="140" fill="#b5845a" fillOpacity="0.85"/>
+          <polygon points="340,555 490,415 340,275 190,415" fill="#c49a6c" fillOpacity="0.6" stroke="#e8d5b0" strokeOpacity="0.8" strokeWidth="2"/>
+          <circle cx="340" cy="435" r="18" fill="#c9a070" fillOpacity="0.9"/>
+          {SVG_POSITIONS.map(function(slot) {
+            var pc = POS_COLORS[slot.pos] || "#555555";
+            return (
+              <g key={slot.pos}>
+                <rect x={slot.x} y={slot.y} width={slot.w} height={slot.h} rx="8"
+                  fill={pc} fillOpacity="0.82"
+                  stroke="white" strokeOpacity="0.5" strokeWidth="1"/>
+                {isSingle ? (
+                  <g>
+                    <text x={slot.x + slot.w / 2} y={slot.y + 17} textAnchor="middle"
+                      fontSize="10" fill="white" fillOpacity="0.8" fontFamily="system-ui,sans-serif">
+                      {slot.pos}
+                    </text>
+                    <text x={slot.x + slot.w / 2} y={slot.y + 38} textAnchor="middle"
+                      fontSize="13" fontWeight="600" fill="white" fontFamily="system-ui,sans-serif">
+                      {(function() { var n = getPlayerFn(slot.pos, selectedInning); return n ? firstName(n) : slot.pos; })()}
+                    </text>
+                  </g>
+                ) : (
+                  <g>
+                    <text x={slot.x + slot.w / 2} y={slot.y + 12} textAnchor="middle"
+                      fontSize="9" fill="white" fillOpacity="0.8" fontFamily="system-ui,sans-serif">
+                      {slot.pos}
+                    </text>
+                    {localInnArr.map(function(ii) {
+                      var n = getPlayerFn(slot.pos, ii);
+                      return (
+                        <text key={ii} x={slot.x + slot.w / 2} y={slot.y + 22 + ii * 6.5} textAnchor="middle"
+                          fontSize="7.5" fill="white" fillOpacity={n ? "1" : "0.4"}
+                          fontFamily="system-ui,sans-serif">
+                          {(ii + 1) + "." + (n ? firstName(n) : "-")}
+                        </text>
+                      );
+                    })}
+                  </g>
+                )}
+              </g>
+            );
+          })}
+        </svg>
+      </div>
+    );
+  }
+
+    // ============================================================
   // FIELD GRID TAB
   // ============================================================
   function renderGrid() {
@@ -2655,6 +2726,12 @@ export default function App() {
               // Shown above the active table view (By Player or By Position).
               // posBox delegates to shared renderPosBox with grid-tab inning filter
               function posBox(pos, label) { return renderPosBox(pos, label, diamondInning); }
+              function getGridPlayerFn(pos, inn) {
+                for (var pi = 0; pi < roster.length; pi++) {
+                  if ((grid[roster[pi].name] || [])[inn] === pos) { return roster[pi].name; }
+                }
+                return "";
+              }
 
               // Bench strip — who is on bench each inning
               var benchByInning = [];
@@ -2712,79 +2789,9 @@ export default function App() {
                     })}
                   </div>
 
-                  {/* ── Outfield row ─────────────────────────────── */}
-                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr 1fr", gap:"4px", marginBottom:"6px" }}>
-                    {posSlots.filter(function(s){ return s.row==="of"; }).map(function(s) {
-                      return (
-                        <div key={s.pos} style={{ overflow:"hidden", minWidth:0 }}>
-                          {posBox(s.pos, s.pos)}
-                        </div>
-                      );
-                    })}
-                  </div>
+                  {renderFieldSVG(getGridPlayerFn, diamondInning, innArr)}
 
-                  {/* ── Field arc decoration between OF and IF ───── */}
-                  <div style={{ position:"relative", height:"32px", marginBottom:"4px", overflow:"hidden", opacity:0.35 }}>
-                    <svg viewBox="0 0 600 36" preserveAspectRatio="none" style={{ width:"100%", height:"100%" }}>
-                      {/* Foul lines */}
-                      <line x1="100" y1="0" x2="0" y2="36" stroke="#388e3c" strokeWidth="2"/>
-                      <line x1="500" y1="0" x2="600" y2="36" stroke="#388e3c" strokeWidth="2"/>
-                      {/* Outfield arc bottom */}
-                      <path d="M 0 36 Q 300 -10 600 36" fill="#c8e6c9" opacity="0.4" stroke="#388e3c" strokeWidth="1.5"/>
-                      {/* 2B base marker */}
-                      <rect x="288" y="8" width="24" height="24" rx="2" fill="#fff" stroke="#888" strokeWidth="1.5" transform="rotate(45,300,20)"/>
-                    </svg>
-                  </div>
-
-                  {/* ── Infield row ───────────────────────────────── */}
-                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr 1fr 1fr", gap:"4px", marginBottom:"6px" }}>
-                    {posSlots.filter(function(s){ return s.row==="if"; }).map(function(s) {
-                      return (
-                        <div key={s.pos} style={{ overflow:"hidden", minWidth:0 }}>
-                          {posBox(s.pos, s.pos)}
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* ── Infield diamond decoration ────────────────── */}
-                  <div style={{ position:"relative", height:"28px", marginBottom:"4px", overflow:"hidden", opacity:0.4 }}>
-                    <svg viewBox="0 0 600 32" preserveAspectRatio="none" style={{ width:"100%", height:"100%" }}>
-                      {/* Dirt infield fill */}
-                      <polygon points="300,0 150,16 300,32 450,16" fill="#d7b899" opacity="0.8"/>
-                      <polygon points="300,0 150,16 300,32 450,16" fill="none" stroke="#8d6e63" strokeWidth="1.5"/>
-                      {/* 3B marker */}
-                      <rect x="138" y="4" width="18" height="18" rx="1" fill="#fff" stroke="#888" strokeWidth="1.5" transform="rotate(45,147,13)"/>
-                      {/* 1B marker */}
-                      <rect x="438" y="4" width="18" height="18" rx="1" fill="#fff" stroke="#888" strokeWidth="1.5" transform="rotate(45,447,13)"/>
-                      {/* Pitcher mound */}
-                      <ellipse cx="300" cy="16" rx="28" ry="12" fill="#c8a882" stroke="#8d6e63" strokeWidth="1.5"/>
-                      {/* Pitcher rubber */}
-                      <rect x="290" y="13" width="20" height="5" rx="1" fill="#fff" stroke="#999" strokeWidth="1"/>
-                    </svg>
-                  </div>
-
-                  {/* ── Catcher row ───────────────────────────────── */}
-                  <div style={{ display:"flex", justifyContent:"center", marginBottom:"6px" }}>
-                    <div style={{ width:"calc(40% - 3px)", minWidth:"110px" }}>
-                      {posBox("C", "C")}
-                    </div>
-                  </div>
-
-                  {/* ── Home plate decoration ─────────────────────── */}
-                  <div style={{ position:"relative", height:"22px", marginBottom:"8px", overflow:"hidden", opacity:0.4 }}>
-                    <svg viewBox="0 0 600 24" preserveAspectRatio="none" style={{ width:"100%", height:"100%" }}>
-                      {/* Dirt around home */}
-                      <ellipse cx="300" cy="12" rx="80" ry="12" fill="#d7b899" opacity="0.6"/>
-                      {/* Home plate */}
-                      <polygon points="300,2 287,10 287,22 313,22 313,10" fill="#fff" stroke="#555" strokeWidth="2"/>
-                      {/* Batter boxes */}
-                      <rect x="256" y="4" width="28" height="18" fill="none" stroke="#999" strokeWidth="1"/>
-                      <rect x="316" y="4" width="28" height="18" fill="none" stroke="#999" strokeWidth="1"/>
-                    </svg>
-                  </div>
-
-                  {/* ── Bench strip ───────────────────────────────── */}
+                                    {/* ── Bench strip ───────────────────────────────── */}
                   <div style={{ borderTop:"2px solid rgba(15,31,61,0.15)", paddingTop:"10px" }}>
                     <div style={{ fontSize:"10px", fontWeight:"bold", color:"#555", textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"6px" }}>Bench</div>
                     <div style={{ overflowX:"auto" }}>
@@ -4369,6 +4376,12 @@ export default function App() {
                 (function() {
                   // posBoxP delegates to shared renderPosBox with print-tab inning filter
                   function posBoxP(pos, label) { return renderPosBox(pos, label, printDiamondInning); }
+                  function getPrintPlayerFn(pos, inn) {
+                    for (var pi = 0; pi < roster.length; pi++) {
+                      if ((grid[roster[pi].name] || [])[inn] === pos) { return roster[pi].name; }
+                    }
+                    return "";
+                  }
                   var benchByInningP = [];
                   for (var bip = 0; bip < innings; bip++) {
                     benchByInningP.push(roster.filter(function(r){ return (grid[r.name]||[])[bip] === "Bench"; }).map(function(r){ return r.name; }));
@@ -4394,52 +4407,8 @@ export default function App() {
                           );
                         })}
                       </div>
-                    {/* OF row */}
-                      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr 1fr", gap:"6px", marginBottom:"6px" }}>
-                        {["LF","LC","RC","RF"].map(function(p) {
-                          return <div key={p}>{posBoxP(p,p)}</div>;
-                        })}
-                      </div>
-                      {/* Arc decoration */}
-                      <div style={{ position:"relative", height:"28px", marginBottom:"4px", overflow:"hidden", opacity:0.35 }}>
-                        <svg viewBox="0 0 600 32" preserveAspectRatio="none" style={{ width:"100%", height:"100%" }}>
-                          <line x1="100" y1="0" x2="0" y2="32" stroke="#388e3c" strokeWidth="2"/>
-                          <line x1="500" y1="0" x2="600" y2="32" stroke="#388e3c" strokeWidth="2"/>
-                          <path d="M 0 32 Q 300 -8 600 32" fill="#c8e6c9" opacity="0.4" stroke="#388e3c" strokeWidth="1.5"/>
-                          <rect x="288" y="6" width="22" height="22" rx="2" fill="#fff" stroke="#888" strokeWidth="1.5" transform="rotate(45,299,17)"/>
-                        </svg>
-                      </div>
-                      {/* IF row */}
-                      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr 1fr 1fr", gap:"6px", marginBottom:"6px" }}>
-                        {["3B","SS","P","2B","1B"].map(function(p) {
-                          return <div key={p}>{posBoxP(p,p)}</div>;
-                        })}
-                      </div>
-                      {/* Infield decoration */}
-                      <div style={{ position:"relative", height:"24px", marginBottom:"4px", overflow:"hidden", opacity:0.4 }}>
-                        <svg viewBox="0 0 600 28" preserveAspectRatio="none" style={{ width:"100%", height:"100%" }}>
-                          <polygon points="300,0 150,14 300,28 450,14" fill="#d7b899" opacity="0.8"/>
-                          <polygon points="300,0 150,14 300,28 450,14" fill="none" stroke="#8d6e63" strokeWidth="1.5"/>
-                          <rect x="138" y="3" width="16" height="16" rx="1" fill="#fff" stroke="#888" strokeWidth="1.5" transform="rotate(45,146,11)"/>
-                          <rect x="438" y="3" width="16" height="16" rx="1" fill="#fff" stroke="#888" strokeWidth="1.5" transform="rotate(45,446,11)"/>
-                          <ellipse cx="300" cy="14" rx="26" ry="10" fill="#c8a882" stroke="#8d6e63" strokeWidth="1.5"/>
-                          <rect x="291" y="11" width="18" height="5" rx="1" fill="#fff" stroke="#999" strokeWidth="1"/>
-                        </svg>
-                      </div>
-                      {/* Catcher row */}
-                      <div style={{ display:"flex", justifyContent:"center", marginBottom:"6px" }}>
-                        <div style={{ width:"calc(40% - 3px)", minWidth:"110px" }}>{posBoxP("C","C")}</div>
-                      </div>
-                      {/* Home plate decoration */}
-                      <div style={{ position:"relative", height:"20px", marginBottom:"8px", overflow:"hidden", opacity:0.4 }}>
-                        <svg viewBox="0 0 600 22" preserveAspectRatio="none" style={{ width:"100%", height:"100%" }}>
-                          <ellipse cx="300" cy="11" rx="70" ry="11" fill="#d7b899" opacity="0.6"/>
-                          <polygon points="300,2 288,9 288,20 312,20 312,9" fill="#fff" stroke="#555" strokeWidth="2"/>
-                          <rect x="258" y="3" width="26" height="16" fill="none" stroke="#999" strokeWidth="1"/>
-                          <rect x="316" y="3" width="26" height="16" fill="none" stroke="#999" strokeWidth="1"/>
-                        </svg>
-                      </div>
-                      <div style={{ marginTop:"8px", borderTop:"2px solid rgba(15,31,61,0.15)", paddingTop:"10px" }}>
+                    {renderFieldSVG(getPrintPlayerFn, printDiamondInning, innArr)}
+                    <div style={{ marginTop:"8px", borderTop:"2px solid rgba(15,31,61,0.15)", paddingTop:"10px" }}>
                         <div style={{ fontSize:"10px", fontWeight:"bold", color:"#555", textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"6px" }}>Bench</div>
                         {(function() {
                           var pbDisplay = printDiamondInning !== null ? [benchByInningP[printDiamondInning] || []] : benchByInningP;
@@ -4617,6 +4586,12 @@ export default function App() {
     });
     var benchDisplay   = svInn !== null ? [benchByInning[svInn] || []] : benchByInning;
     var benchLabels    = svInn !== null ? [svInn] : innArr;
+    function getSharedPlayerFn(pos, inn) {
+      for (var pi = 0; pi < rosterNames.length; pi++) {
+        if ((payload.grid[rosterNames[pi]] || [])[inn] === pos) { return rosterNames[pi]; }
+      }
+      return "";
+    }
 
     var teamInitial = payload.team ? payload.team.charAt(0).toUpperCase() : "L";
     var IF_POSITIONS = ["3B","SS","P","2B","1B"];
@@ -4695,47 +4670,8 @@ export default function App() {
           {/* ── Diamond view ─────────────────────────────────────── */}
           {svView === "diamond" ? (
             <div style={{ marginBottom:"16px" }}>
-              {/* OF row */}
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr 1fr", gap:"4px", marginBottom:"6px" }}>
-                {OF_POSITIONS.map(function(pos) {
-                  return <div key={pos} style={{ overflow:"hidden", minWidth:0 }}>{sharedPosBox(pos)}</div>;
-                })}
-              </div>
-              {/* Arc decoration */}
-              <div style={{ height:"28px", marginBottom:"4px", overflow:"hidden", opacity:0.35 }}>
-                <svg viewBox="0 0 600 32" preserveAspectRatio="none" style={{ width:"100%", height:"100%" }}>
-                  <line x1="100" y1="0" x2="0" y2="32" stroke="#388e3c" strokeWidth="2"/>
-                  <line x1="500" y1="0" x2="600" y2="32" stroke="#388e3c" strokeWidth="2"/>
-                  <path d="M 0 32 Q 300 -8 600 32" fill="#c8e6c9" opacity="0.4" stroke="#388e3c" strokeWidth="1.5"/>
-                </svg>
-              </div>
-              {/* IF row */}
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr 1fr 1fr", gap:"4px", marginBottom:"6px" }}>
-                {IF_POSITIONS.map(function(pos) {
-                  return <div key={pos} style={{ overflow:"hidden", minWidth:0 }}>{sharedPosBox(pos)}</div>;
-                })}
-              </div>
-              {/* Infield dirt */}
-              <div style={{ height:"24px", marginBottom:"4px", overflow:"hidden", opacity:0.4 }}>
-                <svg viewBox="0 0 600 28" preserveAspectRatio="none" style={{ width:"100%", height:"100%" }}>
-                  <polygon points="300,0 150,14 300,28 450,14" fill="#d7b899" opacity="0.8"/>
-                  <polygon points="300,0 150,14 300,28 450,14" fill="none" stroke="#8d6e63" strokeWidth="1.5"/>
-                  <ellipse cx="300" cy="14" rx="26" ry="10" fill="#c8a882" stroke="#8d6e63" strokeWidth="1.5"/>
-                  <rect x="291" y="11" width="18" height="5" rx="1" fill="#fff" stroke="#999" strokeWidth="1"/>
-                </svg>
-              </div>
-              {/* Catcher */}
-              <div style={{ display:"flex", justifyContent:"center", marginBottom:"6px" }}>
-                <div style={{ width:"calc(40% - 3px)", minWidth:"110px" }}>{sharedPosBox("C")}</div>
-              </div>
-              {/* Home plate */}
-              <div style={{ height:"20px", marginBottom:"10px", overflow:"hidden", opacity:0.4 }}>
-                <svg viewBox="0 0 600 22" preserveAspectRatio="none" style={{ width:"100%", height:"100%" }}>
-                  <ellipse cx="300" cy="11" rx="70" ry="11" fill="#d7b899" opacity="0.6"/>
-                  <polygon points="300,2 288,9 288,20 312,20 312,9" fill="#fff" stroke="#555" strokeWidth="2"/>
-                </svg>
-              </div>
-              {/* Bench strip */}
+              {renderFieldSVG(getSharedPlayerFn, svInn, innArr)}
+                            {/* Bench strip */}
               <div style={{ borderTop:"2px solid rgba(15,31,61,0.12)", paddingTop:"8px" }}>
                 <div style={{ fontSize:"10px", fontWeight:"bold", color:"#555", textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"6px" }}>Bench</div>
                 <div style={{ overflowX:"auto" }}>
