@@ -1,5 +1,6 @@
 // v2.1
 import { useState, useMemo, useCallback } from "react";
+import { jsPDF } from "jspdf";
 import { isSupabaseEnabled, dbSaveTeams, dbDeleteTeam,
          dbLoadTeams, dbLoadTeamData, dbSaveTeamData } from './supabase.js';
 
@@ -3681,23 +3682,8 @@ export default function App() {
     // mode: "download" (default) or "share"
     if (mode === "share") { setPdfSharing(true); } else { setPdfLoading(true); }
 
-    // Load jsPDF from CDN if not already loaded
-    function withJsPDF(cb) {
-      if (window.jspdf && window.jspdf.jsPDF) { cb(window.jspdf.jsPDF); return; }
-      var script = document.createElement("script");
-      script.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
-      script.onload = function() { cb(window.jspdf.jsPDF); };
-      script.onerror = function() {
-        setPdfLoading(false);
-        setPdfSharing(false);
-        alert("Could not load PDF library. Check your internet connection and try again.");
-      };
-      document.head.appendChild(script);
-    }
-
-    withJsPDF(function(JsPDF) {
-      try {
-        var doc = new JsPDF({ orientation:"portrait", unit:"mm", format:"a4" });
+    try {
+        var doc = new jsPDF({ orientation:"portrait", unit:"mm", format:"a4" });
         var navy  = [15,31,61];
         var gold  = [245,200,66];
         var cream = [253,246,236];
@@ -4025,13 +4011,12 @@ export default function App() {
           doc.save(filename);
           setPdfLoading(false);
         }
-      } catch(err) {
-        setPdfLoading(false);
-        setPdfSharing(false);
-        console.error("PDF generation error:", err);
-        alert("PDF generation failed: " + err.message);
-      }
-    });
+    } catch(err) {
+      setPdfLoading(false);
+      setPdfSharing(false);
+      console.error("PDF generation error:", err);
+      alert("PDF generation failed: " + err.message);
+    }
   }
 
   // ============================================================
