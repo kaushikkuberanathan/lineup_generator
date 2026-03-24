@@ -188,7 +188,7 @@ function migrateGrid(grid, roster, innings) {
 
 var MUD_HENS_SCHEDULE = [
   { id:"g1",  date:"2026-03-17", time:"7:30 PM",  location:"JV 2", opponent:"Party Animals",   home:true,  result:"X", ourScore:"",   theirScore:"",   battingPerf:{} },
-  { id:"g2",  date:"2026-03-19", time:"6:00 PM",  location:"JV 2", opponent:"Firefighters",    home:false, result:"W", ourScore:"14", theirScore:"11", battingPerf:{} },
+  { id:"g2",  date:"2026-03-19", time:"6:00 PM",  location:"JV 2", opponent:"Firefighters",    home:false, result:"W", ourScore:"14", theirScore:"11", battingPerf:{ "A Hwang":{ ab:5, h:4, r:2, rbi:1, bb:0 }, "J Hershiser":{ ab:5, h:4, r:2, rbi:2, bb:0 }, "E Hastings":{ ab:4, h:3, r:1, rbi:2, bb:0 }, "L Hamilton":{ ab:4, h:3, r:1, rbi:2, bb:0 }, "M Mabrey":{ ab:4, h:3, r:2, rbi:1, bb:0 }, "E Kaushik":{ ab:5, h:3, r:1, rbi:0, bb:0 }, "C Arias":{ ab:3, h:2, r:1, rbi:2, bb:0 }, "C MacPhaul":{ ab:4, h:2, r:1, rbi:1, bb:0 }, "L Noland":{ ab:4, h:2, r:1, rbi:1, bb:0 }, "R Verma":{ ab:5, h:2, r:1, rbi:1, bb:0 }, "B Bieber":{ ab:5, h:2, r:1, rbi:0, bb:0 } } },
   { id:"g3",  date:"2026-03-26", time:"6:00 PM",  location:"JV 2", opponent:"Timber Rattlers", home:false, result:"",  ourScore:"",   theirScore:"",   battingPerf:{} },
   { id:"g4",  date:"2026-03-31", time:"7:30 PM",  location:"FP 4", opponent:"Bananas",         home:false, result:"",  ourScore:"",   theirScore:"",   battingPerf:{} },
   { id:"g5",  date:"2026-04-02", time:"7:30 PM",  location:"JV 2", opponent:"Party Animals",   home:false, result:"",  ourScore:"",   theirScore:"",   battingPerf:{} },
@@ -817,7 +817,7 @@ export default function App() {
       // Each team gets a migration version stamp. If the stamp matches
       // the current version, skip — do not overwrite coach edits.
       // Coaches can freely edit schedules via the Schedule tab after seeding.
-      var MIGRATION_VERSION = "2026-official-v3";
+      var MIGRATION_VERSION = "2026-official-v4";
       var existingIds = merged.map(function(t) { return t.id; });
 
       var migrationTargets = [
@@ -836,30 +836,24 @@ export default function App() {
         var alreadyMigrated = loadJSON(migKey, null);
         if (alreadyMigrated === MIGRATION_VERSION) { continue; } // already done
         if (existingIds.indexOf(mt.id) >= 0) {
-          // Team exists — update schedule only if not yet on this version
           if (alreadyMigrated !== MIGRATION_VERSION) {
-            dbLoadTeamData(mt.id).then(function(existing) {
-              var captured = mt;
-              var preservedRoster    = existing && existing.roster       ? existing.roster       : [];
-              var preservedBatting   = existing && existing.battingOrder ? existing.battingOrder : [];
-              var preservedGrid      = existing && existing.grid         ? existing.grid          : {};
-              var preservedPractices = existing && existing.practices    ? existing.practices     : [];
-              var preservedInnings   = existing && existing.innings      ? existing.innings       : 6;
-              var preservedLocked    = existing                          ? existing.locked        : false;
-              dbSaveTeamData(captured.id, {
-                roster:       preservedRoster,
-                schedule:     captured.schedule,
-                battingOrder: preservedBatting,
-                grid:         preservedGrid,
-                practices:    preservedPractices,
-                innings:      preservedInnings,
-                locked:       preservedLocked
+            (function(captured) {
+              dbLoadTeamData(captured.id).then(function(existing) {
+                dbSaveTeamData(captured.id, {
+                  roster:       existing && existing.roster        ? existing.roster        : [],
+                  schedule:     captured.schedule,
+                  practices:    existing && existing.practices     ? existing.practices     : [],
+                  battingOrder: existing && existing.battingOrder  ? existing.battingOrder  : [],
+                  grid:         existing && existing.grid          ? existing.grid          : {},
+                  innings:      existing && existing.innings       ? existing.innings       : 6,
+                  locked:       existing                           ? existing.locked        : false
+                });
+                saveJSON("team:" + captured.id + ":schedule", captured.schedule);
+                saveJSON("migration:" + captured.id + ":version", MIGRATION_VERSION);
+              }).catch(function() {
+                saveJSON("migration:" + captured.id + ":version", MIGRATION_VERSION);
               });
-              saveJSON("team:" + captured.id + ":schedule", captured.schedule);
-              saveJSON("migration:" + captured.id + ":version", MIGRATION_VERSION);
-            }).catch(function() {
-              saveJSON("migration:" + captured.id + ":version", MIGRATION_VERSION);
-            });
+            })(mt);
           } else {
             saveJSON(migKey, MIGRATION_VERSION);
           }
