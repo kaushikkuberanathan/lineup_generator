@@ -126,9 +126,24 @@ var DEFAULT_ROSTER = [];
 var _mem = {};
 var SCHEMA_VERSION = 2;
 
-var APP_VERSION = "1.1.0";
+var APP_VERSION = "1.2.0";
 
 var VERSION_HISTORY = [
+  {
+    version: "1.2.0",
+    date: "March 24, 2026",
+    changes: [
+      "Redesigned diamond view: SVG field with green background, outfield arc, dirt infield, and realistic position coordinates",
+      "Position boxes: dual-zone design with dark header band per position group and player name area below",
+      "Single-inning mode: large player name (14px bold), inning badge, bench player pill at bottom-right",
+      "All-innings mode: compact first names per inning slot, taller boxes — no numbered prefixes",
+      "Dynamic viewBox: 680×640 single-inning / 680×680 all-innings",
+      "First-name display enforced in all views including bench strips, print tab, and share link",
+      "About tab: onboarding guide expanded by default, reordered above app info",
+      "Vercel Analytics + Mixpanel event tracking added",
+      "Schedule tab: computed batting average replaces BB column; stats legend added"
+    ]
+  },
   {
     version: "1.1.0",
     date: "March 24, 2026",

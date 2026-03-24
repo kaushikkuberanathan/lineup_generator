@@ -27,9 +27,6 @@ Drag-to-reorder with full touch support on mobile. Season batting stats (AVG, AB
 - Log game results with one tap (W / L / T / Rain)
 - Track scores and individual batting performance per game
 
-### Practice tracking
-Log sessions with focus areas, drills, attendance, and notes.
-
 ### PDF + sharing
 - Download a branded PDF of the lineup card
 - Share via iOS/Android OS share sheet
@@ -67,7 +64,7 @@ Lock the lineup before game time. Prevents accidental edits while keeping the da
 lineup_generator/
 ├── frontend/               ← React + Vite PWA
 │   ├── src/
-│   │   ├── App.jsx         ← Main application (~4,300 lines)
+│   │   ├── App.jsx         ← Main application (~4,900 lines)
 │   │   ├── supabase.js     ← DB client + read/write helpers
 │   │   └── main.jsx        ← React entry point
 │   ├── public/             ← PWA icons
@@ -177,7 +174,7 @@ Outfield is filled first (LC → RC → LF → RF) using a hard block on repeat 
 The engine runs up to 8 times with shuffled roster order and returns the attempt with the fewest validation violations.
 
 **Field layout (diamond view)**
-The diamond view renders an SVG field (680×640 viewBox) with a green background, outfield arc, dirt infield ellipse, base diamond, and pitcher mound. All 10 position boxes are placed at true field coordinates. In single-inning mode, each box shows the assigned player's first name. In all-innings mode, each box shows a numbered list of assignments across all innings.
+The diamond view renders an SVG field with a green background, outfield arc, dirt infield ellipse, base diamond, and pitcher mound. All 10 position boxes use a dual-zone design: a dark header band (color-coded by position group) and a player name area below. In single-inning mode (680×640 viewBox), each box shows the player's first name at 14px bold with an inning badge and bench player pill. In all-innings mode (680×680 viewBox), each box shows a compact list of first names per inning slot with no numbered prefix.
 
 ---
 
@@ -196,7 +193,7 @@ The diamond view renders an SVG field (680×640 viewBox) with a green background
 - **Phase 3b** — Role-based access (Coach / Assistant / Viewer)
 - **Phase 3c** — Multi-device realtime sync via Supabase Realtime
 - **Phase 3e** — iCal schedule import
-- **Phase 4** — Season analytics (position frequency, bench equity charts)
+- **Phase 4** — Quality & Automation (CI/CD, E2E tests, visual regression, cross-browser matrix)
 
 ---
 

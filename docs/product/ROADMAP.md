@@ -49,6 +49,16 @@
 - 10-player field configuration: LC + RC replace CF in outfield; 1 bench slot per inning (schema v2, migration auto-remaps saved CF→LC)
 - First-time coach onboarding modal (5-step in-app walkthrough, localStorage completion tracking, always re-accessible via "Getting Started" button in Roster tab)
 
+### v1.2.0 — March 24, 2026
+- Redesigned diamond view: SVG field with green background, outfield arc, dirt infield ellipse, base diamond, pitcher mound, and realistic position coordinates
+- Dual-zone position boxes: dark header band (per position group color) + low-opacity player name area
+- Single-inning mode: large name (14px bold), inning badge pill, bench player pill at bottom-right
+- All-innings mode: compact first names per inning slot, taller 82px boxes, dynamic 680×680 viewBox
+- First-name display enforced in all views — bench strips, grid, print tab, share link
+- About tab: onboarding guide expanded by default, sections reordered (guide → app info → version history)
+- Vercel Analytics + Mixpanel event tracking
+- Schedule tab: computed batting average replaces BB column; stats legend added
+
 ### v1.1.0 — March 24, 2026
 - Replaced Practice tab with Feedback tab (free-form feedback + bug reporting with localStorage persistence)
 - Added About tab (app info, version history, inline onboarding guide)
@@ -128,6 +138,7 @@
 
 ## 🗓 Recommended Next Sprint (Sequenced)
 
+0. ✅ **v1.2.0 shipped** — diamond view redesign, responsive position boxes, first-name enforcement, analytics
 1. ✅ **Verify 10-player auto-assign on live roster** — open Mud Hens, run Auto-Assign across 6 innings, confirm 1 bench/inning and no CF
 2. **Player absent flag** — ~2–3 hrs, high game-day utility
 3. **Mobile batting reorder arrow fallback** — ~1–2 hrs, biggest UX gap at the field
