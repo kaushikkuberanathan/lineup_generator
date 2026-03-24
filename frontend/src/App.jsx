@@ -1170,7 +1170,7 @@ export default function App() {
   var fbHistoryOpen = _fbHistoryOpen[0]; var setFbHistoryOpen = _fbHistoryOpen[1];
   var _showOnboarding = useState(false);
   var showOnboarding = _showOnboarding[0]; var setShowOnboarding = _showOnboarding[1];
-  var _aboutGuideOpen = useState(false);
+  var _aboutGuideOpen = useState(true);
   var aboutGuideOpen = _aboutGuideOpen[0]; var setAboutGuideOpen = _aboutGuideOpen[1];
 
   var warnings = useMemo(function() { return validateGrid(grid, roster, innings); }, [grid, roster, innings]);
@@ -2817,7 +2817,7 @@ export default function App() {
                                     var pname = benchDisplay[ci][r] || "";
                                     return (
                                       <td key={i} style={{ padding:"4px 10px", textAlign:"center", borderBottom:"1px solid rgba(15,31,61,0.06)", fontWeight:"bold", color: pname ? "#0f1f3d" : "#ccc" }}>
-                                        {pname || "-"}
+                                        {pname ? firstName(pname) : "-"}
                                       </td>
                                     );
                                   })}
@@ -4224,7 +4224,26 @@ export default function App() {
 
     return (
       <div>
-
+        {/* \u2500\u2500 Section 3: Onboarding Guide (collapsible) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */}
+        <div style={S.card}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", cursor:"pointer" }}
+            onClick={function() { setAboutGuideOpen(!aboutGuideOpen); }}>
+            <div style={S.sectionTitle}>How to Use This App</div>
+            <span style={{ fontSize:"12px", color:C.textMuted, marginBottom:"14px" }}>{aboutGuideOpen ? "\u25b2" : "\u25bc"}</span>
+          </div>
+          {aboutGuideOpen ? (
+            <div>
+              {onboardingSteps.map(function(step, si) {
+                return (
+                  <div key={si} style={{ marginBottom:"14px", paddingBottom:"14px", borderBottom: si < onboardingSteps.length - 1 ? "1px solid rgba(15,31,61,0.07)" : "none" }}>
+                    <div style={{ fontSize:"12px", fontWeight:"bold", color:C.navy, marginBottom:"4px" }}>{step.title}</div>
+                    <div style={{ fontSize:"12px", color:C.text, lineHeight:"1.6" }}>{step.body}</div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : null}
+        </div>
         {/* \u2500\u2500 Section 1: App Info \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */}
         <div style={S.card}>
           <div style={{ fontSize:"20px", fontWeight:"bold", color:C.navy, marginBottom:"4px" }}>Lineup Generator &#x26be;</div>
@@ -4273,27 +4292,6 @@ export default function App() {
               </div>
             );
           })}
-        </div>
-
-        {/* \u2500\u2500 Section 3: Onboarding Guide (collapsible) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */}
-        <div style={S.card}>
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", cursor:"pointer" }}
-            onClick={function() { setAboutGuideOpen(!aboutGuideOpen); }}>
-            <div style={S.sectionTitle}>How to Use This App</div>
-            <span style={{ fontSize:"12px", color:C.textMuted, marginBottom:"14px" }}>{aboutGuideOpen ? "\u25b2" : "\u25bc"}</span>
-          </div>
-          {aboutGuideOpen ? (
-            <div>
-              {onboardingSteps.map(function(step, si) {
-                return (
-                  <div key={si} style={{ marginBottom:"14px", paddingBottom:"14px", borderBottom: si < onboardingSteps.length - 1 ? "1px solid rgba(15,31,61,0.07)" : "none" }}>
-                    <div style={{ fontSize:"12px", fontWeight:"bold", color:C.navy, marginBottom:"4px" }}>{step.title}</div>
-                    <div style={{ fontSize:"12px", color:C.text, lineHeight:"1.6" }}>{step.body}</div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : null}
         </div>
 
       </div>
@@ -4427,7 +4425,7 @@ export default function App() {
                                     for (var di = 0; di < pbDisplay.length; di++) { if (pbDisplay[di].length > maxB) maxB = pbDisplay[di].length; }
                                     var rows = [];
                                     for (var r = 0; r < maxB; r++) {
-                                      rows.push(<tr key={r}>{pbLabels.map(function(lbl, ci) { var pn = pbDisplay[ci][r] || ""; return <td key={lbl} style={{ padding:"4px 10px", textAlign:"center", borderBottom:"1px solid rgba(15,31,61,0.06)", fontWeight:"bold", color:pn?"#0f1f3d":"#ccc" }}>{pn||"-"}</td>; })}</tr>);
+                                      rows.push(<tr key={r}>{pbLabels.map(function(lbl, ci) { var pn = pbDisplay[ci][r] || ""; return <td key={lbl} style={{ padding:"4px 10px", textAlign:"center", borderBottom:"1px solid rgba(15,31,61,0.06)", fontWeight:"bold", color:pn?"#0f1f3d":"#ccc" }}>{pn ? firstName(pn) : "-"}</td>; })}</tr>);
                                     }
                                     return rows;
                                   })()}
@@ -4693,7 +4691,7 @@ export default function App() {
                             <tr key={r}>
                               {benchLabels.map(function(lbl, ci) {
                                 var pn = benchDisplay[ci][r] || "";
-                                return <td key={lbl} style={{ padding:"4px 10px", textAlign:"center", borderBottom:"1px solid rgba(15,31,61,0.06)", fontWeight:"bold", color: pn ? C.navy : "#ccc" }}>{pn || "-"}</td>;
+                                return <td key={lbl} style={{ padding:"4px 10px", textAlign:"center", borderBottom:"1px solid rgba(15,31,61,0.06)", fontWeight:"bold", color: pn ? C.navy : "#ccc" }}>{pn ? firstName(pn) : "-"}</td>;
                               })}
                             </tr>
                           );
