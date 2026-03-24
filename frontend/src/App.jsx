@@ -17,7 +17,7 @@ var OUTFIELD         = ["LF","CF","RF"];
 var POS_COLORS = {
   P:"#e05c2a", C:"#7f3f3f", "1B":"#2471a3", "2B":"#2980b9",
   "3B":"#6c3483", SS:"#8e44ad", LF:"#1e8449", CF:"#27ae60",
-  RF:"#239b56", Bench:"#555"
+  RF:"#239b56", Bench:"#555555"
 };
 
 // Skill badges - fielding only
@@ -3725,7 +3725,8 @@ export default function App() {
             for (var pli2 = 0; pli2 < posLayoutPDF.length; pli2++) {
               var pl2 = posLayoutPDF[pli2];
               var pc3 = POS_COLORS[pl2.pos] || "#555";
-              var rgb3 = [parseInt(pc3.slice(1,3),16),parseInt(pc3.slice(3,5),16),parseInt(pc3.slice(5,7),16)];
+              var pc3safe = pc3.length === 4 ? "#" + pc3[1]+pc3[1]+pc3[2]+pc3[2]+pc3[3]+pc3[3] : pc3;
+              var rgb3 = [parseInt(pc3safe.slice(1,3),16)||85, parseInt(pc3safe.slice(3,5),16)||85, parseInt(pc3safe.slice(5,7),16)||85];
               var pBoxH2 = pHeaderH + innings * pLineH + 2;
 
               doc.setDrawColor(rgb3[0],rgb3[1],rgb3[2]);
@@ -3853,7 +3854,8 @@ export default function App() {
               if (pos2 && pos2 !== "") {
                 // Color pill per position
                 var pc = POS_COLORS[pos2] || "#555";
-                var rgb = [parseInt(pc.slice(1,3),16), parseInt(pc.slice(3,5),16), parseInt(pc.slice(5,7),16)];
+                var pcsafe = pc.length === 4 ? "#" + pc[1]+pc[1]+pc[2]+pc[2]+pc[3]+pc[3] : pc;
+                var rgb = [parseInt(pcsafe.slice(1,3),16)||85, parseInt(pcsafe.slice(3,5),16)||85, parseInt(pcsafe.slice(5,7),16)||85];
                 doc.setFillColor(rgb[0], rgb[1], rgb[2]);
                 doc.roundedRect(cx - innColW/2 + 2, y + 1.5, innColW - 4, rowH - 3, 1.5, 1.5, "F");
                 doc.setTextColor(255,255,255);
