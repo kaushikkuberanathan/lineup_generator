@@ -4,6 +4,7 @@ const cors = require('cors');
 
 const authRouter = require('./src/routes/auth');
 const adminRouter = require('./src/routes/admin');
+const feedbackRouter = require('./src/routes/feedback');
 
 const app = express();
 const PORT = 5000;
@@ -90,6 +91,7 @@ app.get('/ping', function(req, res) {
 
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1', adminRouter);
+app.use('/api/v1', feedbackRouter);
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

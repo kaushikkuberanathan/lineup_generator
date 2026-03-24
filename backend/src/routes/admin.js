@@ -196,4 +196,124 @@ router.get('/members', async (req, res) => {
   return res.status(200).json({ members });
 });
 
+// ─── POST /admin/update-role ──────────────────────────────────────────────────
+
+router.post(
+  '/update-role',
+  [
+    body('membershipId').isUUID(),
+    body('role').isIn(['admin', 'coach', 'scorekeeper', 'viewer']),
+  ],
+  async (req, res) => {
+    if (validationGuard(req, res)) return;
+
+    const { membershipId, role } = req.body;
+
+    const { error } = await supabaseAdmin
+      .from('team_memberships')
+      .update({ role })
+      .eq('id', membershipId);
+
+    if (error) {
+      console.error('[admin/update-role] DB error:', error.message);
+      return res.status(500).json({ error: 'DB_ERROR' });
+    }
+
+    return res.status(200).json({ message: 'Role updated.' });
+  }
+);
+
+// ─── POST /admin/reset-access ─────────────────────────────────────────────────
+
+router.post(
+  '/reset-access',
+  [body('membershipId').isUUID()],
+  async (req, res) => {
+    if (validationGuard(req, res)) return;
+
+    const { membershipId } = req.body;
+
+    const { error } = await supabaseAdmin
+      .from('team_memberships')
+      .update({ status: 'invited', user_id: null, activated_at: null })
+      .eq('id', membershipId);
+
+    if (error) {
+      console.error('[admin/reset-access] DB error:', error.message);
+      return res.status(500).json({ error: 'DB_ERROR' });
+    }
+
+    return res.status(200).json({ message: 'Access reset. Coach must re-verify on next login.' });
+  }
+);
+
+// ─── POST /admin/suspend ──────────────────────────────────────────────────────
+
+router.post(
+  '/suspend',
+  [body('membershipId').isUUID()],
+  async (req, res) => {
+    if (validationGuard(req, res)) return;
+
+    const { membershipId } = req.body;
+
+    const { error } = await supabaseAdmin
+      .from('team_memberships')
+      .update({ status: 'suspended' })
+      .eq('id', membershipId);
+
+    if (error) {
+      console.error('[admin/suspend] DB error:', error.message);
+      return res.status(500).json({ error: 'DB_ERROR' });
+    }
+
+    return res.status(200).json({ message: 'Coach suspended.' });
+  }
+);
+
+// ─── GET /admin/feedback ──────────────────────────────────────────────────────
+
+router.get(
+  '/feedback',
+  [query('type').optional().isIn(['feedback', 'bug'])],
+  async (req, res) => {
+    if (validationGuard(req, res)) return;
+
+    let q = supabaseAdmin
+      .from('feedback')
+      .select(`
+        id,
+        coach_id,
+        phone_e164,
+        type,
+        category,
+        location,
+        body,
+        change_types,
+        severity,
+        app_version,
+        submitted_at,
+        profiles (
+          first_name,
+          last_name,
+          phone_e164
+        )
+      `, { count: 'exact' })
+      .order('submitted_at', { ascending: false });
+
+    if (req.query.type) {
+      q = q.eq('type', req.query.type);
+    }
+
+    const { data, error, count } = await q;
+
+    if (error) {
+      console.error('[admin/feedback] DB error:', error.message);
+      return res.status(500).json({ error: 'DB_ERROR' });
+    }
+
+    return res.status(200).json({ feedback: data, total: count });
+  }
+);
+
 module.exports = router;

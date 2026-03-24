@@ -6,7 +6,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "test:auth": "node scripts/test-auth-flow.js",
-    "test:admin": "node scripts/test-admin-flow.js"
+    "test:admin": "node scripts/test-admin-flow.js",
+    "seed:admin": "node scripts/seed-admin.js",
+    "backfill": "node scripts/backfill-members.js"
   },
   "keywords": [],
   "author": "",
@@ -15,6 +17,7 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.100.0",
     "cors": "^2.8.6",
+    "csv-parse": "^6.2.1",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "express-rate-limit": "^8.3.1",

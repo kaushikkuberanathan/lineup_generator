@@ -105,6 +105,7 @@ router.post(
       if (err.code === 'INVALID_PHONE') return res.status(400).json({ error: 'INVALID_PHONE' });
       throw err;
     }
+    console.log('[login debug] normalized:', normalizedPhone);
 
     const { data: membership } = await supabaseAdmin
       .from('team_memberships')
@@ -112,6 +113,7 @@ router.post(
       .eq('phone_e164', normalizedPhone)
       .in('status', ['invited', 'active'])
       .maybeSingle();
+    console.log('[login debug] membership result:', membership);
 
     if (!membership) {
       // CRITICAL: identical message regardless of whether the person never requested,
