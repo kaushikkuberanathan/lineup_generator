@@ -48,8 +48,8 @@ var OUTFIELD         = ["LF","LC","RC","RF"];
 
 var POS_COLORS = {
   P:"#e05c2a", C:"#7f3f3f", "1B":"#2471a3", "2B":"#2980b9",
-  "3B":"#6c3483", SS:"#8e44ad", LF:"#1e8449", CF:"#27ae60",
-  RF:"#239b56", Bench:"#555555"
+  "3B":"#6c3483", SS:"#8e44ad", LF:"#1e8449", LC:"#2980b9",
+  RC:"#8e44ad", RF:"#239b56", Bench:"#555555"
 };
 
 // Skill badges - fielding only
@@ -125,6 +125,46 @@ var DEFAULT_ROSTER = [];
 // Storage: localStorage with in-memory fallback
 var _mem = {};
 var SCHEMA_VERSION = 2;
+
+var APP_VERSION = "1.1.0";
+
+var VERSION_HISTORY = [
+  {
+    version: "1.1.0",
+    date: "March 24, 2026",
+    changes: [
+      "Replaced CF with LC (Left Center) and RC (Right Center) in outfield",
+      "Expanded field to 10 players — 1 bench slot per inning",
+      "Schema v2 migration — auto-remaps saved CF assignments to LC",
+      "Added first-time coach onboarding modal (5-step walkthrough)",
+      "Added About tab with version history and onboarding guide",
+      "Added Feedback tab with free-form feedback and bug reporting",
+      "Fixed LC and RC position colors for visibility",
+      "Moved product docs to docs/product/ in repository"
+    ]
+  },
+  {
+    version: "1.0.0",
+    date: "March 24, 2026",
+    changes: [
+      "MVP launch — Lineup Generator live on Vercel",
+      "11-constraint auto-assign engine with retry fallback",
+      "10-player defensive grid (P, C, 1B, 2B, 3B, SS, LF, LC, RC, RF)",
+      "Manual cell overrides with issue detection and Auto-Fix All",
+      "Batting order with stats-driven Suggest Order",
+      "Season stats tracking (AB, H, R, RBI, AVG with color coding)",
+      "Schedule management with AI photo and text import",
+      "Game result logging with per-player batting stats",
+      "View-only share link (URL-encoded snapshot)",
+      "PDF export via bundled jsPDF",
+      "Print tab with Defense / Batting / Both toggle",
+      "Supabase cloud sync with localStorage offline fallback",
+      "PWA — installable on iOS and Android, offline-capable",
+      "Export / Import JSON backup",
+      "UptimeRobot keep-warm ping on Render backend"
+    ]
+  }
+];
 
 function loadJSON(key, def) {
   try {
@@ -1110,6 +1150,29 @@ export default function App() {
   var _editPrac = useState(null);
   var editingPrac = _editPrac[0]; var setEditingPrac = _editPrac[1];
 
+  var _fbCategory = useState("General");
+  var fbCategory = _fbCategory[0]; var setFbCategory = _fbCategory[1];
+  var _fbBody = useState("");
+  var fbBody = _fbBody[0]; var setFbBody = _fbBody[1];
+  var _fbChangeTypes = useState([]);
+  var fbChangeTypes = _fbChangeTypes[0]; var setFbChangeTypes = _fbChangeTypes[1];
+  var _fbConfirm = useState("");
+  var fbConfirm = _fbConfirm[0]; var setFbConfirm = _fbConfirm[1];
+  var _bugLocation = useState("");
+  var bugLocation = _bugLocation[0]; var setBugLocation = _bugLocation[1];
+  var _bugBody = useState("");
+  var bugBody = _bugBody[0]; var setBugBody = _bugBody[1];
+  var _bugSeverity = useState("");
+  var bugSeverity = _bugSeverity[0]; var setBugSeverity = _bugSeverity[1];
+  var _bugConfirm = useState("");
+  var bugConfirm = _bugConfirm[0]; var setBugConfirm = _bugConfirm[1];
+  var _fbHistoryOpen = useState(false);
+  var fbHistoryOpen = _fbHistoryOpen[0]; var setFbHistoryOpen = _fbHistoryOpen[1];
+  var _showOnboarding = useState(false);
+  var showOnboarding = _showOnboarding[0]; var setShowOnboarding = _showOnboarding[1];
+  var _aboutGuideOpen = useState(false);
+  var aboutGuideOpen = _aboutGuideOpen[0]; var setAboutGuideOpen = _aboutGuideOpen[1];
+
   var warnings = useMemo(function() { return validateGrid(grid, roster, innings); }, [grid, roster, innings]);
   var errorCount = warnings.length;
   var players = roster.map(function(r) { return r.name; });
@@ -1516,6 +1579,35 @@ export default function App() {
     setNewPrac({ date:"", duration:"", focus:"Mixed", attendance:{}, drills:[], notes:"" });
     setEditingPrac(null);
     setShowPracForm(false);
+  }
+
+  // --- Feedback helpers ---
+  function submitFeedback() {
+    if (!fbBody.trim()) { return; }
+    var appVer = APP_VERSION;
+    var entry = { id: Date.now() + "", category: fbCategory, body: fbBody.trim(), changeTypes: fbChangeTypes.slice(), timestamp: Date.now(), appVersion: appVer };
+    var existing = [];
+    try { existing = loadJSON("feedback:submissions", []); } catch(e) {}
+    try { saveJSON("feedback:submissions", existing.concat([entry])); } catch(e) {}
+    setFbBody("");
+    setFbChangeTypes([]);
+    setFbCategory("General");
+    setFbConfirm("Thanks! Your feedback has been saved.");
+    setTimeout(function() { setFbConfirm(""); }, 2000);
+  }
+
+  function submitBug() {
+    if (!bugBody.trim()) { return; }
+    var appVer = APP_VERSION;
+    var entry = { id: Date.now() + "", location: bugLocation, body: bugBody.trim(), severity: bugSeverity, timestamp: Date.now(), appVersion: appVer };
+    var existing = [];
+    try { existing = loadJSON("feedback:bugs", []); } catch(e) {}
+    try { saveJSON("feedback:bugs", existing.concat([entry])); } catch(e) {}
+    setBugBody("");
+    setBugLocation("");
+    setBugSeverity("");
+    setBugConfirm("Issue reported. Thank you!");
+    setTimeout(function() { setBugConfirm(""); }, 2000);
   }
 
   // --- AI schedule parser ---
@@ -3569,194 +3661,168 @@ export default function App() {
   }
 
   // ============================================================
-  // PRACTICE TAB
+  // FEEDBACK TAB
   // ============================================================
-  function renderPractice() {
-    var sorted = practices.slice().sort(function(a,b) {
-      return new Date(b.date + "T12:00:00") - new Date(a.date + "T12:00:00");
-    });
+  function renderFeedback() {
+    var fbCats = ["General","Lineup Engine","Batting Order","Schedule","Sharing & Print","Performance","Other"];
+    var fbChangePills = ["Fix a bug","Improve an existing feature","Add something new","Make it faster","Simplify the UI"];
+    var bugLocs = ["Roster","Field Grid","Batting","Schedule","Print / PDF","Home Screen","Other"];
+    var bugSevs = ["Blocks me completely","Annoying but I can work around it","Minor / cosmetic"];
 
-    var totalAttendance = 0;
-    var totalWithAttendance = 0;
-    for (var pi = 0; pi < practices.length; pi++) {
-      var att = practices[pi].attendance || {};
-      var count = 0;
-      for (var k in att) { if (att[k]) { count++; } }
-      if (Object.keys(att).length > 0) { totalAttendance += count; totalWithAttendance++; }
-    }
-    var avgAtt = totalWithAttendance > 0 ? Math.round(totalAttendance / totalWithAttendance) : 0;
+    var allSubs = [];
+    try {
+      var fbSubs = loadJSON("feedback:submissions", []);
+      var bugSubs = loadJSON("feedback:bugs", []);
+      var combined = fbSubs.concat(bugSubs);
+      combined.sort(function(a, b) { return b.timestamp - a.timestamp; });
+      allSubs = combined.slice(0, 5);
+    } catch(e) {}
 
     return (
       <div>
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"14px", gap:"8px" }}>
-          <div style={S.sectionTitle}>Practice Log</div>
-          <button style={S.btn("primary")} onClick={function() { setShowPracForm(true); }}>+ Log Practice</button>
-        </div>
 
-        {practices.length > 0 ? (
-          <div style={{ display:"flex", gap:"12px", marginBottom:"14px" }}>
-            <div style={{ flex:1, ...S.card, textAlign:"center", padding:"14px" }}>
-              <div style={{ fontSize:"24px", fontWeight:"bold", color:C.navy }}>{practices.length}</div>
-              <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.1em" }}>Sessions</div>
-            </div>
-            {avgAtt > 0 ? (
-              <div style={{ flex:1, ...S.card, textAlign:"center", padding:"14px" }}>
-                <div style={{ fontSize:"24px", fontWeight:"bold", color:C.navy }}>{avgAtt}</div>
-                <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.1em" }}>Avg Attendance</div>
-              </div>
-            ) : null}
+        {/* ── Section 1: General Feedback ───────────────────── */}
+        <div style={S.card}>
+          <div style={S.sectionTitle}>Share Feedback</div>
+          <div style={{ color:C.textMuted, fontSize:"12px", marginBottom:"14px" }}>
+            Help us improve the app. Tell us what’s working and what isn’t.
           </div>
-        ) : null}
 
-        {showPracForm ? (
-          <div style={{ ...S.card, marginBottom:"14px", borderLeft:"3px solid #27ae60" }}>
-            <div style={{ fontWeight:"bold", fontSize:"14px", marginBottom:"14px" }}>{editingPrac ? "Edit Practice Session" : "Log Practice Session"}</div>
-
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px", marginBottom:"10px" }}>
-              <div>
-                <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"4px" }}>Date *</div>
-                <input type="date" value={newPrac.date}
-                  onChange={function(e) { var p={}; for(var k in newPrac){p[k]=newPrac[k];} p.date=e.target.value; setNewPrac(p); }}
-                  style={S.input} />
-              </div>
-              <div>
-                <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"4px" }}>Duration (mins)</div>
-                <input type="number" min="0" value={newPrac.duration || ""}
-                  onChange={function(e) { var p={}; for(var k in newPrac){p[k]=newPrac[k];} p.duration=e.target.value; setNewPrac(p); }}
-                  placeholder="60"
-                  style={{ ...S.input, width:"100px" }} />
-              </div>
-            </div>
-
-            <div style={{ marginBottom:"10px" }}>
-              <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"6px" }}>Focus Area</div>
-              <div style={{ display:"flex", gap:"6px", flexWrap:"wrap" }}>
-                {["Fielding","Batting","Baserunning","Pitching","Mixed"].map(function(f) {
-                  var active = newPrac.focus === f;
-                  return (
-                    <button key={f} onClick={function(fv) { return function() { var p={}; for(var k in newPrac){p[k]=newPrac[k];} p.focus=fv; setNewPrac(p); }; }(f)}
-                      style={{ padding:"5px 12px", borderRadius:"6px", border:"none", cursor:"pointer", fontSize:"11px", fontFamily:"inherit", fontWeight:"bold",
-                        background: active ? C.navy : "rgba(15,31,61,0.06)", color: active ? "#fff" : C.textMuted }}>
-                      {f}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div style={{ marginBottom:"10px" }}>
-              <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"6px" }}>Attendance</div>
-              <div style={{ display:"flex", gap:"6px", flexWrap:"wrap" }}>
-                {players.map(function(name) {
-                  var present = newPrac.attendance && newPrac.attendance[name];
-                  return (
-                    <span key={name} onClick={function(n) { return function() {
-                      var p={}; for(var k in newPrac){p[k]=newPrac[k];}
-                      var att = p.attendance ? {} : {};
-                      for(var ak in (p.attendance||{})){att[ak]=p.attendance[ak];}
-                      att[n] = !att[n];
-                      p.attendance = att;
-                      setNewPrac(p);
-                    }; }(name)}
-                      style={{ padding:"4px 10px", borderRadius:"20px", cursor:"pointer", fontSize:"11px", fontWeight:"bold",
-                        background: present ? C.win : "rgba(15,31,61,0.06)",
-                        color: present ? "#fff" : C.textMuted,
-                        border: "1px solid " + (present ? C.win : "rgba(15,31,61,0.1)") }}>
-                      {firstName(name)}
-                    </span>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div style={{ marginBottom:"10px" }}>
-              <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"4px" }}>Drills Run</div>
-              <input type="text" placeholder="e.g. Grounders, Fly balls, Tee work - comma separated"
-                value={(newPrac.drills || []).join(", ")}
-                onChange={function(e) {
-                  var drills = e.target.value.split(",").map(function(d) { return d.trim(); }).filter(function(d) { return d; });
-                  var p={}; for(var k in newPrac){p[k]=newPrac[k];} p.drills=drills; setNewPrac(p);
-                }}
-                style={S.input} />
-            </div>
-
-            <div style={{ marginBottom:"14px" }}>
-              <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"4px" }}>Session Notes</div>
-              <textarea rows={3} placeholder={"How did it go? What to work on next?"}
-                value={newPrac.notes || ""}
-                onChange={function(e) { var p={}; for(var k in newPrac){p[k]=newPrac[k];} p.notes=e.target.value; setNewPrac(p); }}
-                style={{ ...S.input, resize:"vertical", lineHeight:"1.5" }} />
-            </div>
-
-            <div style={{ display:"flex", gap:"8px" }}>
-              <button style={S.btn("primary")} onClick={savePracForm} disabled={!newPrac.date}>{editingPrac ? "Update Session" : "Save Session"}</button>
-              <button style={S.btn("ghost")} onClick={function() { setShowPracForm(false); setEditingPrac(null); setNewPrac({ date:"", duration:"", focus:"Mixed", attendance:{}, drills:[], notes:"" }); }}>Cancel</button>
-            </div>
-          </div>
-        ) : null}
-
-        <div>
-          {sorted.length === 0 && !showPracForm ? (
-            <div style={{ textAlign:"center", padding:"40px", color:C.textMuted, fontSize:"13px" }}>
-              No practice sessions logged yet. Tap + Log Practice to start tracking.
-            </div>
-          ) : null}
-          {sorted.map(function(prac) {
-            var attKeys = Object.keys(prac.attendance || {});
-            var attCount = attKeys.filter(function(k) { return prac.attendance[k]; }).length;
-            return (
-              <div key={prac.id} style={{ ...S.card, borderLeft:"3px solid #27ae60" }}>
-                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:"10px" }}>
-                  <div style={{ flex:1 }}>
-                    <div style={{ display:"flex", gap:"8px", alignItems:"center", marginBottom:"4px", flexWrap:"wrap" }}>
-                      <div style={{ fontWeight:"bold", fontSize:"14px" }}>
-                        {new Date(prac.date + "T12:00:00").toLocaleDateString("en-US", { weekday:"short", month:"short", day:"numeric" })}
-                      </div>
-                      {prac.focus ? <span style={{ fontSize:"10px", padding:"2px 8px", borderRadius:"10px", background:"rgba(15,31,61,0.08)", color:C.navy, fontWeight:"bold" }}>{prac.focus}</span> : null}
-                      {prac.duration ? <span style={{ fontSize:"11px", color:C.textMuted }}>{prac.duration} min</span> : null}
-                      {attCount > 0 ? <span style={{ fontSize:"11px", color:C.win }}>{attCount} players</span> : null}
-                    </div>
-                    {prac.drills && prac.drills.length > 0 ? (
-                      <div style={{ fontSize:"11px", color:C.textMuted, marginBottom:"4px" }}>
-                        Drills: {prac.drills.join(", ")}
-                      </div>
-                    ) : null}
-                    {prac.notes ? (
-                      <div style={{ fontSize:"12px", color:C.text, background:"rgba(15,31,61,0.03)", padding:"8px 10px", borderRadius:"6px", marginTop:"6px" }}>
-                        {prac.notes}
-                      </div>
-                    ) : null}
-                  </div>
-                  <div style={{ display:"flex", gap:"6px" }}>
-                    <button style={S.btn("ghost")} onClick={function(pr) { return function() {
-                      var copy = {}; for (var k in pr) { copy[k] = pr[k]; }
-                      setNewPrac(copy);
-                      setEditingPrac(pr);
-                      setShowPracForm(true);
-                    }; }(prac)}>Edit</button>
-                    <button style={{ ...S.btn("ghost"), color:C.red }} onClick={function(id) { return function() {
-                      if (confirm("Delete practice session?")) { persistPractices(practices.filter(function(p) { return p.id !== id; })); }
-                    }; }(prac.id)}>Del</button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Stats legend */}
-        <div style={{ marginTop:"24px", padding:"10px 14px", borderRadius:"8px", background:"rgba(15,31,61,0.04)", border:"1px solid rgba(15,31,61,0.08)" }}>
-          <div style={{ fontSize:"10px", fontWeight:"bold", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"6px" }}>Stats Key</div>
-          <div style={{ display:"flex", gap:"12px", flexWrap:"wrap" }}>
-            {[["AB","At Bats"],["H","Hits"],["R","Runs Scored"],["RBI","Runs Batted In"],["Avg","Batting Average (H ÷ AB)"]].map(function(row) {
+          <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"6px" }}>Category</div>
+          <div style={{ display:"flex", flexWrap:"wrap", gap:"4px", marginBottom:"14px" }}>
+            {fbCats.map(function(cat) {
+              var active = fbCategory === cat;
               return (
-                <div key={row[0]} style={{ display:"flex", gap:"4px", alignItems:"baseline" }}>
-                  <span style={{ fontSize:"10px", fontWeight:"bold", color:C.navy }}>{row[0]}</span>
-                  <span style={{ fontSize:"10px", color:C.textMuted }}>{row[1]}</span>
-                </div>
+                <span key={cat} style={S.badge(C.navy, active)}
+                  onClick={function(c) { return function() { setFbCategory(c); }; }(cat)}>
+                  {cat}
+                </span>
               );
             })}
           </div>
+
+          <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"4px" }}>Your Feedback</div>
+          <textarea
+            placeholder="Describe your feedback, suggestion, or idea..."
+            value={fbBody}
+            onChange={function(e) { setFbBody(e.target.value); }}
+            style={{ ...S.input, minHeight:"120px", resize:"vertical", lineHeight:"1.5", display:"block", marginBottom:"12px" }}
+          />
+
+          <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"6px" }}>What would you like to see changed?</div>
+          <div style={{ display:"flex", flexWrap:"wrap", gap:"4px", marginBottom:"14px" }}>
+            {fbChangePills.map(function(ct) {
+              var active = fbChangeTypes.indexOf(ct) >= 0;
+              return (
+                <span key={ct} style={S.badge("#27ae60", active)}
+                  onClick={function(cv) { return function() {
+                    var idx = fbChangeTypes.indexOf(cv);
+                    var next = fbChangeTypes.slice();
+                    if (idx >= 0) { next.splice(idx, 1); } else { next.push(cv); }
+                    setFbChangeTypes(next);
+                  }; }(ct)}>
+                  {ct}
+                </span>
+              );
+            })}
+          </div>
+
+          <button style={S.btn("primary")} onClick={submitFeedback}>Send Feedback</button>
+          {fbConfirm ? (
+            <div style={{ marginTop:"10px", color:"#27ae60", fontSize:"12px", fontWeight:"bold" }}>{fbConfirm}</div>
+          ) : null}
+        </div>
+
+        {/* ── Section 2: Report a Bug ──────────────────────── */}
+        <div style={S.card}>
+          <div style={S.sectionTitle}>Report an Issue</div>
+          <div style={{ color:C.textMuted, fontSize:"12px", marginBottom:"14px" }}>
+            Something not working right? Tell us what happened.
+          </div>
+
+          <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"6px" }}>Where did this happen?</div>
+          <div style={{ display:"flex", flexWrap:"wrap", gap:"4px", marginBottom:"14px" }}>
+            {bugLocs.map(function(loc) {
+              var active = bugLocation === loc;
+              return (
+                <span key={loc} style={S.badge(C.navy, active)}
+                  onClick={function(l) { return function() { setBugLocation(l); }; }(loc)}>
+                  {loc}
+                </span>
+              );
+            })}
+          </div>
+
+          <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"4px" }}>What happened?</div>
+          <textarea
+            placeholder="Describe what happened and what you expected instead..."
+            value={bugBody}
+            onChange={function(e) { setBugBody(e.target.value); }}
+            style={{ ...S.input, minHeight:"100px", resize:"vertical", lineHeight:"1.5", display:"block", marginBottom:"12px" }}
+          />
+
+          <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"6px" }}>Severity</div>
+          <div style={{ display:"flex", flexWrap:"wrap", gap:"4px", marginBottom:"14px" }}>
+            {bugSevs.map(function(sev) {
+              var active = bugSeverity === sev;
+              var sevColor = sev === "Blocks me completely" ? C.red : sev === "Annoying but I can work around it" ? "#d4a017" : "#6b7280";
+              return (
+                <span key={sev} style={S.badge(sevColor, active)}
+                  onClick={function(s) { return function() { setBugSeverity(s); }; }(sev)}>
+                  {sev}
+                </span>
+              );
+            })}
+          </div>
+
+          <button style={S.btn("primary")} onClick={submitBug}>Report Issue</button>
+          {bugConfirm ? (
+            <div style={{ marginTop:"10px", color:"#27ae60", fontSize:"12px", fontWeight:"bold" }}>{bugConfirm}</div>
+          ) : null}
+        </div>
+
+        {/* ── Submitted Feedback History ─────────────────────── */}
+        <div style={S.card}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", cursor:"pointer" }}
+            onClick={function() { setFbHistoryOpen(!fbHistoryOpen); }}>
+            <div style={{ fontSize:"11px", fontWeight:"bold", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.1em" }}>
+              {"Submitted Feedback" + (allSubs.length > 0 ? " (" + allSubs.length + " recent)" : "")}
+            </div>
+            <span style={{ fontSize:"11px", color:C.textMuted }}>{fbHistoryOpen ? "▲" : "▼"}</span>
+          </div>
+          {fbHistoryOpen ? (
+            <div style={{ marginTop:"12px" }}>
+              {allSubs.length === 0 ? (
+                <div style={{ color:C.textMuted, fontSize:"12px" }}>No submissions yet.</div>
+              ) : (
+                <div>
+                  {allSubs.map(function(sub) {
+                    var dt = sub.timestamp ? new Date(sub.timestamp).toLocaleDateString("en-US",{month:"short",day:"numeric"}) + " " + new Date(sub.timestamp).toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"}) : "";
+                    var label = sub.category || sub.location || "";
+                    var preview = (sub.body || "").length > 80 ? (sub.body || "").slice(0, 80) + "…" : (sub.body || "");
+                    return (
+                      <div key={sub.id} style={{ borderBottom:"1px solid rgba(15,31,61,0.06)", paddingBottom:"8px", marginBottom:"8px" }}>
+                        <div style={{ display:"flex", gap:"8px", alignItems:"center", marginBottom:"2px" }}>
+                          <span style={{ fontSize:"10px", color:C.textMuted }}>{dt}</span>
+                          {label ? <span style={{ fontSize:"10px", padding:"1px 6px", borderRadius:"4px", background:"rgba(15,31,61,0.08)", color:C.navy, fontWeight:"bold" }}>{label}</span> : null}
+                        </div>
+                        <div style={{ fontSize:"11px", color:C.text }}>{preview}</div>
+                      </div>
+                    );
+                  })}
+                  <button style={{ ...S.btn("ghost"), color:C.red, marginTop:"4px" }}
+                    onClick={function() {
+                      if (confirm("Clear all saved feedback? This cannot be undone.")) {
+                        try { localStorage.removeItem("feedback:submissions"); } catch(e2) {}
+                        try { localStorage.removeItem("feedback:bugs"); } catch(e2) {}
+                      }
+                    }}>
+                    Clear All
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : null}
         </div>
 
       </div>
@@ -4108,6 +4174,123 @@ export default function App() {
       console.error("PDF generation error:", err);
       alert("PDF generation failed: " + err.message);
     }
+  }
+
+  // ============================================================
+  // ABOUT TAB
+  // ============================================================
+  function renderAbout() {
+    var onboardingSteps = [
+      {
+        title: "Step 1 \u2014 Install the App",
+        body: "Tap your browser's share/menu button and select \"Add to Home Screen.\" The app works offline after first load \u2014 no signal needed at the field."
+      },
+      {
+        title: "Step 2 \u2014 Create Your Team",
+        body: "From the Home screen, tap \"Create New Team.\" Enter your team name, age group, and season year."
+      },
+      {
+        title: "Step 3 \u2014 Build Your Roster",
+        body: "Go to the Roster tab. Tap \"Add Player\" for each player. Expand each player card to set skills, coach tags, and preferred positions. Even 2\u20133 skills per player significantly improves auto-assign quality."
+      },
+      {
+        title: "Step 4 \u2014 Add Your Schedule",
+        body: "Go to the Schedule tab. Tap \"Add Game.\" Use AI Photo Import to take a photo of your printed schedule \u2014 it parses automatically in seconds."
+      },
+      {
+        title: "Step 5 \u2014 Generate a Lineup",
+        body: "Go to the Field Grid tab. Set your innings (4, 5, or 6). Tap \"Auto-Assign.\" The engine places 10 players per inning with 1 on bench, rotating fairly across all positions."
+      },
+      {
+        title: "Step 6 \u2014 Set the Batting Order",
+        body: "Go to the Batting tab. Tap \"Suggest Order\" for a stats-driven recommendation. Drag cards or use up/down arrows to reorder."
+      },
+      {
+        title: "Step 7 \u2014 Share With Your Team",
+        body: "From the Schedule tab, tap a game then \"Share Lineup.\" Send the link to parents and scorekeepers \u2014 no account needed to view."
+      },
+      {
+        title: "Step 8 \u2014 Back Up Your Data",
+        body: "Use Export Backup (in Settings or Print tab) to save a JSON file after every few games. Restore it on any device via Import Backup."
+      }
+    ];
+
+    return (
+      <div>
+
+        {/* \u2500\u2500 Section 1: App Info \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */}
+        <div style={S.card}>
+          <div style={{ fontSize:"20px", fontWeight:"bold", color:C.navy, marginBottom:"4px" }}>Lineup Generator &#x26be;</div>
+          <div style={{ fontSize:"12px", color:C.textMuted, marginBottom:"12px" }}>Built for youth baseball coaches. Runs at the field.</div>
+          <div style={{ display:"flex", alignItems:"center", gap:"12px", flexWrap:"wrap", marginBottom:"14px" }}>
+            <span style={{ fontSize:"11px", padding:"3px 10px", borderRadius:"10px", background:"rgba(15,31,61,0.07)", color:C.navy, fontWeight:"bold" }}>
+              Version {APP_VERSION}
+            </span>
+            <a href="https://line-up-generator.vercel.app" target="_blank" rel="noopener noreferrer"
+              style={{ fontSize:"11px", color:C.red, textDecoration:"underline", fontWeight:"bold" }}>
+              line-up-generator.vercel.app
+            </a>
+          </div>
+          <button style={S.btn("ghost")}
+            onClick={function() {
+              try { localStorage.removeItem("onboarding:v1:complete"); } catch(e) {}
+              setShowOnboarding(true);
+            }}>
+            Getting Started
+          </button>
+        </div>
+
+        {/* \u2500\u2500 Section 2: Version History \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */}
+        <div style={S.card}>
+          <div style={S.sectionTitle}>What&#x27;s New</div>
+          {VERSION_HISTORY.map(function(v, vi) {
+            var isCurrent = v.version === APP_VERSION;
+            return (
+              <div key={v.version} style={{
+                borderLeft: isCurrent ? "3px solid #27ae60" : "3px solid rgba(15,31,61,0.1)",
+                background: isCurrent ? "rgba(39,174,96,0.04)" : "transparent",
+                borderRadius: "0 6px 6px 0",
+                padding: "10px 14px",
+                marginBottom: vi < VERSION_HISTORY.length - 1 ? "12px" : "0"
+              }}>
+                <div style={{ display:"flex", gap:"10px", alignItems:"baseline", marginBottom:"8px", flexWrap:"wrap" }}>
+                  <span style={{ fontSize:"14px", fontWeight:"bold", color:C.navy }}>v{v.version}</span>
+                  <span style={{ fontSize:"11px", color:C.textMuted }}>{v.date}</span>
+                  {isCurrent ? <span style={{ fontSize:"10px", padding:"1px 7px", borderRadius:"10px", background:"#27ae60", color:"#fff", fontWeight:"bold" }}>Current</span> : null}
+                </div>
+                <ul style={{ margin:"0", paddingLeft:"16px" }}>
+                  {v.changes.map(function(ch, ci) {
+                    return <li key={ci} style={{ fontSize:"12px", color:C.text, marginBottom:"3px", lineHeight:"1.5" }}>{ch}</li>;
+                  })}
+                </ul>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* \u2500\u2500 Section 3: Onboarding Guide (collapsible) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */}
+        <div style={S.card}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", cursor:"pointer" }}
+            onClick={function() { setAboutGuideOpen(!aboutGuideOpen); }}>
+            <div style={S.sectionTitle}>How to Use This App</div>
+            <span style={{ fontSize:"12px", color:C.textMuted, marginBottom:"14px" }}>{aboutGuideOpen ? "\u25b2" : "\u25bc"}</span>
+          </div>
+          {aboutGuideOpen ? (
+            <div>
+              {onboardingSteps.map(function(step, si) {
+                return (
+                  <div key={si} style={{ marginBottom:"14px", paddingBottom:"14px", borderBottom: si < onboardingSteps.length - 1 ? "1px solid rgba(15,31,61,0.07)" : "none" }}>
+                    <div style={{ fontSize:"12px", fontWeight:"bold", color:C.navy, marginBottom:"4px" }}>{step.title}</div>
+                    <div style={{ fontSize:"12px", color:C.text, lineHeight:"1.6" }}>{step.body}</div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : null}
+        </div>
+
+      </div>
+    );
   }
 
   // ============================================================
@@ -4686,8 +4869,9 @@ export default function App() {
     { key:"grid",     label:"Defense"  },
     { key:"batting",  label:"Batting"  },
     { key:"schedule", label:"Schedule" },
-    { key:"practice", label:"Practice" },
-    { key:"print",    label:"Print"    }
+    { key:"feedback", label:"Feedback" },
+    { key:"print",    label:"Print"    },
+    { key:"about",    label:"About"    }
   ];
 
   var tabContent = (
@@ -4696,8 +4880,9 @@ export default function App() {
       {tab === "grid"     ? renderGrid()     : null}
       {tab === "batting"  ? renderBatting()  : null}
       {tab === "schedule" ? renderSchedule() : null}
-      {tab === "practice" ? renderPractice() : null}
+      {tab === "feedback" ? renderFeedback() : null}
       {tab === "print"    ? renderPrint()    : null}
+      {tab === "about"    ? renderAbout()    : null}
     </div>
   );
 
