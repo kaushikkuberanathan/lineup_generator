@@ -11,13 +11,13 @@ A Progressive Web App that auto-generates defensive lineups, tracks batting orde
 ## What it does
 
 ### Auto-assign defensive lineup
-The engine scores every player for every position using 8 layers of logic — skill badges, preferred positions, coach tags, dislike penalties, consecutive inning rules, outfield repeat prevention, and bench equity. It runs up to 8 attempts with shuffled ordering and returns the best valid result with warnings for any violations.
+The engine scores every player for every position using multiple layers of logic — skill badges, preferred positions, coach tags, dislike penalties, consecutive inning rules, outfield repeat prevention, and bench equity. It runs up to 8 attempts with shuffled ordering and returns the best valid result with warnings for any violations.
 
 ### Diamond view
-Visual field layout showing all 9 positions. Filter to a single inning (tap "4" to see only inning 4 assignments) or view all innings at once. Works in both the Defense tab and the Print/Share view.
+Visual field layout showing all 10 positions. Filter to a single inning (tap "4" to see only inning 4 assignments) or view all innings at once. Works in both the Defense tab and the Print/Share view.
 
 ### Batting order
-Drag-to-reorder with full touch support on mobile. Season batting stats (AVG, AB, H, R, RBI, BB) tracked per player from game results.
+Drag-to-reorder with full touch support on mobile. Season batting stats (AVG, AB, H, R, RBI) tracked per player from game results. AVG is calculated automatically from H ÷ AB and color-coded live.
 
 ### Schedule management
 - Add games manually or import from text/photos using AI (Claude)
@@ -154,10 +154,10 @@ Run the schema SQL from `SUPABASE-IMPLEMENTATION.md` in the Supabase SQL Editor.
 The auto-assign engine (`App.jsx` — `autoAssign` function) works in two phases per inning:
 
 **Phase 1 — Bench selection**
-Players beyond 9 are benched. Players with `benchOnce` tag can only sit once per game. Players who sat last inning must play this inning. Bench candidates are sorted by bench equity (fewest prior bench innings).
+Players beyond 10 are benched (10 players on field, 1 bench slot per inning for an 11-player roster). Players with `benchOnce` tag can only sit once per game. Players who sat last inning must play this inning. Bench candidates are sorted by bench equity (fewest prior bench innings).
 
 **Phase 2 — Field assignment**
-Outfield is filled first (CF → LF → RF) using a hard block on repeat outfield positions. Infield is assigned most-constrained-first. Each position is scored with 8 layers:
+Outfield is filled first (LC → RC → LF → RF) using a hard block on repeat outfield positions. There is no CF — the four outfield positions are LF, LC, RC, and RF. Infield is assigned most-constrained-first. Each position is scored with 8 layers:
 
 1. Outfield repeat hard block (−999)
 2. Skill badge weights (averaged across active badges)
@@ -176,6 +176,7 @@ The engine runs up to 8 times with shuffled roster order and returns the attempt
 
 - [Roadmap](docs/product/ROADMAP.md)
 - [User Personas](docs/product/PERSONAS.md)
+- [Coach Onboarding Guide](docs/product/ONBOARDING.md)
 
 ---
 
@@ -184,7 +185,6 @@ The engine runs up to 8 times with shuffled roster order and returns the attempt
 - **Phase 3a** — Supabase Auth (magic link login, no passwords)
 - **Phase 3b** — Role-based access (Coach / Assistant / Viewer)
 - **Phase 3c** — Multi-device realtime sync via Supabase Realtime
-- **Phase 3d** — Per-game batting order
 - **Phase 3e** — iCal schedule import
 - **Phase 4** — Season analytics (position frequency, bench equity charts)
 
