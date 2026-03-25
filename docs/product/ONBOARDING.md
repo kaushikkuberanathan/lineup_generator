@@ -40,51 +40,47 @@ Add each player on your team one at a time.
 
 ### Add a Player
 1. Tap **"Add Player"**
-2. Enter the player's full name — e.g. `Jackson Hershiser`
-3. Tap **Save**
+2. Enter the player's first name and last name in the two separate fields, then tap Add. Names are automatically capitalized.
+3. Repeat for all players. For an 8U rec team, you'll typically have 10–12 players.
 
 Repeat for all players. For an 8U rec team, you'll typically have 10–12 players.
 
 ### Set Player Profiles (Recommended)
-Tap any player card to expand it and set:
 
-**Skills** — select all that apply:
-- `Game Aware` — reads the field, knows where to throw
-- `Strong Arm` — can make longer throws accurately
-- `Good Glove` — reliable fielder
-- `Natural Catcher` — comfortable behind the plate
-- `Fast Runner` — above-average speed
-- `Left Handed` — affects 1B, outfield, and pitching assignments
-- `Big Kid` — physical size suits certain positions
-- `High Energy` — stays engaged throughout the game
-- `Developing` — newer player, best in lower-pressure spots
+Each player has a collapsible profile card on the Roster tab. Tap a player to expand their card.
 
-**Coach Tags** — honest assessments used internally (not shown to parents):
-- `Weak Thrower` — engine avoids P, SS, 3B
-- `Slow Runner` — engine favors 1B, avoids CF
-- `Fearful of Ball` — engine keeps them in lower-impact spots
-- `Inconsistent Attention` — engine avoids high-responsibility positions
-- `Bench Once` — player should sit no more than once per game
-- `Needs Base Coaching` — flags for your own awareness
+**Lineup Constraints** (shown first, expanded by default)
+The most important section for game day. Set here before generating each lineup:
+- **Out This Game** — marks a player absent; they will not appear in any lineup slot
+- **Skip Bench** — player will never be assigned to bench (use for players who must play every inning)
+- **Preferred Positions** — tap positions in order of preference (1st, 2nd, 3rd choice)
+- **Avoid Positions** — positions the player should not be assigned to
 
-**Preferred Positions** — drag to rank up to 5 positions the player enjoys or excels at. The engine gives these a scoring bonus.
+**Fielding**
+Rate the player's defensive ability:
+- Reliability: how consistently they make plays (High / Average / Needs Support)
+- Reaction Timing: how quickly they respond to the ball (Quick / Average / Slow)
+- Arm Strength: throwing ability (Strong / Average / Developing)
+- Ball Type: whether they are better with ground balls, fly balls, or both
+- Field Awareness: specific behaviors (Knows Where to Throw, Calls for Ball, Backs Up Plays, Anticipates Plays)
 
-**Avoid Positions** — tap any positions the player should not play. The engine applies a soft block (you can still override manually).
+**Batting**
+Rate the player's hitting:
+- Contact: how often they make contact (High / Medium / Developing)
+- Power: hitting strength (High / Medium / Low)
+- Swing Discipline: patient vs free swinger
+- Batting Awareness: tracks ball well, patient at plate, confident hitter
 
-> You don't need to fill in every field. Even just setting 2–3 skills per player dramatically improves the auto-assign quality.
+**Base Running**
+- Speed: Fast / Average / Developing
+- Running Awareness: runs through first, listens to coaches, aware on bases
 
-### Example — Mud Hens Setup
-Here's how a strong profile looks for a player like Jackson Hershiser:
-- Skills: `Game Aware`, `Strong Arm`
-- Preferred: `SS`, `P`
-- Tags: none
-- Avoid: none
+**Effort & Development Focus**
+- Effort level and whether the player needs infield reps, outfield reps, or is balanced
 
-And for a developing player like Benjamin Bieber:
-- Skills: `Developing`
-- Preferred: `RF`, `LF`
-- Tags: `Bench Once`
-- Avoid: `P`, `C`
+The lineup engine uses all of these attributes to assign positions and batting order automatically when you tap Auto-Assign.
+
+> You don't need to fill in every field. Even setting a few attributes per player dramatically improves auto-assign quality.
 
 ---
 

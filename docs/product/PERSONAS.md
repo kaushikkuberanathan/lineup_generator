@@ -54,7 +54,7 @@ Head coach or assistant coach responsible for managing the team, creating lineup
 |---------|-----------|---------|
 | Auto-assign lineup engine | ✅ | — |
 | Manual grid overrides | ✅ | — |
-| Player skill + coach tag profiles | ✅ | — |
+| V2 player profiles with fielding, batting, running, and constraint attributes | ✅ | — |
 | Batting order with stats-driven suggest | ✅ | — |
 | Schedule + game result logging | ✅ | — |
 | PDF export + print view | ✅ | — |

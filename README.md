@@ -67,9 +67,11 @@ Lock the lineup before game time. Prevents accidental edits while keeping the da
 lineup_generator/
 ├── frontend/               ← React + Vite PWA
 │   ├── src/
-│   │   ├── App.jsx         ← Main application (~4,900 lines)
+│   │   ├── App.jsx         ← Main application (~5,100+ lines)
 │   │   ├── supabase.js     ← DB client + read/write helpers
-│   │   └── main.jsx        ← React entry point
+│   │   ├── main.jsx        ← React entry point
+│   │   ├── config/         ← Feature flags
+│   │   └── utils/          ← V2 scoring engine, player mapper, lineup engine
 │   ├── public/             ← PWA icons
 │   ├── index.html
 │   ├── vite.config.js      ← Vite + PWA manifest
@@ -176,6 +178,8 @@ Outfield is filled first (LC → RC → LF → RF) using a hard block on repeat 
 
 The engine runs up to 8 times with shuffled roster order and returns the attempt with the fewest validation violations.
 
+As of v1.3.0, a V2 scoring engine (`lineupEngineV2.js`) uses player-level attributes (fielding reliability, reaction, arm strength, batting contact/power/discipline, running speed) to compute position fit scores and assign players to positions deterministically. The V2 engine is active by default with automatic fallback to V1.
+
 **Field layout (diamond view)**
 The diamond view renders an SVG field with a green background, outfield arc, dirt infield ellipse, base diamond, and pitcher mound. All 10 position boxes use a dual-zone design: a dark header band (color-coded by position group) and a player name area below. In single-inning mode (680×640 viewBox), each box shows the player's first name at 14px bold with an inning badge and bench player pill. In all-innings mode (680×680 viewBox), each box shows a compact list of first names per inning slot with no numbered prefix.
 
@@ -192,7 +196,7 @@ The diamond view renders an SVG field with a green background, outfield arc, dir
 
 ## Roadmap
 
-- **Phase 3a** — Supabase Auth (magic link login, no passwords)
+- **Phase 3a** — Supabase Auth (phone OTP login, no passwords)
 - **Phase 3b** — Role-based access (Coach / Assistant / Viewer)
 - **Phase 3c** — Multi-device realtime sync via Supabase Realtime
 - **Phase 3e** — iCal schedule import

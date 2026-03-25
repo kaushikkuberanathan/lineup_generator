@@ -14,7 +14,7 @@
 - Hard blocks: back-to-back, outfield repeat, benchOnce enforcement
 
 ### Roster Tab
-- Player cards with skill badges, coach tags, and batting skills
+- Player cards with V2 scoring attributes (Fielding, Batting, Running, Constraints) ✅
 - Preferred / avoid positions per player
 - Add/remove player with confirmation
 - Innings selector (4/5/6)
@@ -49,6 +49,22 @@
 - 10-player field configuration: LC + RC replace CF in outfield; 1 bench slot per inning (schema v2, migration auto-remaps saved CF→LC)
 - First-time coach onboarding modal (5-step in-app walkthrough, localStorage completion tracking, always re-accessible via "Getting Started" button in Roster tab)
 
+### v1.3.0 — March 25, 2026
+#### Player Profile & Scoring Engine Rebuild
+- Rebuilt player profile UI with V2 collapsible card system
+- New sections: Fielding (Reliability, Reaction Timing, Arm Strength, Ball Type, Field Awareness), Batting (Contact, Power, Swing Discipline, Batting Awareness), Base Running, Effort, Lineup Constraints, Development Focus
+- Lineup Constraints card: Skip Bench flag, Out This Game flag, Preferred Positions, Avoid Positions — all in one place, expanded by default
+- Removed legacy Skills, Coach Notes, and Batting Skills sections from player card UI (data preserved, engine still uses for V1)
+- Add Player form: split into separate First Name + Last Name fields with capitalization
+- `firstName`/`lastName` stored as separate fields on player object
+- Last Updated timestamp on each player card
+- V2 lineup engine (`lineupEngineV2.js`): position-specific scoring with 9 position formulas
+- `scoringEngine.js`: 11 shared scoring functions (fieldScore, battingScore, runningScore, battingOrderScore, positionScore, benchCandidateScore, getBallTypeFit, awareness scores)
+- `playerMapper.js`: safe V1→V2 field mapping with defaults for all missing fields
+- `migrateRoster()` updated to preserve all V2 fields across team switches
+- `featureFlags.js`: `USE_NEW_LINEUP_ENGINE=true` (V2 active, V1 fallback on error)
+- Auth system (parallel, not yet gated): request access, OTP login, admin approval, admin UI at `/admin.html` — pending Twilio toll-free verification before Phase 4 cutover
+
 ### v1.2.1 — March 24, 2026
 - Added Sharon Springs Athletics link to Links tab (sharonspringsathletics.org)
 
@@ -80,7 +96,7 @@
 | 1 | **Mobile drag-to-reorder (batting)** | Touch drag is fragile — number circle as drag handle exists, but tap up/down arrow fallback is not yet implemented |
 | 2 | **Sticky player name column (field grid)** | Horizontal scroll on mobile loses player names — original fix deferred in single-file build |
 | 3 | **`Confident` vs `goodCoachability` weight parity** | Both tags have identical scoring mods — `Confident` should boost high-pressure positions (P, SS, C) more aggressively; `goodCoachability` should distribute more evenly |
-| 4 | **Player absent flag (per game)** | No way to exclude a player from auto-assign for a single game without removing them from the roster |
+| 4 | ✅ **Player absent flag (per game)** | Resolved in v1.3.0 — Out This Game flag in Lineup Constraints card |
 | 5 | **Mud Hens g2 batting stats** | SQL restore in Supabase pending — two-query fix identified, not yet applied |
 
 ---
@@ -108,6 +124,14 @@
 | 4 | **File split — renderSchedule and large render functions** | `renderSchedule` is ~593 lines doing the work of 4–5 components; blocking future feature velocity |
 | 5 | **TypeScript migration** | Still `.jsx`, no types — lower priority but growing tech debt |
 | 6 | **ESLint config** | No linting enforcement in the repo |
+
+---
+
+## 🚧 Blocked
+
+| # | Item | Notes |
+|---|------|-------|
+| 1 | **Auth Phase 4 cutover** | Blocked pending Twilio toll-free verification (submitted, 2–3 business days). Once verified: OTP SMS works end-to-end, then add requireAuth middleware to existing routes. |
 
 ---
 
