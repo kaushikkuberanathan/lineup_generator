@@ -5382,10 +5382,17 @@ export default function App() {
               Generate Lineup
             </button>
           ) : null}
-          <div style={{ display:"flex", flexDirection:"column", gap:"2px", flex:1 }}>
+          <div style={{ display:"flex", flexDirection:"column", gap:"2px", flex:1, width:"100%" }}>
             <div style={{ display:"flex", gap:"2px" }}>
               {TEAM_TABS.map(function(t) {
-                return <button key={t.key} style={S.tab(tab === t.key)} onClick={function(k) { return function() { setTab(k); }; }(t.key)}>{t.label}</button>;
+                var active = tab === t.key;
+                return <button key={t.key}
+                  onClick={function(k) { return function() { setTab(k); }; }(t.key)}
+                  style={{ flex:1, padding:"6px 4px", borderRadius:"6px", border:"none", cursor:"pointer", fontSize:"10px", fontWeight:"bold", fontFamily:"Georgia,serif", letterSpacing:"0.03em", textTransform:"uppercase", textAlign:"center", whiteSpace:"nowrap", transition:"all 0.12s",
+                    background: active ? C.red : "transparent",
+                    color: active ? "#fff" : "rgba(255,255,255,0.55)" }}>
+                  {t.label}
+                </button>;
               })}
             </div>
             <div style={{ display:"flex", gap:"2px", borderTop:"1px solid rgba(255,255,255,0.15)", paddingTop:"3px" }}>
@@ -5394,7 +5401,7 @@ export default function App() {
                 return (
                   <button key={t.key}
                     onClick={function(k) { return function() { setTab(k); }; }(t.key)}
-                    style={{ fontSize:"9.5px", padding:"4px 10px", borderRadius:"5px", fontWeight:"bold", fontFamily:"Georgia,serif", letterSpacing:"0.06em", textTransform:"uppercase", border:"none", cursor:"pointer",
+                    style={{ flex:1, fontSize:"9.5px", padding:"4px 4px", borderRadius:"5px", fontWeight:"bold", fontFamily:"Georgia,serif", letterSpacing:"0.03em", textTransform:"uppercase", textAlign:"center", whiteSpace:"nowrap", border:"none", cursor:"pointer",
                       background: active ? "rgba(255,255,255,0.15)" : "transparent",
                       color: active ? "#fff" : "rgba(255,255,255,0.4)" }}>
                     {t.label}
