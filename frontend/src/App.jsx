@@ -2045,6 +2045,47 @@ export default function App() {
               <button onClick={function() { setHomeMode("create"); }} style={{ width:"100%", padding:"13px", borderRadius:"12px", border:"2px dashed rgba(255,255,255,0.2)", background:"transparent", color:"rgba(255,255,255,0.55)", fontSize:"13px", fontFamily:"inherit", cursor:"pointer", marginBottom:"14px" }}>
                 + Create New Team
               </button>
+              <div style={{ borderTop:"1px solid rgba(255,255,255,0.1)", marginTop:"20px", paddingTop:"16px" }}>
+                <div style={{ fontSize:"11px", color:"rgba(255,255,255,0.4)", textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"12px" }}>Links</div>
+                {[
+                  { label:"County Official Game Schedule", desc:"Forsyth County 2026 Youth Baseball & Softball — full season schedule", url:COUNTY_SCHEDULE_URL, emoji:"📅" },
+                  { label:"Field & Cage Request", desc:"Request field or batting cage time from Forsyth County Parks", url:"https://docs.google.com/forms/d/e/1FAIpQLSeCIvqZlGsxonkWpFJ52q_6PWrOl3mmOTjTdiPGcz3ZQGzJDQ/viewform", emoji:"⚾" },
+                  { label:"Sharon Springs Athletics", desc:"Sharon Springs community athletics — league info, teams, and events", url:"https://sharonspringsathletics.org/", emoji:"🏆" },
+                  { label:"Inclement Weather Updates", desc:"Forsyth County Parks — field closures and weather delays", url:"https://parks.forsythco.com/Athletic-Leagues/Inclement-Weather-Information", emoji:"⛈️" },
+                  { label:"Status Me Auto Alerts", desc:"Sign up for automatic game status notifications", url:"https://statusme.com/", emoji:"🔔" },
+                ].map(function(link, li) {
+                  return (
+                    <a key={li} href={link.url} target="_blank" rel="noopener noreferrer" style={{ display:"flex", alignItems:"center", gap:"12px", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:"8px", padding:"10px 14px", marginBottom:"6px", textDecoration:"none" }}>
+                      <span style={{ fontSize:"18px", flexShrink:0 }}>{link.emoji}</span>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ fontSize:"13px", fontWeight:"600", color:"rgba(255,255,255,0.9)", marginBottom:"2px" }}>{link.label}</div>
+                        <div style={{ fontSize:"11px", color:"rgba(255,255,255,0.5)", lineHeight:"1.4" }}>{link.desc}</div>
+                      </div>
+                      <span style={{ fontSize:"14px", color:"rgba(255,255,255,0.4)", flexShrink:0 }}>→</span>
+                    </a>
+                  );
+                })}
+              </div>
+              <div style={{ borderTop:"1px solid rgba(255,255,255,0.1)", marginTop:"20px", paddingTop:"16px" }}>
+                <div style={{ fontSize:"11px", color:"rgba(255,255,255,0.4)", textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"12px" }}>What's New</div>
+                {VERSION_HISTORY.map(function(v) {
+                  var isCurrent = v.version === APP_VERSION;
+                  return (
+                    <div key={v.version} style={{ background: isCurrent ? "rgba(39,174,96,0.12)" : "rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderLeft: isCurrent ? "3px solid #27ae60" : "3px solid rgba(255,255,255,0.15)", borderRadius:"8px", padding:"10px 14px", marginBottom:"8px" }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:"8px", marginBottom:"6px" }}>
+                        <span style={{ fontSize:"13px", fontWeight:"700", color: isCurrent ? "#27ae60" : "rgba(255,255,255,0.8)" }}>v{v.version}</span>
+                        {isCurrent ? <span style={{ fontSize:"10px", background:"#27ae60", color:"#fff", borderRadius:"10px", padding:"1px 8px", fontWeight:"600" }}>Current</span> : null}
+                        <span style={{ fontSize:"11px", color:"rgba(255,255,255,0.35)", marginLeft:"auto" }}>{v.date}</span>
+                      </div>
+                      <ul style={{ margin:0, paddingLeft:"16px" }}>
+                        {v.changes.map(function(c, ci) {
+                          return <li key={ci} style={{ fontSize:"11px", color:"rgba(255,255,255,0.55)", lineHeight:"1.6" }}>{c}</li>;
+                        })}
+                      </ul>
+                    </div>
+                  );
+                })}
+              </div>
               <div style={{ textAlign:"center" }}>
                 <div style={{ fontSize:"10px", color:"rgba(255,255,255,0.18)" }}>All data saved locally on this device</div>
               </div>
@@ -5223,16 +5264,19 @@ export default function App() {
     return renderHome();
   }
 
-  var TABS = [
+  var TEAM_TABS = [
     { key:"roster",   label:"Roster"   },
     { key:"grid",     label:"Defense"  },
     { key:"batting",  label:"Batting"  },
     { key:"schedule", label:"Schedule" },
-    { key:"feedback", label:"Feedback" },
     { key:"print",    label:"Print"    },
-    { key:"links",    label:"Links"    },
-    { key:"about",    label:"About"    }
   ];
+  var GLOBAL_TABS = [
+    { key:"feedback", label:"Feedback" },
+    { key:"links",    label:"Links"    },
+    { key:"about",    label:"About"    },
+  ];
+  var TABS = TEAM_TABS.concat(GLOBAL_TABS);
 
   var tabContent = (
     <div>
@@ -5268,7 +5312,20 @@ export default function App() {
           ) : null}
 
           {/* Tab buttons — vertical, icon + abbreviated label */}
-          {TABS.map(function(t) {
+          {TEAM_TABS.map(function(t) {
+            var active = tab === t.key;
+            return (
+              <button key={t.key}
+                onClick={function(k) { return function() { setTab(k); }; }(t.key)}
+                style={{ width:"54px", padding:"6px 2px", borderRadius:"6px", border:"none", cursor:"pointer", fontSize:"8.5px", fontWeight:"bold", fontFamily:"Georgia,serif", letterSpacing:"0.04em", textTransform:"uppercase", textAlign:"center", lineHeight:"1.3",
+                  background: active ? C.red : "transparent",
+                  color: active ? "#fff" : "rgba(255,255,255,0.55)" }}>
+                {t.label}
+              </button>
+            );
+          })}
+          <div style={{ height:"1px", background:"rgba(255,255,255,0.2)", margin:"6px 8px" }} />
+          {GLOBAL_TABS.map(function(t) {
             var active = tab === t.key;
             return (
               <button key={t.key}
@@ -5318,8 +5375,12 @@ export default function App() {
               Generate Lineup
             </button>
           ) : null}
-          <div style={S.tabs}>
-            {TABS.map(function(t) {
+          <div style={{ display:"flex", overflowX:"auto", WebkitOverflowScrolling:"touch" }}>
+            {TEAM_TABS.map(function(t) {
+              return <button key={t.key} style={S.tab(tab === t.key)} onClick={function(k) { return function() { setTab(k); }; }(t.key)}>{t.label}</button>;
+            })}
+            <div style={{ width:"1px", background:"rgba(255,255,255,0.2)", margin:"6px 4px", flexShrink:0 }} />
+            {GLOBAL_TABS.map(function(t) {
               return <button key={t.key} style={S.tab(tab === t.key)} onClick={function(k) { return function() { setTab(k); }; }(t.key)}>{t.label}</button>;
             })}
           </div>
