@@ -213,3 +213,21 @@ backend/
 - **Role-based access** (Coach/Assistant/Viewer): in progress — delete team button is hidden until this ships (see recent commit)
 - **Phase 4 cutover**: when auth ships fully, existing `index.js` routes will be consolidated; until then, all new code is additive only
 - **Realtime multi-device sync**: planned via Supabase Realtime
+
+## Version History
+
+### v1.3.0 — March 25, 2026
+- Player profile UI completely rebuilt with V2 scoring-driven tag system
+- New collapsible card sections: Fielding, Batting, Base Running, Effort, Lineup Constraints, Development Focus
+- Sub-groups within each section (Reliability, Reaction Timing, Arm Strength, etc.)
+- Lineup Constraints card expanded by default with Skip Bench, Out This Game, Preferred Positions, Avoid Positions
+- Legacy Skills, Coach Notes, Batting Skills sections removed from player card UI
+- V2 lineup engine (`lineupEngineV2.js`) with position-specific scoring
+- `scoringEngine.js` — 11 scoring functions: fieldScore, battingScore, runningScore, battingOrderScore, positionScore, benchCandidateScore
+- `playerMapper.js` — V1→V2 field mapping with safe defaults
+- `featureFlags.js` — `USE_NEW_LINEUP_ENGINE: true` (V2 active)
+- `migrateRoster()` updated to preserve all V2 fields across team switches
+- Add Player form split into separate First Name + Last Name fields
+- `firstName`/`lastName` stored as separate fields on player object
+- Last Updated timestamp added to player cards
+- `vite.config.js` — added `@/` path alias for `src/`

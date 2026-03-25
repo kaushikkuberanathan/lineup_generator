@@ -4,6 +4,8 @@ import { jsPDF } from "jspdf";
 import { isSupabaseEnabled, dbSaveTeams, dbDeleteTeam,
          dbLoadTeams, dbLoadTeamData, dbSaveTeamData } from './supabase.js';
 import mixpanel from 'mixpanel-browser';
+import { FEATURE_FLAGS } from '@/config/featureFlags';
+import { generateLineupV2 } from '@/utils/lineupEngineV2';
 
 var MIXPANEL_TOKEN = "YOUR_MIXPANEL_TOKEN";
 if (MIXPANEL_TOKEN !== "YOUR_MIXPANEL_TOKEN") {
@@ -237,7 +239,37 @@ function migrateRoster(roster) {
       tags:      p.tags      || [],
       dislikes:  p.dislikes  || [],
       prefs:     p.prefs     || [],
-      batSkills: p.batSkills || []
+      batSkills: p.batSkills || [],
+      // V2 fielding
+      reliability:        p.reliability        ?? "average",
+      reaction:           p.reaction           ?? "average",
+      armStrength:        p.armStrength        ?? "average",
+      ballType:           p.ballType           ?? "developing",
+      knowsWhereToThrow:  p.knowsWhereToThrow  ?? false,
+      callsForBall:       p.callsForBall       ?? false,
+      backsUpPlays:       p.backsUpPlays       ?? false,
+      anticipatesPlays:   p.anticipatesPlays   ?? false,
+      // V2 batting
+      contact:            p.contact            ?? "medium",
+      power:              p.power              ?? "low",
+      swingDiscipline:    p.swingDiscipline    ?? "free_swinger",
+      tracksBallWell:     p.tracksBallWell     ?? false,
+      patientAtPlate:     p.patientAtPlate     ?? false,
+      confidentHitter:    p.confidentHitter    ?? false,
+      // V2 base running
+      speed:              p.speed              ?? "average",
+      runsThroughFirst:   p.runsThroughFirst   ?? false,
+      listensToCoaches:   p.listensToCoaches   ?? false,
+      awareOnBases:       p.awareOnBases       ?? false,
+      // V2 effort & development
+      effort:             p.effort             ?? null,
+      developmentFocus:   p.developmentFocus   ?? "balanced",
+      // V2 game-day constraints
+      skipBench:          p.skipBench          ?? false,
+      outThisGame:        p.outThisGame        ?? false,
+      lastUpdated:        p.lastUpdated        ?? null,
+      firstName:          p.firstName          ?? (p.name ? p.name.split(" ")[0] : ""),
+      lastName:           p.lastName           ?? (p.name ? p.name.split(" ").slice(1).join(" ") : "")
     };
   });
 }
@@ -1103,8 +1135,8 @@ export default function App() {
     return tid ? (loadJSON("team:" + tid + ":locked", false) || false) : false;
   });
   var lineupLocked = _locked[0]; var setLineupLocked = _locked[1];
-  var _nn = useState("");
-  var newName = _nn[0]; var setNewName = _nn[1];
+  var _nfn = useState(""); var newFirstName = _nfn[0]; var setNewFirstName = _nfn[1];
+  var _nln = useState(""); var newLastName  = _nln[0]; var setNewLastName  = _nln[1];
   var _drag = useState(null);
   var dragPlayer = _drag[0]; var setDragPlayer = _drag[1];
   // Touch drag uses a mutable ref (window object) instead of useState to avoid
@@ -1122,6 +1154,8 @@ export default function App() {
   var inlineScoreGame = _inlineScore[0]; var setInlineScoreGame = _inlineScore[1];
   var _col = useState({});
   var collapsed = _col[0]; var setCollapsed = _col[1];
+  var _v2sec = useState({});
+  var v2SectionOpen = _v2sec[0]; var setV2SectionOpen = _v2sec[1];
   var _sum = useState(false);
   var showSummary = _sum[0]; var setShowSummary = _sum[1];
   var _hm = useState("welcome");
@@ -1505,9 +1539,12 @@ export default function App() {
 
   // --- Roster ---
   function addPlayer() {
-    var n = newName.trim();
-    if (!n || players.indexOf(n) >= 0) { return; }
-    var p = { name:n, skills:["developing"], tags:[], dislikes:[], prefs:[], batSkills:[] };
+    var fn = newFirstName.trim(); var ln = newLastName.trim();
+    if (!fn || !ln) { return; }
+    var capitalize = function(s) { return s.charAt(0).toUpperCase() + s.slice(1); };
+    var n = capitalize(fn) + " " + capitalize(ln);
+    if (players.indexOf(n) >= 0) { return; }
+    var p = { name:n, firstName:capitalize(fn), lastName:capitalize(ln), skills:["developing"], tags:[], dislikes:[], prefs:[], batSkills:[] };
     var next = roster.concat([p]);
     persistRoster(next);
     track("add_player", { roster_size: next.length });
@@ -1518,7 +1555,7 @@ export default function App() {
     for (var i = 0; i < innings; i++) { row.push(""); }
     ng[n] = row;
     persistGrid(ng);
-    setNewName("");
+    setNewFirstName(""); setNewLastName("");
   }
 
   function removePlayer(name) {
@@ -1535,16 +1572,47 @@ export default function App() {
       var updated = {};
       for (var k in r) { updated[k] = r[k]; }
       for (var k2 in patch) { updated[k2] = patch[k2]; }
+      updated.lastUpdated = new Date().toISOString();
       return updated;
     }));
   }
 
+  function isV2Open(playerName, section) {
+    var key = playerName + "::" + section;
+    if (key in v2SectionOpen) { return v2SectionOpen[key]; }
+    return section === "Lineup Constraints";
+  }
+  function toggleV2Section(playerName, section) {
+    var key = playerName + "::" + section;
+    var next = {}; for (var k in v2SectionOpen) { next[k] = v2SectionOpen[k]; }
+    next[key] = !isV2Open(playerName, section);
+    setV2SectionOpen(next);
+  }
+
   function generateLineup() {
-    var result = autoAssignWithRetryFallback(roster, innings);
+    let result;
+
+    try {
+      if (FEATURE_FLAGS.USE_NEW_LINEUP_ENGINE) {
+        console.log("[Lineup Engine] Using V2");
+        result = generateLineupV2(roster, innings);
+      } else {
+        console.log("[Lineup Engine] Using V1");
+        result = autoAssignWithRetryFallback(roster, innings);
+      }
+    } catch (e) {
+      console.error("[Lineup Engine] V2 failed — fallback to V1", e);
+      result = autoAssignWithRetryFallback(roster, innings);
+    }
+
+    console.log("GRID STRUCTURE:", result.grid);
+
+    // 🔒 DO NOT MODIFY BELOW (existing behavior)
     persistGrid(result.grid);
     setLastAutoGrid(result.grid);
     setLineupDirty(false);
     setTab("grid");
+
     track("auto_assign", {
       attempts: result.attempts || 1,
       warnings: (result.warnings || []).length,
@@ -1552,6 +1620,7 @@ export default function App() {
       roster_size: roster.length,
       innings: innings
     });
+
     if (result.usedFallback || !result.isValid) {
       console.warn("[Lineup Engine]", result.explain);
     }
@@ -2106,10 +2175,13 @@ export default function App() {
           </div>
         ) : null}
 
-        <div style={{ display:"flex", gap:"8px", marginBottom:"14px", alignItems:"center" }}>
-          <input value={newName} onChange={function(e) { setNewName(e.target.value); }}
+        <div style={{ display:"flex", flexWrap:"wrap", gap:"8px", marginBottom:"14px", alignItems:"center" }}>
+          <input value={newFirstName} onChange={function(e) { setNewFirstName(e.target.value); }}
             onKeyDown={function(e) { if (e.key === "Enter") { addPlayer(); } }}
-            placeholder="Add player name..." maxLength={30} style={{ ...S.input, flex:1 }} />
+            placeholder="First name*" maxLength={20} style={{ ...S.input, flex:"1 1 120px" }} />
+          <input value={newLastName} onChange={function(e) { setNewLastName(e.target.value); }}
+            onKeyDown={function(e) { if (e.key === "Enter") { addPlayer(); } }}
+            placeholder="Last name*" maxLength={20} style={{ ...S.input, flex:"1 1 120px" }} />
           <button style={S.btn("primary")} onClick={addPlayer}>Add</button>
           <button style={S.btn("ghost")} onClick={function() {
             if (confirm("Reset roster to default players for " + (activeTeam ? activeTeam.name : "this team") + "?")) {
@@ -2173,6 +2245,21 @@ export default function App() {
 
                 {!isCol ? (
                   <div>
+                    {(function() {
+                      function formatLastUpdated(iso) {
+                        var d = new Date(iso);
+                        var now = new Date();
+                        var timeStr = d.toLocaleTimeString([], { hour:"numeric", minute:"2-digit" });
+                        var dDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+                        var nDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                        var diff = nDate - dDate;
+                        if (diff === 0) { return "Today at " + timeStr; }
+                        if (diff === 86400000) { return "Yesterday at " + timeStr; }
+                        return d.toLocaleDateString([], { month:"short", day:"numeric" }) + " at " + timeStr;
+                      }
+                      if (!info.lastUpdated) { return null; }
+                      return <div style={{ fontSize:"10px", color:"#9ca3af", textAlign:"right", marginBottom:"8px", fontStyle:"italic" }}>Last updated: {formatLastUpdated(info.lastUpdated)}</div>;
+                    })()}
                     <div style={{ display:"flex", gap:"8px", flexWrap:"wrap", marginBottom:"10px",
                       padding:"6px 8px", borderRadius:"6px", background:"rgba(15,31,61,0.03)",
                       border:"1px solid rgba(15,31,61,0.07)" }}>
@@ -2192,122 +2279,242 @@ export default function App() {
                         );
                       })}
                     </div>
-                    {(function() {
-                      // Render SKILLS grouped by group field
-                      var skillGroups = [];
-                      var seenGroups = {};
-                      for (var gki = 0; gki < skillKeys.length; gki++) {
-                        var gk = skillKeys[gki];
-                        var grp = SKILLS[gk].group || "Other";
-                        if (!seenGroups[grp]) { seenGroups[grp] = true; skillGroups.push(grp); }
-                      }
-                      return skillGroups.map(function(grp) {
-                        var keysInGroup = skillKeys.filter(function(k){ return (SKILLS[k].group||"Other")===grp; });
-                        return (
-                          <div key={grp} style={{ marginBottom:"10px" }}>
-                            <div style={{ fontSize:"9px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.14em", marginBottom:"4px", fontWeight:"bold" }}>{grp}</div>
-                            <div>
-                              {keysInGroup.map(function(key) {
-                                var s = SKILLS[key]; var active = sk.indexOf(key) >= 0;
-                                return <span key={key} style={S.badge(s.color, active)} onClick={function(k) { return function() { updatePlayer(info.name, { skills: toggle(sk, k) }); }; }(key)}>
-                                  <span style={{ width:"6px", height:"6px", borderRadius:"50%", flexShrink:0, display:"inline-block", background: active ? s.color : "rgba(15,31,61,0.2)" }}></span>
-                                  {s.label}
-                                </span>;
-                              })}
-                            </div>
+                    {/* ── V2 Player Profile: Lineup Constraints ── */}
+                    <div style={{ border:"1px solid #e5e7eb", borderRadius:"8px", marginBottom:"8px", overflow:"hidden" }}>
+                      <div onClick={function(){toggleV2Section(info.name,"Lineup Constraints");}}
+                        style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"8px 12px",
+                        background:"#f9fafb", fontSize:"12px", fontWeight:600, color:"#374151", cursor:"pointer" }}>
+                        <span>Lineup Constraints</span>
+                        <span>{isV2Open(info.name,"Lineup Constraints") ? "▼" : "▶"}</span>
+                      </div>
+                      {isV2Open(info.name,"Lineup Constraints") ? (
+                        <div style={{ padding:"8px 12px", background:"white" }}>
+                          <span style={{ fontSize:"10px", fontWeight:600, color:"#666666", marginBottom:"4px", display:"block" }}>Game Day</span>
+                          <div style={{ display:"flex", flexWrap:"wrap", gap:"4px", marginBottom:"6px" }}>
+                            {(function() {
+                              var sbActive  = !!info.skipBench;
+                              var outActive = !!info.outThisGame || tg.indexOf("absent") >= 0;
+                              return (
+                                <span>
+                                  <span style={S.badge("#c8102e", sbActive)} onClick={function(a){return function(){updatePlayer(info.name,{skipBench:!a});};}(sbActive)}>Skip Bench</span>
+                                  <span style={S.badge("#c8102e", outActive)} onClick={function(a,tgArr){return function(){
+                                    var newOut  = !a;
+                                    var newTags = newOut
+                                      ? (tgArr.indexOf("absent") < 0 ? tgArr.concat(["absent"]) : tgArr)
+                                      : tgArr.filter(function(t){return t !== "absent";});
+                                    updatePlayer(info.name, {outThisGame: newOut, tags: newTags});
+                                  };}(outActive, tg)}>Out This Game</span>
+                                </span>
+                              );
+                            })()}
                           </div>
-                        );
-                      });
-                    })()}
-
-                    <div style={{ borderTop:"1px solid rgba(15,31,61,0.08)", paddingTop:"10px", marginBottom:"6px" }}>
-                      <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:"6px" }}>Coach Notes</div>
-                      {(function() {
-                        var tagGroups = [];
-                        var seenTG = {};
-                        for (var tgi = 0; tgi < tagKeys.length; tgi++) {
-                          var tgrp = TAGS[tagKeys[tgi]].group || "Other";
-                          if (!seenTG[tgrp]) { seenTG[tgrp] = true; tagGroups.push(tgrp); }
-                        }
-                        return tagGroups.map(function(grp) {
-                          var keysInGroup = tagKeys.filter(function(k){ return (TAGS[k].group||"Other")===grp; });
-                          return (
-                            <div key={grp} style={{ marginBottom:"8px" }}>
-                              <div style={{ fontSize:"9px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.14em", marginBottom:"4px", fontWeight:"bold" }}>{grp}</div>
-                              <div>
-                                {keysInGroup.map(function(key) {
-                                  var t = TAGS[key]; var active = tg.indexOf(key) >= 0;
-                                  return <span key={key} style={S.badge(t.color, active)} onClick={function(k) { return function() { updatePlayer(info.name, { tags: toggle(tg, k) }); }; }(key)}>
-                                    <span style={{ width:"6px", height:"6px", borderRadius:"50%", flexShrink:0, display:"inline-block", background: active ? t.color : "rgba(15,31,61,0.2)" }}></span>
-                                    {t.label}
-                                  </span>;
-                                })}
-                              </div>
+                          <span style={{ fontSize:"10px", fontWeight:600, color:"#666666", marginTop:"8px", marginBottom:"4px", display:"block" }}>Preferred Positions</span>
+                          <div style={{ fontSize:"10px", color:C.textMuted, marginBottom:"6px" }}>
+                            Tap to add in priority order. 1st pick gets the biggest boost. Tap again to remove.
+                          </div>
+                          <div style={{ marginBottom:"6px" }}>
+                            {FIELD_POSITIONS.map(function(pos) {
+                              var rank = pr.indexOf(pos);
+                              var active = rank >= 0;
+                              var opacity = rank === 0 ? "ff" : rank === 1 ? "dd" : rank === 2 ? "bb" : rank === 3 ? "99" : "88";
+                              return (
+                                <span key={pos} onClick={function(p) { return function() { setPrefs(info.name, p, pr); }; }(pos)}
+                                  style={{ display:"inline-block", padding:"3px 8px", margin:"2px", borderRadius:"6px", fontSize:"10px", fontWeight:"bold", cursor:"pointer",
+                                    background: active ? POS_COLORS[pos] + opacity : POS_COLORS[pos]+"18",
+                                    color: active ? "#fff" : POS_COLORS[pos],
+                                    border:"1px solid " + POS_COLORS[pos] + (active ? "ff" : "44") }}>
+                                  {active ? (rank + 1) + "." : ""}{pos}
+                                </span>
+                              );
+                            })}
+                          </div>
+                          {pr.length > 0 ? (
+                            <div style={{ display:"flex", gap:"4px", flexWrap:"wrap", marginBottom:"6px", alignItems:"center" }}>
+                              <span style={{ fontSize:"10px", color:C.textMuted }}>Order:</span>
+                              {pr.map(function(pos, ri) {
+                                return (
+                                  <span key={pos} style={{ fontSize:"10px", padding:"1px 6px", borderRadius:"4px",
+                                    background: POS_COLORS[pos] + "cc", color:"#fff", fontWeight:"bold" }}>
+                                    {ri + 1}. {pos}
+                                  </span>
+                                );
+                              })}
+                              <span onClick={function() { updatePlayer(info.name, { prefs: [] }); }}
+                                style={{ fontSize:"10px", color:C.textMuted, cursor:"pointer", marginLeft:"4px", textDecoration:"underline" }}>
+                                clear
+                              </span>
                             </div>
-                          );
-                        });
-                      })()}
+                          ) : null}
+                          <span style={{ fontSize:"10px", fontWeight:600, color:"#666666", marginTop:"8px", marginBottom:"4px", display:"block" }}>Avoid Positions</span>
+                          <div style={{ display:"flex", flexWrap:"wrap", gap:"4px", marginBottom:"6px" }}>
+                            {FIELD_POSITIONS.map(function(pos) {
+                              var active = dl.indexOf(pos) >= 0;
+                              return <span key={pos} style={S.badge("#c8102e", active)} onClick={function(p) { return function() { updatePlayer(info.name, { dislikes: toggle(dl, p) }); }; }(pos)}>{pos}</span>;
+                            })}
+                          </div>
+                        </div>
+                      ) : null}
                     </div>
 
-                    <div style={{ borderTop:"1px solid rgba(15,31,61,0.08)", paddingTop:"10px", marginBottom:"10px" }}>
-                      <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:"6px" }}>Batting Skills</div>
-                      <div>
-                        {batKeys.map(function(key) {
-                          var b = BAT_SKILLS[key]; var active = bs.indexOf(key) >= 0;
-                          return <span key={key} style={S.badge(b.color, active)} onClick={function(k) { return function() { updatePlayer(info.name, { batSkills: toggle(bs, k) }); }; }(key)}>
-                            <span style={{ width:"6px", height:"6px", borderRadius:"50%", flexShrink:0, display:"inline-block", background: active ? b.color : "rgba(15,31,61,0.2)" }}></span>
-                            {b.label}
-                            <span style={{ fontSize:"9px", fontWeight:"bold", opacity: active ? 1 : 0.5 }}>{b.bonus > 0 ? "+"+b.bonus : b.bonus}</span>
-                          </span>;
-                        })}
+                    {/* ── V2 Player Profile: Fielding (+ Field Awareness) ── */}
+                    <div style={{ border:"1px solid #e5e7eb", borderRadius:"8px", marginBottom:"8px", overflow:"hidden" }}>
+                      <div onClick={function(){toggleV2Section(info.name,"Fielding");}}
+                        style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"8px 12px",
+                        background:"#f9fafb", fontSize:"12px", fontWeight:600, color:"#374151", cursor:"pointer" }}>
+                        <span>Fielding</span>
+                        <span>{isV2Open(info.name,"Fielding") ? "▼" : "▶"}</span>
                       </div>
+                      {isV2Open(info.name,"Fielding") ? (
+                        <div style={{ padding:"8px 12px", background:"white" }}>
+                          <span style={{ fontSize:"10px", fontWeight:600, color:"#666666", marginBottom:"4px", display:"block" }}>Reliability</span>
+                          <div style={{ display:"flex", flexWrap:"wrap", gap:"4px", marginBottom:"6px" }}>
+                            {[["High Reliability","high"],["Average Reliability","average"],["Needs Support","needs_support"]].map(function(opt) {
+                              var active = info.reliability === opt[1];
+                              return <span key={opt[1]} style={S.badge("#2563eb", active)} onClick={function(v,a){return function(){updatePlayer(info.name,{reliability:a?null:v});};}(opt[1],active)}>{opt[0]}</span>;
+                            })}
+                          </div>
+                          <span style={{ fontSize:"10px", fontWeight:600, color:"#666666", marginTop:"8px", marginBottom:"4px", display:"block" }}>Reaction Timing</span>
+                          <div style={{ display:"flex", flexWrap:"wrap", gap:"4px", marginBottom:"6px" }}>
+                            {[["Quick Reaction","quick"],["Average Reaction","average"],["Slow Reaction","slow"]].map(function(opt) {
+                              var active = info.reaction === opt[1];
+                              return <span key={opt[1]} style={S.badge("#2563eb", active)} onClick={function(v,a){return function(){updatePlayer(info.name,{reaction:a?null:v});};}(opt[1],active)}>{opt[0]}</span>;
+                            })}
+                          </div>
+                          <span style={{ fontSize:"10px", fontWeight:600, color:"#666666", marginTop:"8px", marginBottom:"4px", display:"block" }}>Arm Strength</span>
+                          <div style={{ display:"flex", flexWrap:"wrap", gap:"4px", marginBottom:"6px" }}>
+                            {[["Strong Arm","strong"],["Average Arm","average"],["Developing Arm","developing"]].map(function(opt) {
+                              var active = info.armStrength === opt[1];
+                              return <span key={opt[1]} style={S.badge("#2563eb", active)} onClick={function(v,a){return function(){updatePlayer(info.name,{armStrength:a?null:v});};}(opt[1],active)}>{opt[0]}</span>;
+                            })}
+                          </div>
+                          <span style={{ fontSize:"10px", fontWeight:600, color:"#666666", marginTop:"8px", marginBottom:"4px", display:"block" }}>Ball Type</span>
+                          <div style={{ display:"flex", flexWrap:"wrap", gap:"4px", marginBottom:"6px" }}>
+                            {[["Ground Ball","ground_ball"],["Fly Ball","fly_ball"],["Both","both"],["Developing","developing"]].map(function(opt) {
+                              var active = info.ballType === opt[1];
+                              return <span key={opt[1]} style={S.badge("#2563eb", active)} onClick={function(v,a){return function(){updatePlayer(info.name,{ballType:a?null:v});};}(opt[1],active)}>{opt[0]}</span>;
+                            })}
+                          </div>
+                          <span style={{ fontSize:"10px", fontWeight:600, color:"#666666", marginTop:"8px", marginBottom:"4px", display:"block" }}>Field Awareness</span>
+                          <div style={{ display:"flex", flexWrap:"wrap", gap:"4px", marginBottom:"6px" }}>
+                            {[["Knows Where to Throw","knowsWhereToThrow"],["Calls for Ball","callsForBall"],["Backs Up Plays","backsUpPlays"],["Anticipates Plays","anticipatesPlays"]].map(function(opt) {
+                              var active = !!info[opt[1]];
+                              return <span key={opt[1]} style={S.badge("#2563eb", active)} onClick={function(f,a){return function(){var patch={};patch[f]=!a;updatePlayer(info.name,patch);};}(opt[1],active)}>{opt[0]}</span>;
+                            })}
+                          </div>
+                        </div>
+                      ) : null}
                     </div>
 
-                    <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:"4px" }}>Preferred Positions</div>
-                    <div style={{ fontSize:"10px", color:C.textMuted, marginBottom:"8px" }}>
-                      Tap to add in priority order. 1st pick gets the biggest boost. Tap again to remove.
-                    </div>
-                    <div style={{ marginBottom:"10px" }}>
-                      {FIELD_POSITIONS.map(function(pos) {
-                        var rank = pr.indexOf(pos);
-                        var active = rank >= 0;
-                        // Fade the background slightly for lower-ranked prefs
-                        var opacity = rank === 0 ? "ff" : rank === 1 ? "dd" : rank === 2 ? "bb" : rank === 3 ? "99" : "88";
-                        return (
-                          <span key={pos} onClick={function(p) { return function() { setPrefs(info.name, p, pr); }; }(pos)}
-                            style={{ display:"inline-block", padding:"3px 8px", margin:"2px", borderRadius:"6px", fontSize:"10px", fontWeight:"bold", cursor:"pointer",
-                              background: active ? POS_COLORS[pos] + opacity : POS_COLORS[pos]+"18",
-                              color: active ? "#fff" : POS_COLORS[pos],
-                              border:"1px solid " + POS_COLORS[pos] + (active ? "ff" : "44") }}>
-                            {active ? (rank + 1) + "." : ""}{pos}
-                          </span>
-                        );
-                      })}
-                    </div>
-                    {pr.length > 0 ? (
-                      <div style={{ display:"flex", gap:"4px", flexWrap:"wrap", marginBottom:"6px", alignItems:"center" }}>
-                        <span style={{ fontSize:"10px", color:C.textMuted }}>Order:</span>
-                        {pr.map(function(pos, ri) {
-                          return (
-                            <span key={pos} style={{ fontSize:"10px", padding:"1px 6px", borderRadius:"4px",
-                              background: POS_COLORS[pos] + "cc", color:"#fff", fontWeight:"bold" }}>
-                              {ri + 1}. {pos}
-                            </span>
-                          );
-                        })}
-                        <span onClick={function() { updatePlayer(info.name, { prefs: [] }); }}
-                          style={{ fontSize:"10px", color:C.textMuted, cursor:"pointer", marginLeft:"4px", textDecoration:"underline" }}>
-                          clear
-                        </span>
+                    {/* ── V2 Player Profile: Batting (+ Batting Awareness) ── */}
+                    <div style={{ border:"1px solid #e5e7eb", borderRadius:"8px", marginBottom:"8px", overflow:"hidden" }}>
+                      <div onClick={function(){toggleV2Section(info.name,"Batting");}}
+                        style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"8px 12px",
+                        background:"#f9fafb", fontSize:"12px", fontWeight:600, color:"#374151", cursor:"pointer" }}>
+                        <span>Batting</span>
+                        <span>{isV2Open(info.name,"Batting") ? "▼" : "▶"}</span>
                       </div>
-                    ) : null}
+                      {isV2Open(info.name,"Batting") ? (
+                        <div style={{ padding:"8px 12px", background:"white" }}>
+                          <span style={{ fontSize:"10px", fontWeight:600, color:"#666666", marginBottom:"4px", display:"block" }}>Contact</span>
+                          <div style={{ display:"flex", flexWrap:"wrap", gap:"4px", marginBottom:"6px" }}>
+                            {[["High Contact","high"],["Medium Contact","medium"],["Developing Contact","developing"]].map(function(opt) {
+                              var active = info.contact === opt[1];
+                              return <span key={opt[1]} style={S.badge("#2563eb", active)} onClick={function(v,a){return function(){updatePlayer(info.name,{contact:a?null:v});};}(opt[1],active)}>{opt[0]}</span>;
+                            })}
+                          </div>
+                          <span style={{ fontSize:"10px", fontWeight:600, color:"#666666", marginTop:"8px", marginBottom:"4px", display:"block" }}>Power</span>
+                          <div style={{ display:"flex", flexWrap:"wrap", gap:"4px", marginBottom:"6px" }}>
+                            {[["High Power","high"],["Medium Power","medium"],["Low Power","low"]].map(function(opt) {
+                              var active = info.power === opt[1];
+                              return <span key={opt[1]} style={S.badge("#2563eb", active)} onClick={function(v,a){return function(){updatePlayer(info.name,{power:a?null:v});};}(opt[1],active)}>{opt[0]}</span>;
+                            })}
+                          </div>
+                          <span style={{ fontSize:"10px", fontWeight:600, color:"#666666", marginTop:"8px", marginBottom:"4px", display:"block" }}>Swing Discipline</span>
+                          <div style={{ display:"flex", flexWrap:"wrap", gap:"4px", marginBottom:"6px" }}>
+                            {[["Disciplined","disciplined"],["Free Swinger","free_swinger"]].map(function(opt) {
+                              var active = info.swingDiscipline === opt[1];
+                              return <span key={opt[1]} style={S.badge("#2563eb", active)} onClick={function(v,a){return function(){updatePlayer(info.name,{swingDiscipline:a?null:v});};}(opt[1],active)}>{opt[0]}</span>;
+                            })}
+                          </div>
+                          <span style={{ fontSize:"10px", fontWeight:600, color:"#666666", marginTop:"8px", marginBottom:"4px", display:"block" }}>Batting Awareness</span>
+                          <div style={{ display:"flex", flexWrap:"wrap", gap:"4px", marginBottom:"6px" }}>
+                            {[["Tracks Ball Well","tracksBallWell"],["Patient at Plate","patientAtPlate"],["Confident Hitter","confidentHitter"]].map(function(opt) {
+                              var active = !!info[opt[1]];
+                              return <span key={opt[1]} style={S.badge("#2563eb", active)} onClick={function(f,a){return function(){var patch={};patch[f]=!a;updatePlayer(info.name,patch);};}(opt[1],active)}>{opt[0]}</span>;
+                            })}
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
 
-                    <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:"6px" }}>Avoid Positions</div>
-                    <div style={{ marginBottom:"10px" }}>
-                      {FIELD_POSITIONS.map(function(pos) {
-                        var active = dl.indexOf(pos) >= 0;
-                        return <span key={pos} style={S.badge("#c8102e", active)} onClick={function(p) { return function() { updatePlayer(info.name, { dislikes: toggle(dl, p) }); }; }(pos)}>{pos}</span>;
-                      })}
+                    {/* ── V2 Player Profile: Base Running ── */}
+                    <div style={{ border:"1px solid #e5e7eb", borderRadius:"8px", marginBottom:"8px", overflow:"hidden" }}>
+                      <div onClick={function(){toggleV2Section(info.name,"Base Running");}}
+                        style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"8px 12px",
+                        background:"#f9fafb", fontSize:"12px", fontWeight:600, color:"#374151", cursor:"pointer" }}>
+                        <span>Base Running</span>
+                        <span>{isV2Open(info.name,"Base Running") ? "▼" : "▶"}</span>
+                      </div>
+                      {isV2Open(info.name,"Base Running") ? (
+                        <div style={{ padding:"8px 12px", background:"white" }}>
+                          <span style={{ fontSize:"10px", fontWeight:600, color:"#666666", marginBottom:"4px", display:"block" }}>Speed</span>
+                          <div style={{ display:"flex", flexWrap:"wrap", gap:"4px", marginBottom:"6px" }}>
+                            {[["Fast","fast"],["Average","average"],["Developing","developing"]].map(function(opt) {
+                              var active = info.speed === opt[1];
+                              return <span key={opt[1]} style={S.badge("#2563eb", active)} onClick={function(v,a){return function(){updatePlayer(info.name,{speed:a?null:v});};}(opt[1],active)}>{opt[0]}</span>;
+                            })}
+                          </div>
+                          <span style={{ fontSize:"10px", fontWeight:600, color:"#666666", marginTop:"8px", marginBottom:"4px", display:"block" }}>Running Awareness</span>
+                          <div style={{ display:"flex", flexWrap:"wrap", gap:"4px", marginBottom:"6px" }}>
+                            {[["Runs Through First","runsThroughFirst"],["Listens to Coaches","listensToCoaches"],["Aware on Bases","awareOnBases"]].map(function(opt) {
+                              var active = !!info[opt[1]];
+                              return <span key={opt[1]} style={S.badge("#2563eb", active)} onClick={function(f,a){return function(){var patch={};patch[f]=!a;updatePlayer(info.name,patch);};}(opt[1],active)}>{opt[0]}</span>;
+                            })}
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+
+                    {/* ── V2 Player Profile: Effort ── */}
+                    <div style={{ border:"1px solid #e5e7eb", borderRadius:"8px", marginBottom:"8px", overflow:"hidden" }}>
+                      <div onClick={function(){toggleV2Section(info.name,"Effort");}}
+                        style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"8px 12px",
+                        background:"#f9fafb", fontSize:"12px", fontWeight:600, color:"#374151", cursor:"pointer" }}>
+                        <span>Effort</span>
+                        <span>{isV2Open(info.name,"Effort") ? "▼" : "▶"}</span>
+                      </div>
+                      {isV2Open(info.name,"Effort") ? (
+                        <div style={{ padding:"8px 12px", background:"white" }}>
+                          <span style={{ fontSize:"10px", fontWeight:600, color:"#666666", marginBottom:"4px", display:"block" }}>Effort Level</span>
+                          <div style={{ display:"flex", flexWrap:"wrap", gap:"4px", marginBottom:"6px" }}>
+                            {[["High Effort","high"],["Average Effort","average"],["Needs Encouragement","needs_encouragement"]].map(function(opt) {
+                              var active = info.effort === opt[1];
+                              return <span key={opt[1]} style={S.badge("#2563eb", active)} onClick={function(v,a){return function(){updatePlayer(info.name,{effort:a?null:v});};}(opt[1],active)}>{opt[0]}</span>;
+                            })}
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+
+                    {/* ── V2 Player Profile: Development Focus ── */}
+                    <div style={{ border:"1px solid #e5e7eb", borderRadius:"8px", marginBottom:"8px", overflow:"hidden" }}>
+                      <div onClick={function(){toggleV2Section(info.name,"Development Focus");}}
+                        style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"8px 12px",
+                        background:"#f9fafb", fontSize:"12px", fontWeight:600, color:"#374151", cursor:"pointer" }}>
+                        <span>Development Focus</span>
+                        <span>{isV2Open(info.name,"Development Focus") ? "▼" : "▶"}</span>
+                      </div>
+                      {isV2Open(info.name,"Development Focus") ? (
+                        <div style={{ padding:"8px 12px", background:"white" }}>
+                          <span style={{ fontSize:"10px", fontWeight:600, color:"#666666", marginBottom:"4px", display:"block" }}>Development Priority</span>
+                          <div style={{ display:"flex", flexWrap:"wrap", gap:"4px", marginBottom:"6px" }}>
+                            {[["Needs Infield Reps","infield"],["Needs Outfield Reps","outfield"],["Balanced","balanced"]].map(function(opt) {
+                              var active = info.developmentFocus === opt[1];
+                              return <span key={opt[1]} style={S.badge("#2563eb", active)} onClick={function(v,a){return function(){updatePlayer(info.name,{developmentFocus:a?null:v});};}(opt[1],active)}>{opt[0]}</span>;
+                            })}
+                          </div>
+                        </div>
+                      ) : null}
                     </div>
 
                     {(function() {
