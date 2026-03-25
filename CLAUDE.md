@@ -216,6 +216,12 @@ backend/
 
 ## Version History
 
+### v1.3.4 — March 25, 2026
+- Fix: batting averages no longer show leading zero (.333 not 0.333)
+- Fix: zero at-bats now shows --- instead of 0.000 or NaN
+- Fix: counting stats (AB, H, R, RBI) always display as integers
+- fmtAvg and fmtStat helpers applied across all 6 display locations
+
 ### v1.3.3 — March 25, 2026
 - Roster protection: migration never overwrites existing roster data
 - Auto-snapshot on every roster add, remove, and edit

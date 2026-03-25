@@ -49,6 +49,13 @@
 - 10-player field configuration: LC + RC replace CF in outfield; 1 bench slot per inning (schema v2, migration auto-remaps saved CF→LC)
 - First-time coach onboarding modal (5-step in-app walkthrough, localStorage completion tracking, always re-accessible via "Getting Started" button in Roster tab)
 
+### v1.3.4 — March 25, 2026
+#### Batting Stat Display Fixes
+- Batting averages no longer show leading zero (.333 not 0.333)
+- Zero at-bats now shows --- instead of 0.000 or NaN
+- Counting stats (AB, H, R, RBI) always display as integers, never as decimals
+- `fmtAvg` and `fmtStat` helpers applied across all 6 display locations: player cards, Quick Summary table, batting tab season stats, batting order card, schedule game-entry AVG
+
 ### v1.3.3 — March 25, 2026
 #### Roster Protection System
 - Migration fix: schedule-only update for existing teams — roster never overwritten by re-seed

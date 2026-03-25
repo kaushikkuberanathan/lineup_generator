@@ -130,9 +130,19 @@ var DEFAULT_ROSTER = [];
 var _mem = {};
 var SCHEMA_VERSION = 2;
 
-var APP_VERSION = "1.3.3";
+var APP_VERSION = "1.3.4";
 
 var VERSION_HISTORY = [
+  {
+    version: "1.3.4",
+    date: "March 25, 2026",
+    changes: [
+      "Fix: batting averages no longer show leading zero (.333 not 0.333)",
+      "Fix: zero at-bats now shows --- instead of 0.000 or NaN",
+      "Fix: counting stats (AB, H, R, RBI) always display as integers",
+      "Shared fmtAvg and fmtStat helpers applied across all 6 display locations"
+    ]
+  },
   {
     version: "1.3.3",
     date: "March 25, 2026",
