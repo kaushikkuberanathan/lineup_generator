@@ -225,7 +225,7 @@ router.post(
 router.get('/me', requireAuth, async (req, res) => {
   const userId = req.user.id;
 
-  const [{ data: profile }, { data: memberships }] = await Promise.all([
+  const [{ data: profile, error: profileErr }, { data: memberships, error: membershipsErr }] = await Promise.all([
     supabaseAdmin.from('profiles').select('first_name, last_name, phone_e164').eq('id', userId).maybeSingle(),
     supabaseAdmin
       .from('team_memberships')
@@ -233,6 +233,9 @@ router.get('/me', requireAuth, async (req, res) => {
       .eq('user_id', userId)
       .eq('status', 'active'),
   ]);
+
+  console.log('[me debug] userId:', userId, 'profile:', profile, 'memberships:', memberships);
+  console.log('[me debug] errors:', profileErr, membershipsErr);
 
   return res.status(200).json({
     id: userId,
