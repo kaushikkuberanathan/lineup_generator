@@ -953,6 +953,25 @@ var S = {
 
 
 // ============================================================
+// BATTING STAT FORMAT HELPERS
+// ============================================================
+
+function fmtAvg(h, ab) {
+  var hits = parseInt(h, 10) || 0;
+  var atBats = parseInt(ab, 10) || 0;
+  if (atBats === 0) return '---';
+  var avg = hits / atBats;
+  if (!isFinite(avg)) return '---';
+  var str = avg.toFixed(3);
+  return str.startsWith('0.') ? str.slice(1) : str;
+}
+
+function fmtStat(val) {
+  var n = parseInt(val, 10);
+  return isNaN(n) ? '0' : String(n);
+}
+
+// ============================================================
 // MAIN COMPONENT
 // ============================================================
 
@@ -2312,6 +2331,16 @@ export default function App() {
           </div>
         </div>
 
+        {lineupDirty && roster.length > 0 && (
+          <div style={{ background:"rgba(245,200,66,0.12)", border:"1px solid rgba(245,200,66,0.4)", borderRadius:"8px", padding:"10px 14px", marginBottom:"10px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:"10px", flexWrap:"wrap" }}>
+            <div style={{ fontSize:"12px", color:"#92620a", fontWeight:"600", flex:1 }}>⚡ Player profiles updated — regenerate lineup when ready</div>
+            <div style={{ display:"flex", gap:"8px", alignItems:"center", flexShrink:0 }}>
+              <button style={{ ...S.btn("gold"), fontSize:"11px", padding:"5px 12px" }} onClick={function() { setTab("grid"); setTimeout(generateLineup, 50); }}>Go & Regenerate</button>
+              <button style={{ background:"transparent", border:"none", color:"#94a3b8", fontSize:"18px", cursor:"pointer", padding:"0 4px", lineHeight:1 }} onClick={function() { setLineupDirty(false); }}>×</button>
+            </div>
+          </div>
+        )}
+
         {!showAddForm ? (
           <button
             style={{ ...S.btn("secondary"), width:"100%", marginBottom:"14px" }}
@@ -2386,10 +2415,10 @@ export default function App() {
                           })}
                           {(!info.dislikes || info.dislikes.length === 0) ? <span style={{ color:"#ccc", fontSize:"10px" }}>none</span> : null}
                         </td>
-                        <td style={{ padding:"4px 6px", textAlign:"center" }}>{stats.ab  || "—"}</td>
-                        <td style={{ padding:"4px 6px", textAlign:"center" }}>{stats.h   || "—"}</td>
-                        <td style={{ padding:"4px 6px", textAlign:"center" }}>{stats.r   || "—"}</td>
-                        <td style={{ padding:"4px 6px", textAlign:"center" }}>{stats.rbi || "—"}</td>
+                        <td style={{ padding:"4px 6px", textAlign:"center" }}>{stats.ab  ? fmtStat(stats.ab)  : "—"}</td>
+                        <td style={{ padding:"4px 6px", textAlign:"center" }}>{stats.h   ? fmtStat(stats.h)   : "—"}</td>
+                        <td style={{ padding:"4px 6px", textAlign:"center" }}>{stats.r   ? fmtStat(stats.r)   : "—"}</td>
+                        <td style={{ padding:"4px 6px", textAlign:"center" }}>{stats.rbi ? fmtStat(stats.rbi) : "—"}</td>
                       </tr>
                     );
                   })}
@@ -2782,7 +2811,7 @@ export default function App() {
                         st.games++;
                       }
                       if (st.games === 0) { return null; }
-                      var avg = st.ab > 0 ? (st.h / st.ab).toFixed(3).replace(/^0/, "") : "-";
+                      var avg = fmtAvg(st.h, st.ab);
                       var avgColor = st.ab > 0 && (st.h/st.ab) >= 0.300 ? C.win : st.ab > 0 && (st.h/st.ab) >= 0.200 ? "#d4a017" : C.textMuted;
                       return (
                         <div style={{ marginBottom:"10px" }}>
@@ -2790,11 +2819,11 @@ export default function App() {
                           <div style={{ display:"flex", gap:"12px", padding:"8px 12px", borderRadius:"8px", background:"rgba(15,31,61,0.04)", border:"1px solid rgba(15,31,61,0.08)" }}>
                             {[
                               ["AVG", avg, avgColor],
-                              ["AB",  st.ab + "", C.text],
-                              ["H",   st.h  + "", C.text],
-                              ["R",   st.r  + "", C.text],
-                              ["RBI", st.rbi + "", C.text],
-                              ["BB",  st.bb  + "", C.text]
+                              ["AB",  fmtStat(st.ab), C.text],
+                              ["H",   fmtStat(st.h),  C.text],
+                              ["R",   fmtStat(st.r),  C.text],
+                              ["RBI", fmtStat(st.rbi), C.text],
+                              ["BB",  fmtStat(st.bb),  C.text]
                             ].map(function(row) {
                               return (
                                 <div key={row[0]} style={{ textAlign:"center" }}>
@@ -2811,16 +2840,16 @@ export default function App() {
                               return new Date(b.date + "T12:00:00") - new Date(a.date + "T12:00:00");
                             }).slice(0, 3).map(function(sg) {
                               var p = sg.battingPerf[info.name];
-                              var gameAvg = parseInt(p.ab||0,10) > 0 ? (parseInt(p.h||0,10)/parseInt(p.ab||0,10)).toFixed(3).replace(/^0/,"") : "-";
+                              var gameAvg = fmtAvg(p.h, p.ab);
                               var rc = sg.result === "W" ? C.win : sg.result === "L" ? C.red : "#d4a017";
                               return (
                                 <div key={sg.id} style={{ display:"flex", alignItems:"center", gap:"8px", fontSize:"11px", padding:"3px 0", borderBottom:"1px solid rgba(15,31,61,0.04)" }}>
                                   <span style={{ fontSize:"10px", fontWeight:"bold", color:rc, minWidth:"12px" }}>{sg.result}</span>
                                   <span style={{ color:C.textMuted, flex:1 }}>vs {sg.opponent}</span>
-                                  <span style={{ color:C.textMuted }}>{p.ab || 0}-AB</span>
-                                  <span style={{ color:C.textMuted }}>{p.h || 0}-H</span>
-                                  {p.r  ? <span style={{ color:C.textMuted }}>{p.r}-R</span>   : null}
-                                  {p.rbi ? <span style={{ color:C.textMuted }}>{p.rbi}-RBI</span> : null}
+                                  <span style={{ color:C.textMuted }}>{fmtStat(p.ab)}-AB</span>
+                                  <span style={{ color:C.textMuted }}>{fmtStat(p.h)}-H</span>
+                                  {p.r  ? <span style={{ color:C.textMuted }}>{fmtStat(p.r)}-R</span>   : null}
+                                  {p.rbi ? <span style={{ color:C.textMuted }}>{fmtStat(p.rbi)}-RBI</span> : null}
                                   <span style={{ fontWeight:"bold", color: parseInt(p.ab||0,10) > 0 && (parseInt(p.h||0,10)/parseInt(p.ab||0,10)) >= 0.300 ? C.win : C.textMuted }}>{gameAvg}</span>
                                 </div>
                               );
@@ -3086,15 +3115,6 @@ export default function App() {
           </div>
         ) : null}
 
-        {lineupDirty && (
-          <div style={{ background:"rgba(245,200,66,0.12)", border:"1px solid rgba(245,200,66,0.4)", borderRadius:"8px", padding:"10px 14px", marginBottom:"10px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:"10px", flexWrap:"wrap" }}>
-            <div style={{ fontSize:"12px", color:"#92620a", fontWeight:"600", flex:1 }}>⚡ Roster changed — your lineup may be out of date</div>
-            <div style={{ display:"flex", gap:"8px", flexShrink:0 }}>
-              <button style={{ ...S.btn("gold"), fontSize:"11px", padding:"5px 12px" }} onClick={generateLineup} disabled={isHydrating}>Regenerate Lineup</button>
-              <button style={{ background:"transparent", border:"none", color:"#94a3b8", fontSize:"18px", cursor:"pointer", padding:"0 4px", lineHeight:1 }} onClick={function() { setLineupDirty(false); }}>×</button>
-            </div>
-          </div>
-        )}
         <div style={{ display:"flex", gap:"8px", marginBottom:"14px", flexWrap:"wrap", alignItems:"center" }}>
           {!lineupLocked ? (
             <button style={S.btn("gold")} onClick={generateLineup} disabled={isHydrating}>
@@ -3162,6 +3182,16 @@ export default function App() {
             </div>
           </div>
         </div>
+
+        {lineupDirty && (
+          <div style={{ background:"rgba(245,200,66,0.12)", border:"1px solid rgba(245,200,66,0.4)", borderRadius:"8px", padding:"10px 14px", marginBottom:"10px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:"10px", flexWrap:"wrap" }}>
+            <div style={{ fontSize:"12px", color:"#92620a", fontWeight:"600", flex:1 }}>⚡ Roster changed — your lineup may be out of date</div>
+            <div style={{ display:"flex", gap:"8px", flexShrink:0 }}>
+              <button style={{ ...S.btn("gold"), fontSize:"11px", padding:"5px 12px" }} onClick={generateLineup} disabled={isHydrating}>Regenerate Lineup</button>
+              <button style={{ background:"transparent", border:"none", color:"#94a3b8", fontSize:"18px", cursor:"pointer", padding:"0 4px", lineHeight:1 }} onClick={function() { setLineupDirty(false); }}>×</button>
+            </div>
+          </div>
+        )}
 
         {errorCount > 0 ? (
           <div style={{ ...S.card, borderLeft:"3px solid " + C.red, marginBottom:"14px" }}>
@@ -3509,18 +3539,18 @@ export default function App() {
                     var st = seasonStats[name];
                     if (!st) { return null; }
                     var avg = st.ab > 0 ? (st.h / st.ab) : null;
-                    var avgStr = avg !== null ? avg.toFixed(3).replace(/^0/, "") : "-";
+                    var avgStr = fmtAvg(st.h, st.ab);
                     var avgColor = avg !== null && avg >= 0.300 ? C.win : avg !== null && avg >= 0.200 ? "#d4a017" : C.text;
                     return (
                       <tr key={name} style={{ borderBottom:"1px solid rgba(15,31,61,0.04)" }}>
                         <td style={{ padding:"6px 8px", fontWeight:"bold" }}>{idx + 1}. {firstName(name)}</td>
                         <td style={{ padding:"6px 8px", textAlign:"center", color:C.textMuted }}>{st.games}</td>
-                        <td style={{ padding:"6px 8px", textAlign:"center" }}>{st.ab}</td>
-                        <td style={{ padding:"6px 8px", textAlign:"center" }}>{st.h}</td>
+                        <td style={{ padding:"6px 8px", textAlign:"center" }}>{fmtStat(st.ab)}</td>
+                        <td style={{ padding:"6px 8px", textAlign:"center" }}>{fmtStat(st.h)}</td>
                         <td style={{ padding:"6px 8px", textAlign:"center", fontWeight:"bold", color:avgColor }}>{avgStr}</td>
-                        <td style={{ padding:"6px 8px", textAlign:"center" }}>{st.r}</td>
-                        <td style={{ padding:"6px 8px", textAlign:"center" }}>{st.rbi}</td>
-                        <td style={{ padding:"6px 8px", textAlign:"center" }}>{st.bb}</td>
+                        <td style={{ padding:"6px 8px", textAlign:"center" }}>{fmtStat(st.r)}</td>
+                        <td style={{ padding:"6px 8px", textAlign:"center" }}>{fmtStat(st.rbi)}</td>
+                        <td style={{ padding:"6px 8px", textAlign:"center" }}>{fmtStat(st.bb)}</td>
                       </tr>
                     );
                   })}
@@ -3613,9 +3643,9 @@ export default function App() {
                 {st ? (
                   <div style={{ display:"flex", gap:"10px", alignItems:"center" }}>
                     {[
-                      ["AVG", st.ab > 0 ? (st.h/st.ab).toFixed(3).replace(/^0/,"") : "-", st.ab > 0 && (st.h/st.ab) >= 0.300 ? C.win : st.ab > 0 && (st.h/st.ab) >= 0.200 ? "#d4a017" : C.textMuted],
-                      ["RBI", st.rbi + "", C.textMuted],
-                      ["BB",  st.bb  + "", C.textMuted]
+                      ["AVG", fmtAvg(st.h, st.ab), st.ab > 0 && (st.h/st.ab) >= 0.300 ? C.win : st.ab > 0 && (st.h/st.ab) >= 0.200 ? "#d4a017" : C.textMuted],
+                      ["RBI", fmtStat(st.rbi), C.textMuted],
+                      ["BB",  fmtStat(st.bb),  C.textMuted]
                     ].map(function(row) {
                       return (
                         <div key={row[0]} style={{ textAlign:"center" }}>
@@ -4083,7 +4113,7 @@ export default function App() {
                             })}
                             <td style={cellStyle}>
                               <span style={{ fontSize:"12px", fontWeight:"bold", color: perf.ab > 0 ? (perf.h/perf.ab >= 0.300 ? C.win : perf.h/perf.ab >= 0.200 ? "#d4a017" : C.text) : C.textMuted }}>
-                                {perf.ab > 0 ? (perf.h / perf.ab).toFixed(3).replace(/^0/, "") : "—"}
+                                {perf.ab > 0 ? fmtAvg(perf.h, perf.ab) : "—"}
                               </span>
                             </td>
                           </tr>
@@ -5498,13 +5528,6 @@ export default function App() {
             {activeTeam ? activeTeam.name.charAt(0).toUpperCase() : "L"}
           </div>
 
-          {/* Generate Lineup button (compact) */}
-          {lineupDirty ? (
-            <button onClick={generateLineup} style={{ width:"48px", padding:"5px 2px", borderRadius:"6px", border:"none", cursor:"pointer", fontWeight:"bold", fontSize:"8px", fontFamily:"inherit", letterSpacing:"0.04em", textTransform:"uppercase", background:"linear-gradient(135deg,#f5c842,#d4a017)", color:"#0f1f3d", marginBottom:"6px", textAlign:"center", lineHeight:"1.3" }}>
-              Gen
-            </button>
-          ) : null}
-
           {/* Tab buttons — vertical, icon + abbreviated label */}
           {TEAM_TABS.map(function(t) {
             var active = tab === t.key;
@@ -5569,11 +5592,6 @@ export default function App() {
             style={{ background:"transparent", border:"1px solid rgba(255,255,255,0.25)", borderRadius:"6px", color:"rgba(255,255,255,0.7)", fontSize:"10px", fontFamily:"Georgia,serif", fontWeight:"bold", letterSpacing:"0.04em", textTransform:"uppercase", padding:"3px 8px", cursor:"pointer", whiteSpace:"nowrap", alignSelf:"flex-start", marginBottom:"3px" }}>
             ← Home
           </button>
-          {lineupDirty ? (
-            <button onClick={generateLineup} style={{ padding:"8px 16px", borderRadius:"6px", border:"none", cursor:"pointer", fontWeight:"bold", fontSize:"11px", fontFamily:"inherit", letterSpacing:"0.08em", textTransform:"uppercase", background:"linear-gradient(135deg,#f5c842,#d4a017)", color:"#0f1f3d" }}>
-              Generate Lineup
-            </button>
-          ) : null}
           <div style={{ display:"flex", flexDirection:"column", gap:"2px", flex:1, width:"100%" }}>
             <div style={{ display:"flex", gap:"2px" }}>
               {TEAM_TABS.map(function(t) {
