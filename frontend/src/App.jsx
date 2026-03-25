@@ -128,9 +128,22 @@ var DEFAULT_ROSTER = [];
 var _mem = {};
 var SCHEMA_VERSION = 2;
 
-var APP_VERSION = "1.2.1";
+var APP_VERSION = "1.3.0";
 
 var VERSION_HISTORY = [
+  {
+    version: "1.3.0",
+    date: "March 25, 2026",
+    changes: [
+      "Player profile UI rebuilt with collapsible V2 sections (Fielding, Batting, Base Running, Effort, Lineup Constraints, Development Focus)",
+      "New scoring engine drives lineup assignments using fielding reliability, reaction, arm strength, batting contact/power/discipline, and running speed",
+      "Lineup Constraints card: Skip Bench flag, Out This Game, Preferred Positions and Avoid Positions all in one place",
+      "Add Player form now uses separate First Name and Last Name fields",
+      "Last Updated timestamp on each player card",
+      "Auth system built in parallel (request access, OTP login, admin approval) — not yet gated",
+      "Home screen now shows correct player count on first load"
+    ]
+  },
   {
     version: "1.2.1",
     date: "March 24, 2026",
