@@ -9,7 +9,12 @@ const feedbackRouter = require('./src/routes/feedback');
 const app = express();
 const PORT = 5000;
 
-app.use(cors({ origin: 'https://line-up-generator.vercel.app' }));
+const ALLOWED_ORIGINS = [
+  'https://line-up-generator.vercel.app',
+  'http://localhost:5173',
+  'http://localhost:5000',
+];
+app.use(cors({ origin: ALLOWED_ORIGINS }));
 app.use(express.json());
 
 app.get('/', (req, res) => {
