@@ -63,5 +63,12 @@ export function mapPlayerToV2(player) {
     // Name parts
     firstName: player.firstName ?? (player.name ? player.name.split(" ")[0] : ""),
     lastName:  player.lastName  ?? (player.name ? player.name.split(" ").slice(1).join(" ") : ""),
+
+    // Walk-up songs
+    walkUpSong:   player.walkUpSong   ?? null,
+    walkUpArtist: player.walkUpArtist ?? null,
+    walkUpStart:  player.walkUpStart  ?? null,
+    walkUpEnd:    player.walkUpEnd    ?? null,
+    walkUpNotes:  player.walkUpNotes  ?? null,
   };
 }

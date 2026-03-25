@@ -327,7 +327,13 @@ function migrateRoster(roster) {
       outThisGame:        p.outThisGame        ?? false,
       lastUpdated:        p.lastUpdated        ?? null,
       firstName:          p.firstName          ?? (p.name ? p.name.split(" ")[0] : ""),
-      lastName:           p.lastName           ?? (p.name ? p.name.split(" ").slice(1).join(" ") : "")
+      lastName:           p.lastName           ?? (p.name ? p.name.split(" ").slice(1).join(" ") : ""),
+      // Walk-up songs
+      walkUpSong:         p.walkUpSong         ?? null,
+      walkUpArtist:       p.walkUpArtist       ?? null,
+      walkUpStart:        p.walkUpStart        ?? null,
+      walkUpEnd:          p.walkUpEnd          ?? null,
+      walkUpNotes:        p.walkUpNotes        ?? null
     };
   });
 }
@@ -1321,6 +1327,8 @@ export default function App() {
   }
   var _printNotes = useState("");
   var printNotes = _printNotes[0]; var setPrintNotes = _printNotes[1];
+  var _songsView = useState("edit");
+  var songsView = _songsView[0]; var setSongsView = _songsView[1];
   var _newGame = useState({ date:"", time:"", location:"", opponent:"", result:"", ourScore:"", theirScore:"", battingPerf:{} });
   var newGame = _newGame[0]; var setNewGame = _newGame[1];
   var _editGame = useState(null);
@@ -2951,8 +2959,8 @@ export default function App() {
       "3B":"#7a1a10", "P":"#7a1a10", "1B":"#7a1a10",
       "C":"#14406e"
     };
-    var BOX_H = isSingle ? 54 : 82;
-    var VB_H  = isSingle ? 640 : 680;
+    var BOX_H = isSingle ? 54 : (30 + (localInnArr.length * 11) + 4);
+    var VB_H  = isSingle ? 640 : (555 + BOX_H + 30);
     var SVG_POSITIONS = isSingle ? [
       { pos:"LF", x:42,  y:175, w:112, h:BOX_H },
       { pos:"LC", x:170, y:138, w:112, h:BOX_H },
@@ -3021,7 +3029,7 @@ export default function App() {
                     {(function() { var n = getPlayerFn(slot.pos, selectedInning); return n ? firstName(n) : "-"; })()}
                   </text>
                 ) : (
-                  localInnArr.slice(0, Math.min(4, localInnArr.length)).map(function(ii, i) {
+                  localInnArr.map(function(ii, i) {
                     var n = getPlayerFn(slot.pos, ii);
                     return (
                       <text key={ii} x={cx} y={slot.y + 30 + (i * 11)} textAnchor="middle"
@@ -3681,6 +3689,212 @@ export default function App() {
             );
           })}
         </div>
+      </div>
+    );
+  }
+
+  // ============================================================
+  // SONGS TAB — helpers
+  // ============================================================
+  function shareSongsList() {
+    var lines = [];
+    lines.push(activeTeam ? activeTeam.name + " — Walk-Up Songs" : "Walk-Up Songs");
+    lines.push("---");
+    battingOrder.forEach(function(name, idx) {
+      var player = roster.find(function(r) { return r.name === name; });
+      if (!player) return;
+      lines.push("#" + (idx + 1) + " " + firstName(name));
+      if (player.walkUpSong)   lines.push("🎵 " + player.walkUpSong);
+      if (player.walkUpArtist) lines.push("🎤 " + player.walkUpArtist);
+      if (player.walkUpStart && player.walkUpEnd) lines.push("⏱ " + player.walkUpStart + " → " + player.walkUpEnd);
+      if (player.walkUpNotes)  lines.push("📝 " + player.walkUpNotes);
+      lines.push("");
+    });
+    var text = lines.join("\n");
+    if (navigator.share) {
+      navigator.share({ title: "Walk-Up Songs", text: text });
+    } else {
+      navigator.clipboard.writeText(text).then(function() {
+        alert("Songs list copied to clipboard!");
+      });
+    }
+  }
+
+  function printSongsList() {
+    var doc = new jsPDF({ unit:"pt", format:"letter" });
+    var y = 40;
+    var pageW = doc.internal.pageSize.getWidth();
+
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.text(activeTeam ? activeTeam.name + " — Walk-Up Songs" : "Walk-Up Songs", pageW / 2, y, { align:"center" });
+    y += 30;
+
+    battingOrder.forEach(function(name, idx) {
+      var player = roster.find(function(r) { return r.name === name; });
+      if (!player) return;
+
+      if (y > 700) { doc.addPage(); y = 40; }
+
+      doc.setFontSize(13);
+      doc.setFont("helvetica", "bold");
+      doc.text("#" + (idx + 1) + "  " + name, 40, y);
+      y += 18;
+
+      if (player.walkUpSong) {
+        doc.setFontSize(11);
+        doc.setFont("helvetica", "normal");
+        doc.text("Song: " + player.walkUpSong, 56, y);
+        y += 15;
+      }
+      if (player.walkUpArtist) {
+        doc.text("Artist: " + player.walkUpArtist, 56, y);
+        y += 15;
+      }
+      if (player.walkUpStart && player.walkUpEnd) {
+        doc.text("Time: " + player.walkUpStart + " to " + player.walkUpEnd, 56, y);
+        y += 15;
+      }
+      if (player.walkUpNotes) {
+        doc.setTextColor(120, 120, 120);
+        doc.text("Note: " + player.walkUpNotes, 56, y);
+        doc.setTextColor(0, 0, 0);
+        y += 15;
+      }
+      y += 10;
+    });
+
+    doc.save((activeTeam ? activeTeam.name.replace(/\s+/g, "-") : "team") + "-walkup-songs.pdf");
+  }
+
+  // ============================================================
+  // SONGS TAB
+  // ============================================================
+  function renderSongs() {
+    return (
+      <div>
+        {/* ── Header row ───────────────────────────────────── */}
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"14px", flexWrap:"wrap", gap:"8px" }}>
+          <div style={{ fontWeight:"bold", fontSize:"16px", color:C.navy }}>Walk-Up Songs</div>
+          <div style={{ display:"flex", gap:"4px", background:"rgba(15,31,61,0.06)", borderRadius:"8px", padding:"3px" }}>
+            {[["Edit","edit"],["Game Day View","display"]].map(function(opt) {
+              var active = songsView === opt[1];
+              return (
+                <button key={opt[1]}
+                  style={{ padding:"5px 12px", borderRadius:"6px", border:"none", cursor:"pointer", fontSize:"11px", fontWeight:"bold", fontFamily:"inherit",
+                    background: active ? C.white : "transparent",
+                    color: active ? C.navy : C.textMuted,
+                    boxShadow: active ? "0 1px 3px rgba(0,0,0,0.1)" : "none" }}
+                  onClick={function(v) { return function() { setSongsView(v); }; }(opt[1])}>
+                  {opt[0]}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {songsView === "edit" ? (
+          <div>
+            {battingOrder.map(function(name, idx) {
+              var player = roster.find(function(r) { return r.name === name; });
+              if (!player) return null;
+              return (
+                <div key={name} style={{ ...S.card, marginBottom:"8px" }}>
+                  <div style={{ fontWeight:"bold", fontSize:"13px", color:C.navy, marginBottom:"10px" }}>
+                    #{idx + 1} &nbsp; {firstName(name)}
+                  </div>
+                  <div style={{ display:"grid", gap:"6px" }}>
+                    <input
+                      style={{ width:"100%", padding:"7px 10px", borderRadius:"6px", border:"1px solid rgba(15,31,61,0.15)", fontSize:"13px", fontFamily:"inherit", boxSizing:"border-box" }}
+                      type="text" placeholder="Song title"
+                      value={player.walkUpSong || ""}
+                      onChange={function(e) { updatePlayer(name, { walkUpSong: e.target.value || null }); }}
+                    />
+                    <input
+                      style={{ width:"100%", padding:"7px 10px", borderRadius:"6px", border:"1px solid rgba(15,31,61,0.15)", fontSize:"13px", fontFamily:"inherit", boxSizing:"border-box" }}
+                      type="text" placeholder="Artist name"
+                      value={player.walkUpArtist || ""}
+                      onChange={function(e) { updatePlayer(name, { walkUpArtist: e.target.value || null }); }}
+                    />
+                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"6px" }}>
+                      <input
+                        style={{ padding:"7px 10px", borderRadius:"6px", border:"1px solid rgba(15,31,61,0.15)", fontSize:"13px", fontFamily:"inherit" }}
+                        type="text" placeholder="Start e.g. 0:45"
+                        value={player.walkUpStart || ""}
+                        onChange={function(e) { updatePlayer(name, { walkUpStart: e.target.value || null }); }}
+                      />
+                      <input
+                        style={{ padding:"7px 10px", borderRadius:"6px", border:"1px solid rgba(15,31,61,0.15)", fontSize:"13px", fontFamily:"inherit" }}
+                        type="text" placeholder="End e.g. 1:10"
+                        value={player.walkUpEnd || ""}
+                        onChange={function(e) { updatePlayer(name, { walkUpEnd: e.target.value || null }); }}
+                      />
+                    </div>
+                    <input
+                      style={{ width:"100%", padding:"7px 10px", borderRadius:"6px", border:"1px solid rgba(15,31,61,0.15)", fontSize:"13px", fontFamily:"inherit", boxSizing:"border-box" }}
+                      type="text" placeholder="Notes for coordinator"
+                      value={player.walkUpNotes || ""}
+                      onChange={function(e) { updatePlayer(name, { walkUpNotes: e.target.value || null }); }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+            <div style={{ display:"flex", gap:"8px", marginTop:"16px" }}>
+              <button style={S.btn("primary")} onClick={shareSongsList}>Share Songs List</button>
+              <button style={S.btn("ghost")} onClick={printSongsList}>Print Songs List</button>
+            </div>
+          </div>
+        ) : (
+          <div>
+            {/* Game Day View header actions */}
+            <div style={{ display:"flex", gap:"8px", marginBottom:"14px", flexWrap:"wrap" }}>
+              <button style={{ ...S.btn("ghost"), fontSize:"12px" }} onClick={function() { setSongsView("edit"); }}>← Edit</button>
+              <button style={S.btn("primary")} onClick={shareSongsList}>Share</button>
+              <button style={S.btn("ghost")} onClick={printSongsList}>Print</button>
+            </div>
+
+            {battingOrder.map(function(name, idx) {
+              var player = roster.find(function(r) { return r.name === name; });
+              if (!player) return null;
+              var hasSong = player.walkUpSong || player.walkUpArtist || player.walkUpStart || player.walkUpNotes;
+              return (
+                <div key={name} style={{ background:C.white, border:"1px solid #e2e8f0", borderRadius:"10px", padding:"14px", marginBottom:"8px",
+                  opacity: hasSong ? 1 : 0.5 }}>
+                  <div style={{ fontWeight:"bold", fontSize:"13px", color:C.navy, marginBottom: hasSong ? "8px" : 0 }}>
+                    #{idx + 1} &nbsp; {firstName(name)}
+                  </div>
+                  {hasSong ? (
+                    <div>
+                      {player.walkUpSong ? (
+                        <div style={{ fontSize:"15px", fontWeight:"600", color:"#1e293b", marginBottom:"3px" }}>
+                          🎵 {player.walkUpSong}
+                        </div>
+                      ) : null}
+                      {player.walkUpArtist ? (
+                        <div style={{ fontSize:"12px", color:"#64748b", marginBottom:"2px" }}>
+                          🎤 {player.walkUpArtist}
+                        </div>
+                      ) : null}
+                      {player.walkUpStart && player.walkUpEnd ? (
+                        <div style={{ fontSize:"12px", color:"#64748b", marginBottom:"2px" }}>
+                          ⏱ {player.walkUpStart} → {player.walkUpEnd}
+                        </div>
+                      ) : null}
+                      {player.walkUpNotes ? (
+                        <div style={{ fontSize:"11px", color:"#94a3b8", fontStyle:"italic" }}>
+                          📝 {player.walkUpNotes}
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <div style={{ fontSize:"11px", color:"#94a3b8" }}>No song set</div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     );
   }
@@ -5502,6 +5716,7 @@ export default function App() {
     { key:"roster",   label:"Roster"   },
     { key:"grid",     label:"Defense"  },
     { key:"batting",  label:"Batting"  },
+    { key:"songs",    label:"Songs"    },
     { key:"schedule", label:"Schedule" },
     { key:"print",    label:"Print"    },
   ];
@@ -5517,6 +5732,7 @@ export default function App() {
       {tab === "roster"   ? renderRoster()   : null}
       {tab === "grid"     ? renderGrid()     : null}
       {tab === "batting"  ? renderBatting()  : null}
+      {tab === "songs"    ? renderSongs()    : null}
       {tab === "schedule" ? renderSchedule() : null}
       {tab === "feedback" ? renderFeedback() : null}
       {tab === "print"    ? renderPrint()    : null}
