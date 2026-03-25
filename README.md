@@ -1,115 +1,140 @@
-# Lineup Generator ⚾🥎
+# ⚾ Lineup Generator
 
-**Baseball and softball lineup management for youth coaches.**
+> **Baseball and softball lineup management for youth coaches — built on the sideline, for the sideline.**
 
-A Progressive Web App that auto-generates defensive lineups, tracks batting order, manages schedules, and syncs data to the cloud — built to be used on the sideline, on any device.
-
-🌐 **Live app:** [line-up-generator.vercel.app](https://line-up-generator.vercel.app)
+🌐 **Live app: [line-up-generator.vercel.app](https://line-up-generator.vercel.app)**
 
 ---
 
-## What it does
+## The Problem Every Youth Coach Knows
 
-### Auto-assign defensive lineup
-The engine scores every player for every position using multiple layers of logic — skill badges, preferred positions, coach tags, dislike penalties, consecutive inning rules, outfield repeat prevention, and bench equity. It runs up to 8 attempts with shuffled ordering and returns the best valid result with warnings for any violations.
+It's 10 minutes before game time. You've got 11 kids, parents watching, and a blank lineup card.
 
-### Diamond view
-Visual field layout showing all 10 positions on a realistic green field with dirt infield and outfield arc. Filter to a single inning (tap "4" to see only inning 4 assignments) or view all innings at once. Works in both the Defense tab and the Print/Share view.
+Recreational youth baseball and softball coaches face the same impossible puzzle every single week:
 
-### Realistic field diamond view
-Green field background with dirt infield, outfield arc, base paths, and pitcher mound. Positions placed at true field coordinates — LF/LC/RC/RF in the outfield arc, SS/2B flanking second base, 3B/P/1B near the base corners, C below home plate.
+- 🧒 **Every kid must play** — league rules mandate minimum innings, and they will be enforced
+- ⚖️ **Fairness is everything** — if one kid never plays shortstop while another always does, you *will* hear about it
+- 🔄 **Position variety matters** — player development means rotating kids through new spots, not defaulting to what's easy
+- 🤯 **No two games are the same** — absences, injuries, a player who just can't catch today — last week's lineup doesn't apply
 
-### Batting order
-Drag-to-reorder with full touch support on mobile. Season batting stats (AVG, AB, H, R, RBI) tracked per player from game results. AVG is calculated automatically from H ÷ AB and color-coded live.
-
-### Schedule management
-- Add games manually or import from text/photos using AI (Claude)
-- Log game results with one tap (W / L / T / Rain)
-- Track scores and individual batting performance per game
-
-### PDF + sharing
-- Download a branded PDF of the lineup card
-- Share via iOS/Android OS share sheet
-- Generate a read-only share link for assistant coaches and score keepers — shows diamond view, batting order, inning filter, no editing possible
-
-### Links
-Quick-access tab with external resources — county game schedule, field/cage request form, Sharon Springs Athletics, inclement weather updates, and Status Me alert sign-up.
-
-### Feedback & bug reporting
-In-app tab for free-form coach feedback and bug reports. Submissions are persisted in localStorage and visible to the developer.
-
-### Export / Import backup
-Download the full team as a JSON file. Restore from backup on any device.
-
-### Finalize lineup
-Lock the lineup before game time. Prevents accidental edits while keeping the data visible.
+Most coaches solve this with a mental spreadsheet, a scribbled notepad, or a chaotic group text. The result: **more time spent on logistics than on actually coaching kids.**
 
 ---
 
-## Stack
+## What This App Does
 
-| Layer | Technology |
+Lineup Generator eliminates the pre-game scramble.
+
+Input your roster once. Tap generate. Walk onto the field with a complete, constraint-validated lineup in under 60 seconds.
+
+### Core Workflows
+
+**🏟️ Auto-Generate Defensive Lineup**
+The engine scores every player for every position across all innings — preferred positions, skill attributes, bench equity, back-to-back rules, outfield repeat prevention, and more. It runs up to 8 attempts and returns the best valid result. Coaches see warnings for any violations, not silent failures.
+
+**📋 Batting Order**
+Drag-to-reorder with full touch support. Season stats (AVG, AB, H, R, RBI) tracked per player from game results. Averages calculated and color-coded live — so decisions are backed by data, not guesswork.
+
+**💎 Diamond View**
+A realistic SVG field layout showing all 10 positions. Filter to a single inning ("show me inning 4 only") or view the full rotation at once. Built for a phone screen in a dugout, not a desktop dashboard.
+
+**📅 Schedule + Game Logging**
+Add games manually or let AI parse a schedule from a photo or a text paste. Log results with one tap. Track individual batting stats per game across the full season.
+
+**📄 Print & Share**
+Download a branded PDF lineup card. Generate a read-only share link for assistant coaches and scorekeepers — they see the diamond view, batting order, and inning filter with zero editing access. Works on any device, no app install required.
+
+**☁️ Cloud Sync + Offline**
+Data lives in Supabase and localStorage simultaneously. Fully usable with no signal — coaches always have their complete lineup at the field.
+
+**📱 PWA — Install Like a Native App**
+Installable on iOS and Android from the browser. No App Store. No Play Store. Tap "Add to Home Screen" and it works like a native app from that point forward.
+
+---
+
+## Who This Is For
+
+| User | What They Need | How the App Serves Them |
+|---|---|---|
+| 🧢 **Head Coach** | Fair lineup, fast — under 2 min before a game | Auto-assign engine + manual overrides + print/share |
+| 🤝 **Assistant Coach** | Read access to the current lineup | Read-only share link, no login required |
+| 📊 **Scorekeeper** | Batting order + defensive positions, clearly laid out | Share link with inning filter + PDF card |
+| 👨‍👩‍👧 **Parent** | Know where their kid is playing, without texting the coach | Share link — opens on any phone, no account needed |
+| 🗂️ **Team Coordinator** | Schedule visibility and logistics | Schedule tab + game result logging |
+
+> **Guiding principle:** If a coach can't use this in under 2 minutes before a game, the system is too complex.
+
+---
+
+## Built With Claude Code + Vibe Coding
+
+This is a real-world example of what **AI-assisted development** makes possible for a domain expert who isn't a full-time engineer.
+
+### What "Vibe Coding" Actually Means Here
+
+Vibe coding isn't about pasting prompts and hoping for the best. It's a disciplined, iterative co-design process — human judgment drives *what* to build, AI capability accelerates *how* it gets built.
+
+Here's what that looked like in practice:
+
+| Challenge | How Claude Code helped |
 |---|---|
-| Frontend | React 18 + Vite 5 |
-| Database | Supabase (Postgres + JSONB) |
-| Backend / AI proxy | Express on Render |
-| AI features | Anthropic Claude API |
-| PDF generation | jsPDF (loaded on demand) |
-| PWA | vite-plugin-pwa + Workbox |
-| Frontend hosting | Vercel |
-| Backend hosting | Render |
+| Constraint scoring engine with 8+ logic layers | Designed the algorithm in plain language, iterated on edge cases, shipped production-ready code |
+| V2 player attribute system (fielding, batting, running) | Co-designed the data model and 9 position-specific scoring formulas |
+| Diamond SVG field with realistic coordinates | Described the visual intent, iterated on layout, got the real-geometry output |
+| Supabase + localStorage dual-sync architecture | Talked through the data flow, failure modes, and tradeoffs — got working implementation, not just a diagram |
+| PWA setup with Workbox | Resolved service worker edge cases through conversation |
+| Schema versioning + auto-migration | Designed the V1→V2 migration runner to remap fields without data loss |
+| Deployment pipeline + cold-start mitigation | Identified the Render free-tier cold-start problem, designed the UptimeRobot keep-alive pattern |
+
+### Why This Matters Beyond This App
+
+This project is a **proof of concept for a new way to build software**:
+
+- A domain expert (coach + product leader) can ship a production-quality, cloud-connected PWA without a dedicated engineering team
+- Claude Code compresses the gap between "I know exactly what coaches need" and "it's live, versioned, and working"
+- The result isn't a prototype — it's a deployed app with real users, a real schema, a test checklist, and a multi-phase roadmap
+
+**Total time from idea to live MVP: days, not months.**
+
+This is vibe coding at its best — not generating boilerplate, but genuinely co-designing a system end-to-end with a human setting direction at every decision point.
 
 ---
 
-## Project structure
+## Feature Status
 
-```
-lineup_generator/
-├── frontend/               ← React + Vite PWA
-│   ├── src/
-│   │   ├── App.jsx         ← Main application (~5,100+ lines)
-│   │   ├── supabase.js     ← DB client + read/write helpers
-│   │   ├── main.jsx        ← React entry point
-│   │   ├── config/         ← Feature flags
-│   │   └── utils/          ← V2 scoring engine, player mapper, lineup engine
-│   ├── public/             ← PWA icons
-│   ├── index.html
-│   ├── vite.config.js      ← Vite + PWA manifest
-│   └── vercel.json         ← Vercel build config
-└── backend/                ← Express API server
-    └── index.js            ← /api/ai proxy + CORS
-```
-
----
-
-## How the data layer works
-
-Data flows through three layers simultaneously on every save:
-
-```
-User action
-    ↓
-React state      ← instant, UI never waits
-    ↓
-localStorage     ← instant, offline fallback
-    ↓
-Supabase         ← async, fire-and-forget, cloud persistence
-```
-
-On app load, data is read from localStorage first (instant), then Supabase hydrates the state in the background with the latest cloud data (~500ms). The app is fully usable offline — coaches at a field with no signal still have their complete lineup.
-
-### Database schema (Supabase)
-
-```sql
-teams (id, name, age_group, year, sport, owner_id, created_at)
-team_data (team_id, roster, schedule, practices, batting_order, grid, innings, locked)
-```
-
-All team data is stored as JSONB in a single `team_data` row per team. This mirrors the localStorage key structure and requires no transformation. The `owner_id` field is reserved for the auth layer (Phase 3).
+| Feature | Status |
+|---|---|
+| Auto-assign defensive lineup (V2 engine) | ✅ Live |
+| Manual grid overrides + Auto-Fix | ✅ Live |
+| Diamond view with inning filter | ✅ Live |
+| Batting order with drag-to-reorder + season stats | ✅ Live |
+| AI schedule import (photo + text paste) | ✅ Live |
+| Game result + per-player batting stat logging | ✅ Live |
+| PDF export + print view | ✅ Live |
+| Read-only share link (no login required) | ✅ Live |
+| Cloud sync (Supabase) + offline (localStorage) | ✅ Live |
+| PWA — installable on iOS + Android | ✅ Live |
+| Phone OTP login + multi-device sync | 🔵 Phase 3 |
+| Role-based access (Coach / Assistant / Viewer) | 🔵 Phase 3 |
+| Season-long position fairness tracking | 🔵 Phase 3 |
+| Practice session log | 🟡 Backlog |
 
 ---
 
-## Running locally
+## Roadmap
+
+See [`ROADMAP.md`](./docs/product/ROADMAP.md) for the full prioritized backlog.
+
+**Coming next:**
+- Mobile batting reorder arrow fallback (touch drag gap on iOS)
+- Print card metadata — team name, date, opponent pulled from game context
+- "Revert to Generated" button after manual grid edits
+- GitHub Actions CI — block deploys on failing engine tests
+- Phase 3: Supabase OTP auth + multi-coach invite flow
+
+---
+
+## Quick Start (Local)
 
 ```bash
 # Clone
@@ -119,91 +144,40 @@ cd lineup_generator
 # Frontend
 cd frontend
 npm install
-cp .env.example .env.local   # fill in Supabase keys
+cp .env.example .env.local   # add Supabase keys
 npm run dev                   # http://localhost:5173
 
 # Backend (separate terminal)
 cd ../backend
 npm install
-cp .env.example .env.local   # fill in ANTHROPIC_API_KEY
+cp .env.example .env.local   # add ANTHROPIC_API_KEY
 npm start                     # http://localhost:3001
 ```
 
-### Environment variables
-
-**frontend/.env.local**
-```
-VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-```
-
-**backend/.env.local**
-```
-ANTHROPIC_API_KEY=sk-ant-...
-```
-
 ---
 
-## Deploying
+## Technical Deep Dive
 
-### Frontend → Vercel
-The `frontend/vercel.json` handles build config automatically. Connect the repo to Vercel, add the two `VITE_SUPABASE_*` env vars, deploy.
+For architecture, data models, scoring engine logic, API design, database schema, deployment setup, and version management — see:
 
-### Backend → Render
-Connect the repo to Render, set root directory to `backend/`, add `ANTHROPIC_API_KEY` env var. Render auto-deploys on push.
-
-### Database → Supabase
-Run the schema SQL from `SUPABASE-IMPLEMENTATION.md` in the Supabase SQL Editor.
-
----
-
-## Lineup engine
-
-The auto-assign engine (`App.jsx` — `autoAssign` function) works in two phases per inning:
-
-**Phase 1 — Bench selection**
-Players beyond 10 are benched (10 players on field, 1 bench slot per inning for an 11-player roster). Players with `benchOnce` tag can only sit once per game. Players who sat last inning must play this inning. Bench candidates are sorted by bench equity (fewest prior bench innings).
-
-**Phase 2 — Field assignment**
-Outfield is filled first (LC → RC → LF → RF) using a hard block on repeat outfield positions. There is no CF — the four outfield positions are LF, LC, RC, and RF. Infield is assigned most-constrained-first. Each position is scored with 8 layers:
-
-1. Outfield repeat hard block (−999)
-2. Skill badge weights (averaged across active badges)
-3. Preferred position bonus (+30/+24/+18/+12/+8 by rank)
-4. Coach tag modifiers (additive)
-5. Position dislike penalty (−50)
-6. Consecutive infield hard block (−998)
-7. Spread penalty (−10 per prior inning at same position)
-8. Bench equity bonus (+4 per prior bench inning)
-
-The engine runs up to 8 times with shuffled roster order and returns the attempt with the fewest validation violations.
-
-As of v1.3.0, a V2 scoring engine (`lineupEngineV2.js`) uses player-level attributes (fielding reliability, reaction, arm strength, batting contact/power/discipline, running speed) to compute position fit scores and assign players to positions deterministically. The V2 engine is active by default with automatic fallback to V1.
-
-**Field layout (diamond view)**
-The diamond view renders an SVG field with a green background, outfield arc, dirt infield ellipse, base diamond, and pitcher mound. All 10 position boxes use a dual-zone design: a dark header band (color-coded by position group) and a player name area below. In single-inning mode (680×640 viewBox), each box shows the player's first name at 14px bold with an inning badge and bench player pill. In all-innings mode (680×680 viewBox), each box shows a compact list of first names per inning slot with no numbered prefix.
+📄 **[Solution Design →](./docs/SOLUTION_DESIGN.md)**
 
 ---
 
 ## Documentation
 
-- [Roadmap](docs/product/ROADMAP.md)
-- [User Personas](docs/product/PERSONAS.md)
-- [Coach Onboarding Guide](docs/product/ONBOARDING.md)
-- [Pre-Deploy Test Checklist](docs/testing/PRE_DEPLOY_CHECKLIST.md)
-
----
-
-## Roadmap
-
-- **Phase 3a** — Supabase Auth (phone OTP login, no passwords)
-- **Phase 3b** — Role-based access (Coach / Assistant / Viewer)
-- **Phase 3c** — Multi-device realtime sync via Supabase Realtime
-- **Phase 3e** — iCal schedule import
-- **Phase 4** — Quality & Automation (CI/CD, E2E tests, visual regression, cross-browser matrix)
+- 📋 [Product Roadmap](./docs/product/ROADMAP.md)
+- 👤 [User Personas](./docs/product/USER_PERSONAS.md)
+- 🧭 [Coach Onboarding Guide](./docs/product/COACH_ONBOARDING.md)
+- ✅ [Pre-Deploy Test Checklist](./docs/product/PRE_DEPLOY_CHECKLIST.md)
+- 🗄️ [Supabase Implementation](./docs/SUPABASE-IMPLEMENTATION.md)
 
 ---
 
 ## License
 
-MIT
+MIT — use it, fork it, build your own version for soccer or lacrosse or whatever sport is running your weekends.
+
+---
+
+*Built with ❤️, Claude Code, and hard-won knowledge of what actually matters at 8U.*

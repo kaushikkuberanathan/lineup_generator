@@ -1,0 +1,390 @@
+# Solution Design — Lineup Generator
+
+> Technical architecture, system design, data models, scoring engine, API contracts, and deployment details.
+>
+> For product overview, user stories, and the vibe coding story — see the **[README](../../README.md)**.
+
+---
+
+## Table of Contents
+
+1. [System Overview](#system-overview)
+2. [Architecture](#architecture)
+3. [Data Layer](#data-layer)
+4. [Database Schema](#database-schema)
+5. [Scoring Engine (V2)](#scoring-engine-v2)
+6. [Field Layout — Diamond View](#field-layout--diamond-view)
+7. [API Design](#api-design)
+8. [Frontend Architecture](#frontend-architecture)
+9. [PWA Setup](#pwa-setup)
+10. [Deployment & Infrastructure](#deployment--infrastructure)
+11. [Version Management](#version-management)
+12. [Known Tradeoffs & Future Considerations](#known-tradeoffs--future-considerations)
+
+---
+
+## System Overview
+
+A two-tier Progressive Web App:
+
+- **Frontend** — React 18 + Vite 5, deployed on Vercel
+- **Backend** — Node.js / Express, deployed on Render (free tier)
+- **Database** — Supabase (Postgres + JSONB)
+- **AI** — Anthropic Claude API (proxied through backend)
+- **Offline layer** — localStorage as cache; Supabase as source of truth
+
+---
+
+## Architecture
+
+```
+┌───────────────────────────────────────────┐
+│              Vercel (CDN)                 │
+│           React + Vite PWA                │
+│  - Roster + player profile input          │
+│  - Auto-assign trigger + override UI      │
+│  - Diamond view (SVG)                     │
+│  - Schedule + game logging                │
+│  - Print / PDF / share link               │
+└──────────────────┬────────────────────────┘
+                   │ HTTPS
+        ┌──────────┴──────────┐
+        │                     │
+        ▼                     ▼
+┌───────────────┐   ┌──────────────────────┐
+│   Supabase    │   │  Render (Node.js)    │
+│  Postgres +   │   │  Express API Server  │
+│  JSONB        │   │  /api/ai proxy       │
+│  (primary DB) │   │  CORS handler        │
+└───────────────┘   └──────────────────────┘
+                              ▲
+                              │ Ping every 5 min
+                   ┌──────────────────────┐
+                   │      UptimeRobot     │
+                   │  Cold-start mitigation│
+                   └──────────────────────┘
+```
+
+### Why This Split
+
+- Constraint scoring and AI calls live server-side to keep API keys out of the browser
+- Supabase handles persistence and will support auth + realtime in Phase 3 without infrastructure changes
+- Render free tier is sufficient for current load; cold-start risk mitigated by UptimeRobot keep-alive
+
+---
+
+## Data Layer
+
+Data flows through three layers simultaneously on every save:
+
+```
+User action
+    ↓
+React state      ← instant, UI never waits on network
+    ↓
+localStorage     ← instant write, offline fallback cache
+    ↓
+Supabase         ← async, fire-and-forget, cloud persistence
+```
+
+**On app load:**
+1. Read from localStorage instantly (app is immediately interactive)
+2. Supabase hydrates state in the background (~500ms)
+3. Supabase data wins on conflict — it's the source of truth
+
+This means coaches at a field with no signal still have their full lineup and can make changes. Those changes sync when connectivity returns.
+
+---
+
+## Database Schema
+
+```sql
+-- Team registry
+teams (
+  id          uuid PRIMARY KEY,
+  name        text,
+  age_group   text,
+  year        int,
+  sport       text,           -- 'baseball' | 'softball'
+  owner_id    uuid,           -- reserved for Phase 3 auth
+  created_at  timestamptz
+)
+
+-- All team data in a single JSONB row per team
+team_data (
+  team_id       uuid REFERENCES teams(id),
+  roster        jsonb,         -- player array with V2 attributes
+  schedule      jsonb,         -- games array with results
+  practices     jsonb,
+  batting_order jsonb,
+  grid          jsonb,         -- defensive assignment matrix
+  innings       int,           -- 4 | 5 | 6
+  locked        boolean        -- lineup finalized flag
+)
+```
+
+**Design rationale:** All team data in one JSONB row mirrors the localStorage key structure exactly, requires no transformation on read/write, and simplifies the sync logic. Schema versioning + auto-migration handles field evolution (V1→V2 player attribute migration as of v1.3.0).
+
+**Schema versioning:** A `schemaVersion` field on `team_data` drives `migrateRoster()`, which remaps V1 fields to V2 equivalents with safe defaults. CF→LC migration (schema v2) is an example — all existing `CF` position references are auto-remapped on load.
+
+---
+
+## Scoring Engine (V2)
+
+The lineup engine is a **constraint-satisfaction solver** that assigns players to positions across all innings simultaneously.
+
+### Architecture
+
+```
+lineupEngineV2.js    ← main engine, position assignment per inning
+scoringEngine.js     ← 11 shared scoring functions
+playerMapper.js      ← safe V1→V2 field mapping with defaults
+featureFlags.js      ← USE_NEW_LINEUP_ENGINE=true (V1 fallback on error)
+```
+
+### Player Attributes (V2)
+
+Each player carries structured scoring attributes:
+
+| Category | Attributes |
+|---|---|
+| **Fielding** | Reliability, Reaction Timing, Arm Strength, Ball Type Fit, Field Awareness |
+| **Batting** | Contact, Power, Swing Discipline, Batting Awareness |
+| **Running** | Speed |
+| **Constraints** | Skip Bench, Out This Game, Preferred Positions, Avoid Positions |
+
+### Scoring Layers (Phase 1 — Bench Selection)
+
+Players beyond the field capacity are benched per inning. Selection priority:
+
+1. Players flagged `benchOnce` can only sit once per game — never benched twice
+2. Players who sat last inning must play this inning (hard rule)
+3. Among remaining candidates: sorted by bench equity (fewest prior bench innings)
+
+### Scoring Layers (Phase 2 — Field Assignment)
+
+Outfield is filled first (LC → RC → LF → RF) to enforce the hard outfield-repeat block. Then infield, most-constrained-first.
+
+Each position slot is scored with 8 layers:
+
+| Layer | Weight | Type |
+|---|---|---|
+| Outfield repeat block | −999 | Hard |
+| Consecutive infield block | −998 | Hard |
+| Position dislike penalty | −50 | Hard-ish |
+| Skill badge / V2 attribute weights | Computed | Soft |
+| Preferred position bonus | +30 / +24 / +18 / +12 / +8 (by rank) | Soft |
+| Coach tag modifiers | Additive | Soft |
+| Spread penalty | −10 per prior inning at same position | Soft |
+| Bench equity bonus | +4 per prior bench inning | Soft |
+
+The engine runs up to **8 attempts with shuffled roster order**, returns the attempt with the fewest validation violations, and surfaces warnings for any that couldn't be resolved.
+
+### V2 Position Scoring Functions
+
+`scoringEngine.js` provides 11 shared functions consumed by `lineupEngineV2.js`:
+
+- `fieldScore(player, position)` — weighted fielding attribute fit for position
+- `battingScore(player)` — batting lineup slot affinity
+- `runningScore(player)` — base-running suitability
+- `positionScore(player, position)` — composite fit (fielding + constraints)
+- `benchCandidateScore(player, priorBenchInnings)` — bench equity + constraints
+- `getBallTypeFit(player, position)` — baseball vs softball ball type matching
+- `awarenessScore(player, position)` — field/batting awareness composite
+- Plus 4 supporting helpers
+
+### 10-Player Field Configuration
+
+8U leagues use 4 outfield positions: **LF, LC, RC, RF** — no CF. The engine enforces exactly 10 fielded players per inning with 1 bench slot for 11-player rosters. This is hardcoded in the position set and validated on every auto-assign run.
+
+---
+
+## Field Layout — Diamond View
+
+The diamond view renders an **SVG field** with:
+
+- Green background, outfield arc, dirt infield ellipse, base diamond, pitcher mound
+- All 10 position boxes using dual-zone design: dark header band (per position-group color) + player name area
+- **Single-inning mode** (`680×640 viewBox`): large name (14px bold), inning badge pill, bench player pill
+- **All-innings mode** (`680×680 viewBox`): compact first names per inning slot, taller 82px boxes
+
+Position colors by group:
+
+| Group | Positions | Color |
+|---|---|---|
+| Battery | P, C | Red |
+| Infield | 1B, 2B, 3B, SS | Green |
+| Outfield | LF, LC, RC, RF | Blue / Purple (LC, RC high-contrast) |
+
+First-name-only display is enforced in all views — diamond, grid, print, and share link.
+
+---
+
+## API Design
+
+The backend is a thin proxy. Business logic lives in the frontend scoring engine for now; the backend handles API key security and CORS.
+
+### `POST /api/ai`
+
+Proxies requests to the Anthropic Claude API. Used for:
+- Schedule import from photo (base64 image → structured game array)
+- Schedule import from text paste → structured game array
+- Batting scorecard parsing from photo or text dump
+
+**Request:**
+```json
+{
+  "type": "schedule_import" | "scorecard_parse",
+  "content": "<text or base64 image>",
+  "context": { "teamName": "Mud Hens", "year": 2026 }
+}
+```
+
+**Response:** Structured JSON array — game objects or batting stat objects — ready to merge into team state.
+
+### `GET /ping`
+
+Keep-alive endpoint. Returns `{ "status": "ok" }`.
+Polled by UptimeRobot every 5 minutes to prevent Render free-tier cold starts.
+
+### `GET /health`
+
+Returns server version and uptime. Used for deploy verification.
+
+```json
+{
+  "status": "healthy",
+  "version": "1.3.0",
+  "uptime": 3820
+}
+```
+
+---
+
+## Frontend Architecture
+
+### Stack
+
+| Layer | Technology |
+|---|---|
+| Framework | React 18 (functional components + hooks) |
+| Build | Vite 5 |
+| Styling | Inline styles + CSS vars (no Tailwind; single-file constraint) |
+| PDF | jsPDF (loaded on demand, not bundled) |
+| Analytics | Vercel Analytics + Mixpanel |
+| Hosting | Vercel with CI/CD on push to `main` |
+
+### Application Structure
+
+```
+frontend/src/
+├── App.jsx              ← Main application (~5,100+ lines — file split is P3 backlog)
+├── supabase.js          ← DB client + read/write helpers
+├── main.jsx             ← React entry point
+├── config/
+│   └── featureFlags.js  ← USE_NEW_LINEUP_ENGINE toggle
+└── utils/
+    ├── lineupEngineV2.js
+    ├── scoringEngine.js
+    └── playerMapper.js
+```
+
+### Key Tab Modules (inside App.jsx)
+
+| Tab | Responsibility |
+|---|---|
+| Roster | Player cards with V2 attribute editing, add/remove, constraints |
+| Field Grid | Defensive assignment matrix, auto-assign, manual overrides, per-inning summary |
+| Batting | Batting order (drag), season stats table, suggest order |
+| Schedule | Game list, AI import, result logging, batting stat entry |
+| Print | PDF export, diamond view, share link generation |
+| Links | External resources (county schedule, field requests, alerts) |
+| Feedback | Free-form coach feedback + bug reports (localStorage) |
+| About | Version history, onboarding guide, app info |
+
+### State Management
+
+All state lives in `App.jsx` via `useState` / `useReducer`. No external state library — scope doesn't warrant it at this scale. Will revisit if multi-team or realtime sync complexity increases.
+
+### Version Display
+
+`APP_VERSION` constant in `App.jsx` (~line 131) drives the "Current" badge in the About tab. The constant must match a `VERSION_HISTORY` entry to display correctly.
+
+---
+
+## PWA Setup
+
+- **Plugin:** `vite-plugin-pwa` with Workbox
+- **Manifest:** `vite.config.js` — app name, icons, theme color, display mode
+- **Service worker strategy:** Cache-first for static assets, network-first for API calls
+- **Installable:** "Add to Home Screen" prompt on iOS Safari and Android Chrome
+- **Offline:** Full app usable after first visit — localStorage layer serves all cached data
+
+---
+
+## Deployment & Infrastructure
+
+### Frontend — Vercel
+
+- Auto-deploys on push to `main`
+- Preview deployments on all PRs
+- `frontend/vercel.json` handles build config
+- Env vars: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
+
+### Backend — Render (Free Tier)
+
+- Node.js web service, root directory: `backend/`
+- Auto-deploys on push to `main`
+- Spins down after 15 minutes of inactivity
+- Env vars: `ANTHROPIC_API_KEY`
+- **Cold-start mitigation:** UptimeRobot pings `/ping` every 5 minutes
+
+**UptimeRobot setup:**
+1. Create free account at [uptimerobot.com](https://uptimerobot.com)
+2. New monitor → HTTP(S) type
+3. URL: `https://lineup-generator-backend.onrender.com/ping`
+4. Interval: 5 minutes
+
+### Database — Supabase
+
+- Run schema SQL from `SUPABASE-IMPLEMENTATION.md` in the Supabase SQL Editor
+- Anon key used for client access (RLS policies will gate this in Phase 3 auth)
+
+### Deploy Checklist
+
+Every production release requires:
+
+- [ ] Bump `APP_VERSION` in `frontend/src/App.jsx` (~line 131)
+- [ ] Prepend new entry to `VERSION_HISTORY` array (~line 133) — include version, date, changes array
+- [ ] Bump version in `frontend/package.json`
+- [ ] Bump version in `backend/package.json`
+- [ ] Add entry to `docs/product/ROADMAP.md`
+- [ ] Update `CLAUDE.md` version history section
+
+---
+
+## Version Management
+
+Versions follow **semver** (`MAJOR.MINOR.PATCH`):
+
+| Bump | When |
+|---|---|
+| `PATCH` | Bug fixes, copy changes, minor UI tweaks |
+| `MINOR` | New features, engine changes, UX improvements |
+| `MAJOR` | Breaking API contract or data model changes |
+
+The `VERSION_HISTORY` array in `App.jsx` powers the in-app changelog. The "Current" badge renders only when `APP_VERSION` matches the first entry in the array.
+
+---
+
+## Known Tradeoffs & Future Considerations
+
+| Decision | Current Rationale | When to Revisit |
+|---|---|---|
+| All logic in `App.jsx` (~5,100 lines) | Single-file build simplified early iteration | Before Phase 3 auth ships — file split is P3 backlog, will reduce feature velocity by ~40% if not done first |
+| No auth in MVP | Single-coach, single-device scope; share link is read-only | Phase 3 — Supabase OTP (Twilio toll-free verification pending) |
+| Render free tier | Zero cost for personal tool | Upgrade if cold-start latency becomes user-facing despite UptimeRobot |
+| JSONB for all team data | Mirrors localStorage, zero transformation overhead | Normalize if query patterns require filtering inside game/player arrays |
+| Backtracking solver in frontend | Fast enough at 11-player / 6-inning scale | Move server-side if multi-game batch generation or 20+ player rosters are added |
+| No TypeScript | Moved fast in MVP phase | Increasing tech debt — migration is a Phase 4 quality item |
+| No CI/CD pipeline | Manual deploy checklist covers it today | GitHub Actions CI is next sprint — block Vercel auto-deploy on failing engine tests |
