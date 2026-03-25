@@ -1611,6 +1611,20 @@ export default function App() {
     var existing = [];
     try { existing = loadJSON("feedback:submissions", []); } catch(e) {}
     try { saveJSON("feedback:submissions", existing.concat([entry])); } catch(e) {}
+    (async function() {
+      try {
+        var BACKEND = "https://lineup-generator-backend.onrender.com";
+        var sessionRes = await supabase.auth.getSession();
+        var token = sessionRes.data.session?.access_token;
+        if (token) {
+          await fetch(BACKEND + "/api/v1/feedback", {
+            method: "POST",
+            headers: { "Authorization": "Bearer " + token, "Content-Type": "application/json" },
+            body: JSON.stringify({ type: "feedback", category: entry.category, body: entry.body, changeTypes: entry.changeTypes, appVersion: entry.appVersion })
+          });
+        }
+      } catch(e) { console.warn("[feedback] POST failed:", e.message); }
+    })();
     setFbBody("");
     setFbChangeTypes([]);
     setFbCategory("General");
@@ -1625,6 +1639,20 @@ export default function App() {
     var existing = [];
     try { existing = loadJSON("feedback:bugs", []); } catch(e) {}
     try { saveJSON("feedback:bugs", existing.concat([entry])); } catch(e) {}
+    (async function() {
+      try {
+        var BACKEND = "https://lineup-generator-backend.onrender.com";
+        var sessionRes = await supabase.auth.getSession();
+        var token = sessionRes.data.session?.access_token;
+        if (token) {
+          await fetch(BACKEND + "/api/v1/feedback", {
+            method: "POST",
+            headers: { "Authorization": "Bearer " + token, "Content-Type": "application/json" },
+            body: JSON.stringify({ type: "bug", location: entry.location, body: entry.body, severity: entry.severity, appVersion: entry.appVersion })
+          });
+        }
+      } catch(e) { console.warn("[feedback] POST failed:", e.message); }
+    })();
     setBugBody("");
     setBugLocation("");
     setBugSeverity("");
