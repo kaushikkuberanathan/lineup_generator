@@ -919,6 +919,20 @@ export default function App() {
         setTeams(merged);
       }
 
+      // If a team was already active (e.g. returning user on fresh browser),
+      // hydrate its roster from Supabase so the home screen shows the correct
+      // player count without requiring the user to tap into the team first.
+      var bootActiveId = loadJSON("ui:activeTeam", null);
+      if (bootActiveId) {
+        dbLoadTeamData(bootActiveId).then(function(dbData) {
+          if (!dbData || !dbData.roster || dbData.roster.length === 0) { return; }
+          saveJSON("team:" + bootActiveId + ":roster", dbData.roster);
+          setRoster(migrateRoster(dbData.roster));
+        }).catch(function(err) {
+          console.error("[boot] failed to hydrate active team roster:", err);
+        });
+      }
+
       // MIGRATION: seed division teams that do not yet exist in DB
       // Each team gets a migration version stamp. If the stamp matches
       // the current version, skip — do not overwrite coach edits.
