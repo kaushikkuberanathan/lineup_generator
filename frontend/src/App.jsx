@@ -6,6 +6,7 @@ import { isSupabaseEnabled, dbSaveTeams, dbDeleteTeam,
 import mixpanel from 'mixpanel-browser';
 import { FEATURE_FLAGS } from '@/config/featureFlags';
 import { generateLineupV2 } from '@/utils/lineupEngineV2';
+import { useRegisterSW } from 'virtual:pwa-register/react';
 
 var MIXPANEL_TOKEN = "YOUR_MIXPANEL_TOKEN";
 if (MIXPANEL_TOKEN !== "YOUR_MIXPANEL_TOKEN") {
@@ -1191,6 +1192,17 @@ export default function App() {
   var pdfLoading = _pdfLoading[0]; var setPdfLoading = _pdfLoading[1];
   var _pdfSharing = useState(false);
   var pdfSharing = _pdfSharing[0]; var setPdfSharing = _pdfSharing[1];
+
+  const {
+    needRefresh: [needRefresh, setNeedRefresh],
+    updateServiceWorker,
+  } = useRegisterSW({
+    onRegistered(r) {
+      if (r) {
+        setInterval(() => r.update(), 60 * 60 * 1000);
+      }
+    }
+  });
 
   // Orientation detection — drives layout mode
   var _landscape = useState(
@@ -5305,6 +5317,57 @@ export default function App() {
       <div style={S.body}>
         {tabContent}
       </div>
+      {needRefresh && (
+        <div style={{
+          position: 'fixed',
+          bottom: '20px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: '#1e293b',
+          color: '#ffffff',
+          padding: '12px 20px',
+          borderRadius: '12px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          zIndex: 9999,
+          boxShadow: '0 4px 24px rgba(0,0,0,0.3)',
+          fontSize: '14px',
+          whiteSpace: 'nowrap',
+          maxWidth: '90vw',
+        }}>
+          <span>⚡ New version available</span>
+          <button
+            onClick={() => updateServiceWorker(true)}
+            style={{
+              background: '#2563eb',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '6px 14px',
+              fontSize: '13px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              flexShrink: 0,
+            }}>
+            Update Now
+          </button>
+          <button
+            onClick={() => setNeedRefresh(false)}
+            style={{
+              background: 'transparent',
+              color: '#94a3b8',
+              border: 'none',
+              fontSize: '18px',
+              cursor: 'pointer',
+              padding: '0 4px',
+              lineHeight: 1,
+              flexShrink: 0,
+            }}>
+            ×
+          </button>
+        </div>
+      )}
     </div>
   );
 }
