@@ -1176,6 +1176,8 @@ export default function App() {
   var _nln = useState(""); var newLastName  = _nln[0]; var setNewLastName  = _nln[1];
   var _showAddForm = useState(false);
   var showAddForm = _showAddForm[0]; var setShowAddForm = _showAddForm[1];
+  var _summaryOpen = useState(true);
+  var summaryOpen = _summaryOpen[0]; var setSummaryOpen = _summaryOpen[1];
   var _drag = useState(null);
   var dragPlayer = _drag[0]; var setDragPlayer = _drag[1];
   // Touch drag uses a mutable ref (window object) instead of useState to avoid
@@ -1197,8 +1199,6 @@ export default function App() {
   var v2SectionOpen = _v2sec[0]; var setV2SectionOpen = _v2sec[1];
   var _vhOpen = useState({});
   var vhOpen = _vhOpen[0]; var setVhOpen = _vhOpen[1];
-  var _sum = useState(false);
-  var showSummary = _sum[0]; var setShowSummary = _sum[1];
   var _hm = useState("welcome");
   var homeMode = _hm[0]; var setHomeMode = _hm[1];
   var _nt = useState({ name:"", ageGroup:"", year: new Date().getFullYear() });
@@ -2240,9 +2240,6 @@ export default function App() {
                 Undo ({rosterHistory.length})
               </button>
             ) : null}
-            <button style={S.btn("ghost")} onClick={function() { setShowSummary(!showSummary); }}>
-              {showSummary ? "Close Summary" : "Quick Summary"}
-            </button>
             <button style={S.btn("ghost")} onClick={function() {
               var allCol = true;
               for (var i = 0; i < roster.length; i++) {
@@ -2260,49 +2257,6 @@ export default function App() {
             </button>
           </div>
         </div>
-
-        {showSummary ? (
-          <div style={S.card}>
-            <div style={S.sectionTitle}>All Players - Quick Summary</div>
-            <div style={{ overflowX:"auto" }}>
-              <table style={{ width:"100%", borderCollapse:"collapse", fontSize:"11px" }}>
-                <thead>
-                  <tr style={{ background:"#f5efe4" }}>
-                    {["Player","Preferred","Avoids","AB","H","R","RBI"].map(function(h) {
-                      return <th key={h} style={{ padding:"7px 10px", textAlign:"left", color:"#6a7a9a", fontSize:"10px", letterSpacing:"0.1em", textTransform:"uppercase", borderBottom:"2px solid rgba(15,31,61,0.08)", whiteSpace:"nowrap" }}>{h}</th>;
-                    })}
-                  </tr>
-                </thead>
-                <tbody>
-                  {roster.map(function(info) {
-                    var stats = getRosterSeasonStats(info.name);
-                    return (
-                      <tr key={info.name} style={{ borderBottom:"1px solid rgba(15,31,61,0.05)" }}>
-                        <td style={{ padding:"8px 10px", fontWeight:"bold" }}>{firstName(info.name)}</td>
-                        <td style={{ padding:"8px 10px" }}>
-                          {(info.prefs || []).map(function(pos, idx) {
-                            return <span key={pos} style={{ fontSize:"10px", padding:"1px 6px", borderRadius:"4px", background:POS_COLORS[pos]+"cc", color:"#fff", fontWeight:"bold", marginRight:"3px" }}>{idx + 1}.{pos}</span>;
-                          })}
-                          {(!info.prefs || info.prefs.length === 0) ? <span style={{ color:"#ccc", fontSize:"10px" }}>none</span> : null}
-                        </td>
-                        <td style={{ padding:"8px 10px" }}>
-                          {(info.dislikes || []).map(function(pos) {
-                            return <span key={pos} style={{ fontSize:"10px", padding:"1px 5px", borderRadius:"4px", background:"rgba(200,16,46,0.1)", color:"#c8102e", fontWeight:"bold", marginRight:"3px", textDecoration:"line-through" }}>{pos}</span>;
-                          })}
-                          {(!info.dislikes || info.dislikes.length === 0) ? <span style={{ color:"#ccc", fontSize:"10px" }}>none</span> : null}
-                        </td>
-                        <td style={{ padding:"4px 6px", textAlign:"center" }}>{stats.ab  || "—"}</td>
-                        <td style={{ padding:"4px 6px", textAlign:"center" }}>{stats.h   || "—"}</td>
-                        <td style={{ padding:"4px 6px", textAlign:"center" }}>{stats.r   || "—"}</td>
-                        <td style={{ padding:"4px 6px", textAlign:"center" }}>{stats.rbi || "—"}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        ) : null}
 
         {!showAddForm ? (
           <button
@@ -2349,6 +2303,54 @@ export default function App() {
               persistGrid(ng);
             }}>{n}</button>;
           })}
+        </div>
+
+        <div style={{ ...S.card, marginBottom:"14px" }}>
+          <div
+            onClick={function() { setSummaryOpen(!summaryOpen); }}
+            style={{ display:"flex", justifyContent:"space-between", alignItems:"center", cursor:"pointer", marginBottom: summaryOpen ? "10px" : "0" }}>
+            <div style={S.sectionTitle}>All Players — Quick Summary</div>
+            <span style={{ fontSize:"14px", color:"#94a3b8" }}>{summaryOpen ? "▼" : "▶"}</span>
+          </div>
+          {summaryOpen && (
+            <div style={{ overflowX:"auto" }}>
+              <table style={{ width:"100%", borderCollapse:"collapse", fontSize:"11px" }}>
+                <thead>
+                  <tr style={{ background:"#f5efe4" }}>
+                    {["Player","Preferred","Avoids","AB","H","R","RBI"].map(function(h) {
+                      return <th key={h} style={{ padding:"7px 10px", textAlign:"left", color:"#6a7a9a", fontSize:"10px", letterSpacing:"0.1em", textTransform:"uppercase", borderBottom:"2px solid rgba(15,31,61,0.08)", whiteSpace:"nowrap" }}>{h}</th>;
+                    })}
+                  </tr>
+                </thead>
+                <tbody>
+                  {roster.map(function(info) {
+                    var stats = getRosterSeasonStats(info.name);
+                    return (
+                      <tr key={info.name} style={{ borderBottom:"1px solid rgba(15,31,61,0.05)" }}>
+                        <td style={{ padding:"8px 10px", fontWeight:"bold" }}>{firstName(info.name)}</td>
+                        <td style={{ padding:"8px 10px" }}>
+                          {(info.prefs || []).map(function(pos, idx) {
+                            return <span key={pos} style={{ fontSize:"10px", padding:"1px 6px", borderRadius:"4px", background:POS_COLORS[pos]+"cc", color:"#fff", fontWeight:"bold", marginRight:"3px" }}>{idx + 1}.{pos}</span>;
+                          })}
+                          {(!info.prefs || info.prefs.length === 0) ? <span style={{ color:"#ccc", fontSize:"10px" }}>none</span> : null}
+                        </td>
+                        <td style={{ padding:"8px 10px" }}>
+                          {(info.dislikes || []).map(function(pos) {
+                            return <span key={pos} style={{ fontSize:"10px", padding:"1px 5px", borderRadius:"4px", background:"rgba(200,16,46,0.1)", color:"#c8102e", fontWeight:"bold", marginRight:"3px", textDecoration:"line-through" }}>{pos}</span>;
+                          })}
+                          {(!info.dislikes || info.dislikes.length === 0) ? <span style={{ color:"#ccc", fontSize:"10px" }}>none</span> : null}
+                        </td>
+                        <td style={{ padding:"4px 6px", textAlign:"center" }}>{stats.ab  || "—"}</td>
+                        <td style={{ padding:"4px 6px", textAlign:"center" }}>{stats.h   || "—"}</td>
+                        <td style={{ padding:"4px 6px", textAlign:"center" }}>{stats.r   || "—"}</td>
+                        <td style={{ padding:"4px 6px", textAlign:"center" }}>{stats.rbi || "—"}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
         {isHydrating && roster.length === 0 && (
