@@ -216,6 +216,11 @@ backend/
 
 ## Version History
 
+### v1.3.5 — March 25, 2026
+- Fix: diamond view all-innings mode now shows all coach-configured innings (4, 5, or 6)
+- Fix: removed Math.min(4) cap that was cutting display to 4 innings regardless of config
+- Fix: position box height and SVG viewBox now scale dynamically with inning count
+
 ### v1.3.4 — March 25, 2026
 - Fix: batting averages no longer show leading zero (.333 not 0.333)
 - Fix: zero at-bats now shows --- instead of 0.000 or NaN

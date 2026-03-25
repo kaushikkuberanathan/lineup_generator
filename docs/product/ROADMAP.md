@@ -49,6 +49,12 @@
 - 10-player field configuration: LC + RC replace CF in outfield; 1 bench slot per inning (schema v2, migration auto-remaps saved CF→LC)
 - First-time coach onboarding modal (5-step in-app walkthrough, localStorage completion tracking, always re-accessible via "Getting Started" button in Roster tab)
 
+### v1.3.5 — March 25, 2026
+#### Diamond View Inning Fix
+- Diamond view all-innings mode now shows all coach-configured innings (4, 5, or 6)
+- Removed hardcoded Math.min(4) cap that silently cut display to 4 innings regardless of config
+- Position box height and SVG viewBox now scale dynamically with inning count
+
 ### v1.3.4 — March 25, 2026
 #### Batting Stat Display Fixes
 - Batting averages no longer show leading zero (.333 not 0.333)

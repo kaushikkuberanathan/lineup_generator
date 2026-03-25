@@ -130,9 +130,18 @@ var DEFAULT_ROSTER = [];
 var _mem = {};
 var SCHEMA_VERSION = 2;
 
-var APP_VERSION = "1.3.4";
+var APP_VERSION = "1.3.5";
 
 var VERSION_HISTORY = [
+  {
+    version: "1.3.5",
+    date: "March 25, 2026",
+    changes: [
+      "Fix: diamond view all-innings mode now shows all coach-configured innings (4, 5, or 6)",
+      "Fix: removed Math.min(4) cap that was cutting display to 4 innings regardless of config",
+      "Fix: position box height and SVG viewBox now scale dynamically with inning count"
+    ]
+  },
   {
     version: "1.3.4",
     date: "March 25, 2026",
