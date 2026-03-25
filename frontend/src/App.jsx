@@ -2686,6 +2686,48 @@ export default function App() {
                       ) : null}
                     </div>
 
+                    {/* ── V2 Player Profile: Walk-Up Song ── */}
+                    <div style={{ border:"1px solid #e5e7eb", borderRadius:"8px", marginBottom:"8px", overflow:"hidden" }}>
+                      <div onClick={function(){toggleV2Section(info.name,"Walk-Up Song");}}
+                        style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"8px 12px",
+                        background:"#f9fafb", fontSize:"12px", fontWeight:600, color:"#374151", cursor:"pointer" }}>
+                        <div style={{ display:"flex", alignItems:"center", gap:"6px" }}>
+                          <span>Walk-Up Song</span>
+                          {info.walkUpSong ? <span style={{ fontSize:"10px", color:"#64748b", fontWeight:"normal" }}>🎵 {info.walkUpSong}{info.walkUpArtist ? " — " + info.walkUpArtist : ""}</span> : null}
+                        </div>
+                        <span>{isV2Open(info.name,"Walk-Up Song") ? "▼" : "▶"}</span>
+                      </div>
+                      {isV2Open(info.name,"Walk-Up Song") ? (
+                        <div style={{ padding:"8px 12px", background:"white" }}>
+                          <div style={{ display:"grid", gap:"6px" }}>
+                            <div>
+                              <span style={{ fontSize:"10px", fontWeight:600, color:"#666666", marginBottom:"4px", display:"block" }}>Song Title</span>
+                              <input style={{ width:"100%", padding:"6px 8px", borderRadius:"6px", border:"1px solid #d1d5db", fontSize:"12px", fontFamily:"inherit", boxSizing:"border-box" }}
+                                type="text" placeholder="Song title" value={info.walkUpSong || ""}
+                                onChange={function(e) { updatePlayer(info.name, { walkUpSong: e.target.value || null }); }} />
+                            </div>
+                            <div>
+                              <span style={{ fontSize:"10px", fontWeight:600, color:"#666666", marginBottom:"4px", display:"block" }}>Artist</span>
+                              <input style={{ width:"100%", padding:"6px 8px", borderRadius:"6px", border:"1px solid #d1d5db", fontSize:"12px", fontFamily:"inherit", boxSizing:"border-box" }}
+                                type="text" placeholder="Artist name" value={info.walkUpArtist || ""}
+                                onChange={function(e) { updatePlayer(info.name, { walkUpArtist: e.target.value || null }); }} />
+                            </div>
+                            <div>
+                              <span style={{ fontSize:"10px", fontWeight:600, color:"#666666", marginBottom:"4px", display:"block" }}>Clip</span>
+                              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"6px" }}>
+                                <input style={{ padding:"6px 8px", borderRadius:"6px", border:"1px solid #d1d5db", fontSize:"12px", fontFamily:"inherit" }}
+                                  type="text" placeholder="Start 00:00" value={info.walkUpStart || ""}
+                                  onChange={function(e) { updatePlayer(info.name, { walkUpStart: e.target.value || null }); }} />
+                                <input style={{ padding:"6px 8px", borderRadius:"6px", border:"1px solid #d1d5db", fontSize:"12px", fontFamily:"inherit" }}
+                                  type="text" placeholder="End 00:10" value={info.walkUpEnd || ""}
+                                  onChange={function(e) { updatePlayer(info.name, { walkUpEnd: e.target.value || null }); }} />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+
                     {/* ── V2 Player Profile: Fielding (+ Field Awareness) ── */}
                     <div style={{ border:"1px solid #e5e7eb", borderRadius:"8px", marginBottom:"8px", overflow:"hidden" }}>
                       <div onClick={function(){toggleV2Section(info.name,"Fielding");}}
