@@ -5364,10 +5364,10 @@ export default function App() {
     <div style={{ minHeight:"100dvh", background:C.cream, fontFamily:"Georgia,'Times New Roman',serif", color:C.text }}>
       <div style={S.header}>
         <div style={S.logoWrap} onClick={function() { setScreen("home"); }}>
-          <div style={S.logoCircle}>M</div>
+          <div style={S.logoCircle}>{activeTeam ? activeTeam.name.charAt(0).toUpperCase() : "L"}</div>
           <div>
             <div style={S.logoTitle}>{activeTeam ? activeTeam.name : "Lineup Generator"}</div>
-            <div style={S.logoSub}>{activeTeam ? (activeTeam.ageGroup || "") + " " + (activeTeam.year || "") : "tap to switch team"}</div>
+            <div style={S.logoSub}>{activeTeam ? (activeTeam.ageGroup || "") + " " + (activeTeam.year || "") + "  ⌂" : "⌂ tap to switch team"}</div>
             {isSupabaseEnabled ? (
               <div title={syncStatus === "synced" ? "Saved to cloud" : syncStatus === "syncing" ? "Saving..." : syncStatus === "error" ? "Sync error — data saved locally" : ""}
                 style={{ width:"7px", height:"7px", borderRadius:"50%", marginTop:"3px",
