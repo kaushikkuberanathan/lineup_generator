@@ -94,3 +94,35 @@ export function dbLoadTeamData(teamId) {
       };
     });
 }
+
+// ── Roster snapshot operations ─────────────────────────────────────────────
+
+export async function dbSnapshotRoster(teamId, teamName, roster, triggerEvent) {
+  if (!supabase) return;
+  try {
+    if (!roster || roster.length === 0) return;
+    await supabase
+      .from('roster_snapshots')
+      .insert({
+        team_id: teamId,
+        team_name: teamName || '',
+        roster: roster,
+        trigger_event: triggerEvent || 'auto_save'
+      });
+  } catch (e) {
+    // silent fail — snapshot is safety net, not critical path
+  }
+}
+
+export async function dbGetRosterSnapshots(teamId) {
+  if (!supabase) return [];
+  try {
+    var res = await supabase
+      .from('roster_snapshots')
+      .select('*')
+      .eq('team_id', teamId)
+      .order('snapshot_at', { ascending: false })
+      .limit(5);
+    return res.data || [];
+  } catch(e) { return []; }
+}
