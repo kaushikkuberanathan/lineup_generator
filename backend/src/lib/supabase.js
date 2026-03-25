@@ -23,6 +23,8 @@ const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
   },
 });
 
+console.log('[supabase] admin key prefix:', process.env.SUPABASE_SERVICE_ROLE_KEY?.slice(0, 30));
+
 /**
  * Supabase anon client for operations that should respect RLS.
  * Safe to use with user-scoped requests once a session is attached.
