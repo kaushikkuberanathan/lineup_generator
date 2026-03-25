@@ -2,7 +2,8 @@
 import { useState, useMemo, useCallback } from "react";
 import { jsPDF } from "jspdf";
 import { isSupabaseEnabled, dbSaveTeams, dbDeleteTeam,
-         dbLoadTeams, dbLoadTeamData, dbSaveTeamData } from './supabase.js';
+         dbLoadTeams, dbLoadTeamData, dbSaveTeamData,
+         dbSnapshotRoster, dbGetRosterSnapshots } from './supabase.js';
 import mixpanel from 'mixpanel-browser';
 import { FEATURE_FLAGS } from '@/config/featureFlags';
 import { generateLineupV2 } from '@/utils/lineupEngineV2';
@@ -995,6 +996,8 @@ export default function App() {
           if (!dbData || !dbData.roster || dbData.roster.length === 0) { return; }
           saveJSON("team:" + bootActiveId + ":roster", dbData.roster);
           setRoster(migrateRoster(dbData.roster));
+          var bootTeam = merged.find ? merged.find(function(t) { return t.id === bootActiveId; }) : null;
+          if (bootTeam) { dbSnapshotRoster(bootActiveId, bootTeam.name, dbData.roster, 'app_load'); }
         }).catch(function(err) {
           console.error("[boot] failed to hydrate active team roster:", err);
         });
@@ -1076,21 +1079,43 @@ export default function App() {
         setTeams(withNew);
 
         // Persist each team to Supabase and localStorage
+        // SAFETY: check for existing data first — never wipe a roster that already exists
         for (var ci = 0; ci < toCreate.length; ci++) {
-          var ct = toCreate[ci];
-          var migKey2 = "migration:" + ct.id + ":version";
-          // Save team record
-          dbSaveTeams([{ id:ct.id, name:ct.name, ageGroup:ct.ageGroup, year:ct.year }]);
-          // Save team data with official schedule, empty roster
-          dbSaveTeamData(ct.id, {
-            roster: [], schedule: ct.schedule, practices: [],
-            battingOrder: [], grid: {}, innings: 6, locked: false
-          });
-          // Seed localStorage for offline access
-          saveJSON("team:" + ct.id + ":schedule", ct.schedule);
-          saveJSON("team:" + ct.id + ":roster", []);
-          // Stamp migration version so this never runs again for this team
-          saveJSON(migKey2, MIGRATION_VERSION);
+          (function(ct) {
+            var migKey2 = "migration:" + ct.id + ":version";
+            // Save team record
+            dbSaveTeams([{ id:ct.id, name:ct.name, ageGroup:ct.ageGroup, year:ct.year }]);
+            // Check if data already exists before seeding with empty roster
+            // OLD (unsafe): dbSaveTeamData(ct.id, { roster: [], schedule: ct.schedule, ... });
+            dbLoadTeamData(ct.id).then(function(existing) {
+              dbSaveTeamData(ct.id, {
+                // If existing roster found, preserve it — never overwrite with []
+                roster:       existing && existing.roster && existing.roster.length > 0 ? existing.roster : [],
+                schedule:     ct.schedule,
+                practices:    existing && existing.practices    ? existing.practices    : [],
+                battingOrder: existing && existing.battingOrder ? existing.battingOrder : [],
+                grid:         existing && existing.grid         ? existing.grid         : {},
+                innings:      existing && existing.innings      ? existing.innings      : 6,
+                locked:       existing                          ? existing.locked       : false
+              });
+              // Seed localStorage — preserve existing roster in local storage too
+              saveJSON("team:" + ct.id + ":schedule", ct.schedule);
+              if (!existing || !existing.roster || existing.roster.length === 0) {
+                saveJSON("team:" + ct.id + ":roster", []);
+              }
+              // Stamp migration version so this never runs again for this team
+              saveJSON(migKey2, MIGRATION_VERSION);
+            }).catch(function() {
+              // On error, still seed schedule but leave roster untouched
+              dbSaveTeamData(ct.id, {
+                roster: [], schedule: ct.schedule, practices: [],
+                battingOrder: [], grid: {}, innings: 6, locked: false
+              });
+              saveJSON("team:" + ct.id + ":schedule", ct.schedule);
+              saveJSON("team:" + ct.id + ":roster", []);
+              saveJSON(migKey2, MIGRATION_VERSION);
+            });
+          })(toCreate[ci]);
         }
       }
       // One-time patch: find Mud Hens by name and push official
@@ -1219,6 +1244,12 @@ export default function App() {
   var pdfLoading = _pdfLoading[0]; var setPdfLoading = _pdfLoading[1];
   var _pdfSharing = useState(false);
   var pdfSharing = _pdfSharing[0]; var setPdfSharing = _pdfSharing[1];
+  var _recoverMode = useState(false);
+  var recoverMode = _recoverMode[0]; var setRecoverMode = _recoverMode[1];
+  var _snapshots = useState([]);
+  var snapshots = _snapshots[0]; var setSnapshots = _snapshots[1];
+  var _restoreBanner = useState('');
+  var restoreBanner = _restoreBanner[0]; var setRestoreBanner = _restoreBanner[1];
 
   const {
     needRefresh: [needRefresh, setNeedRefresh],
@@ -1563,6 +1594,7 @@ export default function App() {
         saveJSON("team:" + team.id + ":innings",   dbData.innings);
         saveJSON("team:" + team.id + ":locked",    dbData.locked);
         setRoster(migrateRoster(dbData.roster));
+        if (dbData.roster && dbData.roster.length > 0) { dbSnapshotRoster(team.id, team.name, dbData.roster, 'app_load'); }
         setSchedule(migrateSchedule(dbData.schedule));
         setPractices(dbData.practices);
         setBattingOrder(dbData.battingOrder && dbData.battingOrder.length
@@ -1615,6 +1647,7 @@ export default function App() {
     var p = { name:n, firstName:capitalize(fn), lastName:capitalize(ln), skills:["developing"], tags:[], dislikes:[], prefs:[], batSkills:[] };
     var next = roster.concat([p]);
     persistRoster(next);
+    if (activeTeam && isSupabaseEnabled) { dbSnapshotRoster(activeTeam.id, activeTeam.name, next, 'auto_save'); }
     track("add_player", { roster_size: next.length });
     persistBatting(battingOrder.concat([n]));
     var ng = {};
@@ -1628,6 +1661,7 @@ export default function App() {
   }
 
   function removePlayer(name) {
+    if (activeTeam && isSupabaseEnabled && roster.length > 0) { dbSnapshotRoster(activeTeam.id, activeTeam.name, roster, 'auto_save'); }
     persistRoster(roster.filter(function(r) { return r.name !== name; }));
     persistBatting(battingOrder.filter(function(p) { return p !== name; }));
     var ng = {};
@@ -1636,14 +1670,16 @@ export default function App() {
   }
 
   function updatePlayer(name, patch) {
-    persistRoster(roster.map(function(r) {
+    var next = roster.map(function(r) {
       if (r.name !== name) { return r; }
       var updated = {};
       for (var k in r) { updated[k] = r[k]; }
       for (var k2 in patch) { updated[k2] = patch[k2]; }
       updated.lastUpdated = new Date().toISOString();
       return updated;
-    }));
+    });
+    persistRoster(next);
+    if (activeTeam && isSupabaseEnabled) { dbSnapshotRoster(activeTeam.id, activeTeam.name, next, 'auto_save'); }
   }
 
   function isV2Open(playerName, section) {
@@ -2231,6 +2267,12 @@ export default function App() {
 
     return (
       <div>
+        {restoreBanner ? (
+          <div style={{ background:'#d1fae5', border:'1px solid #6ee7b7', borderRadius:'8px', padding:'10px 14px', marginBottom:'12px', fontSize:'13px', color:'#065f46', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+            <span>&#x2705; {restoreBanner}</span>
+            <button onClick={function(){setRestoreBanner('');}} style={{ background:'none', border:'none', cursor:'pointer', fontSize:'16px', color:'#065f46' }}>&#xd7;</button>
+          </div>
+        ) : null}
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"14px", flexWrap:"wrap", gap:"8px" }}>
           <div style={S.sectionTitle}>Roster and Player Profiles</div>
           <div style={{ display:"flex", gap:"6px", flexWrap:"wrap", alignItems:"center" }}>
@@ -2347,9 +2389,67 @@ export default function App() {
 
         {isHydrating && roster.length === 0 && (
           <div style={{ textAlign:"center", padding:"20px", color:"#94a3b8", fontSize:"13px" }}>
-            ⏳ Loading roster from cloud...
+            &#x23F3; Loading roster from cloud...
           </div>
         )}
+
+        {roster.length === 0 && !isHydrating && activeTeamId && isSupabaseEnabled && (
+          <div style={{ textAlign:'center', padding:'16px 0' }}>
+            <button
+              onClick={function() {
+                dbGetRosterSnapshots(activeTeamId).then(function(data) {
+                  if (data && data.length > 0) {
+                    setSnapshots(data);
+                    setRecoverMode(true);
+                  } else {
+                    alert('No previous roster snapshots found for this team.');
+                  }
+                });
+              }}
+              style={{ background:'none', border:'none', color:'#6366f1', fontSize:'12px', cursor:'pointer', textDecoration:'underline' }}>
+              &#x1F504; Restore previous roster
+            </button>
+          </div>
+        )}
+
+        {recoverMode && (
+          <div style={{ position:'fixed', top:0, left:0, right:0, bottom:0, background:'rgba(0,0,0,0.5)', zIndex:10000, display:'flex', alignItems:'center', justifyContent:'center', padding:'20px' }}>
+            <div style={{ background:'white', borderRadius:'12px', padding:'20px', maxWidth:'480px', width:'100%', maxHeight:'80vh', overflowY:'auto' }}>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'16px' }}>
+                <div style={{ fontWeight:'bold', fontSize:'16px', color:'#0f1f3d' }}>Restore Previous Roster</div>
+                <button onClick={function(){setRecoverMode(false); setSnapshots([]);}} style={{ background:'none', border:'none', fontSize:'20px', cursor:'pointer', color:'#94a3b8' }}>&#xd7;</button>
+              </div>
+              {snapshots.map(function(snap) {
+                var d = new Date(snap.snapshot_at);
+                var label = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+                return (
+                  <div key={snap.id} style={{ border:'1px solid #e5e7eb', borderRadius:'8px', padding:'12px', marginBottom:'10px' }}>
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                      <div>
+                        <div style={{ fontWeight:'bold', fontSize:'13px', color:'#0f1f3d' }}>{snap.player_count} players</div>
+                        <div style={{ fontSize:'11px', color:'#94a3b8', marginTop:'2px' }}>{label} &middot; {snap.trigger_event}</div>
+                      </div>
+                      <button
+                        onClick={function(s) { return function() {
+                          var restored = migrateRoster(s.roster);
+                          persistRoster(restored);
+                          persistBatting(restored.map(function(p) { return p.name; }));
+                          setRecoverMode(false);
+                          setSnapshots([]);
+                          setRestoreBanner('Roster restored \u2014 ' + restored.length + ' players recovered');
+                          setTimeout(function() { setRestoreBanner(''); }, 5000);
+                        }; }(snap)}
+                        style={{ background:'#0f1f3d', color:'white', border:'none', borderRadius:'6px', padding:'6px 12px', fontSize:'12px', cursor:'pointer', fontWeight:'bold' }}>
+                        Restore
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))", gap:"12px" }}>
           {roster.map(function(info) {
             var isCol = !!collapsed[info.name];
@@ -3158,12 +3258,12 @@ export default function App() {
                               <div>
                                 {benchedPlayers.length > 0 ? benchedPlayers.map(function(bp) {
                                   return (
-                                    <div key={bp} style={{ fontSize:"11px", color:C.navy, fontWeight:"bold", padding:"2px 6px", borderRadius:"4px", background:"rgba(15,31,61,0.1)", marginBottom:"2px", textAlign:"center" }}>{bp}</div>
+                                    <div key={bp} style={{ fontSize:"11px", color:C.navy, fontWeight:"bold", padding:"2px 6px", borderRadius:"4px", background:"rgba(15,31,61,0.1)", marginBottom:"2px", textAlign:"center" }}>{firstName(bp)}</div>
                                   );
                                 }) : <span style={{ fontSize:"11px", color:"rgba(15,31,61,0.2)" }}>-</span>}
                               </div>
                             ) : assignedPlayer ? (
-                              <div style={{ fontSize:"12px", fontWeight:"bold", color:C.navy }}>{assignedPlayer}</div>
+                              <div style={{ fontSize:"12px", fontWeight:"bold", color:C.navy }}>{firstName(assignedPlayer)}</div>
                             ) : (
                               <div style={{ fontSize:"11px", color:"rgba(200,16,46,0.5)", fontWeight:"bold" }}>-</div>
                             )}
