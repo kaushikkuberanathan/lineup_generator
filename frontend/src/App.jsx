@@ -5375,14 +5375,26 @@ export default function App() {
               Generate Lineup
             </button>
           ) : null}
-          <div style={{ display:"flex", overflowX:"auto", WebkitOverflowScrolling:"touch" }}>
-            {TEAM_TABS.map(function(t) {
-              return <button key={t.key} style={S.tab(tab === t.key)} onClick={function(k) { return function() { setTab(k); }; }(t.key)}>{t.label}</button>;
-            })}
-            <div style={{ width:"1px", background:"rgba(255,255,255,0.2)", margin:"6px 4px", flexShrink:0 }} />
-            {GLOBAL_TABS.map(function(t) {
-              return <button key={t.key} style={S.tab(tab === t.key)} onClick={function(k) { return function() { setTab(k); }; }(t.key)}>{t.label}</button>;
-            })}
+          <div style={{ display:"flex", flexDirection:"column", gap:"2px", flex:1 }}>
+            <div style={{ display:"flex", gap:"2px" }}>
+              {TEAM_TABS.map(function(t) {
+                return <button key={t.key} style={S.tab(tab === t.key)} onClick={function(k) { return function() { setTab(k); }; }(t.key)}>{t.label}</button>;
+              })}
+            </div>
+            <div style={{ display:"flex", gap:"2px", borderTop:"1px solid rgba(255,255,255,0.15)", paddingTop:"3px" }}>
+              {GLOBAL_TABS.map(function(t) {
+                var active = tab === t.key;
+                return (
+                  <button key={t.key}
+                    onClick={function(k) { return function() { setTab(k); }; }(t.key)}
+                    style={{ fontSize:"9.5px", padding:"4px 10px", borderRadius:"5px", fontWeight:"bold", fontFamily:"Georgia,serif", letterSpacing:"0.06em", textTransform:"uppercase", border:"none", cursor:"pointer",
+                      background: active ? "rgba(255,255,255,0.15)" : "transparent",
+                      color: active ? "#fff" : "rgba(255,255,255,0.4)" }}>
+                    {t.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
