@@ -1157,6 +1157,8 @@ export default function App() {
     return tid ? (loadJSON("team:" + tid + ":locked", false) || false) : false;
   });
   var lineupLocked = _locked[0]; var setLineupLocked = _locked[1];
+  var _hydrating = useState(false);
+  var isHydrating = _hydrating[0]; var setIsHydrating = _hydrating[1];
   var _nfn = useState(""); var newFirstName = _nfn[0]; var setNewFirstName = _nfn[1];
   var _nln = useState(""); var newLastName  = _nln[0]; var setNewLastName  = _nln[1];
   var _drag = useState(null);
@@ -1501,6 +1503,7 @@ export default function App() {
     saveJSON("ui:activeTeam", team.id);
     setRoster(r);
     setRosterHistory([]);
+    if (isSupabaseEnabled) { setIsHydrating(true); }
     setBattingOrder(b);
     setSchedule(s);
     setPractices(p);
@@ -1515,14 +1518,14 @@ export default function App() {
     if (isSupabaseEnabled) {
       var loadTimestamp = Date.now();
       dbLoadTeamData(team.id).then(function(dbData) {
-        if (!dbData) { return; }
+        if (!dbData) { setIsHydrating(false); return; }
         // Only hydrate if no local changes have been made since
         // this load was triggered (prevents overwriting coach edits)
         // We detect this by comparing the load timestamp against
         // window._lastLocalWrite which is set by every persist call
         var lastWrite = window._lastLocalWrite || 0;
-        if (lastWrite > loadTimestamp) { return; }
-        if (!dbData.roster || dbData.roster.length === 0) { return; }
+        if (lastWrite > loadTimestamp) { setIsHydrating(false); return; }
+        if (!dbData.roster || dbData.roster.length === 0) { setIsHydrating(false); return; }
         saveJSON("team:" + team.id + ":roster",    dbData.roster);
         saveJSON("team:" + team.id + ":schedule",  dbData.schedule);
         saveJSON("team:" + team.id + ":practices", dbData.practices);
@@ -1539,7 +1542,8 @@ export default function App() {
         setGrid(migrateGrid(dbData.grid, dbData.roster, dbData.innings));
         setInnings(dbData.innings);
         setLineupLocked(dbData.locked);
-      }).catch(function() {});
+        setIsHydrating(false);
+      }).catch(function() { setIsHydrating(false); });
     }
   }
 
@@ -2290,6 +2294,11 @@ export default function App() {
           })}
         </div>
 
+        {isHydrating && roster.length === 0 && (
+          <div style={{ textAlign:"center", padding:"20px", color:"#94a3b8", fontSize:"13px" }}>
+            ⏳ Loading roster from cloud...
+          </div>
+        )}
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))", gap:"12px" }}>
           {roster.map(function(info) {
             var isCol = !!collapsed[info.name];
@@ -2907,7 +2916,9 @@ export default function App() {
 
         <div style={{ display:"flex", gap:"8px", marginBottom:"14px", flexWrap:"wrap", alignItems:"center" }}>
           {!lineupLocked ? (
-            <button style={S.btn("gold")} onClick={generateLineup}>Auto-Assign</button>
+            <button style={S.btn("gold")} onClick={generateLineup} disabled={isHydrating}>
+              {isHydrating ? "Loading roster..." : "Auto-Assign"}
+            </button>
           ) : null}
           {!lineupLocked ? (
             <button style={S.btn(errorCount > 0 ? "danger" : "ghost")} onClick={function() {
