@@ -129,9 +129,17 @@ var DEFAULT_ROSTER = [];
 var _mem = {};
 var SCHEMA_VERSION = 2;
 
-var APP_VERSION = "1.3.0";
+var APP_VERSION = "1.3.1";
 
 var VERSION_HISTORY = [
+  {
+    version: "1.3.1",
+    date: "March 25, 2026",
+    changes: [
+      "Fixed V2 lineup engine: LC/RC positions now assign correctly (was silently falling back to V1 on every run)",
+      "Batting order now updates automatically after every auto-assign using V2 skill scores"
+    ]
+  },
   {
     version: "1.3.0",
     date: "March 25, 2026",
