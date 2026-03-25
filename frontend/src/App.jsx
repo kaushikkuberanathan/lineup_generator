@@ -1621,6 +1621,9 @@ export default function App() {
       if (FEATURE_FLAGS.USE_NEW_LINEUP_ENGINE) {
         console.log("[Lineup Engine] Using V2");
         result = generateLineupV2(roster, innings);
+        if (result.battingOrder && result.battingOrder.length > 0) {
+          persistBatting(result.battingOrder);
+        }
       } else {
         console.log("[Lineup Engine] Using V1");
         result = autoAssignWithRetryFallback(roster, innings);

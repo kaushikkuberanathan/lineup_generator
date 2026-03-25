@@ -5,8 +5,8 @@ import {
   getPositionScore,
 } from "./scoringEngine";
 
-const FIELD_POSITIONS = ["P", "C", "1B", "2B", "3B", "SS", "LF", "CF", "RF"];
-const ASSIGNMENT_PRIORITY = ["P", "SS", "CF", "C", "2B", "3B", "1B", "LF", "RF"];
+const FIELD_POSITIONS = ["P", "C", "1B", "2B", "3B", "SS", "LF", "LC", "RC", "RF"];
+const ASSIGNMENT_PRIORITY = ["P", "SS", "LC", "RC", "C", "2B", "3B", "1B", "LF", "RF"];
 
 function buildEmptyGrid(players, innings) {
   const grid = {};
@@ -75,14 +75,8 @@ export function generateLineupV2(roster, innings) {
 
   const benchCountPerInning = Math.max(players.length - FIELD_POSITIONS.length, 0);
 
-  // Batting order is calculated now for future use/debugging.
-  // We are not yet wiring it into the UI because current grid format is defensive-position based.
   const battingOrder = [...players].sort(
     (a, b) => getBattingOrderScore(b) - getBattingOrderScore(a)
-  );
-  console.log(
-    "[V2] Batting order preview:",
-    battingOrder.map((p) => p.name)
   );
 
   for (let inning = 0; inning < innings; inning++) {
@@ -112,6 +106,7 @@ export function generateLineupV2(roster, innings) {
 
   return {
     grid,
+    battingOrder: battingOrder.map(p => p.name),
     attempts: 1,
     warnings,
     isValid: warnings.length === 0,

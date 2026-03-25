@@ -137,7 +137,7 @@ export function getBallTypeFit(p, position) {
     return 0.5;
   }
 
-  if (["LF", "CF", "RF"].includes(position)) {
+  if (["LF", "LC", "RC", "RF"].includes(position)) {
     if (bt === "fly_ball" || bt === "both") return 1.0;
     if (bt === "ground_ball") return 0.6;
     return 0.5;
@@ -245,7 +245,8 @@ export function getPositionScore(p, position) {
         fieldAwareness * 0.15;
       break;
 
-    case "CF":
+    case "LC":
+    case "RC":
       baseScore =
         reaction * 0.30 +
         running * 0.30 +
