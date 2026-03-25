@@ -5377,6 +5377,11 @@ export default function App() {
           </div>
         </div>
         <div style={{ display:"flex", gap:"4px", flexWrap:"wrap", alignItems:"center" }}>
+          <button
+            onClick={function() { setScreen("home"); }}
+            style={{ background:"transparent", border:"1px solid rgba(255,255,255,0.25)", borderRadius:"6px", color:"rgba(255,255,255,0.7)", fontSize:"10px", fontFamily:"Georgia,serif", fontWeight:"bold", letterSpacing:"0.04em", textTransform:"uppercase", padding:"3px 8px", cursor:"pointer", whiteSpace:"nowrap", alignSelf:"flex-start", marginBottom:"3px" }}>
+            ← Home
+          </button>
           {lineupDirty ? (
             <button onClick={generateLineup} style={{ padding:"8px 16px", borderRadius:"6px", border:"none", cursor:"pointer", fontWeight:"bold", fontSize:"11px", fontFamily:"inherit", letterSpacing:"0.08em", textTransform:"uppercase", background:"linear-gradient(135deg,#f5c842,#d4a017)", color:"#0f1f3d" }}>
               Generate Lineup
