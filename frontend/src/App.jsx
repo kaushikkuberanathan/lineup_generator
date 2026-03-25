@@ -130,9 +130,23 @@ var DEFAULT_ROSTER = [];
 var _mem = {};
 var SCHEMA_VERSION = 2;
 
-var APP_VERSION = "1.3.5";
+var APP_VERSION = "1.3.6";
 
 var VERSION_HISTORY = [
+  {
+    version: "1.3.6",
+    date: "March 25, 2026",
+    changes: [
+      "New Songs tab: enter walk-up songs, artist, start/end times, and coordinator notes per player",
+      "Game Day View in Songs tab: clean read-only display ordered by batting position",
+      "Share Songs List: sends plain-text song list via Web Share API or copies to clipboard",
+      "Print Songs List: generates a PDF of all walk-up songs via jsPDF",
+      "Walk-up songs now appear in batting order cards on the Print tab preview",
+      "Walk-up songs included in generated PDF (batting order section)",
+      "Walk-up songs included in share link payload and shown on shared lineup view",
+      "Fix: lineupDirty banner moved below toolbar so Auto-Fix All stays visible on mobile"
+    ]
+  },
   {
     version: "1.3.5",
     date: "March 25, 2026",
@@ -1525,7 +1539,16 @@ export default function App() {
       game:    null,
       grid:    grid,
       batting: battingOrder,
-      roster:  roster.map(function(r) { return r.name; })
+      roster:  roster.map(function(r) { return r.name; }),
+      songs:   (function() {
+        var s = {};
+        roster.forEach(function(p) {
+          if (p.walkUpSong || p.walkUpArtist) {
+            s[p.name] = { song: p.walkUpSong || null, artist: p.walkUpArtist || null, start: p.walkUpStart || null, end: p.walkUpEnd || null };
+          }
+        });
+        return s;
+      })()
     };
     var encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
     var url = window.location.href.split("?")[0] + "?share=" + encoded;
@@ -3939,7 +3962,16 @@ export default function App() {
         game: game,
         grid: grid,
         batting: battingOrder,
-        roster: roster.map(function(r) { return r.name; })
+        roster: roster.map(function(r) { return r.name; }),
+        songs: (function() {
+          var s = {};
+          roster.forEach(function(p) {
+            if (p.walkUpSong || p.walkUpArtist) {
+              s[p.name] = { song: p.walkUpSong || null, artist: p.walkUpArtist || null, start: p.walkUpStart || null, end: p.walkUpEnd || null };
+            }
+          });
+          return s;
+        })()
       };
       var encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
       return window.location.href.split("?")[0] + "?share=" + encoded;
@@ -4912,20 +4944,37 @@ export default function App() {
 
           var batCols = 2;
           var batColW = contentW / batCols;
-          var batRowH = 9;
+
+          // Pre-compute per-player row heights (taller if song data exists)
+          var batRowHeights = battingOrder.map(function(bn) {
+            var sp = roster.find(function(r) { return r.name === bn; });
+            return (sp && (sp.walkUpSong || sp.walkUpArtist)) ? 14 : 9;
+          });
+
+          // Compute y offsets per logical row (rows are pairs of players)
+          var batRowCount = Math.ceil(battingOrder.length / batCols);
+          var batRowYOffsets = [0];
+          for (var bri = 0; bri < batRowCount - 1; bri++) {
+            var leftH  = batRowHeights[bri * batCols]     || 9;
+            var rightH = batRowHeights[bri * batCols + 1] || 9;
+            batRowYOffsets.push(batRowYOffsets[bri] + Math.max(leftH, rightH));
+          }
 
           for (var bi = 0; bi < battingOrder.length; bi++) {
             var bname = battingOrder[bi];
             var col = bi % batCols;
             var row = Math.floor(bi / batCols);
             var bx = margin + col * batColW;
-            var by = y + row * batRowH;
+            var by = y + batRowYOffsets[row];
+            var leftH2  = batRowHeights[row * batCols]     || 9;
+            var rightH2 = batRowHeights[row * batCols + 1] || 9;
+            var cardH = Math.max(leftH2, rightH2) - 1;
 
             // Card background
             doc.setFillColor(255,255,255);
             doc.setDrawColor(220,215,208);
             doc.setLineWidth(0.3);
-            doc.roundedRect(bx + 1, by, batColW - 2, batRowH - 1, 1.5, 1.5, "FD");
+            doc.roundedRect(bx + 1, by, batColW - 2, cardH, 1.5, 1.5, "FD");
 
             // Number circle
             doc.setFillColor(navy[0], navy[1], navy[2]);
@@ -4940,6 +4989,21 @@ export default function App() {
             doc.setFontSize(9);
             doc.setFont("helvetica","bold");
             doc.text(firstName(bname), bx + 11, by + 5);
+
+            // Song line (if present)
+            var songPlayer = roster.find(function(r) { return r.name === bname; });
+            if (songPlayer && (songPlayer.walkUpSong || songPlayer.walkUpArtist)) {
+              doc.setFontSize(6.5);
+              doc.setFont("helvetica", "italic");
+              doc.setTextColor(80, 80, 80);
+              var songLine = [songPlayer.walkUpSong, songPlayer.walkUpArtist].filter(Boolean).join(" — ");
+              if (songPlayer.walkUpStart && songPlayer.walkUpEnd) {
+                songLine += "  (" + songPlayer.walkUpStart + "–" + songPlayer.walkUpEnd + ")";
+              }
+              doc.text(songLine, bx + 11, by + 8.5, { maxWidth: batColW - 14 });
+              doc.setTextColor(0, 0, 0);
+              doc.setFont("helvetica", "normal");
+            }
 
             // Field positions
             var fpos = [];
@@ -4957,10 +5021,12 @@ export default function App() {
               doc.setTextColor(120, 130, 150);
               doc.setFontSize(6.5);
               doc.setFont("helvetica","normal");
-              doc.text(fpos.join(" "), bx + 11, by + 7.5);
+              var fposY = (songPlayer && (songPlayer.walkUpSong || songPlayer.walkUpArtist)) ? by + 12 : by + 7.5;
+              doc.text(fpos.join(" "), bx + 11, fposY);
             }
           }
-          y += (Math.ceil(battingOrder.length / batCols)) * batRowH + 4;
+          var totalBatH = batRowYOffsets[batRowCount - 1] + (Math.max(batRowHeights[(batRowCount-1)*batCols] || 9, batRowHeights[(batRowCount-1)*batCols+1] || 9));
+          y += totalBatH + 4;
         }
 
         // ── Footer ──────────────────────────────────────────────
@@ -5432,6 +5498,17 @@ export default function App() {
                         {fieldPos.length > 0 ? (
                           <div style={{ fontSize:"9px", color:"#8a9aaa" }}>{fieldPos.join(", ")}</div>
                         ) : null}
+                        {(function() {
+                          var p = roster.find(function(r) { return r.name === name; });
+                          if (!p || (!p.walkUpSong && !p.walkUpArtist)) return null;
+                          return (
+                            <div style={{ marginTop:"4px", paddingTop:"4px", borderTop:"1px solid rgba(15,31,61,0.08)" }}>
+                              {p.walkUpSong && <div style={{ fontSize:"10px", fontWeight:"600", color:"#1e293b" }}>🎵 {p.walkUpSong}</div>}
+                              {p.walkUpArtist && <div style={{ fontSize:"9px", color:"#64748b" }}>🎤 {p.walkUpArtist}</div>}
+                              {p.walkUpStart && p.walkUpEnd && <div style={{ fontSize:"9px", color:"#94a3b8" }}>⏱ {p.walkUpStart} → {p.walkUpEnd}</div>}
+                            </div>
+                          );
+                        })()}
                       </div>
                     </div>
                   );
@@ -5684,6 +5761,17 @@ export default function App() {
                       <div style={{ minWidth:0 }}>
                         <div style={{ fontWeight:"bold", fontSize:"12px", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{firstName(name)}</div>
                         {fieldPos.length > 0 ? <div style={{ fontSize:"9px", color:C.textMuted }}>{fieldPos.join(", ")}</div> : null}
+                        {(function() {
+                          var songData = payload.songs && payload.songs[name];
+                          if (!songData || (!songData.song && !songData.artist)) return null;
+                          return (
+                            <div style={{ marginTop:"4px", paddingTop:"4px", borderTop:"1px solid rgba(15,31,61,0.08)" }}>
+                              {songData.song && <div style={{ fontSize:"10px", fontWeight:"600", color:"#1e293b" }}>🎵 {songData.song}</div>}
+                              {songData.artist && <div style={{ fontSize:"9px", color:"#64748b" }}>🎤 {songData.artist}</div>}
+                              {songData.start && songData.end && <div style={{ fontSize:"9px", color:"#94a3b8" }}>⏱ {songData.start} → {songData.end}</div>}
+                            </div>
+                          );
+                        })()}
                       </div>
                     </div>
                   );

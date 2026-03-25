@@ -216,6 +216,15 @@ backend/
 
 ## Version History
 
+### v1.3.6 — March 25, 2026
+- New Songs tab: enter walk-up songs, artist, start/end times, and coordinator notes per player
+- Game Day View in Songs tab: clean read-only display ordered by batting position
+- Share Songs List: Web Share API or clipboard fallback (plain text)
+- Print Songs List: jsPDF programmatic PDF of all walk-up songs
+- Walk-up songs shown in Print tab batting order cards, generated PDF, and shared lineup view
+- Share link payload includes songs map (backward-compatible — old links unaffected)
+- Fix: lineupDirty banner moved below toolbar so Auto-Fix All stays visible on mobile
+
 ### v1.3.5 — March 25, 2026
 - Fix: diamond view all-innings mode now shows all coach-configured innings (4, 5, or 6)
 - Fix: removed Math.min(4) cap that was cutting display to 4 innings regardless of config
