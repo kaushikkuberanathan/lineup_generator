@@ -2278,14 +2278,6 @@ export default function App() {
             </div>
           </div>
         )}
-        <button style={S.btn("ghost")} onClick={function() {
-            if (confirm("Reset roster to default players for " + (activeTeam ? activeTeam.name : "this team") + "?")) {
-              persistRoster(DEFAULT_ROSTER);
-              persistBatting(DEFAULT_ROSTER.map(function(r) { return r.name; }));
-              persistGrid(initGrid(DEFAULT_ROSTER, innings));
-            }
-          }}>Reset</button>
-
         <div style={{ display:"flex", gap:"8px", marginBottom:"16px", alignItems:"center" }}>
           <span style={{ fontSize:"12px", color:C.textMuted }}>Innings:</span>
           {[6,7].map(function(n) {
@@ -2740,6 +2732,15 @@ export default function App() {
               </div>
             );
           })}
+        </div>
+        <div style={{ marginTop:"24px", paddingTop:"16px", borderTop:"1px solid rgba(15,31,61,0.08)" }}>
+          <button style={{ ...S.btn("ghost"), color:"#b0a0a0", fontSize:"11px" }} onClick={function() {
+            if (confirm("Reset roster to default players for " + (activeTeam ? activeTeam.name : "this team") + "?")) {
+              persistRoster(DEFAULT_ROSTER);
+              persistBatting(DEFAULT_ROSTER.map(function(r) { return r.name; }));
+              persistGrid(initGrid(DEFAULT_ROSTER, innings));
+            }
+          }}>Reset Roster</button>
         </div>
       </div>
     );
