@@ -15,11 +15,12 @@
 5. [Scoring Engine (V2)](#scoring-engine-v2)
 6. [Field Layout — Diamond View](#field-layout--diamond-view)
 7. [API Design](#api-design)
-8. [Frontend Architecture](#frontend-architecture)
-9. [PWA Setup](#pwa-setup)
-10. [Deployment & Infrastructure](#deployment--infrastructure)
-11. [Version Management](#version-management)
-12. [Known Tradeoffs & Future Considerations](#known-tradeoffs--future-considerations)
+8. [Auth Architecture (Phase 3)](#auth-architecture-phase-3)
+9. [Frontend Architecture](#frontend-architecture)
+10. [PWA Setup](#pwa-setup)
+11. [Deployment & Infrastructure](#deployment--infrastructure)
+12. [Version Management](#version-management)
+13. [Known Tradeoffs & Future Considerations](#known-tradeoffs--future-considerations)
 
 ---
 
@@ -258,6 +259,113 @@ Returns server version and uptime. Used for deploy verification.
   "uptime": 3820
 }
 ```
+
+---
+
+## Auth Architecture (Phase 3)
+
+The auth system is **deployed but not yet gated** — backend infrastructure is live on Render, frontend cutover pending Twilio toll-free verification.
+
+### Strategy
+
+- **Phone OTP via Supabase Auth** — no passwords; coaches receive a one-time SMS code
+- Phone numbers stored and validated in **E.164 format** (`libphonenumber-js`)
+- **Supabase service role key** lives only in the backend — never sent to the client
+- Frontend continues using the anon key for all existing data operations
+
+### Auth Flow
+
+```
+Coach visits app
+    ↓
+POST /api/v1/auth/request-access  ← name + phone → creates access_request row
+    ↓
+Admin reviews at /admin.html       ← approves or rejects request
+    ↓
+POST /api/v1/admin/approve         ← creates team_memberships row, activates profile
+    ↓
+Coach receives SMS OTP
+    ↓
+POST /api/v1/auth/login            ← sends OTP via Supabase phone auth (rate-limited)
+    ↓
+POST /api/v1/auth/verify           ← verifies OTP, returns access_token + refresh_token
+    ↓
+GET  /api/v1/auth/me               ← returns user profile + team memberships
+```
+
+### Database Tables (Auth)
+
+```sql
+access_requests (
+  id          uuid PRIMARY KEY,
+  name        text,
+  phone       text,           -- E.164 format
+  status      text,           -- 'pending' | 'approved' | 'rejected'
+  team_id     text,
+  created_at  timestamptz
+)
+
+profiles (
+  id          uuid PRIMARY KEY REFERENCES auth.users(id),
+  name        text,
+  phone       text,
+  created_at  timestamptz
+)
+
+team_memberships (
+  id          uuid PRIMARY KEY,
+  user_id     uuid REFERENCES auth.users(id),
+  team_id     text,
+  role        text,           -- 'admin' | 'coach' | 'viewer'
+  status      text,           -- 'active' | 'invited' | 'suspended'
+  created_at  timestamptz
+)
+
+feedback (
+  id          uuid PRIMARY KEY,
+  type        text,           -- 'feedback' | 'bug'
+  message     text,
+  user_id     uuid,
+  created_at  timestamptz
+)
+```
+
+### Backend Route Inventory
+
+| Method | Path | Auth Required | Purpose |
+|--------|------|--------------|---------|
+| POST | `/api/v1/auth/request-access` | No | Submit access request |
+| POST | `/api/v1/auth/login` | No | Send OTP (rate-limited) |
+| POST | `/api/v1/auth/verify` | No | Verify OTP, return tokens |
+| GET | `/api/v1/auth/me` | Yes | Current user + memberships |
+| GET | `/api/v1/admin/requests` | Admin | List pending access requests |
+| POST | `/api/v1/admin/approve` | Admin | Approve request, activate membership |
+| POST | `/api/v1/admin/reject` | Admin | Reject access request |
+| GET | `/api/v1/admin/members` | Admin | List all team members |
+| POST | `/api/v1/admin/update-role` | Admin | Change member role |
+| POST | `/api/v1/admin/reset-access` | Admin | Reset member to invited state |
+| POST | `/api/v1/admin/suspend` | Admin | Suspend member access |
+| GET | `/api/v1/admin/feedback` | Admin | View submitted feedback |
+| POST | `/api/v1/feedback` | No | Submit coach feedback |
+
+### Admin UI
+
+`frontend/public/admin.html` — deployed as a static page at `/admin.html` on Vercel.
+
+4-tab admin interface: Pending Requests | Members | Feedback | Settings.
+
+Login via phone OTP. Checks `/me` for `memberships[0].role === 'admin'`.
+
+### Current Blockers
+
+| Blocker | Status |
+|---------|--------|
+| Twilio toll-free verification | Submitted — 2–3 business day SLA |
+| Phase 4 cutover (add `requireAuth` to existing routes) | Pending Twilio + 2–3 coach pilot users |
+
+### Workaround (Dev/Test)
+
+Supabase test OTP: phone `+14044930548`, code `123456` — set in Supabase Auth > Providers > Phone > Test phone numbers. Remove after Twilio verified.
 
 ---
 

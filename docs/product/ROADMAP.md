@@ -1,6 +1,6 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: March 24, 2026
+> Last updated: March 25, 2026
 > MVP launched: March 24, 2026
 
 ---
@@ -135,18 +135,24 @@
 
 ---
 
-## 🔵 Phase 3 — Auth + Multi-Coach (Deferred by Design)
+## 🔵 Phase 3 — Auth + Multi-Coach
 
-| # | Item | Notes |
-|---|------|-------|
-| 1 | **Supabase auth (magic link)** | No-password flow; fully specced in internal AUTH-ASSESSMENT doc |
-| 2 | **Role system** | Head Coach / Assistant (edit) / Viewer (read-only) |
-| 3 | **Invite flow** | Coach → Settings → Invite by email → Supabase magic link → auto-assigned to team |
-| 4 | **Viewer-mode shell** | Stripped tab bar (Schedule + Lineup only); skill/coach tags hidden from viewer role |
-| 5 | **Supabase Realtime** | Lineup lock → live push to assistant and viewer phones |
-| 6 | **Multi-team management** | Home screen team cards with add/switch/delete; per-coach team isolation |
-| 7 | **Season-end skill calibration report** | Compare auto-assigned positions vs actual played — closes the skill-accuracy feedback loop |
-| 8 | **iCal / calendar import for schedule** | Structured calendar import as an alternate path alongside AI photo/text import |
+> **Backend infrastructure deployed as of v1.3.0. Frontend cutover pending Twilio toll-free verification.**
+
+| # | Item | Status | Notes |
+|---|------|--------|-------|
+| 1 | **Supabase phone OTP auth** | ✅ Backend live | No-password flow; OTP via Twilio SMS; `request-access` → admin approval → OTP login |
+| 2 | **Admin UI** | ✅ Live at `/admin.html` | 4-tab UI: Pending Requests, Members, Feedback, Settings |
+| 3 | **access_requests + profiles + team_memberships tables** | ✅ Deployed | RLS policies active; `activate_membership` Postgres function atomic |
+| 4 | **Feedback backend endpoint** | ✅ Live | `POST /api/v1/feedback` → `feedback` table in Supabase |
+| 5 | **Coach backfill** | ✅ Done | Kaushik (admin) + Stan Hoover (coach) seeded in `team_memberships` |
+| 6 | **Phase 4 cutover** | 🔴 Blocked | Add `requireAuth` middleware to existing routes — blocked on Twilio toll-free verification |
+| 7 | **Role system (frontend)** | ❌ Not started | Head Coach / Assistant (edit) / Viewer (read-only) — requires Phase 4 cutover first |
+| 8 | **Invite flow (frontend)** | ❌ Not started | Coach → Settings → Invite by phone → OTP → auto-assigned to team |
+| 9 | **Viewer-mode shell** | ❌ Not started | Stripped tab bar; skill/tags hidden from viewer role |
+| 10 | **Supabase Realtime** | ❌ Not started | Lineup lock → live push to assistant and viewer phones |
+| 11 | **Season-end skill calibration report** | ❌ Not started | Compare auto-assigned vs actual played positions |
+| 12 | **iCal / calendar import** | ❌ Not started | Alternate path alongside AI photo/text import |
 
 ---
 
@@ -184,4 +190,4 @@
 - **Storage:** Supabase (primary) + localStorage (offline cache with sync-on-connect)
 - **AI backend:** Render free tier — keep warm via UptimeRobot 5-min ping at `https://lineup-generator-backend.onrender.com/ping`
 - **Frontend:** Vercel — auto-deploys on push to `main`
-- **No auth yet:** All data is coach-owned, single-device. Export/Import backup is the current data safety net.
+- **Auth backend deployed (Phase 3):** Phone OTP infrastructure live on Render. Frontend cutover blocked on Twilio toll-free verification. Until then, all routes remain open (no `requireAuth` middleware on existing routes).

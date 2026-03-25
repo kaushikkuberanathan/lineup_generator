@@ -129,9 +129,22 @@ var DEFAULT_ROSTER = [];
 var _mem = {};
 var SCHEMA_VERSION = 2;
 
-var APP_VERSION = "1.3.1";
+var APP_VERSION = "1.3.2";
 
 var VERSION_HISTORY = [
+  {
+    version: "1.3.2",
+    date: "March 25, 2026",
+    changes: [
+      "Navigation restructured: Roster/Defense/Batting/Schedule/Print in top row; Feedback/Links/About in second row",
+      "Home screen: collapsible What's New section, dark-styled Links section",
+      "Portrait header: dynamic team initial, home hint, explicit \u2190 Home button",
+      "Quick Summary table: replaced Skills/Tags/Top Positions with season AB/H/R/RBI stats",
+      "Add Player form: collapsible \u2014 hidden by default, expands on tap",
+      "Fixed Supabase hydration race condition \u2014 loading indicator and Auto-Assign disabled until roster loads",
+      "Fixed data-loss bug: empty roster no longer overwrites Supabase; persist helpers skip cloud sync during hydration"
+    ]
+  },
   {
     version: "1.3.1",
     date: "March 25, 2026",
@@ -1161,6 +1174,8 @@ export default function App() {
   var isHydrating = _hydrating[0]; var setIsHydrating = _hydrating[1];
   var _nfn = useState(""); var newFirstName = _nfn[0]; var setNewFirstName = _nfn[1];
   var _nln = useState(""); var newLastName  = _nln[0]; var setNewLastName  = _nln[1];
+  var _showAddForm = useState(false);
+  var showAddForm = _showAddForm[0]; var setShowAddForm = _showAddForm[1];
   var _drag = useState(null);
   var dragPlayer = _drag[0]; var setDragPlayer = _drag[1];
   // Touch drag uses a mutable ref (window object) instead of useState to avoid
@@ -1609,6 +1624,7 @@ export default function App() {
     ng[n] = row;
     persistGrid(ng);
     setNewFirstName(""); setNewLastName("");
+    setShowAddForm(false);
   }
 
   function removePlayer(name) {
@@ -2042,6 +2058,7 @@ export default function App() {
     }
 
     return (
+      <>
       <div style={{ minHeight:"100vh", background:"linear-gradient(160deg,#0f1f3d 0%,#1a3260 55%,#2a0a0a 100%)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"24px 16px", fontFamily:"Georgia,serif" }}>
 
         <div style={{ marginBottom:"16px", textAlign:"center" }}>
@@ -2141,6 +2158,21 @@ export default function App() {
           )}
         </div>
       </div>
+      {needRefresh && (
+        <div style={{ position:'fixed', bottom:'20px', left:'50%', transform:'translateX(-50%)',
+          background:'#1e293b', color:'#ffffff', padding:'12px 20px', borderRadius:'12px',
+          display:'flex', alignItems:'center', gap:'12px', zIndex:9999,
+          boxShadow:'0 4px 24px rgba(0,0,0,0.3)', fontSize:'14px', whiteSpace:'nowrap', maxWidth:'90vw' }}>
+          <span>⚡ New version available</span>
+          <button onClick={() => updateServiceWorker(true)} style={{ background:'#2563eb', color:'#ffffff',
+            border:'none', borderRadius:'8px', padding:'6px 14px', fontSize:'13px',
+            fontWeight:'600', cursor:'pointer', flexShrink:0 }}>Update Now</button>
+          <button onClick={() => setNeedRefresh(false)} style={{ background:'transparent', color:'#94a3b8',
+            border:'none', fontSize:'18px', cursor:'pointer', padding:'0 4px',
+            lineHeight:1, flexShrink:0 }}>×</button>
+        </div>
+      )}
+      </>
     );
   }
 
@@ -2272,22 +2304,33 @@ export default function App() {
           </div>
         ) : null}
 
-        <div style={{ display:"flex", flexWrap:"wrap", gap:"8px", marginBottom:"14px", alignItems:"center" }}>
-          <input value={newFirstName} onChange={function(e) { setNewFirstName(e.target.value); }}
-            onKeyDown={function(e) { if (e.key === "Enter") { addPlayer(); } }}
-            placeholder="First name*" maxLength={20} style={{ ...S.input, flex:"1 1 120px" }} />
-          <input value={newLastName} onChange={function(e) { setNewLastName(e.target.value); }}
-            onKeyDown={function(e) { if (e.key === "Enter") { addPlayer(); } }}
-            placeholder="Last name*" maxLength={20} style={{ ...S.input, flex:"1 1 120px" }} />
-          <button style={S.btn("primary")} onClick={addPlayer}>Add</button>
-          <button style={S.btn("ghost")} onClick={function() {
+        {!showAddForm ? (
+          <button
+            style={{ ...S.btn("secondary"), width:"100%", marginBottom:"14px" }}
+            onClick={function() { setShowAddForm(true); }}>
+            + Add a New Player to Your Roster
+          </button>
+        ) : (
+          <div style={{ marginBottom:"14px" }}>
+            <div style={{ display:"flex", flexWrap:"wrap", gap:"8px", alignItems:"center", marginBottom:"8px" }}>
+              <input value={newFirstName} onChange={function(e) { setNewFirstName(e.target.value); }}
+                onKeyDown={function(e) { if (e.key === "Enter") { addPlayer(); } }}
+                placeholder="First name*" maxLength={20} style={{ ...S.input, flex:"1 1 120px" }} autoFocus />
+              <input value={newLastName} onChange={function(e) { setNewLastName(e.target.value); }}
+                onKeyDown={function(e) { if (e.key === "Enter") { addPlayer(); } }}
+                placeholder="Last name*" maxLength={20} style={{ ...S.input, flex:"1 1 120px" }} />
+              <button style={S.btn("primary")} onClick={addPlayer}>Add</button>
+              <button style={S.btn("secondary")} onClick={function() { setShowAddForm(false); setNewFirstName(""); setNewLastName(""); }}>Cancel</button>
+            </div>
+          </div>
+        )}
+        <button style={S.btn("ghost")} onClick={function() {
             if (confirm("Reset roster to default players for " + (activeTeam ? activeTeam.name : "this team") + "?")) {
               persistRoster(DEFAULT_ROSTER);
               persistBatting(DEFAULT_ROSTER.map(function(r) { return r.name; }));
               persistGrid(initGrid(DEFAULT_ROSTER, innings));
             }
           }}>Reset</button>
-        </div>
 
         <div style={{ display:"flex", gap:"8px", marginBottom:"16px", alignItems:"center" }}>
           <span style={{ fontSize:"12px", color:C.textMuted }}>Innings:</span>
