@@ -1178,6 +1178,8 @@ export default function App() {
   var collapsed = _col[0]; var setCollapsed = _col[1];
   var _v2sec = useState({});
   var v2SectionOpen = _v2sec[0]; var setV2SectionOpen = _v2sec[1];
+  var _vhOpen = useState({});
+  var vhOpen = _vhOpen[0]; var setVhOpen = _vhOpen[1];
   var _sum = useState(false);
   var showSummary = _sum[0]; var setShowSummary = _sum[1];
   var _hm = useState("welcome");
@@ -2070,18 +2072,23 @@ export default function App() {
                 <div style={{ fontSize:"11px", color:"rgba(255,255,255,0.4)", textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"12px" }}>What's New</div>
                 {VERSION_HISTORY.map(function(v) {
                   var isCurrent = v.version === APP_VERSION;
+                  var isOpen = vhOpen[v.version] !== undefined ? vhOpen[v.version] : isCurrent;
                   return (
-                    <div key={v.version} style={{ background: isCurrent ? "rgba(39,174,96,0.12)" : "rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderLeft: isCurrent ? "3px solid #27ae60" : "3px solid rgba(255,255,255,0.15)", borderRadius:"8px", padding:"10px 14px", marginBottom:"8px" }}>
-                      <div style={{ display:"flex", alignItems:"center", gap:"8px", marginBottom:"6px" }}>
+                    <div key={v.version} style={{ background: isCurrent ? "rgba(39,174,96,0.12)" : "rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderLeft: isCurrent ? "3px solid #27ae60" : "3px solid rgba(255,255,255,0.15)", borderRadius:"8px", marginBottom:"8px", overflow:"hidden" }}>
+                      <div onClick={function(ver, open) { return function() { var next = {}; for (var k in vhOpen) { next[k] = vhOpen[k]; } next[ver] = !open; setVhOpen(next); }; }(v.version, isOpen)}
+                        style={{ display:"flex", alignItems:"center", gap:"8px", padding:"10px 14px", cursor:"pointer" }}>
                         <span style={{ fontSize:"13px", fontWeight:"700", color: isCurrent ? "#27ae60" : "rgba(255,255,255,0.8)" }}>v{v.version}</span>
                         {isCurrent ? <span style={{ fontSize:"10px", background:"#27ae60", color:"#fff", borderRadius:"10px", padding:"1px 8px", fontWeight:"600" }}>Current</span> : null}
                         <span style={{ fontSize:"11px", color:"rgba(255,255,255,0.35)", marginLeft:"auto" }}>{v.date}</span>
+                        <span style={{ fontSize:"10px", color:"rgba(255,255,255,0.3)", flexShrink:0, marginLeft:"6px" }}>{isOpen ? "▲" : "▼"}</span>
                       </div>
-                      <ul style={{ margin:0, paddingLeft:"16px" }}>
-                        {v.changes.map(function(c, ci) {
-                          return <li key={ci} style={{ fontSize:"11px", color:"rgba(255,255,255,0.55)", lineHeight:"1.6" }}>{c}</li>;
-                        })}
-                      </ul>
+                      {isOpen ? (
+                        <ul style={{ margin:0, paddingLeft:"16px", paddingRight:"14px", paddingBottom:"10px" }}>
+                          {v.changes.map(function(c, ci) {
+                            return <li key={ci} style={{ fontSize:"11px", color:"rgba(255,255,255,0.55)", lineHeight:"1.6" }}>{c}</li>;
+                          })}
+                        </ul>
+                      ) : null}
                     </div>
                   );
                 })}
