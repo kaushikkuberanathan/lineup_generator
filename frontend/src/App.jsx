@@ -2164,6 +2164,21 @@ export default function App() {
       return results.slice(0, 3);
     }
 
+    function getRosterSeasonStats(playerName) {
+      var ab = 0, h = 0, r = 0, rbi = 0;
+      for (var gi = 0; gi < schedule.length; gi++) {
+        var game = schedule[gi];
+        if (game.battingPerf && game.battingPerf[playerName]) {
+          var perf = game.battingPerf[playerName];
+          ab  += (perf.ab  || 0);
+          h   += (perf.h   || 0);
+          r   += (perf.r   || 0);
+          rbi += (perf.rbi || 0);
+        }
+      }
+      return { ab:ab, h:h, r:r, rbi:rbi };
+    }
+
     return (
       <div>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"14px", flexWrap:"wrap", gap:"8px" }}>
@@ -2203,34 +2218,17 @@ export default function App() {
               <table style={{ width:"100%", borderCollapse:"collapse", fontSize:"11px" }}>
                 <thead>
                   <tr style={{ background:"#f5efe4" }}>
-                    {["Player","Skills","Tags","Preferred","Avoids","Top Positions"].map(function(h) {
+                    {["Player","Preferred","Avoids","AB","H","R","RBI"].map(function(h) {
                       return <th key={h} style={{ padding:"7px 10px", textAlign:"left", color:"#6a7a9a", fontSize:"10px", letterSpacing:"0.1em", textTransform:"uppercase", borderBottom:"2px solid rgba(15,31,61,0.08)", whiteSpace:"nowrap" }}>{h}</th>;
                     })}
                   </tr>
                 </thead>
                 <tbody>
                   {roster.map(function(info) {
-                    var top = getTopPositions(info);
+                    var stats = getRosterSeasonStats(info.name);
                     return (
                       <tr key={info.name} style={{ borderBottom:"1px solid rgba(15,31,61,0.05)" }}>
                         <td style={{ padding:"8px 10px", fontWeight:"bold" }}>{firstName(info.name)}</td>
-                        <td style={{ padding:"8px 10px" }}>
-                          <div style={{ display:"flex", gap:"3px", flexWrap:"wrap" }}>
-                            {(info.skills || []).map(function(sk) {
-                              var s = SKILLS[sk]; if (!s) { return null; }
-                              return <span key={sk} style={{ fontSize:"10px", padding:"1px 5px", borderRadius:"8px", background:s.color+"22", color:s.color, fontWeight:"bold", whiteSpace:"nowrap" }}>{s.label}</span>;
-                            })}
-                          </div>
-                        </td>
-                        <td style={{ padding:"8px 10px" }}>
-                          <div style={{ display:"flex", gap:"3px", flexWrap:"wrap" }}>
-                            {(info.tags || []).map(function(tk) {
-                              var t = TAGS[tk]; if (!t) { return null; }
-                              return <span key={tk} style={{ fontSize:"10px", padding:"1px 5px", borderRadius:"8px", background:t.color+"22", color:t.color, fontWeight:"bold", whiteSpace:"nowrap" }}>{t.label}</span>;
-                            })}
-                            {(!info.tags || info.tags.length === 0) ? <span style={{ color:"#ccc", fontSize:"10px" }}>none</span> : null}
-                          </div>
-                        </td>
                         <td style={{ padding:"8px 10px" }}>
                           {(info.prefs || []).map(function(pos, idx) {
                             return <span key={pos} style={{ fontSize:"10px", padding:"1px 6px", borderRadius:"4px", background:POS_COLORS[pos]+"cc", color:"#fff", fontWeight:"bold", marginRight:"3px" }}>{idx + 1}.{pos}</span>;
@@ -2243,13 +2241,10 @@ export default function App() {
                           })}
                           {(!info.dislikes || info.dislikes.length === 0) ? <span style={{ color:"#ccc", fontSize:"10px" }}>none</span> : null}
                         </td>
-                        <td style={{ padding:"8px 10px" }}>
-                          <div style={{ display:"flex", gap:"3px" }}>
-                            {top.map(function(item, idx) {
-                              return <span key={item.pos} style={{ fontSize:"10px", padding:"1px 6px", borderRadius:"4px", background:POS_COLORS[item.pos]+"cc", color:"#fff", fontWeight:"bold", opacity: idx === 0 ? 1 : idx === 1 ? 0.75 : 0.5 }}>{item.pos}</span>;
-                            })}
-                          </div>
-                        </td>
+                        <td style={{ padding:"4px 6px", textAlign:"center" }}>{stats.ab  || "—"}</td>
+                        <td style={{ padding:"4px 6px", textAlign:"center" }}>{stats.h   || "—"}</td>
+                        <td style={{ padding:"4px 6px", textAlign:"center" }}>{stats.r   || "—"}</td>
+                        <td style={{ padding:"4px 6px", textAlign:"center" }}>{stats.rbi || "—"}</td>
                       </tr>
                     );
                   })}
