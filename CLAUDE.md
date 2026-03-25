@@ -216,6 +216,25 @@ backend/
 
 ## Version History
 
+### v1.3.3 — March 25, 2026
+- Roster protection: migration never overwrites existing roster data
+- Auto-snapshot on every roster add, remove, and edit
+- Snapshot on Supabase hydration at app load
+- Recover UI: restore previous roster link appears when roster is empty
+- Up to 5 snapshots shown in recovery modal with timestamp and player count
+- Auto-prune: Supabase keeps last 10 snapshots per team
+
+### v1.3.2 — March 25, 2026
+- Navigation restructured: two-row portrait nav, explicit ← Home button
+- Quick Summary table: AB/H/R/RBI columns
+- Add Player form: collapsible
+- Supabase hydration race condition fix
+- Data-loss guard on all persist helpers during hydration
+
+### v1.3.1 — March 25, 2026
+- Fixed V2 lineup engine: LC/RC positions now assign correctly
+- Batting order updates automatically after every auto-assign
+
 ### v1.3.0 — March 25, 2026
 - Player profile UI completely rebuilt with V2 scoring-driven tag system
 - New collapsible card sections: Fielding, Batting, Base Running, Effort, Lineup Constraints, Development Focus

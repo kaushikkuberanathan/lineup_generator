@@ -128,6 +128,15 @@ team_data (
 
 **Schema versioning:** A `schemaVersion` field on `team_data` drives `migrateRoster()`, which remaps V1 fields to V2 equivalents with safe defaults. CF→LC migration (schema v2) is an example — all existing `CF` position references are auto-remapped on load.
 
+```sql
+-- Roster safety net (v1.3.3)
+roster_snapshots (id, team_id, team_name, roster, player_count,
+                  snapshot_at, trigger_event)
+-- Auto-pruned to 10 most recent per team via Postgres trigger
+-- Views: roster_snapshots_latest
+-- trigger_event: 'auto_save' | 'app_load' | 'pre_migration' | 'manual_export'
+```
+
 ---
 
 ## Scoring Engine (V2)
@@ -496,3 +505,4 @@ The `VERSION_HISTORY` array in `App.jsx` powers the in-app changelog. The "Curre
 | Backtracking solver in frontend | Fast enough at 11-player / 6-inning scale | Move server-side if multi-game batch generation or 20+ player rosters are added |
 | No TypeScript | Moved fast in MVP phase | Increasing tech debt — migration is a Phase 4 quality item |
 | No CI/CD pipeline | Manual deploy checklist covers it today | GitHub Actions CI is next sprint — block Vercel auto-deploy on failing engine tests |
+| Roster snapshots (last 10 per team) | Recovery net for migration wipes and accidental deletes | Scale snapshot retention if teams request longer history |

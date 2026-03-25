@@ -130,9 +130,21 @@ var DEFAULT_ROSTER = [];
 var _mem = {};
 var SCHEMA_VERSION = 2;
 
-var APP_VERSION = "1.3.2";
+var APP_VERSION = "1.3.3";
 
 var VERSION_HISTORY = [
+  {
+    version: "1.3.3",
+    date: "March 25, 2026",
+    changes: [
+      "Roster protection: migration never overwrites existing roster data",
+      "Auto-snapshot on every roster add, remove, and edit",
+      "Snapshot on Supabase hydration at app load",
+      "Recover UI: restore previous roster link appears when roster is empty",
+      "Up to 5 snapshots shown in recovery modal with timestamp and player count",
+      "Auto-prune: Supabase keeps last 10 snapshots per team"
+    ]
+  },
   {
     version: "1.3.2",
     date: "March 25, 2026",
@@ -3074,6 +3086,15 @@ export default function App() {
           </div>
         ) : null}
 
+        {lineupDirty && (
+          <div style={{ background:"rgba(245,200,66,0.12)", border:"1px solid rgba(245,200,66,0.4)", borderRadius:"8px", padding:"10px 14px", marginBottom:"10px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:"10px", flexWrap:"wrap" }}>
+            <div style={{ fontSize:"12px", color:"#92620a", fontWeight:"600", flex:1 }}>⚡ Roster changed — your lineup may be out of date</div>
+            <div style={{ display:"flex", gap:"8px", flexShrink:0 }}>
+              <button style={{ ...S.btn("gold"), fontSize:"11px", padding:"5px 12px" }} onClick={generateLineup} disabled={isHydrating}>Regenerate Lineup</button>
+              <button style={{ background:"transparent", border:"none", color:"#94a3b8", fontSize:"18px", cursor:"pointer", padding:"0 4px", lineHeight:1 }} onClick={function() { setLineupDirty(false); }}>×</button>
+            </div>
+          </div>
+        )}
         <div style={{ display:"flex", gap:"8px", marginBottom:"14px", flexWrap:"wrap", alignItems:"center" }}>
           {!lineupLocked ? (
             <button style={S.btn("gold")} onClick={generateLineup} disabled={isHydrating}>

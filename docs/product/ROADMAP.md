@@ -49,6 +49,29 @@
 - 10-player field configuration: LC + RC replace CF in outfield; 1 bench slot per inning (schema v2, migration auto-remaps saved CF→LC)
 - First-time coach onboarding modal (5-step in-app walkthrough, localStorage completion tracking, always re-accessible via "Getting Started" button in Roster tab)
 
+### v1.3.3 — March 25, 2026
+#### Roster Protection System
+- Migration fix: schedule-only update for existing teams — roster never overwritten by re-seed
+- `roster_snapshots` Supabase table with auto-prune trigger (keeps last 10 per team)
+- Auto-snapshot on every player add, remove, and edit (`auto_save` event)
+- Snapshot on Supabase hydration at app load (`app_load` event)
+- In-app roster recovery UI: "Restore previous roster" link visible when roster is empty
+- Recovery modal shows up to 5 snapshots with timestamp, player count, and trigger event
+- Resolves Bananas roster loss incident
+
+### v1.3.2 — March 25, 2026
+#### UX Restructure + Data Integrity Guards
+- Navigation: two-row portrait nav (team tabs / global tabs), explicit ← Home button
+- Home screen: collapsible What's New, dark-styled Links section
+- Quick Summary table: AB/H/R/RBI columns
+- Add Player form: collapsible (hidden by default)
+- Supabase hydration race fix: loading indicator, Auto-Assign disabled until roster loads
+- Data-loss guard: empty roster never overwrites Supabase; persist helpers skip cloud sync during hydration
+
+### v1.3.1 — March 25, 2026
+- Fixed V2 lineup engine: LC/RC positions now assign correctly
+- Batting order updates automatically after every auto-assign
+
 ### v1.3.0 — March 25, 2026
 #### Player Profile & Scoring Engine Rebuild
 - Rebuilt player profile UI with V2 collapsible card system
