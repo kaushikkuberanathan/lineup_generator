@@ -1725,7 +1725,8 @@ export default function App() {
     var capitalize = function(s) { return s.charAt(0).toUpperCase() + s.slice(1); };
     var n = capitalize(fn) + " " + capitalize(ln);
     if (players.indexOf(n) >= 0) { return; }
-    var p = { name:n, firstName:capitalize(fn), lastName:capitalize(ln), skills:["developing"], tags:[], dislikes:[], prefs:[], batSkills:[] };
+    var p = { name:n, firstName:capitalize(fn), lastName:capitalize(ln), skills:["developing"], tags:[], dislikes:[], prefs:[], batSkills:[],
+              walkUpSong:null, walkUpArtist:null, walkUpStart:null, walkUpEnd:null, walkUpNotes:null };
     var next = roster.concat([p]);
     persistRoster(next);
     if (activeTeam && isSupabaseEnabled) { dbSnapshotRoster(activeTeam.id, activeTeam.name, next, 'auto_save'); }
