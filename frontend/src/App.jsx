@@ -5708,40 +5708,43 @@ export default function App() {
           ) : null}
         </div>
 
-        {/* ── Section 3: Version History ───────────────────────── */}
-        <div style={S.card}>
-          <div style={S.sectionTitle}>What&#x27;s New</div>
-          {VERSION_HISTORY.map(function(v, vi) {
-            var isCurrent = v.version === APP_VERSION;
-            var isOpen = expandedVersion === v.version;
-            return (
-              <div key={v.version} style={{
-                borderLeft: isCurrent ? "3px solid #27ae60" : "3px solid rgba(15,31,61,0.1)",
-                background: isCurrent ? "rgba(39,174,96,0.04)" : "transparent",
-                borderRadius: "0 6px 6px 0",
-                padding: "10px 14px",
-                marginBottom: vi < VERSION_HISTORY.length - 1 ? "12px" : "0"
-              }}>
-                <div
-                  onClick={function(ver) { return function() { setExpandedVersion(expandedVersion === ver ? null : ver); }; }(v.version)}
-                  style={{ display:"flex", gap:"10px", alignItems:"baseline", marginBottom: isOpen ? "8px" : "0", flexWrap:"wrap", cursor:"pointer" }}>
-                  <span style={{ fontSize:"14px", fontWeight:"bold", color:C.navy }}>v{v.version}</span>
-                  <span style={{ fontSize:"11px", color:C.textMuted }}>{v.date}</span>
-                  {isCurrent ? <span style={{ fontSize:"10px", padding:"1px 7px", borderRadius:"10px", background:"#27ae60", color:"#fff", fontWeight:"bold" }}>Current</span> : null}
-                  <span style={{ marginLeft:"auto", fontSize:"11px", color:C.textMuted }}>{isOpen ? "▲" : "▼"}</span>
-                </div>
-                {isOpen ? (
-                  <ul style={{ margin:"0", paddingLeft:"16px" }}>
-                    {v.changes.map(function(ch, ci) {
-                      return <li key={ci} style={{ fontSize:"12px", color:C.text, marginBottom:"3px", lineHeight:"1.5" }}>{ch}</li>;
-                    })}
-                  </ul>
-                ) : null}
-              </div>
-            );
-          })}
-        </div>
+      </div>
+    );
+  }
 
+  function renderUpdates() {
+    return (
+      <div style={S.card}>
+        <div style={S.sectionTitle}>What&#x27;s New</div>
+        {VERSION_HISTORY.map(function(v, vi) {
+          var isCurrent = v.version === APP_VERSION;
+          var isOpen = expandedVersion === v.version;
+          return (
+            <div key={v.version} style={{
+              borderLeft: isCurrent ? "3px solid #27ae60" : "3px solid rgba(15,31,61,0.1)",
+              background: isCurrent ? "rgba(39,174,96,0.04)" : "transparent",
+              borderRadius: "0 6px 6px 0",
+              padding: "10px 14px",
+              marginBottom: vi < VERSION_HISTORY.length - 1 ? "12px" : "0"
+            }}>
+              <div
+                onClick={function(ver) { return function() { setExpandedVersion(expandedVersion === ver ? null : ver); }; }(v.version)}
+                style={{ display:"flex", gap:"10px", alignItems:"baseline", marginBottom: isOpen ? "8px" : "0", flexWrap:"wrap", cursor:"pointer" }}>
+                <span style={{ fontSize:"14px", fontWeight:"bold", color:C.navy }}>v{v.version}</span>
+                <span style={{ fontSize:"11px", color:C.textMuted }}>{v.date}</span>
+                {isCurrent ? <span style={{ fontSize:"10px", padding:"1px 7px", borderRadius:"10px", background:"#27ae60", color:"#fff", fontWeight:"bold" }}>Current</span> : null}
+                <span style={{ marginLeft:"auto", fontSize:"11px", color:C.textMuted }}>{isOpen ? "▲" : "▼"}</span>
+              </div>
+              {isOpen ? (
+                <ul style={{ margin:"0", paddingLeft:"16px" }}>
+                  {v.changes.map(function(ch, ci) {
+                    return <li key={ci} style={{ fontSize:"12px", color:C.text, marginBottom:"3px", lineHeight:"1.5" }}>{ch}</li>;
+                  })}
+                </ul>
+              ) : null}
+            </div>
+          );
+        })}
       </div>
     );
   }
@@ -6284,6 +6287,7 @@ export default function App() {
   ];
   var MORE_SUBTABS = [
     { key:"about",    label:"About"    },
+    { key:"updates",  label:"Updates"  },
     { key:"links",    label:"Links"    },
     { key:"feedback", label:"Feedback" },
   ];
@@ -6355,6 +6359,7 @@ export default function App() {
       {primaryTab === "more" && moreTab === "feedback" ? renderFeedback() : null}
       {primaryTab === "more" && moreTab === "links"    ? renderLinks()    : null}
       {primaryTab === "more" && moreTab === "about"    ? renderAbout()    : null}
+      {primaryTab === "more" && moreTab === "updates"  ? renderUpdates()  : null}
     </div>
   );
 
