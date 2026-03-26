@@ -5663,15 +5663,12 @@ export default function App() {
         </div>
         {/* \u2500\u2500 Section 1: App Info \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */}
         <div style={S.card}>
-          <div style={{ fontSize:"20px", fontWeight:"bold", color:C.navy, marginBottom:"4px" }}>Lineup Generator &#x26be;</div>
+          <div style={{ fontSize:"20px", fontWeight:"bold", color:C.navy, marginBottom:"4px" }}>Lineup Generator &#x26be; <span style={{ fontSize:"13px", fontWeight:"normal", color:C.textMuted }}>v{APP_VERSION}</span></div>
           <div style={{ fontSize:"12px", color:C.textMuted, marginBottom:"12px" }}>Built for youth baseball coaches. Runs at the field.</div>
-          <div style={{ display:"flex", alignItems:"center", gap:"12px", flexWrap:"wrap", marginBottom:"14px" }}>
-            <span style={{ fontSize:"11px", padding:"3px 10px", borderRadius:"10px", background:"rgba(15,31,61,0.07)", color:C.navy, fontWeight:"bold" }}>
-              Version {APP_VERSION}
-            </span>
+          <div style={{ marginBottom:"14px" }}>
             <a href="https://line-up-generator.vercel.app" target="_blank" rel="noopener noreferrer"
-              style={{ fontSize:"11px", color:C.red, textDecoration:"underline", fontWeight:"bold" }}>
-              line-up-generator.vercel.app
+              style={{ fontSize:"12px", color:C.red, fontWeight:"bold", textDecoration:"none" }}>
+              Open in Browser ↗
             </a>
           </div>
           <button style={S.btn("primary")}
