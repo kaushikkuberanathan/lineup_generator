@@ -216,6 +216,16 @@ backend/
 
 ## Version History
 
+### v1.3.7 — March 26, 2026
+- Feat: snack duty field on game — add/edit in schedule form, shown on game card with 🍎
+- Feat: walk-up song link field — URL per player, clickable in Game Day View, included in share text and PDF
+- Feat: smart time printing — default times (0:00/0:10) suppressed in PDF and Game Day View; asterisk note added when applicable
+- Feat: Songs tab opens in Game Day View by default with sync warning banner
+- Feat: batting order note in all print views — on-screen print card and generated PDF
+- Feat: team context menu (···) on home screen — backup and delete available for any team, not just active
+- Feat: restore from backup file available on empty roster screen (no Supabase required)
+- Fix: battingPerf migration merge now checks localStorage before Supabase — prevents empty {} overwriting local stats
+
 ### v1.3.6 — March 26, 2026
 - Feat: walkup songs — per-player field with title, artist, start/end time
 - Feat: walkup song display on player card (hidden when empty)

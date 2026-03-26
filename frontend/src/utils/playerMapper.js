@@ -70,5 +70,6 @@ export function mapPlayerToV2(player) {
     walkUpStart:  player.walkUpStart  ?? null,
     walkUpEnd:    player.walkUpEnd    ?? null,
     walkUpNotes:  player.walkUpNotes  ?? null,
+    walkUpLink:   player.walkUpLink   ?? null,
   };
 }

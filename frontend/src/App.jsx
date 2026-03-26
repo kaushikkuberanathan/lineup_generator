@@ -2118,7 +2118,7 @@ export default function App() {
       }
       upcoming.sort(function(a,b) { return a.d - b.d; });
       if (!upcoming.length) { return null; }
-      var days = Math.round((upcoming[0].d - today) / 86400000);
+      var days = Math.floor((upcoming[0].d - today) / 86400000);
       return { game: upcoming[0].game, days: days };
     }
 
