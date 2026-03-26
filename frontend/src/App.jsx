@@ -142,7 +142,9 @@ var VERSION_HISTORY = [
       "Feat: Past games de-emphasized, canceled games hidden",
       "Feat: Summary header showing assigned count and next upcoming assignment",
       "Feat: snackDuty persisted to localStorage, Supabase, export backup, and import restore",
-      "Fix: game time display strips leading zero from hour (7:00 PM not 07:00 PM)"
+      "Fix: game time display strips leading zero from hour (7:00 PM not 07:00 PM)",
+      "Feat: snack duty bidirectional sync — assign from Schedule tab or Snacks tab with single shared state",
+      "Feat: shared handleSnackAssign, handleSnackNote, handleSnackClear handlers used by both tabs"
     ]
   },
   {
@@ -1519,6 +1521,24 @@ export default function App() {
         }); });
       }
     }
+  }
+
+  // Shared by both renderSnackDuty and renderSchedule — single source of truth
+  function updateSnackField(gameId, field, value) {
+    var entry = snackDuty[gameId] || { playerName: "", note: "" };
+    var next = {};
+    for (var k in snackDuty) { next[k] = snackDuty[k]; }
+    next[gameId] = {};
+    for (var k2 in entry) { next[gameId][k2] = entry[k2]; }
+    next[gameId][field] = value;
+    persistSnackDuty(next);
+  }
+
+  function clearSnackAssignment(gameId) {
+    var next = {};
+    for (var k in snackDuty) { next[k] = snackDuty[k]; }
+    delete next[gameId];
+    persistSnackDuty(next);
   }
 
   function persistPractices(next) {
@@ -4161,16 +4181,6 @@ export default function App() {
     // Filter out canceled games
     var games = sorted.filter(function(g) { return g.result !== "X"; });
 
-    function updateAssignment(gameId, field, value) {
-      var entry = snackDuty[gameId] || { playerName: "", note: "" };
-      var next = {};
-      for (var k in snackDuty) { next[k] = snackDuty[k]; }
-      next[gameId] = {};
-      for (var k2 in entry) { next[gameId][k2] = entry[k2]; }
-      next[gameId][field] = value;
-      persistSnackDuty(next);
-    }
-
     if (!schedule.length) {
       return (
         <div style={{ padding:"24px 16px", textAlign:"center", color:C.textMuted, fontSize:"14px" }}>
@@ -4239,7 +4249,7 @@ export default function App() {
                 <select
                   value={assignment.playerName || ""}
                   onChange={function(gid) { return function(e) {
-                    updateAssignment(gid, "playerName", e.target.value);
+                    updateSnackField(gid, "playerName", e.target.value);
                   }; }(game.id)}
                   style={{ flex:"1 1 140px", minWidth:"120px", padding:"5px 8px", borderRadius:"6px", border:"1px solid rgba(15,31,61,0.15)", fontSize:"13px", fontFamily:"inherit", background:C.cardBg, color: hasAssignment ? C.text : C.textMuted }}>
                   <option value="">— select player —</option>
@@ -4249,7 +4259,7 @@ export default function App() {
                 </select>
                 {hasAssignment && (
                   <button
-                    onClick={function(gid) { return function() { updateAssignment(gid, "playerName", ""); }; }(game.id)}
+                    onClick={function(gid) { return function() { clearSnackAssignment(gid); }; }(game.id)}
                     style={{ background:"none", border:"none", cursor:"pointer", fontSize:"14px", color:C.textMuted, padding:"2px 4px", lineHeight:1 }}
                     title="Clear">✕</button>
                 )}
@@ -4263,7 +4273,7 @@ export default function App() {
                   placeholder="Optional note (e.g. bring juice boxes)"
                   value={assignment.note || ""}
                   onChange={function(gid) { return function(e) {
-                    updateAssignment(gid, "note", e.target.value);
+                    updateSnackField(gid, "note", e.target.value);
                   }; }(game.id)}
                   style={{ flex:1, padding:"5px 8px", borderRadius:"6px", border:"1px solid rgba(15,31,61,0.15)", fontSize:"13px", fontFamily:"inherit", background:C.cardBg }} />
               </div>
