@@ -2211,9 +2211,8 @@ export default function App() {
   // ============================================================
   function renderHome() {
     var now = new Date();
-    var hour = now.getHours();
-    var greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
-    var dateStr = now.toLocaleDateString("en-US", { weekday:"long", year:"numeric", month:"long", day:"numeric" });
+    var etHour = new Date(now.toLocaleString("en-US", { timeZone:"America/New_York" })).getHours();
+    var greeting = etHour < 12 ? "Good morning" : etHour < 17 ? "Good afternoon" : "Good evening";
 
     function getNextGame(team) {
       var today = new Date(); today.setHours(0,0,0,0);
@@ -2273,55 +2272,36 @@ export default function App() {
       var hasRoster    = teamRoster.length > 0;
       var hasSched     = teamSched.length > 0;
 
-      var pill = null;
-      var pillStyle = { fontSize:"11px", padding:"6px 12px", borderRadius:"8px", marginTop:"8px" };
-      if (!hasRoster) {
-        pill = "Add your roster to get started";
-        pillStyle.background = "rgba(200,144,46,0.15)"; pillStyle.color = "#c8902e";
-      } else if (!hasSched) {
-        pill = "No schedule yet - tap to add games";
-        pillStyle.background = "rgba(200,144,46,0.15)"; pillStyle.color = "#c8902e";
-      } else if (nextGame && nextGame.days === 0) {
-        pill = "GAME DAY vs " + nextGame.game.opponent + (nextGame.game.time ? " at " + nextGame.game.time : "");
-        pillStyle.background = "rgba(200,16,46,0.9)"; pillStyle.color = "#fff"; pillStyle.fontWeight = "bold";
+      var alertText = null;
+      var alertColor = "rgba(255,255,255,0.45)";
+      if (nextGame && nextGame.days === 0) {
+        alertText = "GAME DAY \u2022 vs " + nextGame.game.opponent + (nextGame.game.time ? " at " + nextGame.game.time : "");
+        alertColor = "#c8102e";
       } else if (nextGame && nextGame.days === 1) {
-        pill = "Game TOMORROW vs " + nextGame.game.opponent;
-        pillStyle.background = "rgba(245,200,66,0.2)"; pillStyle.color = "#a07010"; pillStyle.fontWeight = "bold";
+        alertText = "Game TOMORROW \u2022 vs " + nextGame.game.opponent;
+        alertColor = "#f5c842";
       } else if (nextGame) {
         var gameDate = new Date(nextGame.game.date + "T12:00:00").toLocaleDateString("en-US", { weekday:"short", month:"short", day:"numeric" });
-        pill = "Next game in " + nextGame.days + " days - " + gameDate + " vs " + nextGame.game.opponent;
-        pillStyle.background = "rgba(255,255,255,0.08)"; pillStyle.color = "rgba(255,255,255,0.6)";
-      } else {
-        pill = "Season complete - no upcoming games";
-        pillStyle.background = "rgba(255,255,255,0.05)"; pillStyle.color = "rgba(255,255,255,0.35)";
+        alertText = "Next game " + gameDate + " \u2022 vs " + nextGame.game.opponent;
+        alertColor = "rgba(255,255,255,0.45)";
       }
 
       return (
-        <div style={{ background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.14)", borderRadius:"12px", padding:"16px 18px", marginBottom:"10px" }}>
-          <div style={{ display:"flex", alignItems:"flex-start", gap:"12px" }}>
-            <div style={{ flex:1 }}>
-              <div style={{ fontWeight:"bold", fontSize:"17px", color:"#fff", marginBottom:"4px" }}>
-                {team.name}
-                {team.ageGroup ? <span style={{ fontSize:"11px", color:"rgba(255,255,255,0.45)", marginLeft:"8px", fontWeight:"normal", background:"rgba(255,255,255,0.08)", padding:"1px 8px", borderRadius:"10px" }}>{team.ageGroup}</span> : null}
-                {played > 0 ? <span style={{ fontSize:"11px", color:"rgba(255,255,255,0.45)", marginLeft:"8px", fontWeight:"normal" }}>{wins}W - {losses}L{played - wins - losses > 0 ? " - " + (played-wins-losses) + "T" : ""}</span> : null}
-              </div>
-              <div style={{ fontSize:"11px", color:"rgba(255,255,255,0.4)", display:"flex", gap:"12px", flexWrap:"wrap" }}>
-                <span>{teamRoster.length} player{teamRoster.length !== 1 ? "s" : ""}</span>
-                {teamSched.length > 0 ? (
-                  <span>
-                    {played > 0 ? played + " played" : ""}
-                    {played > 0 && remaining > 0 ? " / " : ""}
-                    {remaining > 0 ? remaining + " to go" : ""}
-                    {played === 0 && remaining === 0 ? teamSched.length + " games" : ""}
-                  </span>
-                ) : null}
-                {nextPracDays === 0 ? <span style={{ color:"#f5c842" }}>Practice today</span> : nextPracDays !== null ? <span>Practice in {nextPracDays}d</span> : null}
-              </div>
-            </div>
-            <div style={{ display:"flex", gap:"6px", alignItems:"center", position:"relative" }}>
-              <button onClick={function() { loadTeam(team); }} style={{ padding:"8px 18px", borderRadius:"8px", border:"none", cursor:"pointer", fontWeight:"bold", fontSize:"13px", fontFamily:"inherit", background:"linear-gradient(135deg,#c8102e,#9b0c22)", color:"#fff", position:"relative", zIndex:1001 }}>
-                Open
-              </button>
+        <div style={{ background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:"12px", padding:"14px 16px", marginBottom:"8px" }}>
+          {/* Row 1: name + age group + Open + ··· */}
+          <div style={{ display:"flex", alignItems:"center", gap:"8px", marginBottom:"6px" }}>
+            <span style={{ fontSize:"17px", fontWeight:"bold", color:"#f5c842", fontFamily:"Georgia,serif", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", flex:1 }}>
+              {team.name}
+            </span>
+            {team.ageGroup ? <span style={{ fontSize:"10px", color:"rgba(255,255,255,0.5)", whiteSpace:"nowrap", flexShrink:0 }}>{team.ageGroup}</span> : null}
+            <button onClick={function() { loadTeam(team); }}
+              style={{ background:"linear-gradient(135deg,#f5c842,#e6a817)", color:"#0f1f3d",
+                        border:"none", borderRadius:"8px", padding:"6px 14px", fontSize:"12px",
+                        fontWeight:"bold", cursor:"pointer", whiteSpace:"nowrap",
+                        flexShrink:0, position:"relative", zIndex:1001 }}>
+              Open
+            </button>
+            <div style={{ position:"relative", flexShrink:0 }}>
               <button
                 onClick={function(e) { e.stopPropagation(); setOpenMenuTeamId(openMenuTeamId === team.id ? null : team.id); }}
                 style={{ padding:"8px 10px", borderRadius:"8px", border:"1px solid rgba(255,255,255,0.2)", cursor:"pointer", fontSize:"16px", fontFamily:"inherit", background:"transparent", color:"rgba(255,255,255,0.55)", lineHeight:1, letterSpacing:"1px" }}>
@@ -2352,7 +2332,21 @@ export default function App() {
               )}
             </div>
           </div>
-          <div style={pillStyle}>{pill}</div>
+          {/* Row 2: metadata with icons */}
+          <div style={{ display:"flex", gap:"12px", fontSize:"11px", color:"rgba(255,255,255,0.5)", flexWrap:"wrap", marginBottom: alertText ? "8px" : "0" }}>
+            <span>👥 {teamRoster.length} player{teamRoster.length !== 1 ? "s" : ""}</span>
+            {teamSched.length > 0 ? <span>⚾ {played}/{teamSched.length} games</span> : <span>⚾ No games yet</span>}
+            {played > 0 ? <span>{wins}W-{losses}L{played-wins-losses > 0 ? "-"+(played-wins-losses)+"T" : ""}</span> : null}
+            {nextPracDays === 0
+              ? <span style={{ color:"#f5c842" }}>🏃 Practice today</span>
+              : nextPracDays !== null ? <span>🏃 {nextPracDays}d to practice</span> : null}
+          </div>
+          {/* Row 3: game alert — left strip */}
+          {alertText ? (
+            <div style={{ borderLeft:"3px solid "+alertColor, paddingLeft:"10px", fontSize:"12px", fontWeight:"600", color:alertColor }}>
+              {alertText}
+            </div>
+          ) : null}
         </div>
       );
     }
@@ -2364,9 +2358,15 @@ export default function App() {
         <div style={{ width:"100%", maxWidth:"500px" }}>
           {homeMode === "welcome" ? (
             <div>
+              <div style={{ marginBottom:"14px" }}>
+                <div style={{ fontSize:"13px", color:"rgba(255,255,255,0.6)", letterSpacing:"0.08em", textTransform:"uppercase", fontFamily:"Georgia,serif" }}>{greeting}, Coach</div>
+                <div style={{ fontSize:"11px", color:"rgba(255,255,255,0.3)", marginTop:"2px" }}>
+                  {now.toLocaleDateString("en-US", { timeZone:"America/New_York", weekday:"long", month:"long", day:"numeric" })}
+                </div>
+              </div>
               {teams.length > 0 ? (
-                <div style={{ marginBottom:"14px" }}>
-                  <div style={{ fontSize:"10px", color:"rgba(255,255,255,0.35)", letterSpacing:"0.15em", textTransform:"uppercase", marginBottom:"10px", textAlign:"center" }}>Your Teams</div>
+                <div style={{ marginBottom:"8px" }}>
+                  <div style={{ fontSize:"10px", color:"rgba(255,255,255,0.35)", letterSpacing:"0.15em", textTransform:"uppercase", marginBottom:"6px", textAlign:"center" }}>Your Teams</div>
                   {teams.map(function(t) { return <TeamCard key={t.id} team={t} />; })}
                 </div>
               ) : null}
