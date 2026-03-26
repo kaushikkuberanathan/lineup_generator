@@ -1341,7 +1341,7 @@ export default function App() {
   var teams = _teams[0]; var setTeams = _teams[1];
   var _atid = useState(initActiveId);
   var activeTeamId = _atid[0]; var setActiveTeamId = _atid[1];
-  var _primaryTab = useState("roster");
+  var _primaryTab = useState("home");
   var primaryTab = _primaryTab[0]; var setPrimaryTab = _primaryTab[1];
   var _rosterTab = useState("players");
   var rosterTab = _rosterTab[0]; var setRosterTab = _rosterTab[1];
@@ -2382,52 +2382,6 @@ export default function App() {
               <button onClick={function() { setHomeMode("create"); }} style={{ width:"100%", padding:"13px", borderRadius:"12px", border:"2px dashed rgba(255,255,255,0.2)", background:"transparent", color:"rgba(255,255,255,0.55)", fontSize:"13px", fontFamily:"inherit", cursor:"pointer", marginBottom:"14px" }}>
                 + Create New Team
               </button>
-              <div style={{ borderTop:"1px solid rgba(255,255,255,0.1)", marginTop:"20px", paddingTop:"16px" }}>
-                <div style={{ fontSize:"11px", color:"rgba(255,255,255,0.4)", textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"12px" }}>Links</div>
-                {[
-                  { label:"County Official Game Schedule", desc:"Forsyth County 2026 Youth Baseball & Softball — full season schedule", url:COUNTY_SCHEDULE_URL, emoji:"📅" },
-                  { label:"Field & Cage Request", desc:"Request field or batting cage time from Forsyth County Parks", url:"https://docs.google.com/forms/d/e/1FAIpQLSeCIvqZlGsxonkWpFJ52q_6PWrOl3mmOTjTdiPGcz3ZQGzJDQ/viewform", emoji:"⚾" },
-                  { label:"Sharon Springs Athletics", desc:"Sharon Springs community athletics — league info, teams, and events", url:"https://sharonspringsathletics.org/", emoji:"🏆" },
-                  { label:"Inclement Weather Updates", desc:"Forsyth County Parks — field closures and weather delays", url:"https://parks.forsythco.com/Athletic-Leagues/Inclement-Weather-Information", emoji:"⛈️" },
-                  { label:"Status Me Auto Alerts", desc:"Sign up for automatic game status notifications", url:"https://statusme.com/", emoji:"🔔" },
-                ].map(function(link, li) {
-                  return (
-                    <a key={li} href={link.url} target="_blank" rel="noopener noreferrer" style={{ display:"flex", alignItems:"center", gap:"12px", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:"8px", padding:"10px 14px", marginBottom:"6px", textDecoration:"none" }}>
-                      <span style={{ fontSize:"18px", flexShrink:0 }}>{link.emoji}</span>
-                      <div style={{ flex:1, minWidth:0 }}>
-                        <div style={{ fontSize:"13px", fontWeight:"600", color:"rgba(255,255,255,0.9)", marginBottom:"2px" }}>{link.label}</div>
-                        <div style={{ fontSize:"11px", color:"rgba(255,255,255,0.5)", lineHeight:"1.4" }}>{link.desc}</div>
-                      </div>
-                      <span style={{ fontSize:"14px", color:"rgba(255,255,255,0.4)", flexShrink:0 }}>→</span>
-                    </a>
-                  );
-                })}
-              </div>
-              <div style={{ borderTop:"1px solid rgba(255,255,255,0.1)", marginTop:"20px", paddingTop:"16px" }}>
-                <div style={{ fontSize:"11px", color:"rgba(255,255,255,0.4)", textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"12px" }}>What's New</div>
-                {VERSION_HISTORY.map(function(v) {
-                  var isCurrent = v.version === APP_VERSION;
-                  var isOpen = vhOpen[v.version] !== undefined ? vhOpen[v.version] : isCurrent;
-                  return (
-                    <div key={v.version} style={{ background: isCurrent ? "rgba(39,174,96,0.12)" : "rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderLeft: isCurrent ? "3px solid #27ae60" : "3px solid rgba(255,255,255,0.15)", borderRadius:"8px", marginBottom:"8px", overflow:"hidden" }}>
-                      <div onClick={function(ver, open) { return function() { var next = {}; for (var k in vhOpen) { next[k] = vhOpen[k]; } next[ver] = !open; setVhOpen(next); }; }(v.version, isOpen)}
-                        style={{ display:"flex", alignItems:"center", gap:"8px", padding:"10px 14px", cursor:"pointer" }}>
-                        <span style={{ fontSize:"13px", fontWeight:"700", color: isCurrent ? "#27ae60" : "rgba(255,255,255,0.8)" }}>v{v.version}</span>
-                        {isCurrent ? <span style={{ fontSize:"10px", background:"#27ae60", color:"#fff", borderRadius:"10px", padding:"1px 8px", fontWeight:"600" }}>Current</span> : null}
-                        <span style={{ fontSize:"11px", color:"rgba(255,255,255,0.35)", marginLeft:"auto" }}>{v.date}</span>
-                        <span style={{ fontSize:"10px", color:"rgba(255,255,255,0.3)", flexShrink:0, marginLeft:"6px" }}>{isOpen ? "▲" : "▼"}</span>
-                      </div>
-                      {isOpen ? (
-                        <ul style={{ margin:0, paddingLeft:"16px", paddingRight:"14px", paddingBottom:"10px" }}>
-                          {v.changes.map(function(c, ci) {
-                            return <li key={ci} style={{ fontSize:"11px", color:"rgba(255,255,255,0.55)", lineHeight:"1.6" }}>{c}</li>;
-                          })}
-                        </ul>
-                      ) : null}
-                    </div>
-                  );
-                })}
-              </div>
               <div style={{ textAlign:"center" }}>
                 <div style={{ fontSize:"10px", color:"rgba(255,255,255,0.18)" }}>All data saved locally on this device</div>
               </div>
@@ -6295,11 +6249,8 @@ export default function App() {
     }
   } catch (e) {}
 
-  if (screen === "home") {
-    return renderHome();
-  }
-
   var PRIMARY_TABS = [
+    { key:"home",    label:"Home",     icon:"🏠" },
     { key:"roster",  label:"Roster",   icon:"👥" },
     { key:"gameday", label:"Game Day", icon:"🏟" },
     { key:"season",  label:"Season",   icon:"📅" },
@@ -6519,25 +6470,35 @@ export default function App() {
             ) : null}
           </div>
         </div>
-        <button
-          onClick={function() { setScreen("home"); }}
-          style={{ background:"transparent", border:"1px solid rgba(255,255,255,0.25)", borderRadius:"6px", color:"rgba(255,255,255,0.7)", fontSize:"10px", fontFamily:"Georgia,serif", fontWeight:"bold", letterSpacing:"0.04em", textTransform:"uppercase", padding:"3px 8px", cursor:"pointer", whiteSpace:"nowrap" }}>
-          ← Home
-        </button>
+        {screen === "app" && activeTeam ? (
+          <button
+            onClick={function() { setScreen("home"); setPrimaryTab("roster"); }}
+            style={{ background:"transparent", border:"1px solid rgba(255,255,255,0.25)", borderRadius:"6px", color:"rgba(255,255,255,0.7)", fontSize:"10px", fontFamily:"Georgia,serif", fontWeight:"bold", letterSpacing:"0.04em", textTransform:"uppercase", padding:"3px 8px", cursor:"pointer", whiteSpace:"nowrap" }}>
+            ← Home
+          </button>
+        ) : null}
       </div>
       <div style={S.body}>
-        {tabContent}
+        {(primaryTab === "home" || (!activeTeam && primaryTab !== "more")) ? renderHome() : tabContent}
       </div>
       {/* Fixed bottom nav bar */}
       <div style={{ position:"fixed", bottom:0, left:0, right:0, background:"linear-gradient(180deg,#0f1f3d 0%,#1a3260 100%)", borderTop:"2px solid " + C.red, display:"flex", zIndex:100, paddingBottom:"env(safe-area-inset-bottom, 0px)" }}>
         {PRIMARY_TABS.map(function(t) {
           var active = primaryTab === t.key;
+          var disabled = (t.key !== "more" && t.key !== "home" && screen !== "app");
           return (
             <button key={t.key}
-              onClick={function(k) { return function() { setPrimaryTab(k); }; }(t.key)}
-              style={{ flex:1, padding:"10px 4px 10px", border:"none", cursor:"pointer", fontSize:"9px", fontWeight:"bold", fontFamily:"Georgia,serif", letterSpacing:"0.03em", textTransform:"uppercase", textAlign:"center", lineHeight:1.3, background:"transparent",
-                color: active ? C.gold : "rgba(255,255,255,0.5)",
+              onClick={function(k, d) { return function() {
+                if (k === "home") { setScreen("home"); setPrimaryTab("home"); return; }
+                if (d) return;
+                setPrimaryTab(k);
+                if (k !== "more") setScreen("app");
+              }; }(t.key, disabled)}
+              style={{ flex:1, padding:"10px 4px 10px", border:"none", fontSize:"9px", fontWeight:"bold", fontFamily:"Georgia,serif", letterSpacing:"0.03em", textTransform:"uppercase", textAlign:"center", lineHeight:1.3, background:"transparent",
+                cursor: disabled ? "default" : "pointer",
+                color: active ? C.gold : disabled ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.9)",
                 borderTop: active ? "2px solid " + C.gold : "2px solid transparent",
+                opacity: disabled ? 0.4 : 1,
                 marginTop:"-2px" }}>
               <div style={{ fontSize:"18px", marginBottom:"3px" }}>{t.icon}</div>
               {t.label}
