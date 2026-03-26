@@ -5643,27 +5643,27 @@ export default function App() {
 
     return (
       <div>
-        {/* \u2500\u2500 Section 3: Onboarding Guide (collapsible) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */}
+        {/* ── Section 0: What Is This App ─────────────────────── */}
         <div style={S.card}>
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", cursor:"pointer" }}
-            onClick={function() { setAboutGuideOpen(!aboutGuideOpen); }}>
-            <div style={S.sectionTitle}>How to Use This App</div>
-            <span style={{ fontSize:"12px", color:C.textMuted, marginBottom:"14px" }}>{aboutGuideOpen ? "\u25b2" : "\u25bc"}</span>
+          <div style={{ fontSize:"15px", fontWeight:"bold", color:C.navy, marginBottom:"10px" }}>What is Lineup Generator?</div>
+          <div style={{ fontSize:"13px", color:C.text, lineHeight:"1.7", marginBottom:"10px" }}>
+            Lineup Generator is a free tool built for youth baseball and softball coaches. It takes the stress out of game day by helping you build a fair, smart field lineup in seconds — no spreadsheets, no paper charts, no arguments about who played where last game.
           </div>
-          {aboutGuideOpen ? (
-            <div>
-              {onboardingSteps.map(function(step, si) {
-                return (
-                  <div key={si} style={{ marginBottom:"14px", paddingBottom:"14px", borderBottom: si < onboardingSteps.length - 1 ? "1px solid rgba(15,31,61,0.07)" : "none" }}>
-                    <div style={{ fontSize:"12px", fontWeight:"bold", color:C.navy, marginBottom:"4px" }}>{step.title}</div>
-                    <div style={{ fontSize:"12px", color:C.text, lineHeight:"1.6" }}>{step.body}</div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : null}
+          <div style={{ fontSize:"13px", color:C.text, lineHeight:"1.7", marginBottom:"10px" }}>
+            Tell it your roster, your players' positions, and how many innings you're playing. Tap Auto-Assign and it rotates every kid fairly — keeping track of bench time, position preferences, and who played where across every inning.
+          </div>
+          <div style={{ fontSize:"13px", color:C.text, lineHeight:"1.7", marginBottom:"14px" }}>
+            It also tracks your season schedule, batting stats, walk-up songs, and snack duty — everything a volunteer coach needs, right in their pocket.
+          </div>
+          <div style={{ display:"flex", flexWrap:"wrap", gap:"8px" }}>
+            {["Free forever","Works offline","No account needed","iOS + Android"].map(function(tag) {
+              return (
+                <span key={tag} style={{ fontSize:"11px", padding:"3px 10px", borderRadius:"10px", background:"rgba(15,31,61,0.07)", color:C.navy, fontWeight:"bold" }}>{tag}</span>
+              );
+            })}
+          </div>
         </div>
-        {/* \u2500\u2500 Section 1: App Info \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */}
+        {/* ── Section 1: App Info ──────────────────────────────── */}
         <div style={S.card}>
           <div style={{ fontSize:"20px", fontWeight:"bold", color:C.navy, marginBottom:"4px" }}>Lineup Generator &#x26be; <span style={{ fontSize:"13px", fontWeight:"normal", color:C.textMuted }}>v{APP_VERSION}</span></div>
           <div style={{ fontSize:"12px", color:C.textMuted, marginBottom:"12px" }}>Built for youth baseball coaches. Runs at the field.</div>
@@ -5687,7 +5687,28 @@ export default function App() {
           </button>
         </div>
 
-        {/* \u2500\u2500 Section 2: Version History \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */}
+        {/* ── Section 2: How to Use (collapsible) ─────────────── */}
+        <div style={S.card}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", cursor:"pointer" }}
+            onClick={function() { setAboutGuideOpen(!aboutGuideOpen); }}>
+            <div style={S.sectionTitle}>How to Use This App</div>
+            <span style={{ fontSize:"12px", color:C.textMuted, marginBottom:"14px" }}>{aboutGuideOpen ? "\u25b2" : "\u25bc"}</span>
+          </div>
+          {aboutGuideOpen ? (
+            <div>
+              {onboardingSteps.map(function(step, si) {
+                return (
+                  <div key={si} style={{ marginBottom:"14px", paddingBottom:"14px", borderBottom: si < onboardingSteps.length - 1 ? "1px solid rgba(15,31,61,0.07)" : "none" }}>
+                    <div style={{ fontSize:"12px", fontWeight:"bold", color:C.navy, marginBottom:"4px" }}>{step.title}</div>
+                    <div style={{ fontSize:"12px", color:C.text, lineHeight:"1.6" }}>{step.body}</div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : null}
+        </div>
+
+        {/* ── Section 3: Version History ───────────────────────── */}
         <div style={S.card}>
           <div style={S.sectionTitle}>What&#x27;s New</div>
           {VERSION_HISTORY.map(function(v, vi) {
