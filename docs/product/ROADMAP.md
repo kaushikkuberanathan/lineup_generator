@@ -220,6 +220,28 @@
 
 ---
 
+## 🅿️ Parking Lot / Future Considerations
+
+### Theme System (Phase 3 — Post-Component Refactor)
+**Recommended approach:** Design tokens + ThemeContext + localStorage persistence
+**Why deferred:** App.jsx is a 5,000+ line monolith with hundreds of hardcoded hex colors. A proper theme system requires finding and replacing every hardcoded color — a 2-3 day refactor with high regression risk. Best done alongside the planned App.jsx component split.
+
+**When to do it:** After App.jsx is broken into components. Theme tokens and component split can be done together cleanly.
+
+**Proposed themes:**
+- Classic Navy (default) — current branding, #0f1f3d background
+- Slate + Teal (recommended for usability) — #0f172a background, #14b8a6 primary
+- Field Green (sports vibe) — #0d2818 background, #27ae60 primary
+
+**Implementation plan (ready to execute when timing is right):**
+1. /src/theme/themes.ts — design token definitions
+2. /src/context/ThemeContext.tsx — React context + useState
+3. localStorage persistence for user preference
+4. Theme selector UI in Settings/About tab
+5. Replace all hardcoded colors with theme.colors.* references
+
+---
+
 ## 🔵 Phase 3 — Auth + Multi-Coach
 
 > **Backend infrastructure deployed as of v1.3.0. Frontend cutover pending Twilio toll-free verification.**
