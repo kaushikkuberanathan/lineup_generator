@@ -1009,7 +1009,7 @@ var S = {
       color: active ? "#fff" : "rgba(255,255,255,0.55)"
     };
   },
-  body: { padding:"20px 24px", maxWidth:"1400px", margin:"0 auto" },
+  body: { padding:"20px 24px 90px", maxWidth:"1400px", margin:"0 auto" },
   card: {
     background:C.white, borderRadius:"10px", padding:"16px 18px",
     boxShadow:"0 2px 8px rgba(15,31,61,0.06)", marginBottom:"14px",
@@ -6455,31 +6455,31 @@ export default function App() {
             ) : null}
           </div>
         </div>
-        <div style={{ display:"flex", gap:"4px", flexWrap:"wrap", alignItems:"center" }}>
-          <button
-            onClick={function() { setScreen("home"); }}
-            style={{ background:"transparent", border:"1px solid rgba(255,255,255,0.25)", borderRadius:"6px", color:"rgba(255,255,255,0.7)", fontSize:"10px", fontFamily:"Georgia,serif", fontWeight:"bold", letterSpacing:"0.04em", textTransform:"uppercase", padding:"3px 8px", cursor:"pointer", whiteSpace:"nowrap", alignSelf:"flex-start", marginBottom:"3px" }}>
-            ← Home
-          </button>
-          <div style={{ display:"flex", gap:"4px", flex:1, width:"100%" }}>
-            {PRIMARY_TABS.map(function(t) {
-              var active = primaryTab === t.key;
-              return (
-                <button key={t.key}
-                  onClick={function(k) { return function() { setPrimaryTab(k); }; }(t.key)}
-                  style={{ flex:1, padding:"7px 2px", borderRadius:"6px", border:"none", cursor:"pointer", fontSize:"9px", fontWeight:"bold", fontFamily:"Georgia,serif", letterSpacing:"0.02em", textTransform:"uppercase", textAlign:"center", lineHeight:1.25,
-                    background: active ? C.red : "transparent",
-                    color: active ? "#fff" : "rgba(255,255,255,0.55)" }}>
-                  <div style={{ fontSize:"14px", marginBottom:"2px" }}>{t.icon}</div>
-                  {t.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+        <button
+          onClick={function() { setScreen("home"); }}
+          style={{ background:"transparent", border:"1px solid rgba(255,255,255,0.25)", borderRadius:"6px", color:"rgba(255,255,255,0.7)", fontSize:"10px", fontFamily:"Georgia,serif", fontWeight:"bold", letterSpacing:"0.04em", textTransform:"uppercase", padding:"3px 8px", cursor:"pointer", whiteSpace:"nowrap" }}>
+          ← Home
+        </button>
       </div>
       <div style={S.body}>
         {tabContent}
+      </div>
+      {/* Fixed bottom nav bar */}
+      <div style={{ position:"fixed", bottom:0, left:0, right:0, background:"linear-gradient(180deg,#0f1f3d 0%,#1a3260 100%)", borderTop:"2px solid " + C.red, display:"flex", zIndex:100, paddingBottom:"env(safe-area-inset-bottom, 0px)" }}>
+        {PRIMARY_TABS.map(function(t) {
+          var active = primaryTab === t.key;
+          return (
+            <button key={t.key}
+              onClick={function(k) { return function() { setPrimaryTab(k); }; }(t.key)}
+              style={{ flex:1, padding:"10px 4px 10px", border:"none", cursor:"pointer", fontSize:"9px", fontWeight:"bold", fontFamily:"Georgia,serif", letterSpacing:"0.03em", textTransform:"uppercase", textAlign:"center", lineHeight:1.3, background:"transparent",
+                color: active ? C.gold : "rgba(255,255,255,0.5)",
+                borderTop: active ? "2px solid " + C.gold : "2px solid transparent",
+                marginTop:"-2px" }}>
+              <div style={{ fontSize:"18px", marginBottom:"3px" }}>{t.icon}</div>
+              {t.label}
+            </button>
+          );
+        })}
       </div>
       {needRefresh && (
         <div style={{
