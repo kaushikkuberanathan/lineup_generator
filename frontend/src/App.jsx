@@ -1333,8 +1333,6 @@ export default function App() {
   var schedule = _sched[0]; var setSchedule = _sched[1];
   var _prac = useState(initPractice);
   var practices = _prac[0]; var setPractices = _prac[1];
-  var _snackDuty = useState(initSnackDuty);
-  var snackDuty = _snackDuty[0]; var setSnackDuty = _snackDuty[1];
   var _dirty = useState(false);
   var lineupDirty = _dirty[0]; var setLineupDirty = _dirty[1];
   var _lastAutoGrid = useState(null);
@@ -1501,8 +1499,7 @@ export default function App() {
       if (next.length > 0) {
         dbSync(function() { return dbSaveTeamData(activeTeamId, {
           roster: next, schedule: schedule, practices: practices,
-          battingOrder: battingOrder, grid: grid, innings: innings, locked: lineupLocked,
-          snackDuty: snackDuty
+          battingOrder: battingOrder, grid: grid, innings: innings, locked: lineupLocked
         }); });
       }
     }
@@ -1520,8 +1517,7 @@ export default function App() {
         saveJSON("team:" + activeTeamId + ":roster", prev);
         dbSync(function() { return dbSaveTeamData(activeTeamId, {
           roster: prev, schedule: schedule, practices: practices,
-          battingOrder: battingOrder, grid: grid, innings: innings, locked: lineupLocked,
-          snackDuty: snackDuty
+          battingOrder: battingOrder, grid: grid, innings: innings, locked: lineupLocked
         }); });
       }
       return next;
@@ -1536,44 +1532,30 @@ export default function App() {
       if (!isHydrating) {
         dbSync(function() { return dbSaveTeamData(activeTeamId, {
           roster: roster, schedule: next, practices: practices,
-          battingOrder: battingOrder, grid: grid, innings: innings, locked: lineupLocked,
-          snackDuty: snackDuty
+          battingOrder: battingOrder, grid: grid, innings: innings, locked: lineupLocked
         }); });
       }
     }
   }
 
-  function persistSnackDuty(next) {
-    window._lastLocalWrite = Date.now();
-    setSnackDuty(next);
-    if (activeTeamId) {
-      saveJSON("team:" + activeTeamId + ":snackDuty", next);
-      if (!isHydrating) {
-        dbSync(function() { return dbSaveTeamData(activeTeamId, {
-          roster: roster, schedule: schedule, practices: practices,
-          battingOrder: battingOrder, grid: grid, innings: innings, locked: lineupLocked,
-          snackDuty: next
-        }); });
-      }
-    }
-  }
-
-  // Shared by both renderSnackDuty and renderSchedule — single source of truth
+  // Shared by both renderSnackDuty and renderSchedule — snack data lives on game objects
   function updateSnackField(gameId, field, value) {
-    var entry = snackDuty[gameId] || { playerName: "", note: "" };
-    var next = {};
-    for (var k in snackDuty) { next[k] = snackDuty[k]; }
-    next[gameId] = {};
-    for (var k2 in entry) { next[gameId][k2] = entry[k2]; }
-    next[gameId][field] = value;
-    persistSnackDuty(next);
+    var next = schedule.map(function(g) {
+      if (g.id !== gameId) return g;
+      var updated = Object.assign({}, g);
+      if (field === "playerName") updated.snackDuty = value;
+      else if (field === "note") updated.snackNote = value;
+      return updated;
+    });
+    persistSchedule(next);
   }
 
   function clearSnackAssignment(gameId) {
-    var next = {};
-    for (var k in snackDuty) { next[k] = snackDuty[k]; }
-    delete next[gameId];
-    persistSnackDuty(next);
+    var next = schedule.map(function(g) {
+      if (g.id !== gameId) return g;
+      return Object.assign({}, g, { snackDuty: "", snackNote: "" });
+    });
+    persistSchedule(next);
   }
 
   function persistPractices(next) {
@@ -1584,8 +1566,7 @@ export default function App() {
       if (!isHydrating) {
         dbSync(function() { return dbSaveTeamData(activeTeamId, {
           roster: roster, schedule: schedule, practices: next,
-          battingOrder: battingOrder, grid: grid, innings: innings, locked: lineupLocked,
-          snackDuty: snackDuty
+          battingOrder: battingOrder, grid: grid, innings: innings, locked: lineupLocked
         }); });
       }
     }
@@ -1599,8 +1580,7 @@ export default function App() {
       if (!isHydrating) {
         dbSync(function() { return dbSaveTeamData(activeTeamId, {
           roster: roster, schedule: schedule, practices: practices,
-          battingOrder: next, grid: grid, innings: innings, locked: lineupLocked,
-          snackDuty: snackDuty
+          battingOrder: next, grid: grid, innings: innings, locked: lineupLocked
         }); });
       }
     }
@@ -1614,8 +1594,7 @@ export default function App() {
       if (!isHydrating) {
         dbSync(function() { return dbSaveTeamData(activeTeamId, {
           roster: roster, schedule: schedule, practices: practices,
-          battingOrder: battingOrder, grid: next, innings: innings, locked: lineupLocked,
-          snackDuty: snackDuty
+          battingOrder: battingOrder, grid: next, innings: innings, locked: lineupLocked
         }); });
       }
     }
@@ -1629,8 +1608,7 @@ export default function App() {
       if (!isHydrating) {
         dbSync(function() { return dbSaveTeamData(activeTeamId, {
           roster: roster, schedule: schedule, practices: practices,
-          battingOrder: battingOrder, grid: grid, innings: n, locked: lineupLocked,
-          snackDuty: snackDuty
+          battingOrder: battingOrder, grid: grid, innings: n, locked: lineupLocked
         }); });
       }
     }
@@ -1644,8 +1622,7 @@ export default function App() {
       if (!isHydrating) {
         dbSync(function() { return dbSaveTeamData(activeTeamId, {
           roster: roster, schedule: schedule, practices: practices,
-          battingOrder: battingOrder, grid: grid, innings: innings, locked: val,
-          snackDuty: snackDuty
+          battingOrder: battingOrder, grid: grid, innings: innings, locked: val
         }); });
       }
     }
@@ -1711,8 +1688,7 @@ export default function App() {
       battingOrder:isActive ? battingOrder : loadJSON("team:" + tid + ":batting",   []),
       grid:        isActive ? grid         : loadJSON("team:" + tid + ":grid",      {}),
       innings:     isActive ? innings      : loadJSON("team:" + tid + ":innings",   6),
-      locked:      isActive ? lineupLocked : loadJSON("team:" + tid + ":locked",    false),
-      snackDuty:   isActive ? snackDuty    : loadJSON("team:" + tid + ":snackDuty", {})
+      locked:      isActive ? lineupLocked : loadJSON("team:" + tid + ":locked",    false)
     };
     var json = JSON.stringify(payload, null, 2);
     var blob = new Blob([json], { type:"application/json" });
@@ -1742,8 +1718,8 @@ export default function App() {
         saveJSON("team:" + tid + ":practices", data.practices || []);
         saveJSON("team:" + tid + ":batting",   data.battingOrder || []);
         saveJSON("team:" + tid + ":grid",      data.grid || {});
-        saveJSON("team:" + tid + ":innings",   data.innings   || 6);
-        saveJSON("team:" + tid + ":snackDuty", data.snackDuty || {});
+        saveJSON("team:" + tid + ":innings",   data.innings || 6);
+        saveJSON("team:" + tid + ":locked",    data.locked  || false);
         // Reload the team from storage
         if (activeTeam) {
           var t = {}; for (var k in activeTeam) { t[k] = activeTeam[k]; }
@@ -1769,7 +1745,6 @@ export default function App() {
     var savedInnings   = loadJSON("team:" + team.id + ":innings",   6)    || 6;
     var savedGrid      = migrateGrid(loadJSON("team:" + team.id + ":grid", null), r, savedInnings);
     var savedLocked    = loadJSON("team:" + team.id + ":locked",    false) || false;
-    var savedSnackDuty = loadJSON("team:" + team.id + ":snackDuty", {})   || {};
 
     setActiveTeamId(team.id);
     saveJSON("ui:activeTeam", team.id);
@@ -1783,7 +1758,6 @@ export default function App() {
     setInnings(savedInnings);
     setLineupDirty(false);
     setLineupLocked(savedLocked);
-    setSnackDuty(savedSnackDuty);
     setPrimaryTab("roster");
     setScreen("app");
     track("load_team", { team_id: team.id, team_name: team.name });
@@ -1806,7 +1780,6 @@ export default function App() {
         saveJSON("team:" + team.id + ":grid",      dbData.grid);
         saveJSON("team:" + team.id + ":innings",   dbData.innings);
         saveJSON("team:" + team.id + ":locked",     dbData.locked);
-        saveJSON("team:" + team.id + ":snackDuty",  dbData.snackDuty || {});
         setRoster(migrateRoster(dbData.roster));
         if (dbData.roster && dbData.roster.length > 0) { dbSnapshotRoster(team.id, team.name, dbData.roster, 'app_load'); }
         var migratedDbSchedule = migrateBattingPerf(migrateSchedule(dbData.schedule), migrateRoster(dbData.roster));
@@ -1819,7 +1792,6 @@ export default function App() {
         setGrid(migrateGrid(dbData.grid, dbData.roster, dbData.innings));
         setInnings(dbData.innings);
         setLineupLocked(dbData.locked);
-        setSnackDuty(dbData.snackDuty || {});
         setIsHydrating(false);
       }).catch(function() { setIsHydrating(false); });
     }
@@ -2313,7 +2285,7 @@ export default function App() {
               </div>
             </div>
             <div style={{ display:"flex", gap:"6px", alignItems:"center", position:"relative" }}>
-              <button onClick={function() { loadTeam(team); }} style={{ padding:"8px 18px", borderRadius:"8px", border:"none", cursor:"pointer", fontWeight:"bold", fontSize:"13px", fontFamily:"inherit", background:"linear-gradient(135deg,#c8102e,#9b0c22)", color:"#fff" }}>
+              <button onClick={function() { loadTeam(team); }} style={{ padding:"8px 18px", borderRadius:"8px", border:"none", cursor:"pointer", fontWeight:"bold", fontSize:"13px", fontFamily:"inherit", background:"linear-gradient(135deg,#c8102e,#9b0c22)", color:"#fff", position:"relative", zIndex:1001 }}>
                 Open
               </button>
               <button
@@ -4241,7 +4213,7 @@ export default function App() {
         <div style={{ padding:"0 16px 12px", display:"flex", alignItems:"baseline", gap:"8px" }}>
           <span style={{ fontSize:"18px", fontWeight:"bold", color:C.navy }}>🍎 Snack Duty</span>
           <span style={{ fontSize:"12px", color:C.textMuted }}>
-            {Object.values(snackDuty).filter(function(e) { return e && e.playerName; }).length} of {games.length} assigned
+            {games.filter(function(g) { return !!g.snackDuty; }).length} of {games.length} assigned
           </span>
         </div>
 
@@ -4249,7 +4221,7 @@ export default function App() {
           var gd = game.date ? new Date(game.date + "T12:00:00") : null;
           var isPast = gd && gd < today;
           var isToday = gd && gd.getTime() === today.getTime();
-          var assignment = snackDuty[game.id] || { playerName: "", note: "" };
+          var assignment = { playerName: game.snackDuty || "", note: game.snackNote || "" };
           var hasAssignment = !!assignment.playerName;
 
           var resultColor = game.result === "W" ? C.win : game.result === "L" ? C.red : C.tie;
@@ -4887,7 +4859,7 @@ export default function App() {
                       {game.location ? <span>{game.location}</span> : null}
                     </div>
                     {(function() {
-                      var sa = snackDuty[game.id] || { playerName: "", note: "" };
+                      var sa = { playerName: game.snackDuty || "", note: game.snackNote || "" };
                       var hasSa = !!sa.playerName;
                       return (
                         <div style={{ marginTop:"6px", paddingTop:"6px", borderTop:"1px solid " + C.subtleBorder }}>
