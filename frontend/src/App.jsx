@@ -5608,35 +5608,35 @@ export default function App() {
     var onboardingSteps = [
       {
         title: "Step 1 \u2014 Install the App",
-        body: "Tap your browser's share/menu button and select \"Add to Home Screen.\" The app works offline after first load \u2014 no signal needed at the field."
+        body: "iOS: Tap the Share button in Safari, then \u201cAdd to Home Screen.\u201d Android: Tap \u22ee in Chrome, then \u201cAdd to Home Screen\u201d or \u201cInstall App.\u201d The app works offline after first load \u2014 no signal needed at the field."
       },
       {
         title: "Step 2 \u2014 Create Your Team",
-        body: "From the Home screen, tap \"Create New Team.\" Enter your team name, age group, and season year."
+        body: "From the Home screen, tap \u201cCreate New Team.\u201d Enter your team name, age group, and season year. Tap the team card to open it."
       },
       {
         title: "Step 3 \u2014 Build Your Roster",
-        body: "Go to the Roster tab. Tap \"Add Player\" for each player. Expand each player card to set skills, coach tags, and preferred positions. Even 2\u20133 skills per player significantly improves auto-assign quality."
+        body: "Go to the Roster tab. Tap \u201cAdd Player\u201d for each player. Expand each player card to set fielding attributes, batting attributes, running, and preferred positions. The more you fill in, the better the auto-assign engine performs."
       },
       {
         title: "Step 4 \u2014 Add Your Schedule",
-        body: "Go to the Schedule tab. Tap \"Add Game.\" Use AI Photo Import to take a photo of your printed schedule \u2014 it parses automatically in seconds."
+        body: "Go to the Season tab, then the Schedule sub-tab. Tap \u201cAdd Game\u201d to enter games manually, or use AI Photo Import to photograph your printed schedule \u2014 it parses automatically in seconds."
       },
       {
         title: "Step 5 \u2014 Generate a Lineup",
-        body: "Go to the Field Grid tab. Set your innings (4, 5, or 6). Tap \"Auto-Assign.\" The engine places 10 players per inning with 1 on bench, rotating fairly across all positions."
+        body: "Go to the Game Day tab, then Defense. Set your innings (4, 5, or 6). Tap \u201cAuto-Assign.\u201d The engine places 10 players per inning with 1 on bench, rotating fairly across all positions."
       },
       {
         title: "Step 6 \u2014 Set the Batting Order",
-        body: "Go to the Batting tab. Tap \"Suggest Order\" for a stats-driven recommendation. Drag cards or use up/down arrows to reorder."
+        body: "Go to the Game Day tab, then Batting. Tap \u201cSuggest Order\u201d for a stats-driven recommendation. Use the up/down arrows to reorder on mobile, or drag cards on desktop."
       },
       {
         title: "Step 7 \u2014 Share With Your Team",
-        body: "From the Schedule tab, tap a game then \"Share Lineup.\" Send the link to parents and scorekeepers \u2014 no account needed to view."
+        body: "Go to the Season tab, then Schedule. Tap a game then \u201cShare Lineup.\u201d Send the link to parents and scorekeepers \u2014 no account needed to view."
       },
       {
         title: "Step 8 \u2014 Back Up Your Data",
-        body: "Use Export Backup (in Settings or Print tab) to save a JSON file after every few games. Restore it on any device via Import Backup."
+        body: "Tap \u00b7\u00b7\u00b7 on any team card to Download Backup and save a JSON file. To restore, go to the Roster tab \u2014 if your roster is empty, tap \u201cRestore from backup file.\u201d Back up after every few games."
       }
     ];
 
