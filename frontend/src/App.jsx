@@ -130,9 +130,24 @@ var DEFAULT_ROSTER = [];
 var _mem = {};
 var SCHEMA_VERSION = 2;
 
-var APP_VERSION = "1.3.6";
+var APP_VERSION = "1.3.7";
 
 var VERSION_HISTORY = [
+  {
+    version: "1.3.7",
+    date: "March 26, 2026",
+    changes: [
+      "Feat: snack duty field on game — add/edit in schedule form, shown on game card with 🍎",
+      "Feat: walk-up song link field — URL per player, clickable in Game Day View, included in share text and PDF",
+      "Feat: smart time printing — default times (0:00/0:10) suppressed in PDF and Game Day View; asterisk note added when applicable",
+      "Feat: Songs tab opens in Game Day View by default",
+      "Feat: sync warning banner in Game Day View — reminds coach to re-sync after batting order changes",
+      "Feat: batting order note in all print views — on-screen print card and generated PDF",
+      "Feat: team context menu (···) on home screen — backup and delete available for any team, not just active",
+      "Feat: restore from backup file available on empty roster screen (no Supabase required)",
+      "Fix: battingPerf migration merge now checks localStorage before Supabase — prevents empty Supabase {} overwriting local stats"
+    ]
+  },
   {
     version: "1.3.6",
     date: "March 26, 2026",
@@ -1328,6 +1343,8 @@ export default function App() {
   var pdfSharing = _pdfSharing[0]; var setPdfSharing = _pdfSharing[1];
   var _recoverMode = useState(false);
   var recoverMode = _recoverMode[0]; var setRecoverMode = _recoverMode[1];
+  var _openMenuTeamId = useState(null);
+  var openMenuTeamId = _openMenuTeamId[0]; var setOpenMenuTeamId = _openMenuTeamId[1];
   var _snapshots = useState([]);
   var snapshots = _snapshots[0]; var setSnapshots = _snapshots[1];
   var _restoreBanner = useState('');
@@ -1586,19 +1603,22 @@ export default function App() {
     var box = prompt("Copy this link:", text);
   }
 
-  function exportTeamData() {
-    if (!activeTeam) { return; }
+  function exportTeamData(teamObj) {
+    var t = teamObj || activeTeam;
+    if (!t) { return; }
+    var tid = t.id;
+    var isActive = tid === activeTeamId;
     var payload = {
       exportedAt:  new Date().toISOString(),
       appVersion:  "1.0",
-      team:        activeTeam,
-      roster:      roster,
-      schedule:    schedule,
-      practices:   practices,
-      battingOrder:battingOrder,
-      grid:        grid,
-      innings:     innings,
-      locked:      lineupLocked
+      team:        t,
+      roster:      isActive ? roster       : loadJSON("team:" + tid + ":roster",    []),
+      schedule:    isActive ? schedule     : loadJSON("team:" + tid + ":schedule",  []),
+      practices:   isActive ? practices    : loadJSON("team:" + tid + ":practices", []),
+      battingOrder:isActive ? battingOrder : loadJSON("team:" + tid + ":batting",   []),
+      grid:        isActive ? grid         : loadJSON("team:" + tid + ":grid",      {}),
+      innings:     isActive ? innings      : loadJSON("team:" + tid + ":innings",   6),
+      locked:      isActive ? lineupLocked : loadJSON("team:" + tid + ":locked",    false)
     };
     var json = JSON.stringify(payload, null, 2);
     var blob = new Blob([json], { type:"application/json" });
@@ -2187,16 +2207,38 @@ export default function App() {
                 {nextPracDays === 0 ? <span style={{ color:"#f5c842" }}>Practice today</span> : nextPracDays !== null ? <span>Practice in {nextPracDays}d</span> : null}
               </div>
             </div>
-            <div style={{ display:"flex", gap:"6px", alignItems:"center" }}>
+            <div style={{ display:"flex", gap:"6px", alignItems:"center", position:"relative" }}>
               <button onClick={function() { loadTeam(team); }} style={{ padding:"8px 18px", borderRadius:"8px", border:"none", cursor:"pointer", fontWeight:"bold", fontSize:"13px", fontFamily:"inherit", background:"linear-gradient(135deg,#c8102e,#9b0c22)", color:"#fff" }}>
                 Open
               </button>
-              {activeTeamId === team.id ? (
-                <button onClick={exportTeamData} title="Download backup"
-                  style={{ padding:"8px 10px", borderRadius:"8px", border:"1px solid rgba(255,255,255,0.2)", cursor:"pointer", fontSize:"13px", fontFamily:"inherit", background:"transparent", color:"rgba(255,255,255,0.55)" }}>
-                  ⬇
-                </button>
-              ) : null}
+              <button
+                onClick={function(e) { e.stopPropagation(); setOpenMenuTeamId(openMenuTeamId === team.id ? null : team.id); }}
+                style={{ padding:"8px 10px", borderRadius:"8px", border:"1px solid rgba(255,255,255,0.2)", cursor:"pointer", fontSize:"16px", fontFamily:"inherit", background:"transparent", color:"rgba(255,255,255,0.55)", lineHeight:1, letterSpacing:"1px" }}>
+                ···
+              </button>
+              {openMenuTeamId === team.id && (
+                <>
+                  <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, zIndex:999 }}
+                       onClick={function() { setOpenMenuTeamId(null); }} />
+                  <div style={{ position:"absolute", top:"100%", right:0, marginTop:"4px", background:"#1a1a2e", border:"1px solid #333", borderRadius:"6px", boxShadow:"0 4px 12px rgba(0,0,0,0.4)", zIndex:1000, minWidth:"168px", overflow:"hidden" }}>
+                    <div style={{ padding:"10px 16px", cursor:"pointer", color:"rgba(255,255,255,0.85)", fontSize:"13px", fontFamily:"inherit" }}
+                         onMouseEnter={function(e) { e.currentTarget.style.background="#2a2a3e"; }}
+                         onMouseLeave={function(e) { e.currentTarget.style.background="transparent"; }}
+                         onClick={function() { exportTeamData(team); setOpenMenuTeamId(null); }}>
+                      ⬇ Download backup
+                    </div>
+                    <div style={{ padding:"10px 16px", cursor:"pointer", color:"#e05565", fontSize:"13px", fontFamily:"inherit" }}
+                         onMouseEnter={function(e) { e.currentTarget.style.background="#2a2a3e"; }}
+                         onMouseLeave={function(e) { e.currentTarget.style.background="transparent"; }}
+                         onClick={function() {
+                           setOpenMenuTeamId(null);
+                           if (confirm("Delete \"" + team.name + "\"? This cannot be undone.")) { deleteTeam(team.id); }
+                         }}>
+                      🗑 Delete team
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
           <div style={pillStyle}>{pill}</div>
@@ -2514,22 +2556,32 @@ export default function App() {
           </div>
         )}
 
-        {roster.length === 0 && !isHydrating && activeTeamId && isSupabaseEnabled && (
+        {roster.length === 0 && !isHydrating && activeTeamId && (
           <div style={{ textAlign:'center', padding:'16px 0' }}>
-            <button
-              onClick={function() {
-                dbGetRosterSnapshots(activeTeamId).then(function(data) {
-                  if (data && data.length > 0) {
-                    setSnapshots(data);
-                    setRecoverMode(true);
-                  } else {
-                    alert('No previous roster snapshots found for this team.');
-                  }
-                });
-              }}
-              style={{ background:'none', border:'none', color:'#6366f1', fontSize:'12px', cursor:'pointer', textDecoration:'underline' }}>
-              &#x1F504; Restore previous roster
-            </button>
+            <div style={{ color:'#888', fontSize:'13px', marginBottom:'8px' }}>No players yet.</div>
+            <div style={{ display:'flex', gap:'10px', justifyContent:'center', alignItems:'center', flexWrap:'wrap' }}>
+              {isSupabaseEnabled && (
+                <button
+                  onClick={function() {
+                    dbGetRosterSnapshots(activeTeamId).then(function(data) {
+                      if (data && data.length > 0) {
+                        setSnapshots(data);
+                        setRecoverMode(true);
+                      } else {
+                        alert('No previous roster snapshots found for this team.');
+                      }
+                    });
+                  }}
+                  style={{ background:'none', border:'none', color:'#6366f1', fontSize:'12px', cursor:'pointer', textDecoration:'underline', padding:0 }}>
+                  &#x1F504; Restore previous roster
+                </button>
+              )}
+              <label style={{ background:'none', border:'none', color:'#6366f1', fontSize:'12px', cursor:'pointer', textDecoration:'underline', padding:0 }}>
+                &#x2B06; Restore from backup file
+                <input type="file" accept=".json" style={{ display:'none' }}
+                  onChange={function(e) { importTeamData(e.target.files[0]); e.target.value=''; }} />
+              </label>
+            </div>
           </div>
         )}
 
@@ -3800,6 +3852,13 @@ export default function App() {
   // ============================================================
   // SONGS TAB — helpers
   // ============================================================
+  function isDefaultTime(start, end) {
+    var defaults = ["", "0:00", "00:00"];
+    var endDefaults = ["", "0:10", "00:10"];
+    if (!start && !end) return true;
+    return defaults.indexOf(start || "") >= 0 && endDefaults.indexOf(end || "") >= 0;
+  }
+
   function shareSongsList() {
     var lines = [];
     lines.push(activeTeam ? activeTeam.name + " — Walk-Up Songs" : "Walk-Up Songs");
@@ -3810,8 +3869,9 @@ export default function App() {
       lines.push("#" + (idx + 1) + " " + firstName(name));
       if (player.walkUpSong)   lines.push("🎵 " + player.walkUpSong);
       if (player.walkUpArtist) lines.push("🎤 " + player.walkUpArtist);
-      if (player.walkUpStart && player.walkUpEnd) lines.push("⏱ " + player.walkUpStart + " → " + player.walkUpEnd);
+      if (player.walkUpStart && player.walkUpEnd && !isDefaultTime(player.walkUpStart, player.walkUpEnd)) lines.push("⏱ " + player.walkUpStart + " → " + player.walkUpEnd);
       if (player.walkUpNotes)  lines.push("📝 " + player.walkUpNotes);
+      if (player.walkUpLink)   lines.push("🔗 " + player.walkUpLink);
       lines.push("");
     });
     var text = lines.join("\n");
@@ -3834,6 +3894,20 @@ export default function App() {
     doc.text(activeTeam ? activeTeam.name + " — Walk-Up Songs" : "Walk-Up Songs", pageW / 2, y, { align:"center" });
     y += 30;
 
+    // Check if any players have default/blank times — if so, add a note
+    var hasDefaultTimes = battingOrder.some(function(name) {
+      var player = roster.find(function(r) { return r.name === name; });
+      return player && (player.walkUpSong || player.walkUpArtist) && isDefaultTime(player.walkUpStart, player.walkUpEnd);
+    });
+    if (hasDefaultTimes) {
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "italic");
+      doc.setTextColor(120, 120, 120);
+      doc.text("* Players without a specific start time will play from the beginning of the song.", 40, y);
+      doc.setTextColor(0, 0, 0);
+      y += 18;
+    }
+
     battingOrder.forEach(function(name, idx) {
       var player = roster.find(function(r) { return r.name === name; });
       if (!player) return;
@@ -3855,13 +3929,19 @@ export default function App() {
         doc.text("Artist: " + player.walkUpArtist, 56, y);
         y += 15;
       }
-      if (player.walkUpStart && player.walkUpEnd) {
+      if (player.walkUpStart && player.walkUpEnd && !isDefaultTime(player.walkUpStart, player.walkUpEnd)) {
         doc.text("Time: " + player.walkUpStart + " to " + player.walkUpEnd, 56, y);
         y += 15;
       }
       if (player.walkUpNotes) {
         doc.setTextColor(120, 120, 120);
         doc.text("Note: " + player.walkUpNotes, 56, y);
+        doc.setTextColor(0, 0, 0);
+        y += 15;
+      }
+      if (player.walkUpLink) {
+        doc.setTextColor(37, 99, 235);
+        doc.text("Link: " + player.walkUpLink, 56, y);
         doc.setTextColor(0, 0, 0);
         y += 15;
       }
@@ -3899,6 +3979,9 @@ export default function App() {
 
         {songsView === "edit" ? (
           <div>
+            <div style={{ fontSize:"11px", color:C.textMuted, marginBottom:"12px", padding:"8px 10px", background:"rgba(15,31,61,0.04)", borderRadius:"8px" }}>
+              Players are listed in batting order. To change the order, update the Batting tab first.
+            </div>
             {battingOrder.map(function(name, idx) {
               var player = roster.find(function(r) { return r.name === name; });
               if (!player) return null;
@@ -3940,6 +4023,12 @@ export default function App() {
                       value={player.walkUpNotes || ""}
                       onChange={function(e) { updatePlayer(name, { walkUpNotes: e.target.value || null }); }}
                     />
+                    <input
+                      style={{ width:"100%", padding:"7px 10px", borderRadius:"6px", border:"1px solid rgba(15,31,61,0.15)", fontSize:"13px", fontFamily:"inherit", boxSizing:"border-box" }}
+                      type="url" placeholder="Song link (e.g. YouTube or Spotify URL)"
+                      value={player.walkUpLink || ""}
+                      onChange={function(e) { updatePlayer(name, { walkUpLink: e.target.value || null }); }}
+                    />
                   </div>
                 </div>
               );
@@ -3952,16 +4041,20 @@ export default function App() {
         ) : (
           <div>
             {/* Game Day View header actions */}
-            <div style={{ display:"flex", gap:"8px", marginBottom:"14px", flexWrap:"wrap" }}>
+            <div style={{ display:"flex", gap:"8px", marginBottom:"10px", flexWrap:"wrap" }}>
               <button style={{ ...S.btn("ghost"), fontSize:"12px" }} onClick={function() { setSongsView("edit"); }}>← Edit</button>
               <button style={S.btn("primary")} onClick={shareSongsList}>Share</button>
               <button style={S.btn("ghost")} onClick={printSongsList}>Print</button>
+            </div>
+            <div style={{ fontSize:"11px", color:"#64748b", marginBottom:"14px", padding:"8px 10px", background:"rgba(245,200,66,0.12)", borderRadius:"8px", border:"1px solid rgba(245,200,66,0.3)" }}>
+              ⚡ Order matches current batting lineup. If you update the batting order, tap Edit then return here to re-sync.
             </div>
 
             {battingOrder.map(function(name, idx) {
               var player = roster.find(function(r) { return r.name === name; });
               if (!player) return null;
-              var hasSong = player.walkUpSong || player.walkUpArtist || player.walkUpStart || player.walkUpNotes;
+              var hasSong = player.walkUpSong || player.walkUpArtist || player.walkUpStart || player.walkUpNotes || player.walkUpLink;
+              var showTime = player.walkUpStart && player.walkUpEnd && !isDefaultTime(player.walkUpStart, player.walkUpEnd);
               return (
                 <div key={name} style={{ background:C.white, border:"1px solid #e2e8f0", borderRadius:"10px", padding:"14px", marginBottom:"8px",
                   opacity: hasSong ? 1 : 0.5 }}>
@@ -3980,14 +4073,19 @@ export default function App() {
                           🎤 {player.walkUpArtist}
                         </div>
                       ) : null}
-                      {player.walkUpStart && player.walkUpEnd ? (
+                      {showTime ? (
                         <div style={{ fontSize:"12px", color:"#64748b", marginBottom:"2px" }}>
                           ⏱ {player.walkUpStart} → {player.walkUpEnd}
                         </div>
                       ) : null}
                       {player.walkUpNotes ? (
-                        <div style={{ fontSize:"11px", color:"#94a3b8", fontStyle:"italic" }}>
+                        <div style={{ fontSize:"11px", color:"#94a3b8", fontStyle:"italic", marginBottom:"2px" }}>
                           📝 {player.walkUpNotes}
+                        </div>
+                      ) : null}
+                      {player.walkUpLink ? (
+                        <div style={{ fontSize:"12px", marginBottom:"2px" }}>
+                          <a href={player.walkUpLink} target="_blank" rel="noopener noreferrer" style={{ color:"#2563eb", textDecoration:"none" }}>🔗 Open Song</a>
                         </div>
                       ) : null}
                     </div>
@@ -4559,6 +4657,7 @@ export default function App() {
                       {game.time ? <span>{game.time}</span> : null}
                       {game.location ? <span>{game.location}</span> : null}
                     </div>
+                    {game.snackDuty ? <div style={{ fontSize:"12px", color:C.textMuted, marginTop:"3px" }}>🍎 Snacks: {game.snackDuty}</div> : null}
                   </div>
                   <div style={{ display:"flex", gap:"6px", flexWrap:"wrap" }}>
                     {(function() {
@@ -5019,7 +5118,13 @@ export default function App() {
           doc.setFontSize(9);
           doc.setFont("helvetica","bold");
           doc.text("BATTING ORDER", margin, y);
-          y += 6;
+          y += 5;
+          doc.setFontSize(7);
+          doc.setFont("helvetica","italic");
+          doc.setTextColor(120, 120, 120);
+          doc.text("Players are listed in batting order. To change the order, update the Batting tab first.", margin, y);
+          doc.setTextColor(navy[0], navy[1], navy[2]);
+          y += 5;
 
           var batCols = 2;
           var batColW = contentW / batCols;
@@ -5402,11 +5507,6 @@ export default function App() {
             <button style={{ ...S.btn("ghost"), border:"1px solid rgba(15,31,61,0.15)" }} onClick={exportTeamData}>
               ⬇ Backup
             </button>
-            <label style={{ ...S.btn("ghost"), border:"1px solid rgba(15,31,61,0.15)", cursor:"pointer" }}>
-              ⬆ Restore
-              <input type="file" accept=".json" style={{ display:"none" }}
-                onChange={function(e) { importTeamData(e.target.files[0]); e.target.value=""; }} />
-            </label>
           </div>
           {(printOpt === "both" || printOpt === "defense") ? (
             <div style={{ display:"flex", gap:"4px", background:"rgba(15,31,61,0.06)", borderRadius:"8px", padding:"3px", width:"fit-content" }}>
@@ -5549,8 +5649,11 @@ export default function App() {
 
           {printOpt === "both" || printOpt === "batting" ? (
             <div>
-              <div style={{ fontSize:"12px", fontWeight:"bold", color:"#0f1f3d", letterSpacing:"0.12em", textTransform:"uppercase", marginBottom:"10px" }}>
+              <div style={{ fontSize:"12px", fontWeight:"bold", color:"#0f1f3d", letterSpacing:"0.12em", textTransform:"uppercase", marginBottom:"4px" }}>
                 Batting Order
+              </div>
+              <div style={{ fontSize:"10px", color:"#64748b", fontStyle:"italic", marginBottom:"10px" }}>
+                Players are listed in batting order. To change the order, update the Batting tab first.
               </div>
               <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))", gap:"6px" }}>
                 {battingOrder.map(function(name, idx) {
