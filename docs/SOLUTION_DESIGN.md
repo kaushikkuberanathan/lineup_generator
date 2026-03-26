@@ -120,7 +120,8 @@ team_data (
   batting_order jsonb,
   grid          jsonb,         -- defensive assignment matrix
   innings       int,           -- 4 | 5 | 6
-  locked        boolean        -- lineup finalized flag
+  locked        boolean,       -- lineup finalized flag
+  snack_duty    jsonb          -- per-game snack assignments (v1.3.8+)
 )
 ```
 
@@ -395,7 +396,7 @@ Supabase test OTP: phone `+14044930548`, code `123456` — set in Supabase Auth 
 
 ```
 frontend/src/
-├── App.jsx              ← Main application (~5,100+ lines — file split is P3 backlog)
+├── App.jsx              ← Main application (~5,500+ lines — file split is P3 backlog)
 ├── supabase.js          ← DB client + read/write helpers
 ├── main.jsx             ← React entry point
 ├── config/

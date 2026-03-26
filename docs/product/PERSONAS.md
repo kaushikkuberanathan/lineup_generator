@@ -189,7 +189,7 @@ Parent volunteer responsible for managing team logistics.
 | Schedule visible via share link | ✅ | — |
 | Practice tab (session + drill log) | ❌ (backlog P2) | — |
 | Coordinator role with schedule write access | ❌ | ✅ |
-| Snack / volunteer assignment tracking | ❌ | ✅ |
+| Snack / volunteer assignment tracking | ✅ | — |
 | In-app team communication | ❌ | ✅ |
 
 ---

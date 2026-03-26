@@ -191,10 +191,14 @@ To restore on a new device:
 | Tab | What It Does |
 |-----|-------------|
 | **Roster** | Add players, set skills, tags, and position preferences |
-| **Field Grid** | Auto-generate and manually adjust the defensive lineup |
-| **Batting** | Set and manage the batting order |
-| **Schedule** | Add games, log results, and share lineups |
-| **Print** | Generate a printable / PDF lineup card |
+| **Game Day → Defense** | Auto-generate and manually adjust the defensive lineup |
+| **Game Day → Batting** | Set and manage the batting order |
+| **Game Day → Songs** | Walk-up songs per player with Game Day View |
+| **Season → Schedule** | Add games, log results, and share lineups |
+| **Season → Snacks** | Per-game snack duty assignment with notes |
+| **More → Feedback** | Submit feedback or bug reports |
+| **More → Links** | League and field resources |
+| **More → About** | Version history and onboarding guide |
 
 ---
 

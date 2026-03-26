@@ -130,9 +130,20 @@ var DEFAULT_ROSTER = [];
 var _mem = {};
 var SCHEMA_VERSION = 2;
 
-var APP_VERSION = "1.3.8";
+var APP_VERSION = "1.3.9";
 
 var VERSION_HISTORY = [
+  {
+    version: "1.3.9",
+    date: "March 26, 2026",
+    changes: [
+      "Fix: Open button on Home tab blocked by ··· context menu overlay — zIndex fix",
+      "Fix: data persistence audit — migrateSchedule spread preserves future fields, snackDuty consolidated onto game objects, importTeamData now restores locked state",
+      "UX: nav restructure — 5 primary tabs with nested sub-tabs (Game Day: Defense/Batting/Songs, Season: Schedule/Snacks, More: Feedback/Links/About)",
+      "Fix: migrateBattingPerf — remaps old initial+lastName batting stat keys (e.g. 'A Hwang') to full player names on load",
+      "Fix: roster players sorted alphabetically by firstName at render time in Roster tab, Snacks dropdown, and Schedule snack dropdown"
+    ]
+  },
   {
     version: "1.3.8",
     date: "March 26, 2026",

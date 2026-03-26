@@ -49,6 +49,14 @@
 - 10-player field configuration: LC + RC replace CF in outfield; 1 bench slot per inning (schema v2, migration auto-remaps saved CF→LC)
 - First-time coach onboarding modal (5-step in-app walkthrough, localStorage completion tracking, always re-accessible via "Getting Started" button in Roster tab)
 
+### v1.3.9 — March 26, 2026
+#### Bug Fixes + Nav Restructure
+- Fix: Open button on Home tab unclickable when ··· context menu overlay was active — zIndex fix
+- Fix: data persistence audit — migrateSchedule spread preserves future game fields; snackDuty consolidated onto game objects (game.snackDuty / game.snackNote); importTeamData now restores locked state from backup
+- UX: nav restructure — 5 primary tabs with nested sub-tabs (Game Day: Defense/Batting/Songs; Season: Schedule/Snacks; More: Feedback/Links/About)
+- Fix: migrateBattingPerf — remaps old initial+lastName batting stat keys (e.g. "A Hwang" → "Aiden Hwang") to full player names on load
+- Fix: roster players sorted alphabetically by firstName at render time in Roster tab, Snacks tab dropdown, and Schedule tab snack dropdown
+
 ### v1.3.8 — March 26, 2026
 #### Snack Duty Tab
 - New Snacks tab — per-game player assignment with roster dropdown and optional note field
@@ -57,6 +65,17 @@
 - Summary header: assigned count out of total games
 - snackDuty persisted to localStorage, Supabase (snack_duty JSONB column), export backup, and import restore
 - Fix: game time strips leading zero (7:00 PM not 07:00 PM)
+
+### v1.3.7 — March 26, 2026
+#### Walk-Up Song Links + Smart Time Printing + Print Enhancements
+- Snack duty field on game card — add/edit in schedule form, shown with 🍎
+- Walk-up song link field — URL per player, clickable in Game Day View, included in share text and PDF
+- Smart time printing — default times (0:00/0:10) suppressed in PDF and Game Day View; asterisk note added when applicable
+- Songs tab opens in Game Day View by default with sync warning banner
+- Batting order note added to all print views (on-screen print card and generated PDF)
+- Team context menu (···) on home screen — backup and delete available for any team, not just active
+- Restore from backup file available on empty roster screen (no Supabase required)
+- Fix: battingPerf migration merge checks localStorage before Supabase — prevents empty {} overwriting local stats
 
 ### v1.3.6 — March 26, 2026
 #### Walk-Up Songs + Player Data Preservation

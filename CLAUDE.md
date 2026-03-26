@@ -222,6 +222,13 @@ backend/
 
 ## Version History
 
+### v1.3.9 — March 26, 2026
+- Fix: Open button on Home tab blocked by ··· context menu overlay (zIndex fix)
+- Fix: data persistence audit — migrateSchedule spread, snackDuty consolidated onto game objects, importTeamData restores locked state
+- UX: nav restructure — 5 primary tabs with nested sub-tabs (Game Day, Season, More)
+- Fix: migrateBattingPerf — remaps old initial+lastName batting stat keys to full player names on load
+- Fix: roster sorted alphabetically by firstName at render time (Roster tab, Snacks dropdown, Schedule dropdown)
+
 ### v1.3.8 — March 26, 2026
 - Feat: Snack Duty tab — per-game player assignment with dropdown and note field
 - Feat: Today badge + gold border on game day card

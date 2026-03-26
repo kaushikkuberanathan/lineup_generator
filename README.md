@@ -110,6 +110,8 @@ This is vibe coding at its best — not generating boilerplate, but genuinely co
 | Batting order with drag-to-reorder + season stats | ✅ Live |
 | AI schedule import (photo + text paste) | ✅ Live |
 | Game result + per-player batting stat logging | ✅ Live |
+| Walk-up songs per player (title, artist, link, timestamps) | ✅ Live |
+| Snack Duty tab — per-game assignment with notes | ✅ Live |
 | PDF export + print view | ✅ Live |
 | Read-only share link (no login required) | ✅ Live |
 | Cloud sync (Supabase) + offline (localStorage) | ✅ Live |
@@ -167,10 +169,9 @@ For architecture, data models, scoring engine logic, API design, database schema
 ## Documentation
 
 - 📋 [Product Roadmap](./docs/product/ROADMAP.md)
-- 👤 [User Personas](./docs/product/USER_PERSONAS.md)
-- 🧭 [Coach Onboarding Guide](./docs/product/COACH_ONBOARDING.md)
-- ✅ [Pre-Deploy Test Checklist](./docs/product/PRE_DEPLOY_CHECKLIST.md)
-- 🗄️ [Supabase Implementation](./docs/SUPABASE-IMPLEMENTATION.md)
+- 👤 [User Personas](./docs/product/PERSONAS.md)
+- 🧭 [Coach Onboarding Guide](./docs/product/ONBOARDING.md)
+- 🏗️ [Solution Design](./docs/SOLUTION_DESIGN.md)
 
 ---
 
