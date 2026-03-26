@@ -5774,16 +5774,13 @@ export default function App() {
               })}
             </div>
             <button style={S.btn("gold")} onClick={function() { generatePDF("download"); }} disabled={pdfLoading || pdfSharing}>
-              {pdfLoading ? "Generating..." : "Download PDF"}
-            </button>
-            <button style={{ ...S.btn("ghost"), border:"1px solid rgba(15,31,61,0.2)" }} onClick={function() { generatePDF("share"); }} disabled={pdfLoading || pdfSharing}>
-              {pdfSharing ? "Preparing..." : "Share PDF"}
+              {pdfLoading ? "Generating..." : "Download as PDF"}
             </button>
             <button style={{ ...S.btn("ghost"), border:"1px solid rgba(15,31,61,0.2)" }} onClick={shareCurrentLineup}>
-              🔗 Share Link
+              Share as Link
             </button>
-            <button style={{ ...S.btn("ghost"), border:"1px solid rgba(15,31,61,0.15)" }} onClick={exportTeamData}>
-              ⬇ Backup
+            <button style={{ ...S.btn("ghost"), border:"1px solid rgba(15,31,61,0.2)" }} onClick={function() { generatePDF("share"); }} disabled={pdfLoading || pdfSharing}>
+              {pdfSharing ? "Preparing..." : "Share as PDF"}
             </button>
           </div>
           {(printOpt === "both" || printOpt === "defense") ? (
