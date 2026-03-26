@@ -1324,6 +1324,8 @@ export default function App() {
   var activeTeamId = _atid[0]; var setActiveTeamId = _atid[1];
   var _primaryTab = useState("roster");
   var primaryTab = _primaryTab[0]; var setPrimaryTab = _primaryTab[1];
+  var _rosterTab = useState("players");
+  var rosterTab = _rosterTab[0]; var setRosterTab = _rosterTab[1];
   var _gameDayTab = useState("defense");
   var gameDayTab = _gameDayTab[0]; var setGameDayTab = _gameDayTab[1];
   var _seasonTab = useState("schedule");
@@ -5773,6 +5775,23 @@ export default function App() {
                 );
               })}
             </div>
+            {(printOpt === "both" || printOpt === "defense") ? (
+              <div style={{ display:"flex", gap:"4px", background:"rgba(15,31,61,0.06)", borderRadius:"8px", padding:"3px", width:"fit-content" }}>
+                {[["Grid","grid"],["Diamond","diamond"]].map(function(opt) {
+                  var active = printDefView === opt[1];
+                  return (
+                    <button key={opt[1]}
+                      onClick={function(v) { return function() { setPrintDefView(v); if (v !== "diamond") { setPrintDiamondInning(null); } }; }(opt[1])}
+                      style={{ padding:"4px 14px", borderRadius:"6px", border:"none", cursor:"pointer", fontSize:"11px", fontWeight:"bold", fontFamily:"inherit",
+                        background: active ? C.white : "transparent",
+                        color: active ? C.navy : C.textMuted,
+                        boxShadow: active ? "0 1px 3px rgba(0,0,0,0.1)" : "none" }}>
+                      {opt[0]}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : null}
             <button style={S.btn("gold")} onClick={function() { generatePDF("download"); }} disabled={pdfLoading || pdfSharing}>
               {pdfLoading ? "Generating..." : "Download as PDF"}
             </button>
@@ -5783,23 +5802,6 @@ export default function App() {
               {pdfSharing ? "Preparing..." : "Share as PDF"}
             </button>
           </div>
-          {(printOpt === "both" || printOpt === "defense") ? (
-            <div style={{ display:"flex", gap:"4px", background:"rgba(15,31,61,0.06)", borderRadius:"8px", padding:"3px", width:"fit-content" }}>
-              {[["Grid","grid"],["Diamond","diamond"]].map(function(opt) {
-                var active = printDefView === opt[1];
-                return (
-                  <button key={opt[1]}
-                    onClick={function(v) { return function() { setPrintDefView(v); if (v !== "diamond") { setPrintDiamondInning(null); } }; }(opt[1])}
-                    style={{ padding:"4px 14px", borderRadius:"6px", border:"none", cursor:"pointer", fontSize:"11px", fontWeight:"bold", fontFamily:"inherit",
-                      background: active ? C.white : "transparent",
-                      color: active ? C.navy : C.textMuted,
-                      boxShadow: active ? "0 1px 3px rgba(0,0,0,0.1)" : "none" }}>
-                    {opt[0]}
-                  </button>
-                );
-              })}
-            </div>
-          ) : null}
         </div>
 
         <div id="print-card" style={{ background:"#fff", border:"2px solid #0f1f3d", borderRadius:"10px", padding:"20px", maxWidth:"800px" }}>
@@ -6282,13 +6284,16 @@ export default function App() {
     { key:"roster",  label:"Roster",   icon:"👥" },
     { key:"gameday", label:"Game Day", icon:"🏟" },
     { key:"season",  label:"Season",   icon:"📅" },
-    { key:"print",   label:"Print",    icon:"🖨" },
     { key:"more",    label:"More",     icon:"⚙️" },
+  ];
+  var ROSTER_SUBTABS = [
+    { key:"players", label:"Players" },
+    { key:"songs",   label:"Songs"   },
   ];
   var GAMEDAY_SUBTABS = [
     { key:"defense", label:"Defense" },
     { key:"batting", label:"Batting" },
-    { key:"songs",   label:"Songs"   },
+    { key:"lineups", label:"Lineups" },
   ];
   var SEASON_SUBTABS = [
     { key:"schedule", label:"Schedule" },
@@ -6311,7 +6316,21 @@ export default function App() {
     color: active ? "#fff" : C.textMuted
   }; };
 
-  if (primaryTab === "gameday") {
+  if (primaryTab === "roster") {
+    subTabBar = (
+      <div style={{ display:"flex", gap:"4px", padding:"8px 12px 4px", background:C.cream, borderBottom:"1px solid " + C.border }}>
+        {ROSTER_SUBTABS.map(function(st) {
+          return (
+            <button key={st.key}
+              onClick={function(k) { return function() { setRosterTab(k); }; }(st.key)}
+              style={subTabStyle(rosterTab === st.key)}>
+              {st.label}
+            </button>
+          );
+        })}
+      </div>
+    );
+  } else if (primaryTab === "gameday") {
     subTabBar = (
       <div style={{ display:"flex", gap:"4px", padding:"8px 12px 4px", background:C.cream, borderBottom:"1px solid " + C.border }}>
         {GAMEDAY_SUBTABS.map(function(st) {
@@ -6358,13 +6377,13 @@ export default function App() {
   var tabContent = (
     <div>
       {subTabBar}
-      {primaryTab === "roster"  ? renderRoster()   : null}
+      {primaryTab === "roster"  && rosterTab === "players" ? renderRoster()  : null}
+      {primaryTab === "roster"  && rosterTab === "songs"   ? renderSongs()   : null}
       {primaryTab === "gameday" && gameDayTab === "defense" ? renderGrid()      : null}
       {primaryTab === "gameday" && gameDayTab === "batting" ? renderBatting()   : null}
-      {primaryTab === "gameday" && gameDayTab === "songs"   ? renderSongs()     : null}
+      {primaryTab === "gameday" && gameDayTab === "lineups" ? renderPrint()     : null}
       {primaryTab === "season"  && seasonTab  === "schedule" ? renderSchedule() : null}
       {primaryTab === "season"  && seasonTab  === "snack"    ? renderSnackDuty(): null}
-      {primaryTab === "print"   ? renderPrint()    : null}
       {primaryTab === "more" && moreTab === "feedback" ? renderFeedback() : null}
       {primaryTab === "more" && moreTab === "links"    ? renderLinks()    : null}
       {primaryTab === "more" && moreTab === "about"    ? renderAbout()    : null}
@@ -6398,6 +6417,18 @@ export default function App() {
                   <div style={{ fontSize:"14px", marginBottom:"2px" }}>{t.icon}</div>
                   {t.label}
                 </button>
+                {t.key === "roster" && primaryTab === "roster" && ROSTER_SUBTABS.map(function(st) {
+                  var subActive = rosterTab === st.key;
+                  return (
+                    <button key={st.key}
+                      onClick={function(k) { return function() { setRosterTab(k); }; }(st.key)}
+                      style={{ width:"50px", padding:"3px 2px", borderRadius:"4px", border:"none", cursor:"pointer", fontSize:"7.5px", fontWeight:"bold", fontFamily:"Georgia,serif", letterSpacing:"0.04em", textTransform:"uppercase", textAlign:"center", display:"block", marginLeft:"2px",
+                        background: subActive ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.07)",
+                        color: subActive ? "#fff" : "rgba(255,255,255,0.6)" }}>
+                      {st.label}
+                    </button>
+                  );
+                })}
                 {t.key === "gameday" && primaryTab === "gameday" && GAMEDAY_SUBTABS.map(function(st) {
                   var subActive = gameDayTab === st.key;
                   return (
