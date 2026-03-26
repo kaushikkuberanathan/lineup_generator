@@ -315,6 +315,11 @@ function migrateRoster(roster) {
       }
     }
     return {
+      // Spread all existing fields first so any future fields are preserved
+      // through migration without being silently dropped.
+      ...p,
+      // Explicit fields below normalize values and apply safe defaults.
+      // They override whatever was spread above (intentional).
       name:      p.name      || "",
       skills:    skills,
       tags:      p.tags      || [],
