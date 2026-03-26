@@ -1,6 +1,6 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: March 25, 2026
+> Last updated: March 26, 2026
 > MVP launched: March 24, 2026
 
 ---
@@ -48,6 +48,14 @@
 - Export / Import backup (JSON)
 - 10-player field configuration: LC + RC replace CF in outfield; 1 bench slot per inning (schema v2, migration auto-remaps saved CF→LC)
 - First-time coach onboarding modal (5-step in-app walkthrough, localStorage completion tracking, always re-accessible via "Getting Started" button in Roster tab)
+
+### v1.3.6 — March 26, 2026
+#### Walk-Up Songs + Player Data Preservation
+- Walkup songs — per-player field with title, artist, start/end time, coordinator notes
+- Walkup song display on player card (hidden when empty)
+- Walkup song edit form in player profile editor
+- Fix: migrateRoster now spreads all existing player fields before normalizing — any future player fields are no longer silently dropped on app load, team switch, or Supabase hydration
+- Fix: walkup song and all V2 attributes now survive full round-trip through migrateRoster
 
 ### v1.3.5 — March 25, 2026
 #### Diamond View Inning Fix

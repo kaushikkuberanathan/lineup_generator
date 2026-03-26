@@ -216,14 +216,13 @@ backend/
 
 ## Version History
 
-### v1.3.6 — March 25, 2026
-- New Songs tab: enter walk-up songs, artist, start/end times, and coordinator notes per player
-- Game Day View in Songs tab: clean read-only display ordered by batting position
-- Share Songs List: Web Share API or clipboard fallback (plain text)
-- Print Songs List: jsPDF programmatic PDF of all walk-up songs
-- Walk-up songs shown in Print tab batting order cards, generated PDF, and shared lineup view
-- Share link payload includes songs map (backward-compatible — old links unaffected)
-- Fix: lineupDirty banner moved below toolbar so Auto-Fix All stays visible on mobile
+### v1.3.6 — March 26, 2026
+- Feat: walkup songs — per-player field with title, artist, start/end time
+- Feat: walkup song display on player card (hidden when empty)
+- Feat: walkup song edit form in player profile editor
+- Fix: migrateRoster now spreads all existing player fields before normalizing
+- Fix: any future player fields are no longer silently dropped on app load, team switch, or Supabase hydration
+- Fix: walkup song and all V2 attributes now survive full round-trip through migrateRoster
 
 ### v1.3.5 — March 25, 2026
 - Fix: diamond view all-innings mode now shows all coach-configured innings (4, 5, or 6)

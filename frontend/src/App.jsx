@@ -135,16 +135,14 @@ var APP_VERSION = "1.3.6";
 var VERSION_HISTORY = [
   {
     version: "1.3.6",
-    date: "March 25, 2026",
+    date: "March 26, 2026",
     changes: [
-      "New Songs tab: enter walk-up songs, artist, start/end times, and coordinator notes per player",
-      "Game Day View in Songs tab: clean read-only display ordered by batting position",
-      "Share Songs List: sends plain-text song list via Web Share API or copies to clipboard",
-      "Print Songs List: generates a PDF of all walk-up songs via jsPDF",
-      "Walk-up songs now appear in batting order cards on the Print tab preview",
-      "Walk-up songs included in generated PDF (batting order section)",
-      "Walk-up songs included in share link payload and shown on shared lineup view",
-      "Fix: lineupDirty banner moved below toolbar so Auto-Fix All stays visible on mobile"
+      "Feat: walkup songs — per-player field with title, artist, start/end time",
+      "Feat: walkup song display on player card (hidden when empty)",
+      "Feat: walkup song edit form in player profile editor",
+      "Fix: migrateRoster now spreads all existing player fields before normalizing",
+      "Fix: any future player fields are no longer silently dropped on app load, team switch, or Supabase hydration",
+      "Fix: walkup song and all V2 attributes now survive full round-trip through migrateRoster"
     ]
   },
   {
@@ -361,7 +359,8 @@ function migrateRoster(roster) {
       walkUpArtist:       p.walkUpArtist       ?? null,
       walkUpStart:        p.walkUpStart        ?? null,
       walkUpEnd:          p.walkUpEnd          ?? null,
-      walkUpNotes:        p.walkUpNotes        ?? null
+      walkUpNotes:        p.walkUpNotes        ?? null,
+      walkUpLink:         p.walkUpLink         ?? null
     };
   });
 }
@@ -1102,6 +1101,13 @@ export default function App() {
         if (existingIds.indexOf(mt.id) >= 0) {
           if (alreadyMigrated !== MIGRATION_VERSION) {
             (function(captured) {
+              var localSchedule = loadJSON("team:" + captured.id + ":schedule", []);
+              function getLocalBattingPerf(gameId) {
+                var localGame = localSchedule.find(function(g) { return g.id === gameId; });
+                return (localGame && localGame.battingPerf && Object.keys(localGame.battingPerf).length > 0)
+                  ? localGame.battingPerf
+                  : null;
+              }
               dbLoadTeamData(captured.id).then(function(existing) {
                 dbSaveTeamData(captured.id, {
                   roster:       existing && existing.roster        ? existing.roster        : [],
@@ -1111,17 +1117,18 @@ export default function App() {
                     for (var ei = 0; ei < exGames.length; ei++) {
                       if (exGames[ei].id) { exById[exGames[ei].id] = exGames[ei]; }
                     }
-                    return captured.schedule.map(function(g) {
-                      var prev = exById[g.id];
-                      if (!prev) { return g; }
+                    return captured.schedule.map(function(seed) {
+                      var prev = exById[seed.id];
+                      if (!prev) { return seed; }
                       return {
-                        id: g.id, date: g.date, time: g.time,
-                        location: g.location, opponent: g.opponent, home: g.home,
-                        result:      prev.result      || g.result,
-                        ourScore:    prev.ourScore    || g.ourScore,
-                        theirScore:  prev.theirScore  || g.theirScore,
-                        battingPerf: prev.battingPerf && Object.keys(prev.battingPerf).length > 0
-                                     ? prev.battingPerf : (g.battingPerf || {})
+                        id: seed.id, date: seed.date, time: seed.time,
+                        location: seed.location, opponent: seed.opponent, home: seed.home,
+                        result:      prev.result      || seed.result,
+                        ourScore:    prev.ourScore    || seed.ourScore,
+                        theirScore:  prev.theirScore  || seed.theirScore,
+                        snackDuty:   prev.snackDuty   || seed.snackDuty  || "",
+                        battingPerf: getLocalBattingPerf(seed.id) || (prev.battingPerf && Object.keys(prev.battingPerf).length > 0
+                                     ? prev.battingPerf : (seed.battingPerf || {}))
                       };
                     });
                   })(),
@@ -1355,9 +1362,9 @@ export default function App() {
   }
   var _printNotes = useState("");
   var printNotes = _printNotes[0]; var setPrintNotes = _printNotes[1];
-  var _songsView = useState("edit");
+  var _songsView = useState("display");
   var songsView = _songsView[0]; var setSongsView = _songsView[1];
-  var _newGame = useState({ date:"", time:"", location:"", opponent:"", result:"", ourScore:"", theirScore:"", battingPerf:{} });
+  var _newGame = useState({ date:"", time:"", location:"", opponent:"", result:"", ourScore:"", theirScore:"", battingPerf:{}, snackDuty:"" });
   var newGame = _newGame[0]; var setNewGame = _newGame[1];
   var _editGame = useState(null);
   var editingGame = _editGame[0]; var setEditingGame = _editGame[1];
@@ -1747,7 +1754,7 @@ export default function App() {
       skipBench: false, outThisGame: false,
       lastUpdated: null,
       // Walk-up songs
-      walkUpSong: null, walkUpArtist: null, walkUpStart: null, walkUpEnd: null, walkUpNotes: null
+      walkUpSong: null, walkUpArtist: null, walkUpStart: null, walkUpEnd: null, walkUpNotes: null, walkUpLink: null
     };
     var next = roster.concat([p]);
     persistRoster(next);
@@ -1872,7 +1879,7 @@ export default function App() {
       game.id = Date.now() + "";
       persistSchedule(schedule.concat([game]));
     }
-    setNewGame({ date:"", time:"", location:"", opponent:"", result:"", ourScore:"", theirScore:"", battingPerf:{} });
+    setNewGame({ date:"", time:"", location:"", opponent:"", result:"", ourScore:"", theirScore:"", battingPerf:{}, snackDuty:"" });
     setShowGameForm(false);
     setEditingGame(null);
   }
@@ -4071,7 +4078,7 @@ export default function App() {
 
         <div style={{ display:"flex", gap:"8px", marginBottom:"14px", flexWrap:"wrap" }}>
           <button style={S.btn("primary")} onClick={function() {
-            setNewGame({ date:"", time:"", location:"", opponent:"", result:"", ourScore:"", theirScore:"", battingPerf:{} });
+            setNewGame({ date:"", time:"", location:"", opponent:"", result:"", ourScore:"", theirScore:"", battingPerf:{}, snackDuty:"" });
             setEditingGame(null);
             setShowGameForm(true);
             setImportMode(null);
@@ -4282,6 +4289,13 @@ export default function App() {
                   </div>
                 );
               })}
+            </div>
+            <div style={{ marginBottom:"10px" }}>
+              <div style={{ fontSize:"10px", color:C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:"4px" }}>Snack Duty</div>
+              <input type="text" value={newGame.snackDuty || ""} placeholder="Parent bringing snacks (e.g. Smith family)"
+                maxLength={80}
+                onChange={function(e) { var g={}; for(var k in newGame){g[k]=newGame[k];} g.snackDuty=e.target.value; setNewGame(g); }}
+                style={S.input} />
             </div>
             <div style={{ marginBottom:"10px" }}>
               <div style={{ fontSize:"10px", color:C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:"6px" }}>Result</div>
