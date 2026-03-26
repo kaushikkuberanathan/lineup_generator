@@ -412,6 +412,33 @@ function migrateSchedule(schedule) {
   });
 }
 
+function migrateBattingPerf(schedule, roster) {
+  if (!schedule || !roster || roster.length === 0) return schedule;
+  return schedule.map(function(game) {
+    if (!game.battingPerf || Object.keys(game.battingPerf).length === 0) return game;
+    var keys = Object.keys(game.battingPerf);
+    var needsMigration = keys.some(function(k) {
+      return !roster.find(function(p) { return p.name === k; });
+    });
+    if (!needsMigration) return game;
+    var newPerf = {};
+    keys.forEach(function(oldKey) {
+      var match = roster.find(function(p) {
+        var parts = p.name.split(' ');
+        var initial = parts[0].charAt(0);
+        var lastName = parts.slice(1).join(' ');
+        return (initial + ' ' + lastName) === oldKey || p.name === oldKey;
+      });
+      if (match) {
+        newPerf[match.name] = game.battingPerf[oldKey];
+      } else {
+        newPerf[oldKey] = game.battingPerf[oldKey];
+      }
+    });
+    return Object.assign({}, game, { battingPerf: newPerf });
+  });
+}
+
 function migrateGrid(grid, roster, innings) {
   if (!grid || typeof grid !== "object") { return initGrid(roster, innings); }
   // Remap CF → LC for any grid data saved before the 10-player update
@@ -1282,8 +1309,14 @@ export default function App() {
   var teams = _teams[0]; var setTeams = _teams[1];
   var _atid = useState(initActiveId);
   var activeTeamId = _atid[0]; var setActiveTeamId = _atid[1];
-  var _tab = useState("roster");
-  var tab = _tab[0]; var setTab = _tab[1];
+  var _primaryTab = useState("roster");
+  var primaryTab = _primaryTab[0]; var setPrimaryTab = _primaryTab[1];
+  var _gameDayTab = useState("defense");
+  var gameDayTab = _gameDayTab[0]; var setGameDayTab = _gameDayTab[1];
+  var _seasonTab = useState("schedule");
+  var seasonTab = _seasonTab[0]; var setSeasonTab = _seasonTab[1];
+  var _moreTab = useState("feedback");
+  var moreTab = _moreTab[0]; var setMoreTab = _moreTab[1];
   var _ros = useState(initRoster);
   var roster = _ros[0]; var setRoster = _ros[1];
   var _rosterHistory = useState([]);
@@ -1725,7 +1758,10 @@ export default function App() {
   // --- Team management ---
   function loadTeam(team) {
     var r = migrateRoster(loadJSON("team:" + team.id + ":roster", []));
-    var s = migrateSchedule(loadJSON("team:" + team.id + ":schedule", []));
+    var s = migrateBattingPerf(
+      migrateSchedule(loadJSON("team:" + team.id + ":schedule", [])),
+      r
+    );
     var p = loadJSON("team:" + team.id + ":practices", []);
     var b = loadJSON("team:" + team.id + ":batting", r.map(function(x) { return x.name; }));
     var savedInnings   = loadJSON("team:" + team.id + ":innings",   6)    || 6;
@@ -1746,7 +1782,7 @@ export default function App() {
     setLineupDirty(false);
     setLineupLocked(savedLocked);
     setSnackDuty(savedSnackDuty);
-    setTab("roster");
+    setPrimaryTab("roster");
     setScreen("app");
     track("load_team", { team_id: team.id, team_name: team.name });
 
@@ -1771,7 +1807,9 @@ export default function App() {
         saveJSON("team:" + team.id + ":snackDuty",  dbData.snackDuty || {});
         setRoster(migrateRoster(dbData.roster));
         if (dbData.roster && dbData.roster.length > 0) { dbSnapshotRoster(team.id, team.name, dbData.roster, 'app_load'); }
-        setSchedule(migrateSchedule(dbData.schedule));
+        var migratedDbSchedule = migrateBattingPerf(migrateSchedule(dbData.schedule), migrateRoster(dbData.roster));
+        saveJSON("team:" + team.id + ":schedule", migratedDbSchedule);
+        setSchedule(migratedDbSchedule);
         setPractices(dbData.practices);
         setBattingOrder(dbData.battingOrder && dbData.battingOrder.length
           ? dbData.battingOrder
@@ -1914,7 +1952,8 @@ export default function App() {
     persistGrid(result.grid);
     setLastAutoGrid(result.grid);
     setLineupDirty(false);
-    setTab("grid");
+    setPrimaryTab("gameday");
+    setGameDayTab("defense");
 
     track("auto_assign", {
       attempts: result.attempts || 1,
@@ -2521,7 +2560,7 @@ export default function App() {
           <div style={{ background:"rgba(245,200,66,0.12)", border:"1px solid rgba(245,200,66,0.4)", borderRadius:"8px", padding:"10px 14px", marginBottom:"10px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:"10px", flexWrap:"wrap" }}>
             <div style={{ fontSize:"12px", color:"#92620a", fontWeight:"600", flex:1 }}>⚡ Player profiles updated — regenerate lineup when ready</div>
             <div style={{ display:"flex", gap:"8px", alignItems:"center", flexShrink:0 }}>
-              <button style={{ ...S.btn("gold"), fontSize:"11px", padding:"5px 12px" }} onClick={function() { setTab("grid"); setTimeout(generateLineup, 50); }}>Go & Regenerate</button>
+              <button style={{ ...S.btn("gold"), fontSize:"11px", padding:"5px 12px" }} onClick={function() { setPrimaryTab("gameday"); setGameDayTab("defense"); setTimeout(generateLineup, 50); }}>Go & Regenerate</button>
               <button style={{ background:"transparent", border:"none", color:"#94a3b8", fontSize:"18px", cursor:"pointer", padding:"0 4px", lineHeight:1 }} onClick={function() { setLineupDirty(false); }}>×</button>
             </div>
           </div>
@@ -6207,34 +6246,95 @@ export default function App() {
     return renderHome();
   }
 
-  var TEAM_TABS = [
-    { key:"roster",   label:"Roster"   },
-    { key:"grid",     label:"Defense"  },
-    { key:"batting",  label:"Batting"  },
-    { key:"songs",    label:"Songs"    },
+  var PRIMARY_TABS = [
+    { key:"roster",  label:"Roster",   icon:"👥" },
+    { key:"gameday", label:"Game Day", icon:"🏟" },
+    { key:"season",  label:"Season",   icon:"📅" },
+    { key:"print",   label:"Print",    icon:"🖨" },
+    { key:"more",    label:"More",     icon:"⚙️" },
+  ];
+  var GAMEDAY_SUBTABS = [
+    { key:"defense", label:"Defense" },
+    { key:"batting", label:"Batting" },
+    { key:"songs",   label:"Songs"   },
+  ];
+  var SEASON_SUBTABS = [
     { key:"schedule", label:"Schedule" },
     { key:"snack",    label:"Snacks"   },
-    { key:"print",    label:"Print"    },
   ];
-  var GLOBAL_TABS = [
+  var MORE_SUBTABS = [
     { key:"feedback", label:"Feedback" },
     { key:"links",    label:"Links"    },
     { key:"about",    label:"About"    },
   ];
-  var TABS = TEAM_TABS.concat(GLOBAL_TABS);
+
+  // Sub-tab bar — rendered inside tabContent when Game Day or Season is active
+  var subTabBar = null;
+  var subTabStyle = function(active) { return {
+    flex:1, padding:"7px 4px", borderRadius:"6px", border:"none", cursor:"pointer",
+    fontSize:"12px", fontWeight:"bold", fontFamily:"Georgia,serif",
+    letterSpacing:"0.03em", textTransform:"uppercase", textAlign:"center",
+    background: active ? C.navy : "rgba(15,31,61,0.07)",
+    color: active ? "#fff" : C.textMuted
+  }; };
+
+  if (primaryTab === "gameday") {
+    subTabBar = (
+      <div style={{ display:"flex", gap:"4px", padding:"8px 12px 4px", background:C.cream, borderBottom:"1px solid " + C.border }}>
+        {GAMEDAY_SUBTABS.map(function(st) {
+          return (
+            <button key={st.key}
+              onClick={function(k) { return function() { setGameDayTab(k); }; }(st.key)}
+              style={subTabStyle(gameDayTab === st.key)}>
+              {st.label}
+            </button>
+          );
+        })}
+      </div>
+    );
+  } else if (primaryTab === "season") {
+    subTabBar = (
+      <div style={{ display:"flex", gap:"4px", padding:"8px 12px 4px", background:C.cream, borderBottom:"1px solid " + C.border }}>
+        {SEASON_SUBTABS.map(function(st) {
+          return (
+            <button key={st.key}
+              onClick={function(k) { return function() { setSeasonTab(k); }; }(st.key)}
+              style={subTabStyle(seasonTab === st.key)}>
+              {st.label}
+            </button>
+          );
+        })}
+      </div>
+    );
+  } else if (primaryTab === "more") {
+    subTabBar = (
+      <div style={{ display:"flex", gap:"4px", padding:"8px 12px 4px", background:C.cream, borderBottom:"1px solid " + C.border }}>
+        {MORE_SUBTABS.map(function(st) {
+          return (
+            <button key={st.key}
+              onClick={function(k) { return function() { setMoreTab(k); }; }(st.key)}
+              style={subTabStyle(moreTab === st.key)}>
+              {st.label}
+            </button>
+          );
+        })}
+      </div>
+    );
+  }
 
   var tabContent = (
     <div>
-      {tab === "roster"   ? renderRoster()   : null}
-      {tab === "grid"     ? renderGrid()     : null}
-      {tab === "batting"  ? renderBatting()  : null}
-      {tab === "songs"    ? renderSongs()    : null}
-      {tab === "schedule" ? renderSchedule()  : null}
-      {tab === "snack"    ? renderSnackDuty() : null}
-      {tab === "feedback" ? renderFeedback() : null}
-      {tab === "print"    ? renderPrint()    : null}
-      {tab === "links"    ? renderLinks()    : null}
-      {tab === "about"    ? renderAbout()    : null}
+      {subTabBar}
+      {primaryTab === "roster"  ? renderRoster()   : null}
+      {primaryTab === "gameday" && gameDayTab === "defense" ? renderGrid()      : null}
+      {primaryTab === "gameday" && gameDayTab === "batting" ? renderBatting()   : null}
+      {primaryTab === "gameday" && gameDayTab === "songs"   ? renderSongs()     : null}
+      {primaryTab === "season"  && seasonTab  === "schedule" ? renderSchedule() : null}
+      {primaryTab === "season"  && seasonTab  === "snack"    ? renderSnackDuty(): null}
+      {primaryTab === "print"   ? renderPrint()    : null}
+      {primaryTab === "more" && moreTab === "feedback" ? renderFeedback() : null}
+      {primaryTab === "more" && moreTab === "links"    ? renderLinks()    : null}
+      {primaryTab === "more" && moreTab === "about"    ? renderAbout()    : null}
     </div>
   );
 
@@ -6251,30 +6351,56 @@ export default function App() {
             {activeTeam ? activeTeam.name.charAt(0).toUpperCase() : "L"}
           </div>
 
-          {/* Tab buttons — vertical, icon + abbreviated label */}
-          {TEAM_TABS.map(function(t) {
-            var active = tab === t.key;
+          {/* Primary tab buttons */}
+          {PRIMARY_TABS.map(function(t) {
+            var active = primaryTab === t.key;
             return (
-              <button key={t.key}
-                onClick={function(k) { return function() { setTab(k); }; }(t.key)}
-                style={{ width:"54px", padding:"6px 2px", borderRadius:"6px", border:"none", cursor:"pointer", fontSize:"8.5px", fontWeight:"bold", fontFamily:"Georgia,serif", letterSpacing:"0.04em", textTransform:"uppercase", textAlign:"center", lineHeight:"1.3",
-                  background: active ? C.red : "transparent",
-                  color: active ? "#fff" : "rgba(255,255,255,0.55)" }}>
-                {t.label}
-              </button>
-            );
-          })}
-          <div style={{ height:"1px", background:"rgba(255,255,255,0.2)", margin:"6px 8px" }} />
-          {GLOBAL_TABS.map(function(t) {
-            var active = tab === t.key;
-            return (
-              <button key={t.key}
-                onClick={function(k) { return function() { setTab(k); }; }(t.key)}
-                style={{ width:"54px", padding:"6px 2px", borderRadius:"6px", border:"none", cursor:"pointer", fontSize:"8.5px", fontWeight:"bold", fontFamily:"Georgia,serif", letterSpacing:"0.04em", textTransform:"uppercase", textAlign:"center", lineHeight:"1.3",
-                  background: active ? C.red : "transparent",
-                  color: active ? "#fff" : "rgba(255,255,255,0.55)" }}>
-                {t.label}
-              </button>
+              <div key={t.key}>
+                <button
+                  onClick={function(k) { return function() { setPrimaryTab(k); }; }(t.key)}
+                  style={{ width:"54px", padding:"6px 2px", borderRadius:"6px", border:"none", cursor:"pointer", fontSize:"8px", fontWeight:"bold", fontFamily:"Georgia,serif", letterSpacing:"0.04em", textTransform:"uppercase", textAlign:"center", lineHeight:"1.3",
+                    background: active ? C.red : "transparent",
+                    color: active ? "#fff" : "rgba(255,255,255,0.55)" }}>
+                  <div style={{ fontSize:"14px", marginBottom:"2px" }}>{t.icon}</div>
+                  {t.label}
+                </button>
+                {t.key === "gameday" && primaryTab === "gameday" && GAMEDAY_SUBTABS.map(function(st) {
+                  var subActive = gameDayTab === st.key;
+                  return (
+                    <button key={st.key}
+                      onClick={function(k) { return function() { setGameDayTab(k); }; }(st.key)}
+                      style={{ width:"50px", padding:"3px 2px", borderRadius:"4px", border:"none", cursor:"pointer", fontSize:"7.5px", fontWeight:"bold", fontFamily:"Georgia,serif", letterSpacing:"0.04em", textTransform:"uppercase", textAlign:"center", display:"block", marginLeft:"2px",
+                        background: subActive ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.07)",
+                        color: subActive ? "#fff" : "rgba(255,255,255,0.6)" }}>
+                      {st.label}
+                    </button>
+                  );
+                })}
+                {t.key === "season" && primaryTab === "season" && SEASON_SUBTABS.map(function(st) {
+                  var subActive = seasonTab === st.key;
+                  return (
+                    <button key={st.key}
+                      onClick={function(k) { return function() { setSeasonTab(k); }; }(st.key)}
+                      style={{ width:"50px", padding:"3px 2px", borderRadius:"4px", border:"none", cursor:"pointer", fontSize:"7.5px", fontWeight:"bold", fontFamily:"Georgia,serif", letterSpacing:"0.04em", textTransform:"uppercase", textAlign:"center", display:"block", marginLeft:"2px",
+                        background: subActive ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.07)",
+                        color: subActive ? "#fff" : "rgba(255,255,255,0.6)" }}>
+                      {st.label}
+                    </button>
+                  );
+                })}
+                {t.key === "more" && primaryTab === "more" && MORE_SUBTABS.map(function(st) {
+                  var subActive = moreTab === st.key;
+                  return (
+                    <button key={st.key}
+                      onClick={function(k) { return function() { setMoreTab(k); }; }(st.key)}
+                      style={{ width:"50px", padding:"3px 2px", borderRadius:"4px", border:"none", cursor:"pointer", fontSize:"7.5px", fontWeight:"bold", fontFamily:"Georgia,serif", letterSpacing:"0.04em", textTransform:"uppercase", textAlign:"center", display:"block", marginLeft:"2px",
+                        background: subActive ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.07)",
+                        color: subActive ? "#fff" : "rgba(255,255,255,0.6)" }}>
+                      {st.label}
+                    </button>
+                  );
+                })}
+              </div>
             );
           })}
 
@@ -6315,33 +6441,20 @@ export default function App() {
             style={{ background:"transparent", border:"1px solid rgba(255,255,255,0.25)", borderRadius:"6px", color:"rgba(255,255,255,0.7)", fontSize:"10px", fontFamily:"Georgia,serif", fontWeight:"bold", letterSpacing:"0.04em", textTransform:"uppercase", padding:"3px 8px", cursor:"pointer", whiteSpace:"nowrap", alignSelf:"flex-start", marginBottom:"3px" }}>
             ← Home
           </button>
-          <div style={{ display:"flex", flexDirection:"column", gap:"2px", flex:1, width:"100%" }}>
-            <div style={{ display:"flex", gap:"2px" }}>
-              {TEAM_TABS.map(function(t) {
-                var active = tab === t.key;
-                return <button key={t.key}
-                  onClick={function(k) { return function() { setTab(k); }; }(t.key)}
-                  style={{ flex:1, padding:"6px 4px", borderRadius:"6px", border:"none", cursor:"pointer", fontSize:"10px", fontWeight:"bold", fontFamily:"Georgia,serif", letterSpacing:"0.03em", textTransform:"uppercase", textAlign:"center", whiteSpace:"nowrap", transition:"all 0.12s",
+          <div style={{ display:"flex", gap:"2px", flex:1, width:"100%" }}>
+            {PRIMARY_TABS.map(function(t) {
+              var active = primaryTab === t.key;
+              return (
+                <button key={t.key}
+                  onClick={function(k) { return function() { setPrimaryTab(k); }; }(t.key)}
+                  style={{ flex:1, padding:"4px 2px", borderRadius:"6px", border:"none", cursor:"pointer", fontSize:"9px", fontWeight:"bold", fontFamily:"Georgia,serif", letterSpacing:"0.02em", textTransform:"uppercase", textAlign:"center", lineHeight:1.25,
                     background: active ? C.red : "transparent",
                     color: active ? "#fff" : "rgba(255,255,255,0.55)" }}>
+                  <div style={{ fontSize:"13px", marginBottom:"1px" }}>{t.icon}</div>
                   {t.label}
-                </button>;
-              })}
-            </div>
-            <div style={{ display:"flex", gap:"2px", borderTop:"1px solid rgba(255,255,255,0.15)", paddingTop:"3px" }}>
-              {GLOBAL_TABS.map(function(t) {
-                var active = tab === t.key;
-                return (
-                  <button key={t.key}
-                    onClick={function(k) { return function() { setTab(k); }; }(t.key)}
-                    style={{ flex:1, fontSize:"9.5px", padding:"4px 4px", borderRadius:"5px", fontWeight:"bold", fontFamily:"Georgia,serif", letterSpacing:"0.03em", textTransform:"uppercase", textAlign:"center", whiteSpace:"nowrap", border:"none", cursor:"pointer",
-                      background: active ? "rgba(255,255,255,0.15)" : "transparent",
-                      color: active ? "#fff" : "rgba(255,255,255,0.4)" }}>
-                    {t.label}
-                  </button>
-                );
-              })}
-            </div>
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
