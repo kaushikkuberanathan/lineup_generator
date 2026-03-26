@@ -4054,7 +4054,7 @@ export default function App() {
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"14px", flexWrap:"wrap", gap:"8px" }}>
           <div style={{ fontWeight:"bold", fontSize:"16px", color:C.navy }}>Walk-Up Songs</div>
           <div style={{ display:"flex", gap:"4px", background:"rgba(15,31,61,0.06)", borderRadius:"8px", padding:"3px" }}>
-            {[["Edit","edit"],["Game Day View","display"]].map(function(opt) {
+            {[["Game Day View","display"],["Edit","edit"]].map(function(opt) {
               var active = songsView === opt[1];
               return (
                 <button key={opt[1]}
@@ -4135,7 +4135,6 @@ export default function App() {
           <div>
             {/* Game Day View header actions */}
             <div style={{ display:"flex", gap:"8px", marginBottom:"10px", flexWrap:"wrap" }}>
-              <button style={{ ...S.btn("ghost"), fontSize:"12px" }} onClick={function() { setSongsView("edit"); }}>← Edit</button>
               <button style={S.btn("primary")} onClick={shareSongsList}>Share</button>
               <button style={S.btn("ghost")} onClick={printSongsList}>Print</button>
             </div>
