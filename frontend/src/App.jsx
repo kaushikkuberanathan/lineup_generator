@@ -1487,6 +1487,8 @@ export default function App() {
   var showOnboarding = _showOnboarding[0]; var setShowOnboarding = _showOnboarding[1];
   var _aboutGuideOpen = useState(true);
   var aboutGuideOpen = _aboutGuideOpen[0]; var setAboutGuideOpen = _aboutGuideOpen[1];
+  var _expandedVersion = useState(APP_VERSION);
+  var expandedVersion = _expandedVersion[0]; var setExpandedVersion = _expandedVersion[1];
 
   var warnings = useMemo(function() { return validateGrid(grid, roster, innings); }, [grid, roster, innings]);
   var errorCount = warnings.length;
@@ -5690,6 +5692,7 @@ export default function App() {
           <div style={S.sectionTitle}>What&#x27;s New</div>
           {VERSION_HISTORY.map(function(v, vi) {
             var isCurrent = v.version === APP_VERSION;
+            var isOpen = expandedVersion === v.version;
             return (
               <div key={v.version} style={{
                 borderLeft: isCurrent ? "3px solid #27ae60" : "3px solid rgba(15,31,61,0.1)",
@@ -5698,16 +5701,21 @@ export default function App() {
                 padding: "10px 14px",
                 marginBottom: vi < VERSION_HISTORY.length - 1 ? "12px" : "0"
               }}>
-                <div style={{ display:"flex", gap:"10px", alignItems:"baseline", marginBottom:"8px", flexWrap:"wrap" }}>
+                <div
+                  onClick={function(ver) { return function() { setExpandedVersion(expandedVersion === ver ? null : ver); }; }(v.version)}
+                  style={{ display:"flex", gap:"10px", alignItems:"baseline", marginBottom: isOpen ? "8px" : "0", flexWrap:"wrap", cursor:"pointer" }}>
                   <span style={{ fontSize:"14px", fontWeight:"bold", color:C.navy }}>v{v.version}</span>
                   <span style={{ fontSize:"11px", color:C.textMuted }}>{v.date}</span>
                   {isCurrent ? <span style={{ fontSize:"10px", padding:"1px 7px", borderRadius:"10px", background:"#27ae60", color:"#fff", fontWeight:"bold" }}>Current</span> : null}
+                  <span style={{ marginLeft:"auto", fontSize:"11px", color:C.textMuted }}>{isOpen ? "▲" : "▼"}</span>
                 </div>
-                <ul style={{ margin:"0", paddingLeft:"16px" }}>
-                  {v.changes.map(function(ch, ci) {
-                    return <li key={ci} style={{ fontSize:"12px", color:C.text, marginBottom:"3px", lineHeight:"1.5" }}>{ch}</li>;
-                  })}
-                </ul>
+                {isOpen ? (
+                  <ul style={{ margin:"0", paddingLeft:"16px" }}>
+                    {v.changes.map(function(ch, ci) {
+                      return <li key={ci} style={{ fontSize:"12px", color:C.text, marginBottom:"3px", lineHeight:"1.5" }}>{ch}</li>;
+                    })}
+                  </ul>
+                ) : null}
               </div>
             );
           })}
