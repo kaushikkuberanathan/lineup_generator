@@ -130,9 +130,27 @@ var DEFAULT_ROSTER = [];
 var _mem = {};
 var SCHEMA_VERSION = 2;
 
-var APP_VERSION = "1.3.9";
+var APP_VERSION = "1.4.0";
 
 var VERSION_HISTORY = [
+  {
+    version: "1.4.0",
+    date: "March 26, 2026",
+    changes: [
+      "UX: primary tabs moved to fixed bottom nav bar (portrait) — standard iOS/Android pattern, gold active indicator, 4 primary tabs",
+      "UX: Roster tab — Players and Songs sub-tabs; walk-up song management moved from Game Day to Roster \u2192 Songs",
+      "UX: Game Day — Songs sub-tab replaced by Lineups (print/PDF view absorbed into Game Day as a sub-tab)",
+      "UX: More tab — Updates sub-tab added; What\u2019s New version history moved there; sub-tabs reordered to About / Updates / Links / Feedback",
+      "UX: About tab — coach-friendly app description at top; sections reordered (Description \u2192 App Info \u2192 How to Use)",
+      "UX: About tab — version badge inline on heading; Open in Browser link added; raw URL removed; Getting Started CTA replaced with Share App Now",
+      "UX: What\u2019s New — previous versions collapsed by default, current version auto-expanded",
+      "UX: Songs tab — Game Day View is first in toggle and default landing; redundant Edit button removed",
+      "UX: Lineups (Print) — Bench displays as X in defensive grid; position legend added below grid",
+      "UX: Lineups (Print) — buttons renamed to Download as PDF / Share as Link / Share as PDF; Backup CTA removed; Grid/Diamond toggle moved to top row",
+      "Fix: onboarding guide updated — correct tab references reflecting new 4-tab nav structure",
+      "Fix: game day pill shows GAME DAY not TOMORROW — Math.round \u2192 Math.floor for day diff"
+    ]
+  },
   {
     version: "1.3.9",
     date: "March 26, 2026",
@@ -988,7 +1006,8 @@ var S = {
     background:"linear-gradient(135deg,#0f1f3d 0%,#1a3260 100%)",
     borderBottom:"4px solid " + C.red,
     padding:"12px 20px", display:"flex", alignItems:"center",
-    justifyContent:"space-between", gap:"12px", flexWrap:"wrap"
+    justifyContent:"space-between", gap:"12px", flexWrap:"wrap",
+    position:"sticky", top:0, zIndex:100
   },
   logoWrap: { display:"flex", alignItems:"center", gap:"10px", cursor:"pointer" },
   logoCircle: {

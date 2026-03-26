@@ -121,7 +121,7 @@ team_data (
   grid          jsonb,         -- defensive assignment matrix
   innings       int,           -- 4 | 5 | 6
   locked        boolean,       -- lineup finalized flag
-  snack_duty    jsonb          -- per-game snack assignments (v1.3.8+)
+  snack_duty    jsonb          -- deprecated as of v1.4.0; snack data now stored in schedule JSONB (game.snackDuty / game.snackNote per game object)
 )
 ```
 
@@ -265,7 +265,7 @@ Returns server version and uptime. Used for deploy verification.
 ```json
 {
   "status": "healthy",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "uptime": 3820
 }
 ```
@@ -396,7 +396,7 @@ Supabase test OTP: phone `+14044930548`, code `123456` — set in Supabase Auth 
 
 ```
 frontend/src/
-├── App.jsx              ← Main application (~5,500+ lines — file split is P3 backlog)
+├── App.jsx              ← Main application (~6,600+ lines — file split is P3 backlog)
 ├── supabase.js          ← DB client + read/write helpers
 ├── main.jsx             ← React entry point
 ├── config/
@@ -407,18 +407,16 @@ frontend/src/
     └── playerMapper.js
 ```
 
-### Key Tab Modules (inside App.jsx)
+### Navigation Structure (v1.4.0+)
 
-| Tab | Responsibility |
-|---|---|
-| Roster | Player cards with V2 attribute editing, add/remove, constraints |
-| Field Grid | Defensive assignment matrix, auto-assign, manual overrides, per-inning summary |
-| Batting | Batting order (drag), season stats table, suggest order |
-| Schedule | Game list, AI import, result logging, batting stat entry |
-| Print | PDF export, diamond view, share link generation |
-| Links | External resources (county schedule, field requests, alerts) |
-| Feedback | Free-form coach feedback + bug reports (localStorage) |
-| About | Version history, onboarding guide, app info |
+4 primary tabs in a fixed bottom nav bar (portrait) / sidebar (landscape):
+
+| Primary Tab | Sub-tabs | Responsibility |
+|---|---|---|
+| **Roster** | Players / Songs | Player cards with V2 attribute editing, add/remove, constraints; Walk-up song management per player |
+| **Game Day** | Defense / Batting / Lineups | Defensive assignment matrix + auto-assign; Batting order (drag) + season stats; PDF export, diamond view, share link |
+| **Season** | Schedule / Snacks | Game list, AI import, result logging, batting stat entry; Per-game snack duty assignment |
+| **More** | About / Updates / Links / Feedback | App description + info; Version history; External resources; Coach feedback + bug reports |
 
 ### State Management
 
@@ -499,7 +497,7 @@ The `VERSION_HISTORY` array in `App.jsx` powers the in-app changelog. The "Curre
 
 | Decision | Current Rationale | When to Revisit |
 |---|---|---|
-| All logic in `App.jsx` (~5,100 lines) | Single-file build simplified early iteration | Before Phase 3 auth ships — file split is P3 backlog, will reduce feature velocity by ~40% if not done first |
+| All logic in `App.jsx` (~6,600 lines) | Single-file build simplified early iteration | Before Phase 3 auth ships — file split is P3 backlog, will reduce feature velocity by ~40% if not done first |
 | No auth in MVP | Single-coach, single-device scope; share link is read-only | Phase 3 — Supabase OTP (Twilio toll-free verification pending) |
 | Render free tier | Zero cost for personal tool | Upgrade if cold-start latency becomes user-facing despite UptimeRobot |
 | JSONB for all team data | Mirrors localStorage, zero transformation overhead | Normalize if query patterns require filtering inside game/player arrays |

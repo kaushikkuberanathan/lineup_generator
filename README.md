@@ -112,6 +112,9 @@ This is vibe coding at its best — not generating boilerplate, but genuinely co
 | Game result + per-player batting stat logging | ✅ Live |
 | Walk-up songs per player (title, artist, link, timestamps) | ✅ Live |
 | Snack Duty tab — per-game assignment with notes | ✅ Live |
+| Alphabetical roster display (render-time sort, no data changes) | ✅ Live |
+| Roster auto-snapshots + in-app recovery UI (up to 5 restore points) | ✅ Live |
+| Team card ··· context menu — backup + delete for any team | ✅ Live |
 | PDF export + print view | ✅ Live |
 | Read-only share link (no login required) | ✅ Live |
 | Cloud sync (Supabase) + offline (localStorage) | ✅ Live |

@@ -49,6 +49,19 @@
 - 10-player field configuration: LC + RC replace CF in outfield; 1 bench slot per inning (schema v2, migration auto-remaps saved CF→LC)
 - First-time coach onboarding modal (5-step in-app walkthrough, localStorage completion tracking, always re-accessible via "Getting Started" button in Roster tab)
 
+### v1.4.0 — March 26, 2026
+#### Nav Overhaul + About Tab + Lineups UX
+- UX: primary tabs moved to fixed bottom nav bar (portrait) — standard iOS/Android pattern, 4 primary tabs (Roster, Game Day, Season, More), gold active indicator
+- UX: Roster tab — Players and Songs sub-tabs; walk-up song management moved from Game Day to Roster → Songs
+- UX: Game Day — Songs sub-tab replaced by Lineups sub-tab (print/PDF view absorbed into Game Day)
+- UX: More tab — Updates sub-tab added; What's New version history moved there; sub-tabs reordered to About / Updates / Links / Feedback
+- UX: About tab — coach/parent-friendly description at top; sections reordered; version badge inline; Open in Browser link; Getting Started → Share App Now
+- UX: What's New — previous versions collapsed by default, current version auto-expanded
+- UX: Songs tab — Game Day View is first and default landing; redundant Edit button removed
+- UX: Lineups (Print) — Bench displays as X in grid; position legend added; buttons renamed Download as PDF / Share as Link / Share as PDF; Backup CTA removed; Grid/Diamond toggle moved to top row
+- Fix: onboarding guide updated with correct tab references for new 4-tab nav structure
+- Fix: game day pill shows GAME DAY not TOMORROW — Math.round → Math.floor for day diff
+
 ### v1.3.9 — March 26, 2026
 #### Bug Fixes + Nav Restructure
 - Fix: Open button on Home tab unclickable when ··· context menu overlay was active — zIndex fix
