@@ -1054,8 +1054,9 @@ export default function App() {
   var initTeams    = loadJSON("app:teams", null) || [];
   var initActiveId = loadJSON("ui:activeTeam", null);
   var initRoster   = initActiveId ? migrateRoster(loadJSON("team:" + initActiveId + ":roster", [])) : [];
-  var initSchedule = initActiveId ? migrateSchedule(loadJSON("team:" + initActiveId + ":schedule", [])) : [];
-  var initPractice = initActiveId ? loadJSON("team:" + initActiveId + ":practices", []) : [];
+  var initSchedule   = initActiveId ? migrateSchedule(loadJSON("team:" + initActiveId + ":schedule", [])) : [];
+  var initPractice   = initActiveId ? loadJSON("team:" + initActiveId + ":practices", []) : [];
+  var initSnackDuty  = initActiveId ? (loadJSON("team:" + initActiveId + ":snackDuty", {}) || {}) : {};
   var initInnings  = initActiveId ? (loadJSON("team:" + initActiveId + ":innings", 6) || 6) : 6;
   var initGrid_    = initActiveId ? migrateGrid(loadJSON("team:" + initActiveId + ":grid", null), initRoster, initInnings) : null;
 
@@ -1283,6 +1284,8 @@ export default function App() {
   var schedule = _sched[0]; var setSchedule = _sched[1];
   var _prac = useState(initPractice);
   var practices = _prac[0]; var setPractices = _prac[1];
+  var _snackDuty = useState(initSnackDuty);
+  var snackDuty = _snackDuty[0]; var setSnackDuty = _snackDuty[1];
   var _dirty = useState(false);
   var lineupDirty = _dirty[0]; var setLineupDirty = _dirty[1];
   var _lastAutoGrid = useState(null);
@@ -1488,6 +1491,14 @@ export default function App() {
     }
   }
 
+  function persistSnackDuty(next) {
+    window._lastLocalWrite = Date.now();
+    setSnackDuty(next);
+    if (activeTeamId) {
+      saveJSON("team:" + activeTeamId + ":snackDuty", next);
+    }
+  }
+
   function persistPractices(next) {
     window._lastLocalWrite = Date.now();
     setPractices(next);
@@ -1618,7 +1629,8 @@ export default function App() {
       battingOrder:isActive ? battingOrder : loadJSON("team:" + tid + ":batting",   []),
       grid:        isActive ? grid         : loadJSON("team:" + tid + ":grid",      {}),
       innings:     isActive ? innings      : loadJSON("team:" + tid + ":innings",   6),
-      locked:      isActive ? lineupLocked : loadJSON("team:" + tid + ":locked",    false)
+      locked:      isActive ? lineupLocked : loadJSON("team:" + tid + ":locked",    false),
+      snackDuty:   isActive ? snackDuty    : loadJSON("team:" + tid + ":snackDuty", {})
     };
     var json = JSON.stringify(payload, null, 2);
     var blob = new Blob([json], { type:"application/json" });
@@ -1648,7 +1660,8 @@ export default function App() {
         saveJSON("team:" + tid + ":practices", data.practices || []);
         saveJSON("team:" + tid + ":batting",   data.battingOrder || []);
         saveJSON("team:" + tid + ":grid",      data.grid || {});
-        saveJSON("team:" + tid + ":innings",   data.innings || 6);
+        saveJSON("team:" + tid + ":innings",   data.innings   || 6);
+        saveJSON("team:" + tid + ":snackDuty", data.snackDuty || {});
         // Reload the team from storage
         if (activeTeam) {
           var t = {}; for (var k in activeTeam) { t[k] = activeTeam[k]; }
@@ -1668,9 +1681,10 @@ export default function App() {
     var s = migrateSchedule(loadJSON("team:" + team.id + ":schedule", []));
     var p = loadJSON("team:" + team.id + ":practices", []);
     var b = loadJSON("team:" + team.id + ":batting", r.map(function(x) { return x.name; }));
-    var savedInnings = loadJSON("team:" + team.id + ":innings", 6) || 6;
-    var savedGrid = migrateGrid(loadJSON("team:" + team.id + ":grid", null), r, savedInnings);
-    var savedLocked = loadJSON("team:" + team.id + ":locked", false) || false;
+    var savedInnings   = loadJSON("team:" + team.id + ":innings",   6)    || 6;
+    var savedGrid      = migrateGrid(loadJSON("team:" + team.id + ":grid", null), r, savedInnings);
+    var savedLocked    = loadJSON("team:" + team.id + ":locked",    false) || false;
+    var savedSnackDuty = loadJSON("team:" + team.id + ":snackDuty", {})   || {};
 
     setActiveTeamId(team.id);
     saveJSON("ui:activeTeam", team.id);
@@ -1684,6 +1698,7 @@ export default function App() {
     setInnings(savedInnings);
     setLineupDirty(false);
     setLineupLocked(savedLocked);
+    setSnackDuty(savedSnackDuty);
     setTab("roster");
     setScreen("app");
     track("load_team", { team_id: team.id, team_name: team.name });
@@ -4102,6 +4117,135 @@ export default function App() {
   }
 
   // ============================================================
+  // SNACK DUTY TAB
+  // ============================================================
+  function renderSnackDuty() {
+    var today = new Date(); today.setHours(0,0,0,0);
+
+    // Sort games by date; no-date games go to end
+    var sorted = schedule.slice().sort(function(a, b) {
+      var da = a.date ? new Date(a.date + "T12:00:00") : new Date(9999,0,1);
+      var db = b.date ? new Date(b.date + "T12:00:00") : new Date(9999,0,1);
+      return da - db;
+    });
+
+    // Filter out canceled games
+    var games = sorted.filter(function(g) { return g.result !== "X"; });
+
+    function updateAssignment(gameId, field, value) {
+      var entry = snackDuty[gameId] || { playerName: "", note: "" };
+      var next = {};
+      for (var k in snackDuty) { next[k] = snackDuty[k]; }
+      next[gameId] = {};
+      for (var k2 in entry) { next[gameId][k2] = entry[k2]; }
+      next[gameId][field] = value;
+      persistSnackDuty(next);
+    }
+
+    if (!schedule.length) {
+      return (
+        <div style={{ padding:"24px 16px", textAlign:"center", color:C.textMuted, fontSize:"14px" }}>
+          No games on the schedule yet.<br />
+          <span style={{ fontSize:"12px" }}>Add games in the Schedule tab first.</span>
+        </div>
+      );
+    }
+
+    return (
+      <div style={{ padding:"12px 0 32px" }}>
+        <div style={{ padding:"0 16px 12px", display:"flex", alignItems:"baseline", gap:"8px" }}>
+          <span style={{ fontSize:"18px", fontWeight:"bold", color:C.navy }}>🍎 Snack Duty</span>
+          <span style={{ fontSize:"12px", color:C.textMuted }}>
+            {Object.values(snackDuty).filter(function(e) { return e && e.playerName; }).length} of {games.length} assigned
+          </span>
+        </div>
+
+        {games.map(function(game) {
+          var gd = game.date ? new Date(game.date + "T12:00:00") : null;
+          var isPast = gd && gd < today;
+          var isToday = gd && gd.getTime() === today.getTime();
+          var assignment = snackDuty[game.id] || { playerName: "", note: "" };
+          var hasAssignment = !!assignment.playerName;
+
+          var resultColor = game.result === "W" ? C.win : game.result === "L" ? C.red : C.tie;
+          var dateStr = gd ? gd.toLocaleDateString("en-US", { weekday:"short", month:"short", day:"numeric" }) : "—";
+
+          return (
+            <div key={game.id} style={{
+              margin:"0 12px 10px",
+              background: isPast && !isToday ? "rgba(15,31,61,0.03)" : C.cardBg,
+              border: "1px solid " + (isToday ? C.gold : C.border),
+              borderRadius:"10px",
+              padding:"12px 14px",
+              opacity: isPast && !isToday ? 0.7 : 1,
+              boxShadow: isToday ? "0 0 0 2px " + C.gold + "44" : "none"
+            }}>
+              {/* Game header row */}
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"10px" }}>
+                <div>
+                  <div style={{ fontSize:"14px", fontWeight:"bold", color: isPast && !isToday ? C.textMuted : C.navy }}>
+                    {isToday && <span style={{ fontSize:"10px", background:C.gold, color:C.navy, borderRadius:"4px", padding:"1px 6px", fontWeight:"bold", marginRight:"6px", letterSpacing:"0.06em" }}>TODAY</span>}
+                    📅 {dateStr}
+                    {game.time ? <span style={{ fontWeight:"normal", color:C.textMuted, fontSize:"12px", marginLeft:"8px" }}>• {game.time}</span> : null}
+                  </div>
+                  <div style={{ fontSize:"13px", color: isPast && !isToday ? C.textMuted : C.text, marginTop:"2px" }}>
+                    {game.home ? "vs " : "@ "}<strong>{game.opponent || "TBD"}</strong>
+                    {game.location ? <span style={{ fontWeight:"normal", color:C.textMuted, fontSize:"12px" }}> — {game.location}</span> : null}
+                  </div>
+                </div>
+                <div>
+                  {game.result ? (
+                    <span style={{ fontSize:"11px", padding:"2px 8px", borderRadius:"10px", fontWeight:"bold", background: resultColor + "22", color: resultColor }}>
+                      {game.result}{game.ourScore ? " " + game.ourScore + "-" + game.theirScore : ""}
+                    </span>
+                  ) : (
+                    <span style={{ fontSize:"11px", color:C.subtleText }}>—</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Snack assignment row */}
+              <div style={{ display:"flex", gap:"8px", alignItems:"center", flexWrap:"wrap" }}>
+                <span style={{ fontSize:"12px", color:C.textMuted, flexShrink:0 }}>🍎 Snack Duty:</span>
+                <select
+                  value={assignment.playerName || ""}
+                  onChange={function(gid) { return function(e) {
+                    updateAssignment(gid, "playerName", e.target.value);
+                  }; }(game.id)}
+                  style={{ flex:"1 1 140px", minWidth:"120px", padding:"5px 8px", borderRadius:"6px", border:"1px solid rgba(15,31,61,0.15)", fontSize:"13px", fontFamily:"inherit", background:C.cardBg, color: hasAssignment ? C.text : C.textMuted }}>
+                  <option value="">— select player —</option>
+                  {roster.map(function(p) {
+                    return <option key={p.name} value={p.firstName || p.name}>{p.firstName || p.name}</option>;
+                  })}
+                </select>
+                {hasAssignment && (
+                  <button
+                    onClick={function(gid) { return function() { updateAssignment(gid, "playerName", ""); }; }(game.id)}
+                    style={{ background:"none", border:"none", cursor:"pointer", fontSize:"14px", color:C.textMuted, padding:"2px 4px", lineHeight:1 }}
+                    title="Clear">✕</button>
+                )}
+              </div>
+
+              {/* Note row */}
+              <div style={{ display:"flex", gap:"8px", alignItems:"center", marginTop:"6px" }}>
+                <span style={{ fontSize:"12px", color:C.textMuted, flexShrink:0 }}>📝 Note:</span>
+                <input
+                  type="text"
+                  placeholder="Optional note (e.g. bring juice boxes)"
+                  value={assignment.note || ""}
+                  onChange={function(gid) { return function(e) {
+                    updateAssignment(gid, "note", e.target.value);
+                  }; }(game.id)}
+                  style={{ flex:1, padding:"5px 8px", borderRadius:"6px", border:"1px solid rgba(15,31,61,0.15)", fontSize:"13px", fontFamily:"inherit", background:C.cardBg }} />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  // ============================================================
   // SCHEDULE TAB
   // ============================================================
   function renderSchedule() {
@@ -5997,6 +6141,7 @@ export default function App() {
     { key:"batting",  label:"Batting"  },
     { key:"songs",    label:"Songs"    },
     { key:"schedule", label:"Schedule" },
+    { key:"snack",    label:"Snacks"   },
     { key:"print",    label:"Print"    },
   ];
   var GLOBAL_TABS = [
@@ -6012,7 +6157,8 @@ export default function App() {
       {tab === "grid"     ? renderGrid()     : null}
       {tab === "batting"  ? renderBatting()  : null}
       {tab === "songs"    ? renderSongs()    : null}
-      {tab === "schedule" ? renderSchedule() : null}
+      {tab === "schedule" ? renderSchedule()  : null}
+      {tab === "snack"    ? renderSnackDuty() : null}
       {tab === "feedback" ? renderFeedback() : null}
       {tab === "print"    ? renderPrint()    : null}
       {tab === "links"    ? renderLinks()    : null}
