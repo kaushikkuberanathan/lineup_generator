@@ -6267,6 +6267,7 @@ export default function App() {
     { key:"defense", label:"Defense" },
     { key:"batting", label:"Batting" },
     { key:"lineups", label:"Lineups" },
+    { key:"songs",   label:"Songs"   },
   ];
   var SEASON_SUBTABS = [
     { key:"schedule", label:"Schedule" },
@@ -6355,6 +6356,7 @@ export default function App() {
       {primaryTab === "gameday" && gameDayTab === "defense" ? renderGrid()      : null}
       {primaryTab === "gameday" && gameDayTab === "batting" ? renderBatting()   : null}
       {primaryTab === "gameday" && gameDayTab === "lineups" ? renderPrint()     : null}
+      {primaryTab === "gameday" && gameDayTab === "songs"   ? renderSongs()     : null}
       {primaryTab === "season"  && seasonTab  === "schedule" ? renderSchedule() : null}
       {primaryTab === "season"  && seasonTab  === "snack"    ? renderSnackDuty(): null}
       {primaryTab === "more" && moreTab === "feedback" ? renderFeedback() : null}
