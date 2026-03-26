@@ -5905,7 +5905,9 @@ export default function App() {
                           var pos = (grid[info.name] || [])[i] || "";
                           return (
                             <td key={i} style={{ padding:"5px 6px", textAlign:"center", borderBottom:"1px solid rgba(15,31,61,0.06)" }}>
-                              {pos ? (
+                              {pos === "Bench" ? (
+                                <span style={{ display:"inline-block", padding:"2px 6px", borderRadius:"4px", fontWeight:"bold", fontSize:"11px", background:"#888", color:"#fff" }}>X</span>
+                              ) : pos ? (
                                 <span style={{ display:"inline-block", padding:"2px 6px", borderRadius:"4px", fontWeight:"bold", fontSize:"11px",
                                   background: (POS_COLORS[pos] || "#555") + "cc", color:"#fff" }}>
                                   {pos}
@@ -5922,6 +5924,16 @@ export default function App() {
                 </tbody>
               </table>
               )}
+              {/* Position legend */}
+              <div style={{ marginTop:"10px", paddingTop:"8px", borderTop:"1px solid rgba(15,31,61,0.1)", display:"flex", flexWrap:"wrap", gap:"6px 14px" }}>
+                {[["P","Pitcher"],["C","Catcher"],["1B","First Base"],["2B","Second Base"],["3B","Third Base"],["SS","Shortstop"],["LF","Left Field"],["LC","Left Center"],["RC","Right Center"],["RF","Right Field"],["X","Bench"]].map(function(pair) {
+                  return (
+                    <span key={pair[0]} style={{ fontSize:"9px", color:"#6a7a9a", whiteSpace:"nowrap" }}>
+                      <strong style={{ color:"#0f1f3d" }}>{pair[0]}</strong> = {pair[1]}
+                    </span>
+                  );
+                })}
+              </div>
             </div>
           ) : null}
 
