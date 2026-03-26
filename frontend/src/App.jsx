@@ -4840,7 +4840,40 @@ export default function App() {
                       {game.time ? <span>{game.time}</span> : null}
                       {game.location ? <span>{game.location}</span> : null}
                     </div>
-                    {game.snackDuty ? <div style={{ fontSize:"12px", color:C.textMuted, marginTop:"3px" }}>🍎 Snacks: {game.snackDuty}</div> : null}
+                    {(function() {
+                      var sa = snackDuty[game.id] || { playerName: "", note: "" };
+                      var hasSa = !!sa.playerName;
+                      return (
+                        <div style={{ marginTop:"6px", paddingTop:"6px", borderTop:"1px solid " + C.subtleBorder }}>
+                          <div style={{ display:"flex", gap:"6px", alignItems:"center", flexWrap:"wrap" }}>
+                            <span style={{ fontSize:"11px", color:C.textMuted, flexShrink:0 }}>🍎</span>
+                            <select
+                              value={sa.playerName || ""}
+                              onChange={function(gid) { return function(e) {
+                                updateSnackField(gid, "playerName", e.target.value);
+                              }; }(game.id)}
+                              style={{ flex:"1 1 110px", minWidth:"100px", padding:"3px 6px", borderRadius:"5px", border:"1px solid rgba(15,31,61,0.15)", fontSize:"12px", fontFamily:"inherit", background:C.cardBg, color: hasSa ? C.text : C.textMuted }}>
+                              <option value="">— Assign —</option>
+                              {roster.map(function(p) {
+                                return <option key={p.name} value={p.firstName || p.name}>{p.firstName || p.name}</option>;
+                              })}
+                            </select>
+                            {hasSa && (
+                              <button onClick={function(gid) { return function() { clearSnackAssignment(gid); }; }(game.id)}
+                                style={{ background:"none", border:"none", cursor:"pointer", fontSize:"12px", color:C.textMuted, padding:"1px 3px", lineHeight:1 }} title="Clear">✕</button>
+                            )}
+                            <input
+                              type="text"
+                              placeholder="Snack note (optional)"
+                              value={sa.note || ""}
+                              onChange={function(gid) { return function(e) {
+                                updateSnackField(gid, "note", e.target.value);
+                              }; }(game.id)}
+                              style={{ flex:"1 1 130px", minWidth:"110px", padding:"3px 6px", borderRadius:"5px", border:"1px solid rgba(15,31,61,0.15)", fontSize:"12px", fontFamily:"inherit", background:C.cardBg }} />
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                   <div style={{ display:"flex", gap:"6px", flexWrap:"wrap" }}>
                     {(function() {
