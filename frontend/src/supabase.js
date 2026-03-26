@@ -56,7 +56,7 @@ export function dbLoadTeams() {
 
 export function dbSaveTeamData(teamId, data) {
   if (!supabase || !teamId) { return Promise.resolve(); }
-  return supabase.from('team_data').upsert({
+  var upsertObj = {
     team_id:       teamId,
     roster:        data.roster        || [],
     schedule:      data.schedule      || [],
@@ -65,7 +65,9 @@ export function dbSaveTeamData(teamId, data) {
     grid:          data.grid          || {},
     innings:       data.innings       || 6,
     locked:        data.locked        || false
-  }, { onConflict: 'team_id' })
+  };
+  if (data.coachPin !== undefined) { upsertObj.coach_pin = data.coachPin; }
+  return supabase.from('team_data').upsert(upsertObj, { onConflict: 'team_id' })
   .then(function(r) {
     if (r.error) { console.warn('[DB] saveTeamData error:', r.error.message); }
   });
@@ -90,7 +92,8 @@ export function dbLoadTeamData(teamId) {
         battingOrder: row.batting_order || [],
         grid:         row.grid          || {},
         innings:      row.innings       || 6,
-        locked:       row.locked        || false
+        locked:       row.locked        || false,
+        coachPin:     row.coach_pin     || ''
       };
     });
 }

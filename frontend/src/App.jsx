@@ -1431,6 +1431,18 @@ export default function App() {
   var snapshots = _snapshots[0]; var setSnapshots = _snapshots[1];
   var _restoreBanner = useState('');
   var restoreBanner = _restoreBanner[0]; var setRestoreBanner = _restoreBanner[1];
+  var _coachPin = useState(function() {
+    var tid = loadJSON("ui:activeTeam", null);
+    return tid ? (loadJSON("team:" + tid + ":pin", "") || "") : "";
+  });
+  var coachPin = _coachPin[0]; var setCoachPin = _coachPin[1];
+  var _pinSession = useState(false);
+  var pinSessionUnlocked = _pinSession[0]; var setPinSessionUnlocked = _pinSession[1];
+  var _pinModal = useState(null);
+  var pinModal = _pinModal[0]; var setPinModal = _pinModal[1];
+  var _pinInput = useState(""); var pinInput = _pinInput[0]; var setPinInput = _pinInput[1];
+  var _pinError = useState(""); var pinError = _pinError[0]; var setPinError = _pinError[1];
+  var _pinConfirm = useState(""); var pinConfirm = _pinConfirm[0]; var setPinConfirm = _pinConfirm[1];
 
   const {
     needRefresh: [needRefresh, setNeedRefresh],
@@ -1665,6 +1677,17 @@ export default function App() {
     }
   }
 
+  function persistCoachPin(val) {
+    setCoachPin(val);
+    if (activeTeamId) {
+      saveJSON("team:" + activeTeamId + ":pin", val);
+      dbSync(function() { return dbSaveTeamData(activeTeamId, {
+        roster: roster, schedule: schedule, practices: practices,
+        battingOrder: battingOrder, grid: grid, innings: innings, locked: lineupLocked, coachPin: val
+      }); });
+    }
+  }
+
   function shareCurrentLineup() {
     track("share_link", {});
     var payload = {
@@ -1779,6 +1802,7 @@ export default function App() {
     var savedInnings   = loadJSON("team:" + team.id + ":innings",   6)    || 6;
     var savedGrid      = migrateGrid(loadJSON("team:" + team.id + ":grid", null), r, savedInnings);
     var savedLocked    = loadJSON("team:" + team.id + ":locked",    false) || false;
+    var savedPin       = loadJSON("team:" + team.id + ":pin",       "")    || "";
 
     setActiveTeamId(team.id);
     saveJSON("ui:activeTeam", team.id);
@@ -1792,6 +1816,8 @@ export default function App() {
     setInnings(savedInnings);
     setLineupDirty(false);
     setLineupLocked(savedLocked);
+    setCoachPin(savedPin);
+    setPinSessionUnlocked(false);
     setPrimaryTab("roster");
     setScreen("app");
     track("load_team", { team_id: team.id, team_name: team.name });
@@ -1814,6 +1840,7 @@ export default function App() {
         saveJSON("team:" + team.id + ":grid",      dbData.grid);
         saveJSON("team:" + team.id + ":innings",   dbData.innings);
         saveJSON("team:" + team.id + ":locked",     dbData.locked);
+        saveJSON("team:" + team.id + ":pin",        dbData.coachPin || "");
         setRoster(migrateRoster(dbData.roster));
         if (dbData.roster && dbData.roster.length > 0) { dbSnapshotRoster(team.id, team.name, dbData.roster, 'app_load'); }
         var migratedDbSchedule = migrateBattingPerf(migrateSchedule(dbData.schedule), migrateRoster(dbData.roster));
@@ -1826,6 +1853,7 @@ export default function App() {
         setGrid(migrateGrid(dbData.grid, dbData.roster, dbData.innings));
         setInnings(dbData.innings);
         setLineupLocked(dbData.locked);
+        setCoachPin(dbData.coachPin || "");
         setIsHydrating(false);
       }).catch(function() { setIsHydrating(false); });
     }
@@ -2536,7 +2564,11 @@ export default function App() {
           </div>
         )}
 
-        {!showAddForm ? (
+        {lineupLocked ? (
+          <div style={{ fontSize:"11px", color:C.textMuted, textAlign:"center", padding:"8px 12px", marginBottom:"14px", background:"rgba(15,31,61,0.03)", borderRadius:"8px", border:"1px dashed rgba(15,31,61,0.15)" }}>
+            🔒 Lineup is finalized — unlock to add or remove players
+          </div>
+        ) : !showAddForm ? (
           <button
             style={{ ...S.btn("secondary"), width:"100%", marginBottom:"14px" }}
             onClick={function() { setShowAddForm(true); }}>
@@ -2698,7 +2730,7 @@ export default function App() {
 
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))", gap:"12px" }}>
           {sortedRoster.map(function(info) {
-            var isCol = !!collapsed[info.name];
+            var isCol = lineupLocked || !!collapsed[info.name];
             var sk = info.skills || [];
             var tg = info.tags || [];
             var dl = info.dislikes || [];
@@ -2708,10 +2740,12 @@ export default function App() {
             return (
               <div key={info.name} style={{ ...S.card, padding:"14px" }}>
                 <div style={{ display:"flex", alignItems:"center", gap:"8px", marginBottom: isCol ? 0 : "12px" }}>
-                  <button onClick={function(n) { return function() { var next = {}; for (var k in collapsed) { next[k]=collapsed[k]; } next[n] = !collapsed[n]; setCollapsed(next); }; }(info.name)}
-                    style={{ background:"none", border:"none", cursor:"pointer", fontSize:"11px", color:C.textMuted, padding:"2px", flexShrink:0 }}>
-                    {isCol ? ">" : "v"}
-                  </button>
+                  {!lineupLocked ? (
+                    <button onClick={function(n) { return function() { var next = {}; for (var k in collapsed) { next[k]=collapsed[k]; } next[n] = !collapsed[n]; setCollapsed(next); }; }(info.name)}
+                      style={{ background:"none", border:"none", cursor:"pointer", fontSize:"11px", color:C.textMuted, padding:"2px", flexShrink:0 }}>
+                      {isCol ? ">" : "v"}
+                    </button>
+                  ) : <span style={{ width:"16px", flexShrink:0 }} />}
                   <div style={{ fontWeight:"bold", fontSize:"14px", flex:1 }}>{info.name}</div>
                   {isCol ? (
                     <div style={{ display:"flex", gap:"2px", flexWrap:"wrap" }}>
@@ -2724,12 +2758,19 @@ export default function App() {
                       })}
                     </div>
                   ) : null}
-                  <button onClick={function(n) { return function() { if (confirm("Remove " + n + "?")) { removePlayer(n); } }; }(info.name)}
-                    style={{ background:"none", border:"none", color:"#b0a0a0", cursor:"pointer", fontSize:"13px", padding:"2px 6px" }}>x</button>
+                  {!lineupLocked ? (
+                    <button onClick={function(n) { return function() { if (confirm("Remove " + n + "?")) { removePlayer(n); } }; }(info.name)}
+                      style={{ background:"none", border:"none", color:"#b0a0a0", cursor:"pointer", fontSize:"13px", padding:"2px 6px" }}>x</button>
+                  ) : null}
                 </div>
 
                 {!isCol ? (
-                  <div>
+                  <div style={{ pointerEvents: lineupLocked ? "none" : "auto" }}>
+                    {lineupLocked ? (
+                      <div style={{ fontSize:"11px", color:C.textMuted, textAlign:"center", padding:"6px 10px", marginBottom:"10px", background:"rgba(15,31,61,0.03)", borderRadius:"6px", border:"1px dashed rgba(15,31,61,0.12)" }}>
+                        🔒 Unlock lineup to edit player attributes
+                      </div>
+                    ) : null}
                     {(function() {
                       function formatLastUpdated(iso) {
                         var d = new Date(iso);
@@ -3356,7 +3397,13 @@ export default function App() {
               <div style={{ fontSize:"11px", color:C.textMuted }}>Editing is locked. Unlock to make changes.</div>
             </div>
             <button style={{ ...S.btn("ghost"), fontSize:"11px", color:C.win, border:"1px solid rgba(39,174,96,0.4)" }}
-              onClick={function() { persistLineupLocked(false); }}>
+              onClick={function() {
+                if (coachPin) {
+                  setPinModal("unlock"); setPinInput(""); setPinError("");
+                } else {
+                  persistLineupLocked(false);
+                }
+              }}>
               Unlock
             </button>
           </div>
@@ -3396,7 +3443,11 @@ export default function App() {
                 if (errorCount > 0) {
                   if (!confirm(errorCount + " issue(s) detected. Finalize anyway?")) { return; }
                 }
-                persistLineupLocked(true);
+                if (coachPin) {
+                  setPinModal("finalize"); setPinInput(""); setPinError("");
+                } else {
+                  persistLineupLocked(true);
+                }
               }}>
               ✓ Finalize
             </button>
@@ -3828,8 +3879,8 @@ export default function App() {
 
             return (
               <div key={name}
-                draggable={true}
-                onDragStart={function(n) { return function(e) { e.dataTransfer.effectAllowed="move"; setDragPlayer(n); }; }(name)}
+                draggable={!lineupLocked}
+                onDragStart={function(n) { return function(e) { if (lineupLocked) return; e.dataTransfer.effectAllowed="move"; setDragPlayer(n); }; }(name)}
                 onDragOver={function(e) { e.preventDefault(); e.dataTransfer.dropEffect="move"; }}
                 onDrop={function(n) { return function() { handleDrop(n); setDragPlayer(null); }; }(name)}
                 onDragEnd={function() { setDragPlayer(null); }}
@@ -3867,13 +3918,14 @@ export default function App() {
 
                 <div
                   onTouchStart={function(n, i) { return function(e) {
+                    if (lineupLocked) return;
                     // Drag only activates from the handle (number circle) — not the whole card
                     // This keeps normal scroll working anywhere else on the card
                     e.stopPropagation();
                     window._bTouchDrag = { active:true, name:n, startY:e.touches[0].clientY, currentIdx:i };
                     bumpTouchDrag(function(v) { return v + 1; });
                   }; }(name, idx)}
-                  style={{ width:"26px", height:"26px", borderRadius:"50%", background:C.navy, color:"#fff", fontSize:"12px", fontWeight:"bold", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, touchAction:"none", cursor:"grab", userSelect:"none" }}>
+                  style={{ width:"26px", height:"26px", borderRadius:"50%", background: lineupLocked ? "rgba(15,31,61,0.2)" : C.navy, color:"#fff", fontSize:"12px", fontWeight:"bold", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, touchAction:"none", cursor: lineupLocked ? "default" : "grab", userSelect:"none" }}>
                   {idx + 1}
                 </div>
 
@@ -4259,7 +4311,8 @@ export default function App() {
                   onChange={function(gid) { return function(e) {
                     updateSnackField(gid, "playerName", e.target.value);
                   }; }(game.id)}
-                  style={{ flex:"1 1 140px", minWidth:"120px", padding:"5px 8px", borderRadius:"6px", border:"1px solid rgba(15,31,61,0.15)", fontSize:"13px", fontFamily:"inherit", background:C.cardBg, color: hasAssignment ? C.text : C.textMuted }}>
+                  disabled={lineupLocked}
+                  style={{ flex:"1 1 140px", minWidth:"120px", padding:"5px 8px", borderRadius:"6px", border:"1px solid rgba(15,31,61,0.15)", fontSize:"13px", fontFamily:"inherit", background:C.cardBg, color: hasAssignment ? C.text : C.textMuted, opacity: lineupLocked ? 0.5 : 1 }}>
                   <option value="">— select player —</option>
                   {roster.slice().sort(function(a,b){ return (a.firstName||a.name||'').toLowerCase().localeCompare((b.firstName||b.name||'').toLowerCase()); }).map(function(p) {
                     return <option key={p.name} value={p.firstName || p.name}>{p.firstName || p.name}</option>;
@@ -5728,6 +5781,84 @@ export default function App() {
   }
 
   // ============================================================
+  // PIN MODAL
+  // ============================================================
+  function renderPinModal() {
+    if (!pinModal) return null;
+    var title, subtitle, showConfirm = false;
+    if (pinModal === "unlock") {
+      title = "🔒 Unlock Lineup"; subtitle = "Enter your coach PIN to unlock for editing.";
+    } else if (pinModal === "finalize") {
+      title = "✓ Finalize Lineup"; subtitle = "Enter your PIN to lock and protect this lineup.";
+    } else if (pinModal === "setup") {
+      title = "🔐 Set Coach PIN"; subtitle = "Choose a 4-digit PIN to protect your finalized lineup.";
+      showConfirm = true;
+    } else if (pinModal === "change1") {
+      title = "🔐 Change PIN"; subtitle = "Enter your current PIN to continue.";
+    } else if (pinModal === "change2") {
+      title = "🔐 Set New PIN"; subtitle = "Enter your new 4-digit PIN.";
+      showConfirm = true;
+    } else if (pinModal === "remove") {
+      title = "Remove PIN"; subtitle = "Enter your PIN to remove lineup protection.";
+    }
+    function handlePinSubmit() {
+      if (pinModal === "unlock") {
+        if (pinInput !== coachPin) { setPinError("Incorrect PIN."); return; }
+        persistLineupLocked(false);
+        setPinModal(null); setPinInput(""); setPinError("");
+      } else if (pinModal === "finalize") {
+        if (pinInput !== coachPin) { setPinError("Incorrect PIN."); return; }
+        persistLineupLocked(true);
+        setPinModal(null); setPinInput(""); setPinError("");
+      } else if (pinModal === "setup") {
+        if (!/^\d{4}$/.test(pinInput)) { setPinError("PIN must be exactly 4 digits."); return; }
+        if (pinInput !== pinConfirm) { setPinError("PINs don't match. Try again."); return; }
+        persistCoachPin(pinInput);
+        setPinModal(null); setPinInput(""); setPinConfirm(""); setPinError("");
+      } else if (pinModal === "change1") {
+        if (pinInput !== coachPin) { setPinError("Incorrect PIN."); return; }
+        setPinModal("change2"); setPinInput(""); setPinConfirm(""); setPinError("");
+      } else if (pinModal === "change2") {
+        if (!/^\d{4}$/.test(pinInput)) { setPinError("PIN must be exactly 4 digits."); return; }
+        if (pinInput !== pinConfirm) { setPinError("PINs don't match. Try again."); return; }
+        persistCoachPin(pinInput);
+        setPinModal(null); setPinInput(""); setPinConfirm(""); setPinError("");
+      } else if (pinModal === "remove") {
+        if (pinInput !== coachPin) { setPinError("Incorrect PIN."); return; }
+        persistCoachPin("");
+        setPinModal(null); setPinInput(""); setPinError("");
+      }
+    }
+    return (
+      <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.65)", zIndex:9999, display:"flex", alignItems:"center", justifyContent:"center", padding:"20px" }}
+        onClick={function(e) { if (e.target === e.currentTarget) { setPinModal(null); setPinInput(""); setPinConfirm(""); setPinError(""); } }}>
+        <div style={{ background:"#fff", borderRadius:"16px", padding:"24px", maxWidth:"300px", width:"100%", boxShadow:"0 20px 60px rgba(0,0,0,0.3)" }}>
+          <div style={{ fontSize:"17px", fontWeight:"bold", color:C.navy, marginBottom:"6px" }}>{title}</div>
+          <div style={{ fontSize:"12px", color:C.textMuted, marginBottom:"16px", lineHeight:"1.5" }}>{subtitle}</div>
+          <input type="password" inputMode="numeric" maxLength={4} placeholder="· · · ·"
+            value={pinInput} onChange={function(e) { setPinInput(e.target.value.replace(/\D/g,"")); setPinError(""); }}
+            onKeyDown={function(e) { if (e.key === "Enter") { handlePinSubmit(); } }}
+            style={{ width:"100%", padding:"12px", borderRadius:"8px", border:"1px solid rgba(15,31,61,0.2)", fontSize:"24px", letterSpacing:"12px", textAlign:"center", marginBottom:"8px", fontFamily:"monospace", boxSizing:"border-box" }}
+            autoFocus />
+          {showConfirm ? (
+            <input type="password" inputMode="numeric" maxLength={4} placeholder="Confirm PIN"
+              value={pinConfirm} onChange={function(e) { setPinConfirm(e.target.value.replace(/\D/g,"")); setPinError(""); }}
+              onKeyDown={function(e) { if (e.key === "Enter") { handlePinSubmit(); } }}
+              style={{ width:"100%", padding:"12px", borderRadius:"8px", border:"1px solid rgba(15,31,61,0.2)", fontSize:"24px", letterSpacing:"12px", textAlign:"center", marginBottom:"8px", fontFamily:"monospace", boxSizing:"border-box" }} />
+          ) : null}
+          {pinError ? <div style={{ color:C.red, fontSize:"12px", marginBottom:"10px" }}>{pinError}</div> : null}
+          <div style={{ display:"flex", gap:"8px", marginTop:"4px" }}>
+            <button onClick={function() { setPinModal(null); setPinInput(""); setPinConfirm(""); setPinError(""); }}
+              style={{ ...S.btn("ghost"), flex:1 }}>Cancel</button>
+            <button onClick={handlePinSubmit}
+              style={{ ...S.btn("primary"), flex:1 }}>Confirm</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ============================================================
   // PRINT TAB
   // ============================================================
   function renderPrint() {
@@ -5778,6 +5909,32 @@ export default function App() {
               {pdfSharing ? "Preparing..." : "Share as PDF"}
             </button>
           </div>
+        </div>
+
+        {/* ── PIN Protection ── */}
+        <div style={{ display:"flex", alignItems:"center", gap:"10px", padding:"10px 14px", marginBottom:"14px", background:"rgba(15,31,61,0.03)", borderRadius:"8px", border:"1px solid rgba(15,31,61,0.08)" }}>
+          <span style={{ fontSize:"14px" }}>🔐</span>
+          <div style={{ flex:1 }}>
+            <span style={{ fontSize:"12px", fontWeight:"600", color:C.navy }}>Lineup PIN </span>
+            <span style={{ fontSize:"11px", color:C.textMuted }}>{coachPin ? "Active — required to unlock" : "Not set — anyone can unlock"}</span>
+          </div>
+          {!coachPin ? (
+            <button style={{ ...S.btn("ghost"), fontSize:"11px" }}
+              onClick={function() { setPinModal("setup"); setPinInput(""); setPinConfirm(""); setPinError(""); }}>
+              Set PIN
+            </button>
+          ) : (
+            <div style={{ display:"flex", gap:"6px" }}>
+              <button style={{ ...S.btn("ghost"), fontSize:"11px" }}
+                onClick={function() { setPinModal("change1"); setPinInput(""); setPinConfirm(""); setPinError(""); }}>
+                Change
+              </button>
+              <button style={{ ...S.btn("ghost"), fontSize:"11px", color:C.red, border:"1px solid rgba(200,16,46,0.25)" }}
+                onClick={function() { setPinModal("remove"); setPinInput(""); setPinError(""); }}>
+                Remove
+              </button>
+            </div>
+          )}
         </div>
 
         <div id="print-card" style={{ background:"#fff", border:"2px solid #0f1f3d", borderRadius:"10px", padding:"20px", maxWidth:"800px" }}>
@@ -6562,6 +6719,7 @@ export default function App() {
           </button>
         </div>
       )}
+      {renderPinModal()}
     </div>
   );
 }
