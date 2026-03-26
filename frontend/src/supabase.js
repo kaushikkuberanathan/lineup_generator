@@ -64,7 +64,8 @@ export function dbSaveTeamData(teamId, data) {
     batting_order: data.battingOrder  || [],
     grid:          data.grid          || {},
     innings:       data.innings       || 6,
-    locked:        data.locked        || false
+    locked:        data.locked        || false,
+    snack_duty:    data.snackDuty     || {}
   }, { onConflict: 'team_id' })
   .then(function(r) {
     if (r.error) { console.warn('[DB] saveTeamData error:', r.error.message); }
@@ -90,7 +91,8 @@ export function dbLoadTeamData(teamId) {
         battingOrder: row.batting_order || [],
         grid:         row.grid          || {},
         innings:      row.innings       || 6,
-        locked:       row.locked        || false
+        locked:       row.locked        || false,
+        snackDuty:    row.snack_duty    || {}
       };
     });
 }

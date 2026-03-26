@@ -1452,7 +1452,8 @@ export default function App() {
       if (next.length > 0) {
         dbSync(function() { return dbSaveTeamData(activeTeamId, {
           roster: next, schedule: schedule, practices: practices,
-          battingOrder: battingOrder, grid: grid, innings: innings, locked: lineupLocked
+          battingOrder: battingOrder, grid: grid, innings: innings, locked: lineupLocked,
+          snackDuty: snackDuty
         }); });
       }
     }
@@ -1470,7 +1471,8 @@ export default function App() {
         saveJSON("team:" + activeTeamId + ":roster", prev);
         dbSync(function() { return dbSaveTeamData(activeTeamId, {
           roster: prev, schedule: schedule, practices: practices,
-          battingOrder: battingOrder, grid: grid, innings: innings, locked: lineupLocked
+          battingOrder: battingOrder, grid: grid, innings: innings, locked: lineupLocked,
+          snackDuty: snackDuty
         }); });
       }
       return next;
@@ -1485,7 +1487,8 @@ export default function App() {
       if (!isHydrating) {
         dbSync(function() { return dbSaveTeamData(activeTeamId, {
           roster: roster, schedule: next, practices: practices,
-          battingOrder: battingOrder, grid: grid, innings: innings, locked: lineupLocked
+          battingOrder: battingOrder, grid: grid, innings: innings, locked: lineupLocked,
+          snackDuty: snackDuty
         }); });
       }
     }
@@ -1496,6 +1499,13 @@ export default function App() {
     setSnackDuty(next);
     if (activeTeamId) {
       saveJSON("team:" + activeTeamId + ":snackDuty", next);
+      if (!isHydrating) {
+        dbSync(function() { return dbSaveTeamData(activeTeamId, {
+          roster: roster, schedule: schedule, practices: practices,
+          battingOrder: battingOrder, grid: grid, innings: innings, locked: lineupLocked,
+          snackDuty: next
+        }); });
+      }
     }
   }
 
@@ -1507,7 +1517,8 @@ export default function App() {
       if (!isHydrating) {
         dbSync(function() { return dbSaveTeamData(activeTeamId, {
           roster: roster, schedule: schedule, practices: next,
-          battingOrder: battingOrder, grid: grid, innings: innings, locked: lineupLocked
+          battingOrder: battingOrder, grid: grid, innings: innings, locked: lineupLocked,
+          snackDuty: snackDuty
         }); });
       }
     }
@@ -1521,7 +1532,8 @@ export default function App() {
       if (!isHydrating) {
         dbSync(function() { return dbSaveTeamData(activeTeamId, {
           roster: roster, schedule: schedule, practices: practices,
-          battingOrder: next, grid: grid, innings: innings, locked: lineupLocked
+          battingOrder: next, grid: grid, innings: innings, locked: lineupLocked,
+          snackDuty: snackDuty
         }); });
       }
     }
@@ -1535,7 +1547,8 @@ export default function App() {
       if (!isHydrating) {
         dbSync(function() { return dbSaveTeamData(activeTeamId, {
           roster: roster, schedule: schedule, practices: practices,
-          battingOrder: battingOrder, grid: next, innings: innings, locked: lineupLocked
+          battingOrder: battingOrder, grid: next, innings: innings, locked: lineupLocked,
+          snackDuty: snackDuty
         }); });
       }
     }
@@ -1549,7 +1562,8 @@ export default function App() {
       if (!isHydrating) {
         dbSync(function() { return dbSaveTeamData(activeTeamId, {
           roster: roster, schedule: schedule, practices: practices,
-          battingOrder: battingOrder, grid: grid, innings: n, locked: lineupLocked
+          battingOrder: battingOrder, grid: grid, innings: n, locked: lineupLocked,
+          snackDuty: snackDuty
         }); });
       }
     }
@@ -1563,7 +1577,8 @@ export default function App() {
       if (!isHydrating) {
         dbSync(function() { return dbSaveTeamData(activeTeamId, {
           roster: roster, schedule: schedule, practices: practices,
-          battingOrder: battingOrder, grid: grid, innings: innings, locked: val
+          battingOrder: battingOrder, grid: grid, innings: innings, locked: val,
+          snackDuty: snackDuty
         }); });
       }
     }
@@ -1720,7 +1735,8 @@ export default function App() {
         saveJSON("team:" + team.id + ":batting",   dbData.battingOrder);
         saveJSON("team:" + team.id + ":grid",      dbData.grid);
         saveJSON("team:" + team.id + ":innings",   dbData.innings);
-        saveJSON("team:" + team.id + ":locked",    dbData.locked);
+        saveJSON("team:" + team.id + ":locked",     dbData.locked);
+        saveJSON("team:" + team.id + ":snackDuty",  dbData.snackDuty || {});
         setRoster(migrateRoster(dbData.roster));
         if (dbData.roster && dbData.roster.length > 0) { dbSnapshotRoster(team.id, team.name, dbData.roster, 'app_load'); }
         setSchedule(migrateSchedule(dbData.schedule));
@@ -1731,6 +1747,7 @@ export default function App() {
         setGrid(migrateGrid(dbData.grid, dbData.roster, dbData.innings));
         setInnings(dbData.innings);
         setLineupLocked(dbData.locked);
+        setSnackDuty(dbData.snackDuty || {});
         setIsHydrating(false);
       }).catch(function() { setIsHydrating(false); });
     }
