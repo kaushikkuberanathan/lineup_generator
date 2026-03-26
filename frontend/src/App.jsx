@@ -2359,16 +2359,7 @@ export default function App() {
 
     return (
       <>
-      <div style={{ minHeight:"100vh", background:"linear-gradient(160deg,#0f1f3d 0%,#1a3260 55%,#2a0a0a 100%)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"24px 16px", fontFamily:"Georgia,serif" }}>
-
-        <div style={{ marginBottom:"16px", textAlign:"center" }}>
-          <div style={{ width:"64px", height:"64px", borderRadius:"50%", background:"#c8102e", border:"2.5px solid #f5c842", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"26px", fontWeight:"bold", color:"#f5c842", margin:"0 auto 12px" }}>M</div>
-          <div style={{ fontSize:"12px", color:"rgba(255,255,255,0.45)", letterSpacing:"0.18em", textTransform:"uppercase", marginBottom:"4px" }}>{greeting}, Coach!</div>
-          <div style={{ fontSize:"26px", fontWeight:"bold", color:"#f5c842", marginBottom:"8px" }}>Lineup Generator</div>
-          <div style={{ display:"inline-flex", alignItems:"center", gap:"6px", background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.15)", borderRadius:"20px", padding:"5px 14px" }}>
-            <span style={{ fontSize:"12px", color:"rgba(255,255,255,0.7)" }}>{dateStr}</span>
-          </div>
-        </div>
+      <div style={{ display:"flex", flexDirection:"column", alignItems:"center", padding:"8px 16px", fontFamily:"Georgia,serif" }}>
 
         <div style={{ width:"100%", maxWidth:"500px" }}>
           {homeMode === "welcome" ? (
@@ -6455,14 +6446,14 @@ export default function App() {
 
   // ── Portrait: top header + content ──────────────────────────────────────
   return (
-    <div style={{ minHeight:"100dvh", background:C.cream, fontFamily:"Georgia,'Times New Roman',serif", color:C.text }}>
+    <div style={{ minHeight:"100dvh", background: (screen !== "app" || primaryTab === "more") ? "linear-gradient(160deg,#0f1f3d 0%,#1a3260 55%,#2a0a0a 100%)" : C.cream, fontFamily:"Georgia,'Times New Roman',serif", color:C.text }}>
       <div style={S.header}>
-        <div style={S.logoWrap} onClick={function() { setScreen("home"); }}>
-          <div style={S.logoCircle}>{activeTeam ? activeTeam.name.charAt(0).toUpperCase() : "L"}</div>
+        <div style={S.logoWrap} onClick={function() { setScreen("home"); setPrimaryTab("home"); }}>
+          <div style={S.logoCircle}>{screen === "app" && primaryTab !== "more" && activeTeam ? activeTeam.name.charAt(0).toUpperCase() : "L"}</div>
           <div>
-            <div style={S.logoTitle}>{activeTeam ? activeTeam.name : "Lineup Generator"}</div>
-            <div style={S.logoSub}>{activeTeam ? (activeTeam.ageGroup || "") + " " + (activeTeam.year || "") + "  ⌂" : "⌂ tap to switch team"}</div>
-            {isSupabaseEnabled ? (
+            <div style={S.logoTitle}>{screen === "app" && primaryTab !== "more" && activeTeam ? activeTeam.name : "Lineup Generator"}</div>
+            <div style={S.logoSub}>{screen === "app" && primaryTab !== "more" && activeTeam ? (activeTeam.ageGroup || "") + " " + (activeTeam.year || "") + "  ⌂" : "Youth Baseball & Softball"}</div>
+            {screen === "app" && primaryTab !== "more" && isSupabaseEnabled ? (
               <div title={syncStatus === "synced" ? "Saved to cloud" : syncStatus === "syncing" ? "Saving..." : syncStatus === "error" ? "Sync error — data saved locally" : ""}
                 style={{ width:"7px", height:"7px", borderRadius:"50%", marginTop:"3px",
                   background: syncStatus === "synced" ? "#27ae60" : syncStatus === "syncing" ? "#f5c842" : syncStatus === "error" ? "#c8102e" : "rgba(255,255,255,0.15)" }}>
