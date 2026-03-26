@@ -1328,7 +1328,7 @@ export default function App() {
   var gameDayTab = _gameDayTab[0]; var setGameDayTab = _gameDayTab[1];
   var _seasonTab = useState("schedule");
   var seasonTab = _seasonTab[0]; var setSeasonTab = _seasonTab[1];
-  var _moreTab = useState("feedback");
+  var _moreTab = useState("about");
   var moreTab = _moreTab[0]; var setMoreTab = _moreTab[1];
   var _ros = useState(initRoster);
   var roster = _ros[0]; var setRoster = _ros[1];
@@ -6253,9 +6253,9 @@ export default function App() {
     { key:"snack",    label:"Snacks"   },
   ];
   var MORE_SUBTABS = [
-    { key:"feedback", label:"Feedback" },
-    { key:"links",    label:"Links"    },
     { key:"about",    label:"About"    },
+    { key:"links",    label:"Links"    },
+    { key:"feedback", label:"Feedback" },
   ];
 
   // Sub-tab bar — rendered inside tabContent when Game Day or Season is active
