@@ -1349,6 +1349,14 @@ export default function App() {
   var gameDayTab = _gameDayTab[0]; var setGameDayTab = _gameDayTab[1];
   var _seasonTab = useState("schedule");
   var seasonTab = _seasonTab[0]; var setSeasonTab = _seasonTab[1];
+  var _statsSortCol = useState("name");
+  var statsSortCol = _statsSortCol[0]; var setStatsSortCol = _statsSortCol[1];
+  var _statsSortDir = useState("asc");
+  var statsSortDir = _statsSortDir[0]; var setStatsSortDir = _statsSortDir[1];
+  var _batDirty = useState(false);
+  var battingOrderDirty = _batDirty[0]; var setBattingOrderDirty = _batDirty[1];
+  var _batSaved = useState(false);
+  var battingOrderSaved = _batSaved[0]; var setBattingOrderSaved = _batSaved[1];
   var _moreTab = useState("about");
   var moreTab = _moreTab[0]; var setMoreTab = _moreTab[1];
   var _ros = useState(initRoster);
@@ -2012,6 +2020,7 @@ export default function App() {
     order.splice(from, 1);
     order.splice(to, 0, dragPlayer);
     persistBatting(order);
+    setBattingOrderDirty(true);
     setDragPlayer(null);
   }
 
@@ -3788,6 +3797,7 @@ export default function App() {
       });
       scored.sort(function(a, b) { return b.score - a.score; });
       persistBatting(scored.map(function(x) { return x.name; }));
+      setBattingOrderDirty(false); setBattingOrderSaved(false);
       track("suggest_batting_order", {
         has_stats: Object.keys(seasonStats || {}).length > 0 ? "yes" : "no"
       });
@@ -3815,9 +3825,30 @@ export default function App() {
 
     return (
       <div>
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"14px", gap:"8px" }}>
-          <div style={S.sectionTitle}>Batting Order</div>
-          <button style={S.btn("gold")} onClick={suggestOrder}>Suggest Order</button>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"14px", gap:"8px", flexWrap:"wrap" }}>
+          <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
+            <div style={S.sectionTitle}>Batting Order</div>
+            {battingOrderDirty && !battingOrderSaved ? (
+              <span style={{ fontSize:"10px", color:"#d4a017", fontWeight:"bold", letterSpacing:"0.04em" }}>● Unsaved changes</span>
+            ) : null}
+            {battingOrderSaved ? (
+              <span style={{ fontSize:"10px", color:C.win, fontWeight:"bold" }}>✓ Saved</span>
+            ) : null}
+          </div>
+          <div style={{ display:"flex", gap:"6px", alignItems:"center" }}>
+            {battingOrderDirty ? (
+              <button style={{ ...S.btn("ghost"), color:C.win, border:"1px solid rgba(39,174,96,0.4)" }}
+                onClick={function() {
+                  persistBatting(battingOrder);
+                  setBattingOrderDirty(false);
+                  setBattingOrderSaved(true);
+                  setTimeout(function() { setBattingOrderSaved(false); }, 2000);
+                }}>
+                💾 Save Order
+              </button>
+            ) : null}
+            <button style={S.btn("gold")} onClick={suggestOrder}>Suggest Order</button>
+          </div>
         </div>
 
         {hasAnyStats ? (
@@ -3827,31 +3858,85 @@ export default function App() {
               <table style={{ width:"100%", borderCollapse:"collapse", fontSize:"12px" }}>
                 <thead>
                   <tr style={{ background:"#f5efe4" }}>
-                    {["Player","G","AB","H","AVG","R","RBI","BB"].map(function(h) {
-                      return <th key={h} style={{ padding:"5px 8px", textAlign: h === "Player" ? "left" : "center", fontSize:"10px", color:C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase", borderBottom:"2px solid rgba(15,31,61,0.08)", whiteSpace:"nowrap" }}>{h}</th>;
+                    {[
+                      { key:"name", label:"Player", sortable:true,  align:"left"   },
+                      { key:"g",    label:"G",      sortable:false, align:"center" },
+                      { key:"ab",   label:"AB",     sortable:false, align:"center" },
+                      { key:"h",    label:"H",      sortable:false, align:"center" },
+                      { key:"avg",  label:"AVG",    sortable:true,  align:"center" },
+                      { key:"r",    label:"R",      sortable:true,  align:"center" },
+                      { key:"rbi",  label:"RBI",    sortable:false, align:"center" },
+                      { key:"bb",   label:"BB",     sortable:false, align:"center" },
+                    ].map(function(col) {
+                      var isActive = statsSortCol === col.key;
+                      var indicator = col.sortable ? (isActive ? (statsSortDir === "asc" ? " ↑" : " ↓") : " ↕") : "";
+                      return (
+                        <th key={col.key}
+                          onClick={col.sortable ? function(k) { return function() {
+                            if (statsSortCol === k) {
+                              setStatsSortDir(statsSortDir === "asc" ? "desc" : "asc");
+                            } else {
+                              setStatsSortCol(k);
+                              setStatsSortDir(k === "name" ? "asc" : "desc");
+                            }
+                          }; }(col.key) : undefined}
+                          style={{ padding:"5px 8px", textAlign:col.align, fontSize:"10px", letterSpacing:"0.1em", textTransform:"uppercase", borderBottom:"2px solid rgba(15,31,61,0.08)", whiteSpace:"nowrap",
+                            cursor: col.sortable ? "pointer" : "default",
+                            color: isActive ? C.navy : C.textMuted,
+                            fontWeight: isActive ? "bold" : "normal" }}>
+                          {col.label}<span style={{ color: isActive ? C.red : "rgba(15,31,61,0.25)", fontSize:"9px" }}>{indicator}</span>
+                        </th>
+                      );
                     })}
                   </tr>
                 </thead>
                 <tbody>
-                  {battingOrder.map(function(name, idx) {
-                    var st = seasonStats[name];
-                    if (!st) { return null; }
-                    var avg = st.ab > 0 ? (st.h / st.ab) : null;
-                    var avgStr = fmtAvg(st.h, st.ab);
-                    var avgColor = avg !== null && avg >= 0.300 ? C.win : avg !== null && avg >= 0.200 ? "#d4a017" : C.text;
-                    return (
-                      <tr key={name} style={{ borderBottom:"1px solid rgba(15,31,61,0.04)" }}>
-                        <td style={{ padding:"6px 8px", fontWeight:"bold" }}>{idx + 1}. {firstName(name)}</td>
-                        <td style={{ padding:"6px 8px", textAlign:"center", color:C.textMuted }}>{st.games}</td>
-                        <td style={{ padding:"6px 8px", textAlign:"center" }}>{fmtStat(st.ab)}</td>
-                        <td style={{ padding:"6px 8px", textAlign:"center" }}>{fmtStat(st.h)}</td>
-                        <td style={{ padding:"6px 8px", textAlign:"center", fontWeight:"bold", color:avgColor }}>{avgStr}</td>
-                        <td style={{ padding:"6px 8px", textAlign:"center" }}>{fmtStat(st.r)}</td>
-                        <td style={{ padding:"6px 8px", textAlign:"center" }}>{fmtStat(st.rbi)}</td>
-                        <td style={{ padding:"6px 8px", textAlign:"center" }}>{fmtStat(st.bb)}</td>
-                      </tr>
-                    );
-                  })}
+                  {(function() {
+                    var rows = battingOrder.filter(function(name) { return !!seasonStats[name]; });
+                    rows = rows.slice().sort(function(a, b) {
+                      var sa = seasonStats[a]; var sb = seasonStats[b];
+                      if (statsSortCol === "name") {
+                        var fa = (roster.find(function(p) { return p.name === a; }) || {});
+                        var fb = (roster.find(function(p) { return p.name === b; }) || {});
+                        var na = ((fa.firstName || "") + " " + (fa.lastName || "")).toLowerCase().trim() || a.toLowerCase();
+                        var nb = ((fb.firstName || "") + " " + (fb.lastName || "")).toLowerCase().trim() || b.toLowerCase();
+                        var cmp = na.localeCompare(nb);
+                        return statsSortDir === "asc" ? cmp : -cmp;
+                      }
+                      if (statsSortCol === "r") {
+                        var cmp = sa.r - sb.r;
+                        return statsSortDir === "asc" ? cmp : -cmp;
+                      }
+                      if (statsSortCol === "avg") {
+                        var avgA = sa.ab > 0 ? sa.h / sa.ab : -1;
+                        var avgB = sb.ab > 0 ? sb.h / sb.ab : -1;
+                        if (avgA === -1 && avgB === -1) return 0;
+                        if (avgA === -1) return 1;
+                        if (avgB === -1) return -1;
+                        var cmp = avgA - avgB;
+                        return statsSortDir === "asc" ? cmp : -cmp;
+                      }
+                      return 0;
+                    });
+                    return rows.map(function(name) {
+                      var st = seasonStats[name];
+                      var avg = st.ab > 0 ? (st.h / st.ab) : null;
+                      var avgStr = fmtAvg(st.h, st.ab);
+                      var avgColor = avg !== null && avg >= 0.300 ? C.win : avg !== null && avg >= 0.200 ? "#d4a017" : C.text;
+                      return (
+                        <tr key={name} style={{ borderBottom:"1px solid rgba(15,31,61,0.04)" }}>
+                          <td style={{ padding:"6px 8px", fontWeight:"bold" }}>{firstName(name)}</td>
+                          <td style={{ padding:"6px 8px", textAlign:"center", color:C.textMuted }}>{st.games}</td>
+                          <td style={{ padding:"6px 8px", textAlign:"center" }}>{fmtStat(st.ab)}</td>
+                          <td style={{ padding:"6px 8px", textAlign:"center" }}>{fmtStat(st.h)}</td>
+                          <td style={{ padding:"6px 8px", textAlign:"center", fontWeight:"bold", color:avgColor }}>{avgStr}</td>
+                          <td style={{ padding:"6px 8px", textAlign:"center" }}>{fmtStat(st.r)}</td>
+                          <td style={{ padding:"6px 8px", textAlign:"center" }}>{fmtStat(st.rbi)}</td>
+                          <td style={{ padding:"6px 8px", textAlign:"center" }}>{fmtStat(st.bb)}</td>
+                        </tr>
+                      );
+                    });
+                  })()}
                 </tbody>
               </table>
             </div>
@@ -3902,6 +3987,7 @@ export default function App() {
                     var item = order.splice(td.currentIdx, 1)[0];
                     order.splice(newIdx, 0, item);
                     persistBatting(order);
+                    setBattingOrderDirty(true);
                     window._bTouchDrag = { active:true, name:td.name, startY:td.startY, currentIdx:newIdx };
                     bumpTouchDrag(function(v) { return v + 1; });
                   }

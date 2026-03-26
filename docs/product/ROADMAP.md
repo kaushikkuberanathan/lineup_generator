@@ -222,6 +222,18 @@
 
 ## 🅿️ Parking Lot / Future Considerations
 
+### PIN Reset Flow
+**Problem:** If a coach forgets their PIN, there is currently no recovery path — the lineup stays locked indefinitely.
+
+**Proposed solution:** Add a "Forgot PIN?" link in the unlock modal. Since the app has no auth yet, recovery options are limited:
+- **Option A (simple):** "Forgot PIN?" clears the PIN and unlocks after a `confirm()` dialog — accepts that anyone with the phone can bypass, but unblocks the coach.
+- **Option B (better, post-auth):** Send a reset code to the coach's phone via Supabase OTP — only available after Phase 3 auth ships.
+- **Option C (middle ground):** Show the team name + a prompt to contact the app admin, with an admin override endpoint that clears the PIN via the backend.
+
+**When to do it:** Option A can be added in ~30 min at any time. Options B/C depend on Phase 3 auth.
+
+---
+
 ### Theme System (Phase 3 — Post-Component Refactor)
 **Recommended approach:** Design tokens + ThemeContext + localStorage persistence
 **Why deferred:** App.jsx is a 5,000+ line monolith with hundreds of hardcoded hex colors. A proper theme system requires finding and replacing every hardcoded color — a 2-3 day refactor with high regression risk. Best done alongside the planned App.jsx component split.
