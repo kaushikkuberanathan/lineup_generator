@@ -397,18 +397,20 @@ function migrateRoster(roster) {
 function migrateSchedule(schedule) {
   if (!Array.isArray(schedule)) { return schedule; }
   return schedule.map(function(g) {
-    return {
-      id:          g.id          || (Date.now() + Math.random() + ""),
+    return Object.assign({}, g, {
+      id:          g.id          || (Date.now() + ""),
       date:        g.date        || "",
       time:        g.time        || "",
       location:    g.location    || "",
       opponent:    g.opponent    || "",
-      home:        g.home        || false,
       result:      g.result      || "",
       ourScore:    g.ourScore    || "",
       theirScore:  g.theirScore  || "",
+      home:        g.home        ?? false,
+      snackDuty:   g.snackDuty   || "",
+      snackNote:   g.snackNote   || "",
       battingPerf: g.battingPerf || {}
-    };
+    });
   });
 }
 
@@ -1097,7 +1099,6 @@ export default function App() {
   var initRoster   = initActiveId ? migrateRoster(loadJSON("team:" + initActiveId + ":roster", [])) : [];
   var initSchedule   = initActiveId ? migrateSchedule(loadJSON("team:" + initActiveId + ":schedule", [])) : [];
   var initPractice   = initActiveId ? loadJSON("team:" + initActiveId + ":practices", []) : [];
-  var initSnackDuty  = initActiveId ? (loadJSON("team:" + initActiveId + ":snackDuty", {}) || {}) : {};
   var initInnings  = initActiveId ? (loadJSON("team:" + initActiveId + ":innings", 6) || 6) : 6;
   var initGrid_    = initActiveId ? migrateGrid(loadJSON("team:" + initActiveId + ":grid", null), initRoster, initInnings) : null;
 
@@ -1184,6 +1185,7 @@ export default function App() {
                         ourScore:    prev.ourScore    || seed.ourScore,
                         theirScore:  prev.theirScore  || seed.theirScore,
                         snackDuty:   prev.snackDuty   || seed.snackDuty  || "",
+                        snackNote:   prev.snackNote   || seed.snackNote  || "",
                         battingPerf: getLocalBattingPerf(seed.id) || (prev.battingPerf && Object.keys(prev.battingPerf).length > 0
                                      ? prev.battingPerf : (seed.battingPerf || {}))
                       };
@@ -2475,6 +2477,11 @@ export default function App() {
     var skillKeys   = Object.keys(SKILLS);
     var tagKeys     = Object.keys(TAGS);
     var batKeys     = Object.keys(BAT_SKILLS);
+    var sortedRoster = roster.slice().sort(function(a, b) {
+      var nameA = (a.firstName || a.name || '').toLowerCase();
+      var nameB = (b.firstName || b.name || '').toLowerCase();
+      return nameA.localeCompare(nameB);
+    });
 
     function toggle(arr, key) {
       var idx = arr.indexOf(key);
@@ -2623,7 +2630,7 @@ export default function App() {
                   </tr>
                 </thead>
                 <tbody>
-                  {roster.map(function(info) {
+                  {sortedRoster.map(function(info) {
                     var stats = getRosterSeasonStats(info.name);
                     return (
                       <tr key={info.name} style={{ borderBottom:"1px solid rgba(15,31,61,0.05)" }}>
@@ -2727,7 +2734,7 @@ export default function App() {
         )}
 
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))", gap:"12px" }}>
-          {roster.map(function(info) {
+          {sortedRoster.map(function(info) {
             var isCol = !!collapsed[info.name];
             var sk = info.skills || [];
             var tg = info.tags || [];
@@ -4292,7 +4299,7 @@ export default function App() {
                   }; }(game.id)}
                   style={{ flex:"1 1 140px", minWidth:"120px", padding:"5px 8px", borderRadius:"6px", border:"1px solid rgba(15,31,61,0.15)", fontSize:"13px", fontFamily:"inherit", background:C.cardBg, color: hasAssignment ? C.text : C.textMuted }}>
                   <option value="">— select player —</option>
-                  {roster.map(function(p) {
+                  {roster.slice().sort(function(a,b){ return (a.firstName||a.name||'').toLowerCase().localeCompare((b.firstName||b.name||'').toLowerCase()); }).map(function(p) {
                     return <option key={p.name} value={p.firstName || p.name}>{p.firstName || p.name}</option>;
                   })}
                 </select>
@@ -4893,7 +4900,7 @@ export default function App() {
                               }; }(game.id)}
                               style={{ flex:"1 1 110px", minWidth:"100px", padding:"3px 6px", borderRadius:"5px", border:"1px solid rgba(15,31,61,0.15)", fontSize:"12px", fontFamily:"inherit", background:C.cardBg, color: hasSa ? C.text : C.textMuted }}>
                               <option value="">— Assign —</option>
-                              {roster.map(function(p) {
+                              {roster.slice().sort(function(a,b){ return (a.firstName||a.name||'').toLowerCase().localeCompare((b.firstName||b.name||'').toLowerCase()); }).map(function(p) {
                                 return <option key={p.name} value={p.firstName || p.name}>{p.firstName || p.name}</option>;
                               })}
                             </select>
