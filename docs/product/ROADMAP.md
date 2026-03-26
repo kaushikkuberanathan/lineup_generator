@@ -49,6 +49,15 @@
 - 10-player field configuration: LC + RC replace CF in outfield; 1 bench slot per inning (schema v2, migration auto-remaps saved CF→LC)
 - First-time coach onboarding modal (5-step in-app walkthrough, localStorage completion tracking, always re-accessible via "Getting Started" button in Roster tab)
 
+### v1.3.8 — March 26, 2026
+#### Snack Duty Tab
+- New Snacks tab — per-game player assignment with roster dropdown and optional note field
+- TODAY badge + gold border highlight on game day card
+- Past games de-emphasized (opacity), canceled games hidden
+- Summary header: assigned count out of total games
+- snackDuty persisted to localStorage, Supabase (snack_duty JSONB column), export backup, and import restore
+- Fix: game time strips leading zero (7:00 PM not 07:00 PM)
+
 ### v1.3.6 — March 26, 2026
 #### Walk-Up Songs + Player Data Preservation
 - Walkup songs — per-player field with title, artist, start/end time, coordinator notes

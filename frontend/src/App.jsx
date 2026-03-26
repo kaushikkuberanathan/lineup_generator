@@ -130,9 +130,21 @@ var DEFAULT_ROSTER = [];
 var _mem = {};
 var SCHEMA_VERSION = 2;
 
-var APP_VERSION = "1.3.7";
+var APP_VERSION = "1.3.8";
 
 var VERSION_HISTORY = [
+  {
+    version: "1.3.8",
+    date: "March 26, 2026",
+    changes: [
+      "Feat: Snack Duty tab — per-game player assignment with dropdown and note field",
+      "Feat: Today badge + gold border on game day card",
+      "Feat: Past games de-emphasized, canceled games hidden",
+      "Feat: Summary header showing assigned count and next upcoming assignment",
+      "Feat: snackDuty persisted to localStorage, Supabase, export backup, and import restore",
+      "Fix: game time display strips leading zero from hour (7:00 PM not 07:00 PM)"
+    ]
+  },
   {
     version: "1.3.7",
     date: "March 26, 2026",

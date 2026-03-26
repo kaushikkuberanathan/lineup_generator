@@ -2,6 +2,12 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Development Rules
+- NEVER commit or push to main without explicit confirmation from KK
+- Always test locally first — start dev server, verify in browser, then ask for confirmation
+- The confirmation phrase is: "confirmed — push to main"
+- If KK has not said "confirmed — push to main", only make local file changes
+
 ## Project Overview
 
 Youth baseball/softball lineup generator — a mobile-first PWA for coaches to manage rosters, auto-assign field positions, track batting order, and manage schedules. Stack: React 18 + Vite (frontend on Vercel), Express (backend on Render), Supabase (Postgres + JSONB).
@@ -215,6 +221,14 @@ backend/
 - **Realtime multi-device sync**: planned via Supabase Realtime
 
 ## Version History
+
+### v1.3.8 — March 26, 2026
+- Feat: Snack Duty tab — per-game player assignment with dropdown and note field
+- Feat: Today badge + gold border on game day card
+- Feat: Past games de-emphasized, canceled games hidden
+- Feat: Summary header showing assigned count and next upcoming assignment
+- Feat: snackDuty persisted to localStorage, Supabase, export backup, and import restore
+- Fix: game time display strips leading zero from hour (7:00 PM not 07:00 PM)
 
 ### v1.3.7 — March 26, 2026
 - Feat: snack duty field on game — add/edit in schedule form, shown on game card with 🍎
