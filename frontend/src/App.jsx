@@ -6461,16 +6461,16 @@ export default function App() {
             style={{ background:"transparent", border:"1px solid rgba(255,255,255,0.25)", borderRadius:"6px", color:"rgba(255,255,255,0.7)", fontSize:"10px", fontFamily:"Georgia,serif", fontWeight:"bold", letterSpacing:"0.04em", textTransform:"uppercase", padding:"3px 8px", cursor:"pointer", whiteSpace:"nowrap", alignSelf:"flex-start", marginBottom:"3px" }}>
             ← Home
           </button>
-          <div style={{ display:"flex", gap:"2px", flex:1, width:"100%" }}>
+          <div style={{ display:"flex", gap:"4px", flex:1, width:"100%" }}>
             {PRIMARY_TABS.map(function(t) {
               var active = primaryTab === t.key;
               return (
                 <button key={t.key}
                   onClick={function(k) { return function() { setPrimaryTab(k); }; }(t.key)}
-                  style={{ flex:1, padding:"4px 2px", borderRadius:"6px", border:"none", cursor:"pointer", fontSize:"9px", fontWeight:"bold", fontFamily:"Georgia,serif", letterSpacing:"0.02em", textTransform:"uppercase", textAlign:"center", lineHeight:1.25,
+                  style={{ flex:1, padding:"7px 2px", borderRadius:"6px", border:"none", cursor:"pointer", fontSize:"9px", fontWeight:"bold", fontFamily:"Georgia,serif", letterSpacing:"0.02em", textTransform:"uppercase", textAlign:"center", lineHeight:1.25,
                     background: active ? C.red : "transparent",
                     color: active ? "#fff" : "rgba(255,255,255,0.55)" }}>
-                  <div style={{ fontSize:"13px", marginBottom:"1px" }}>{t.icon}</div>
+                  <div style={{ fontSize:"14px", marginBottom:"2px" }}>{t.icon}</div>
                   {t.label}
                 </button>
               );
