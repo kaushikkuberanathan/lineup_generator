@@ -5674,12 +5674,17 @@ export default function App() {
               line-up-generator.vercel.app
             </a>
           </div>
-          <button style={S.btn("ghost")}
+          <button style={S.btn("primary")}
             onClick={function() {
-              try { localStorage.removeItem("onboarding:v1:complete"); } catch(e) {}
-              setShowOnboarding(true);
+              var url = "https://line-up-generator.vercel.app";
+              var text = "Lineup Generator — free lineup tool for youth baseball coaches. Runs at the field, works offline.";
+              if (navigator.share) {
+                navigator.share({ title: "Lineup Generator", text: text, url: url }).catch(function() {});
+              } else {
+                try { navigator.clipboard.writeText(url); alert("Link copied to clipboard!"); } catch(e) {}
+              }
             }}>
-            Getting Started
+            Share App Now
           </button>
         </div>
 
