@@ -2287,10 +2287,10 @@ export default function App() {
       }
 
       return (
-        <div style={{ background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:"12px", padding:"14px 16px", marginBottom:"8px" }}>
+        <div style={{ background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:"12px", padding:"14px 16px", marginBottom:"10px" }}>
           {/* Row 1: name + age group + Open + ··· */}
-          <div style={{ display:"flex", alignItems:"center", gap:"8px", marginBottom:"6px" }}>
-            <span style={{ fontSize:"17px", fontWeight:"bold", color:"#f5c842", fontFamily:"Georgia,serif", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", flex:1 }}>
+          <div style={{ display:"flex", alignItems:"flex-start", gap:"8px", marginBottom:"6px" }}>
+            <span style={{ fontSize:"17px", fontWeight:"bold", color:"#f5c842", fontFamily:"Georgia,serif", flex:1 }}>
               {team.name}
             </span>
             {team.ageGroup ? <span style={{ fontSize:"10px", color:"rgba(255,255,255,0.5)", whiteSpace:"nowrap", flexShrink:0 }}>{team.ageGroup}</span> : null}
@@ -2304,7 +2304,7 @@ export default function App() {
             <div style={{ position:"relative", flexShrink:0 }}>
               <button
                 onClick={function(e) { e.stopPropagation(); setOpenMenuTeamId(openMenuTeamId === team.id ? null : team.id); }}
-                style={{ padding:"8px 10px", borderRadius:"8px", border:"1px solid rgba(255,255,255,0.2)", cursor:"pointer", fontSize:"16px", fontFamily:"inherit", background:"transparent", color:"rgba(255,255,255,0.55)", lineHeight:1, letterSpacing:"1px" }}>
+                style={{ padding:"8px 10px", borderRadius:"8px", border:"1px solid rgba(255,255,255,0.2)", cursor:"pointer", fontSize:"16px", fontFamily:"inherit", background:"transparent", color:"rgba(255,255,255,0.2)", lineHeight:1, letterSpacing:"1px" }}>
                 ···
               </button>
               {openMenuTeamId === team.id && (
@@ -2333,14 +2333,26 @@ export default function App() {
             </div>
           </div>
           {/* Row 2: metadata with icons */}
-          <div style={{ display:"flex", gap:"12px", fontSize:"11px", color:"rgba(255,255,255,0.5)", flexWrap:"wrap", marginBottom: alertText ? "8px" : "0" }}>
+          <div style={{ display:"flex", gap:"6px", fontSize:"11px", color:"rgba(255,255,255,0.5)", flexWrap:"wrap", alignItems:"center", marginBottom: alertText ? "8px" : "0" }}>
             <span>👥 {teamRoster.length} player{teamRoster.length !== 1 ? "s" : ""}</span>
-            {teamSched.length > 0 ? <span>⚾ {played}/{teamSched.length} games</span> : <span>⚾ No games yet</span>}
-            {played > 0 ? <span>{wins}W-{losses}L{played-wins-losses > 0 ? "-"+(played-wins-losses)+"T" : ""}</span> : null}
+            <span style={{ color:"rgba(255,255,255,0.2)" }}>·</span>
+            {teamSched.length > 0
+              ? (played > 0 && remaining > 0
+                  ? <span>⚾ {played} played · {remaining} to go</span>
+                  : played > 0
+                    ? <span>⚾ {played} played</span>
+                    : <span>⚾ {teamSched.length} games</span>)
+              : <span>⚾ No games yet</span>}
+            {played > 0 ? <><span style={{ color:"rgba(255,255,255,0.2)" }}>·</span><span style={{ color:"rgba(255,255,255,0.7)" }}>{wins}W-{losses}L{played-wins-losses > 0 ? "-"+(played-wins-losses)+"T" : ""}</span></> : null}
             {nextPracDays === 0
-              ? <span style={{ color:"#f5c842" }}>🏃 Practice today</span>
-              : nextPracDays !== null ? <span>🏃 {nextPracDays}d to practice</span> : null}
+              ? <><span style={{ color:"rgba(255,255,255,0.2)" }}>·</span><span style={{ color:"#f5c842" }}>🏃 Practice today</span></>
+              : nextPracDays !== null ? <><span style={{ color:"rgba(255,255,255,0.2)" }}>·</span><span>🏃 {nextPracDays}d to practice</span></> : null}
           </div>
+          {teamRoster.length === 0 && (
+            <div style={{ fontSize:"11px", color:"rgba(245,200,66,0.7)", marginTop:"6px", fontStyle:"italic" }}>
+              👆 Tap Open to add your roster
+            </div>
+          )}
           {/* Row 3: game alert — left strip */}
           {alertText ? (
             <div style={{ borderLeft:"3px solid "+alertColor, paddingLeft:"10px", fontSize:"12px", fontWeight:"600", color:alertColor }}>
@@ -2358,14 +2370,14 @@ export default function App() {
         <div style={{ width:"100%", maxWidth:"500px" }}>
           {homeMode === "welcome" ? (
             <div>
-              <div style={{ marginBottom:"14px" }}>
+              <div style={{ marginBottom:"8px" }}>
                 <div style={{ fontSize:"13px", color:"rgba(255,255,255,0.6)", letterSpacing:"0.08em", textTransform:"uppercase", fontFamily:"Georgia,serif" }}>{greeting}, Coach</div>
                 <div style={{ fontSize:"11px", color:"rgba(255,255,255,0.3)", marginTop:"2px" }}>
                   {now.toLocaleDateString("en-US", { timeZone:"America/New_York", weekday:"long", month:"long", day:"numeric" })}
                 </div>
               </div>
               {teams.length > 0 ? (
-                <div style={{ marginBottom:"8px" }}>
+                <div style={{ marginBottom:"4px" }}>
                   <div style={{ fontSize:"10px", color:"rgba(255,255,255,0.35)", letterSpacing:"0.15em", textTransform:"uppercase", marginBottom:"6px", textAlign:"center" }}>Your Teams</div>
                   {teams.map(function(t) { return <TeamCard key={t.id} team={t} />; })}
                 </div>
