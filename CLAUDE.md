@@ -222,6 +222,10 @@ backend/
 
 ## Version History
 
+### v1.6.3 — March 27, 2026
+- UX: Defense tab — inning column headers show green ✓ when all 10 field positions + bench are filled for that inning
+- UX: Defense tab (By Player view) — position dropdown disables already-taken positions per inning; Bench locks after 1 player assigned
+
 ### v1.6.2 — March 27, 2026
 - UX: Status badges use 6px CSS colored circles instead of emoji dots
 - UX: Team card alert date uses ▸ symbol instead of 📅 emoji

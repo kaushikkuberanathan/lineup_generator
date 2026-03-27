@@ -1,6 +1,6 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: March 27, 2026 (v1.6.2)
+> Last updated: March 27, 2026 (v1.6.3)
 > MVP launched: March 24, 2026
 
 ---
@@ -48,6 +48,11 @@
 - Export / Import backup (JSON)
 - 10-player field configuration: LC + RC replace CF in outfield; 1 bench slot per inning (schema v2, migration auto-remaps saved CF→LC)
 - First-time coach onboarding modal (5-step in-app walkthrough, localStorage completion tracking, always re-accessible via "Getting Started" button in Roster tab)
+
+### v1.6.3 — March 27, 2026
+#### Defense Tab — Inning Completion Indicators + Position Lock
+- UX: Defense tab — inning column headers show green ✓ indicator (green text + green border wash) when all 10 field positions + at least 1 bench are filled for that inning
+- UX: Defense tab (By Player view) — position dropdowns disable already-taken positions for that inning; Bench option locks after 1 player is assigned to bench
 
 ### v1.6.2 — March 27, 2026
 #### Home Screen Icon Cleanup

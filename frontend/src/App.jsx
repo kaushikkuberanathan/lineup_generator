@@ -131,9 +131,17 @@ var DEFAULT_ROSTER = [];
 var _mem = {};
 var SCHEMA_VERSION = 2;
 
-var APP_VERSION = "1.6.2";
+var APP_VERSION = "1.6.3";
 
 var VERSION_HISTORY = [
+  {
+    version: "1.6.3",
+    date: "March 27, 2026",
+    changes: [
+      "UX: Defense tab — inning column headers show a green ✓ indicator when all 10 field positions + bench are filled for that inning",
+      "UX: Defense tab (By Player view) — position dropdown disables already-taken positions for that inning; Bench locks after 1 player assigned"
+    ]
+  },
   {
     version: "1.6.2",
     date: "March 27, 2026",
@@ -3894,6 +3902,16 @@ export default function App() {
                         var pos = (grid[info.name] || [])[i] || "";
                         var viols = getCellViolations(info.name, i);
                         var hasViol = viols.length > 0;
+                        // Compute positions taken by other players this inning
+                        var takenByOthers = {};
+                        var benchCountInInning = 0;
+                        for (var tpi = 0; tpi < players.length; tpi++) {
+                          if (players[tpi] === info.name) { continue; }
+                          var tpos = (grid[players[tpi]] || [])[i] || "";
+                          if (tpos === "Bench") { benchCountInInning++; }
+                          else if (tpos) { takenByOthers[tpos] = true; }
+                        }
+                        if (benchCountInInning >= 1) { takenByOthers["Bench"] = true; }
                         return (
                           <td key={i} style={{ padding:"4px 5px", textAlign:"center", borderBottom:"1px solid rgba(15,31,61,0.04)" }}>
                             <select value={pos}
@@ -3906,7 +3924,10 @@ export default function App() {
                                 cursor: lineupLocked ? "default" : "pointer", outline:"none", fontFamily:"inherit", textAlign:"center",
                                 opacity: lineupLocked ? 0.8 : 1 }}>
                               <option value="">-</option>
-                              {ALL_POSITIONS.map(function(p) { return <option key={p} value={p}>{p}</option>; })}
+                              {ALL_POSITIONS.map(function(p) {
+                                var taken = takenByOthers[p] && p !== pos;
+                                return <option key={p} value={p} disabled={taken} style={{ color: taken ? "#bbb" : undefined }}>{p}{taken ? " ·" : ""}</option>;
+                              })}
                             </select>
                           </td>
                         );
