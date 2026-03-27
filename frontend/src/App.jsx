@@ -1049,7 +1049,7 @@ var S = {
       color: active ? "#fff" : "rgba(255,255,255,0.55)"
     };
   },
-  body: { padding:"20px 24px 90px", maxWidth:"1400px", margin:"0 auto" },
+  body: { flex:1, overflowY:"auto", WebkitOverflowScrolling:"touch", padding:"20px 24px 20px", maxWidth:"1400px", margin:"0 auto" },
   card: {
     background:C.white, borderRadius:"10px", padding:"16px 18px",
     boxShadow:"0 2px 8px rgba(15,31,61,0.06)", marginBottom:"14px",
@@ -2407,7 +2407,7 @@ export default function App() {
               style={{ background:"linear-gradient(135deg,#f5c842,#e6a817)", color:"#0f1f3d",
                         border:"none", borderRadius:"8px", padding:"6px 14px", fontSize:"12px",
                         fontWeight:"bold", cursor:"pointer", whiteSpace:"nowrap",
-                        flexShrink:0, position:"relative", zIndex:1001 }}>
+                        flexShrink:0 }}>
               Open
             </button>
             <div style={{ position:"relative", flexShrink:0 }}>
@@ -2418,9 +2418,9 @@ export default function App() {
               </button>
               {openMenuTeamId === team.id && (
                 <>
-                  <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, zIndex:999 }}
+                  <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, zIndex:9998 }}
                        onClick={function() { setOpenMenuTeamId(null); }} />
-                  <div style={{ position:"absolute", top:"100%", right:0, marginTop:"4px", background:"#1a1a2e", border:"1px solid #333", borderRadius:"6px", boxShadow:"0 4px 12px rgba(0,0,0,0.4)", zIndex:1000, minWidth:"168px", overflow:"hidden" }}>
+                  <div style={{ position:"absolute", top:"100%", right:0, marginTop:"4px", background:"#1a1a2e", border:"1px solid #333", borderRadius:"6px", boxShadow:"0 4px 12px rgba(0,0,0,0.4)", zIndex:9999, minWidth:"168px", overflow:"hidden" }}>
                     <div style={{ padding:"10px 16px", cursor:"pointer", color:"rgba(255,255,255,0.85)", fontSize:"13px", fontFamily:"inherit" }}
                          onMouseEnter={function(e) { e.currentTarget.style.background="#2a2a3e"; }}
                          onMouseLeave={function(e) { e.currentTarget.style.background="transparent"; }}
@@ -6945,7 +6945,7 @@ export default function App() {
 
   // ── Portrait: top header + content ──────────────────────────────────────
   return (
-    <div style={{ minHeight:"100dvh", background: (screen !== "app" || primaryTab === "more") ? "linear-gradient(160deg,#0f1f3d 0%,#1a3260 55%,#2a0a0a 100%)" : C.cream, fontFamily:"Georgia,'Times New Roman',serif", color:C.text }}>
+    <div style={{ height:"100dvh", display:"flex", flexDirection:"column", overflow:"hidden", background: (screen !== "app" || primaryTab === "more") ? "linear-gradient(160deg,#0f1f3d 0%,#1a3260 55%,#2a0a0a 100%)" : C.cream, fontFamily:"Georgia,'Times New Roman',serif", color:C.text }}>
       <div style={S.header}>
         <div style={S.logoWrap} onClick={function() { setScreen("home"); setPrimaryTab("home"); setHomeMode("welcome"); }}>
           <div style={S.logoCircle}>{screen === "app" && primaryTab !== "more" && activeTeam ? activeTeam.name.charAt(0).toUpperCase() : "L"}</div>
@@ -6972,7 +6972,7 @@ export default function App() {
         {(primaryTab === "home" || (!activeTeam && primaryTab !== "more")) ? renderHome() : tabContent}
       </div>
       {/* Fixed bottom nav bar */}
-      <div style={{ position:"fixed", bottom:0, left:0, right:0, background:C.navy, backgroundColor:C.navy, borderTop:"2px solid " + C.red, display:"flex", zIndex:1000, paddingBottom:"env(safe-area-inset-bottom, 0px)", WebkitTransform:"translateZ(0)", transform:"translateZ(0)" }}>
+      <div style={{ flexShrink:0, background:C.navy, borderTop:"2px solid " + C.red, display:"flex", paddingBottom:"env(safe-area-inset-bottom, 0px)" }}>
         {PRIMARY_TABS.map(function(t) {
           var active = primaryTab === t.key;
           var disabled = (t.key !== "more" && t.key !== "home" && screen !== "app");
