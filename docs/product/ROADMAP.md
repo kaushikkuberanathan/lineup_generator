@@ -1,6 +1,6 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: March 27, 2026 (v1.6.0)
+> Last updated: March 27, 2026 (v1.6.1)
 > MVP launched: March 24, 2026
 
 ---
@@ -48,6 +48,13 @@
 - Export / Import backup (JSON)
 - 10-player field configuration: LC + RC replace CF in outfield; 1 bench slot per inning (schema v2, migration auto-remaps saved CF→LC)
 - First-time coach onboarding modal (5-step in-app walkthrough, localStorage completion tracking, always re-accessible via "Getting Started" button in Roster tab)
+
+### v1.6.1 — March 27, 2026
+#### Home Screen Polish + scoreReported Persistence Fix
+- Fix: scoreReported flag no longer resets on team reopen — Supabase hydration now merges local `scoreReported: true` instead of overwriting it
+- UX: Home screen team card — "Missing Schedule" badge (consistent with "Missing Roster"); italic CTA hints below card for each missing item
+- UX: Home screen — per-team ⚡ Generate Lineup button on every Ready team card that has an upcoming game
+- Fix: Generate Lineup CTA filtered to Ready teams only (both roster + schedule must be present)
 
 ### v1.6.0 — March 27, 2026
 #### Share Links + Team Management + Quick Summary Enhancements

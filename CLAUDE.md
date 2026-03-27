@@ -222,6 +222,12 @@ backend/
 
 ## Version History
 
+### v1.6.1 — March 27, 2026
+- Fix: scoreReported flag preserved across Supabase hydration — no longer resets on team reopen
+- UX: Home screen team card — "Missing Schedule" badge + italic CTA hints for missing roster/schedule
+- UX: Home screen — per-team ⚡ Generate Lineup button on every Ready team card with an upcoming game
+- Fix: Generate Lineup CTA only shown for Ready teams (both roster + schedule present)
+
 ### v1.6.0 — March 27, 2026
 - Feat: short share links — 8-char Supabase-backed IDs (?s=xxxxxxxx); mobile share sheet; share_links table with public read + insert RLS
 - Feat: Quick Summary enhancements — sortable Player/R/AVG columns; Games (G) column; AVG color coding
