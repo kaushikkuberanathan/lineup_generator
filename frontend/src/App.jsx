@@ -2450,8 +2450,9 @@ export default function App() {
               {team.name}
             </span>
             {team.ageGroup ? <span style={{ fontSize:"10px", color:"rgba(255,255,255,0.5)", whiteSpace:"nowrap", flexShrink:0 }}>{team.ageGroup}</span> : null}
-            <span style={{ fontSize:"9px", fontWeight:"bold", letterSpacing:"0.06em", textTransform:"uppercase", color:statusColor, border:"1px solid " + statusColor, borderRadius:"4px", padding:"2px 6px", flexShrink:0, opacity:0.9 }}>
-              {statusBadge === "Ready" ? "🟢" : statusBadge === "Missing roster" ? "🟡" : "⚪"} {statusBadge}
+            <span style={{ fontSize:"9px", fontWeight:"bold", letterSpacing:"0.06em", textTransform:"uppercase", color:statusColor, border:"1px solid " + statusColor, borderRadius:"4px", padding:"2px 6px", flexShrink:0, opacity:0.9, display:"inline-flex", alignItems:"center", gap:"4px" }}>
+              <span style={{ display:"inline-block", width:"6px", height:"6px", borderRadius:"50%", background:statusColor, flexShrink:0 }} />
+              {statusBadge}
             </span>
             <button onClick={function(e) { e.stopPropagation(); loadTeam(team); }}
               style={{ background:"linear-gradient(135deg,#f5c842,#e6a817)", color:"#0f1f3d",
@@ -2512,7 +2513,7 @@ export default function App() {
               </div>
               {nextGame && nextGame.game.date ? (
                 <div style={{ fontSize:"11px", color:"rgba(255,255,255,0.5)" }}>
-                  📅 {new Date(nextGame.game.date + "T12:00:00").toLocaleDateString("en-US", { weekday:"short", month:"short", day:"numeric" })}
+                  ▸ {new Date(nextGame.game.date + "T12:00:00").toLocaleDateString("en-US", { weekday:"short", month:"short", day:"numeric" })}
                   {nextGame.game.time ? "  \u00b7  " + nextGame.game.time : ""}
                 </div>
               ) : null}
@@ -2542,7 +2543,7 @@ export default function App() {
                 setTimeout(function() { setPrimaryTab("gameday"); setGameDayTab("defense"); setTimeout(generateLineup, 100); }, 300);
               }}
               style={{ marginTop:"10px", background:"linear-gradient(135deg,#f5c842,#e6a817)", color:"#0f1f3d", border:"none", borderRadius:"8px", padding:"8px 16px", fontSize:"12px", fontWeight:"bold", cursor:"pointer", width:"100%", fontFamily:"inherit" }}>
-              ⚡ Generate Lineup
+              Generate Lineup
             </button>
           )}
         </div>
