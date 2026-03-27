@@ -222,6 +222,18 @@ backend/
 
 ## Version History
 
+### v1.6.0 — March 27, 2026
+- Feat: short share links — 8-char Supabase-backed IDs (?s=xxxxxxxx); mobile share sheet; share_links table with public read + insert RLS
+- Feat: Quick Summary enhancements — sortable Player/R/AVG columns; Games (G) column; AVG color coding
+- Feat: county score report checkbox per completed game; persisted to schedule state
+- Feat: home screen team search bar (appears at 3+ teams; filters by name, age group, sport)
+- Feat: create team sport (Baseball/Softball) + age group (5U–12U) dropdowns; form resets on open/cancel/save
+- Feat: edit team modal via ··· context menu — update name, sport, age group; saved to localStorage + Supabase
+- Feat: backup export includes coachPin; restored on import
+- Fix: homeMode resets to 'welcome' on all Home nav paths
+- Fix: stale schedule closure no longer overwrites battingPerf on county checkbox toggle
+- Fix: app-shell flex column layout replaces position:fixed bottom nav (fixes iOS keyboard push-up + scroll)
+
 ### v1.5.1 — March 26, 2026
 - Fix: Quick Summary season totals now calculate correctly — was string-concatenating instead of summing (AB/H/R/RBI)
 - Fix: parseInt applied to all batting stat accumulations in Quick Summary

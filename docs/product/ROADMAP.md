@@ -1,6 +1,6 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: March 27, 2026
+> Last updated: March 27, 2026 (v1.6.0)
 > MVP launched: March 24, 2026
 
 ---
@@ -48,6 +48,19 @@
 - Export / Import backup (JSON)
 - 10-player field configuration: LC + RC replace CF in outfield; 1 bench slot per inning (schema v2, migration auto-remaps saved CF→LC)
 - First-time coach onboarding modal (5-step in-app walkthrough, localStorage completion tracking, always re-accessible via "Getting Started" button in Roster tab)
+
+### v1.6.0 — March 27, 2026
+#### Share Links + Team Management + Quick Summary Enhancements
+- Feat: Short share links — 8-character Supabase-backed IDs (`?s=xxxxxxxx`) replace long URL-encoded payloads; mobile share sheet (navigator.share) supported; Supabase `share_links` table with public read + insert RLS
+- Feat: Quick Summary enhancements — sortable Player / R / AVG columns; Games (G) column; AVG color coding matches season stats table
+- Feat: County score report checkbox — per completed game "I have reported the score to the County" checkbox; persisted to schedule state + Supabase
+- Feat: Home screen team search bar — appears at 3+ teams; real-time filter by team name, age group, or sport
+- Feat: Create team sport + age group — Baseball/Softball dropdown; 5U–12U age group dropdown; form fully resets on open, cancel, or save
+- Feat: Edit team — ··· context menu on any team card opens edit modal to update name, sport, and age group; saved to localStorage + Supabase
+- Feat: Backup export completeness — coachPin now included in backup JSON; restores on import
+- Fix: homeMode resets to 'welcome' on all Home nav paths (Home tab click, logo click, delete team)
+- Fix: stale schedule closure no longer overwrites battingPerf when county checkbox is toggled
+- Fix: app-shell layout — replaced position:fixed bottom nav with flex column to fix scroll and iOS keyboard push-up
 
 ### v1.5.1 — March 26, 2026
 #### Quick Summary Season Stats Bug Fix

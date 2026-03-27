@@ -114,10 +114,14 @@ This is vibe coding at its best — not generating boilerplate, but genuinely co
 | Snack Duty tab — per-game assignment with notes | ✅ Live |
 | Alphabetical roster display (render-time sort, no data changes) | ✅ Live |
 | Roster auto-snapshots + in-app recovery UI (up to 5 restore points) | ✅ Live |
-| Team card ··· context menu — backup + delete for any team | ✅ Live |
+| Team card ··· context menu — backup, edit, + delete for any team | ✅ Live |
+| Create/edit team — sport (Baseball/Softball) + age group (5U–12U) dropdowns | ✅ Live |
+| Home screen team search bar (filters by name, sport, age group) | ✅ Live |
 | Coach PIN protection — gates Finalize + Unlock; locked roster goes read-only | ✅ Live |
+| County score report checkbox per completed game | ✅ Live |
+| Quick Summary — sortable columns (Player/R/AVG) + Games column + AVG color coding | ✅ Live |
 | PDF export + print view | ✅ Live |
-| Read-only share link (no login required) | ✅ Live |
+| Short share links (Supabase-backed 8-char ID, mobile share sheet) | ✅ Live |
 | Cloud sync (Supabase) + offline (localStorage) | ✅ Live |
 | PWA — installable on iOS + Android | ✅ Live |
 | Phone OTP login + multi-device sync | 🔵 Phase 3 |

@@ -131,9 +131,24 @@ var DEFAULT_ROSTER = [];
 var _mem = {};
 var SCHEMA_VERSION = 2;
 
-var APP_VERSION = "1.5.1";
+var APP_VERSION = "1.6.0";
 
 var VERSION_HISTORY = [
+  {
+    version: "1.6.0",
+    date: "March 27, 2026",
+    changes: [
+      "Feat: Short share links — 8-character Supabase-backed IDs (?s=xxxxxxxx) replace long URL-encoded payloads; mobile share sheet supported",
+      "Feat: Quick Summary enhancements — sortable Player/R/AVG columns; Games (G) column; AVG color coding matches season stats table",
+      "Feat: County score report checkbox — check 'I have reported the score to the County' per completed game; persisted to schedule state",
+      "Feat: Home screen team search bar — appears at 3+ teams; filters by name, age group, or sport",
+      "Feat: Create team — sport dropdown (Baseball/Softball) + age group dropdown (5U–12U); form fully resets on open/cancel/save",
+      "Feat: Edit team — ··· menu on team card opens edit modal to update name, sport, and age group",
+      "Fix: homeMode correctly resets to 'welcome' on all Home nav paths (Home tab click, logo click, delete team)",
+      "Fix: stale schedule closure prevented from overwriting battingPerf on county checkbox toggle",
+      "Fix: app-shell layout — replaced position:fixed bottom nav with flex column layout to fix scroll and keyboard push-up on iOS"
+    ]
+  },
   {
     version: "1.5.1",
     date: "March 26, 2026",
