@@ -1454,6 +1454,8 @@ export default function App() {
   var vhOpen = _vhOpen[0]; var setVhOpen = _vhOpen[1];
   var _hm = useState("welcome");
   var homeMode = _hm[0]; var setHomeMode = _hm[1];
+  var _teamSearch = useState("");
+  var teamSearch = _teamSearch[0]; var setTeamSearch = _teamSearch[1];
   var _nt = useState({ name:"", ageGroup:"", year: new Date().getFullYear() });
   var newTeam = _nt[0]; var setNewTeam = _nt[1];
   var _share = useState(false);
@@ -2467,8 +2469,40 @@ export default function App() {
               </div>
               {teams.length > 0 ? (
                 <div style={{ marginBottom:"4px" }}>
-                  <div style={{ fontSize:"10px", color:"rgba(255,255,255,0.35)", letterSpacing:"0.15em", textTransform:"uppercase", marginBottom:"6px", textAlign:"center" }}>Your Teams</div>
-                  {teams.map(function(t) { return <TeamCard key={t.id} team={t} />; })}
+                  <div style={{ fontSize:"10px", color:"rgba(255,255,255,0.35)", letterSpacing:"0.15em", textTransform:"uppercase", marginBottom:"8px", textAlign:"center" }}>Your Teams</div>
+                  {teams.length >= 3 ? (
+                    <div style={{ position:"relative", marginBottom:"10px" }}>
+                      <span style={{ position:"absolute", left:"12px", top:"50%", transform:"translateY(-50%)", fontSize:"14px", pointerEvents:"none", opacity:0.4 }}>🔍</span>
+                      <input
+                        type="search"
+                        value={teamSearch}
+                        onChange={function(e) { setTeamSearch(e.target.value); }}
+                        placeholder="Find your team…"
+                        style={{ width:"100%", boxSizing:"border-box", background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.15)", borderRadius:"10px", padding:"9px 12px 9px 36px", color:"#fff", fontFamily:"Georgia,serif", fontSize:"13px", outline:"none" }} />
+                      {teamSearch ? (
+                        <button onClick={function() { setTeamSearch(""); }}
+                          style={{ position:"absolute", right:"10px", top:"50%", transform:"translateY(-50%)", background:"none", border:"none", color:"rgba(255,255,255,0.4)", fontSize:"16px", cursor:"pointer", lineHeight:1, padding:"0 2px" }}>×</button>
+                      ) : null}
+                    </div>
+                  ) : null}
+                  {(function() {
+                    var q = teamSearch.trim().toLowerCase();
+                    var filtered = q
+                      ? teams.filter(function(t) {
+                          return (t.name || "").toLowerCase().indexOf(q) >= 0 ||
+                                 (t.ageGroup || "").toLowerCase().indexOf(q) >= 0 ||
+                                 (t.sport || "").toLowerCase().indexOf(q) >= 0;
+                        })
+                      : teams;
+                    if (filtered.length === 0) {
+                      return (
+                        <div style={{ textAlign:"center", padding:"20px 0", color:"rgba(255,255,255,0.3)", fontSize:"12px", fontStyle:"italic" }}>
+                          No teams match "{teamSearch}"
+                        </div>
+                      );
+                    }
+                    return filtered.map(function(t) { return <TeamCard key={t.id} team={t} />; });
+                  })()}
                 </div>
               ) : null}
               <button onClick={function() { setHomeMode("create"); }} style={{ width:"100%", padding:"13px", borderRadius:"12px", border:"2px dashed rgba(255,255,255,0.2)", background:"transparent", color:"rgba(255,255,255,0.55)", fontSize:"13px", fontFamily:"inherit", cursor:"pointer", marginBottom:"14px" }}>
