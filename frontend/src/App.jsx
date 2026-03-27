@@ -1946,7 +1946,7 @@ export default function App() {
     if (activeTeamId === id) {
       saveJSON("ui:activeTeam", null);
       setActiveTeamId(null);
-      setScreen("home");
+      setScreen("home"); setHomeMode("welcome");
     }
   }
 
@@ -6902,7 +6902,7 @@ export default function App() {
   return (
     <div style={{ minHeight:"100dvh", background: (screen !== "app" || primaryTab === "more") ? "linear-gradient(160deg,#0f1f3d 0%,#1a3260 55%,#2a0a0a 100%)" : C.cream, fontFamily:"Georgia,'Times New Roman',serif", color:C.text }}>
       <div style={S.header}>
-        <div style={S.logoWrap} onClick={function() { setScreen("home"); setPrimaryTab("home"); }}>
+        <div style={S.logoWrap} onClick={function() { setScreen("home"); setPrimaryTab("home"); setHomeMode("welcome"); }}>
           <div style={S.logoCircle}>{screen === "app" && primaryTab !== "more" && activeTeam ? activeTeam.name.charAt(0).toUpperCase() : "L"}</div>
           <div>
             <div style={S.logoTitle}>{screen === "app" && primaryTab !== "more" && activeTeam ? activeTeam.name : "Lineup Generator"}</div>
@@ -6927,14 +6927,14 @@ export default function App() {
         {(primaryTab === "home" || (!activeTeam && primaryTab !== "more")) ? renderHome() : tabContent}
       </div>
       {/* Fixed bottom nav bar */}
-      <div style={{ position:"fixed", bottom:0, left:0, right:0, background:"linear-gradient(180deg,#0f1f3d 0%,#1a3260 100%)", borderTop:"2px solid " + C.red, display:"flex", zIndex:100, paddingBottom:"env(safe-area-inset-bottom, 0px)" }}>
+      <div style={{ position:"fixed", bottom:0, left:0, right:0, background:C.navy, borderTop:"2px solid " + C.red, display:"flex", zIndex:1000, paddingBottom:"env(safe-area-inset-bottom, 0px)" }}>
         {PRIMARY_TABS.map(function(t) {
           var active = primaryTab === t.key;
           var disabled = (t.key !== "more" && t.key !== "home" && screen !== "app");
           return (
             <button key={t.key}
               onClick={function(k, d) { return function() {
-                if (k === "home") { setScreen("home"); setPrimaryTab("home"); return; }
+                if (k === "home") { setScreen("home"); setPrimaryTab("home"); setHomeMode("welcome"); return; }
                 if (d) return;
                 setPrimaryTab(k);
                 if (k !== "more") setScreen("app");
