@@ -1,9 +1,10 @@
 // v2.1
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { jsPDF } from "jspdf";
 import { isSupabaseEnabled, dbSaveTeams, dbDeleteTeam,
          dbLoadTeams, dbLoadTeamData, dbSaveTeamData,
-         dbSnapshotRoster, dbGetRosterSnapshots } from './supabase.js';
+         dbSnapshotRoster, dbGetRosterSnapshots,
+         dbSaveShareLink, dbLoadShareLink } from './supabase.js';
 import mixpanel from 'mixpanel-browser';
 import { FEATURE_FLAGS } from '@/config/featureFlags';
 import { generateLineupV2 } from '@/utils/lineupEngineV2';
@@ -1383,6 +1384,22 @@ export default function App() {
   var battingOrderSaved = _batSaved[0]; var setBattingOrderSaved = _batSaved[1];
   var _moreTab = useState("about");
   var moreTab = _moreTab[0]; var setMoreTab = _moreTab[1];
+  var _sharePayload = useState(null);
+  var sharePayload = _sharePayload[0]; var setSharePayload = _sharePayload[1];
+  var _shareLoading = useState(function() {
+    return !!(new URLSearchParams(window.location.search).get("s"));
+  });
+  var shareLoading = _shareLoading[0]; var setShareLoading = _shareLoading[1];
+
+  // Fetch short share link payload on mount
+  useEffect(function() {
+    var sid = new URLSearchParams(window.location.search).get("s");
+    if (!sid) { return; }
+    dbLoadShareLink(sid).then(function(payload) {
+      if (payload) { setSharePayload(payload); }
+      setShareLoading(false);
+    }).catch(function() { setShareLoading(false); });
+  }, []);
   var _ros = useState(initRoster);
   var roster = _ros[0]; var setRoster = _ros[1];
   var _rosterHistory = useState([]);
@@ -1720,6 +1737,13 @@ export default function App() {
     }
   }
 
+  function generateShareId() {
+    var chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+    var id = "";
+    for (var i = 0; i < 8; i++) { id += chars[Math.floor(Math.random() * chars.length)]; }
+    return id;
+  }
+
   function shareCurrentLineup() {
     track("share_link", {});
     var payload = {
@@ -1738,8 +1762,10 @@ export default function App() {
         return s;
       })()
     };
-    var encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
-    var url = window.location.href.split("?")[0] + "?share=" + encoded;
+    var id = generateShareId();
+    var url = window.location.href.split("?")[0] + "?s=" + id;
+    // Fire-and-forget — save completes well before recipient opens the link
+    dbSaveShareLink(id, payload);
     if (navigator.share) {
       navigator.share({ title:(activeTeam ? activeTeam.name : "Lineup") + " — Game Day Lineup", url:url })
         .catch(function(e) { if (e.name !== "AbortError") { copyToClipboard(url); } });
@@ -1777,14 +1803,15 @@ export default function App() {
       battingOrder:isActive ? battingOrder : loadJSON("team:" + tid + ":batting",   []),
       grid:        isActive ? grid         : loadJSON("team:" + tid + ":grid",      {}),
       innings:     isActive ? innings      : loadJSON("team:" + tid + ":innings",   6),
-      locked:      isActive ? lineupLocked : loadJSON("team:" + tid + ":locked",    false)
+      locked:      isActive ? lineupLocked : loadJSON("team:" + tid + ":locked",    false),
+      coachPin:    isActive ? coachPin     : loadJSON("team:" + tid + ":pin",       "")
     };
     var json = JSON.stringify(payload, null, 2);
     var blob = new Blob([json], { type:"application/json" });
     var url  = URL.createObjectURL(blob);
     var a    = document.createElement("a");
     a.href   = url;
-    a.download = (activeTeam.name || "team").replace(/[^a-z0-9]/gi,"-").toLowerCase()
+    a.download = (t.name || "team").replace(/[^a-z0-9]/gi,"-").toLowerCase()
                  + "-backup-" + new Date().toISOString().slice(0,10) + ".json";
     document.body.appendChild(a);
     a.click();
@@ -1809,6 +1836,10 @@ export default function App() {
         saveJSON("team:" + tid + ":grid",      data.grid || {});
         saveJSON("team:" + tid + ":innings",   data.innings || 6);
         saveJSON("team:" + tid + ":locked",    data.locked  || false);
+        if (data.coachPin !== undefined) { saveJSON("team:" + tid + ":pin", data.coachPin || ""); }
+        // Stamp _lastLocalWrite so Supabase hydration backs off and doesn't
+        // overwrite the just-imported data when loadTeam fires the hydration cycle
+        window._lastLocalWrite = Date.now();
         // Reload the team from storage
         if (activeTeam) {
           var t = {}; for (var k in activeTeam) { t[k] = activeTeam[k]; }
@@ -4564,8 +4595,10 @@ export default function App() {
           return s;
         })()
       };
-      var encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
-      return window.location.href.split("?")[0] + "?share=" + encoded;
+      var id = generateShareId();
+      // Fire-and-forget — save completes well before recipient opens the link
+      dbSaveShareLink(id, payload);
+      return window.location.href.split("?")[0] + "?s=" + id;
     }
 
     function handleShareGame(game) {
@@ -6598,7 +6631,24 @@ export default function App() {
   // MAIN RETURN
   // ============================================================
 
-  // Check for shared lineup in URL
+  // Check for shared lineup in URL — short ?s= link (async) or legacy ?share= (base64)
+  if (new URLSearchParams(window.location.search).get("s")) {
+    if (shareLoading) {
+      return (
+        <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", minHeight:"100vh", background:"#fdf8f0", gap:"16px" }}>
+          <div style={{ fontSize:"32px" }}>⚾</div>
+          <div style={{ fontSize:"14px", color:"#6a7a9a", fontFamily:"Georgia,serif" }}>Loading lineup…</div>
+        </div>
+      );
+    }
+    if (sharePayload) { return renderSharedView(sharePayload); }
+    return (
+      <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", minHeight:"100vh", background:"#fdf8f0", gap:"12px" }}>
+        <div style={{ fontSize:"32px" }}>😕</div>
+        <div style={{ fontSize:"14px", color:"#6a7a9a", fontFamily:"Georgia,serif" }}>This share link couldn't be found.</div>
+      </div>
+    );
+  }
   try {
     var urlParams = new URLSearchParams(window.location.search);
     var shareParam = urlParams.get("share");

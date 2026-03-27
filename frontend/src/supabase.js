@@ -129,3 +129,22 @@ export async function dbGetRosterSnapshots(teamId) {
     return res.data || [];
   } catch(e) { return []; }
 }
+
+// ── Share link operations ──────────────────────────────────────────────────
+
+export function dbSaveShareLink(id, payload) {
+  if (!supabase) { return Promise.resolve(); }
+  return supabase.from('share_links').insert({ id: id, payload: payload })
+    .then(function(r) {
+      if (r.error) { console.warn('[DB] saveShareLink error:', r.error.message); }
+    });
+}
+
+export function dbLoadShareLink(id) {
+  if (!supabase) { return Promise.resolve(null); }
+  return supabase.from('share_links').select('payload').eq('id', id).single()
+    .then(function(r) {
+      if (r.error) { return null; }
+      return r.data ? r.data.payload : null;
+    });
+}
