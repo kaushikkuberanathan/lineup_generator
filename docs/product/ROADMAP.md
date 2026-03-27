@@ -49,7 +49,7 @@
 - 10-player field configuration: LC + RC replace CF in outfield; 1 bench slot per inning (schema v2, migration auto-remaps saved CF→LC)
 - First-time coach onboarding modal (5-step in-app walkthrough, localStorage completion tracking, always re-accessible via "Getting Started" button in Roster tab)
 
-### v1.4.2 — March 26, 2026
+### v1.5.1 — March 26, 2026
 #### Quick Summary Season Stats Bug Fix
 - Fix: Quick Summary AB/H/R/RBI totals now calculate correctly — values were stored as strings from input fields and being string-concatenated instead of summed
 - Fix: parseInt applied to all batting stat accumulations in Quick Summary (`getRosterSeasonStats`)

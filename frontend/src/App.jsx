@@ -130,11 +130,11 @@ var DEFAULT_ROSTER = [];
 var _mem = {};
 var SCHEMA_VERSION = 2;
 
-var APP_VERSION = "1.4.2";
+var APP_VERSION = "1.5.1";
 
 var VERSION_HISTORY = [
   {
-    version: "1.4.2",
+    version: "1.5.1",
     date: "March 26, 2026",
     changes: [
       "Fix: Quick Summary season totals now calculate correctly — was string-concatenating instead of summing (AB/H/R/RBI)",

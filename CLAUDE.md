@@ -222,7 +222,7 @@ backend/
 
 ## Version History
 
-### v1.4.2 — March 26, 2026
+### v1.5.1 — March 26, 2026
 - Fix: Quick Summary season totals now calculate correctly — was string-concatenating instead of summing (AB/H/R/RBI)
 - Fix: parseInt applied to all batting stat accumulations in Quick Summary
 - Fix: only completed games (result logged) counted toward season totals
