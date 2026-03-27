@@ -130,9 +130,20 @@ var DEFAULT_ROSTER = [];
 var _mem = {};
 var SCHEMA_VERSION = 2;
 
-var APP_VERSION = "1.4.0";
+var APP_VERSION = "1.5.0";
 
 var VERSION_HISTORY = [
+  {
+    version: "1.5.0",
+    date: "March 27, 2026",
+    changes: [
+      "Feat: Coach PIN protection — 4-digit PIN gates Finalize and Unlock; set/change/remove from Lineups tab; PIN persisted per team to localStorage + Supabase",
+      "Feat: Locked roster read-only — all player cards collapse when lineup is finalized; expand toggle disabled; Add Player and Remove buttons hidden; attribute editing blocked",
+      "Feat: Batting Save Order button — appears only after a manual drag reorder; amber \u25cf Unsaved changes indicator; \u2713 Saved confirmation fades after 2s; Suggest Order auto-clears dirty state",
+      "Feat: Sortable season stats table — tap Player / R / AVG column headers to sort; \u2191 \u2193 \u2195 direction indicators; 0 AB players always sort to bottom on AVG sort",
+      "UX: Home screen redesign — compact greeting header with date; gold Open button per team card; left-strip game alert (red = today, amber = tomorrow); dot-separated metadata row; roster hint on empty teams"
+    ]
+  },
   {
     version: "1.4.0",
     date: "March 26, 2026",

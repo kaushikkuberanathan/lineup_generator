@@ -107,7 +107,7 @@ This is vibe coding at its best — not generating boilerplate, but genuinely co
 | Auto-assign defensive lineup (V2 engine) | ✅ Live |
 | Manual grid overrides + Auto-Fix | ✅ Live |
 | Diamond view with inning filter | ✅ Live |
-| Batting order with drag-to-reorder + season stats | ✅ Live |
+| Batting order with drag-to-reorder + season stats + sortable table | ✅ Live |
 | AI schedule import (photo + text paste) | ✅ Live |
 | Game result + per-player batting stat logging | ✅ Live |
 | Walk-up songs per player (title, artist, link, timestamps) | ✅ Live |
@@ -115,6 +115,7 @@ This is vibe coding at its best — not generating boilerplate, but genuinely co
 | Alphabetical roster display (render-time sort, no data changes) | ✅ Live |
 | Roster auto-snapshots + in-app recovery UI (up to 5 restore points) | ✅ Live |
 | Team card ··· context menu — backup + delete for any team | ✅ Live |
+| Coach PIN protection — gates Finalize + Unlock; locked roster goes read-only | ✅ Live |
 | PDF export + print view | ✅ Live |
 | Read-only share link (no login required) | ✅ Live |
 | Cloud sync (Supabase) + offline (localStorage) | ✅ Live |
@@ -131,7 +132,7 @@ This is vibe coding at its best — not generating boilerplate, but genuinely co
 See [`ROADMAP.md`](./docs/product/ROADMAP.md) for the full prioritized backlog.
 
 **Coming next:**
-- Mobile batting reorder arrow fallback (touch drag gap on iOS)
+- PIN reset flow — recovery path if coach forgets PIN (see Parking Lot in ROADMAP)
 - Print card metadata — team name, date, opponent pulled from game context
 - "Revert to Generated" button after manual grid edits
 - GitHub Actions CI — block deploys on failing engine tests

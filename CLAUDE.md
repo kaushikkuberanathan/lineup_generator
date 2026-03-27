@@ -222,6 +222,13 @@ backend/
 
 ## Version History
 
+### v1.5.0 — March 27, 2026
+- Feat: coach PIN protection — 4-digit PIN gates Finalize and Unlock; set/change/remove from Lineups tab; coach_pin persisted per team to localStorage + Supabase (migration 007_add_coach_pin.sql)
+- Feat: locked roster read-only — all player cards collapse when lineup finalized; expand toggle disabled; Add Player and Remove buttons hidden; attribute editing blocked (pointerEvents: none)
+- Feat: batting Save Order button — appears only after manual drag reorder; amber unsaved indicator; ✓ Saved confirmation fades 2s; Suggest Order auto-clears dirty state
+- Feat: sortable season stats table — Player / R / AVG columns sortable; ↑ ↓ ↕ indicators; 0 AB always bottom on AVG sort
+- UX: home screen redesign — compact header with greeting + date; gold Open button; left-strip game alert (red = today, amber = tomorrow); dot-separated metadata; roster hint on empty teams
+
 ### v1.4.0 — March 26, 2026
 - UX: primary tabs moved to fixed bottom nav bar (portrait) — 4 primary tabs with gold active indicator
 - UX: Roster tab — Players and Songs sub-tabs; walk-up song management moved from Game Day → Roster → Songs
