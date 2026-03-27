@@ -1837,9 +1837,6 @@ export default function App() {
         saveJSON("team:" + tid + ":innings",   data.innings || 6);
         saveJSON("team:" + tid + ":locked",    data.locked  || false);
         if (data.coachPin !== undefined) { saveJSON("team:" + tid + ":pin", data.coachPin || ""); }
-        // Stamp _lastLocalWrite so Supabase hydration backs off and doesn't
-        // overwrite the just-imported data when loadTeam fires the hydration cycle
-        window._lastLocalWrite = Date.now();
         // Reload the team from storage
         if (activeTeam) {
           var t = {}; for (var k in activeTeam) { t[k] = activeTeam[k]; }
@@ -5117,11 +5114,14 @@ export default function App() {
                           type="checkbox"
                           id={"county-" + game.id}
                           checked={!!game.scoreReported}
-                          onChange={function(gid) { return function(e) {
-                            var g2 = {}; for (var k in game) { g2[k] = game[k]; }
-                            g2.scoreReported = e.target.checked;
-                            persistSchedule(schedule.map(function(x) { return x.id === gid ? g2 : x; }));
-                          }; }(game.id)}
+                          onChange={function(gid, val) { return function() {
+                            persistSchedule(schedule.map(function(x) {
+                              if (x.id !== gid) { return x; }
+                              var g2 = {}; for (var k in x) { g2[k] = x[k]; }
+                              g2.scoreReported = val;
+                              return g2;
+                            }));
+                          }; }(game.id, !game.scoreReported)}
                           style={{ width:"15px", height:"15px", accentColor:C.gold, cursor:"pointer", flexShrink:0 }} />
                         <label htmlFor={"county-" + game.id} style={{ fontSize:"12px", color: game.scoreReported ? C.text : C.textMuted, cursor:"pointer", userSelect:"none" }}>
                           {game.scoreReported ? "✓ Score reported to the County" : "Report score to the County"}
