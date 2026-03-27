@@ -5664,6 +5664,12 @@ export default function App() {
             emoji: "📅"
           },
           {
+            label: "Report Game Score",
+            desc: "Submit the final score after a completed game — must be done within 24 hours",
+            url: "https://forms.office.com/pages/responsepage.aspx?id=vf3EubbvekefszJiSiLNcOoWxPqaa4FBtgle0rAQ6bBURVExSDNDNEFTTkRaMVlRR0lNUDVGOUtFVy4u&route=shorturl",
+            emoji: "📝"
+          },
+          {
             label: "Field & Cage Request",
             desc: "Request field or batting cage time from Forsyth County Parks",
             url: "https://docs.google.com/forms/d/e/1FAIpQLSeCIvqZlGsxonkWpFJ52q_6PWrOl3mmOTjTdiPGcz3ZQGzJDQ/viewform",
@@ -5709,18 +5715,17 @@ export default function App() {
               <div style={S.sectionTitle}>{section.group}</div>
               {section.items.map(function(link, li) {
                 return (
-                  <a key={li} href={link.url} target="_blank" rel="noopener noreferrer"
-                    style={{ display:"flex", alignItems:"flex-start", gap:"12px", padding:"12px 0",
-                      borderBottom: li < section.items.length - 1 ? "1px solid rgba(15,31,61,0.07)" : "none",
-                      textDecoration:"none", color:"inherit" }}>
+                  <div key={li} style={{ display:"flex", alignItems:"flex-start", gap:"12px", padding:"12px 0",
+                      borderBottom: li < section.items.length - 1 ? "1px solid rgba(15,31,61,0.07)" : "none" }}>
                     <span style={{ fontSize:"22px", lineHeight:"1", marginTop:"2px", flexShrink:0 }}>{link.emoji}</span>
                     <div style={{ flex:1, minWidth:0 }}>
                       <div style={{ fontSize:"13px", fontWeight:"700", color:C.navy, marginBottom:"3px" }}>{link.label}</div>
                       <div style={{ fontSize:"11px", color:C.textMuted, lineHeight:"1.5", marginBottom:"5px" }}>{link.desc}</div>
-                      <div style={{ fontSize:"10px", color:C.red, wordBreak:"break-all", opacity:0.8 }}>{link.url}</div>
+                      <div style={{ fontSize:"12px" }}>
+                        <a href={link.url} target="_blank" rel="noopener noreferrer" style={{ color:"#2563eb", textDecoration:"none" }}>🔗 Click here</a>
+                      </div>
                     </div>
-                    <span style={{ fontSize:"14px", color:C.textMuted, flexShrink:0, marginTop:"4px" }}>↗</span>
-                  </a>
+                  </div>
                 );
               })}
             </div>
