@@ -1329,7 +1329,7 @@ export default function App() {
       // schedule to whatever ID it was actually created with.
       // This handles the case where the team was created via UI
       // with a timestamp ID instead of the hardcoded "mudhens-8u".
-      var MH_PATCH_KEY = "migration:mudhens:schedule-patch-v5";
+      var MH_PATCH_KEY = "migration:mudhens:schedule-patch-v6";
       if (loadJSON(MH_PATCH_KEY, null) !== "done") {
         var mhTeam = null;
         for (var mhi = 0; mhi < merged.length; mhi++) {
@@ -1350,7 +1350,7 @@ export default function App() {
                   result:      prev.result      !== undefined ? prev.result      : og.result,
                   ourScore:    prev.ourScore     !== undefined ? prev.ourScore    : og.ourScore,
                   theirScore:  prev.theirScore   !== undefined ? prev.theirScore  : og.theirScore,
-                  battingPerf: prev.battingPerf  && prev.battingPerf.length > 0 ? prev.battingPerf : og.battingPerf
+                  battingPerf: prev.battingPerf  && Object.keys(prev.battingPerf).length > 0 ? prev.battingPerf : og.battingPerf
                 });
               });
               dbSaveTeamData(capturedTeam.id, {
@@ -2410,15 +2410,31 @@ export default function App() {
         alertColor = "rgba(255,255,255,0.45)";
       }
 
+      var statusBadge = null;
+      var statusColor = null;
+      if (teamRoster.length === 0) {
+        statusBadge = "Missing roster";
+        statusColor = "#f5c842";
+      } else if (teamSched.length === 0) {
+        statusBadge = "No schedule";
+        statusColor = "#e67e22";
+      } else {
+        statusBadge = "Ready";
+        statusColor = "#27ae60";
+      }
+
       return (
-        <div style={{ background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:"12px", padding:"14px 16px", marginBottom:"10px" }}>
+        <div onClick={function() { loadTeam(team); }} style={{ background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:"12px", padding:"14px 16px", marginBottom:"10px", cursor:"pointer" }}>
           {/* Row 1: name + age group + Open + ··· */}
           <div style={{ display:"flex", alignItems:"flex-start", gap:"8px", marginBottom:"6px" }}>
             <span style={{ fontSize:"17px", fontWeight:"bold", color:"#f5c842", fontFamily:"Georgia,serif", flex:1 }}>
               {team.name}
             </span>
             {team.ageGroup ? <span style={{ fontSize:"10px", color:"rgba(255,255,255,0.5)", whiteSpace:"nowrap", flexShrink:0 }}>{team.ageGroup}</span> : null}
-            <button onClick={function() { loadTeam(team); }}
+            <span style={{ fontSize:"9px", fontWeight:"bold", letterSpacing:"0.06em", textTransform:"uppercase", color:statusColor, border:"1px solid " + statusColor, borderRadius:"4px", padding:"2px 6px", flexShrink:0, opacity:0.9 }}>
+              {statusBadge === "Ready" ? "🟢" : statusBadge === "Missing roster" ? "🟡" : "🔴"} {statusBadge}
+            </span>
+            <button onClick={function(e) { e.stopPropagation(); loadTeam(team); }}
               style={{ background:"linear-gradient(135deg,#f5c842,#e6a817)", color:"#0f1f3d",
                         border:"none", borderRadius:"8px", padding:"6px 14px", fontSize:"12px",
                         fontWeight:"bold", cursor:"pointer", whiteSpace:"nowrap",
@@ -2465,21 +2481,9 @@ export default function App() {
               )}
             </div>
           </div>
-          {/* Row 2: metadata with icons */}
-          <div style={{ display:"flex", gap:"6px", fontSize:"11px", color:"rgba(255,255,255,0.5)", flexWrap:"wrap", alignItems:"center", marginBottom: alertText ? "8px" : "0" }}>
+          {/* Row 2: metadata */}
+          <div style={{ display:"flex", gap:"8px", fontSize:"11px", color:"rgba(255,255,255,0.5)", flexWrap:"wrap", marginBottom: alertText ? "6px" : "0" }}>
             <span>👥 {teamRoster.length} player{teamRoster.length !== 1 ? "s" : ""}</span>
-            <span style={{ color:"rgba(255,255,255,0.2)" }}>·</span>
-            {teamSched.length > 0
-              ? (played > 0 && remaining > 0
-                  ? <span>⚾ {played} played · {remaining} to go</span>
-                  : played > 0
-                    ? <span>⚾ {played} played</span>
-                    : <span>⚾ {teamSched.length} games</span>)
-              : <span>⚾ No games yet</span>}
-            {played > 0 ? <><span style={{ color:"rgba(255,255,255,0.2)" }}>·</span><span style={{ color:"rgba(255,255,255,0.7)" }}>{wins}W-{losses}L{played-wins-losses > 0 ? "-"+(played-wins-losses)+"T" : ""}</span></> : null}
-            {nextPracDays === 0
-              ? <><span style={{ color:"rgba(255,255,255,0.2)" }}>·</span><span style={{ color:"#f5c842" }}>🏃 Practice today</span></>
-              : nextPracDays !== null ? <><span style={{ color:"rgba(255,255,255,0.2)" }}>·</span><span>🏃 {nextPracDays}d to practice</span></> : null}
           </div>
           {teamRoster.length === 0 && (
             <div style={{ fontSize:"11px", color:"rgba(245,200,66,0.7)", marginTop:"6px", fontStyle:"italic" }}>
@@ -2547,9 +2551,17 @@ export default function App() {
                   })()}
                 </div>
               ) : null}
-              <button onClick={function() { setNewTeam({ name:"", ageGroup:"", sport:"", year: new Date().getFullYear() }); setHomeMode("create"); }} style={{ width:"100%", padding:"13px", borderRadius:"12px", border:"2px dashed rgba(255,255,255,0.2)", background:"transparent", color:"rgba(255,255,255,0.55)", fontSize:"13px", fontFamily:"inherit", cursor:"pointer", marginBottom:"14px" }}>
-                + Create New Team
-              </button>
+              {teams.length === 0 ? (
+                <button onClick={function() { setNewTeam({ name:"", ageGroup:"", sport:"", year: new Date().getFullYear() }); setHomeMode("create"); }}
+                  style={{ width:"100%", padding:"16px", borderRadius:"12px", background:"linear-gradient(135deg,#c8102e,#a00d25)", color:"#fff", border:"none", fontSize:"16px", fontWeight:"bold", fontFamily:"Georgia,serif", cursor:"pointer", marginBottom:"12px", letterSpacing:"0.04em" }}>
+                  ⚾ Create Your First Team
+                </button>
+              ) : (
+                <button onClick={function() { setNewTeam({ name:"", ageGroup:"", sport:"", year: new Date().getFullYear() }); setHomeMode("create"); }}
+                  style={{ width:"100%", padding:"12px", borderRadius:"10px", background:"transparent", color:"rgba(255,255,255,0.7)", border:"1px dashed rgba(255,255,255,0.3)", fontSize:"13px", fontWeight:"bold", fontFamily:"Georgia,serif", cursor:"pointer", marginBottom:"12px", letterSpacing:"0.04em" }}>
+                  + New Team
+                </button>
+              )}
               <div style={{ textAlign:"center" }}>
                 <div style={{ fontSize:"10px", color:"rgba(255,255,255,0.18)" }}>All data saved locally on this device</div>
               </div>
