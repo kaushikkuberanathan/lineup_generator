@@ -2450,12 +2450,14 @@ export default function App() {
               {openMenuTeamId === team.id && (
                 <>
                   <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, zIndex:9998 }}
-                       onClick={function() { setOpenMenuTeamId(null); }} />
-                  <div style={{ position:"absolute", top:"100%", right:0, marginTop:"4px", background:"#1a1a2e", border:"1px solid #333", borderRadius:"6px", boxShadow:"0 4px 12px rgba(0,0,0,0.4)", zIndex:9999, minWidth:"168px", overflow:"hidden" }}>
+                       onClick={function(e) { e.stopPropagation(); setOpenMenuTeamId(null); }} />
+                  <div style={{ position:"absolute", top:"100%", right:0, marginTop:"4px", background:"#1a1a2e", border:"1px solid #333", borderRadius:"6px", boxShadow:"0 4px 12px rgba(0,0,0,0.4)", zIndex:9999, minWidth:"168px", overflow:"hidden" }}
+                       onClick={function(e) { e.stopPropagation(); }}>
                     <div style={{ padding:"10px 16px", cursor:"pointer", color:"rgba(255,255,255,0.85)", fontSize:"13px", fontFamily:"inherit" }}
                          onMouseEnter={function(e) { e.currentTarget.style.background="#2a2a3e"; }}
                          onMouseLeave={function(e) { e.currentTarget.style.background="transparent"; }}
-                         onClick={function(tm) { return function() {
+                         onClick={function(tm) { return function(e) {
+                           e.stopPropagation();
                            setEditingTeam({ id:tm.id, name:tm.name, ageGroup:tm.ageGroup||"", sport:tm.sport||"baseball" });
                            setOpenMenuTeamId(null);
                          }; }(team)}>
@@ -2464,13 +2466,14 @@ export default function App() {
                     <div style={{ padding:"10px 16px", cursor:"pointer", color:"rgba(255,255,255,0.85)", fontSize:"13px", fontFamily:"inherit" }}
                          onMouseEnter={function(e) { e.currentTarget.style.background="#2a2a3e"; }}
                          onMouseLeave={function(e) { e.currentTarget.style.background="transparent"; }}
-                         onClick={function() { exportTeamData(team); setOpenMenuTeamId(null); }}>
+                         onClick={function(e) { e.stopPropagation(); exportTeamData(team); setOpenMenuTeamId(null); }}>
                       ⬇ Download backup
                     </div>
                     <div style={{ padding:"10px 16px", cursor:"pointer", color:"#e05565", fontSize:"13px", fontFamily:"inherit" }}
                          onMouseEnter={function(e) { e.currentTarget.style.background="#2a2a3e"; }}
                          onMouseLeave={function(e) { e.currentTarget.style.background="transparent"; }}
-                         onClick={function() {
+                         onClick={function(e) {
+                           e.stopPropagation();
                            setOpenMenuTeamId(null);
                            if (confirm("Delete \"" + team.name + "\"? This cannot be undone.")) { deleteTeam(team.id); }
                          }}>
