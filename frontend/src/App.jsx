@@ -1373,6 +1373,10 @@ export default function App() {
   var statsSortCol = _statsSortCol[0]; var setStatsSortCol = _statsSortCol[1];
   var _statsSortDir = useState("asc");
   var statsSortDir = _statsSortDir[0]; var setStatsSortDir = _statsSortDir[1];
+  var _summarySortCol = useState("avg");
+  var summarySortCol = _summarySortCol[0]; var setSummarySortCol = _summarySortCol[1];
+  var _summarySortDir = useState("desc");
+  var summarySortDir = _summarySortDir[0]; var setSummarySortDir = _summarySortDir[1];
   var _batDirty = useState(false);
   var battingOrderDirty = _batDirty[0]; var setBattingOrderDirty = _batDirty[1];
   var _batSaved = useState(false);
@@ -2534,7 +2538,7 @@ export default function App() {
     }
 
     function getRosterSeasonStats(playerName) {
-      var ab = 0, h = 0, r = 0, rbi = 0;
+      var ab = 0, h = 0, r = 0, rbi = 0, games = 0;
       for (var gi = 0; gi < schedule.length; gi++) {
         var game = schedule[gi];
         if (!game.result || game.result === '') continue;
@@ -2544,9 +2548,10 @@ export default function App() {
           h   += parseInt(perf.h   || 0, 10);
           r   += parseInt(perf.r   || 0, 10);
           rbi += parseInt(perf.rbi || 0, 10);
+          games += 1;
         }
       }
-      return { ab:ab, h:h, r:r, rbi:rbi };
+      return { ab:ab, h:h, r:r, rbi:rbi, games:games };
     }
 
     return (
@@ -2644,45 +2649,112 @@ export default function App() {
             <div style={S.sectionTitle}>All Players — Quick Summary</div>
             <span style={{ fontSize:"14px", color:"#94a3b8" }}>{summaryOpen ? "▼" : "▶"}</span>
           </div>
-          {summaryOpen && (
-            <div style={{ overflowX:"auto" }}>
-              <table style={{ width:"100%", borderCollapse:"collapse", fontSize:"11px" }}>
-                <thead>
-                  <tr style={{ background:"#f5efe4" }}>
-                    {["Player","Preferred","Avoids","AB","H","R","RBI"].map(function(h) {
-                      return <th key={h} style={{ padding:"7px 10px", textAlign:"left", color:"#6a7a9a", fontSize:"10px", letterSpacing:"0.1em", textTransform:"uppercase", borderBottom:"2px solid rgba(15,31,61,0.08)", whiteSpace:"nowrap" }}>{h}</th>;
+          {summaryOpen && (function() {
+            var summaryRows = sortedRoster.map(function(info) {
+              var stats = getRosterSeasonStats(info.name);
+              var avg = stats.ab > 0 ? stats.h / stats.ab : null;
+              return { info: info, stats: stats, avg: avg };
+            });
+            summaryRows.sort(function(a, b) {
+              if (summarySortCol === "player") {
+                var fa = firstName(a.info.name).toLowerCase();
+                var fb = firstName(b.info.name).toLowerCase();
+                return summarySortDir === "asc" ? fa.localeCompare(fb) : fb.localeCompare(fa);
+              }
+              if (summarySortCol === "avg") {
+                var av = a.avg !== null ? a.avg : -1;
+                var bv = b.avg !== null ? b.avg : -1;
+                return summarySortDir === "asc" ? av - bv : bv - av;
+              }
+              var colMap = { ab:"ab", h:"h", r:"r", rbi:"rbi", g:"games" };
+              var key = colMap[summarySortCol] || "r";
+              var av2 = a.stats[key] || 0;
+              var bv2 = b.stats[key] || 0;
+              return summarySortDir === "asc" ? av2 - bv2 : bv2 - av2;
+            });
+            function toggleSummarySort(col) {
+              if (summarySortCol === col) {
+                setSummarySortDir(summarySortDir === "desc" ? "asc" : "desc");
+              } else {
+                setSummarySortCol(col);
+                setSummarySortDir("desc");
+              }
+            }
+            var sortableCols = [
+              { key:"player", label:"Player" },
+              { key:"preferred", label:"Preferred", sortable:false },
+              { key:"avoids", label:"Avoids", sortable:false },
+              { key:"g", label:"G" },
+              { key:"ab", label:"AB" },
+              { key:"h", label:"H" },
+              { key:"avg", label:"AVG" },
+              { key:"r", label:"R" },
+              { key:"rbi", label:"RBI" }
+            ];
+            return (
+              <div style={{ overflowX:"auto" }}>
+                <table style={{ width:"100%", borderCollapse:"collapse", fontSize:"11px" }}>
+                  <thead>
+                    <tr style={{ background:"#f5efe4" }}>
+                      {sortableCols.map(function(col) {
+                        var isSortable = col.sortable !== false;
+                        var isActive = isSortable && summarySortCol === col.key;
+                        var indicator = isActive ? (summarySortDir === "asc" ? " ↑" : " ↓") : "";
+                        return (
+                          <th key={col.key}
+                            onClick={isSortable ? function(k) { return function() { toggleSummarySort(k); }; }(col.key) : undefined}
+                            style={{
+                              padding:"4px 6px",
+                              textAlign: col.key === "player" ? "left" : "center",
+                              fontSize:"10px",
+                              color: isActive ? C.red : "#6a7a9a",
+                              fontWeight: isActive ? "bold" : "normal",
+                              borderBottom:"2px solid rgba(15,31,61,0.08)",
+                              whiteSpace:"nowrap",
+                              cursor: isSortable ? "pointer" : "default",
+                              userSelect:"none"
+                            }}>
+                            {col.label}{indicator}
+                          </th>
+                        );
+                      })}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {summaryRows.map(function(row, ri) {
+                      var info = row.info;
+                      var stats = row.stats;
+                      var avg = row.avg;
+                      var avgColor = avg === null ? C.textMuted : avg >= 0.300 ? "#27ae60" : avg >= 0.200 ? "#e67e22" : C.text;
+                      return (
+                        <tr key={info.name} style={{ borderBottom:"1px solid rgba(15,31,61,0.05)", background: ri % 2 === 0 ? "transparent" : "rgba(15,31,61,0.03)" }}>
+                          <td style={{ padding:"4px 6px", fontWeight:"600", textAlign:"left" }}>{firstName(info.name)}</td>
+                          <td style={{ padding:"4px 6px", maxWidth:"80px", wordBreak:"break-word", verticalAlign:"top" }}>
+                            {(info.prefs || []).length > 0
+                              ? (info.prefs || []).map(function(pos, idx) {
+                                  return <div key={pos} style={{ fontSize:"9px", color:"rgba(15,31,61,0.6)" }}>{pos}</div>;
+                                })
+                              : <span style={{ fontSize:"9px", color:"#ccc" }}>—</span>}
+                          </td>
+                          <td style={{ padding:"4px 6px", maxWidth:"70px", wordBreak:"break-word", verticalAlign:"top" }}>
+                            {(info.dislikes || []).length > 0
+                              ? <span style={{ fontSize:"9px", color:"rgba(15,31,61,0.6)" }}>{(info.dislikes || []).join(", ")}</span>
+                              : <span style={{ fontSize:"9px", color:"#ccc" }}>—</span>}
+                          </td>
+                          <td style={{ padding:"4px 6px", textAlign:"center" }}>{stats.games ? fmtStat(stats.games) : "—"}</td>
+                          <td style={{ padding:"4px 6px", textAlign:"center" }}>{stats.ab  ? fmtStat(stats.ab)  : "—"}</td>
+                          <td style={{ padding:"4px 6px", textAlign:"center" }}>{stats.h   ? fmtStat(stats.h)   : "—"}</td>
+                          <td style={{ padding:"4px 6px", textAlign:"center", color:avgColor, fontWeight: avg !== null && avg >= 0.300 ? "bold" : "normal" }}>{fmtAvg(stats.h, stats.ab)}</td>
+                          <td style={{ padding:"4px 6px", textAlign:"center" }}>{stats.r   ? fmtStat(stats.r)   : "—"}</td>
+                          <td style={{ padding:"4px 6px", textAlign:"center" }}>{stats.rbi ? fmtStat(stats.rbi) : "—"}</td>
+                        </tr>
+                      );
                     })}
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedRoster.map(function(info) {
-                    var stats = getRosterSeasonStats(info.name);
-                    return (
-                      <tr key={info.name} style={{ borderBottom:"1px solid rgba(15,31,61,0.05)" }}>
-                        <td style={{ padding:"8px 10px", fontWeight:"bold" }}>{firstName(info.name)}</td>
-                        <td style={{ padding:"8px 10px" }}>
-                          {(info.prefs || []).map(function(pos, idx) {
-                            return <span key={pos} style={{ fontSize:"10px", padding:"1px 6px", borderRadius:"4px", background:POS_COLORS[pos]+"cc", color:"#fff", fontWeight:"bold", marginRight:"3px" }}>{idx + 1}.{pos}</span>;
-                          })}
-                          {(!info.prefs || info.prefs.length === 0) ? <span style={{ color:"#ccc", fontSize:"10px" }}>none</span> : null}
-                        </td>
-                        <td style={{ padding:"8px 10px" }}>
-                          {(info.dislikes || []).map(function(pos) {
-                            return <span key={pos} style={{ fontSize:"10px", padding:"1px 5px", borderRadius:"4px", background:"rgba(200,16,46,0.1)", color:"#c8102e", fontWeight:"bold", marginRight:"3px", textDecoration:"line-through" }}>{pos}</span>;
-                          })}
-                          {(!info.dislikes || info.dislikes.length === 0) ? <span style={{ color:"#ccc", fontSize:"10px" }}>none</span> : null}
-                        </td>
-                        <td style={{ padding:"4px 6px", textAlign:"center" }}>{stats.ab  ? fmtStat(stats.ab)  : "—"}</td>
-                        <td style={{ padding:"4px 6px", textAlign:"center" }}>{stats.h   ? fmtStat(stats.h)   : "—"}</td>
-                        <td style={{ padding:"4px 6px", textAlign:"center" }}>{stats.r   ? fmtStat(stats.r)   : "—"}</td>
-                        <td style={{ padding:"4px 6px", textAlign:"center" }}>{stats.rbi ? fmtStat(stats.rbi) : "—"}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
+                  </tbody>
+                </table>
+              </div>
+            );
+          })()}
         </div>
 
         {isHydrating && roster.length === 0 && (
@@ -3887,7 +3959,6 @@ export default function App() {
                       { key:"avg",  label:"AVG",    sortable:true,  align:"center" },
                       { key:"r",    label:"R",      sortable:true,  align:"center" },
                       { key:"rbi",  label:"RBI",    sortable:false, align:"center" },
-                      { key:"bb",   label:"BB",     sortable:false, align:"center" },
                     ].map(function(col) {
                       var isActive = statsSortCol === col.key;
                       var indicator = col.sortable ? (isActive ? (statsSortDir === "asc" ? " ↑" : " ↓") : " ↕") : "";
@@ -3953,7 +4024,6 @@ export default function App() {
                           <td style={{ padding:"6px 8px", textAlign:"center", fontWeight:"bold", color:avgColor }}>{avgStr}</td>
                           <td style={{ padding:"6px 8px", textAlign:"center" }}>{fmtStat(st.r)}</td>
                           <td style={{ padding:"6px 8px", textAlign:"center" }}>{fmtStat(st.rbi)}</td>
-                          <td style={{ padding:"6px 8px", textAlign:"center" }}>{fmtStat(st.bb)}</td>
                         </tr>
                       );
                     });
@@ -5008,6 +5078,23 @@ export default function App() {
                       {game.time ? <span>{game.time}</span> : null}
                       {game.location ? <span>{game.location}</span> : null}
                     </div>
+                    {isPlayed ? (
+                      <div style={{ marginTop:"6px", paddingTop:"6px", borderTop:"1px solid " + C.subtleBorder, display:"flex", alignItems:"center", gap:"8px" }}>
+                        <input
+                          type="checkbox"
+                          id={"county-" + game.id}
+                          checked={!!game.scoreReported}
+                          onChange={function(gid) { return function(e) {
+                            var g2 = {}; for (var k in game) { g2[k] = game[k]; }
+                            g2.scoreReported = e.target.checked;
+                            persistSchedule(schedule.map(function(x) { return x.id === gid ? g2 : x; }));
+                          }; }(game.id)}
+                          style={{ width:"15px", height:"15px", accentColor:C.gold, cursor:"pointer", flexShrink:0 }} />
+                        <label htmlFor={"county-" + game.id} style={{ fontSize:"12px", color: game.scoreReported ? C.text : C.textMuted, cursor:"pointer", userSelect:"none" }}>
+                          {game.scoreReported ? "✓ Score reported to the County" : "Report score to the County"}
+                        </label>
+                      </div>
+                    ) : null}
                     {(function() {
                       var sa = { playerName: game.snackDuty || "", note: game.snackNote || "" };
                       var hasSa = !!sa.playerName;
