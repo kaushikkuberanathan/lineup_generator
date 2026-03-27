@@ -2417,7 +2417,7 @@ export default function App() {
         statusColor = "#f5c842";
       } else if (teamSched.length === 0) {
         statusBadge = "No schedule";
-        statusColor = "#e67e22";
+        statusColor = "rgba(255,255,255,0.4)";
       } else {
         statusBadge = "Ready";
         statusColor = "#27ae60";
@@ -2432,7 +2432,7 @@ export default function App() {
             </span>
             {team.ageGroup ? <span style={{ fontSize:"10px", color:"rgba(255,255,255,0.5)", whiteSpace:"nowrap", flexShrink:0 }}>{team.ageGroup}</span> : null}
             <span style={{ fontSize:"9px", fontWeight:"bold", letterSpacing:"0.06em", textTransform:"uppercase", color:statusColor, border:"1px solid " + statusColor, borderRadius:"4px", padding:"2px 6px", flexShrink:0, opacity:0.9 }}>
-              {statusBadge === "Ready" ? "🟢" : statusBadge === "Missing roster" ? "🟡" : "🔴"} {statusBadge}
+              {statusBadge === "Ready" ? "🟢" : statusBadge === "Missing roster" ? "🟡" : "⚪"} {statusBadge}
             </span>
             <button onClick={function(e) { e.stopPropagation(); loadTeam(team); }}
               style={{ background:"linear-gradient(135deg,#f5c842,#e6a817)", color:"#0f1f3d",
@@ -2484,8 +2484,23 @@ export default function App() {
               )}
             </div>
           </div>
-          {/* Row 2: metadata */}
-          <div style={{ display:"flex", gap:"8px", fontSize:"11px", color:"rgba(255,255,255,0.5)", flexWrap:"wrap", marginBottom: alertText ? "6px" : "0" }}>
+          {/* Row 2: game alert — left strip, now more prominent */}
+          {alertText ? (
+            <div style={{ borderLeft:"3px solid " + alertColor, paddingLeft:"10px", marginBottom:"6px" }}>
+              <div style={{ fontSize:"12px", fontWeight:"700", color:alertColor, marginBottom:"2px" }}>
+                {nextGame && nextGame.days === 0 ? "GAME DAY" : nextGame && nextGame.days === 1 ? "TOMORROW" : nextGame ? (nextGame.days + " days") : ""}
+                {nextGame && nextGame.game.opponent ? " \u00b7 vs " + nextGame.game.opponent : ""}
+              </div>
+              {nextGame && nextGame.game.date ? (
+                <div style={{ fontSize:"11px", color:"rgba(255,255,255,0.5)" }}>
+                  📅 {new Date(nextGame.game.date + "T12:00:00").toLocaleDateString("en-US", { weekday:"short", month:"short", day:"numeric" })}
+                  {nextGame.game.time ? "  \u00b7  " + nextGame.game.time : ""}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+          {/* Row 3: player count — tertiary */}
+          <div style={{ display:"flex", gap:"8px", fontSize:"11px", color:"rgba(255,255,255,0.5)", flexWrap:"wrap", marginTop:"4px", marginBottom:"0" }}>
             <span>👥 {teamRoster.length} player{teamRoster.length !== 1 ? "s" : ""}</span>
           </div>
           {teamRoster.length === 0 && (
@@ -2493,12 +2508,6 @@ export default function App() {
               👆 Tap Open to add your roster
             </div>
           )}
-          {/* Row 3: game alert — left strip */}
-          {alertText ? (
-            <div style={{ borderLeft:"3px solid "+alertColor, paddingLeft:"10px", fontSize:"12px", fontWeight:"600", color:alertColor }}>
-              {alertText}
-            </div>
-          ) : null}
         </div>
       );
     }
@@ -2516,6 +2525,42 @@ export default function App() {
                   {now.toLocaleDateString("en-US", { timeZone:"America/New_York", weekday:"long", month:"long", day:"numeric" })}
                 </div>
               </div>
+              {(function() {
+                var nextGameGlobal = null;
+                var nextGameTeam = null;
+                for (var tgi = 0; tgi < teams.length; tgi++) {
+                  var tgTeam = teams[tgi];
+                  var tgNext = getNextGame(tgTeam);
+                  if (tgNext && (!nextGameGlobal || tgNext.days < nextGameGlobal.days)) {
+                    nextGameGlobal = tgNext;
+                    nextGameTeam = tgTeam;
+                  }
+                }
+                if (!nextGameGlobal || !nextGameTeam) { return null; }
+                return (
+                  <div style={{ background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:"12px", padding:"16px", marginBottom:"16px" }}>
+                    <div style={{ fontSize:"9px", color:"rgba(255,255,255,0.4)", letterSpacing:"0.12em", textTransform:"uppercase", marginBottom:"8px" }}>Next Game</div>
+                    <div style={{ fontSize:"16px", fontWeight:"bold", color:"#f5c842", fontFamily:"Georgia,serif", marginBottom:"4px" }}>
+                      {nextGameTeam.name} vs {nextGameGlobal.game.opponent}
+                    </div>
+                    <div style={{ fontSize:"12px", color:"rgba(255,255,255,0.6)", marginBottom:"2px" }}>
+                      📅 {new Date(nextGameGlobal.game.date + "T12:00:00").toLocaleDateString("en-US", { weekday:"short", month:"short", day:"numeric" })}
+                      {nextGameGlobal.game.time ? "  \u00b7  " + nextGameGlobal.game.time : ""}
+                    </div>
+                    <div style={{ fontSize:"12px", color: nextGameGlobal.days === 0 ? "#c8102e" : nextGameGlobal.days === 1 ? "#f5c842" : "rgba(255,255,255,0.5)", marginBottom:"12px" }}>
+                      ⏱ {nextGameGlobal.days === 0 ? "TODAY" : nextGameGlobal.days === 1 ? "Tomorrow" : nextGameGlobal.days + " days away"}
+                    </div>
+                    <button
+                      onClick={function(ngt, ngg) { return function() {
+                        loadTeam(ngt);
+                        setTimeout(function() { setPrimaryTab("gameday"); setGameDayTab("defense"); setTimeout(generateLineup, 100); }, 300);
+                      }; }(nextGameTeam, nextGameGlobal)}
+                      style={{ background:"linear-gradient(135deg,#f5c842,#e6a817)", color:"#0f1f3d", border:"none", borderRadius:"8px", padding:"8px 16px", fontSize:"12px", fontWeight:"bold", cursor:"pointer", width:"100%" }}>
+                      ⚡ Generate Lineup for {nextGameTeam.name}
+                    </button>
+                  </div>
+                );
+              })()}
               {teams.length > 0 ? (
                 <div style={{ marginBottom:"4px" }}>
                   <div style={{ fontSize:"10px", color:"rgba(255,255,255,0.35)", letterSpacing:"0.15em", textTransform:"uppercase", marginBottom:"8px", textAlign:"center" }}>Your Teams</div>
@@ -2561,7 +2606,7 @@ export default function App() {
                 </button>
               ) : (
                 <button onClick={function() { setNewTeam({ name:"", ageGroup:"", sport:"", year: new Date().getFullYear() }); setHomeMode("create"); }}
-                  style={{ width:"100%", padding:"12px", borderRadius:"10px", background:"transparent", color:"rgba(255,255,255,0.7)", border:"1px dashed rgba(255,255,255,0.3)", fontSize:"13px", fontWeight:"bold", fontFamily:"Georgia,serif", cursor:"pointer", marginBottom:"12px", letterSpacing:"0.04em" }}>
+                  style={{ width:"100%", padding:"10px", borderRadius:"10px", background:"rgba(255,255,255,0.06)", color:"rgba(255,255,255,0.8)", border:"1px solid rgba(255,255,255,0.2)", fontSize:"13px", fontWeight:"bold", fontFamily:"Georgia,serif", cursor:"pointer", marginBottom:"12px", letterSpacing:"0.04em" }}>
                   + New Team
                 </button>
               )}
