@@ -131,9 +131,19 @@ var DEFAULT_ROSTER = [];
 var _mem = {};
 var SCHEMA_VERSION = 2;
 
-var APP_VERSION = "1.6.0";
+var APP_VERSION = "1.6.1";
 
 var VERSION_HISTORY = [
+  {
+    version: "1.6.1",
+    date: "March 27, 2026",
+    changes: [
+      "Fix: scoreReported flag now preserved across Supabase hydration — no longer resets on team reopen",
+      "UX: Home screen team card — 'Missing Schedule' badge replaces 'Add Schedule'; italic CTA hints for missing roster and schedule",
+      "UX: Home screen — per-team ⚡ Generate Lineup button on every Ready team card with an upcoming game",
+      "Fix: Generate Lineup CTA only shown for Ready teams (roster + schedule both present)"
+    ]
+  },
   {
     version: "1.6.0",
     date: "March 27, 2026",
@@ -2518,8 +2528,10 @@ export default function App() {
             </div>
           )}
           {teamSched.length === 0 && teamRoster.length > 0 && (
-            <div style={{ fontSize:"11px", color:"rgba(255,255,255,0.45)", marginTop:"6px", fontStyle:"italic" }}>
-              👆 Tap Open to add team schedule
+            <div
+              onClick={function(e) { e.stopPropagation(); loadTeam(team); setTimeout(function() { setPrimaryTab("season"); setSeasonTab("schedule"); }, 300); }}
+              style={{ fontSize:"11px", color:"rgba(245,200,66,0.7)", marginTop:"6px", fontStyle:"italic", cursor:"pointer", textDecoration:"underline", textDecorationStyle:"dotted" }}>
+              → Tap to add team schedule
             </div>
           )}
           {statusBadge === "Ready" && nextGame && (
