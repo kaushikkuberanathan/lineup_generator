@@ -1,6 +1,6 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: March 27, 2026 (v1.6.1)
+> Last updated: March 27, 2026 (v1.6.2)
 > MVP launched: March 24, 2026
 
 ---
@@ -48,6 +48,12 @@
 - Export / Import backup (JSON)
 - 10-player field configuration: LC + RC replace CF in outfield; 1 bench slot per inning (schema v2, migration auto-remaps saved CF→LC)
 - First-time coach onboarding modal (5-step in-app walkthrough, localStorage completion tracking, always re-accessible via "Getting Started" button in Roster tab)
+
+### v1.6.2 — March 27, 2026
+#### Home Screen Icon Cleanup
+- UX: Status badges use 6px CSS colored circles instead of emoji dots (product-grade look)
+- UX: Team card game alert date uses ▸ symbol instead of 📅 emoji
+- UX: Per-card Generate Lineup button — removed ⚡ emoji prefix
 
 ### v1.6.1 — March 27, 2026
 #### Home Screen Polish + scoreReported Persistence Fix

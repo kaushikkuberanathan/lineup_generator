@@ -222,6 +222,11 @@ backend/
 
 ## Version History
 
+### v1.6.2 — March 27, 2026
+- UX: Status badges use 6px CSS colored circles instead of emoji dots
+- UX: Team card alert date uses ▸ symbol instead of 📅 emoji
+- UX: Per-card Generate Lineup button — removed ⚡ emoji prefix
+
 ### v1.6.1 — March 27, 2026
 - Fix: scoreReported flag preserved across Supabase hydration — no longer resets on team reopen
 - UX: Home screen team card — "Missing Schedule" badge + italic CTA hints for missing roster/schedule

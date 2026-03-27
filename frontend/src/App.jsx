@@ -131,9 +131,18 @@ var DEFAULT_ROSTER = [];
 var _mem = {};
 var SCHEMA_VERSION = 2;
 
-var APP_VERSION = "1.6.1";
+var APP_VERSION = "1.6.2";
 
 var VERSION_HISTORY = [
+  {
+    version: "1.6.2",
+    date: "March 27, 2026",
+    changes: [
+      "UX: Status badges now use 6px CSS colored circles instead of emoji dots (🟢🟡⚪)",
+      "UX: Team card game alert date uses ▸ symbol instead of 📅 emoji",
+      "UX: Per-card Generate Lineup button — removed ⚡ emoji prefix"
+    ]
+  },
   {
     version: "1.6.1",
     date: "March 27, 2026",
@@ -3709,6 +3718,18 @@ export default function App() {
     var innArr = [];
     for (var i = 0; i < innings; i++) { innArr.push(i); }
 
+    // Per-inning completion: all 10 field positions filled + at least 1 bench
+    var inningComplete = innArr.map(function(i) {
+      var coveredPos = {};
+      var benchCount = 0;
+      for (var pi = 0; pi < players.length; pi++) {
+        var pos = (grid[players[pi]] || [])[i] || "";
+        if (pos === "Bench") { benchCount++; }
+        else if (pos) { coveredPos[pos] = true; }
+      }
+      return Object.keys(coveredPos).length === FIELD_POSITIONS.length && benchCount >= 1;
+    });
+
     return (
       <div>
         {/* ── Finalized badge ───────────────────────────────── */}
@@ -3851,7 +3872,13 @@ export default function App() {
                 <tr style={{ background:"#f5efe4" }}>
                   <th style={{ padding:"8px 12px", textAlign:"left", fontSize:"10px", color:C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase", borderBottom:"2px solid rgba(15,31,61,0.08)", position:"sticky", left:0, background:"#f5efe4", zIndex:1, minWidth:"90px" }}>Player</th>
                   {innArr.map(function(i) {
-                    return <th key={i} style={{ padding:"8px 10px", textAlign:"center", fontSize:"10px", color:C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase", borderBottom:"2px solid rgba(15,31,61,0.08)", minWidth:"72px" }}>Inn {i+1}</th>;
+                    var done = inningComplete[i];
+                    return (
+                      <th key={i} style={{ padding:"6px 10px", textAlign:"center", fontSize:"10px", color: done ? "#27ae60" : C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase", borderBottom:"2px solid " + (done ? "rgba(39,174,96,0.35)" : "rgba(15,31,61,0.08)"), minWidth:"72px", background: done ? "rgba(39,174,96,0.07)" : "transparent" }}>
+                        Inn {i+1}
+                        {done ? <div style={{ fontSize:"11px", lineHeight:"1", marginTop:"2px", color:"#27ae60" }}>✓</div> : null}
+                      </th>
+                    );
                   })}
                 </tr>
               </thead>
@@ -3897,7 +3924,13 @@ export default function App() {
                 <tr style={{ background:"#f5efe4" }}>
                   <th style={{ padding:"8px 12px", textAlign:"left", fontSize:"10px", color:C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase", borderBottom:"2px solid rgba(15,31,61,0.08)", position:"sticky", left:0, background:"#f5efe4", zIndex:1, minWidth:"90px" }}>Position</th>
                   {innArr.map(function(i) {
-                    return <th key={i} style={{ padding:"8px 10px", textAlign:"center", fontSize:"10px", color:C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase", borderBottom:"2px solid rgba(15,31,61,0.08)", minWidth:"90px" }}>Inn {i+1}</th>;
+                    var done = inningComplete[i];
+                    return (
+                      <th key={i} style={{ padding:"6px 10px", textAlign:"center", fontSize:"10px", color: done ? "#27ae60" : C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase", borderBottom:"2px solid " + (done ? "rgba(39,174,96,0.35)" : "rgba(15,31,61,0.08)"), minWidth:"90px", background: done ? "rgba(39,174,96,0.07)" : "transparent" }}>
+                        Inn {i+1}
+                        {done ? <div style={{ fontSize:"11px", lineHeight:"1", marginTop:"2px", color:"#27ae60" }}>✓</div> : null}
+                      </th>
+                    );
                   })}
                 </tr>
               </thead>
