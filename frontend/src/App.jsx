@@ -130,9 +130,18 @@ var DEFAULT_ROSTER = [];
 var _mem = {};
 var SCHEMA_VERSION = 2;
 
-var APP_VERSION = "1.5.0";
+var APP_VERSION = "1.4.2";
 
 var VERSION_HISTORY = [
+  {
+    version: "1.4.2",
+    date: "March 26, 2026",
+    changes: [
+      "Fix: Quick Summary season totals now calculate correctly — was string-concatenating instead of summing (AB/H/R/RBI)",
+      "Fix: parseInt applied to all batting stat accumulations in Quick Summary",
+      "Fix: only completed games (result logged) counted toward season totals"
+    ]
+  },
   {
     version: "1.5.0",
     date: "March 27, 2026",
@@ -2528,12 +2537,13 @@ export default function App() {
       var ab = 0, h = 0, r = 0, rbi = 0;
       for (var gi = 0; gi < schedule.length; gi++) {
         var game = schedule[gi];
+        if (!game.result || game.result === '') continue;
         if (game.battingPerf && game.battingPerf[playerName]) {
           var perf = game.battingPerf[playerName];
-          ab  += (perf.ab  || 0);
-          h   += (perf.h   || 0);
-          r   += (perf.r   || 0);
-          rbi += (perf.rbi || 0);
+          ab  += parseInt(perf.ab  || 0, 10);
+          h   += parseInt(perf.h   || 0, 10);
+          r   += parseInt(perf.r   || 0, 10);
+          rbi += parseInt(perf.rbi || 0, 10);
         }
       }
       return { ab:ab, h:h, r:r, rbi:rbi };

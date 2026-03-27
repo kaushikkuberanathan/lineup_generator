@@ -49,6 +49,12 @@
 - 10-player field configuration: LC + RC replace CF in outfield; 1 bench slot per inning (schema v2, migration auto-remaps saved CF→LC)
 - First-time coach onboarding modal (5-step in-app walkthrough, localStorage completion tracking, always re-accessible via "Getting Started" button in Roster tab)
 
+### v1.4.2 — March 26, 2026
+#### Quick Summary Season Stats Bug Fix
+- Fix: Quick Summary AB/H/R/RBI totals now calculate correctly — values were stored as strings from input fields and being string-concatenated instead of summed
+- Fix: parseInt applied to all batting stat accumulations in Quick Summary (`getRosterSeasonStats`)
+- Fix: only completed games (result logged) counted toward season totals, matching Season tab behavior
+
 ### v1.5.0 — March 27, 2026
 #### Coach PIN Protection + Locked Roster + Batting Improvements
 - Feat: coach PIN protection — 4-digit PIN gates Finalize and Unlock; set/change/remove from Game Day → Lineups tab; PIN persisted per team to localStorage + Supabase (`coach_pin` column, migration 007)

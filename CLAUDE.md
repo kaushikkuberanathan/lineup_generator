@@ -222,6 +222,11 @@ backend/
 
 ## Version History
 
+### v1.4.2 — March 26, 2026
+- Fix: Quick Summary season totals now calculate correctly — was string-concatenating instead of summing (AB/H/R/RBI)
+- Fix: parseInt applied to all batting stat accumulations in Quick Summary
+- Fix: only completed games (result logged) counted toward season totals
+
 ### v1.5.0 — March 27, 2026
 - Feat: coach PIN protection — 4-digit PIN gates Finalize and Unlock; set/change/remove from Lineups tab; coach_pin persisted per team to localStorage + Supabase (migration 007_add_coach_pin.sql)
 - Feat: locked roster read-only — all player cards collapse when lineup finalized; expand toggle disabled; Add Player and Remove buttons hidden; attribute editing blocked (pointerEvents: none)
