@@ -1912,6 +1912,9 @@ export default function App() {
         var lastWrite = window._lastLocalWrite || 0;
         if (lastWrite > loadTimestamp) { setIsHydrating(false); return; }
         if (!dbData.roster || dbData.roster.length === 0) { setIsHydrating(false); return; }
+        // Read local schedule before Supabase data overwrites it — needed to preserve
+        // locally-set flags (scoreReported) that may not have synced to Supabase yet
+        var localSchedBeforeHydrate = loadJSON("team:" + team.id + ":schedule", []);
         saveJSON("team:" + team.id + ":roster",    dbData.roster);
         saveJSON("team:" + team.id + ":schedule",  dbData.schedule);
         saveJSON("team:" + team.id + ":practices", dbData.practices);
@@ -1923,8 +1926,14 @@ export default function App() {
         setRoster(migrateRoster(dbData.roster));
         if (dbData.roster && dbData.roster.length > 0) { dbSnapshotRoster(team.id, team.name, dbData.roster, 'app_load'); }
         var migratedDbSchedule = migrateBattingPerf(migrateSchedule(dbData.schedule), migrateRoster(dbData.roster));
-        saveJSON("team:" + team.id + ":schedule", migratedDbSchedule);
-        setSchedule(migratedDbSchedule);
+        // Merge scoreReported from local — wins if local=true and Supabase doesn't have it
+        var mergedSchedule = migratedDbSchedule.map(function(g) {
+          var local = localSchedBeforeHydrate.find(function(x) { return x.id === g.id; });
+          if (local && local.scoreReported && !g.scoreReported) { return Object.assign({}, g, { scoreReported: true }); }
+          return g;
+        });
+        saveJSON("team:" + team.id + ":schedule", mergedSchedule);
+        setSchedule(mergedSchedule);
         setPractices(dbData.practices);
         setBattingOrder(dbData.battingOrder && dbData.battingOrder.length
           ? dbData.battingOrder
