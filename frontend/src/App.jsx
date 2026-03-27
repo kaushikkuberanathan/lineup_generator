@@ -2425,7 +2425,7 @@ export default function App() {
         statusBadge = "Missing roster";
         statusColor = "#f5c842";
       } else if (teamSched.length === 0) {
-        statusBadge = "No schedule";
+        statusBadge = "Add Schedule";
         statusColor = "rgba(255,255,255,0.4)";
       } else {
         statusBadge = "Ready";
@@ -2433,7 +2433,7 @@ export default function App() {
       }
 
       return (
-        <div onClick={function() { loadTeam(team); }} style={{ background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:"12px", padding:"14px 16px", marginBottom:"10px", cursor:"pointer" }}>
+        <div key={team.id} onClick={function() { loadTeam(team); }} style={{ background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:"12px", padding:"14px 16px", marginBottom:"10px", cursor:"pointer" }}>
           {/* Row 1: name + age group + Open + ··· */}
           <div style={{ display:"flex", alignItems:"flex-start", gap:"8px", marginBottom:"6px" }}>
             <span style={{ fontSize:"17px", fontWeight:"bold", color:"#f5c842", fontFamily:"Georgia,serif", flex:1 }}>
@@ -2604,7 +2604,7 @@ export default function App() {
                         </div>
                       );
                     }
-                    return filtered.map(function(t) { return <TeamCard key={t.id} team={t} />; });
+                    return filtered.map(function(t) { return TeamCard({ team: t }); });
                   })()}
                 </div>
               ) : null}
