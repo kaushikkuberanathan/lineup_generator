@@ -2425,7 +2425,7 @@ export default function App() {
         statusBadge = "Missing roster";
         statusColor = "#f5c842";
       } else if (teamSched.length === 0) {
-        statusBadge = "Add Schedule";
+        statusBadge = "Missing Schedule";
         statusColor = "rgba(255,255,255,0.4)";
       } else {
         statusBadge = "Ready";
@@ -2433,9 +2433,9 @@ export default function App() {
       }
 
       return (
-        <div key={team.id} onClick={function() { loadTeam(team); }} style={{ background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:"12px", padding:"14px 16px", marginBottom:"10px", cursor:"pointer" }}>
+        <div key={team.id} onClick={function() { loadTeam(team); }} style={{ background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:"12px", padding:"16px 16px", marginBottom:"12px", cursor:"pointer" }}>
           {/* Row 1: name + age group + Open + ··· */}
-          <div style={{ display:"flex", alignItems:"flex-start", gap:"8px", marginBottom:"6px" }}>
+          <div style={{ display:"flex", alignItems:"flex-start", gap:"10px", marginBottom:"6px" }}>
             <span style={{ fontSize:"17px", fontWeight:"bold", color:"#f5c842", fontFamily:"Georgia,serif", flex:1 }}>
               {team.name}
             </span>
@@ -2495,7 +2495,7 @@ export default function App() {
           </div>
           {/* Row 2: game alert — left strip, now more prominent */}
           {alertText ? (
-            <div style={{ borderLeft:"3px solid " + alertColor, paddingLeft:"10px", marginBottom:"6px" }}>
+            <div style={{ borderLeft:"3px solid " + alertColor, paddingLeft:"10px", marginTop:"6px", marginBottom:"6px" }}>
               <div style={{ fontSize:"12px", fontWeight:"700", color:alertColor, marginBottom:"2px" }}>
                 {nextGame && nextGame.days === 0 ? "GAME DAY" : nextGame && nextGame.days === 1 ? "TOMORROW" : nextGame ? (nextGame.days + " days") : ""}
                 {nextGame && nextGame.game.opponent ? " \u00b7 vs " + nextGame.game.opponent : ""}
@@ -2509,13 +2509,29 @@ export default function App() {
             </div>
           ) : null}
           {/* Row 3: player count — tertiary */}
-          <div style={{ display:"flex", gap:"8px", fontSize:"11px", color:"rgba(255,255,255,0.5)", flexWrap:"wrap", marginTop:"4px", marginBottom:"0" }}>
-            <span>👥 {teamRoster.length} player{teamRoster.length !== 1 ? "s" : ""}</span>
+          <div style={{ display:"flex", gap:"8px", fontSize:"11px", color:"rgba(255,255,255,0.5)", flexWrap:"wrap", marginTop:"6px", marginBottom:"0" }}>
+            <span>{teamRoster.length} player{teamRoster.length !== 1 ? "s" : ""}</span>
           </div>
           {teamRoster.length === 0 && (
             <div style={{ fontSize:"11px", color:"rgba(245,200,66,0.7)", marginTop:"6px", fontStyle:"italic" }}>
-              👆 Tap Open to add your roster
+              → Tap Open to add your roster
             </div>
+          )}
+          {teamSched.length === 0 && teamRoster.length > 0 && (
+            <div style={{ fontSize:"11px", color:"rgba(255,255,255,0.45)", marginTop:"6px", fontStyle:"italic" }}>
+              👆 Tap Open to add team schedule
+            </div>
+          )}
+          {statusBadge === "Ready" && nextGame && (
+            <button
+              onClick={function(e) {
+                e.stopPropagation();
+                loadTeam(team);
+                setTimeout(function() { setPrimaryTab("gameday"); setGameDayTab("defense"); setTimeout(generateLineup, 100); }, 300);
+              }}
+              style={{ marginTop:"10px", background:"linear-gradient(135deg,#f5c842,#e6a817)", color:"#0f1f3d", border:"none", borderRadius:"8px", padding:"8px 16px", fontSize:"12px", fontWeight:"bold", cursor:"pointer", width:"100%", fontFamily:"inherit" }}>
+              ⚡ Generate Lineup
+            </button>
           )}
         </div>
       );
@@ -2523,7 +2539,7 @@ export default function App() {
 
     return (
       <>
-      <div style={{ display:"flex", flexDirection:"column", alignItems:"center", padding:"8px 16px", fontFamily:"Georgia,serif" }}>
+      <div style={{ display:"flex", flexDirection:"column", alignItems:"center", padding:"8px 16px", fontFamily:"Georgia,serif", minHeight:"100%", background:"linear-gradient(180deg,#0f1f3d 0%,#0d1b35 60%,#0b1730 100%)" }}>
 
         <div style={{ width:"100%", maxWidth:"500px" }}>
           {homeMode === "welcome" ? (
@@ -2539,6 +2555,8 @@ export default function App() {
                 var nextGameTeam = null;
                 for (var tgi = 0; tgi < teams.length; tgi++) {
                   var tgTeam = teams[tgi];
+                  var tgRoster = loadJSON("team:" + tgTeam.id + ":roster", []);
+                  if (!tgRoster || tgRoster.length === 0) { continue; }
                   var tgNext = getNextGame(tgTeam);
                   if (tgNext && (!nextGameGlobal || tgNext.days < nextGameGlobal.days)) {
                     nextGameGlobal = tgNext;
@@ -2547,17 +2565,17 @@ export default function App() {
                 }
                 if (!nextGameGlobal || !nextGameTeam) { return null; }
                 return (
-                  <div style={{ background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:"12px", padding:"16px", marginBottom:"16px" }}>
+                  <div style={{ background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:"12px", padding:"16px", marginBottom:"20px" }}>
                     <div style={{ fontSize:"9px", color:"rgba(255,255,255,0.4)", letterSpacing:"0.12em", textTransform:"uppercase", marginBottom:"8px" }}>Next Game</div>
                     <div style={{ fontSize:"16px", fontWeight:"bold", color:"#f5c842", fontFamily:"Georgia,serif", marginBottom:"4px" }}>
                       {nextGameTeam.name} vs {nextGameGlobal.game.opponent}
                     </div>
                     <div style={{ fontSize:"12px", color:"rgba(255,255,255,0.6)", marginBottom:"2px" }}>
-                      📅 {new Date(nextGameGlobal.game.date + "T12:00:00").toLocaleDateString("en-US", { weekday:"short", month:"short", day:"numeric" })}
+                      ▸ {new Date(nextGameGlobal.game.date + "T12:00:00").toLocaleDateString("en-US", { weekday:"short", month:"short", day:"numeric" })}
                       {nextGameGlobal.game.time ? "  \u00b7  " + nextGameGlobal.game.time : ""}
                     </div>
                     <div style={{ fontSize:"12px", color: nextGameGlobal.days === 0 ? "#c8102e" : nextGameGlobal.days === 1 ? "#f5c842" : "rgba(255,255,255,0.5)", marginBottom:"12px" }}>
-                      ⏱ {nextGameGlobal.days === 0 ? "TODAY" : nextGameGlobal.days === 1 ? "Tomorrow" : nextGameGlobal.days + " days away"}
+                      {nextGameGlobal.days === 0 ? "TODAY" : nextGameGlobal.days === 1 ? "Tomorrow" : nextGameGlobal.days + " days away"}
                     </div>
                     <button
                       onClick={function(ngt, ngg) { return function() {
@@ -2565,13 +2583,13 @@ export default function App() {
                         setTimeout(function() { setPrimaryTab("gameday"); setGameDayTab("defense"); setTimeout(generateLineup, 100); }, 300);
                       }; }(nextGameTeam, nextGameGlobal)}
                       style={{ background:"linear-gradient(135deg,#f5c842,#e6a817)", color:"#0f1f3d", border:"none", borderRadius:"8px", padding:"8px 16px", fontSize:"12px", fontWeight:"bold", cursor:"pointer", width:"100%" }}>
-                      ⚡ Generate Lineup for {nextGameTeam.name}
+                      Generate Lineup for {nextGameTeam.name}
                     </button>
                   </div>
                 );
               })()}
               {teams.length > 0 ? (
-                <div style={{ marginBottom:"4px" }}>
+                <div style={{ marginBottom:"8px" }}>
                   <div style={{ fontSize:"10px", color:"rgba(255,255,255,0.35)", letterSpacing:"0.15em", textTransform:"uppercase", marginBottom:"8px", textAlign:"center" }}>Your Teams</div>
                   {teams.length >= 3 ? (
                     <div style={{ position:"relative", marginBottom:"10px" }}>
