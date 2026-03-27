@@ -1456,7 +1456,9 @@ export default function App() {
   var homeMode = _hm[0]; var setHomeMode = _hm[1];
   var _teamSearch = useState("");
   var teamSearch = _teamSearch[0]; var setTeamSearch = _teamSearch[1];
-  var _nt = useState({ name:"", ageGroup:"", year: new Date().getFullYear() });
+  var _nt = useState({ name:"", ageGroup:"", sport:"", year: new Date().getFullYear() });
+  var _editingTeam = useState(null);
+  var editingTeam = _editingTeam[0]; var setEditingTeam = _editingTeam[1];
   var newTeam = _nt[0]; var setNewTeam = _nt[1];
   var _share = useState(false);
   var showShare = _share[0]; var setShowShare = _share[1];
@@ -1926,16 +1928,32 @@ export default function App() {
     var t = {
       id: Date.now() + "",
       name: newTeam.name.trim(),
-      ageGroup: newTeam.ageGroup.trim(),
+      ageGroup: newTeam.ageGroup,
       year: newTeam.year,
-      sport: "baseball"
+      sport: newTeam.sport || "baseball"
     };
     var next = teams.concat([t]);
     setTeams(next);
     saveJSON("app:teams", next);
     track("create_team", { age_group: t.ageGroup || "" });
     dbSync(function() { return dbSaveTeams([t]); });
+    setNewTeam({ name:"", ageGroup:"", sport:"", year: new Date().getFullYear() });
     loadTeam(t);
+  }
+
+  function saveTeamEdits() {
+    if (!editingTeam || !editingTeam.name.trim()) { return; }
+    var updated = teams.map(function(t) {
+      if (t.id !== editingTeam.id) { return t; }
+      return { id:t.id, name:editingTeam.name.trim(), ageGroup:editingTeam.ageGroup, sport:editingTeam.sport || "baseball", year:t.year };
+    });
+    setTeams(updated);
+    saveJSON("app:teams", updated);
+    dbSync(function() {
+      var t = updated.find(function(x) { return x.id === editingTeam.id; });
+      return t ? dbSaveTeams([t]) : Promise.resolve();
+    });
+    setEditingTeam(null);
   }
 
   function deleteTeam(id) {
@@ -2406,6 +2424,15 @@ export default function App() {
                     <div style={{ padding:"10px 16px", cursor:"pointer", color:"rgba(255,255,255,0.85)", fontSize:"13px", fontFamily:"inherit" }}
                          onMouseEnter={function(e) { e.currentTarget.style.background="#2a2a3e"; }}
                          onMouseLeave={function(e) { e.currentTarget.style.background="transparent"; }}
+                         onClick={function(tm) { return function() {
+                           setEditingTeam({ id:tm.id, name:tm.name, ageGroup:tm.ageGroup||"", sport:tm.sport||"baseball" });
+                           setOpenMenuTeamId(null);
+                         }; }(team)}>
+                      ✏ Edit team
+                    </div>
+                    <div style={{ padding:"10px 16px", cursor:"pointer", color:"rgba(255,255,255,0.85)", fontSize:"13px", fontFamily:"inherit" }}
+                         onMouseEnter={function(e) { e.currentTarget.style.background="#2a2a3e"; }}
+                         onMouseLeave={function(e) { e.currentTarget.style.background="transparent"; }}
                          onClick={function() { exportTeamData(team); setOpenMenuTeamId(null); }}>
                       ⬇ Download backup
                     </div>
@@ -2505,7 +2532,7 @@ export default function App() {
                   })()}
                 </div>
               ) : null}
-              <button onClick={function() { setHomeMode("create"); }} style={{ width:"100%", padding:"13px", borderRadius:"12px", border:"2px dashed rgba(255,255,255,0.2)", background:"transparent", color:"rgba(255,255,255,0.55)", fontSize:"13px", fontFamily:"inherit", cursor:"pointer", marginBottom:"14px" }}>
+              <button onClick={function() { setNewTeam({ name:"", ageGroup:"", sport:"", year: new Date().getFullYear() }); setHomeMode("create"); }} style={{ width:"100%", padding:"13px", borderRadius:"12px", border:"2px dashed rgba(255,255,255,0.2)", background:"transparent", color:"rgba(255,255,255,0.55)", fontSize:"13px", fontFamily:"inherit", cursor:"pointer", marginBottom:"14px" }}>
                 + Create New Team
               </button>
               <div style={{ textAlign:"center" }}>
@@ -2515,22 +2542,40 @@ export default function App() {
           ) : (
             <div style={{ background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.15)", borderRadius:"14px", padding:"22px" }}>
               <div style={{ fontSize:"15px", fontWeight:"bold", color:"#fff", marginBottom:"16px" }}>Create a New Team</div>
-              {[["Team Name", "name","text"],["Age Group","ageGroup","text"]].map(function(row) {
-                return (
-                  <div key={row[1]} style={{ marginBottom:"12px" }}>
-                    <div style={{ fontSize:"10px", color:"rgba(255,255,255,0.4)", letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:"5px" }}>{row[0]}</div>
-                    <input type={row[2]} value={newTeam[row[1]]} placeholder={row[0]}
-                      maxLength={row[1] === "name" ? 40 : 20}
-                      onChange={function(field) { return function(e) { var next = {}; for (var k in newTeam) { next[k]=newTeam[k]; } next[field]=e.target.value; setNewTeam(next); }; }(row[1])}
-                      style={{ width:"100%", background:"rgba(255,255,255,0.1)", border:"1px solid rgba(255,255,255,0.18)", borderRadius:"8px", padding:"10px 12px", color:"#fff", fontFamily:"inherit", fontSize:"13px", outline:"none", boxSizing:"border-box" }} />
-                  </div>
-                );
-              })}
+              <div style={{ marginBottom:"12px" }}>
+                <div style={{ fontSize:"10px", color:"rgba(255,255,255,0.4)", letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:"5px" }}>Team Name</div>
+                <input type="text" value={newTeam.name} placeholder="Team Name" maxLength={40} autoFocus
+                  onChange={function(e) { var next = {}; for (var k in newTeam) { next[k]=newTeam[k]; } next.name=e.target.value; setNewTeam(next); }}
+                  style={{ width:"100%", background:"rgba(255,255,255,0.1)", border:"1px solid rgba(255,255,255,0.18)", borderRadius:"8px", padding:"10px 12px", color:"#fff", fontFamily:"inherit", fontSize:"13px", outline:"none", boxSizing:"border-box" }} />
+              </div>
+              <div style={{ display:"flex", gap:"10px", marginBottom:"12px" }}>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:"10px", color:"rgba(255,255,255,0.4)", letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:"5px" }}>Age Group</div>
+                  <select value={newTeam.ageGroup}
+                    onChange={function(e) { var next = {}; for (var k in newTeam) { next[k]=newTeam[k]; } next.ageGroup=e.target.value; setNewTeam(next); }}
+                    style={{ width:"100%", background:"#1a2a4a", border:"1px solid rgba(255,255,255,0.18)", borderRadius:"8px", padding:"10px 12px", color: newTeam.ageGroup ? "#fff" : "rgba(255,255,255,0.35)", fontFamily:"inherit", fontSize:"13px", outline:"none", boxSizing:"border-box", appearance:"none", cursor:"pointer" }}>
+                    <option value="">— Age —</option>
+                    {["5U","6U","7U","8U","9U","10U","11U","12U"].map(function(ag) {
+                      return <option key={ag} value={ag}>{ag}</option>;
+                    })}
+                  </select>
+                </div>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:"10px", color:"rgba(255,255,255,0.4)", letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:"5px" }}>Sport</div>
+                  <select value={newTeam.sport}
+                    onChange={function(e) { var next = {}; for (var k in newTeam) { next[k]=newTeam[k]; } next.sport=e.target.value; setNewTeam(next); }}
+                    style={{ width:"100%", background:"#1a2a4a", border:"1px solid rgba(255,255,255,0.18)", borderRadius:"8px", padding:"10px 12px", color: newTeam.sport ? "#fff" : "rgba(255,255,255,0.35)", fontFamily:"inherit", fontSize:"13px", outline:"none", boxSizing:"border-box", appearance:"none", cursor:"pointer" }}>
+                    <option value="">— Sport —</option>
+                    <option value="baseball">Baseball</option>
+                    <option value="softball">Softball</option>
+                  </select>
+                </div>
+              </div>
               <div style={{ display:"flex", gap:"10px", marginTop:"8px" }}>
                 <button onClick={createTeam} disabled={!newTeam.name.trim()} style={{ flex:1, padding:"12px", borderRadius:"8px", border:"none", cursor:"pointer", fontWeight:"bold", fontSize:"14px", fontFamily:"inherit", background: newTeam.name.trim() ? "linear-gradient(135deg,#c8102e,#9b0c22)" : "rgba(255,255,255,0.1)", color: newTeam.name.trim() ? "#fff" : "rgba(255,255,255,0.3)" }}>
                   Create Team
                 </button>
-                <button onClick={function() { setHomeMode("welcome"); }} style={{ padding:"12px 16px", borderRadius:"8px", border:"1px solid rgba(255,255,255,0.18)", background:"transparent", color:"rgba(255,255,255,0.45)", fontSize:"13px", fontFamily:"inherit", cursor:"pointer" }}>
+                <button onClick={function() { setNewTeam({ name:"", ageGroup:"", sport:"", year: new Date().getFullYear() }); setHomeMode("welcome"); }} style={{ padding:"12px 16px", borderRadius:"8px", border:"1px solid rgba(255,255,255,0.18)", background:"transparent", color:"rgba(255,255,255,0.45)", fontSize:"13px", fontFamily:"inherit", cursor:"pointer" }}>
                   Cancel
                 </button>
               </div>
@@ -6927,7 +6972,7 @@ export default function App() {
         {(primaryTab === "home" || (!activeTeam && primaryTab !== "more")) ? renderHome() : tabContent}
       </div>
       {/* Fixed bottom nav bar */}
-      <div style={{ position:"fixed", bottom:0, left:0, right:0, background:C.navy, borderTop:"2px solid " + C.red, display:"flex", zIndex:1000, paddingBottom:"env(safe-area-inset-bottom, 0px)" }}>
+      <div style={{ position:"fixed", bottom:0, left:0, right:0, background:C.navy, backgroundColor:C.navy, borderTop:"2px solid " + C.red, display:"flex", zIndex:1000, paddingBottom:"env(safe-area-inset-bottom, 0px)", WebkitTransform:"translateZ(0)", transform:"translateZ(0)" }}>
         {PRIMARY_TABS.map(function(t) {
           var active = primaryTab === t.key;
           var disabled = (t.key !== "more" && t.key !== "home" && screen !== "app");
@@ -6939,7 +6984,7 @@ export default function App() {
                 setPrimaryTab(k);
                 if (k !== "more") setScreen("app");
               }; }(t.key, disabled)}
-              style={{ flex:1, padding:"10px 4px 10px", border:"none", fontSize:"9px", fontWeight:"bold", fontFamily:"Georgia,serif", letterSpacing:"0.03em", textTransform:"uppercase", textAlign:"center", lineHeight:1.3, background:"transparent",
+              style={{ flex:1, padding:"10px 4px 10px", border:"none", fontSize:"9px", fontWeight:"bold", fontFamily:"Georgia,serif", letterSpacing:"0.03em", textTransform:"uppercase", textAlign:"center", lineHeight:1.3, background:C.navy,
                 cursor: disabled ? "default" : "pointer",
                 color: active ? C.gold : disabled ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.9)",
                 borderTop: active ? "2px solid " + C.gold : "2px solid transparent",
@@ -7003,6 +7048,52 @@ export default function App() {
         </div>
       )}
       {renderPinModal()}
+      {editingTeam ? (
+        <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, background:"rgba(0,0,0,0.6)", zIndex:10000, display:"flex", alignItems:"center", justifyContent:"center", padding:"20px" }}
+          onClick={function(e) { if (e.target === e.currentTarget) { setEditingTeam(null); } }}>
+          <div style={{ background:"#0f1f3d", border:"1px solid rgba(255,255,255,0.15)", borderRadius:"14px", padding:"24px", width:"100%", maxWidth:"380px" }}>
+            <div style={{ fontSize:"15px", fontWeight:"bold", color:"#fff", marginBottom:"18px", fontFamily:"Georgia,serif" }}>Edit Team</div>
+            <div style={{ marginBottom:"14px" }}>
+              <div style={{ fontSize:"10px", color:"rgba(255,255,255,0.4)", letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:"5px" }}>Team Name</div>
+              <input type="text" value={editingTeam.name} maxLength={40} autoFocus
+                onChange={function(e) { var t={}; for(var k in editingTeam){t[k]=editingTeam[k];} t.name=e.target.value; setEditingTeam(t); }}
+                style={{ width:"100%", background:"rgba(255,255,255,0.1)", border:"1px solid rgba(255,255,255,0.18)", borderRadius:"8px", padding:"10px 12px", color:"#fff", fontFamily:"Georgia,serif", fontSize:"13px", outline:"none", boxSizing:"border-box" }} />
+            </div>
+            <div style={{ display:"flex", gap:"10px", marginBottom:"20px" }}>
+              <div style={{ flex:1 }}>
+                <div style={{ fontSize:"10px", color:"rgba(255,255,255,0.4)", letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:"5px" }}>Age Group</div>
+                <select value={editingTeam.ageGroup}
+                  onChange={function(e) { var t={}; for(var k in editingTeam){t[k]=editingTeam[k];} t.ageGroup=e.target.value; setEditingTeam(t); }}
+                  style={{ width:"100%", background:"#1a2a4a", border:"1px solid rgba(255,255,255,0.18)", borderRadius:"8px", padding:"10px 12px", color: editingTeam.ageGroup ? "#fff" : "rgba(255,255,255,0.35)", fontFamily:"Georgia,serif", fontSize:"13px", outline:"none", boxSizing:"border-box", appearance:"none", cursor:"pointer" }}>
+                  <option value="">— Age —</option>
+                  {["5U","6U","7U","8U","9U","10U","11U","12U"].map(function(ag) {
+                    return <option key={ag} value={ag}>{ag}</option>;
+                  })}
+                </select>
+              </div>
+              <div style={{ flex:1 }}>
+                <div style={{ fontSize:"10px", color:"rgba(255,255,255,0.4)", letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:"5px" }}>Sport</div>
+                <select value={editingTeam.sport}
+                  onChange={function(e) { var t={}; for(var k in editingTeam){t[k]=editingTeam[k];} t.sport=e.target.value; setEditingTeam(t); }}
+                  style={{ width:"100%", background:"#1a2a4a", border:"1px solid rgba(255,255,255,0.18)", borderRadius:"8px", padding:"10px 12px", color:"#fff", fontFamily:"Georgia,serif", fontSize:"13px", outline:"none", boxSizing:"border-box", appearance:"none", cursor:"pointer" }}>
+                  <option value="baseball">Baseball</option>
+                  <option value="softball">Softball</option>
+                </select>
+              </div>
+            </div>
+            <div style={{ display:"flex", gap:"10px" }}>
+              <button onClick={saveTeamEdits} disabled={!editingTeam.name.trim()}
+                style={{ flex:1, padding:"12px", borderRadius:"8px", border:"none", cursor: editingTeam.name.trim() ? "pointer" : "default", fontWeight:"bold", fontSize:"14px", fontFamily:"Georgia,serif", background: editingTeam.name.trim() ? "linear-gradient(135deg,#f5c842,#e6a817)" : "rgba(255,255,255,0.1)", color: editingTeam.name.trim() ? "#0f1f3d" : "rgba(255,255,255,0.3)" }}>
+                Save
+              </button>
+              <button onClick={function() { setEditingTeam(null); }}
+                style={{ padding:"12px 16px", borderRadius:"8px", border:"1px solid rgba(255,255,255,0.18)", background:"transparent", color:"rgba(255,255,255,0.45)", fontSize:"13px", fontFamily:"Georgia,serif", cursor:"pointer" }}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
