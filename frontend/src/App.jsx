@@ -4422,13 +4422,50 @@ export default function App() {
                 💾 Save Order
               </button>
             ) : null}
-            <button style={S.btn("gold")} onClick={suggestOrder}>Suggest Order</button>
+            <button style={{ ...S.btn(lineupLocked ? "ghost" : "gold"), opacity: lineupLocked ? 0.4 : 1, cursor: lineupLocked ? "default" : "pointer" }} onClick={suggestOrder} disabled={lineupLocked}>Suggest Order</button>
           </div>
         </div>
 
         {hasAnyStats ? (
           <div style={{ ...S.card, padding:"12px 14px", marginBottom:"14px", background:"rgba(15,31,61,0.03)", border:"1px solid rgba(15,31,61,0.1)" }}>
-            <div style={{ fontSize:"10px", color:C.textMuted, marginBottom:"10px", textTransform:"uppercase", letterSpacing:"0.1em" }}>Season Batting Stats</div>
+            <div style={{ fontSize:"10px", color:C.textMuted, marginBottom:"8px", textTransform:"uppercase", letterSpacing:"0.1em" }}>Season Batting Stats</div>
+            {(function() {
+              var tg = 0, tab = 0, th = 0, tr = 0, trbi = 0;
+              var keys = Object.keys(seasonStats);
+              for (var ki = 0; ki < keys.length; ki++) {
+                var st = seasonStats[keys[ki]];
+                if ((st.games || 0) > tg) tg = st.games || 0;
+                tab  += parseInt(st.ab  || 0, 10);
+                th   += parseInt(st.h   || 0, 10);
+                tr   += parseInt(st.r   || 0, 10);
+                trbi += parseInt(st.rbi || 0, 10);
+              }
+              var teamAvgStr = tab > 0 ? fmtAvg(th, tab) : "---";
+              var teamAvgNum = tab > 0 ? th / tab : null;
+              var avgColor = teamAvgNum !== null && teamAvgNum >= 0.300 ? C.win : teamAvgNum !== null && teamAvgNum >= 0.200 ? "#d4a017" : C.textMuted;
+              var divider = <div style={{ width:"1px", height:"28px", background:C.border, margin:"0 4px" }} />;
+              var statCell = function(label, val, color) {
+                return (
+                  <div style={{ display:"flex", flexDirection:"column", alignItems:"center", minWidth:"40px" }}>
+                    <div style={{ fontSize:"15px", fontWeight:"bold", color: color || C.navy }}>{val}</div>
+                    <div style={{ fontSize:"9px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.08em" }}>{label}</div>
+                  </div>
+                );
+              };
+              return (
+                <div style={{ display:"flex", alignItems:"center", background:"rgba(15,31,61,0.05)", borderRadius:"6px",
+                  padding:"8px 12px", marginBottom:"10px", justifyContent:"space-around" }}>
+                  {statCell("G", tg)}
+                  {divider}
+                  {statCell("AB", tab)}
+                  {statCell("H", th)}
+                  {statCell("AVG", teamAvgStr, avgColor)}
+                  {divider}
+                  {statCell("R", tr)}
+                  {statCell("RBI", trbi)}
+                </div>
+              );
+            })()}
             <div style={{ overflowX:"auto" }}>
               <table style={{ width:"100%", borderCollapse:"collapse", fontSize:"12px" }}>
                 <thead>
@@ -7288,7 +7325,9 @@ export default function App() {
           {[6,7].map(function(n) {
             return (
               <button key={n}
-                style={{ ...S.btn(innings === n ? "primary" : "ghost"), padding:"4px 14px", fontSize:"12px" }}
+                disabled={lineupLocked}
+                style={{ ...S.btn(innings === n ? "primary" : "ghost"), padding:"4px 14px", fontSize:"12px",
+                  opacity: lineupLocked ? 0.4 : 1, cursor: lineupLocked ? "default" : "pointer" }}
                 onClick={function(nn) { return function() {
                   persistInnings(nn);
                   setLineupDirty(true);
