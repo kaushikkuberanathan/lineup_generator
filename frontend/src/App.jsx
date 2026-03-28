@@ -2999,24 +2999,6 @@ export default function App() {
             </div>
           </div>
         )}
-        <div style={{ display:"flex", gap:"8px", marginBottom:"16px", alignItems:"center" }}>
-          <span style={{ fontSize:"12px", color:C.textMuted }}>Innings:</span>
-          {[6,7].map(function(n) {
-            return <button key={n} style={{ ...S.btn(innings === n ? "primary" : "ghost"), padding:"5px 14px" }} onClick={function() {
-              persistInnings(n);
-              setLineupDirty(true);
-              var ng = {};
-              for (var pi = 0; pi < players.length; pi++) {
-                var p = players[pi];
-                var existing = grid[p] || [];
-                var row = [];
-                for (var i = 0; i < n; i++) { row.push(existing[i] || ""); }
-                ng[p] = row;
-              }
-              persistGrid(ng);
-            }}>{n}</button>;
-          })}
-        </div>
 
         <div style={{ ...S.card, marginBottom:"14px" }}>
           <div
@@ -7297,6 +7279,33 @@ export default function App() {
             }}>
             Unlock
           </button>
+        </div>
+      ) : null}
+      {primaryTab === "gameday" ? (
+        <div style={{ display:"flex", gap:"6px", alignItems:"center", padding:"6px 16px",
+          background:"rgba(15,31,61,0.03)", borderBottom:"1px solid " + C.border }}>
+          <span style={{ fontSize:"11px", color:C.textMuted, letterSpacing:"0.04em" }}>Innings:</span>
+          {[6,7].map(function(n) {
+            return (
+              <button key={n}
+                style={{ ...S.btn(innings === n ? "primary" : "ghost"), padding:"4px 14px", fontSize:"12px" }}
+                onClick={function(nn) { return function() {
+                  persistInnings(nn);
+                  setLineupDirty(true);
+                  var ng = {};
+                  for (var pi = 0; pi < players.length; pi++) {
+                    var p = players[pi];
+                    var existing = grid[p] || [];
+                    var row = [];
+                    for (var i = 0; i < nn; i++) { row.push(existing[i] || ""); }
+                    ng[p] = row;
+                  }
+                  persistGrid(ng);
+                }; }(n)}>
+                {n}
+              </button>
+            );
+          })}
         </div>
       ) : null}
       {primaryTab === "roster"  && rosterTab === "players" ? renderRoster()  : null}
