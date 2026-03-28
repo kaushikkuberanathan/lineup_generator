@@ -2462,7 +2462,7 @@ export default function App() {
       }
 
       return (
-        <div key={team.id} onClick={function() { loadTeam(team); }} style={{ background:"#ffffff", border:"1px solid rgba(0,0,0,0.06)", borderRadius:"12px", padding:"16px 16px", marginBottom:"12px", cursor:"pointer", boxShadow:"0 2px 8px rgba(0,0,0,0.06)" }}>
+        <div key={team.id} onClick={function() { loadTeam(team); }} style={{ background:"#fafafa", border:"1px solid rgba(0,0,0,0.07)", borderRadius:"10px", padding:"12px 14px", marginBottom:"8px", cursor:"pointer", boxShadow:"none" }}>
           {/* Row 1: name + age group + Open + ··· */}
           <div style={{ display:"flex", alignItems:"flex-start", gap:"10px", marginBottom:"6px" }}>
             <span style={{ fontSize:"17px", fontWeight:"bold", color:"#0f1f3d", fontFamily:"Georgia,serif", flex:1 }}>
@@ -2554,17 +2554,6 @@ export default function App() {
               → Tap to add team schedule
             </div>
           )}
-          {statusBadge === "Ready" && nextGame && (
-            <button
-              onClick={function(e) {
-                e.stopPropagation();
-                loadTeam(team);
-                setTimeout(function() { setPrimaryTab("gameday"); setGameDayTab("defense"); setTimeout(generateLineup, 100); }, 300);
-              }}
-              style={{ marginTop:"10px", background:"linear-gradient(135deg,#f5c842,#e6a817)", color:"#0f1f3d", border:"none", borderRadius:"8px", padding:"8px 16px", fontSize:"12px", fontWeight:"bold", cursor:"pointer", width:"100%", fontFamily:"inherit" }}>
-              Generate Lineup
-            </button>
-          )}
         </div>
       );
     }
@@ -2596,33 +2585,41 @@ export default function App() {
                   }
                 }
                 if (!nextGameGlobal || !nextGameTeam) { return null; }
+                var ngDays = nextGameGlobal.days;
+                var ngAccent = ngDays === 0 ? "#c8102e" : ngDays === 1 ? "#b8860b" : C.navy;
                 return (
-                  <div style={{ background:"#ffffff", border:"1px solid rgba(0,0,0,0.08)", borderRadius:"12px", padding:"16px", marginBottom:"20px", boxShadow:"0 2px 8px rgba(0,0,0,0.06)" }}>
-                    <div style={{ fontSize:"9px", color:"#6b7280", letterSpacing:"0.12em", textTransform:"uppercase", marginBottom:"8px" }}>Next Game</div>
-                    <div style={{ fontSize:"16px", fontWeight:"bold", color:"#0f1f3d", fontFamily:"Georgia,serif", marginBottom:"4px" }}>
+                  <div style={{ background:"linear-gradient(135deg,#0f1f3d 0%,#1a3260 100%)", borderRadius:"14px", padding:"18px 18px 16px", marginBottom:"22px", boxShadow:"0 6px 24px rgba(15,31,61,0.18)", border:"1px solid rgba(255,255,255,0.08)" }}>
+                    {/* Label + urgency badge */}
+                    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"10px" }}>
+                      <div style={{ fontSize:"9px", color:"rgba(255,255,255,0.45)", letterSpacing:"0.18em", textTransform:"uppercase" }}>Next Game</div>
+                      <div style={{ fontSize:"10px", fontWeight:"bold", letterSpacing:"0.08em", textTransform:"uppercase", color: ngDays === 0 ? "#ff6b6b" : ngDays === 1 ? "#f5c842" : "rgba(255,255,255,0.45)" }}>
+                        {ngDays === 0 ? "TODAY" : ngDays === 1 ? "Tomorrow" : ngDays + " days away"}
+                      </div>
+                    </div>
+                    {/* Matchup */}
+                    <div style={{ fontSize:"19px", fontWeight:"bold", color:"#ffffff", fontFamily:"Georgia,serif", lineHeight:1.2, marginBottom:"6px" }}>
                       {nextGameTeam.name} vs {nextGameGlobal.game.opponent}
                     </div>
-                    <div style={{ fontSize:"12px", color:"#6b7280", marginBottom:"2px" }}>
-                      ▸ {new Date(nextGameGlobal.game.date + "T12:00:00").toLocaleDateString("en-US", { weekday:"short", month:"short", day:"numeric" })}
+                    {/* Date + time */}
+                    <div style={{ fontSize:"13px", color:"rgba(255,255,255,0.6)", marginBottom:"16px" }}>
+                      {new Date(nextGameGlobal.game.date + "T12:00:00").toLocaleDateString("en-US", { weekday:"short", month:"short", day:"numeric" })}
                       {nextGameGlobal.game.time ? "  \u00b7  " + nextGameGlobal.game.time : ""}
                     </div>
-                    <div style={{ fontSize:"12px", color: nextGameGlobal.days === 0 ? "#c8102e" : nextGameGlobal.days === 1 ? "#b8860b" : "#6b7280", marginBottom:"12px" }}>
-                      {nextGameGlobal.days === 0 ? "TODAY" : nextGameGlobal.days === 1 ? "Tomorrow" : nextGameGlobal.days + " days away"}
-                    </div>
+                    {/* Primary CTA */}
                     <button
                       onClick={function(ngt, ngg) { return function() {
                         loadTeam(ngt);
                         setTimeout(function() { setPrimaryTab("gameday"); setGameDayTab("defense"); setTimeout(generateLineup, 100); }, 300);
                       }; }(nextGameTeam, nextGameGlobal)}
-                      style={{ background:"linear-gradient(135deg,#f5c842,#e6a817)", color:"#0f1f3d", border:"none", borderRadius:"8px", padding:"8px 16px", fontSize:"12px", fontWeight:"bold", cursor:"pointer", width:"100%" }}>
-                      Generate Lineup for {nextGameTeam.name}
+                      style={{ background:"linear-gradient(135deg,#f5c842,#e6a817)", color:"#0f1f3d", border:"none", borderRadius:"10px", padding:"14px 20px", fontSize:"15px", fontWeight:"bold", cursor:"pointer", width:"100%", fontFamily:"Georgia,serif", letterSpacing:"0.02em", boxShadow:"0 3px 12px rgba(245,200,66,0.35)" }}>
+                      ⚡ Generate Lineup
                     </button>
                   </div>
                 );
               })()}
               {teams.length > 0 ? (
                 <div style={{ marginBottom:"8px" }}>
-                  <div style={{ fontSize:"10px", color:"#9ca3af", letterSpacing:"0.15em", textTransform:"uppercase", marginBottom:"8px", textAlign:"center" }}>Your Teams</div>
+                  <div style={{ fontSize:"9px", color:"#c0c7d0", letterSpacing:"0.15em", textTransform:"uppercase", marginBottom:"6px", paddingLeft:"2px" }}>Your Teams</div>
                   {teams.length >= 3 ? (
                     <div style={{ position:"relative", marginBottom:"10px" }}>
                       <span style={{ position:"absolute", left:"12px", top:"50%", transform:"translateY(-50%)", fontSize:"14px", pointerEvents:"none", opacity:0.4 }}>🔍</span>
@@ -7056,7 +7053,7 @@ export default function App() {
 
   function renderBottomNav() {
     return (
-      <div style={{ flexShrink:0, background:C.navy, borderBottom:"2px solid " + C.red, display:"flex" }}>
+      <div style={{ flexShrink:0, background:C.navy, borderTop:"2px solid " + C.red, display:"flex", paddingBottom:"env(safe-area-inset-bottom, 0px)" }}>
         {PRIMARY_TABS.map(function(t) {
           var active = primaryTab === t.key;
           var disabled = (t.key !== "more" && t.key !== "home" && screen !== "app");
@@ -7068,18 +7065,14 @@ export default function App() {
                 setPrimaryTab(k);
                 if (k !== "more") setScreen("app");
               }; }(t.key, disabled)}
-              style={{ flex:1, padding:"8px 4px", border:"none", fontSize:"9px", fontWeight: active ? "bold" : "600", fontFamily:"Georgia,serif", letterSpacing:"0.03em", textTransform:"uppercase", textAlign:"center", lineHeight:1.3, background:C.navy,
+              style={{ flex:1, padding: isLandscape ? "4px 4px" : "10px 4px", border:"none", fontSize:"9px", fontWeight:"bold", fontFamily:"Georgia,serif", letterSpacing:"0.03em", textTransform:"uppercase", textAlign:"center", lineHeight:1.3, background:C.navy,
                 cursor: disabled ? "default" : "pointer",
-                color: active ? C.gold : disabled ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.7)",
-                borderBottom: active ? "3px solid " + C.gold : "3px solid transparent",
+                color: active ? C.gold : disabled ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.9)",
+                borderTop: active ? "2px solid " + C.gold : "2px solid transparent",
                 opacity: disabled ? 0.4 : 1,
-                marginBottom:"-2px" }}>
-              <div style={{ display:"inline-flex", flexDirection:"column", alignItems:"center",
-                background: active ? "rgba(200,144,46,0.15)" : "transparent",
-                borderRadius:"8px", padding:"3px 10px 2px", minWidth:"44px" }}>
-                <div style={{ fontSize: active ? "20px" : "17px", marginBottom:"3px", transition:"font-size 0.12s" }}>{t.icon}</div>
-                {t.label}
-              </div>
+                marginTop:"-2px" }}>
+              <div style={{ fontSize:"18px", marginBottom:"3px" }}>{t.icon}</div>
+              {t.label}
             </button>
           );
         })}
@@ -7104,19 +7097,12 @@ export default function App() {
             ) : null}
           </div>
         </div>
-        {screen === "app" && activeTeam ? (
-          <button
-            onClick={function() { setScreen("home"); setPrimaryTab("roster"); }}
-            style={{ background:"transparent", border:"1px solid rgba(255,255,255,0.25)", borderRadius:"6px", color:"rgba(255,255,255,0.7)", fontSize:"10px", fontFamily:"Georgia,serif", fontWeight:"bold", letterSpacing:"0.04em", textTransform:"uppercase", padding:"3px 8px", cursor:"pointer", whiteSpace:"nowrap" }}>
-            ← Home
-          </button>
-        ) : null}
       </div>
-      {renderBottomNav()}
       {subTabBar}
-      <div style={S.body}>
+      <div style={Object.assign({}, S.body, isLandscape ? { padding:"8px 20px" } : {})}>
         {(primaryTab === "home" || (!activeTeam && primaryTab !== "more")) ? renderHome() : tabContent}
       </div>
+      {renderBottomNav()}
       {needRefresh && (
         <div style={{
           position: 'fixed',
