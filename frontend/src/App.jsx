@@ -1,5 +1,5 @@
 // v2.1
-import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { jsPDF } from "jspdf";
 import { isSupabaseEnabled, dbSaveTeams, dbDeleteTeam,
          dbLoadTeams, dbLoadTeamData, dbSaveTeamData,
@@ -1177,98 +1177,6 @@ function fmtAvg(h, ab) {
 function fmtStat(val) {
   var n = parseInt(val, 10);
   return isNaN(n) ? '0' : String(n);
-}
-
-// ============================================================
-// CUSTOM SELECT
-// ============================================================
-
-function CustomSelect({ value, onChange, options, placeholder }) {
-  var _open = useState(false);
-  var open = _open[0]; var setOpen = _open[1];
-  var ref = useRef(null);
-
-  useEffect(function() {
-    if (!open) return;
-    function handleClickOutside(e) {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return function() { document.removeEventListener('mousedown', handleClickOutside); };
-  }, [open]);
-
-  var selected = options.find(function(o) { return o.value === value; });
-
-  return (
-    <div ref={ref} style={{ position: 'relative', userSelect: 'none', flex: 1 }}>
-      <div
-        onClick={function() { setOpen(function(o) { return !o; }); }}
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          padding: '10px 12px',
-          borderRadius: '8px',
-          fontSize: '13px',
-          fontFamily: 'inherit',
-          cursor: 'pointer',
-          border: '1px solid rgba(255,255,255,0.18)',
-          background: 'rgba(255,255,255,0.1)',
-          color: selected ? '#ffffff' : 'rgba(255,255,255,0.35)',
-          boxSizing: 'border-box',
-          width: '100%',
-        }}
-      >
-        <span>{selected ? selected.label : placeholder}</span>
-        <span style={{ fontSize: '10px', marginLeft: '6px', color: 'rgba(255,255,255,0.35)' }}>
-          {open ? '▲' : '▼'}
-        </span>
-      </div>
-      {open && (
-        <div style={{
-          position: 'absolute',
-          top: 'calc(100% + 4px)',
-          left: 0,
-          right: 0,
-          borderRadius: '8px',
-          zIndex: 9999,
-          maxHeight: '220px',
-          overflowY: 'auto',
-          border: '1px solid rgba(255,255,255,0.18)',
-          background: '#1a2a4a',
-          boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
-        }}>
-          {options.map(function(opt, i) {
-            var isSelected = opt.value === value;
-            return (
-              <div
-                key={opt.value}
-                onClick={function() { onChange(opt.value); setOpen(false); }}
-                style={{
-                  padding: '10px 14px',
-                  fontSize: '13px',
-                  fontFamily: 'inherit',
-                  cursor: 'pointer',
-                  background: isSelected ? 'rgba(255,255,255,0.15)' : 'transparent',
-                  color: '#ffffff',
-                  fontWeight: isSelected ? '600' : 'normal',
-                  borderBottom: i < options.length - 1 ? '1px solid rgba(255,255,255,0.08)' : 'none',
-                }}
-                onMouseEnter={function(e) {
-                  if (!isSelected) e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
-                }}
-                onMouseLeave={function(e) {
-                  e.currentTarget.style.background = isSelected ? 'rgba(255,255,255,0.15)' : 'transparent';
-                }}
-              >
-                {opt.label}
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
 }
 
 // ============================================================
@@ -2912,21 +2820,24 @@ export default function App() {
               <div style={{ display:"flex", gap:"10px", marginBottom:"12px" }}>
                 <div style={{ flex:1 }}>
                   <div style={{ fontSize:"10px", color:"rgba(255,255,255,0.4)", letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:"5px" }}>Age Group</div>
-                  <CustomSelect
-                    value={newTeam.ageGroup}
-                    onChange={function(v) { var next = {}; for (var k in newTeam) { next[k]=newTeam[k]; } next.ageGroup=v; setNewTeam(next); }}
-                    placeholder="— Age —"
-                    options={["5U","6U","7U","8U","9U","10U","11U","12U"].map(function(ag) { return { value: ag, label: ag }; })}
-                  />
+                  <select value={newTeam.ageGroup}
+                    onChange={function(e) { var next = {}; for (var k in newTeam) { next[k]=newTeam[k]; } next.ageGroup=e.target.value; setNewTeam(next); }}
+                    style={{ width:"100%", background:"#1a2a4a", border:"1px solid rgba(255,255,255,0.18)", borderRadius:"8px", padding:"10px 12px", color: newTeam.ageGroup ? "#fff" : "rgba(255,255,255,0.35)", fontFamily:"inherit", fontSize:"13px", outline:"none", boxSizing:"border-box", appearance:"none", cursor:"pointer" }}>
+                    <option value="">— Age —</option>
+                    {["5U","6U","7U","8U","9U","10U","11U","12U"].map(function(ag) {
+                      return <option key={ag} value={ag}>{ag}</option>;
+                    })}
+                  </select>
                 </div>
                 <div style={{ flex:1 }}>
                   <div style={{ fontSize:"10px", color:"rgba(255,255,255,0.4)", letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:"5px" }}>Sport</div>
-                  <CustomSelect
-                    value={newTeam.sport}
-                    onChange={function(v) { var next = {}; for (var k in newTeam) { next[k]=newTeam[k]; } next.sport=v; setNewTeam(next); }}
-                    placeholder="— Sport —"
-                    options={[{ value:"baseball", label:"Baseball" }, { value:"softball", label:"Softball" }]}
-                  />
+                  <select value={newTeam.sport}
+                    onChange={function(e) { var next = {}; for (var k in newTeam) { next[k]=newTeam[k]; } next.sport=e.target.value; setNewTeam(next); }}
+                    style={{ width:"100%", background:"#1a2a4a", border:"1px solid rgba(255,255,255,0.18)", borderRadius:"8px", padding:"10px 12px", color: newTeam.sport ? "#fff" : "rgba(255,255,255,0.35)", fontFamily:"inherit", fontSize:"13px", outline:"none", boxSizing:"border-box", appearance:"none", cursor:"pointer" }}>
+                    <option value="">— Sport —</option>
+                    <option value="baseball">Baseball</option>
+                    <option value="softball">Softball</option>
+                  </select>
                 </div>
               </div>
               <div style={{ display:"flex", gap:"10px", marginTop:"8px" }}>
@@ -3967,26 +3878,6 @@ export default function App() {
     return (
       <div>
         {/* ── Finalized badge ───────────────────────────────── */}
-        {lineupLocked ? (
-          <div style={{ display:"flex", alignItems:"center", gap:"10px", padding:"10px 16px", borderRadius:"10px",
-            background:"rgba(39,174,96,0.08)", border:"2px solid rgba(39,174,96,0.3)", marginBottom:"12px" }}>
-            <span style={{ fontSize:"18px" }}>🔒</span>
-            <div style={{ flex:1 }}>
-              <div style={{ fontWeight:"bold", fontSize:"13px", color:C.win }}>Lineup Finalized</div>
-              <div style={{ fontSize:"11px", color:C.textMuted }}>Editing is locked. Unlock to make changes.</div>
-            </div>
-            <button style={{ ...S.btn("ghost"), fontSize:"11px", color:C.win, border:"1px solid rgba(39,174,96,0.4)" }}
-              onClick={function() {
-                if (coachPin) {
-                  setPinModal("unlock"); setPinInput(""); setPinError("");
-                } else {
-                  persistLineupLocked(false);
-                }
-              }}>
-              Unlock
-            </button>
-          </div>
-        ) : null}
 
         <div style={{ display:"flex", gap:"8px", marginBottom:"14px", flexWrap:"wrap", alignItems:"center" }}>
           {!lineupLocked ? (
@@ -7389,6 +7280,23 @@ export default function App() {
         <div style={{ padding:"5px 16px", background:"rgba(15,31,61,0.04)", borderBottom:"1px solid " + C.border,
           fontSize:"11px", color:C.textMuted, letterSpacing:"0.05em", fontWeight:"600" }}>
           {contextLabel}
+        </div>
+      ) : null}
+      {primaryTab === "gameday" && lineupLocked ? (
+        <div style={{ display:"flex", alignItems:"center", gap:"10px", padding:"10px 16px",
+          background:"rgba(39,174,96,0.08)", borderBottom:"2px solid rgba(39,174,96,0.3)" }}>
+          <span style={{ fontSize:"18px" }}>🔒</span>
+          <div style={{ flex:1 }}>
+            <div style={{ fontWeight:"bold", fontSize:"13px", color:C.win }}>Lineup Finalized</div>
+            <div style={{ fontSize:"11px", color:C.textMuted }}>Editing is locked. Unlock to make changes.</div>
+          </div>
+          <button style={{ ...S.btn("ghost"), fontSize:"11px", color:C.win, border:"1px solid rgba(39,174,96,0.4)" }}
+            onClick={function() {
+              if (coachPin) { setPinModal("unlock"); setPinInput(""); setPinError(""); }
+              else { persistLineupLocked(false); }
+            }}>
+            Unlock
+          </button>
         </div>
       ) : null}
       {primaryTab === "roster"  && rosterTab === "players" ? renderRoster()  : null}
