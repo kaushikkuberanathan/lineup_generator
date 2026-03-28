@@ -1,5 +1,5 @@
 // v2.1
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { jsPDF } from "jspdf";
 import { isSupabaseEnabled, dbSaveTeams, dbDeleteTeam,
          dbLoadTeams, dbLoadTeamData, dbSaveTeamData,
@@ -1177,6 +1177,98 @@ function fmtAvg(h, ab) {
 function fmtStat(val) {
   var n = parseInt(val, 10);
   return isNaN(n) ? '0' : String(n);
+}
+
+// ============================================================
+// CUSTOM SELECT
+// ============================================================
+
+function CustomSelect({ value, onChange, options, placeholder }) {
+  var _open = useState(false);
+  var open = _open[0]; var setOpen = _open[1];
+  var ref = useRef(null);
+
+  useEffect(function() {
+    if (!open) return;
+    function handleClickOutside(e) {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return function() { document.removeEventListener('mousedown', handleClickOutside); };
+  }, [open]);
+
+  var selected = options.find(function(o) { return o.value === value; });
+
+  return (
+    <div ref={ref} style={{ position: 'relative', userSelect: 'none', flex: 1 }}>
+      <div
+        onClick={function() { setOpen(function(o) { return !o; }); }}
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '10px 12px',
+          borderRadius: '8px',
+          fontSize: '13px',
+          fontFamily: 'inherit',
+          cursor: 'pointer',
+          border: '1px solid rgba(255,255,255,0.18)',
+          background: 'rgba(255,255,255,0.1)',
+          color: selected ? '#ffffff' : 'rgba(255,255,255,0.35)',
+          boxSizing: 'border-box',
+          width: '100%',
+        }}
+      >
+        <span>{selected ? selected.label : placeholder}</span>
+        <span style={{ fontSize: '10px', marginLeft: '6px', color: 'rgba(255,255,255,0.35)' }}>
+          {open ? '▲' : '▼'}
+        </span>
+      </div>
+      {open && (
+        <div style={{
+          position: 'absolute',
+          top: 'calc(100% + 4px)',
+          left: 0,
+          right: 0,
+          borderRadius: '8px',
+          zIndex: 9999,
+          maxHeight: '220px',
+          overflowY: 'auto',
+          border: '1px solid rgba(255,255,255,0.18)',
+          background: '#1a2a4a',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+        }}>
+          {options.map(function(opt, i) {
+            var isSelected = opt.value === value;
+            return (
+              <div
+                key={opt.value}
+                onClick={function() { onChange(opt.value); setOpen(false); }}
+                style={{
+                  padding: '10px 14px',
+                  fontSize: '13px',
+                  fontFamily: 'inherit',
+                  cursor: 'pointer',
+                  background: isSelected ? 'rgba(255,255,255,0.15)' : 'transparent',
+                  color: '#ffffff',
+                  fontWeight: isSelected ? '600' : 'normal',
+                  borderBottom: i < options.length - 1 ? '1px solid rgba(255,255,255,0.08)' : 'none',
+                }}
+                onMouseEnter={function(e) {
+                  if (!isSelected) e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
+                }}
+                onMouseLeave={function(e) {
+                  e.currentTarget.style.background = isSelected ? 'rgba(255,255,255,0.15)' : 'transparent';
+                }}
+              >
+                {opt.label}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
 }
 
 // ============================================================
@@ -2820,24 +2912,21 @@ export default function App() {
               <div style={{ display:"flex", gap:"10px", marginBottom:"12px" }}>
                 <div style={{ flex:1 }}>
                   <div style={{ fontSize:"10px", color:"rgba(255,255,255,0.4)", letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:"5px" }}>Age Group</div>
-                  <select value={newTeam.ageGroup}
-                    onChange={function(e) { var next = {}; for (var k in newTeam) { next[k]=newTeam[k]; } next.ageGroup=e.target.value; setNewTeam(next); }}
-                    style={{ width:"100%", background:"#1a2a4a", border:"1px solid rgba(255,255,255,0.18)", borderRadius:"8px", padding:"10px 12px", color: newTeam.ageGroup ? "#fff" : "rgba(255,255,255,0.35)", fontFamily:"inherit", fontSize:"13px", outline:"none", boxSizing:"border-box", appearance:"none", cursor:"pointer" }}>
-                    <option value="">— Age —</option>
-                    {["5U","6U","7U","8U","9U","10U","11U","12U"].map(function(ag) {
-                      return <option key={ag} value={ag}>{ag}</option>;
-                    })}
-                  </select>
+                  <CustomSelect
+                    value={newTeam.ageGroup}
+                    onChange={function(v) { var next = {}; for (var k in newTeam) { next[k]=newTeam[k]; } next.ageGroup=v; setNewTeam(next); }}
+                    placeholder="— Age —"
+                    options={["5U","6U","7U","8U","9U","10U","11U","12U"].map(function(ag) { return { value: ag, label: ag }; })}
+                  />
                 </div>
                 <div style={{ flex:1 }}>
                   <div style={{ fontSize:"10px", color:"rgba(255,255,255,0.4)", letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:"5px" }}>Sport</div>
-                  <select value={newTeam.sport}
-                    onChange={function(e) { var next = {}; for (var k in newTeam) { next[k]=newTeam[k]; } next.sport=e.target.value; setNewTeam(next); }}
-                    style={{ width:"100%", background:"#1a2a4a", border:"1px solid rgba(255,255,255,0.18)", borderRadius:"8px", padding:"10px 12px", color: newTeam.sport ? "#fff" : "rgba(255,255,255,0.35)", fontFamily:"inherit", fontSize:"13px", outline:"none", boxSizing:"border-box", appearance:"none", cursor:"pointer" }}>
-                    <option value="">— Sport —</option>
-                    <option value="baseball">Baseball</option>
-                    <option value="softball">Softball</option>
-                  </select>
+                  <CustomSelect
+                    value={newTeam.sport}
+                    onChange={function(v) { var next = {}; for (var k in newTeam) { next[k]=newTeam[k]; } next.sport=v; setNewTeam(next); }}
+                    placeholder="— Sport —"
+                    options={[{ value:"baseball", label:"Baseball" }, { value:"softball", label:"Softball" }]}
+                  />
                 </div>
               </div>
               <div style={{ display:"flex", gap:"10px", marginTop:"8px" }}>
@@ -4393,6 +4482,17 @@ export default function App() {
       return total;
     }
 
+    function movePlayer(idx, dir) {
+      if (lineupLocked) return;
+      var newIdx = idx + dir;
+      if (newIdx < 0 || newIdx >= battingOrder.length) return;
+      var order = battingOrder.slice();
+      var item = order.splice(idx, 1)[0];
+      order.splice(newIdx, 0, item);
+      persistBatting(order);
+      setBattingOrderDirty(true);
+    }
+
     function suggestOrder() {
       var scored = roster.map(function(r) {
         return { name: r.name, score: getBatScore(r) };
@@ -4544,7 +4644,7 @@ export default function App() {
         ) : null}
 
         <div style={{ fontSize:"11px", color:C.textMuted, marginBottom:"10px" }}>
-          Drag to reorder. Enter game stats in the Schedule tab after each game.
+          Use ▲▼ arrows or drag to reorder. Enter game stats in the Schedule tab after each game.
         </div>
 
         <div>
@@ -4651,6 +4751,33 @@ export default function App() {
                     return <span key={fi} style={{ fontSize:"9px", padding:"1px 4px", borderRadius:"3px", background:POS_COLORS[pos]+"cc", color:"#fff", opacity: fi === 0 ? 1 : 0.6 }}>{pos}</span>;
                   })}
                 </div>
+
+                {!lineupLocked ? (
+                  <div style={{ display:"flex", flexDirection:"column", gap:"2px", flexShrink:0 }}>
+                    <button
+                      onClick={function(i) { return function(e) { e.stopPropagation(); movePlayer(i, -1); }; }(idx)}
+                      disabled={idx === 0}
+                      style={{ width:"26px", height:"26px", border:"1px solid rgba(15,31,61,0.15)", borderRadius:"5px",
+                        background: idx === 0 ? "rgba(15,31,61,0.04)" : "#fff",
+                        color: idx === 0 ? "rgba(15,31,61,0.2)" : C.navy,
+                        cursor: idx === 0 ? "default" : "pointer",
+                        fontSize:"13px", lineHeight:1, padding:0,
+                        display:"flex", alignItems:"center", justifyContent:"center" }}>
+                      ▲
+                    </button>
+                    <button
+                      onClick={function(i) { return function(e) { e.stopPropagation(); movePlayer(i, 1); }; }(idx)}
+                      disabled={idx === battingOrder.length - 1}
+                      style={{ width:"26px", height:"26px", border:"1px solid rgba(15,31,61,0.15)", borderRadius:"5px",
+                        background: idx === battingOrder.length - 1 ? "rgba(15,31,61,0.04)" : "#fff",
+                        color: idx === battingOrder.length - 1 ? "rgba(15,31,61,0.2)" : C.navy,
+                        cursor: idx === battingOrder.length - 1 ? "default" : "pointer",
+                        fontSize:"13px", lineHeight:1, padding:0,
+                        display:"flex", alignItems:"center", justifyContent:"center" }}>
+                      ▼
+                    </button>
+                  </div>
+                ) : null}
 
               </div>
             );
