@@ -4423,6 +4423,26 @@ export default function App() {
               </button>
             ) : null}
             <button style={{ ...S.btn(lineupLocked ? "ghost" : "gold"), opacity: lineupLocked ? 0.4 : 1, cursor: lineupLocked ? "default" : "pointer" }} onClick={suggestOrder} disabled={lineupLocked}>Suggest Order</button>
+            {!lineupLocked ? (
+              <button
+                style={{ ...S.btn("ghost"), color:C.win, border:"1px solid rgba(39,174,96,0.35)" }}
+                onClick={function() {
+                  if (errorCount > 0) {
+                    if (!confirm(errorCount + " issue(s) detected. Finalize anyway?")) { return; }
+                  }
+                  if (coachPin) {
+                    setPinModal("finalize"); setPinInput(""); setPinError("");
+                  } else {
+                    persistLineupLocked(true);
+                    if (deferredPrompt && !localStorage.getItem("pwa_installed")) {
+                      var _snoozed = parseInt(localStorage.getItem("pwa_install_snoozed") || "0");
+                      if (Date.now() >= _snoozed) { setShowInstallBanner(true); }
+                    }
+                  }
+                }}>
+                ✓ Finalize
+              </button>
+            ) : null}
           </div>
         </div>
 
