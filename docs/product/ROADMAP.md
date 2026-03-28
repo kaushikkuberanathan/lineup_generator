@@ -49,6 +49,11 @@
 - 10-player field configuration: LC + RC replace CF in outfield; 1 bench slot per inning (schema v2, migration auto-remaps saved CF→LC)
 - First-time coach onboarding modal (5-step in-app walkthrough, localStorage completion tracking, always re-accessible via "Getting Started" button in Roster tab)
 
+### v1.6.5 — March 28, 2026
+- **Lineup Finalized — all 4 Game Day subtabs**: locked experience now consistent across Defense, Batting, Lineups, and Songs
+- **Lineups tab**: ✓ Finalize button added to print/share toolbar (was only accessible from Defense)
+- **Songs tab (Game Day)**: Edit mode hidden when lineup is locked — read-only Game Day View enforced
+
 ### v1.6.4 — March 27, 2026
 - **Defense tab warnings**: per-warning Accept + Ignore All/Restore All; ignored warnings persisted to localStorage by game date; panel header turns green when all accepted
 - **Sub-tab consistency**: all 4 sub-tab bars now use label-width buttons (flex:0 0 auto); no more 2-tab vs 4-tab size mismatch

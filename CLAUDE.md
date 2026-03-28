@@ -222,6 +222,9 @@ backend/
 
 ## Version History
 
+### v1.6.5 — March 28, 2026
+Lineup Finalized experience consistent across all 4 Game Day subtabs · Lineups tab gains ✓ Finalize button · Songs tab (Game Day) hides Edit mode when locked
+
 ### v1.6.4 — March 27, 2026
 Defense tab accept/ignore warnings (localStorage persistence by game date) · Sub-tab button width standardization · Global content centering (S.body 600px + 480px inner wrapper) · Home cream background fix · Team card 3-zone flex refactor (120px fixed badge, ellipsis truncation) · Hydration merge extended to snackDuty + snackNote · Supabase backfill covers all three merge fields
 

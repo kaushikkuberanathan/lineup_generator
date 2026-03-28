@@ -1447,6 +1447,8 @@ export default function App() {
   var battingOrderDirty = _batDirty[0]; var setBattingOrderDirty = _batDirty[1];
   var _batSaved = useState(false);
   var battingOrderSaved = _batSaved[0]; var setBattingOrderSaved = _batSaved[1];
+  var _preSuggest = useState(null);
+  var preSuggestOrder = _preSuggest[0]; var setPreSuggestOrder = _preSuggest[1];
   var _moreTab = useState("about");
   var moreTab = _moreTab[0]; var setMoreTab = _moreTab[1];
   var _sharePayload = useState(null);
@@ -4390,9 +4392,11 @@ export default function App() {
       order.splice(newIdx, 0, item);
       persistBatting(order);
       setBattingOrderDirty(true);
+      setPreSuggestOrder(null);
     }
 
     function suggestOrder() {
+      setPreSuggestOrder(battingOrder.slice());
       var scored = roster.map(function(r) {
         return { name: r.name, score: getBatScore(r) };
       });
@@ -4443,12 +4447,24 @@ export default function App() {
                   persistBatting(battingOrder);
                   setBattingOrderDirty(false);
                   setBattingOrderSaved(true);
+                  setPreSuggestOrder(null);
                   setTimeout(function() { setBattingOrderSaved(false); }, 2000);
                 }}>
                 💾 Save Order
               </button>
             ) : null}
             <button style={{ ...S.btn(lineupLocked ? "ghost" : "gold"), opacity: lineupLocked ? 0.4 : 1, cursor: lineupLocked ? "default" : "pointer" }} onClick={suggestOrder} disabled={lineupLocked}>Suggest Order</button>
+            {preSuggestOrder ? (
+              <button style={{ ...S.btn("ghost"), fontSize:"11px", padding:"5px 10px", color:"#92620a", border:"1px solid rgba(146,98,10,0.35)" }}
+                onClick={function() {
+                  persistBatting(preSuggestOrder);
+                  setPreSuggestOrder(null);
+                  setBattingOrderDirty(false);
+                  setBattingOrderSaved(false);
+                }}>
+                ↩ Undo
+              </button>
+            ) : null}
             {!lineupLocked ? (
               <button
                 style={{ ...S.btn("ghost"), color:C.win, border:"1px solid rgba(39,174,96,0.35)" }}
