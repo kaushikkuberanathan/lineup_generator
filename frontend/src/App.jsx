@@ -1551,6 +1551,21 @@ export default function App() {
     }
   });
 
+  // Landscape: style-only modifier — same layout, tighter spacing + more grid room
+  var _landscape = useState(
+    typeof window !== "undefined" && window.matchMedia
+      ? window.matchMedia("(orientation: landscape)").matches
+      : false
+  );
+  var isLandscape = _landscape[0]; var setIsLandscape = _landscape[1];
+  if (typeof window !== "undefined" && window.matchMedia && !window._lineupOrientSet) {
+    window._lineupOrientSet = true;
+    var _mql = window.matchMedia("(orientation: landscape)");
+    var _orientFn = function(e) { setIsLandscape(e.matches); };
+    if (_mql.addEventListener) { _mql.addEventListener("change", _orientFn); }
+    else if (_mql.addListener) { _mql.addListener(_orientFn); }
+  }
+
   var _printNotes = useState("");
   var printNotes = _printNotes[0]; var setPrintNotes = _printNotes[1];
   var _songsView = useState("display");
@@ -7018,7 +7033,6 @@ export default function App() {
 
   var tabContent = (
     <div>
-      {subTabBar}
       {contextLabel ? (
         <div style={{ padding:"5px 16px", background:"rgba(15,31,61,0.04)", borderBottom:"1px solid " + C.border,
           fontSize:"11px", color:C.textMuted, letterSpacing:"0.05em", fontWeight:"600" }}>
@@ -7040,9 +7054,9 @@ export default function App() {
     </div>
   );
 
-  function renderTopTabsAlways() {
+  function renderBottomNav() {
     return (
-      <div style={{ flexShrink:0, background:C.navy, borderBottom:"2px solid " + C.red, display:"flex" }}>
+      <div style={{ flexShrink:0, background:C.navy, borderTop:"2px solid " + C.red, display:"flex", paddingBottom:"env(safe-area-inset-bottom, 0px)" }}>
         {PRIMARY_TABS.map(function(t) {
           var active = primaryTab === t.key;
           var disabled = (t.key !== "more" && t.key !== "home" && screen !== "app");
@@ -7057,9 +7071,9 @@ export default function App() {
               style={{ flex:1, padding:"8px 4px", border:"none", fontSize:"9px", fontWeight: active ? "bold" : "600", fontFamily:"Georgia,serif", letterSpacing:"0.03em", textTransform:"uppercase", textAlign:"center", lineHeight:1.3, background:C.navy,
                 cursor: disabled ? "default" : "pointer",
                 color: active ? C.gold : disabled ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.7)",
-                borderBottom: active ? "3px solid " + C.gold : "3px solid transparent",
+                borderTop: active ? "3px solid " + C.gold : "3px solid transparent",
                 opacity: disabled ? 0.4 : 1,
-                marginBottom:"-2px" }}>
+                marginTop:"-2px" }}>
               <div style={{ display:"inline-flex", flexDirection:"column", alignItems:"center",
                 background: active ? "rgba(200,144,46,0.15)" : "transparent",
                 borderRadius:"8px", padding:"3px 10px 2px", minWidth:"44px" }}>
@@ -7076,12 +7090,12 @@ export default function App() {
   // ── Always column: header + top tabs + scrollable content ──────────────
   return (
     <div style={{ height:"100dvh", display:"flex", flexDirection:"column", overflow:"hidden", background: (screen !== "app" || primaryTab === "more") ? "linear-gradient(160deg,#0f1f3d 0%,#1a3260 55%,#2a0a0a 100%)" : C.cream, fontFamily:"Georgia,'Times New Roman',serif", color:C.text }}>
-      <div style={S.header}>
+      <div style={Object.assign({}, S.header, isLandscape ? { padding:"5px 16px" } : {})}>
         <div style={S.logoWrap} onClick={function() { setScreen("home"); setPrimaryTab("home"); setHomeMode("welcome"); }}>
-          <div style={S.logoCircle}>{screen === "app" && primaryTab !== "more" && activeTeam ? activeTeam.name.charAt(0).toUpperCase() : "L"}</div>
+          <div style={Object.assign({}, S.logoCircle, isLandscape ? { width:"30px", height:"30px", fontSize:"13px" } : {})}>{screen === "app" && primaryTab !== "more" && activeTeam ? activeTeam.name.charAt(0).toUpperCase() : "L"}</div>
           <div>
-            <div style={S.logoTitle}>{screen === "app" && primaryTab !== "more" && activeTeam ? activeTeam.name : "Lineup Generator"}</div>
-            <div style={S.logoSub}>{screen === "app" && primaryTab !== "more" && activeTeam ? (activeTeam.ageGroup || "") + " " + (activeTeam.year || "") + "  ⌂" : "Youth Baseball & Softball"}</div>
+            <div style={Object.assign({}, S.logoTitle, isLandscape ? { fontSize:"14px" } : {})}>{screen === "app" && primaryTab !== "more" && activeTeam ? activeTeam.name : "Lineup Generator"}</div>
+            {!isLandscape && <div style={S.logoSub}>{screen === "app" && primaryTab !== "more" && activeTeam ? (activeTeam.ageGroup || "") + " " + (activeTeam.year || "") + "  ⌂" : "Youth Baseball & Softball"}</div>}
             {screen === "app" && primaryTab !== "more" && isSupabaseEnabled ? (
               <div title={syncStatus === "synced" ? "Saved to cloud" : syncStatus === "syncing" ? "Saving..." : syncStatus === "error" ? "Sync error — data saved locally" : ""}
                 style={{ width:"7px", height:"7px", borderRadius:"50%", marginTop:"3px",
@@ -7098,10 +7112,11 @@ export default function App() {
           </button>
         ) : null}
       </div>
-      {renderTopTabsAlways()}
+      {subTabBar}
       <div style={S.body}>
         {(primaryTab === "home" || (!activeTeam && primaryTab !== "more")) ? renderHome() : tabContent}
       </div>
+      {renderBottomNav()}
       {needRefresh && (
         <div style={{
           position: 'fixed',
