@@ -2528,98 +2528,74 @@ export default function App() {
       }
 
       return (
-        <div key={team.id} onClick={function() { loadTeam(team); }} style={{ background:"#fafafa", border:"1px solid rgba(0,0,0,0.07)", borderRadius:"10px", padding:"12px 14px", marginBottom:"8px", cursor:"pointer", boxShadow:"none" }}>
-          {/* Row 1: name + age group + Open + ··· */}
-          <div style={{ display:"flex", alignItems:"flex-start", gap:"10px", marginBottom:"6px" }}>
-            <span style={{ fontSize:"17px", fontWeight:"bold", color:"#0f1f3d", fontFamily:"Georgia,serif", flex:1 }}>
+        <div key={team.id} onClick={function() { loadTeam(team); }} style={{ background:"#fafafa", border:"1px solid rgba(0,0,0,0.07)", borderRadius:"10px", padding:"12px 14px", marginBottom:"8px", cursor:"pointer", boxShadow:"none", display:"flex", alignItems:"center", gap:"8px" }}>
+          {/* ZONE 1 — Team info */}
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontSize:"15px", fontWeight:"bold", color:"#0f1f3d", fontFamily:"Georgia,serif", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
               {team.name}
-            </span>
-            {team.ageGroup ? <span style={{ fontSize:"10px", color:"#6b7280", whiteSpace:"nowrap", flexShrink:0 }}>{team.ageGroup}</span> : null}
-            <span style={{ fontSize:"9px", fontWeight:"bold", letterSpacing:"0.06em", textTransform:"uppercase", color:statusColor, border:"1px solid " + statusColor, borderRadius:"4px", padding:"2px 6px", flexShrink:0, opacity:0.9, display:"inline-flex", alignItems:"center", gap:"4px" }}>
-              <span style={{ display:"inline-block", width:"6px", height:"6px", borderRadius:"50%", background:statusColor, flexShrink:0 }} />
+              {team.ageGroup ? <span style={{ fontSize:"10px", color:"#6b7280", fontWeight:"normal", marginLeft:"6px" }}>{team.ageGroup}</span> : null}
+            </div>
+            <span style={{ display:"inline-block", width:"120px", textAlign:"center", fontSize:"10px", fontWeight:"bold", letterSpacing:"0.06em", textTransform:"uppercase", color:statusColor, border:"1px solid " + statusColor, borderRadius:"4px", padding:"2px 6px", opacity:0.9, marginTop:"4px" }}>
+              <span style={{ display:"inline-block", width:"6px", height:"6px", borderRadius:"50%", background:statusColor, marginRight:"4px", verticalAlign:"middle" }} />
               {statusBadge}
             </span>
-            <button onClick={function(e) { e.stopPropagation(); loadTeam(team); }}
-              style={{ background:"linear-gradient(135deg,#f5c842,#e6a817)", color:"#0f1f3d",
-                        border:"none", borderRadius:"8px", padding:"6px 14px", fontSize:"12px",
-                        fontWeight:"bold", cursor:"pointer", whiteSpace:"nowrap",
-                        flexShrink:0 }}>
-              Open
-            </button>
-            <div style={{ position:"relative", flexShrink:0 }}>
-              <button
-                onClick={function(e) { e.stopPropagation(); setOpenMenuTeamId(openMenuTeamId === team.id ? null : team.id); }}
-                style={{ padding:"8px 10px", borderRadius:"8px", border:"1px solid rgba(0,0,0,0.12)", cursor:"pointer", fontSize:"16px", fontFamily:"inherit", background:"transparent", color:"rgba(0,0,0,0.3)", lineHeight:1, letterSpacing:"1px" }}>
-                ···
-              </button>
-              {openMenuTeamId === team.id && (
-                <>
-                  <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, zIndex:9998 }}
-                       onClick={function(e) { e.stopPropagation(); setOpenMenuTeamId(null); }} />
-                  <div style={{ position:"absolute", top:"100%", right:0, marginTop:"4px", background:"#ffffff", border:"1px solid rgba(0,0,0,0.1)", borderRadius:"6px", boxShadow:"0 4px 12px rgba(0,0,0,0.12)", zIndex:9999, minWidth:"168px", overflow:"hidden" }}
-                       onClick={function(e) { e.stopPropagation(); }}>
-                    <div style={{ padding:"10px 16px", cursor:"pointer", color:"#374151", fontSize:"13px", fontFamily:"inherit" }}
-                         onMouseEnter={function(e) { e.currentTarget.style.background="#f9fafb"; }}
-                         onMouseLeave={function(e) { e.currentTarget.style.background="transparent"; }}
-                         onClick={function(tm) { return function(e) {
-                           e.stopPropagation();
-                           setEditingTeam({ id:tm.id, name:tm.name, ageGroup:tm.ageGroup||"", sport:tm.sport||"baseball" });
-                           setOpenMenuTeamId(null);
-                         }; }(team)}>
-                      ✏ Edit team
-                    </div>
-                    <div style={{ padding:"10px 16px", cursor:"pointer", color:"#374151", fontSize:"13px", fontFamily:"inherit" }}
-                         onMouseEnter={function(e) { e.currentTarget.style.background="#f9fafb"; }}
-                         onMouseLeave={function(e) { e.currentTarget.style.background="transparent"; }}
-                         onClick={function(e) { e.stopPropagation(); exportTeamData(team); setOpenMenuTeamId(null); }}>
-                      ⬇ Download backup
-                    </div>
-                    <div style={{ padding:"10px 16px", cursor:"pointer", color:"#e05565", fontSize:"13px", fontFamily:"inherit" }}
-                         onMouseEnter={function(e) { e.currentTarget.style.background="#f9fafb"; }}
-                         onMouseLeave={function(e) { e.currentTarget.style.background="transparent"; }}
-                         onClick={function(e) {
-                           e.stopPropagation();
-                           setOpenMenuTeamId(null);
-                           if (confirm("Delete \"" + team.name + "\"? This cannot be undone.")) { deleteTeam(team.id); }
-                         }}>
-                      🗑 Delete team
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-          {/* Row 2: game alert — left strip, now more prominent */}
-          {alertText ? (
-            <div style={{ borderLeft:"3px solid " + alertColor, paddingLeft:"10px", marginTop:"6px", marginBottom:"6px" }}>
-              <div style={{ fontSize:"12px", fontWeight:"700", color:alertColor, marginBottom:"2px" }}>
-                {nextGame && nextGame.days === 0 ? "GAME DAY" : nextGame && nextGame.days === 1 ? "TOMORROW" : nextGame ? (nextGame.days + " days") : ""}
-                {nextGame && nextGame.game.opponent ? " \u00b7 vs " + nextGame.game.opponent : ""}
+            {nextGame ? (
+              <div style={{ fontSize:"12px", color:"#6b7280", marginTop:"3px", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+                {nextGame.days === 0 ? "Today" : nextGame.days === 1 ? "Tomorrow" : nextGame.days + " days"}{nextGame.game.opponent ? " \u00b7 vs " + nextGame.game.opponent : ""}
               </div>
-              {nextGame && nextGame.game.date ? (
-                <div style={{ fontSize:"11px", color:"#6b7280" }}>
-                  ▸ {new Date(nextGame.game.date + "T12:00:00").toLocaleDateString("en-US", { weekday:"short", month:"short", day:"numeric" })}
-                  {nextGame.game.time ? "  \u00b7  " + nextGame.game.time : ""}
-                </div>
-              ) : null}
-            </div>
-          ) : null}
-          {/* Row 3: player count — tertiary */}
-          <div style={{ display:"flex", gap:"8px", fontSize:"11px", color:"#6b7280", flexWrap:"wrap", marginTop:"6px", marginBottom:"0" }}>
-            <span>{teamRoster.length} player{teamRoster.length !== 1 ? "s" : ""}</span>
+            ) : null}
           </div>
-          {teamRoster.length === 0 && (
-            <div style={{ fontSize:"11px", color:"#b8860b", marginTop:"6px", fontStyle:"italic" }}>
-              → Tap Open to add your roster
-            </div>
-          )}
-          {teamSched.length === 0 && teamRoster.length > 0 && (
-            <div
-              onClick={function(e) { e.stopPropagation(); loadTeam(team); setTimeout(function() { setPrimaryTab("season"); setSeasonTab("schedule"); }, 300); }}
-              style={{ fontSize:"11px", color:"#b8860b", marginTop:"6px", fontStyle:"italic", cursor:"pointer", textDecoration:"underline", textDecorationStyle:"dotted" }}>
-              → Tap to add team schedule
-            </div>
-          )}
+          {/* ZONE 2 — Open button */}
+          <button onClick={function(e) { e.stopPropagation(); loadTeam(team); }}
+            style={{ background:"linear-gradient(135deg,#f5c842,#e6a817)", color:"#0f1f3d",
+                      border:"none", borderRadius:"8px", padding:"6px 14px", fontSize:"12px",
+                      fontWeight:"bold", cursor:"pointer", whiteSpace:"nowrap",
+                      flex:"none" }}>
+            Open
+          </button>
+          {/* ZONE 3 — Ellipsis */}
+          <div style={{ position:"relative", flex:"none", marginLeft:"4px" }}>
+            <button
+              onClick={function(e) { e.stopPropagation(); setOpenMenuTeamId(openMenuTeamId === team.id ? null : team.id); }}
+              style={{ padding:"8px 10px", borderRadius:"8px", border:"1px solid rgba(0,0,0,0.12)", cursor:"pointer", fontSize:"16px", fontFamily:"inherit", background:"transparent", color:"rgba(0,0,0,0.3)", lineHeight:1, letterSpacing:"1px" }}>
+              ···
+            </button>
+            {openMenuTeamId === team.id && (
+              <>
+                <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, zIndex:9998 }}
+                     onClick={function(e) { e.stopPropagation(); setOpenMenuTeamId(null); }} />
+                <div style={{ position:"absolute", top:"100%", right:0, marginTop:"4px", background:"#ffffff", border:"1px solid rgba(0,0,0,0.1)", borderRadius:"6px", boxShadow:"0 4px 12px rgba(0,0,0,0.12)", zIndex:9999, minWidth:"168px", overflow:"hidden" }}
+                     onClick={function(e) { e.stopPropagation(); }}>
+                  <div style={{ padding:"10px 16px", cursor:"pointer", color:"#374151", fontSize:"13px", fontFamily:"inherit" }}
+                       onMouseEnter={function(e) { e.currentTarget.style.background="#f9fafb"; }}
+                       onMouseLeave={function(e) { e.currentTarget.style.background="transparent"; }}
+                       onClick={function(tm) { return function(e) {
+                         e.stopPropagation();
+                         setEditingTeam({ id:tm.id, name:tm.name, ageGroup:tm.ageGroup||"", sport:tm.sport||"baseball" });
+                         setOpenMenuTeamId(null);
+                       }; }(team)}>
+                    ✏ Edit team
+                  </div>
+                  <div style={{ padding:"10px 16px", cursor:"pointer", color:"#374151", fontSize:"13px", fontFamily:"inherit" }}
+                       onMouseEnter={function(e) { e.currentTarget.style.background="#f9fafb"; }}
+                       onMouseLeave={function(e) { e.currentTarget.style.background="transparent"; }}
+                       onClick={function(e) { e.stopPropagation(); exportTeamData(team); setOpenMenuTeamId(null); }}>
+                    ⬇ Download backup
+                  </div>
+                  <div style={{ padding:"10px 16px", cursor:"pointer", color:"#e05565", fontSize:"13px", fontFamily:"inherit" }}
+                       onMouseEnter={function(e) { e.currentTarget.style.background="#f9fafb"; }}
+                       onMouseLeave={function(e) { e.currentTarget.style.background="transparent"; }}
+                       onClick={function(e) {
+                         e.stopPropagation();
+                         setOpenMenuTeamId(null);
+                         if (confirm("Delete \"" + team.name + "\"? This cannot be undone.")) { deleteTeam(team.id); }
+                       }}>
+                    🗑 Delete team
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       );
     }
