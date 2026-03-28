@@ -2009,25 +2009,30 @@ export default function App() {
         setRoster(migrateRoster(dbData.roster));
         if (dbData.roster && dbData.roster.length > 0) { dbSnapshotRoster(team.id, team.name, dbData.roster, 'app_load'); }
         var migratedDbSchedule = migrateBattingPerf(migrateSchedule(dbData.schedule), migrateRoster(dbData.roster));
-        // Merge scoreReported from local — wins if local=true and Supabase doesn't have it
+        // Merge locally-set fields that Supabase may not have (set during hydration window)
+        var MERGE_FIELDS = ['scoreReported', 'snackDuty', 'snackNote'];
         var mergedSchedule = migratedDbSchedule.map(function(g) {
           var local = localSchedBeforeHydrate.find(function(x) { return x.id === g.id; });
-          if (local && local.scoreReported && !g.scoreReported) { return Object.assign({}, g, { scoreReported: true }); }
-          return g;
+          if (!local) return g;
+          var merged = Object.assign({}, g);
+          MERGE_FIELDS.forEach(function(field) {
+            if (local[field] && !g[field]) merged[field] = local[field];
+          });
+          return merged;
         });
         saveJSON("team:" + team.id + ":schedule", mergedSchedule);
         setSchedule(mergedSchedule);
-        // Backfill Supabase if any scoreReported flags were rescued from localStorage
-        var hasRestoredFlags = mergedSchedule.some(function(g, idx) {
+        // Backfill Supabase if any fields were rescued from localStorage
+        var hasRestoredFields = mergedSchedule.some(function(g, idx) {
           var dbg = migratedDbSchedule[idx];
-          return g.scoreReported && dbg && !dbg.scoreReported;
+          return dbg && MERGE_FIELDS.some(function(f) { return g[f] && !dbg[f]; });
         });
-        if (hasRestoredFlags) {
+        if (hasRestoredFields) {
           dbSaveTeamData(team.id, {
             roster: dbData.roster, schedule: mergedSchedule, practices: dbData.practices,
             battingOrder: dbData.battingOrder, grid: dbData.grid,
             innings: dbData.innings, locked: dbData.locked
-          }).catch(function() {}); // fire-and-forget, same pattern as rest of app
+          }).catch(function() {});
         }
         setPractices(dbData.practices);
         setBattingOrder(dbData.battingOrder && dbData.battingOrder.length
