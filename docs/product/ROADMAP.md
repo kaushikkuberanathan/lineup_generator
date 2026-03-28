@@ -49,6 +49,15 @@
 - 10-player field configuration: LC + RC replace CF in outfield; 1 bench slot per inning (schema v2, migration auto-remaps saved CF→LC)
 - First-time coach onboarding modal (5-step in-app walkthrough, localStorage completion tracking, always re-accessible via "Getting Started" button in Roster tab)
 
+### v1.6.4 — March 27, 2026
+- **Defense tab warnings**: per-warning Accept + Ignore All/Restore All; ignored warnings persisted to localStorage by game date; panel header turns green when all accepted
+- **Sub-tab consistency**: all 4 sub-tab bars now use label-width buttons (flex:0 0 auto); no more 2-tab vs 4-tab size mismatch
+- **Layout centering**: S.body capped at 600px centered; inner content wrapper 480px — fixes left-alignment on all tabs
+- **Home background**: cream background correctly applied to all tabs; dark gradient reserved for More tab only
+- **Team cards**: refactored to single flex row (name zone / Open / Ellipsis); status badge fixed at 120px width; name truncates with ellipsis
+- **Hydration merge**: snackDuty + snackNote now protected from Supabase overwrite during cold-start window
+- **Supabase backfill**: extended to cover all merge fields (scoreReported, snackDuty, snackNote)
+
 ### v1.6.3 — March 27, 2026
 #### Defense Tab — Inning Completion Indicators + Position Lock
 - UX: Defense tab — inning column headers show green ✓ indicator (green text + green border wash) when all 10 field positions + at least 1 bench are filled for that inning

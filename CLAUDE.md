@@ -222,6 +222,9 @@ backend/
 
 ## Version History
 
+### v1.6.4 — March 27, 2026
+Defense tab accept/ignore warnings (localStorage persistence by game date) · Sub-tab button width standardization · Global content centering (S.body 600px + 480px inner wrapper) · Home cream background fix · Team card 3-zone flex refactor (120px fixed badge, ellipsis truncation) · Hydration merge extended to snackDuty + snackNote · Supabase backfill covers all three merge fields
+
 ### v1.6.3 — March 27, 2026
 - UX: Defense tab — inning column headers show green ✓ when all 10 field positions + bench are filled for that inning
 - UX: Defense tab (By Player view) — position dropdown disables already-taken positions per inning; Bench locks after 1 player assigned
