@@ -1053,12 +1053,13 @@ function initGrid(roster, innings) {
 var C = {
   navy: "#0f1f3d", navyLight: "#1a3260", red: "#c8102e", redDark: "#9b0c22",
   gold: "#f5c842", cream: "#fdf6ec", white: "#ffffff", text: "#1a1a2e",
-  textMuted: "#6a7a9a", border: "rgba(15,31,61,0.1)", cardBg: "#ffffff",
+  textMuted: "#6b7280", border: "rgba(0,0,0,0.06)", cardBg: "#ffffff",
   // Field/game colors
   win: "#27ae60", loss: "#c8102e", tie: "#d4a017", canceled: "#7f8c8d",
+  greenField: "#2e7d32",
   // Common UI values referenced inline throughout
-  overlayBg: "rgba(0,0,0,0.5)", subtleBg: "rgba(15,31,61,0.06)",
-  subtleBorder: "rgba(15,31,61,0.08)", subtleText: "rgba(15,31,61,0.3)"
+  overlayBg: "rgba(0,0,0,0.5)", subtleBg: "#f8fafc",
+  subtleBorder: "rgba(0,0,0,0.04)", subtleText: "#9ca3af"
 };
 
 function ss(obj) { return obj; }
@@ -1550,22 +1551,6 @@ export default function App() {
     }
   });
 
-  // Orientation detection — drives layout mode
-  var _landscape = useState(
-    typeof window !== "undefined" && window.matchMedia
-      ? window.matchMedia("(orientation: landscape)").matches
-      : false
-  );
-  var isLandscape = _landscape[0]; var setIsLandscape = _landscape[1];
-
-  // Set up orientation listener once using a module-level guard (avoids useEffect dependency)
-  if (typeof window !== "undefined" && window.matchMedia && !window._lineupOrientSet) {
-    window._lineupOrientSet = true;
-    var _mql = window.matchMedia("(orientation: landscape)");
-    var _orientFn = function(e) { setIsLandscape(e.matches); };
-    if (_mql.addEventListener) { _mql.addEventListener("change", _orientFn); }
-    else if (_mql.addListener) { _mql.addListener(_orientFn); }
-  }
   var _printNotes = useState("");
   var printNotes = _printNotes[0]; var setPrintNotes = _printNotes[1];
   var _songsView = useState("display");
@@ -1582,6 +1567,8 @@ export default function App() {
   var resultImport = _resultImport[0]; var setResultImport = _resultImport[1];
   var _gridView = useState("player");
   var gridView = _gridView[0]; var setGridView = _gridView[1];
+  var _issuesPanelOpen = useState(false);
+  var issuesPanelOpen = _issuesPanelOpen[0]; var setIssuesPanelOpen = _issuesPanelOpen[1];
   var _diamondInning = useState(null);
   var diamondInning = _diamondInning[0]; var setDiamondInning = _diamondInning[1];
   var _showDiamond = useState(false);
@@ -2439,34 +2426,34 @@ export default function App() {
         alertColor = "#c8102e";
       } else if (nextGame && nextGame.days === 1) {
         alertText = "Game TOMORROW \u2022 vs " + nextGame.game.opponent;
-        alertColor = "#f5c842";
+        alertColor = "#b8860b";
       } else if (nextGame) {
         var gameDate = new Date(nextGame.game.date + "T12:00:00").toLocaleDateString("en-US", { weekday:"short", month:"short", day:"numeric" });
         alertText = "Next game " + gameDate + " \u2022 vs " + nextGame.game.opponent;
-        alertColor = "rgba(255,255,255,0.45)";
+        alertColor = "#6b7280";
       }
 
       var statusBadge = null;
       var statusColor = null;
       if (teamRoster.length === 0) {
         statusBadge = "Missing roster";
-        statusColor = "#f5c842";
+        statusColor = "#b8860b";
       } else if (teamSched.length === 0) {
         statusBadge = "Missing Schedule";
-        statusColor = "rgba(255,255,255,0.4)";
+        statusColor = "#6b7280";
       } else {
         statusBadge = "Ready";
-        statusColor = "#27ae60";
+        statusColor = "#2e7d32";
       }
 
       return (
-        <div key={team.id} onClick={function() { loadTeam(team); }} style={{ background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:"12px", padding:"16px 16px", marginBottom:"12px", cursor:"pointer" }}>
+        <div key={team.id} onClick={function() { loadTeam(team); }} style={{ background:"#ffffff", border:"1px solid rgba(0,0,0,0.06)", borderRadius:"12px", padding:"16px 16px", marginBottom:"12px", cursor:"pointer", boxShadow:"0 2px 8px rgba(0,0,0,0.06)" }}>
           {/* Row 1: name + age group + Open + ··· */}
           <div style={{ display:"flex", alignItems:"flex-start", gap:"10px", marginBottom:"6px" }}>
-            <span style={{ fontSize:"17px", fontWeight:"bold", color:"#f5c842", fontFamily:"Georgia,serif", flex:1 }}>
+            <span style={{ fontSize:"17px", fontWeight:"bold", color:"#0f1f3d", fontFamily:"Georgia,serif", flex:1 }}>
               {team.name}
             </span>
-            {team.ageGroup ? <span style={{ fontSize:"10px", color:"rgba(255,255,255,0.5)", whiteSpace:"nowrap", flexShrink:0 }}>{team.ageGroup}</span> : null}
+            {team.ageGroup ? <span style={{ fontSize:"10px", color:"#6b7280", whiteSpace:"nowrap", flexShrink:0 }}>{team.ageGroup}</span> : null}
             <span style={{ fontSize:"9px", fontWeight:"bold", letterSpacing:"0.06em", textTransform:"uppercase", color:statusColor, border:"1px solid " + statusColor, borderRadius:"4px", padding:"2px 6px", flexShrink:0, opacity:0.9, display:"inline-flex", alignItems:"center", gap:"4px" }}>
               <span style={{ display:"inline-block", width:"6px", height:"6px", borderRadius:"50%", background:statusColor, flexShrink:0 }} />
               {statusBadge}
@@ -2481,17 +2468,17 @@ export default function App() {
             <div style={{ position:"relative", flexShrink:0 }}>
               <button
                 onClick={function(e) { e.stopPropagation(); setOpenMenuTeamId(openMenuTeamId === team.id ? null : team.id); }}
-                style={{ padding:"8px 10px", borderRadius:"8px", border:"1px solid rgba(255,255,255,0.2)", cursor:"pointer", fontSize:"16px", fontFamily:"inherit", background:"transparent", color:"rgba(255,255,255,0.2)", lineHeight:1, letterSpacing:"1px" }}>
+                style={{ padding:"8px 10px", borderRadius:"8px", border:"1px solid rgba(0,0,0,0.12)", cursor:"pointer", fontSize:"16px", fontFamily:"inherit", background:"transparent", color:"rgba(0,0,0,0.3)", lineHeight:1, letterSpacing:"1px" }}>
                 ···
               </button>
               {openMenuTeamId === team.id && (
                 <>
                   <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, zIndex:9998 }}
                        onClick={function(e) { e.stopPropagation(); setOpenMenuTeamId(null); }} />
-                  <div style={{ position:"absolute", top:"100%", right:0, marginTop:"4px", background:"#1a1a2e", border:"1px solid #333", borderRadius:"6px", boxShadow:"0 4px 12px rgba(0,0,0,0.4)", zIndex:9999, minWidth:"168px", overflow:"hidden" }}
+                  <div style={{ position:"absolute", top:"100%", right:0, marginTop:"4px", background:"#ffffff", border:"1px solid rgba(0,0,0,0.1)", borderRadius:"6px", boxShadow:"0 4px 12px rgba(0,0,0,0.12)", zIndex:9999, minWidth:"168px", overflow:"hidden" }}
                        onClick={function(e) { e.stopPropagation(); }}>
-                    <div style={{ padding:"10px 16px", cursor:"pointer", color:"rgba(255,255,255,0.85)", fontSize:"13px", fontFamily:"inherit" }}
-                         onMouseEnter={function(e) { e.currentTarget.style.background="#2a2a3e"; }}
+                    <div style={{ padding:"10px 16px", cursor:"pointer", color:"#374151", fontSize:"13px", fontFamily:"inherit" }}
+                         onMouseEnter={function(e) { e.currentTarget.style.background="#f9fafb"; }}
                          onMouseLeave={function(e) { e.currentTarget.style.background="transparent"; }}
                          onClick={function(tm) { return function(e) {
                            e.stopPropagation();
@@ -2500,14 +2487,14 @@ export default function App() {
                          }; }(team)}>
                       ✏ Edit team
                     </div>
-                    <div style={{ padding:"10px 16px", cursor:"pointer", color:"rgba(255,255,255,0.85)", fontSize:"13px", fontFamily:"inherit" }}
-                         onMouseEnter={function(e) { e.currentTarget.style.background="#2a2a3e"; }}
+                    <div style={{ padding:"10px 16px", cursor:"pointer", color:"#374151", fontSize:"13px", fontFamily:"inherit" }}
+                         onMouseEnter={function(e) { e.currentTarget.style.background="#f9fafb"; }}
                          onMouseLeave={function(e) { e.currentTarget.style.background="transparent"; }}
                          onClick={function(e) { e.stopPropagation(); exportTeamData(team); setOpenMenuTeamId(null); }}>
                       ⬇ Download backup
                     </div>
                     <div style={{ padding:"10px 16px", cursor:"pointer", color:"#e05565", fontSize:"13px", fontFamily:"inherit" }}
-                         onMouseEnter={function(e) { e.currentTarget.style.background="#2a2a3e"; }}
+                         onMouseEnter={function(e) { e.currentTarget.style.background="#f9fafb"; }}
                          onMouseLeave={function(e) { e.currentTarget.style.background="transparent"; }}
                          onClick={function(e) {
                            e.stopPropagation();
@@ -2529,7 +2516,7 @@ export default function App() {
                 {nextGame && nextGame.game.opponent ? " \u00b7 vs " + nextGame.game.opponent : ""}
               </div>
               {nextGame && nextGame.game.date ? (
-                <div style={{ fontSize:"11px", color:"rgba(255,255,255,0.5)" }}>
+                <div style={{ fontSize:"11px", color:"#6b7280" }}>
                   ▸ {new Date(nextGame.game.date + "T12:00:00").toLocaleDateString("en-US", { weekday:"short", month:"short", day:"numeric" })}
                   {nextGame.game.time ? "  \u00b7  " + nextGame.game.time : ""}
                 </div>
@@ -2537,18 +2524,18 @@ export default function App() {
             </div>
           ) : null}
           {/* Row 3: player count — tertiary */}
-          <div style={{ display:"flex", gap:"8px", fontSize:"11px", color:"rgba(255,255,255,0.5)", flexWrap:"wrap", marginTop:"6px", marginBottom:"0" }}>
+          <div style={{ display:"flex", gap:"8px", fontSize:"11px", color:"#6b7280", flexWrap:"wrap", marginTop:"6px", marginBottom:"0" }}>
             <span>{teamRoster.length} player{teamRoster.length !== 1 ? "s" : ""}</span>
           </div>
           {teamRoster.length === 0 && (
-            <div style={{ fontSize:"11px", color:"rgba(245,200,66,0.7)", marginTop:"6px", fontStyle:"italic" }}>
+            <div style={{ fontSize:"11px", color:"#b8860b", marginTop:"6px", fontStyle:"italic" }}>
               → Tap Open to add your roster
             </div>
           )}
           {teamSched.length === 0 && teamRoster.length > 0 && (
             <div
               onClick={function(e) { e.stopPropagation(); loadTeam(team); setTimeout(function() { setPrimaryTab("season"); setSeasonTab("schedule"); }, 300); }}
-              style={{ fontSize:"11px", color:"rgba(245,200,66,0.7)", marginTop:"6px", fontStyle:"italic", cursor:"pointer", textDecoration:"underline", textDecorationStyle:"dotted" }}>
+              style={{ fontSize:"11px", color:"#b8860b", marginTop:"6px", fontStyle:"italic", cursor:"pointer", textDecoration:"underline", textDecorationStyle:"dotted" }}>
               → Tap to add team schedule
             </div>
           )}
@@ -2569,14 +2556,14 @@ export default function App() {
 
     return (
       <>
-      <div style={{ display:"flex", flexDirection:"column", alignItems:"center", padding:"8px 16px", fontFamily:"Georgia,serif", minHeight:"100%", background:"linear-gradient(180deg,#0f1f3d 0%,#0d1b35 60%,#0b1730 100%)" }}>
+      <div style={{ display:"flex", flexDirection:"column", alignItems:"center", padding:"8px 16px", fontFamily:"Georgia,serif", minHeight:"100%", background:"linear-gradient(180deg,#fdf6ec 0%,#f7efe2 100%)" }}>
 
         <div style={{ width:"100%", maxWidth:"500px" }}>
           {homeMode === "welcome" ? (
             <div>
               <div style={{ marginBottom:"8px" }}>
-                <div style={{ fontSize:"13px", color:"rgba(255,255,255,0.6)", letterSpacing:"0.08em", textTransform:"uppercase", fontFamily:"Georgia,serif" }}>{greeting}, Coach</div>
-                <div style={{ fontSize:"11px", color:"rgba(255,255,255,0.3)", marginTop:"2px" }}>
+                <div style={{ fontSize:"13px", color:"#6b7280", letterSpacing:"0.08em", textTransform:"uppercase", fontFamily:"Georgia,serif" }}>{greeting}, Coach</div>
+                <div style={{ fontSize:"11px", color:"#9ca3af", marginTop:"2px" }}>
                   {now.toLocaleDateString("en-US", { timeZone:"America/New_York", weekday:"long", month:"long", day:"numeric" })}
                 </div>
               </div>
@@ -2595,16 +2582,16 @@ export default function App() {
                 }
                 if (!nextGameGlobal || !nextGameTeam) { return null; }
                 return (
-                  <div style={{ background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:"12px", padding:"16px", marginBottom:"20px" }}>
-                    <div style={{ fontSize:"9px", color:"rgba(255,255,255,0.4)", letterSpacing:"0.12em", textTransform:"uppercase", marginBottom:"8px" }}>Next Game</div>
-                    <div style={{ fontSize:"16px", fontWeight:"bold", color:"#f5c842", fontFamily:"Georgia,serif", marginBottom:"4px" }}>
+                  <div style={{ background:"#ffffff", border:"1px solid rgba(0,0,0,0.08)", borderRadius:"12px", padding:"16px", marginBottom:"20px", boxShadow:"0 2px 8px rgba(0,0,0,0.06)" }}>
+                    <div style={{ fontSize:"9px", color:"#6b7280", letterSpacing:"0.12em", textTransform:"uppercase", marginBottom:"8px" }}>Next Game</div>
+                    <div style={{ fontSize:"16px", fontWeight:"bold", color:"#0f1f3d", fontFamily:"Georgia,serif", marginBottom:"4px" }}>
                       {nextGameTeam.name} vs {nextGameGlobal.game.opponent}
                     </div>
-                    <div style={{ fontSize:"12px", color:"rgba(255,255,255,0.6)", marginBottom:"2px" }}>
+                    <div style={{ fontSize:"12px", color:"#6b7280", marginBottom:"2px" }}>
                       ▸ {new Date(nextGameGlobal.game.date + "T12:00:00").toLocaleDateString("en-US", { weekday:"short", month:"short", day:"numeric" })}
                       {nextGameGlobal.game.time ? "  \u00b7  " + nextGameGlobal.game.time : ""}
                     </div>
-                    <div style={{ fontSize:"12px", color: nextGameGlobal.days === 0 ? "#c8102e" : nextGameGlobal.days === 1 ? "#f5c842" : "rgba(255,255,255,0.5)", marginBottom:"12px" }}>
+                    <div style={{ fontSize:"12px", color: nextGameGlobal.days === 0 ? "#c8102e" : nextGameGlobal.days === 1 ? "#b8860b" : "#6b7280", marginBottom:"12px" }}>
                       {nextGameGlobal.days === 0 ? "TODAY" : nextGameGlobal.days === 1 ? "Tomorrow" : nextGameGlobal.days + " days away"}
                     </div>
                     <button
@@ -2620,7 +2607,7 @@ export default function App() {
               })()}
               {teams.length > 0 ? (
                 <div style={{ marginBottom:"8px" }}>
-                  <div style={{ fontSize:"10px", color:"rgba(255,255,255,0.35)", letterSpacing:"0.15em", textTransform:"uppercase", marginBottom:"8px", textAlign:"center" }}>Your Teams</div>
+                  <div style={{ fontSize:"10px", color:"#9ca3af", letterSpacing:"0.15em", textTransform:"uppercase", marginBottom:"8px", textAlign:"center" }}>Your Teams</div>
                   {teams.length >= 3 ? (
                     <div style={{ position:"relative", marginBottom:"10px" }}>
                       <span style={{ position:"absolute", left:"12px", top:"50%", transform:"translateY(-50%)", fontSize:"14px", pointerEvents:"none", opacity:0.4 }}>🔍</span>
@@ -2629,10 +2616,10 @@ export default function App() {
                         value={teamSearch}
                         onChange={function(e) { setTeamSearch(e.target.value); }}
                         placeholder="Find your team…"
-                        style={{ width:"100%", boxSizing:"border-box", background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.15)", borderRadius:"10px", padding:"9px 12px 9px 36px", color:"#fff", fontFamily:"Georgia,serif", fontSize:"13px", outline:"none" }} />
+                        style={{ width:"100%", boxSizing:"border-box", background:"#f8fafc", border:"1px solid rgba(0,0,0,0.08)", borderRadius:"10px", padding:"9px 12px 9px 36px", color:"#374151", fontFamily:"Georgia,serif", fontSize:"13px", outline:"none" }} />
                       {teamSearch ? (
                         <button onClick={function() { setTeamSearch(""); }}
-                          style={{ position:"absolute", right:"10px", top:"50%", transform:"translateY(-50%)", background:"none", border:"none", color:"rgba(255,255,255,0.4)", fontSize:"16px", cursor:"pointer", lineHeight:1, padding:"0 2px" }}>×</button>
+                          style={{ position:"absolute", right:"10px", top:"50%", transform:"translateY(-50%)", background:"none", border:"none", color:"#9ca3af", fontSize:"16px", cursor:"pointer", lineHeight:1, padding:"0 2px" }}>×</button>
                       ) : null}
                     </div>
                   ) : null}
@@ -2647,7 +2634,7 @@ export default function App() {
                       : teams;
                     if (filtered.length === 0) {
                       return (
-                        <div style={{ textAlign:"center", padding:"20px 0", color:"rgba(255,255,255,0.3)", fontSize:"12px", fontStyle:"italic" }}>
+                        <div style={{ textAlign:"center", padding:"20px 0", color:"#9ca3af", fontSize:"12px", fontStyle:"italic" }}>
                           No teams match "{teamSearch}"
                         </div>
                       );
@@ -2663,12 +2650,12 @@ export default function App() {
                 </button>
               ) : (
                 <button onClick={function() { setNewTeam({ name:"", ageGroup:"", sport:"", year: new Date().getFullYear() }); setHomeMode("create"); }}
-                  style={{ width:"100%", padding:"10px", borderRadius:"10px", background:"rgba(255,255,255,0.06)", color:"rgba(255,255,255,0.8)", border:"1px solid rgba(255,255,255,0.2)", fontSize:"13px", fontWeight:"bold", fontFamily:"Georgia,serif", cursor:"pointer", marginBottom:"12px", letterSpacing:"0.04em" }}>
+                  style={{ width:"100%", padding:"10px", borderRadius:"10px", background:"#f8fafc", color:"#374151", border:"1px solid rgba(0,0,0,0.12)", fontSize:"13px", fontWeight:"bold", fontFamily:"Georgia,serif", cursor:"pointer", marginBottom:"12px", letterSpacing:"0.04em" }}>
                   + New Team
                 </button>
               )}
               <div style={{ textAlign:"center" }}>
-                <div style={{ fontSize:"10px", color:"rgba(255,255,255,0.18)" }}>All data saved locally on this device</div>
+                <div style={{ fontSize:"10px", color:"#d1d5db" }}>All data saved locally on this device</div>
               </div>
             </div>
           ) : (
@@ -3845,20 +3832,31 @@ export default function App() {
         )}
 
         {errorCount > 0 ? (
-          <div style={{ ...S.card, borderLeft:"3px solid " + C.red, marginBottom:"14px" }}>
-            <div style={{ fontWeight:"bold", color:C.red, fontSize:"12px", marginBottom:"8px" }}>
-              {errorCount} Issue{errorCount !== 1 ? "s" : ""} Detected
-            </div>
-            {warnings.map(function(w, wi) {
-              return (
-                <div key={wi} style={{ padding:"6px 10px", borderRadius:"6px", fontSize:"11px", marginBottom:"4px",
-                  background: w.type === "missing" ? "rgba(200,16,46,0.06)" : "rgba(200,144,46,0.08)",
-                  color: w.type === "missing" ? C.red : "#9a6010",
-                  border:"1px solid " + (w.type === "missing" ? "rgba(200,16,46,0.2)" : "rgba(200,144,46,0.2)") }}>
-                  {w.msg}
-                </div>
-              );
-            })}
+          <div style={{ ...S.card, borderLeft:"3px solid " + C.red, marginBottom:"14px", padding:"0" }}>
+            <button
+              onClick={function() { setIssuesPanelOpen(!issuesPanelOpen); }}
+              style={{ width:"100%", display:"flex", alignItems:"center", justifyContent:"space-between",
+                background:"transparent", border:"none", cursor:"pointer", padding:"10px 14px",
+                textAlign:"left" }}>
+              <span style={{ fontWeight:"bold", color:C.red, fontSize:"12px" }}>
+                ⚠ {errorCount} Issue{errorCount !== 1 ? "s" : ""} — Tap to review
+              </span>
+              <span style={{ fontSize:"14px", color:C.red, lineHeight:1 }}>{issuesPanelOpen ? "▲" : "▼"}</span>
+            </button>
+            {issuesPanelOpen ? (
+              <div style={{ padding:"0 14px 10px" }}>
+                {warnings.map(function(w, wi) {
+                  return (
+                    <div key={wi} style={{ padding:"6px 10px", borderRadius:"6px", fontSize:"11px", marginBottom:"4px",
+                      background: w.type === "missing" ? "rgba(200,16,46,0.06)" : "rgba(200,144,46,0.08)",
+                      color: w.type === "missing" ? C.red : "#9a6010",
+                      border:"1px solid " + (w.type === "missing" ? "rgba(200,16,46,0.2)" : "rgba(200,144,46,0.2)") }}>
+                      {w.msg}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : null}
           </div>
         ) : null}
 
@@ -6941,7 +6939,10 @@ export default function App() {
     fontSize:"12px", fontWeight:"bold", fontFamily:"Georgia,serif",
     letterSpacing:"0.03em", textTransform:"uppercase", textAlign:"center",
     background: active ? C.navy : "rgba(15,31,61,0.07)",
-    color: active ? "#fff" : C.textMuted
+    color: active ? "#fff" : C.textMuted,
+    boxShadow: active ? "0 2px 6px rgba(15,31,61,0.2)" : "none",
+    borderBottom: active ? "2px solid " + C.gold : "2px solid transparent",
+    transform: active ? "translateY(-1px)" : "none"
   }; };
 
   if (primaryTab === "roster") {
@@ -7002,9 +7003,28 @@ export default function App() {
     );
   }
 
+  var contextLabel = null;
+  if (primaryTab === "gameday" && gameDayTab === "defense") {
+    contextLabel = (gridView === "player" ? "By Player" : "By Position") + " \u2022 " + innings + " Innings";
+  } else if (primaryTab === "gameday" && gameDayTab === "batting") {
+    contextLabel = "Batting Order \u2022 " + roster.length + " Players";
+  } else if (primaryTab === "gameday" && gameDayTab === "lineups") {
+    contextLabel = "Print / Share View";
+  } else if (primaryTab === "season" && seasonTab === "schedule") {
+    contextLabel = "Season Schedule";
+  } else if (primaryTab === "roster" && rosterTab === "players") {
+    contextLabel = roster.length + " Player" + (roster.length !== 1 ? "s" : "") + " on Roster";
+  }
+
   var tabContent = (
     <div>
       {subTabBar}
+      {contextLabel ? (
+        <div style={{ padding:"5px 16px", background:"rgba(15,31,61,0.04)", borderBottom:"1px solid " + C.border,
+          fontSize:"11px", color:C.textMuted, letterSpacing:"0.05em", fontWeight:"600" }}>
+          {contextLabel}
+        </div>
+      ) : null}
       {primaryTab === "roster"  && rosterTab === "players" ? renderRoster()  : null}
       {primaryTab === "roster"  && rosterTab === "songs"   ? renderSongs()   : null}
       {primaryTab === "gameday" && gameDayTab === "defense" ? renderGrid()      : null}
@@ -7020,99 +7040,40 @@ export default function App() {
     </div>
   );
 
-  if (isLandscape) {
-    // ── Landscape: sidebar nav + scrollable content ──────────────────────
+  function renderTopTabsAlways() {
     return (
-      <div style={{ display:"flex", height:"100dvh", minHeight:"100dvh", background:C.cream, fontFamily:"Georgia,'Times New Roman',serif", color:C.text, overflow:"hidden" }}>
-
-        {/* Left sidebar — fixed width, full height, scrollable nav */}
-        <div style={{ width:"64px", minWidth:"64px", background:"linear-gradient(180deg,#0f1f3d 0%,#1a3260 100%)", borderRight:"3px solid " + C.red, display:"flex", flexDirection:"column", alignItems:"center", paddingTop:"8px", paddingBottom:"8px", gap:"2px", overflowY:"auto", flexShrink:0 }}>
-
-          {/* Logo button */}
-          <div onClick={function() { setScreen("home"); }} style={{ width:"44px", height:"44px", borderRadius:"50%", background:C.red, border:"2px solid " + C.gold, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"16px", fontWeight:"bold", color:C.gold, cursor:"pointer", marginBottom:"8px", flexShrink:0 }}>
-            {activeTeam ? activeTeam.name.charAt(0).toUpperCase() : "L"}
-          </div>
-
-          {/* Primary tab buttons */}
-          {PRIMARY_TABS.map(function(t) {
-            var active = primaryTab === t.key;
-            return (
-              <div key={t.key}>
-                <button
-                  onClick={function(k) { return function() { setPrimaryTab(k); }; }(t.key)}
-                  style={{ width:"54px", padding:"6px 2px", borderRadius:"6px", border:"none", cursor:"pointer", fontSize:"8px", fontWeight:"bold", fontFamily:"Georgia,serif", letterSpacing:"0.04em", textTransform:"uppercase", textAlign:"center", lineHeight:"1.3",
-                    background: active ? C.red : "transparent",
-                    color: active ? "#fff" : "rgba(255,255,255,0.55)" }}>
-                  <div style={{ fontSize:"14px", marginBottom:"2px" }}>{t.icon}</div>
-                  {t.label}
-                </button>
-                {t.key === "roster" && primaryTab === "roster" && ROSTER_SUBTABS.map(function(st) {
-                  var subActive = rosterTab === st.key;
-                  return (
-                    <button key={st.key}
-                      onClick={function(k) { return function() { setRosterTab(k); }; }(st.key)}
-                      style={{ width:"50px", padding:"3px 2px", borderRadius:"4px", border:"none", cursor:"pointer", fontSize:"7.5px", fontWeight:"bold", fontFamily:"Georgia,serif", letterSpacing:"0.04em", textTransform:"uppercase", textAlign:"center", display:"block", marginLeft:"2px",
-                        background: subActive ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.07)",
-                        color: subActive ? "#fff" : "rgba(255,255,255,0.6)" }}>
-                      {st.label}
-                    </button>
-                  );
-                })}
-                {t.key === "gameday" && primaryTab === "gameday" && GAMEDAY_SUBTABS.map(function(st) {
-                  var subActive = gameDayTab === st.key;
-                  return (
-                    <button key={st.key}
-                      onClick={function(k) { return function() { setGameDayTab(k); }; }(st.key)}
-                      style={{ width:"50px", padding:"3px 2px", borderRadius:"4px", border:"none", cursor:"pointer", fontSize:"7.5px", fontWeight:"bold", fontFamily:"Georgia,serif", letterSpacing:"0.04em", textTransform:"uppercase", textAlign:"center", display:"block", marginLeft:"2px",
-                        background: subActive ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.07)",
-                        color: subActive ? "#fff" : "rgba(255,255,255,0.6)" }}>
-                      {st.label}
-                    </button>
-                  );
-                })}
-                {t.key === "season" && primaryTab === "season" && SEASON_SUBTABS.map(function(st) {
-                  var subActive = seasonTab === st.key;
-                  return (
-                    <button key={st.key}
-                      onClick={function(k) { return function() { setSeasonTab(k); }; }(st.key)}
-                      style={{ width:"50px", padding:"3px 2px", borderRadius:"4px", border:"none", cursor:"pointer", fontSize:"7.5px", fontWeight:"bold", fontFamily:"Georgia,serif", letterSpacing:"0.04em", textTransform:"uppercase", textAlign:"center", display:"block", marginLeft:"2px",
-                        background: subActive ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.07)",
-                        color: subActive ? "#fff" : "rgba(255,255,255,0.6)" }}>
-                      {st.label}
-                    </button>
-                  );
-                })}
-                {t.key === "more" && primaryTab === "more" && MORE_SUBTABS.map(function(st) {
-                  var subActive = moreTab === st.key;
-                  return (
-                    <button key={st.key}
-                      onClick={function(k) { return function() { setMoreTab(k); }; }(st.key)}
-                      style={{ width:"50px", padding:"3px 2px", borderRadius:"4px", border:"none", cursor:"pointer", fontSize:"7.5px", fontWeight:"bold", fontFamily:"Georgia,serif", letterSpacing:"0.04em", textTransform:"uppercase", textAlign:"center", display:"block", marginLeft:"2px",
-                        background: subActive ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.07)",
-                        color: subActive ? "#fff" : "rgba(255,255,255,0.6)" }}>
-                      {st.label}
-                    </button>
-                  );
-                })}
+      <div style={{ flexShrink:0, background:C.navy, borderBottom:"2px solid " + C.red, display:"flex" }}>
+        {PRIMARY_TABS.map(function(t) {
+          var active = primaryTab === t.key;
+          var disabled = (t.key !== "more" && t.key !== "home" && screen !== "app");
+          return (
+            <button key={t.key}
+              onClick={function(k, d) { return function() {
+                if (k === "home") { setScreen("home"); setPrimaryTab("home"); setHomeMode("welcome"); return; }
+                if (d) return;
+                setPrimaryTab(k);
+                if (k !== "more") setScreen("app");
+              }; }(t.key, disabled)}
+              style={{ flex:1, padding:"8px 4px", border:"none", fontSize:"9px", fontWeight: active ? "bold" : "600", fontFamily:"Georgia,serif", letterSpacing:"0.03em", textTransform:"uppercase", textAlign:"center", lineHeight:1.3, background:C.navy,
+                cursor: disabled ? "default" : "pointer",
+                color: active ? C.gold : disabled ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.7)",
+                borderBottom: active ? "3px solid " + C.gold : "3px solid transparent",
+                opacity: disabled ? 0.4 : 1,
+                marginBottom:"-2px" }}>
+              <div style={{ display:"inline-flex", flexDirection:"column", alignItems:"center",
+                background: active ? "rgba(200,144,46,0.15)" : "transparent",
+                borderRadius:"8px", padding:"3px 10px 2px", minWidth:"44px" }}>
+                <div style={{ fontSize: active ? "20px" : "17px", marginBottom:"3px", transition:"font-size 0.12s" }}>{t.icon}</div>
+                {t.label}
               </div>
-            );
-          })}
-
-          {/* Team name at bottom */}
-          <div style={{ marginTop:"auto", fontSize:"8px", color:"rgba(255,255,255,0.35)", textAlign:"center", padding:"4px 2px", wordBreak:"break-word", letterSpacing:"0.04em" }}>
-            {activeTeam ? activeTeam.name : ""}
-          </div>
-        </div>
-
-        {/* Main content — scrollable */}
-        <div style={{ flex:1, overflowY:"auto", padding:"14px 18px", maxWidth:"1400px" }}>
-          {tabContent}
-        </div>
+            </button>
+          );
+        })}
       </div>
     );
   }
 
-  // ── Portrait: top header + content ──────────────────────────────────────
+  // ── Always column: header + top tabs + scrollable content ──────────────
   return (
     <div style={{ height:"100dvh", display:"flex", flexDirection:"column", overflow:"hidden", background: (screen !== "app" || primaryTab === "more") ? "linear-gradient(160deg,#0f1f3d 0%,#1a3260 55%,#2a0a0a 100%)" : C.cream, fontFamily:"Georgia,'Times New Roman',serif", color:C.text }}>
       <div style={S.header}>
@@ -7137,33 +7098,9 @@ export default function App() {
           </button>
         ) : null}
       </div>
+      {renderTopTabsAlways()}
       <div style={S.body}>
         {(primaryTab === "home" || (!activeTeam && primaryTab !== "more")) ? renderHome() : tabContent}
-      </div>
-      {/* Fixed bottom nav bar */}
-      <div style={{ flexShrink:0, background:C.navy, borderTop:"2px solid " + C.red, display:"flex", paddingBottom:"env(safe-area-inset-bottom, 0px)" }}>
-        {PRIMARY_TABS.map(function(t) {
-          var active = primaryTab === t.key;
-          var disabled = (t.key !== "more" && t.key !== "home" && screen !== "app");
-          return (
-            <button key={t.key}
-              onClick={function(k, d) { return function() {
-                if (k === "home") { setScreen("home"); setPrimaryTab("home"); setHomeMode("welcome"); return; }
-                if (d) return;
-                setPrimaryTab(k);
-                if (k !== "more") setScreen("app");
-              }; }(t.key, disabled)}
-              style={{ flex:1, padding:"10px 4px 10px", border:"none", fontSize:"9px", fontWeight:"bold", fontFamily:"Georgia,serif", letterSpacing:"0.03em", textTransform:"uppercase", textAlign:"center", lineHeight:1.3, background:C.navy,
-                cursor: disabled ? "default" : "pointer",
-                color: active ? C.gold : disabled ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.9)",
-                borderTop: active ? "2px solid " + C.gold : "2px solid transparent",
-                opacity: disabled ? 0.4 : 1,
-                marginTop:"-2px" }}>
-              <div style={{ fontSize:"18px", marginBottom:"3px" }}>{t.icon}</div>
-              {t.label}
-            </button>
-          );
-        })}
       </div>
       {needRefresh && (
         <div style={{
