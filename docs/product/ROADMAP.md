@@ -1,6 +1,6 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: March 27, 2026 (v1.6.3)
+> Last updated: March 28, 2026 (v1.6.4)
 > MVP launched: March 24, 2026
 
 ---
@@ -305,6 +305,34 @@
 3. localStorage persistence for user preference
 4. Theme selector UI in Settings/About tab
 5. Replace all hardcoded colors with theme.colors.* references
+
+---
+
+## 📦 Backlog — Ready to Implement
+
+### iOS PWA Install Coaching Overlay
+
+**Status:** Ready to implement (spec complete)
+**Effort:** Small — frontend only, no new packages, no backend changes
+**Priority:** Medium — high-value for first-time iOS coaches
+**Spec doc:** [`docs/features/ios-pwa-install-overlay.md`](../features/ios-pwa-install-overlay.md)
+
+**Summary:** iOS Safari has no `beforeinstallprompt` event. Users must manually tap Share → Add to Home Screen. Without coaching UI, most iOS users never install the PWA. This feature adds a bottom-sheet overlay that guides coaches through the steps at the right moment.
+
+**Trigger conditions:**
+- iOS Safari only (detected via UA string)
+- NOT already in standalone mode
+- NOT previously dismissed
+- Show on 2nd+ visit OR after lineup generation completes (intent signals)
+
+**Files to create/modify when implementing:**
+
+| File | Action |
+|------|--------|
+| `frontend/src/hooks/useIOSInstallPrompt.js` | CREATE |
+| `frontend/src/components/IOSInstallBanner.jsx` | CREATE |
+| `frontend/src/App.jsx` | MODIFY — hook + render + window trigger |
+| `frontend/package.json` | MODIFY — bump version |
 
 ---
 
