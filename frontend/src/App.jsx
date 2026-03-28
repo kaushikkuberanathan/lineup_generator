@@ -131,9 +131,18 @@ var DEFAULT_ROSTER = [];
 var _mem = {};
 var SCHEMA_VERSION = 2;
 
-var APP_VERSION = "1.6.4";
+var APP_VERSION = "1.6.5";
 
 var VERSION_HISTORY = [
+  {
+    version: "1.6.5",
+    date: "March 28, 2026",
+    changes: [
+      "UX: Lineup Finalized experience now consistent across all 4 Game Day subtabs",
+      "UX: Lineups tab — ✓ Finalize button added to toolbar (was Defense-only)",
+      "UX: Songs tab (Game Day) — Edit mode hidden when lineup is locked; read-only Game Day View enforced"
+    ]
+  },
   {
     version: "1.6.4",
     date: "March 27, 2026",
@@ -2713,14 +2722,31 @@ export default function App() {
                       {nextGameGlobal.game.time ? "  \u00b7  " + nextGameGlobal.game.time : ""}
                     </div>
                     {/* Primary CTA */}
-                    <button
-                      onClick={function(ngt, ngg) { return function() {
-                        loadTeam(ngt);
-                        setTimeout(function() { setPrimaryTab("gameday"); setGameDayTab("defense"); setTimeout(generateLineup, 100); }, 300);
-                      }; }(nextGameTeam, nextGameGlobal)}
-                      style={{ background:"linear-gradient(135deg,#f5c842,#e6a817)", color:"#0f1f3d", border:"none", borderRadius:"10px", padding:"14px 20px", fontSize:"15px", fontWeight:"bold", cursor:"pointer", width:"100%", fontFamily:"Georgia,serif", letterSpacing:"0.02em", boxShadow:"0 3px 12px rgba(245,200,66,0.35)" }}>
-                      ⚡ Generate Lineup
-                    </button>
+                    {(function() {
+                      var isTeamLocked = loadJSON("team:" + nextGameTeam.id + ":locked", false);
+                      if (isTeamLocked) {
+                        return (
+                          <button
+                            onClick={function(ngt) { return function() {
+                              loadTeam(ngt);
+                              setTimeout(function() { setPrimaryTab("gameday"); setGameDayTab("defense"); }, 300);
+                            }; }(nextGameTeam)}
+                            style={{ background:"linear-gradient(135deg,#f5c842,#e6a817)", color:"#0f1f3d", border:"none", borderRadius:"10px", padding:"14px 20px", fontSize:"15px", fontWeight:"bold", cursor:"pointer", width:"100%", fontFamily:"Georgia,serif", letterSpacing:"0.02em", boxShadow:"0 3px 12px rgba(245,200,66,0.35)" }}>
+                            ✓ View Lineup
+                          </button>
+                        );
+                      }
+                      return (
+                        <button
+                          onClick={function(ngt, ngg) { return function() {
+                            loadTeam(ngt);
+                            setTimeout(function() { setPrimaryTab("gameday"); setGameDayTab("defense"); setTimeout(generateLineup, 100); }, 300);
+                          }; }(nextGameTeam, nextGameGlobal)}
+                          style={{ background:"linear-gradient(135deg,#f5c842,#e6a817)", color:"#0f1f3d", border:"none", borderRadius:"10px", padding:"14px 20px", fontSize:"15px", fontWeight:"bold", cursor:"pointer", width:"100%", fontFamily:"Georgia,serif", letterSpacing:"0.02em", boxShadow:"0 3px 12px rgba(245,200,66,0.35)" }}>
+                          ⚡ Generate Lineup
+                        </button>
+                      );
+                    })()}
                   </div>
                 );
               })()}
@@ -2965,7 +2991,7 @@ export default function App() {
           </div>
         </div>
 
-        {lineupDirty && roster.length > 0 && (
+        {lineupDirty && !lineupLocked && roster.length > 0 && (
           <div style={{ background:"rgba(245,200,66,0.12)", border:"1px solid rgba(245,200,66,0.4)", borderRadius:"8px", padding:"10px 14px", marginBottom:"10px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:"10px", flexWrap:"wrap" }}>
             <div style={{ fontSize:"12px", color:"#92620a", fontWeight:"600", flex:1 }}>⚡ Player profiles updated — regenerate lineup when ready</div>
             <div style={{ display:"flex", gap:"8px", alignItems:"center", flexShrink:0 }}>
@@ -3938,7 +3964,7 @@ export default function App() {
           </div>
         </div>
 
-        {lineupDirty && (
+        {lineupDirty && !lineupLocked && (
           <div style={{ background:"rgba(245,200,66,0.12)", border:"1px solid rgba(245,200,66,0.4)", borderRadius:"8px", padding:"10px 14px", marginBottom:"10px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:"10px", flexWrap:"wrap" }}>
             <div style={{ fontSize:"12px", color:"#92620a", fontWeight:"600", flex:1 }}>⚡ Roster changed — your lineup may be out of date</div>
             <div style={{ display:"flex", gap:"8px", flexShrink:0 }}>
@@ -4829,7 +4855,7 @@ export default function App() {
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"14px", flexWrap:"wrap", gap:"8px" }}>
           <div style={{ fontWeight:"bold", fontSize:"16px", color:C.navy }}>Walk-Up Songs</div>
           <div style={{ display:"flex", gap:"4px", background:"rgba(15,31,61,0.06)", borderRadius:"8px", padding:"3px" }}>
-            {[["Game Day View","display"],["Edit","edit"]].map(function(opt) {
+            {(primaryTab === "gameday" && lineupLocked ? [["Game Day View","display"]] : [["Game Day View","display"],["Edit","edit"]]).map(function(opt) {
               var active = songsView === opt[1];
               return (
                 <button key={opt[1]}
@@ -6683,6 +6709,26 @@ export default function App() {
             <button style={{ ...S.btn("ghost"), border:"1px solid rgba(15,31,61,0.2)" }} onClick={function() { generatePDF("share"); }} disabled={pdfLoading || pdfSharing}>
               {pdfSharing ? "Preparing..." : "Share as PDF"}
             </button>
+            {!lineupLocked ? (
+              <button
+                style={{ ...S.btn("ghost"), color:C.win, border:"1px solid rgba(39,174,96,0.35)" }}
+                onClick={function() {
+                  if (errorCount > 0) {
+                    if (!confirm(errorCount + " issue(s) detected. Finalize anyway?")) { return; }
+                  }
+                  if (coachPin) {
+                    setPinModal("finalize"); setPinInput(""); setPinError("");
+                  } else {
+                    persistLineupLocked(true);
+                    if (deferredPrompt && !localStorage.getItem("pwa_installed")) {
+                      var _snoozed = parseInt(localStorage.getItem("pwa_install_snoozed") || "0");
+                      if (Date.now() >= _snoozed) { setShowInstallBanner(true); }
+                    }
+                  }
+                }}>
+                ✓ Finalize
+              </button>
+            ) : null}
           </div>
         </div>
 
