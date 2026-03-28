@@ -7056,7 +7056,7 @@ export default function App() {
 
   function renderBottomNav() {
     return (
-      <div style={{ flexShrink:0, background:C.navy, borderTop:"2px solid " + C.red, display:"flex", paddingBottom:"env(safe-area-inset-bottom, 0px)" }}>
+      <div style={{ flexShrink:0, background:C.navy, borderBottom:"2px solid " + C.red, display:"flex" }}>
         {PRIMARY_TABS.map(function(t) {
           var active = primaryTab === t.key;
           var disabled = (t.key !== "more" && t.key !== "home" && screen !== "app");
@@ -7071,9 +7071,9 @@ export default function App() {
               style={{ flex:1, padding:"8px 4px", border:"none", fontSize:"9px", fontWeight: active ? "bold" : "600", fontFamily:"Georgia,serif", letterSpacing:"0.03em", textTransform:"uppercase", textAlign:"center", lineHeight:1.3, background:C.navy,
                 cursor: disabled ? "default" : "pointer",
                 color: active ? C.gold : disabled ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.7)",
-                borderTop: active ? "3px solid " + C.gold : "3px solid transparent",
+                borderBottom: active ? "3px solid " + C.gold : "3px solid transparent",
                 opacity: disabled ? 0.4 : 1,
-                marginTop:"-2px" }}>
+                marginBottom:"-2px" }}>
               <div style={{ display:"inline-flex", flexDirection:"column", alignItems:"center",
                 background: active ? "rgba(200,144,46,0.15)" : "transparent",
                 borderRadius:"8px", padding:"3px 10px 2px", minWidth:"44px" }}>
@@ -7112,11 +7112,11 @@ export default function App() {
           </button>
         ) : null}
       </div>
+      {renderBottomNav()}
       {subTabBar}
       <div style={S.body}>
         {(primaryTab === "home" || (!activeTeam && primaryTab !== "more")) ? renderHome() : tabContent}
       </div>
-      {renderBottomNav()}
       {needRefresh && (
         <div style={{
           position: 'fixed',
