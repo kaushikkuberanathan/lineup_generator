@@ -4466,26 +4466,42 @@ export default function App() {
               </button>
             ) : null}
             {!lineupLocked ? (
-              <button
-                style={{ ...S.btn("ghost"), color:C.win, border:"1px solid rgba(39,174,96,0.35)" }}
-                onClick={function() {
-                  if (errorCount > 0) {
-                    if (!confirm(errorCount + " issue(s) detected. Finalize anyway?")) { return; }
-                  }
-                  if (coachPin) {
-                    setPinModal("finalize"); setPinInput(""); setPinError("");
-                  } else {
-                    persistLineupLocked(true);
-                    if (deferredPrompt && !localStorage.getItem("pwa_installed")) {
-                      var _snoozed = parseInt(localStorage.getItem("pwa_install_snoozed") || "0");
-                      if (Date.now() >= _snoozed) { setShowInstallBanner(true); }
+              <div style={{ position:"relative", display:"inline-block" }}
+                onMouseEnter={function(e) { if (battingOrderDirty) { var t = e.currentTarget.querySelector(".fin-tip"); if (t) t.style.display = "block"; } }}
+                onMouseLeave={function(e) { var t = e.currentTarget.querySelector(".fin-tip"); if (t) t.style.display = "none"; }}>
+                <button
+                  disabled={battingOrderDirty}
+                  style={{ ...S.btn("ghost"), color: battingOrderDirty ? C.textMuted : C.win, border:"1px solid " + (battingOrderDirty ? "rgba(0,0,0,0.12)" : "rgba(39,174,96,0.35)"), opacity: battingOrderDirty ? 0.5 : 1, cursor: battingOrderDirty ? "default" : "pointer" }}
+                  onClick={function() {
+                    if (errorCount > 0) {
+                      if (!confirm(errorCount + " issue(s) detected. Finalize anyway?")) { return; }
                     }
-                  }
-                }}>
-                ✓ Finalize
-              </button>
+                    if (coachPin) {
+                      setPinModal("finalize"); setPinInput(""); setPinError("");
+                    } else {
+                      persistLineupLocked(true);
+                      if (deferredPrompt && !localStorage.getItem("pwa_installed")) {
+                        var _snoozed = parseInt(localStorage.getItem("pwa_install_snoozed") || "0");
+                        if (Date.now() >= _snoozed) { setShowInstallBanner(true); }
+                      }
+                    }
+                  }}>
+                  ✓ Finalize
+                </button>
+                {battingOrderDirty ? (
+                  <div className="fin-tip" style={{ display:"none", position:"absolute", bottom:"calc(100% + 6px)", right:0, background:"#1e293b", color:"#fff", fontSize:"11px", borderRadius:"6px", padding:"5px 9px", whiteSpace:"nowrap", pointerEvents:"none", zIndex:99, boxShadow:"0 2px 8px rgba(0,0,0,0.25)" }}>
+                    💾 Save order first to Finalize
+                    <div style={{ position:"absolute", bottom:"-5px", right:"14px", width:"10px", height:"10px", background:"#1e293b", transform:"rotate(45deg)", borderRadius:"1px" }} />
+                  </div>
+                ) : null}
+              </div>
             ) : null}
           </div>
+          {battingOrderDirty ? (
+            <div style={{ fontSize:"11px", color:"#92620a", marginTop:"4px", textAlign:"right" }}>
+              💾 Save order to enable Finalize
+            </div>
+          ) : null}
         </div>
 
         {hasAnyStats ? (
