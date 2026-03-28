@@ -1092,7 +1092,7 @@ var S = {
       color: active ? "#fff" : "rgba(255,255,255,0.55)"
     };
   },
-  body: { flex:1, overflowY:"auto", WebkitOverflowScrolling:"touch", display:"flex", flexDirection:"column", alignItems:"center", width:"100%" },
+  body: { flex:1, overflowY:"auto", WebkitOverflowScrolling:"touch", display:"flex", flexDirection:"column", alignItems:"center", width:"100%", maxWidth:"600px", marginLeft:"auto", marginRight:"auto" },
   card: {
     background:C.white, borderRadius:"10px", padding:"16px 18px",
     boxShadow:"0 2px 8px rgba(15,31,61,0.06)", marginBottom:"14px",
@@ -7093,7 +7093,7 @@ export default function App() {
   // Sub-tab bar — rendered inside tabContent when Game Day or Season is active
   var subTabBar = null;
   var subTabStyle = function(active) { return {
-    flex:1, padding:"7px 4px", borderRadius:"6px", border:"none", cursor:"pointer",
+    flex:"0 0 auto", padding:"7px 16px", borderRadius:"6px", border:"none", cursor:"pointer",
     fontSize:"12px", fontWeight:"bold", fontFamily:"Georgia,serif",
     letterSpacing:"0.03em", textTransform:"uppercase", textAlign:"center",
     background: active ? C.navy : "rgba(15,31,61,0.07)",
