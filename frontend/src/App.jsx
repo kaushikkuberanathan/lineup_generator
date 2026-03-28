@@ -1584,6 +1584,22 @@ export default function App() {
   var gridView = _gridView[0]; var setGridView = _gridView[1];
   var _issuesPanelOpen = useState(false);
   var issuesPanelOpen = _issuesPanelOpen[0]; var setIssuesPanelOpen = _issuesPanelOpen[1];
+  // Next game date — used as localStorage key so ignored warnings auto-clear each game
+  var nextGameDate = (function() {
+    var today = new Date(); today.setHours(0,0,0,0);
+    var up = schedule.filter(function(g) { return !g.result && g.date && new Date(g.date+"T12:00:00") >= today; });
+    up.sort(function(a,b) { return new Date(a.date) - new Date(b.date); });
+    return up.length ? up[0].date : "nodate";
+  })();
+  // Ignored warnings — keyed by `${type}::${msg}`, persisted per game date
+  var _ignoredWarnings = useState(function() {
+    try {
+      var key = "ignoredWarnings_" + nextGameDate;
+      var stored = localStorage.getItem(key);
+      return stored ? new Set(JSON.parse(stored)) : new Set();
+    } catch(e) { return new Set(); }
+  });
+  var ignoredWarnings = _ignoredWarnings[0]; var setIgnoredWarnings = _ignoredWarnings[1];
   var _diamondInning = useState(null);
   var diamondInning = _diamondInning[0]; var setDiamondInning = _diamondInning[1];
   var _showDiamond = useState(false);
@@ -1621,7 +1637,45 @@ export default function App() {
   var expandedVersion = _expandedVersion[0]; var setExpandedVersion = _expandedVersion[1];
 
   var warnings = useMemo(function() { return validateGrid(grid, roster, innings); }, [grid, roster, innings]);
-  var errorCount = warnings.length;
+
+  // Stable key per warning — type+msg is unique since msg embeds player/inning context
+  var warnKey = function(w) { return w.type + "::" + w.msg; };
+
+  var activeWarnings = warnings.filter(function(w) { return !ignoredWarnings.has(warnKey(w)); });
+  var ignoredList    = warnings.filter(function(w) {  return ignoredWarnings.has(warnKey(w)); });
+  var errorCount = activeWarnings.length;
+
+  var ignoreWarning = function(w) {
+    setIgnoredWarnings(function(prev) {
+      var next = new Set(prev);
+      next.add(warnKey(w));
+      try { localStorage.setItem("ignoredWarnings_" + nextGameDate, JSON.stringify([...next])); } catch(e) {}
+      return next;
+    });
+  };
+
+  var ignoreAllWarnings = function() {
+    setIgnoredWarnings(function(prev) {
+      var next = new Set(prev);
+      warnings.forEach(function(w) { next.add(warnKey(w)); });
+      try { localStorage.setItem("ignoredWarnings_" + nextGameDate, JSON.stringify([...next])); } catch(e) {}
+      return next;
+    });
+  };
+
+  var restoreWarning = function(w) {
+    setIgnoredWarnings(function(prev) {
+      var next = new Set(prev);
+      next.delete(warnKey(w));
+      try { localStorage.setItem("ignoredWarnings_" + nextGameDate, JSON.stringify([...next])); } catch(e) {}
+      return next;
+    });
+  };
+
+  var restoreAllWarnings = function() {
+    setIgnoredWarnings(new Set());
+    try { localStorage.removeItem("ignoredWarnings_" + nextGameDate); } catch(e) {}
+  };
   var players = roster.map(function(r) { return r.name; });
 
   var activeTeam = null;
@@ -3843,30 +3897,110 @@ export default function App() {
           </div>
         )}
 
-        {errorCount > 0 ? (
-          <div style={{ ...S.card, borderLeft:"3px solid " + C.red, marginBottom:"14px", padding:"0" }}>
-            <button
-              onClick={function() { setIssuesPanelOpen(!issuesPanelOpen); }}
-              style={{ width:"100%", display:"flex", alignItems:"center", justifyContent:"space-between",
-                background:"transparent", border:"none", cursor:"pointer", padding:"10px 14px",
-                textAlign:"left" }}>
-              <span style={{ fontWeight:"bold", color:C.red, fontSize:"12px" }}>
-                ⚠ {errorCount} Issue{errorCount !== 1 ? "s" : ""} — Tap to review
-              </span>
-              <span style={{ fontSize:"14px", color:C.red, lineHeight:1 }}>{issuesPanelOpen ? "▲" : "▼"}</span>
-            </button>
+        {warnings.length > 0 ? (
+          <div style={{ marginBottom:"12px" }}>
+            {/* Panel header: toggle + Accept All */}
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
+              background: activeWarnings.length > 0 ? "#fff3cd" : "#d4edda",
+              border:"1px solid " + (activeWarnings.length > 0 ? "#ffc107" : "#28a745"),
+              borderRadius: issuesPanelOpen ? "8px 8px 0 0" : "8px",
+              padding:"10px 14px", cursor:"pointer", userSelect:"none" }}>
+              <div onClick={function() { setIssuesPanelOpen(!issuesPanelOpen); }}
+                style={{ flex:1, fontWeight:600, fontSize:14,
+                  color: activeWarnings.length > 0 ? "#856404" : "#155724" }}>
+                {activeWarnings.length === 0
+                  ? "✓ All issues accepted — " + ignoredList.length + " overridden"
+                  : "⚠ " + activeWarnings.length + " Issue" + (activeWarnings.length !== 1 ? "s" : "") + " — Tap to review"}
+              </div>
+              <div style={{ display:"flex", gap:"8px", alignItems:"center" }}>
+                {activeWarnings.length > 1 ? (
+                  <button onClick={function(e) { e.stopPropagation(); ignoreAllWarnings(); }}
+                    style={{ fontSize:11, fontWeight:600, padding:"3px 10px",
+                      background:"#6c757d", color:"#fff",
+                      border:"none", borderRadius:6, cursor:"pointer", whiteSpace:"nowrap" }}>
+                    Accept All
+                  </button>
+                ) : null}
+                <span onClick={function() { setIssuesPanelOpen(!issuesPanelOpen); }}
+                  style={{ fontSize:12, color:"#6c757d" }}>
+                  {issuesPanelOpen ? "▲" : "▼"}
+                </span>
+              </div>
+            </div>
+
+            {/* Expanded panel body */}
             {issuesPanelOpen ? (
-              <div style={{ padding:"0 14px 10px" }}>
-                {warnings.map(function(w, wi) {
+              <div style={{ border:"1px solid #ffc107", borderTop:"none",
+                borderRadius:"0 0 8px 8px", background:"#fffdf0", overflow:"hidden" }}>
+
+                {/* Active warnings */}
+                {activeWarnings.map(function(w, i) {
                   return (
-                    <div key={wi} style={{ padding:"6px 10px", borderRadius:"6px", fontSize:"11px", marginBottom:"4px",
-                      background: w.type === "missing" ? "rgba(200,16,46,0.06)" : "rgba(200,144,46,0.08)",
-                      color: w.type === "missing" ? C.red : "#9a6010",
-                      border:"1px solid " + (w.type === "missing" ? "rgba(200,16,46,0.2)" : "rgba(200,144,46,0.2)") }}>
-                      {w.msg}
+                    <div key={warnKey(w)} style={{ display:"flex", alignItems:"flex-start",
+                      justifyContent:"space-between", gap:8, padding:"9px 14px",
+                      borderBottom: (i < activeWarnings.length - 1 || ignoredList.length > 0) ? "1px solid #f0e6b2" : "none",
+                      background: w.type === "missing" ? "#fff0f0" : "#fffdf0" }}>
+                      <div style={{ flex:1 }}>
+                        <span style={{ display:"inline-block", fontSize:10, fontWeight:700,
+                          textTransform:"uppercase", letterSpacing:"0.5px", marginRight:7,
+                          color: w.type === "missing" ? "#dc3545" : "#856404",
+                          background: w.type === "missing" ? "#fce8e8" : "#fff3cd",
+                          border:"1px solid " + (w.type === "missing" ? "#f5c6cb" : "#ffeeba"),
+                          borderRadius:4, padding:"1px 5px" }}>
+                          {w.type}
+                        </span>
+                        <span style={{ fontSize:13, color:"#333" }}>{w.msg}</span>
+                      </div>
+                      <button onClick={function(ww) { return function() { ignoreWarning(ww); }; }(w)}
+                        title="Accept / override this issue"
+                        style={{ flexShrink:0, fontSize:11, fontWeight:600, padding:"3px 10px",
+                          background:"#fff", color:"#28a745",
+                          border:"1px solid #28a745", borderRadius:6, cursor:"pointer", whiteSpace:"nowrap" }}>
+                        ✓ Accept
+                      </button>
                     </div>
                   );
                 })}
+
+                {/* Overridden / ignored section */}
+                {ignoredList.length > 0 ? (
+                  <div style={{ borderTop: activeWarnings.length > 0 ? "1px solid #dee2e6" : "none" }}>
+                    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
+                      padding:"7px 14px", background:"#f8f9fa", fontSize:12, color:"#6c757d" }}>
+                      <span>✓ {ignoredList.length} overridden</span>
+                      <button onClick={restoreAllWarnings}
+                        style={{ fontSize:11, fontWeight:500, padding:"2px 8px",
+                          background:"transparent", color:"#6c757d",
+                          border:"1px solid #ced4da", borderRadius:5, cursor:"pointer" }}>
+                        Restore All
+                      </button>
+                    </div>
+                    {ignoredList.map(function(w) {
+                      return (
+                        <div key={warnKey(w)} style={{ display:"flex", alignItems:"flex-start",
+                          justifyContent:"space-between", gap:8, padding:"7px 14px",
+                          opacity:0.5, background:"#f8f9fa" }}>
+                          <div style={{ flex:1 }}>
+                            <span style={{ display:"inline-block", fontSize:10, fontWeight:700,
+                              textTransform:"uppercase", letterSpacing:"0.5px", marginRight:7,
+                              color:"#6c757d", background:"#e9ecef",
+                              border:"1px solid #ced4da", borderRadius:4, padding:"1px 5px" }}>
+                              {w.type}
+                            </span>
+                            <span style={{ fontSize:12, color:"#6c757d", textDecoration:"line-through" }}>{w.msg}</span>
+                          </div>
+                          <button onClick={function(ww) { return function() { restoreWarning(ww); }; }(w)}
+                            title="Restore this issue"
+                            style={{ flexShrink:0, fontSize:11, padding:"3px 8px",
+                              background:"transparent", color:"#6c757d",
+                              border:"1px solid #ced4da", borderRadius:6, cursor:"pointer" }}>
+                            ↩
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : null}
               </div>
             ) : null}
           </div>
@@ -7082,7 +7216,7 @@ export default function App() {
 
   // ── Always column: header + top tabs + scrollable content ──────────────
   return (
-    <div style={{ height:"100dvh", display:"flex", flexDirection:"column", overflow:"hidden", background: (screen !== "app" || primaryTab === "more") ? "linear-gradient(160deg,#0f1f3d 0%,#1a3260 55%,#2a0a0a 100%)" : C.cream, fontFamily:"Georgia,'Times New Roman',serif", color:C.text }}>
+    <div style={{ height:"100dvh", display:"flex", flexDirection:"column", overflow:"hidden", background: primaryTab === "more" ? "linear-gradient(160deg,#0f1f3d 0%,#1a3260 55%,#2a0a0a 100%)" : C.cream, fontFamily:"Georgia,'Times New Roman',serif", color:C.text }}>
       <div style={Object.assign({}, S.header, isLandscape ? { padding:"5px 16px" } : {})}>
         <div style={S.logoWrap} onClick={function() { setScreen("home"); setPrimaryTab("home"); setHomeMode("welcome"); }}>
           <div style={Object.assign({}, S.logoCircle, isLandscape ? { width:"30px", height:"30px", fontSize:"13px" } : {})}>{screen === "app" && primaryTab !== "more" && activeTeam ? activeTeam.name.charAt(0).toUpperCase() : "L"}</div>
