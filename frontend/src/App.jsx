@@ -1092,7 +1092,7 @@ var S = {
       color: active ? "#fff" : "rgba(255,255,255,0.55)"
     };
   },
-  body: { flex:1, overflowY:"auto", WebkitOverflowScrolling:"touch", padding:"20px 24px 20px", maxWidth:"1400px", margin:"0 auto" },
+  body: { flex:1, overflowY:"auto", WebkitOverflowScrolling:"touch", display:"flex", flexDirection:"column", alignItems:"center", width:"100%" },
   card: {
     background:C.white, borderRadius:"10px", padding:"16px 18px",
     boxShadow:"0 2px 8px rgba(15,31,61,0.06)", marginBottom:"14px",
@@ -2017,6 +2017,18 @@ export default function App() {
         });
         saveJSON("team:" + team.id + ":schedule", mergedSchedule);
         setSchedule(mergedSchedule);
+        // Backfill Supabase if any scoreReported flags were rescued from localStorage
+        var hasRestoredFlags = mergedSchedule.some(function(g, idx) {
+          var dbg = migratedDbSchedule[idx];
+          return g.scoreReported && dbg && !dbg.scoreReported;
+        });
+        if (hasRestoredFlags) {
+          dbSaveTeamData(team.id, {
+            roster: dbData.roster, schedule: mergedSchedule, practices: dbData.practices,
+            battingOrder: dbData.battingOrder, grid: dbData.grid,
+            innings: dbData.innings, locked: dbData.locked
+          }).catch(function() {}); // fire-and-forget, same pattern as rest of app
+        }
         setPractices(dbData.practices);
         setBattingOrder(dbData.battingOrder && dbData.battingOrder.length
           ? dbData.battingOrder
@@ -7233,8 +7245,10 @@ export default function App() {
         </div>
       </div>
       {subTabBar}
-      <div style={Object.assign({}, S.body, isLandscape ? { padding:"8px 20px" } : {})}>
-        {(primaryTab === "home" || (!activeTeam && primaryTab !== "more")) ? renderHome() : tabContent}
+      <div style={S.body}>
+        <div style={{ width:"100%", maxWidth:"480px", marginLeft:"auto", marginRight:"auto", paddingLeft:"16px", paddingRight:"16px", boxSizing:"border-box" }}>
+          {(primaryTab === "home" || (!activeTeam && primaryTab !== "more")) ? renderHome() : tabContent}
+        </div>
       </div>
       {renderBottomNav()}
       {needRefresh && (
