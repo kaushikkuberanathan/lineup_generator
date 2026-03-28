@@ -131,9 +131,22 @@ var DEFAULT_ROSTER = [];
 var _mem = {};
 var SCHEMA_VERSION = 2;
 
-var APP_VERSION = "1.6.3";
+var APP_VERSION = "1.6.4";
 
 var VERSION_HISTORY = [
+  {
+    version: "1.6.4",
+    date: "March 27, 2026",
+    changes: [
+      "Defense tab: per-warning Accept/Ignore All with localStorage persistence keyed by game date",
+      "Sub-tab buttons: standardized to label-width (flex:0 0 auto) — consistent across 2-tab and 4-tab bars",
+      "Global layout: S.body maxWidth 600px centered + 480px inner content wrapper for all tabs",
+      "Home: dark gradient background bug fixed — cream on all tabs, dark on More only",
+      "Team cards: single flex row with 3 fixed zones — eliminates name wrap and CTA drift",
+      "Hydration merge: snackDuty and snackNote now rescued from localStorage alongside scoreReported",
+      "Supabase backfill: fires for all three merge fields, not just scoreReported"
+    ]
+  },
   {
     version: "1.6.3",
     date: "March 27, 2026",
@@ -1443,6 +1456,31 @@ export default function App() {
       setShareLoading(false);
     }).catch(function() { setShareLoading(false); });
   }, []);
+
+  // PWA install prompt — capture and defer until coach chooses to install
+  useEffect(function() {
+    var handler = function(e) {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      var hasVisitedBefore = localStorage.getItem("pwa_visited");
+      var snoozedUntil = parseInt(localStorage.getItem("pwa_install_snoozed") || "0");
+      var isSnoozed = Date.now() < snoozedUntil;
+      var isInstalled = localStorage.getItem("pwa_installed");
+      if (hasVisitedBefore && !isSnoozed && !isInstalled) {
+        setShowInstallBanner(true);
+      }
+      localStorage.setItem("pwa_visited", "1");
+    };
+    window.addEventListener("beforeinstallprompt", handler);
+    window.addEventListener("appinstalled", function() {
+      setShowInstallBanner(false);
+      setDeferredPrompt(null);
+      localStorage.setItem("pwa_installed", "1");
+    });
+    return function() {
+      window.removeEventListener("beforeinstallprompt", handler);
+    };
+  }, []);
   var _ros = useState(initRoster);
   var roster = _ros[0]; var setRoster = _ros[1];
   var _rosterHistory = useState([]);
@@ -1635,6 +1673,10 @@ export default function App() {
   var aboutGuideOpen = _aboutGuideOpen[0]; var setAboutGuideOpen = _aboutGuideOpen[1];
   var _expandedVersion = useState(APP_VERSION);
   var expandedVersion = _expandedVersion[0]; var setExpandedVersion = _expandedVersion[1];
+  var _showInstallBanner = useState(false);
+  var showInstallBanner = _showInstallBanner[0]; var setShowInstallBanner = _showInstallBanner[1];
+  var _deferredPrompt = useState(null);
+  var deferredPrompt = _deferredPrompt[0]; var setDeferredPrompt = _deferredPrompt[1];
 
   var warnings = useMemo(function() { return validateGrid(grid, roster, innings); }, [grid, roster, innings]);
 
@@ -2167,6 +2209,24 @@ export default function App() {
     setV2SectionOpen(next);
   }
 
+  var handleInstallClick = async function() {
+    if (!deferredPrompt) return;
+    setShowInstallBanner(false);
+    deferredPrompt.prompt();
+    var result = await deferredPrompt.userChoice;
+    if (result.outcome === "accepted") {
+      localStorage.setItem("pwa_installed", "1");
+    }
+    setDeferredPrompt(null);
+  };
+
+  var handleDismissInstall = function() {
+    setShowInstallBanner(false);
+    // Snooze for 3 days before showing again
+    var snoozeUntil = Date.now() + (3 * 24 * 60 * 60 * 1000);
+    localStorage.setItem("pwa_install_snoozed", String(snoozeUntil));
+  };
+
   function generateLineup() {
     let result;
 
@@ -2664,6 +2724,37 @@ export default function App() {
                   </div>
                 );
               })()}
+
+              {showInstallBanner ? (
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
+                  gap:10, margin:"12px 0", padding:"12px 14px",
+                  background:"#1a2f5e", border:"1px solid rgba(245,200,66,0.3)",
+                  borderRadius:10, boxShadow:"0 2px 8px rgba(0,0,0,0.15)" }}>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontSize:13, fontWeight:700, color:"#fff", marginBottom:2 }}>
+                      📲 Install Lineup Generator
+                    </div>
+                    <div style={{ fontSize:11, color:"rgba(255,255,255,0.65)", lineHeight:1.4 }}>
+                      One tap access on game day — no browser needed
+                    </div>
+                  </div>
+                  <div style={{ display:"flex", gap:6, flexShrink:0 }}>
+                    <button onClick={handleDismissInstall}
+                      style={{ padding:"6px 10px", fontSize:11, background:"transparent",
+                        color:"rgba(255,255,255,0.5)", border:"1px solid rgba(255,255,255,0.2)",
+                        borderRadius:6, cursor:"pointer" }}>
+                      Later
+                    </button>
+                    <button onClick={handleInstallClick}
+                      style={{ padding:"6px 14px", fontSize:12, fontWeight:700,
+                        background:"#f5c842", color:"#0f1f3d", border:"none",
+                        borderRadius:6, cursor:"pointer", whiteSpace:"nowrap" }}>
+                      Install
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+
               {teams.length > 0 ? (
                 <div style={{ marginBottom:"8px" }}>
                   <div style={{ fontSize:"9px", color:"#c0c7d0", letterSpacing:"0.15em", textTransform:"uppercase", marginBottom:"6px", paddingLeft:"2px" }}>Your Teams</div>
@@ -3846,6 +3937,11 @@ export default function App() {
                   setPinModal("finalize"); setPinInput(""); setPinError("");
                 } else {
                   persistLineupLocked(true);
+                  // Surface install banner after finalize — high-engagement moment
+                  if (deferredPrompt && !localStorage.getItem("pwa_installed")) {
+                    var _snoozed = parseInt(localStorage.getItem("pwa_install_snoozed") || "0");
+                    if (Date.now() >= _snoozed) { setShowInstallBanner(true); }
+                  }
                 }
               }}>
               ✓ Finalize
@@ -6426,6 +6522,11 @@ export default function App() {
       } else if (pinModal === "finalize") {
         if (pinInput !== coachPin) { setPinError("Incorrect PIN."); return; }
         persistLineupLocked(true);
+        // Surface install banner after finalize — high-engagement moment
+        if (deferredPrompt && !localStorage.getItem("pwa_installed")) {
+          var _snoozedPin = parseInt(localStorage.getItem("pwa_install_snoozed") || "0");
+          if (Date.now() >= _snoozedPin) { setShowInstallBanner(true); }
+        }
         setPinModal(null); setPinInput(""); setPinError("");
       } else if (pinModal === "setup") {
         if (!/^\d{4}$/.test(pinInput)) { setPinError("PIN must be exactly 4 digits."); return; }
