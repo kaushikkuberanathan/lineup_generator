@@ -1,6 +1,6 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: March 29, 2026 (v1.6.7)
+> Last updated: March 29, 2026 (v1.6.8)
 > MVP launched: March 24, 2026
 
 ---
@@ -48,6 +48,10 @@
 - Export / Import backup (JSON)
 - 10-player field configuration: LC + RC replace CF in outfield; 1 bench slot per inning (schema v2, migration auto-remaps saved CF→LC)
 - First-time coach onboarding modal (5-step in-app walkthrough, localStorage completion tracking, always re-accessible via "Getting Started" button in Roster tab)
+
+### v1.6.8 — March 29, 2026
+- **Home screen actionable roster button**: "Missing Roster" badge replaced with "Add Players →" (0 players) or "Complete Roster (N/10) →" (1–9 players); tapping navigates directly to team roster; shown for all teams with fewer than 10 players
+- **Home screen empty states**: when no teams exist or search returns no results, show contextual empty state with icon, copy, and "+ Create Team" CTA
 
 ### v1.6.7 — March 29, 2026
 - **Viewer Mode** *(feature-flagged OFF)*: read-only swipeable inning cards for parents/players; opened via `?s=…&view=true`; shows inning header, field positions, bench, batting order; Prev/Next footer; dark themed

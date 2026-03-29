@@ -248,6 +248,9 @@ The app sets the localStorage key and redirects cleanly. Use `?disable_flag=<nam
 
 ## Version History
 
+### v1.6.8 — March 29, 2026
+Home screen — "Missing Roster" badge replaced with actionable button: "Add Players →" (0 players) or "Complete Roster (N/10) →" (1–9 players); navigates directly to roster tab · Home screen — empty state with contextual icon + copy + "+ Create Team" CTA when no teams exist or search returns nothing
+
 ### v1.6.7 — March 29, 2026
 Viewer Mode (feature-flagged OFF) — read-only swipeable inning cards (?s=…&view=true) for parents/players · Feature flag system — featureFlags.js global toggles + localStorage per-user override + URL param bootstrap (?enable_flag / ?disable_flag) · Share as Link + Share Viewer Link both fall back to base64 URL encoding when Supabase unavailable (local dev) · Team season batting totals mini-block (G/AB/H/AVG/R/RBI) in Batting stats box · Suggest Order + 6/7 selector disabled when finalized · Batting order Undo after Suggest Order or ▲▼ arrow · Finalize CTA blocked until batting order saved · Generate Lineup blocked on all surfaces when finalized
 

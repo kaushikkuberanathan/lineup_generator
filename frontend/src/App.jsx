@@ -131,9 +131,17 @@ var DEFAULT_ROSTER = [];
 var _mem = {};
 var SCHEMA_VERSION = 2;
 
-var APP_VERSION = "1.6.7";
+var APP_VERSION = "1.6.8";
 
 var VERSION_HISTORY = [
+  {
+    version: "1.6.8",
+    date: "March 29, 2026",
+    changes: [
+      "UX: Home screen — 'Missing Roster' badge replaced with actionable button ('Add Players →' or 'Complete Roster (N/10) →'); shown for teams with fewer than 10 players",
+      "UX: Home screen — empty state guidance when no teams exist or search returns no results; + Create Team CTA in both states"
+    ]
+  },
   {
     version: "1.6.7",
     date: "March 29, 2026",
@@ -2946,7 +2954,7 @@ export default function App() {
 
       var statusBadge = null;
       var statusColor = null;
-      if (teamRoster.length === 0) {
+      if (teamRoster.length < 10) {
         statusBadge = "Missing roster";
         statusColor = "#b8860b";
       } else if (teamSched.length === 0) {
@@ -2965,10 +2973,23 @@ export default function App() {
               {team.name}
               {team.ageGroup ? <span style={{ fontSize:"10px", color:"#6b7280", fontWeight:"normal", marginLeft:"6px" }}>{team.ageGroup}</span> : null}
             </div>
-            <span style={{ display:"inline-block", width:"120px", textAlign:"center", fontSize:"10px", fontWeight:"bold", letterSpacing:"0.06em", textTransform:"uppercase", color:statusColor, border:"1px solid " + statusColor, borderRadius:"4px", padding:"2px 6px", opacity:0.9, marginTop:"4px" }}>
-              <span style={{ display:"inline-block", width:"6px", height:"6px", borderRadius:"50%", background:statusColor, marginRight:"4px", verticalAlign:"middle" }} />
-              {statusBadge}
-            </span>
+            {statusBadge === "Missing roster" ? (
+              <button
+                onClick={function(e) { e.stopPropagation(); loadTeam(team); }}
+                style={{ display:"inline-flex", alignItems:"center", gap:"4px", fontSize:"10px", fontWeight:"bold",
+                  letterSpacing:"0.05em", textTransform:"uppercase", color:"#92400e",
+                  background:"rgba(180,83,9,0.08)", border:"1px solid rgba(180,83,9,0.35)",
+                  borderRadius:"4px", padding:"2px 8px", marginTop:"4px", cursor:"pointer",
+                  fontFamily:"inherit", lineHeight:"16px", whiteSpace:"nowrap" }}>
+                <span style={{ display:"inline-block", width:"6px", height:"6px", borderRadius:"50%", background:"#b45309", flexShrink:0 }} />
+                {teamRoster.length === 0 ? "Add Players →" : "Complete Roster (" + teamRoster.length + "/10) →"}
+              </button>
+            ) : (
+              <span style={{ display:"inline-block", width:"120px", textAlign:"center", fontSize:"10px", fontWeight:"bold", letterSpacing:"0.06em", textTransform:"uppercase", color:statusColor, border:"1px solid " + statusColor, borderRadius:"4px", padding:"2px 6px", opacity:0.9, marginTop:"4px" }}>
+                <span style={{ display:"inline-block", width:"6px", height:"6px", borderRadius:"50%", background:statusColor, marginRight:"4px", verticalAlign:"middle" }} />
+                {statusBadge}
+              </span>
+            )}
             {nextGame ? (
               <div style={{ fontSize:"12px", color:"#6b7280", marginTop:"3px", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
                 {nextGame.days === 0 ? "Today" : nextGame.days === 1 ? "Tomorrow" : nextGame.days + " days"}{nextGame.game.opponent ? " \u00b7 vs " + nextGame.game.opponent : ""}
@@ -3165,9 +3186,21 @@ export default function App() {
                         })
                       : teams;
                     if (filtered.length === 0) {
+                      var _hasQuery = q.length > 0;
                       return (
-                        <div style={{ textAlign:"center", padding:"20px 0", color:"#9ca3af", fontSize:"12px", fontStyle:"italic" }}>
-                          No teams match "{teamSearch}"
+                        <div style={{ textAlign:"center", padding:"36px 16px", display:"flex", flexDirection:"column", alignItems:"center", gap:"8px" }}>
+                          <div style={{ fontSize:"32px", lineHeight:1 }}>{_hasQuery ? "🔍" : "🏟️"}</div>
+                          <div style={{ fontSize:"15px", fontWeight:"bold", color:"#374151", fontFamily:"Georgia,serif", marginTop:"4px" }}>
+                            {_hasQuery ? "No teams found" : "No teams yet"}
+                          </div>
+                          <div style={{ fontSize:"12px", color:"#9ca3af" }}>
+                            {_hasQuery ? "Try a different search, or create a new team." : "Create your first team to get started."}
+                          </div>
+                          <button
+                            onClick={function() { setNewTeam({ name:"", ageGroup:"", sport:"", year: new Date().getFullYear() }); setHomeMode("create"); }}
+                            style={{ marginTop:"8px", padding:"8px 20px", borderRadius:"8px", background:"#0f1f3d", color:"#fff", border:"none", fontSize:"13px", fontWeight:"bold", fontFamily:"Georgia,serif", cursor:"pointer" }}>
+                            + Create Team
+                          </button>
                         </div>
                       );
                     }
