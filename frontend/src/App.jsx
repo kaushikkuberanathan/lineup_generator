@@ -1189,6 +1189,77 @@ function fmtStat(val) {
 }
 
 // ============================================================
+// NOW BATTING BAR
+// Coach-only sticky strip shown above the bottom nav on Game Day tab.
+// Tapping the batter name advances the index by 1 (cycles).
+// ============================================================
+
+function NowBattingBar({ battingOrder, currentIndex, onAdvance }) {
+  if (!battingOrder || battingOrder.length === 0) return null;
+  var len = battingOrder.length;
+  var nowName    = battingOrder[currentIndex % len] || "";
+  var onDeckName = battingOrder[(currentIndex + 1) % len] || "";
+  var inHoleName = battingOrder[(currentIndex + 2) % len] || "";
+  return (
+    <div style={{
+      background: '#1e3a5f', color: '#ffffff', fontFamily: "Georgia,'Times New Roman',serif",
+      padding: '10px 16px', width: '100%', boxSizing: 'border-box',
+      display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'nowrap', overflow: 'hidden', flexShrink: 0,
+    }}>
+      <span style={{ opacity: 0.55, fontSize: '12px', whiteSpace: 'nowrap', flexShrink: 0 }}>Now Batting:</span>
+      <span
+        onClick={onAdvance}
+        title="Tap to advance"
+        style={{ fontWeight: 'bold', fontSize: '16px', cursor: 'pointer', color: '#f5c842',
+          textDecoration: 'underline', whiteSpace: 'nowrap', flexShrink: 0 }}
+      >
+        {firstName(nowName)}
+      </span>
+      <span style={{ opacity: 0.45, fontSize: '12px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        {' · On Deck: '}{firstName(onDeckName)}{' · In Hole: '}{firstName(inHoleName)}
+      </span>
+    </div>
+  );
+}
+
+// ============================================================
+// PLAYER FILTER TOGGLE
+// Viewer mode (shared link) — horizontal pill list to filter by player.
+// "All Players" resets the selection.
+// ============================================================
+
+function PlayerFilterToggle({ players, selected, onSelect }) {
+  var pills = ['All Players'].concat(players);
+  return (
+    <div style={{
+      display: 'flex', gap: '6px', overflowX: 'auto', WebkitOverflowScrolling: 'touch',
+      paddingBottom: '4px', scrollbarWidth: 'none', msOverflowStyle: 'none',
+    }}>
+      {pills.map(function(name) {
+        var isSelected = name === 'All Players' ? !selected : selected === name;
+        return (
+          <button
+            key={name}
+            onClick={function() { onSelect(name === 'All Players' ? null : name); }}
+            style={{
+              flex: 'none', padding: '5px 12px', borderRadius: '14px', cursor: 'pointer',
+              fontFamily: "Georgia,'Times New Roman',serif", fontSize: '12px', whiteSpace: 'nowrap',
+              border: isSelected ? '2px solid #f5a623' : '1px solid rgba(15,31,61,0.15)',
+              background: isSelected ? '#f5a623' : '#ffffff',
+              color: isSelected ? '#0f1f3d' : '#555',
+              fontWeight: isSelected ? 'bold' : 'normal',
+              boxShadow: isSelected ? '0 2px 6px rgba(245,166,35,0.3)' : 'none',
+            }}
+          >
+            {name === 'All Players' ? name : firstName(name)}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// ============================================================
 // MAIN COMPONENT
 // ============================================================
 
@@ -1515,6 +1586,8 @@ export default function App() {
     return tid ? (loadJSON("team:" + tid + ":locked", false) || false) : false;
   });
   var lineupLocked = _locked[0]; var setLineupLocked = _locked[1];
+  var _cbi = useState(function() { return parseInt(loadJSON("ui:currentBatterIndex", 0), 10) || 0; });
+  var currentBatterIndex = _cbi[0]; var setCurrentBatterIndex = _cbi[1];
   var _hydrating = useState(false);
   var isHydrating = _hydrating[0]; var setIsHydrating = _hydrating[1];
   var _nfn = useState(""); var newFirstName = _nfn[0]; var setNewFirstName = _nfn[1];
@@ -1864,6 +1937,11 @@ export default function App() {
     }
   }
 
+  function persistCurrentBatterIndex(idx) {
+    setCurrentBatterIndex(idx);
+    saveJSON("ui:currentBatterIndex", idx);
+  }
+
   function persistLineupLocked(val) {
     window._lastLocalWrite = Date.now();
     setLineupLocked(val);
@@ -1920,6 +1998,28 @@ export default function App() {
     var id = generateShareId();
     var url = window.location.href.split("?")[0] + "?s=" + id;
     // Fire-and-forget — save completes well before recipient opens the link
+    dbSaveShareLink(id, payload);
+    if (navigator.share) {
+      navigator.share({ title:(activeTeam ? activeTeam.name : "Lineup") + " — Game Day Lineup", url:url })
+        .catch(function(e) { if (e.name !== "AbortError") { copyToClipboard(url); } });
+    } else {
+      copyToClipboard(url);
+    }
+  }
+
+  function shareViewerLink() {
+    track("share_viewer_link", {});
+    var payload = {
+      team:    activeTeam ? activeTeam.name + (activeTeam.ageGroup ? " " + activeTeam.ageGroup : "") : "Lineup",
+      game:    null,
+      grid:    grid,
+      batting: battingOrder,
+      roster:  roster.map(function(r) { return r.name; }),
+      songs:   {}
+    };
+    var id = generateShareId();
+    var base = window.location.href.split("?")[0];
+    var url = base + "?s=" + id + "&view=true";
     dbSaveShareLink(id, payload);
     if (navigator.share) {
       navigator.share({ title:(activeTeam ? activeTeam.name : "Lineup") + " — Game Day Lineup", url:url })
@@ -3885,8 +3985,78 @@ export default function App() {
       return Object.keys(coveredPos).length === FIELD_POSITIONS.length && benchCount >= 1;
     });
 
+    // ── LineupValidationBanner ─────────────────────────────────────────
+    var _bannerIssues = [];
+
+    // (a) Incomplete innings
+    for (var _bi = 0; _bi < innArr.length; _bi++) {
+      if (!inningComplete[_bi]) {
+        _bannerIssues.push("Inning " + (_bi + 1) + " is incomplete");
+      }
+    }
+
+    // (b) Duplicate position in same inning
+    for (var _di = 0; _di < innArr.length; _di++) {
+      var _seen = {};
+      for (var _dp = 0; _dp < players.length; _dp++) {
+        var _dpos = (grid[players[_dp]] || [])[_di] || "";
+        if (_dpos && _dpos !== "Bench") {
+          if (_seen[_dpos]) {
+            _bannerIssues.push("Inning " + (_di + 1) + ": " + _dpos + " assigned to two players");
+          } else {
+            _seen[_dpos] = true;
+          }
+        }
+      }
+    }
+
+    // (c) Bench rotation balance — flag if spread > 2
+    if (players.length > 0) {
+      var _bCounts = players.map(function(p) {
+        var cnt = 0;
+        for (var _ii = 0; _ii < innings; _ii++) {
+          if ((grid[p] || [])[_ii] === "Bench") cnt++;
+        }
+        return cnt;
+      });
+      var _maxB = Math.max.apply(null, _bCounts);
+      var _minB = Math.min.apply(null, _bCounts);
+      if (_maxB - _minB > 2) {
+        var _heavyIdx = _bCounts.indexOf(_maxB);
+        var _heavyName = (roster[_heavyIdx] && (roster[_heavyIdx].firstName || roster[_heavyIdx].name)) || players[_heavyIdx];
+        _bannerIssues.push("Bench rotation uneven — " + _heavyName + " benched " + _maxB + "x");
+      }
+    }
+
+    var _bannerReady = _bannerIssues.length === 0;
+    // ──────────────────────────────────────────────────────────────────
+
     return (
       <div>
+        {/* ── Lineup Validation Banner ──────────────────────────────── */}
+        <div style={{ borderRadius:"10px", padding:"12px 16px", marginBottom:"14px", display:"flex", alignItems:"flex-start", gap:"10px",
+          background: _bannerReady ? "#d1fae5" : "#fef3c7",
+          border: "1px solid " + (_bannerReady ? "rgba(16,185,129,0.3)" : "rgba(217,119,6,0.3)") }}>
+          <span style={{ fontSize:"20px", lineHeight:1, flexShrink:0 }}>{_bannerReady ? "✅" : "⚠️"}</span>
+          <div style={{ flex:1 }}>
+            {_bannerReady ? (
+              <div style={{ fontSize:"16px", fontWeight:"bold", color:"#065f46", fontFamily:"Georgia,serif" }}>
+                Lineup Ready — All innings valid · Bench rotation balanced
+              </div>
+            ) : (
+              <div>
+                <div style={{ fontSize:"16px", fontWeight:"bold", color:"#92400e", fontFamily:"Georgia,serif", marginBottom:"4px" }}>
+                  {"Fix " + _bannerIssues.length + (_bannerIssues.length === 1 ? " issue" : " issues")}
+                </div>
+                <ul style={{ margin:0, paddingLeft:"18px" }}>
+                  {_bannerIssues.map(function(msg, idx) {
+                    return <li key={idx} style={{ fontSize:"14px", color:"#78350f", lineHeight:1.6 }}>{msg}</li>;
+                  })}
+                </ul>
+              </div>
+            )}
+          </div>
+        </div>
         {/* ── Finalized badge ───────────────────────────────── */}
 
         <div style={{ display:"flex", gap:"8px", marginBottom:"14px", flexWrap:"wrap", alignItems:"center" }}>
@@ -6738,6 +6908,9 @@ export default function App() {
             <button style={{ ...S.btn("ghost"), border:"1px solid rgba(15,31,61,0.2)" }} onClick={shareCurrentLineup}>
               Share as Link
             </button>
+            <button style={{ ...S.btn("ghost"), border:"1px solid rgba(15,31,61,0.2)" }} onClick={shareViewerLink}>
+              Share Viewer Link
+            </button>
             <button style={{ ...S.btn("ghost"), border:"1px solid rgba(15,31,61,0.2)" }} onClick={function() { generatePDF("share"); }} disabled={pdfLoading || pdfSharing}>
               {pdfSharing ? "Preparing..." : "Share as PDF"}
             </button>
@@ -6981,6 +7154,158 @@ export default function App() {
   // ============================================================
   // SHARED LINEUP VIEW (read-only, opened via share link)
   // ============================================================
+  // ============================================================
+  // VIEWER MODE — read-only swipeable inning cards for parents/players
+  // Activated via ?view=true or ?role=viewer (combined with ?s= share link)
+  // ============================================================
+  function renderViewerMode(payload) {
+    var POS_LABELS = {
+      P:"Pitcher", C:"Catcher", "1B":"First Base", "2B":"Second Base",
+      "3B":"Third Base", SS:"Shortstop", LF:"Left Field", LC:"Left Center",
+      RC:"Right Center", RF:"Right Field"
+    };
+    var rosterNames = payload.roster || [];
+    // Derive inning count from grid
+    var innCount = 0;
+    for (var ri = 0; ri < rosterNames.length; ri++) {
+      var rlen = (payload.grid[rosterNames[ri]] || []).length;
+      if (rlen > innCount) innCount = rlen;
+    }
+    if (!innCount) innCount = 6;
+    var innArr = [];
+    for (var ii = 0; ii < innCount; ii++) innArr.push(ii);
+
+    var _vIdx = useState(0);
+    var vIdx = _vIdx[0]; var setVIdx = _vIdx[1];
+
+    function playerAt(pos, inn) {
+      for (var pi = 0; pi < rosterNames.length; pi++) {
+        if ((payload.grid[rosterNames[pi]] || [])[inn] === pos) return rosterNames[pi];
+      }
+      return "";
+    }
+    function benchFor(inn) {
+      return rosterNames.filter(function(n) {
+        return (payload.grid[n] || [])[inn] === "Bench";
+      });
+    }
+
+    var batting = payload.batting || [];
+    var bench = benchFor(vIdx);
+    var teamLabel = payload.team || "Lineup";
+
+    return (
+      <div style={{ minHeight:"100vh", background:"#0f1f3d", fontFamily:"Georgia,'Times New Roman',serif", color:"#fff", display:"flex", flexDirection:"column", maxWidth:"100vw", overflow:"hidden" }}>
+
+        {/* Header */}
+        <div style={{ padding:"12px 20px", background:"linear-gradient(135deg,#0f1f3d,#1a3260)", borderBottom:"3px solid #f5c842", display:"flex", alignItems:"center", gap:"12px", flexShrink:0 }}>
+          <div style={{ fontSize:"24px" }}>⚾</div>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontSize:"17px", fontWeight:"bold", color:"#f5c842", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{teamLabel}</div>
+            <div style={{ fontSize:"10px", color:"#94a3b8", textTransform:"uppercase", letterSpacing:"0.1em" }}>Game Day · Read-Only</div>
+          </div>
+        </div>
+
+        {/* Inning tab strip */}
+        <div style={{ display:"flex", overflowX:"auto", background:"rgba(0,0,0,0.3)", borderBottom:"1px solid rgba(255,255,255,0.08)", flexShrink:0, scrollbarWidth:"none" }}>
+          {innArr.map(function(i) {
+            var active = vIdx === i;
+            return (
+              <button key={i}
+                onClick={function(ii) { return function() { setVIdx(ii); }; }(i)}
+                style={{ flex:"0 0 auto", padding:"9px 20px", border:"none", cursor:"pointer",
+                  fontFamily:"Georgia,serif", fontSize:"13px", fontWeight:"bold",
+                  background: active ? "#f5c842" : "transparent",
+                  color: active ? "#0f1f3d" : "#64748b",
+                  borderBottom: active ? "3px solid #f5c842" : "3px solid transparent",
+                  transition:"background 0.15s" }}>
+                INN {i+1}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Card body */}
+        <div style={{ flex:1, overflowY:"auto", padding:"16px", display:"flex", flexDirection:"column", gap:"10px", maxWidth:"600px", margin:"0 auto", width:"100%", boxSizing:"border-box" }}>
+
+          {/* Inning header */}
+          <div style={{ textAlign:"center", padding:"10px 0 4px" }}>
+            <div style={{ fontSize:"22px", fontWeight:"bold", color:"#f5c842", textTransform:"uppercase", letterSpacing:"0.12em" }}>
+              INNING {vIdx+1}
+            </div>
+          </div>
+
+          {/* Field positions */}
+          {FIELD_POSITIONS.map(function(pos) {
+            var name = playerAt(pos, vIdx);
+            var pc = POS_COLORS[pos] || "#555";
+            return (
+              <div key={pos} style={{ display:"flex", alignItems:"center", gap:"12px", padding:"10px 14px",
+                background:"rgba(255,255,255,0.06)", borderRadius:"8px", borderLeft:"4px solid " + pc }}>
+                <div style={{ fontSize:"11px", fontWeight:"bold", color:pc, minWidth:"34px", textAlign:"right", flexShrink:0 }}>{pos}</div>
+                <div style={{ fontSize:"19px", fontWeight:"bold", color: name ? "#fff" : "#3a4a6a", flex:1 }}>
+                  {name ? firstName(name) : "—"}
+                </div>
+                <div style={{ fontSize:"10px", color:"#64748b", flexShrink:0 }}>{POS_LABELS[pos] || ""}</div>
+              </div>
+            );
+          })}
+
+          {/* Bench */}
+          <div style={{ background:"rgba(255,255,255,0.04)", borderRadius:"8px", padding:"10px 14px", borderLeft:"4px solid #555" }}>
+            <div style={{ fontSize:"10px", color:"#64748b", textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"6px" }}>Bench</div>
+            {bench.length > 0 ? (
+              <div style={{ display:"flex", flexWrap:"wrap", gap:"8px" }}>
+                {bench.map(function(n) {
+                  return <div key={n} style={{ fontSize:"19px", fontWeight:"bold", color:"#94a3b8" }}>{firstName(n)}</div>;
+                })}
+              </div>
+            ) : (
+              <div style={{ fontSize:"14px", color:"#3a4a6a" }}>—</div>
+            )}
+          </div>
+
+          {/* Batting order */}
+          {batting.length > 0 ? (
+            <div style={{ background:"rgba(255,255,255,0.04)", borderRadius:"8px", padding:"10px 14px" }}>
+              <div style={{ fontSize:"10px", color:"#64748b", textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"8px" }}>Batting Order</div>
+              <div style={{ display:"flex", flexDirection:"column", gap:"3px" }}>
+                {batting.map(function(n, idx) {
+                  return (
+                    <div key={n+idx} style={{ display:"flex", alignItems:"center", gap:"10px" }}>
+                      <div style={{ fontSize:"12px", color:"#64748b", minWidth:"22px", textAlign:"right", flexShrink:0 }}>{idx+1}.</div>
+                      <div style={{ fontSize:"18px", fontWeight:"bold", color:"#e2e8f0" }}>{firstName(n)}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
+        </div>
+
+        {/* Prev / Next footer */}
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 20px",
+          borderTop:"1px solid rgba(255,255,255,0.08)", background:"rgba(0,0,0,0.3)", flexShrink:0 }}>
+          <button onClick={function() { setVIdx(Math.max(0, vIdx-1)); }}
+            disabled={vIdx === 0}
+            style={{ padding:"10px 22px", borderRadius:"8px", border:"1px solid rgba(255,255,255,0.18)",
+              background:"transparent", color: vIdx === 0 ? "#2d3f5a" : "#cbd5e1",
+              cursor: vIdx === 0 ? "default" : "pointer", fontSize:"14px", fontFamily:"Georgia,serif" }}>
+            ← Prev
+          </button>
+          <div style={{ fontSize:"12px", color:"#64748b" }}>Inning {vIdx+1} of {innCount}</div>
+          <button onClick={function() { setVIdx(Math.min(innCount-1, vIdx+1)); }}
+            disabled={vIdx === innCount-1}
+            style={{ padding:"10px 22px", borderRadius:"8px", border:"1px solid rgba(255,255,255,0.18)",
+              background:"transparent", color: vIdx === innCount-1 ? "#2d3f5a" : "#cbd5e1",
+              cursor: vIdx === innCount-1 ? "default" : "pointer", fontSize:"14px", fontFamily:"Georgia,serif" }}>
+            Next →
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   function renderSharedView(payload) {
     // Derive inning count from grid
     var innCount = 0;
@@ -7262,7 +7587,11 @@ export default function App() {
         </div>
       );
     }
-    if (sharePayload) { return renderSharedView(sharePayload); }
+    if (sharePayload) {
+      var _vp = new URLSearchParams(window.location.search);
+      var isViewer = _vp.get("view") === "true" || _vp.get("role") === "viewer";
+      return isViewer ? renderViewerMode(sharePayload) : renderSharedView(sharePayload);
+    }
     return (
       <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", minHeight:"100vh", background:"#fdf8f0", gap:"12px" }}>
         <div style={{ fontSize:"32px" }}>😕</div>
@@ -7513,6 +7842,15 @@ export default function App() {
           {(primaryTab === "home" || (!activeTeam && primaryTab !== "more")) ? renderHome() : tabContent}
         </div>
       </div>
+      {primaryTab === "gameday" && battingOrder && battingOrder.length > 0 ? (
+        <NowBattingBar
+          battingOrder={battingOrder}
+          currentIndex={currentBatterIndex}
+          onAdvance={function() {
+            persistCurrentBatterIndex((currentBatterIndex + 1) % battingOrder.length);
+          }}
+        />
+      ) : null}
       {renderBottomNav()}
       {needRefresh && (
         <div style={{
