@@ -131,9 +131,17 @@ var DEFAULT_ROSTER = [];
 var _mem = {};
 var SCHEMA_VERSION = 2;
 
-var APP_VERSION = "1.6.5";
+var APP_VERSION = "1.6.6";
 
 var VERSION_HISTORY = [
+  {
+    version: "1.6.6",
+    date: "March 29, 2026",
+    changes: [
+      "Feat: Now Batting Bar — sticky strip above bottom nav on Game Day tab; 3-pill layout (Now Batting / On Deck / In Hole) with ‹ › nav buttons; index persisted to localStorage",
+      "Feat: Player Filter Toggle — viewer (share link) mode; horizontal pill list highlights selected player across diamond, table, and batting order"
+    ]
+  },
   {
     version: "1.6.5",
     date: "March 28, 2026",
@@ -1194,30 +1202,52 @@ function fmtStat(val) {
 // Tapping the batter name advances the index by 1 (cycles).
 // ============================================================
 
-function NowBattingBar({ battingOrder, currentIndex, onAdvance }) {
+function NowBattingBar({ battingOrder, currentIndex, onAdvance, onBack }) {
   if (!battingOrder || battingOrder.length === 0) return null;
   var len = battingOrder.length;
   var nowName    = battingOrder[currentIndex % len] || "";
   var onDeckName = battingOrder[(currentIndex + 1) % len] || "";
   var inHoleName = battingOrder[(currentIndex + 2) % len] || "";
+  var btnStyle = {
+    background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.25)',
+    color: '#ffffff', borderRadius: '6px', width: '32px', alignSelf: 'stretch',
+    fontSize: '20px', fontWeight: 'bold', cursor: 'pointer', flexShrink: 0,
+    display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit',
+  };
+  var pills = [
+    { label: 'Now Batting', name: nowName,    active: true  },
+    { label: 'On Deck',     name: onDeckName, active: false },
+    { label: 'In Hole',     name: inHoleName, active: false },
+  ];
   return (
     <div style={{
       background: '#1e3a5f', color: '#ffffff', fontFamily: "Georgia,'Times New Roman',serif",
-      padding: '10px 16px', width: '100%', boxSizing: 'border-box',
-      display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'nowrap', overflow: 'hidden', flexShrink: 0,
+      padding: '8px 10px', width: '100%', boxSizing: 'border-box',
+      display: 'flex', alignItems: 'stretch', gap: '8px', flexShrink: 0,
     }}>
-      <span style={{ opacity: 0.55, fontSize: '12px', whiteSpace: 'nowrap', flexShrink: 0 }}>Now Batting:</span>
-      <span
-        onClick={onAdvance}
-        title="Tap to advance"
-        style={{ fontWeight: 'bold', fontSize: '16px', cursor: 'pointer', color: '#f5c842',
-          textDecoration: 'underline', whiteSpace: 'nowrap', flexShrink: 0 }}
-      >
-        {firstName(nowName)}
-      </span>
-      <span style={{ opacity: 0.45, fontSize: '12px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-        {' · On Deck: '}{firstName(onDeckName)}{' · In Hole: '}{firstName(inHoleName)}
-      </span>
+      <button onClick={onBack} title="Previous batter" style={btnStyle}>‹</button>
+      {pills.map(function(pill) {
+        return (
+          <div key={pill.label} style={{
+            flex: 1, minWidth: 0, textAlign: 'center',
+            background: pill.active ? 'rgba(245,200,66,0.12)' : 'rgba(255,255,255,0.06)',
+            border: '1px solid ' + (pill.active ? 'rgba(245,200,66,0.4)' : 'rgba(255,255,255,0.12)'),
+            borderRadius: '8px', padding: '6px 8px',
+          }}>
+            <div style={{ fontSize: '20px', fontWeight: 'bold', lineHeight: 1.1,
+              color: pill.active ? '#f5c842' : 'rgba(255,255,255,0.85)',
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {firstName(pill.name)}
+            </div>
+            <div style={{ fontSize: '10px', marginTop: '3px',
+              color: pill.active ? 'rgba(245,200,66,0.7)' : 'rgba(255,255,255,0.4)',
+              letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+              {pill.label}
+            </div>
+          </div>
+        );
+      })}
+      <button onClick={onAdvance} title="Next batter" style={btnStyle}>›</button>
     </div>
   );
 }
@@ -1995,10 +2025,17 @@ export default function App() {
         return s;
       })()
     };
-    var id = generateShareId();
-    var url = window.location.href.split("?")[0] + "?s=" + id;
-    // Fire-and-forget — save completes well before recipient opens the link
-    dbSaveShareLink(id, payload);
+    var base = window.location.href.split("?")[0];
+    var url;
+    if (isSupabaseEnabled) {
+      var id = generateShareId();
+      dbSaveShareLink(id, payload);
+      url = base + "?s=" + id;
+    } else {
+      // Local dev fallback — embed payload in URL via base64
+      try { url = base + "?share=" + btoa(unescape(encodeURIComponent(JSON.stringify(payload)))); }
+      catch(e) { url = base; }
+    }
     if (navigator.share) {
       navigator.share({ title:(activeTeam ? activeTeam.name : "Lineup") + " — Game Day Lineup", url:url })
         .catch(function(e) { if (e.name !== "AbortError") { copyToClipboard(url); } });
@@ -2017,10 +2054,17 @@ export default function App() {
       roster:  roster.map(function(r) { return r.name; }),
       songs:   {}
     };
-    var id = generateShareId();
     var base = window.location.href.split("?")[0];
-    var url = base + "?s=" + id + "&view=true";
-    dbSaveShareLink(id, payload);
+    var url;
+    if (isSupabaseEnabled) {
+      var id = generateShareId();
+      dbSaveShareLink(id, payload);
+      url = base + "?s=" + id + "&view=true";
+    } else {
+      // Local dev fallback — embed payload in URL via base64
+      try { url = base + "?share=" + btoa(unescape(encodeURIComponent(JSON.stringify(payload)))) + "&view=true"; }
+      catch(e) { url = base + "?view=true"; }
+    }
     if (navigator.share) {
       navigator.share({ title:(activeTeam ? activeTeam.name : "Lineup") + " — Game Day Lineup", url:url })
         .catch(function(e) { if (e.name !== "AbortError") { copyToClipboard(url); } });
@@ -6908,9 +6952,11 @@ export default function App() {
             <button style={{ ...S.btn("ghost"), border:"1px solid rgba(15,31,61,0.2)" }} onClick={shareCurrentLineup}>
               Share as Link
             </button>
-            <button style={{ ...S.btn("ghost"), border:"1px solid rgba(15,31,61,0.2)" }} onClick={shareViewerLink}>
-              Share Viewer Link
-            </button>
+            {(FEATURE_FLAGS.VIEWER_MODE || localStorage.getItem("flag:viewer_mode") === "1") ? (
+              <button style={{ ...S.btn("ghost"), border:"1px solid rgba(15,31,61,0.2)" }} onClick={shareViewerLink}>
+                Share Viewer Link
+              </button>
+            ) : null}
             <button style={{ ...S.btn("ghost"), border:"1px solid rgba(15,31,61,0.2)" }} onClick={function() { generatePDF("share"); }} disabled={pdfLoading || pdfSharing}>
               {pdfSharing ? "Preparing..." : "Share as PDF"}
             </button>
@@ -7316,11 +7362,13 @@ export default function App() {
     for (var i = 0; i < innCount; i++) { innArr.push(i); }
     var rosterNames = payload.roster || [];
 
-    // Local state for inning filter and view mode — version-counter pattern (no hooks import)
+    // Local state for inning filter, view mode, and player filter
     var _svInn = useState(null);
     var svInn = _svInn[0]; var setSvInn = _svInn[1];
     var _svView = useState("diamond");
     var svView = _svView[0]; var setSvView = _svView[1];
+    var _svPlayer = useState(null);
+    var svPlayer = _svPlayer[0]; var setSvPlayer = _svPlayer[1];
 
     // Build position box from payload.grid (no live React state here)
     function sharedPosBox(pos) {
@@ -7335,23 +7383,26 @@ export default function App() {
         }
         innPlayers.push({ inn: ii + 1, name: found });
       }
+      var hasSelectedPlayer = svPlayer && innPlayers.some(function(row) { return row.name === svPlayer; });
       return (
-        <div style={{ background:"rgba(255,255,255,0.97)", border:"2px solid " + pc, borderRadius:"7px",
+        <div style={{ background: hasSelectedPlayer ? "rgba(245,166,35,0.10)" : "rgba(255,255,255,0.97)",
+          border: "2px solid " + (hasSelectedPlayer ? "#f5a623" : pc), borderRadius:"7px",
           padding: isSingle ? "5px 8px" : "3px 5px", width:"100%", boxSizing:"border-box",
           boxShadow:"0 1px 5px rgba(0,0,0,0.14)", overflow:"hidden", minWidth:0 }}>
           <div style={{ fontSize:"9px", fontWeight:"bold", color:pc, textAlign:"center",
             borderBottom:"1px solid "+pc+"44", paddingBottom:"2px", marginBottom: isSingle ? "4px" : "2px" }}>{pos}</div>
           {innPlayers.map(function(row) {
+            var isHighlighted = svPlayer && row.name === svPlayer;
             return isSingle ? (
               <div key={row.inn} style={{ fontSize:"12px", fontWeight: row.name ? "bold" : "normal",
-                color: row.name ? C.navy : "#bbb", textAlign:"center", padding:"1px 0",
+                color: isHighlighted ? "#b45309" : (row.name ? C.navy : "#bbb"), textAlign:"center", padding:"1px 0",
                 overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
                 {row.name ? firstName(row.name) : "-"}
               </div>
             ) : (
               <div key={row.inn} style={{ display:"flex", gap:"2px", alignItems:"baseline", fontSize:"9.5px", lineHeight:"1.5", overflow:"hidden" }}>
                 <span style={{ color:"#aaa", fontSize:"7.5px", minWidth:"8px", textAlign:"right", flexShrink:0 }}>{row.inn}</span>
-                <span style={{ fontWeight: row.name ? "bold" : "normal", color: row.name ? C.navy : "#ccc",
+                <span style={{ fontWeight: (row.name ? "bold" : "normal"), color: isHighlighted ? "#b45309" : (row.name ? C.navy : "#ccc"),
                   overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", minWidth:0, flex:1 }}>{row.name ? firstName(row.name) : "-"}</span>
               </div>
             );
@@ -7410,6 +7461,17 @@ export default function App() {
         </div>
 
         <div style={{ maxWidth:"800px", margin:"0 auto", padding:"16px 20px" }}>
+
+          {/* ── Player filter pills ──────────────────────────────── */}
+          {rosterNames.length > 0 ? (
+            <div style={{ marginBottom:"12px" }}>
+              <PlayerFilterToggle
+                players={rosterNames}
+                selected={svPlayer}
+                onSelect={setSvPlayer}
+              />
+            </div>
+          ) : null}
 
           {/* ── Controls row: inning filter + view toggle ───────── */}
           <div style={{ display:"flex", gap:"8px", alignItems:"center", marginBottom:"16px", flexWrap:"wrap" }}>
@@ -7500,9 +7562,11 @@ export default function App() {
                   </thead>
                   <tbody>
                     {rosterNames.map(function(name, ri) {
+                      var isSelectedRow = svPlayer && name === svPlayer;
+                      var rowBg = isSelectedRow ? "rgba(245,166,35,0.12)" : (ri%2===0 ? "#fff" : "#faf8f5");
                       return (
-                        <tr key={name} style={{ background: ri%2===0 ? "#fff" : "#faf8f5" }}>
-                          <td style={{ padding:"6px 12px", fontWeight:"bold", position:"sticky", left:0, background: ri%2===0?"#fff":"#faf8f5", borderBottom:"1px solid rgba(15,31,61,0.04)" }}>{firstName(name)}</td>
+                        <tr key={name} style={{ background: rowBg }}>
+                          <td style={{ padding:"6px 12px", fontWeight:"bold", position:"sticky", left:0, background: rowBg, borderBottom:"1px solid rgba(15,31,61,0.04)", color: isSelectedRow ? "#b45309" : C.navy }}>{firstName(name)}</td>
                           {(svInn !== null ? [svInn] : innArr).map(function(i) {
                             var pos = (payload.grid[name] || [])[i] || "";
                             return (
@@ -7526,6 +7590,7 @@ export default function App() {
               <div style={S.sectionTitle}>Batting Order</div>
               <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))", gap:"6px" }}>
                 {payload.batting.map(function(name, idx) {
+                  var isSelectedBatter = svPlayer && name === svPlayer;
                   var fieldPos = [];
                   for (var ii = 0; ii < innCount; ii++) {
                     var pos = (payload.grid[name] || [])[ii];
@@ -7538,10 +7603,17 @@ export default function App() {
                     }
                   }
                   return (
-                    <div key={name} style={{ display:"flex", alignItems:"center", gap:"8px", padding:"7px 10px", border:"1px solid rgba(15,31,61,0.08)", borderRadius:"6px" }}>
-                      <div style={{ width:"20px", height:"20px", borderRadius:"50%", background:C.navy, color:"#fff", fontSize:"10px", fontWeight:"bold", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{idx+1}</div>
+                    <div key={name} style={{ display:"flex", alignItems:"center", gap:"8px", padding:"7px 10px",
+                      border:"1px solid " + (isSelectedBatter ? "#f5a623" : "rgba(15,31,61,0.08)"),
+                      background: isSelectedBatter ? "rgba(245,166,35,0.08)" : undefined,
+                      borderRadius:"6px" }}>
+                      <div style={{ width:"20px", height:"20px", borderRadius:"50%",
+                        background: isSelectedBatter ? "#f5a623" : C.navy,
+                        color: isSelectedBatter ? "#0f1f3d" : "#fff",
+                        fontSize:"10px", fontWeight:"bold", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{idx+1}</div>
                       <div style={{ minWidth:0 }}>
-                        <div style={{ fontWeight:"bold", fontSize:"12px", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{firstName(name)}</div>
+                        <div style={{ fontWeight:"bold", fontSize:"12px", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",
+                          color: isSelectedBatter ? "#b45309" : undefined }}>{firstName(name)}</div>
                         {fieldPos.length > 0 ? <div style={{ fontSize:"9px", color:C.textMuted }}>{fieldPos.join(", ")}</div> : null}
                         {(function() {
                           var songData = payload.songs && payload.songs[name];
@@ -7589,7 +7661,8 @@ export default function App() {
     }
     if (sharePayload) {
       var _vp = new URLSearchParams(window.location.search);
-      var isViewer = _vp.get("view") === "true" || _vp.get("role") === "viewer";
+      var _viewerFlagOn = FEATURE_FLAGS.VIEWER_MODE || localStorage.getItem("flag:viewer_mode") === "1";
+      var isViewer = _viewerFlagOn && (_vp.get("view") === "true" || _vp.get("role") === "viewer");
       return isViewer ? renderViewerMode(sharePayload) : renderSharedView(sharePayload);
     }
     return (
@@ -7604,7 +7677,9 @@ export default function App() {
     var shareParam = urlParams.get("share");
     if (shareParam) {
       var payload = JSON.parse(decodeURIComponent(escape(atob(shareParam))));
-      return renderSharedView(payload);
+      var _viewerFlagOn64 = FEATURE_FLAGS.VIEWER_MODE || localStorage.getItem("flag:viewer_mode") === "1";
+      var isViewer64 = _viewerFlagOn64 && (urlParams.get("view") === "true" || urlParams.get("role") === "viewer");
+      return isViewer64 ? renderViewerMode(payload) : renderSharedView(payload);
     }
   } catch (e) {}
 
@@ -7848,6 +7923,9 @@ export default function App() {
           currentIndex={currentBatterIndex}
           onAdvance={function() {
             persistCurrentBatterIndex((currentBatterIndex + 1) % battingOrder.length);
+          }}
+          onBack={function() {
+            persistCurrentBatterIndex((currentBatterIndex - 1 + battingOrder.length) % battingOrder.length);
           }}
         />
       ) : null}

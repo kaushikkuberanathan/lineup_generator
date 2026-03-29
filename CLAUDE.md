@@ -222,6 +222,9 @@ backend/
 
 ## Version History
 
+### v1.6.6 — March 29, 2026
+Now Batting Bar — sticky 3-pill strip (Now Batting / On Deck / In Hole) above bottom nav on Game Day tab; ‹ › nav buttons; index persisted to localStorage · Player Filter Toggle — viewer mode pill list highlights selected player across diamond, table view, and batting order
+
 ### v1.6.5 — March 28, 2026
 Lineup Finalized experience consistent across all 4 Game Day subtabs · Lineups tab gains ✓ Finalize button · Songs tab (Game Day) hides Edit mode when locked
 
