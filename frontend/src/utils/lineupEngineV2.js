@@ -89,7 +89,7 @@ export function generateLineupV2(roster, innings) {
     const benchNames = new Set(inningBench.map((p) => p.name));
     const activePlayers = players.filter((p) => !benchNames.has(p.name));
 
-    if (activePlayers.length < Math.min(players.length, FIELD_POSITIONS.length)) {
+    if (activePlayers.length < FIELD_POSITIONS.length) {
       warnings.push(`Inning ${inning + 1}: not enough active players to fill all field positions.`);
     }
 

@@ -131,9 +131,17 @@ var DEFAULT_ROSTER = [];
 var _mem = {};
 var SCHEMA_VERSION = 2;
 
-var APP_VERSION = "1.6.9";
+var APP_VERSION = "1.7.0";
 
 var VERSION_HISTORY = [
+  {
+    version: "1.7.0",
+    date: "March 29, 2026",
+    changes: [
+      "Fix: lineup engine under-roster guard — 7-player (sub-10) rosters now correctly warn instead of silently leaving positions unassigned",
+      "Test: all 11 engine regression tests passing (first clean all-green run)"
+    ]
+  },
   {
     version: "1.6.9",
     date: "March 29, 2026",

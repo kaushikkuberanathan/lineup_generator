@@ -16,10 +16,12 @@ Youth baseball/softball lineup generator — a mobile-first PWA for coaches to m
 
 ### Frontend (`frontend/`)
 ```bash
-npm run dev        # Dev server at http://localhost:5173
-npm run build      # Production build to dist/
-npm run lint       # ESLint with --max-warnings 0 (strict)
-npm test           # Run lineup engine unit tests (engine.test.js)
+npm run dev          # Dev server at http://localhost:5173
+npm run build        # Production build to dist/
+npm run lint         # ESLint with --max-warnings 0 (strict)
+npm test             # Run Vitest regression suite (vitest run)
+npm run test:watch   # Watch mode for TDD
+npm run test:ui      # Browser UI (vitest --ui)
 ```
 
 ### Backend (`backend/`)
@@ -227,6 +229,19 @@ Add `ADMIN_KEY` to backend `.env` and Render environment to protect the recovery
 - **Frontend**: Vercel auto-deploys from `main` (config: `frontend/vercel.json`)
 - **Backend**: Render auto-deploys from `main` (root dir: `backend/`)
 
+## Test Suite
+
+Tests live in `frontend/src/tests/`. Run with `npm test` from `frontend/`.
+
+- **Framework**: Vitest (configured in `vite.config.js` under the `test` key)
+- **Test file**: `src/tests/engine.v2.test.js` — 5 groups, 11 tests
+- **Fixtures**: `src/tests/fixtures/mockRoster.js`, `mockConfig.js`
+- **Docs**: `src/tests/README.md`
+
+### Rule: any change to `src/utils/lineupEngineV2.js`, `scoringEngine.js`, or `playerMapper.js` must pass `npm test` before commit.
+
+Known failing test: **2.3** (7-player roster produces no warning — confirmed bug, fix in separate session).
+
 ## Key Conventions
 - Display **first names only** throughout the UI (enforced, not optional) — coaches use this on the sideline where brevity matters
 - `touchDrag` state is a mutable ref (not `useState`) to avoid stale closure issues in touch event handlers
@@ -266,6 +281,9 @@ The app sets the localStorage key and redirects cleanly. Use `?disable_flag=<nam
 ---
 
 ## Version History
+
+### v1.7.0 — March 29, 2026
+Fix: lineup engine under-roster guard — sub-10 rosters now warn instead of silently leaving positions unassigned · Test: all 11 V2 engine regression tests passing (first clean all-green run)
 
 ### v1.6.9 — March 29, 2026
 Now Batting inning label above pill strip (syncs with active inning, "INNING —" when none selected) · Fairness Check card post-finalization (bench equity, P/C balance, no back-to-back) with green/amber border · Offline Ready header pill (green/amber/red based on connectivity + local cache state; text hidden in landscape) · Parent View Mode toggle in Game Day (player picker + per-player inning card with color-coded positions)
