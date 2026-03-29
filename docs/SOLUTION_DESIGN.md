@@ -366,6 +366,34 @@ feedback (
 
 Login via phone OTP. Checks `/me` for `memberships[0].role === 'admin'`.
 
+### RLS Policy Map (Phase 4 target state)
+
+All frontend data calls use the anon Supabase key. Until Phase 4 cutover, RLS on
+team data tables is permissive (or disabled) to allow unauthenticated writes. After
+cutover, `004_rls_fixes.sql` applies the following policy set:
+
+| Table | anon SELECT | anon INSERT | auth SELECT | auth INSERT/UPDATE | Notes |
+|-------|-------------|-------------|-------------|---------------------|-------|
+| `share_links` | ✓ (all rows) | ✗ | ✓ | ✓ | Token entropy (~4.3B) is enumeration guard |
+| `teams` | ✗ | ✗ | ✓ own team | ✓ | Gated via team_memberships join |
+| `team_data` | ✗ | ✗ | ✓ own team | ✓ coach/admin only | Highest-risk table — direct frontend writes |
+| `roster_snapshots` | ✗ | ✗ | ✓ own team | ✓ coach/admin only | Snapshot safety net |
+| `team_data_history` | ✗ | ✗ | ✗ | ✗ | service_role + trigger only; no REST access |
+| Auth tables | ✗ | anon INSERT (request-access) | ✓ own row | via backend only | RLS from migrations 001/003 |
+
+**Key architectural insight for viewer mode:** Share links store the full lineup payload
+inline in `share_links.payload`. Viewer mode reads `share_links` by id — it never reads
+`team_data` directly. This means anon SELECT on `team_data` can be fully blocked post-Phase 4
+without breaking the viewer experience.
+
+**Backend bypasses RLS entirely:** All routes in `src/routes/` use `supabaseAdmin`
+(service role key). Service role bypasses RLS. Application-level auth is enforced by
+`requireAuth` and `requireAdmin` middleware — RLS is defence-in-depth, not the
+primary gate for backend routes.
+
+Migration file: `backend/migrations/004_rls_fixes.sql`
+Pre-cutover checklist: `docs/ops/PHASE4_PRECHECK.md`
+
 ### Current Blockers
 
 | Blocker | Status |
