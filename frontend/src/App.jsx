@@ -10,6 +10,15 @@ import { FEATURE_FLAGS } from '@/config/featureFlags';
 import { generateLineupV2 } from '@/utils/lineupEngineV2';
 import { useBackendHealth } from '@/hooks/useBackendHealth';
 import { useRegisterSW } from 'virtual:pwa-register/react';
+import { ErrorBoundary } from './components/Shared/ErrorBoundary';
+import { NowBattingBar } from './components/GameDay/NowBattingStrip';
+import { LockFlow } from './components/GameDay/LockFlow';
+import { FairnessCheck } from './components/GameDay/FairnessCheck';
+import { ParentView } from './components/GameDay/ParentView';
+import { ViewerMode } from './components/Viewer/ViewerMode';
+import { EmptyState } from './components/Home/EmptyState';
+import { ValidationBanner } from './components/Shared/ValidationBanner';
+import { OfflineIndicator } from './components/Shared/OfflineIndicator';
 
 var MIXPANEL_TOKEN = "YOUR_MIXPANEL_TOKEN";
 if (MIXPANEL_TOKEN !== "YOUR_MIXPANEL_TOKEN") {
@@ -132,9 +141,18 @@ var DEFAULT_ROSTER = [];
 var _mem = {};
 var SCHEMA_VERSION = 2;
 
-var APP_VERSION = "1.7.0";
+var APP_VERSION = "1.7.1";
 
 var VERSION_HISTORY = [
+  {
+    version: "1.7.1",
+    date: "March 29, 2026",
+    changes: [
+      "Platform: React Error Boundaries on all major sections — prevents white screen when a section crashes on game day",
+      "Boundaries: Game Day (outer), Parent View, Now Batting, Lock Flow, Viewer Mode, Validation Banner, Fairness Check, Offline Status, Team List",
+      "Fallback: inline amber card with tap-to-reset; shows 'try refreshing' if reset fails"
+    ]
+  },
   {
     version: "1.7.0",
     date: "March 29, 2026",
@@ -1240,69 +1258,7 @@ function fmtStat(val) {
   return isNaN(n) ? '0' : String(n);
 }
 
-// ============================================================
-// NOW BATTING BAR
-// Coach-only sticky strip shown above the bottom nav on Game Day tab.
-// Tapping the batter name advances the index by 1 (cycles).
-// ============================================================
-
-function NowBattingBar({ battingOrder, currentIndex, onAdvance, onBack, activeInning }) {
-  if (!battingOrder || battingOrder.length === 0) return null;
-  var len = battingOrder.length;
-  var nowName    = battingOrder[currentIndex % len] || "";
-  var onDeckName = battingOrder[(currentIndex + 1) % len] || "";
-  var inHoleName = battingOrder[(currentIndex + 2) % len] || "";
-  var btnStyle = {
-    background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.25)',
-    color: '#ffffff', borderRadius: '6px', width: '32px', alignSelf: 'stretch',
-    fontSize: '20px', fontWeight: 'bold', cursor: 'pointer', flexShrink: 0,
-    display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit',
-  };
-  var pills = [
-    { label: 'Now Batting', name: nowName,    active: true  },
-    { label: 'On Deck',     name: onDeckName, active: false },
-    { label: 'In Hole',     name: inHoleName, active: false },
-  ];
-  var inningLabel = (activeInning !== null && activeInning !== undefined) ? ("INNING " + activeInning) : "INNING —";
-  return (
-    <div style={{ display:'flex', flexDirection:'column', flexShrink:0, width:'100%' }}>
-      <div style={{ textAlign:'center', fontSize:'11px', letterSpacing:'0.14em', textTransform:'uppercase',
-        color:'rgba(255,255,255,0.4)', background:'#1e3a5f', paddingTop:'5px', paddingBottom:'1px',
-        fontFamily:"Georgia,'Times New Roman',serif" }}>
-        {inningLabel}
-      </div>
-    <div style={{
-      background: '#1e3a5f', color: '#ffffff', fontFamily: "Georgia,'Times New Roman',serif",
-      padding: '8px 10px', width: '100%', boxSizing: 'border-box',
-      display: 'flex', alignItems: 'stretch', gap: '8px',
-    }}>
-      <button onClick={onBack} title="Previous batter" style={btnStyle}>‹</button>
-      {pills.map(function(pill) {
-        return (
-          <div key={pill.label} style={{
-            flex: 1, minWidth: 0, textAlign: 'center',
-            background: pill.active ? 'rgba(245,200,66,0.12)' : 'rgba(255,255,255,0.06)',
-            border: '1px solid ' + (pill.active ? 'rgba(245,200,66,0.4)' : 'rgba(255,255,255,0.12)'),
-            borderRadius: '8px', padding: '6px 8px',
-          }}>
-            <div style={{ fontSize: '20px', fontWeight: 'bold', lineHeight: 1.1,
-              color: pill.active ? '#f5c842' : 'rgba(255,255,255,0.85)',
-              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {firstName(pill.name)}
-            </div>
-            <div style={{ fontSize: '10px', marginTop: '3px',
-              color: pill.active ? 'rgba(245,200,66,0.7)' : 'rgba(255,255,255,0.4)',
-              letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-              {pill.label}
-            </div>
-          </div>
-        );
-      })}
-      <button onClick={onAdvance} title="Next batter" style={btnStyle}>›</button>
-    </div>
-    </div>
-  );
-}
+// NowBattingBar — extracted to components/GameDay/NowBattingStrip.jsx
 
 // ============================================================
 // PLAYER FILTER TOGGLE
@@ -1341,176 +1297,7 @@ function PlayerFilterToggle({ players, selected, onSelect }) {
   );
 }
 
-// ============================================================
-// LOCK FLOW — 3-step confirmation before finalizing lineup
-// ============================================================
-
-function LockFlow({ activeWarnings, nextGame, hasPin, onConfirmLock, onRequestPin, onClose }) {
-  var _step = useState(1);
-  var step = _step[0]; var setStep = _step[1];
-
-  var totalSteps = hasPin ? 3 : 2;
-  var stepLabels = hasPin ? ["Review", "Confirm", "Lock"] : ["Review", "Confirm"];
-
-  var navy = "#0f1f3d";
-  var win  = "#27ae60";
-  var gold = "#b8860b";
-  var textMuted = "rgba(15,31,61,0.45)";
-
-  function StepIndicator() {
-    return (
-      <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:"6px", marginBottom:"22px" }}>
-        {stepLabels.map(function(label, i) {
-          var num = i + 1;
-          var isActive = step === num;
-          var isDone   = step > num;
-          var circleColor = isDone ? win : isActive ? navy : "rgba(15,31,61,0.12)";
-          var circleText  = isDone ? win : isActive ? "#fff" : textMuted;
-          var circleTextColor = isDone ? "#fff" : isActive ? "#fff" : textMuted;
-          return (
-            <div key={i} style={{ display:"flex", alignItems:"center", gap:"6px" }}>
-              <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:"3px" }}>
-                <div style={{ width:"26px", height:"26px", borderRadius:"50%", background:circleColor,
-                  color:circleTextColor, display:"flex", alignItems:"center", justifyContent:"center",
-                  fontSize:"12px", fontWeight:"bold" }}>
-                  {isDone ? "✓" : num}
-                </div>
-                <span style={{ fontSize:"10px", letterSpacing:"0.05em", textTransform:"uppercase",
-                  color: isActive ? navy : textMuted, fontWeight: isActive ? "bold" : "normal" }}>
-                  {label}
-                </span>
-              </div>
-              {i < stepLabels.length - 1 ? (
-                <div style={{ width:"28px", height:"1px", background:"rgba(15,31,61,0.15)", marginBottom:"14px" }} />
-              ) : null}
-            </div>
-          );
-        })}
-      </div>
-    );
-  }
-
-  var hasIssues = activeWarnings && activeWarnings.length > 0;
-
-  function renderStep1() {
-    return (
-      <div>
-        <div style={{ fontSize:"16px", fontWeight:"bold", color:navy, fontFamily:"Georgia,serif", marginBottom:"14px" }}>
-          Review Lineup
-        </div>
-        {!hasIssues ? (
-          <div style={{ display:"flex", alignItems:"center", gap:"10px", background:"rgba(39,174,96,0.08)",
-            border:"1px solid rgba(39,174,96,0.25)", borderRadius:"10px", padding:"14px", marginBottom:"18px" }}>
-            <span style={{ fontSize:"20px" }}>✅</span>
-            <div>
-              <div style={{ fontSize:"14px", fontWeight:"bold", color:win }}>Lineup looks good</div>
-              <div style={{ fontSize:"12px", color:"rgba(39,174,96,0.8)", marginTop:"2px" }}>No issues detected</div>
-            </div>
-          </div>
-        ) : (
-          <div style={{ background:"rgba(200,16,46,0.04)", border:"1px solid rgba(200,16,46,0.15)", borderRadius:"10px", padding:"14px", marginBottom:"18px" }}>
-            <div style={{ fontSize:"13px", fontWeight:"bold", color:"#92400e", marginBottom:"8px" }}>
-              {activeWarnings.length + " issue" + (activeWarnings.length === 1 ? "" : "s") + " must be resolved"}
-            </div>
-            <ul style={{ margin:0, paddingLeft:"18px", marginBottom:"10px" }}>
-              {activeWarnings.map(function(w, i) {
-                return <li key={i} style={{ fontSize:"12px", color:"#78350f", lineHeight:1.6 }}>{w.msg || w}</li>;
-              })}
-            </ul>
-            <div style={{ fontSize:"11px", color:"#92400e", opacity:0.7 }}>
-              Dismissed warnings are shown here — all issues must be fixed before locking.
-            </div>
-          </div>
-        )}
-        <div style={{ display:"flex", gap:"8px", justifyContent:"flex-end", flexWrap:"wrap" }}>
-          <button onClick={onClose}
-            style={{ padding:"9px 18px", borderRadius:"8px", border:"1px solid rgba(15,31,61,0.2)",
-              background:"transparent", color:navy, fontSize:"13px", fontWeight:"bold", cursor:"pointer", fontFamily:"Georgia,serif" }}>
-            Cancel
-          </button>
-          {hasIssues ? (
-            <button onClick={function() { setStep(2); }}
-              style={{ padding:"9px 18px", borderRadius:"8px", border:"1px solid rgba(200,16,46,0.3)",
-                background:"transparent", color:"#b91c1c", fontSize:"13px", fontWeight:"bold", cursor:"pointer", fontFamily:"Georgia,serif" }}>
-              Lock Anyway →
-            </button>
-          ) : null}
-          <button onClick={function() { setStep(2); }} disabled={hasIssues}
-            style={{ padding:"9px 18px", borderRadius:"8px", border:"none",
-              background: hasIssues ? "rgba(15,31,61,0.1)" : navy,
-              color: hasIssues ? textMuted : "#fff", fontSize:"13px", fontWeight:"bold",
-              cursor: hasIssues ? "not-allowed" : "pointer", fontFamily:"Georgia,serif" }}>
-            Continue to Lock →
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  function renderStep2() {
-    var gameLabel = null;
-    if (nextGame) {
-      var d = new Date(nextGame.date + "T12:00:00");
-      var dateStr = d.toLocaleDateString("en-US", { weekday:"short", month:"short", day:"numeric" });
-      gameLabel = dateStr + (nextGame.opponent ? " · vs " + nextGame.opponent : "");
-    }
-    return (
-      <div>
-        <div style={{ fontSize:"16px", fontWeight:"bold", color:navy, fontFamily:"Georgia,serif", marginBottom:"14px" }}>
-          Confirm Lock
-        </div>
-        <div style={{ background:"rgba(15,31,61,0.04)", border:"1px solid rgba(15,31,61,0.1)", borderRadius:"10px", padding:"14px", marginBottom:"18px" }}>
-          <div style={{ fontSize:"13px", color:textMuted, marginBottom:"6px", letterSpacing:"0.05em", textTransform:"uppercase", fontSize:"10px" }}>
-            You are about to lock the lineup for
-          </div>
-          {gameLabel ? (
-            <div style={{ fontSize:"15px", fontWeight:"bold", color:navy, fontFamily:"Georgia,serif" }}>{gameLabel}</div>
-          ) : (
-            <div style={{ fontSize:"14px", color:navy, fontStyle:"italic" }}>Next game</div>
-          )}
-          <div style={{ fontSize:"12px", color:textMuted, marginTop:"8px" }}>
-            Once locked, the lineup is read-only. Use your PIN to unlock and make changes.
-          </div>
-        </div>
-        <div style={{ display:"flex", gap:"8px", justifyContent:"flex-end" }}>
-          <button onClick={function() { setStep(1); }}
-            style={{ padding:"9px 18px", borderRadius:"8px", border:"1px solid rgba(15,31,61,0.2)",
-              background:"transparent", color:navy, fontSize:"13px", fontWeight:"bold", cursor:"pointer", fontFamily:"Georgia,serif" }}>
-            ← Go Back
-          </button>
-          <button onClick={function() {
-              if (hasPin) {
-                onRequestPin();
-                onClose();
-              } else {
-                onConfirmLock();
-                onClose();
-              }
-            }}
-            style={{ padding:"9px 18px", borderRadius:"8px", border:"none",
-              background:win, color:"#fff", fontSize:"13px", fontWeight:"bold", cursor:"pointer", fontFamily:"Georgia,serif" }}>
-            Lock Lineup →
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, background:"rgba(0,0,0,0.55)", zIndex:9000,
-      display:"flex", alignItems:"flex-end", justifyContent:"center" }}
-      onClick={function(e) { if (e.target === e.currentTarget) onClose(); }}>
-      <div style={{ background:"#fff", borderRadius:"16px 16px 0 0", padding:"24px 20px 32px",
-        width:"100%", maxWidth:"520px", maxHeight:"80vh", overflowY:"auto",
-        boxShadow:"0 -4px 24px rgba(0,0,0,0.18)" }}>
-        {/* Close handle */}
-        <div style={{ width:"36px", height:"4px", borderRadius:"2px", background:"rgba(15,31,61,0.15)", margin:"-8px auto 20px" }} />
-        <StepIndicator />
-        {step === 1 ? renderStep1() : renderStep2()}
-      </div>
-    </div>
-  );
-}
+// LockFlow — extracted to components/GameDay/LockFlow.jsx
 
 // ============================================================
 // MAIN COMPONENT
@@ -2962,6 +2749,7 @@ export default function App() {
       return Math.round((upcoming[0] - today) / 86400000);
     }
 
+    // TODO: extract — deferred (TeamCard depends on getNextGame/getNextPractice inner functions and loadTeam handler — extract after renderHome is refactored)
     function TeamCard(props) {
       var team = props.team;
       // For the active team, use live React state for accurate counts.
@@ -3223,6 +3011,7 @@ export default function App() {
                 </div>
               ) : null}
 
+              <ErrorBoundary fallback="Team List">
               {teams.length > 0 ? (
                 <div style={{ marginBottom:"8px" }}>
                   <div style={{ fontSize:"9px", color:"#c0c7d0", letterSpacing:"0.15em", textTransform:"uppercase", marginBottom:"6px", paddingLeft:"2px" }}>Your Teams</div>
@@ -3251,28 +3040,18 @@ export default function App() {
                         })
                       : teams;
                     if (filtered.length === 0) {
-                      var _hasQuery = q.length > 0;
                       return (
-                        <div style={{ textAlign:"center", padding:"36px 16px", display:"flex", flexDirection:"column", alignItems:"center", gap:"8px" }}>
-                          <div style={{ fontSize:"32px", lineHeight:1 }}>{_hasQuery ? "🔍" : "🏟️"}</div>
-                          <div style={{ fontSize:"15px", fontWeight:"bold", color:"#374151", fontFamily:"Georgia,serif", marginTop:"4px" }}>
-                            {_hasQuery ? "No teams found" : "No teams yet"}
-                          </div>
-                          <div style={{ fontSize:"12px", color:"#9ca3af" }}>
-                            {_hasQuery ? "Try a different search, or create a new team." : "Create your first team to get started."}
-                          </div>
-                          <button
-                            onClick={function() { setNewTeam({ name:"", ageGroup:"", sport:"", year: new Date().getFullYear() }); setHomeMode("create"); }}
-                            style={{ marginTop:"8px", padding:"8px 20px", borderRadius:"8px", background:"#0f1f3d", color:"#fff", border:"none", fontSize:"13px", fontWeight:"bold", fontFamily:"Georgia,serif", cursor:"pointer" }}>
-                            + Create Team
-                          </button>
-                        </div>
+                        <EmptyState
+                          hasQuery={q.length > 0}
+                          onCreateTeam={function() { setNewTeam({ name:"", ageGroup:"", sport:"", year: new Date().getFullYear() }); setHomeMode("create"); }}
+                        />
                       );
                     }
                     return filtered.map(function(t) { return TeamCard({ team: t }); });
                   })()}
                 </div>
               ) : null}
+              </ErrorBoundary>
               {teams.length === 0 ? (
                 <button onClick={function() { setNewTeam({ name:"", ageGroup:"", sport:"", year: new Date().getFullYear() }); setHomeMode("create"); }}
                   style={{ width:"100%", padding:"16px", borderRadius:"12px", background:"linear-gradient(135deg,#c8102e,#a00d25)", color:"#fff", border:"none", fontSize:"16px", fontWeight:"bold", fontFamily:"Georgia,serif", cursor:"pointer", marginBottom:"12px", letterSpacing:"0.04em" }}>
@@ -4386,73 +4165,13 @@ export default function App() {
     return (
       <div>
         {/* ── Lineup Validation Banner ──────────────────────────────── */}
-        <div style={{ borderRadius:"10px", padding:"12px 16px", marginBottom:"14px", display:"flex", alignItems:"flex-start", gap:"10px",
-          background: _bannerReady ? "#d1fae5" : "#fef3c7",
-          border: "1px solid " + (_bannerReady ? "rgba(16,185,129,0.3)" : "rgba(217,119,6,0.3)") }}>
-          <span style={{ fontSize:"20px", lineHeight:1, flexShrink:0 }}>{_bannerReady ? "✅" : "⚠️"}</span>
-          <div style={{ flex:1 }}>
-            {_bannerReady ? (
-              <div style={{ fontSize:"16px", fontWeight:"bold", color:"#065f46", fontFamily:"Georgia,serif" }}>
-                Lineup Ready — All innings valid · Bench rotation balanced
-              </div>
-            ) : (
-              <div>
-                <div style={{ fontSize:"16px", fontWeight:"bold", color:"#92400e", fontFamily:"Georgia,serif", marginBottom:"4px" }}>
-                  {"Fix " + _bannerIssues.length + (_bannerIssues.length === 1 ? " issue" : " issues")}
-                </div>
-                <ul style={{ margin:0, paddingLeft:"18px" }}>
-                  {_bannerIssues.map(function(msg, idx) {
-                    return <li key={idx} style={{ fontSize:"14px", color:"#78350f", lineHeight:1.6 }}>{msg}</li>;
-                  })}
-                </ul>
-              </div>
-            )}
-          </div>
-        </div>
+        <ErrorBoundary fallback="Validation">
+          <ValidationBanner bannerReady={_bannerReady} bannerIssues={_bannerIssues} />
+        </ErrorBoundary>
         {/* ── Fairness Check card — only when finalized ──── */}
-        {lineupLocked ? (function() {
-          var pcCounts = roster.map(function(p) {
-            return (grid[p.name] || []).filter(function(pos) { return pos === "P" || pos === "C"; }).length;
-          });
-          var totalPC = pcCounts.reduce(function(s,x) { return s+x; }, 0);
-          var avgPC = roster.length > 0 ? totalPC / roster.length : 0;
-          var checkA = roster.every(function(p) {
-            return (grid[p.name] || []).some(function(pos) { return pos === "Bench"; });
-          });
-          var checkB = avgPC === 0 || pcCounts.every(function(c) { return c <= Math.max(2 * avgPC, 1); });
-          var checkC = roster.every(function(p) {
-            var asgn = grid[p.name] || [];
-            for (var i = 0; i < asgn.length - 1; i++) {
-              if ((asgn[i] === "P" || asgn[i] === "C") && (asgn[i+1] === "P" || asgn[i+1] === "C")) return false;
-            }
-            return true;
-          });
-          var allPass = checkA && checkB && checkC;
-          var failCount = [checkA, checkB, checkC].filter(function(c) { return !c; }).length;
-          var checks = [
-            { pass: checkA, label: "Everyone sits at least once" },
-            { pass: checkB, label: "Positions balanced" },
-            { pass: checkC, label: "No consecutive P/C assignments" },
-          ];
-          return (
-            <div style={{ background:C.white, borderRadius:"8px", border:"1px solid " + C.border,
-              borderLeft:"4px solid " + (allPass ? "#27ae60" : "#d4a017"),
-              padding:"12px 14px", marginBottom:"14px",
-              boxShadow:"0 1px 4px rgba(15,31,61,0.06)" }}>
-              <div style={{ fontSize:"13px", fontWeight:"bold", marginBottom:"8px",
-                color: allPass ? "#27ae60" : "#d4a017" }}>
-                {allPass ? "✅ Fairness Check Passed" : "⚠️ Fairness Check — " + failCount + " issue" + (failCount !== 1 ? "s" : "")}
-              </div>
-              {checks.map(function(ch) {
-                return (
-                  <div key={ch.label} style={{ fontSize:"14px", color: ch.pass ? C.text : C.red, marginBottom:"3px" }}>
-                    {ch.pass ? "✅" : "❌"} {ch.label}
-                  </div>
-                );
-              })}
-            </div>
-          );
-        })() : null}
+        <ErrorBoundary fallback="Fairness Check">
+          {lineupLocked ? <FairnessCheck roster={roster} grid={grid} C={C} /> : null}
+        </ErrorBoundary>
 
         {/* ── Finalized badge ───────────────────────────────── */}
 
@@ -4702,7 +4421,7 @@ export default function App() {
                               <option value="">-</option>
                               {ALL_POSITIONS.map(function(p) {
                                 var taken = takenByOthers[p] && p !== pos;
-                                return <option key={p} value={p} disabled={taken} style={{ color: taken ? "#bbb" : undefined }}>{p}{taken ? " ·" : ""}</option>;
+                                return <option key={p} value={p} disabled={taken} style={{ color: taken ? "#bbb" : undefined }}>{p === "Bench" ? "X" : p}{taken ? " ·" : ""}</option>;
                               })}
                             </select>
                           </td>
@@ -7570,157 +7289,7 @@ export default function App() {
   // ============================================================
   // SHARED LINEUP VIEW (read-only, opened via share link)
   // ============================================================
-  // ============================================================
-  // VIEWER MODE — read-only swipeable inning cards for parents/players
-  // Activated via ?view=true or ?role=viewer (combined with ?s= share link)
-  // ============================================================
-  function renderViewerMode(payload) {
-    var POS_LABELS = {
-      P:"Pitcher", C:"Catcher", "1B":"First Base", "2B":"Second Base",
-      "3B":"Third Base", SS:"Shortstop", LF:"Left Field", LC:"Left Center",
-      RC:"Right Center", RF:"Right Field"
-    };
-    var rosterNames = payload.roster || [];
-    // Derive inning count from grid
-    var innCount = 0;
-    for (var ri = 0; ri < rosterNames.length; ri++) {
-      var rlen = (payload.grid[rosterNames[ri]] || []).length;
-      if (rlen > innCount) innCount = rlen;
-    }
-    if (!innCount) innCount = 6;
-    var innArr = [];
-    for (var ii = 0; ii < innCount; ii++) innArr.push(ii);
-
-    var _vIdx = useState(0);
-    var vIdx = _vIdx[0]; var setVIdx = _vIdx[1];
-
-    function playerAt(pos, inn) {
-      for (var pi = 0; pi < rosterNames.length; pi++) {
-        if ((payload.grid[rosterNames[pi]] || [])[inn] === pos) return rosterNames[pi];
-      }
-      return "";
-    }
-    function benchFor(inn) {
-      return rosterNames.filter(function(n) {
-        return (payload.grid[n] || [])[inn] === "Bench";
-      });
-    }
-
-    var batting = payload.batting || [];
-    var bench = benchFor(vIdx);
-    var teamLabel = payload.team || "Lineup";
-
-    return (
-      <div style={{ minHeight:"100vh", background:"#0f1f3d", fontFamily:"Georgia,'Times New Roman',serif", color:"#fff", display:"flex", flexDirection:"column", maxWidth:"100vw", overflow:"hidden" }}>
-
-        {/* Header */}
-        <div style={{ padding:"12px 20px", background:"linear-gradient(135deg,#0f1f3d,#1a3260)", borderBottom:"3px solid #f5c842", display:"flex", alignItems:"center", gap:"12px", flexShrink:0 }}>
-          <div style={{ fontSize:"24px" }}>⚾</div>
-          <div style={{ flex:1, minWidth:0 }}>
-            <div style={{ fontSize:"17px", fontWeight:"bold", color:"#f5c842", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{teamLabel}</div>
-            <div style={{ fontSize:"10px", color:"#94a3b8", textTransform:"uppercase", letterSpacing:"0.1em" }}>Game Day · Read-Only</div>
-          </div>
-        </div>
-
-        {/* Inning tab strip */}
-        <div style={{ display:"flex", overflowX:"auto", background:"rgba(0,0,0,0.3)", borderBottom:"1px solid rgba(255,255,255,0.08)", flexShrink:0, scrollbarWidth:"none" }}>
-          {innArr.map(function(i) {
-            var active = vIdx === i;
-            return (
-              <button key={i}
-                onClick={function(ii) { return function() { setVIdx(ii); }; }(i)}
-                style={{ flex:"0 0 auto", padding:"9px 20px", border:"none", cursor:"pointer",
-                  fontFamily:"Georgia,serif", fontSize:"13px", fontWeight:"bold",
-                  background: active ? "#f5c842" : "transparent",
-                  color: active ? "#0f1f3d" : "#64748b",
-                  borderBottom: active ? "3px solid #f5c842" : "3px solid transparent",
-                  transition:"background 0.15s" }}>
-                INN {i+1}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Card body */}
-        <div style={{ flex:1, overflowY:"auto", padding:"16px", display:"flex", flexDirection:"column", gap:"10px", maxWidth:"600px", margin:"0 auto", width:"100%", boxSizing:"border-box" }}>
-
-          {/* Inning header */}
-          <div style={{ textAlign:"center", padding:"10px 0 4px" }}>
-            <div style={{ fontSize:"22px", fontWeight:"bold", color:"#f5c842", textTransform:"uppercase", letterSpacing:"0.12em" }}>
-              INNING {vIdx+1}
-            </div>
-          </div>
-
-          {/* Field positions */}
-          {FIELD_POSITIONS.map(function(pos) {
-            var name = playerAt(pos, vIdx);
-            var pc = POS_COLORS[pos] || "#555";
-            return (
-              <div key={pos} style={{ display:"flex", alignItems:"center", gap:"12px", padding:"10px 14px",
-                background:"rgba(255,255,255,0.06)", borderRadius:"8px", borderLeft:"4px solid " + pc }}>
-                <div style={{ fontSize:"11px", fontWeight:"bold", color:pc, minWidth:"34px", textAlign:"right", flexShrink:0 }}>{pos}</div>
-                <div style={{ fontSize:"19px", fontWeight:"bold", color: name ? "#fff" : "#3a4a6a", flex:1 }}>
-                  {name ? firstName(name) : "—"}
-                </div>
-                <div style={{ fontSize:"10px", color:"#64748b", flexShrink:0 }}>{POS_LABELS[pos] || ""}</div>
-              </div>
-            );
-          })}
-
-          {/* Bench */}
-          <div style={{ background:"rgba(255,255,255,0.04)", borderRadius:"8px", padding:"10px 14px", borderLeft:"4px solid #555" }}>
-            <div style={{ fontSize:"10px", color:"#64748b", textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"6px" }}>Bench</div>
-            {bench.length > 0 ? (
-              <div style={{ display:"flex", flexWrap:"wrap", gap:"8px" }}>
-                {bench.map(function(n) {
-                  return <div key={n} style={{ fontSize:"19px", fontWeight:"bold", color:"#94a3b8" }}>{firstName(n)}</div>;
-                })}
-              </div>
-            ) : (
-              <div style={{ fontSize:"14px", color:"#3a4a6a" }}>—</div>
-            )}
-          </div>
-
-          {/* Batting order */}
-          {batting.length > 0 ? (
-            <div style={{ background:"rgba(255,255,255,0.04)", borderRadius:"8px", padding:"10px 14px" }}>
-              <div style={{ fontSize:"10px", color:"#64748b", textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"8px" }}>Batting Order</div>
-              <div style={{ display:"flex", flexDirection:"column", gap:"3px" }}>
-                {batting.map(function(n, idx) {
-                  return (
-                    <div key={n+idx} style={{ display:"flex", alignItems:"center", gap:"10px" }}>
-                      <div style={{ fontSize:"12px", color:"#64748b", minWidth:"22px", textAlign:"right", flexShrink:0 }}>{idx+1}.</div>
-                      <div style={{ fontSize:"18px", fontWeight:"bold", color:"#e2e8f0" }}>{firstName(n)}</div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          ) : null}
-        </div>
-
-        {/* Prev / Next footer */}
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 20px",
-          borderTop:"1px solid rgba(255,255,255,0.08)", background:"rgba(0,0,0,0.3)", flexShrink:0 }}>
-          <button onClick={function() { setVIdx(Math.max(0, vIdx-1)); }}
-            disabled={vIdx === 0}
-            style={{ padding:"10px 22px", borderRadius:"8px", border:"1px solid rgba(255,255,255,0.18)",
-              background:"transparent", color: vIdx === 0 ? "#2d3f5a" : "#cbd5e1",
-              cursor: vIdx === 0 ? "default" : "pointer", fontSize:"14px", fontFamily:"Georgia,serif" }}>
-            ← Prev
-          </button>
-          <div style={{ fontSize:"12px", color:"#64748b" }}>Inning {vIdx+1} of {innCount}</div>
-          <button onClick={function() { setVIdx(Math.min(innCount-1, vIdx+1)); }}
-            disabled={vIdx === innCount-1}
-            style={{ padding:"10px 22px", borderRadius:"8px", border:"1px solid rgba(255,255,255,0.18)",
-              background:"transparent", color: vIdx === innCount-1 ? "#2d3f5a" : "#cbd5e1",
-              cursor: vIdx === innCount-1 ? "default" : "pointer", fontSize:"14px", fontFamily:"Georgia,serif" }}>
-            Next →
-          </button>
-        </div>
-      </div>
-    );
-  }
+  // renderViewerMode — extracted to components/Viewer/ViewerMode.jsx
 
   function renderSharedView(payload) {
     // Derive inning count from grid
@@ -8033,7 +7602,7 @@ export default function App() {
       var _vp = new URLSearchParams(window.location.search);
       var _viewerFlagOn = FEATURE_FLAGS.VIEWER_MODE || localStorage.getItem("flag:viewer_mode") === "1";
       var isViewer = _viewerFlagOn && (_vp.get("view") === "true" || _vp.get("role") === "viewer");
-      return isViewer ? renderViewerMode(sharePayload) : renderSharedView(sharePayload);
+      return <ErrorBoundary fallback="Viewer Mode">{isViewer ? <ViewerMode payload={sharePayload} /> : renderSharedView(sharePayload)}</ErrorBoundary>;
     }
     return (
       <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", minHeight:"100vh", background:"#fdf8f0", gap:"12px" }}>
@@ -8049,7 +7618,7 @@ export default function App() {
       var payload = JSON.parse(decodeURIComponent(escape(atob(shareParam))));
       var _viewerFlagOn64 = FEATURE_FLAGS.VIEWER_MODE || localStorage.getItem("flag:viewer_mode") === "1";
       var isViewer64 = _viewerFlagOn64 && (urlParams.get("view") === "true" || urlParams.get("role") === "viewer");
-      return isViewer64 ? renderViewerMode(payload) : renderSharedView(payload);
+      return <ErrorBoundary fallback="Viewer Mode">{isViewer64 ? <ViewerMode payload={payload} /> : renderSharedView(payload)}</ErrorBoundary>;
     }
   } catch (e) {}
 
@@ -8226,11 +7795,26 @@ export default function App() {
       ) : null}
       {primaryTab === "roster"  && rosterTab === "players" ? renderRoster()  : null}
       {primaryTab === "roster"  && rosterTab === "songs"   ? renderSongs()   : null}
-      {primaryTab === "gameday" && parentViewActive  ? renderParentView()   : null}
-      {primaryTab === "gameday" && !parentViewActive && gameDayTab === "defense" ? renderGrid()    : null}
-      {primaryTab === "gameday" && !parentViewActive && gameDayTab === "batting" ? renderBatting() : null}
-      {primaryTab === "gameday" && !parentViewActive && gameDayTab === "lineups" ? renderPrint()   : null}
-      {primaryTab === "gameday" && !parentViewActive && gameDayTab === "songs"   ? renderSongs()   : null}
+      <ErrorBoundary fallback="Game Day">
+        <ErrorBoundary fallback="Parent View">
+          {primaryTab === "gameday" && parentViewActive ? (
+            <ParentView
+              roster={roster}
+              battingOrder={battingOrder}
+              grid={grid}
+              selectedParentPlayer={selectedParentPlayer}
+              setSelectedParentPlayer={setSelectedParentPlayer}
+              S={S}
+              C={C}
+              POS_COLORS={POS_COLORS}
+            />
+          ) : null}
+        </ErrorBoundary>
+        {primaryTab === "gameday" && !parentViewActive && gameDayTab === "defense" ? renderGrid()    : null}
+        {primaryTab === "gameday" && !parentViewActive && gameDayTab === "batting" ? renderBatting() : null}
+        {primaryTab === "gameday" && !parentViewActive && gameDayTab === "lineups" ? renderPrint()   : null}
+        {primaryTab === "gameday" && !parentViewActive && gameDayTab === "songs"   ? renderSongs()   : null}
+      </ErrorBoundary>
       {primaryTab === "season"  && seasonTab  === "schedule" ? renderSchedule() : null}
       {primaryTab === "season"  && seasonTab  === "snack"    ? renderSnackDuty(): null}
       {primaryTab === "more" && moreTab === "feedback" ? renderFeedback() : null}
@@ -8240,74 +7824,7 @@ export default function App() {
     </div>
   );
 
-  function renderParentView() {
-    var POS_FULL = {
-      P:"Pitcher", C:"Catcher", "1B":"First Base", "2B":"Second Base",
-      "3B":"Third Base", SS:"Shortstop", LF:"Left Field", LC:"Left Center",
-      RC:"Right Center", RF:"Right Field", Bench:"Bench"
-    };
-    var batPos = selectedParentPlayer ? battingOrder.indexOf(selectedParentPlayer) : -1;
-    var assignments = selectedParentPlayer ? (grid[selectedParentPlayer] || []) : [];
-    return (
-      <div style={{ padding:"12px 0" }}>
-        {/* Player picker */}
-        <div style={{ display:"flex", gap:"6px", overflowX:"auto", padding:"0 0 10px",
-          WebkitOverflowScrolling:"touch", scrollbarWidth:"none", marginBottom:"8px" }}>
-          {roster.map(function(p) {
-            var fn = firstName(p.name);
-            var sel = selectedParentPlayer === p.name;
-            return (
-              <button key={p.name}
-                onClick={function(n) { return function() { setSelectedParentPlayer(sel ? null : n); }; }(p.name)}
-                style={{ ...S.btn(sel ? "primary" : "ghost"), flexShrink:0, padding:"6px 14px", fontSize:"12px" }}>
-                {fn}
-              </button>
-            );
-          })}
-        </div>
-        {selectedParentPlayer ? (
-          <div style={{ ...S.card, borderTop:"4px solid " + C.navy }}>
-            {/* Player name */}
-            <div style={{ fontSize:"22px", fontWeight:"bold", color:C.navy, marginBottom:"16px" }}>
-              👤 {firstName(selectedParentPlayer)}
-            </div>
-            {/* Batting position */}
-            <div style={{ marginBottom:"16px" }}>
-              <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:"4px" }}>Batting Order</div>
-              <div style={{ fontSize:"20px", fontWeight:"bold", color: batPos >= 0 ? C.navy : C.textMuted }}>
-                {batPos >= 0 ? "#" + (batPos + 1) + " of " + battingOrder.length : "Not in order"}
-              </div>
-            </div>
-            {/* Positions per inning */}
-            <div>
-              <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:"8px" }}>Positions This Game</div>
-              {assignments.length > 0 ? assignments.map(function(pos, i) {
-                var pc = POS_COLORS[pos] || "#555";
-                var isBench = pos === "Bench";
-                return (
-                  <div key={i} style={{ display:"flex", alignItems:"center", gap:"12px",
-                    padding:"8px 10px", marginBottom:"4px", borderRadius:"6px",
-                    background: isBench ? "rgba(85,85,85,0.06)" : "rgba(15,31,61,0.04)",
-                    borderLeft:"3px solid " + pc }}>
-                    <div style={{ fontSize:"11px", color:C.textMuted, minWidth:"40px" }}>Inn {i+1}</div>
-                    <div style={{ fontSize:"18px", fontWeight:"bold", color: isBench ? C.textMuted : C.navy }}>
-                      {POS_FULL[pos] || pos}
-                    </div>
-                  </div>
-                );
-              }) : (
-                <div style={{ fontSize:"13px", color:C.textMuted }}>No assignments found</div>
-              )}
-            </div>
-          </div>
-        ) : (
-          <div style={{ padding:"40px 0", textAlign:"center", color:C.textMuted, fontSize:"13px" }}>
-            Select a player above to view their game day info
-          </div>
-        )}
-      </div>
-    );
-  }
+  // renderParentView — extracted to components/GameDay/ParentView.jsx
 
   function renderBottomNav() {
     return (
@@ -8339,6 +7856,7 @@ export default function App() {
   }
 
   // ── Always column: header + top tabs + scrollable content ──────────────
+  // TODO: extract — deferred (Header depends on syncStatus, isLandscape, screen, activeTeam, isOnline, activeTeamId — extract after OfflineIndicator is stable and state prop drilling pattern is established)
   return (
     <div style={{ height:"100dvh", display:"flex", flexDirection:"column", overflow:"hidden", background: primaryTab === "more" ? "linear-gradient(160deg,#0f1f3d 0%,#1a3260 55%,#2a0a0a 100%)" : C.cream, fontFamily:"Georgia,'Times New Roman',serif", color:C.text }}>
       <div style={Object.assign({}, S.header, isLandscape ? { padding:"5px 16px" } : {})}>
@@ -8355,30 +7873,13 @@ export default function App() {
             ) : null}
           </div>
         </div>
-        {(function() {
-          var hasCache = !!(activeTeamId && loadJSON("team:" + activeTeamId + ":roster", null));
-          if (isOnline && !hasCache) return null;
-          var dot, label, bg, border;
-          if (!isOnline && !hasCache) {
-            dot = "#c8102e"; label = "No Connection"; bg = "rgba(200,16,46,0.15)"; border = "rgba(200,16,46,0.35)";
-          } else if (!isOnline && hasCache) {
-            dot = "#d4a017"; label = "Offline Mode"; bg = "rgba(212,160,23,0.15)"; border = "rgba(212,160,23,0.35)";
-          } else {
-            dot = "#27ae60"; label = "Offline Ready"; bg = "rgba(39,174,96,0.12)"; border = "rgba(39,174,96,0.3)";
-          }
-          return (
-            <div title={label} style={{ display:"flex", alignItems:"center", gap:"5px",
-              padding:"3px 8px", borderRadius:"999px", background:bg, border:"1px solid " + border,
-              cursor:"default", flexShrink:0 }}>
-              <div style={{ width:"7px", height:"7px", borderRadius:"50%", background:dot, flexShrink:0 }} />
-              {!isLandscape ? (
-                <span style={{ fontSize:"10px", color:"rgba(255,255,255,0.75)", letterSpacing:"0.05em", whiteSpace:"nowrap" }}>
-                  {label}
-                </span>
-              ) : null}
-            </div>
-          );
-        })()}
+        <ErrorBoundary fallback="Offline Status">
+          <OfflineIndicator
+            isOnline={isOnline}
+            hasCache={!!(activeTeamId && loadJSON("team:" + activeTeamId + ":roster", null))}
+            isLandscape={isLandscape}
+          />
+        </ErrorBoundary>
       </div>
       {subTabBar}
       <div style={S.body}>
@@ -8386,19 +7887,21 @@ export default function App() {
           {(primaryTab === "home" || (!activeTeam && primaryTab !== "more")) ? renderHome() : tabContent}
         </div>
       </div>
-      {primaryTab === "gameday" && battingOrder && battingOrder.length > 0 ? (
-        <NowBattingBar
-          battingOrder={battingOrder}
-          currentIndex={currentBatterIndex}
-          activeInning={diamondInning !== null ? diamondInning + 1 : null}
-          onAdvance={function() {
-            persistCurrentBatterIndex((currentBatterIndex + 1) % battingOrder.length);
-          }}
-          onBack={function() {
-            persistCurrentBatterIndex((currentBatterIndex - 1 + battingOrder.length) % battingOrder.length);
-          }}
-        />
-      ) : null}
+      <ErrorBoundary fallback="Now Batting">
+        {primaryTab === "gameday" && battingOrder && battingOrder.length > 0 ? (
+          <NowBattingBar
+            battingOrder={battingOrder}
+            currentIndex={currentBatterIndex}
+            activeInning={diamondInning !== null ? diamondInning + 1 : null}
+            onAdvance={function() {
+              persistCurrentBatterIndex((currentBatterIndex + 1) % battingOrder.length);
+            }}
+            onBack={function() {
+              persistCurrentBatterIndex((currentBatterIndex - 1 + battingOrder.length) % battingOrder.length);
+            }}
+          />
+        ) : null}
+      </ErrorBoundary>
       {renderBottomNav()}
       {needRefresh && (
         <div style={{
@@ -8452,27 +7955,29 @@ export default function App() {
         </div>
       )}
       {renderPinModal()}
-      {lockFlowOpen ? (
-        <LockFlow
-          activeWarnings={warnings}
-          nextGame={(function() {
-            var today = new Date(); today.setHours(0,0,0,0);
-            var up = schedule.filter(function(g) { return !g.result && g.date && new Date(g.date+"T12:00:00") >= today; });
-            up.sort(function(a,b) { return new Date(a.date) - new Date(b.date); });
-            return up.length ? up[0] : null;
-          })()}
-          hasPin={!!coachPin}
-          onConfirmLock={function() {
-            persistLineupLocked(true);
-            if (deferredPrompt && !localStorage.getItem("pwa_installed")) {
-              var _snoozed = parseInt(localStorage.getItem("pwa_install_snoozed") || "0");
-              if (Date.now() >= _snoozed) { setShowInstallBanner(true); }
-            }
-          }}
-          onRequestPin={function() { setPinModal("finalize"); setPinInput(""); setPinError(""); }}
-          onClose={function() { setLockFlowOpen(false); }}
-        />
-      ) : null}
+      <ErrorBoundary fallback="Lock Flow">
+        {lockFlowOpen ? (
+          <LockFlow
+            activeWarnings={warnings}
+            nextGame={(function() {
+              var today = new Date(); today.setHours(0,0,0,0);
+              var up = schedule.filter(function(g) { return !g.result && g.date && new Date(g.date+"T12:00:00") >= today; });
+              up.sort(function(a,b) { return new Date(a.date) - new Date(b.date); });
+              return up.length ? up[0] : null;
+            })()}
+            hasPin={!!coachPin}
+            onConfirmLock={function() {
+              persistLineupLocked(true);
+              if (deferredPrompt && !localStorage.getItem("pwa_installed")) {
+                var _snoozed = parseInt(localStorage.getItem("pwa_install_snoozed") || "0");
+                if (Date.now() >= _snoozed) { setShowInstallBanner(true); }
+              }
+            }}
+            onRequestPin={function() { setPinModal("finalize"); setPinInput(""); setPinError(""); }}
+            onClose={function() { setLockFlowOpen(false); }}
+          />
+        ) : null}
+      </ErrorBoundary>
       {editingTeam ? (
         <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, background:"rgba(0,0,0,0.6)", zIndex:10000, display:"flex", alignItems:"center", justifyContent:"center", padding:"20px" }}
           onClick={function(e) { if (e.target === e.currentTarget) { setEditingTeam(null); } }}>

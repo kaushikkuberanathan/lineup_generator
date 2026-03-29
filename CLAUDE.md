@@ -146,10 +146,25 @@ backend/
 - Known issue: /me returns memberships:[] intermittently — suspect token expiry mid-session, needs monitoring once Twilio unblocked
 
 #### TODO: Phase 4 Cutover (do after 2-3 coaches have tested successfully)
+- Fix admin.js teamId UUID validation bug (see below) before running cutover
+- Run `backend/migrations/004_rls_fixes.sql` in Supabase SQL Editor to harden RLS
 - Add requireAuth middleware to existing routes in index.js
 - Deploy to Render
 - Announce to coaches: "next login will ask you to verify your phone"
-- Pre-cutover checklist is documented in CLAUDE.md implementation guide
+- Full pre-cutover checklist: `docs/ops/PHASE4_PRECHECK.md`
+
+#### BUG: admin.js approve route rejects numeric team IDs
+- `body('teamId').isUUID()` in `backend/src/routes/admin.js` rejects `1774297491626`
+- This means admin CANNOT approve access requests for Mud Hens (or any legacy numeric team)
+- Fix: change validator to `body('teamId').notEmpty().trim()`
+- Must fix before any real coach tries to request access
+
+#### TODO: Apply RLS hardening migration (004_rls_fixes.sql)
+- Migration created: `backend/migrations/004_rls_fixes.sql`
+- DO NOT run before Phase 4 cutover — will break anon writes that coaches rely on today
+- Run AT cutover, after requireAuth is added to existing index.js routes
+- Covers: share_links, teams, team_data, roster_snapshots, team_data_history
+- Viewer mode (share links) safe: payload is self-contained in share_links table
 
 #### TODO: Mobile UI Screens
 - Request Access form (screen for coaches to submit their name + phone)
@@ -280,7 +295,24 @@ The app sets the localStorage key and redirects cleanly. Use `?disable_flag=<nam
 
 ---
 
+## Error Boundaries
+
+All major sections are wrapped with `<ErrorBoundary>` (class component). On crash, they render an inline amber fallback card instead of white-screening. Tapping resets the section; if it crashes again, the card says "try refreshing the page."
+
+**Component:** `src/components/Shared/ErrorBoundary.jsx`
+
+**Sections wrapped:** Game Day (outer), Parent View, Now Batting (NowBattingBar component — real catch), Lock Flow (LockFlow component — real catch), Viewer Mode, Validation Banner, Fairness Check, Offline Status, Team List
+
+**Rule:** New components must be wrapped at the call site in App.jsx, not inside the component definition itself. Do NOT wrap the nav bar, tab bar, or top-level app shell.
+
+**Note on inline sections:** ErrorBoundary only catches errors thrown during the render of child COMPONENTS (`<ComponentName />`). Inline IIFE/render-function calls run as part of the parent's render and are not caught by boundaries placed around them — they are caught by a boundary higher in the tree. The boundaries here provide real protection for named components and are infrastructure for future extraction.
+
+---
+
 ## Version History
+
+### v1.7.1 — March 29, 2026
+Platform: React Error Boundaries on all major sections — prevents white screen when a section crashes on game day · Component: src/components/Shared/ErrorBoundary.jsx
 
 ### v1.7.0 — March 29, 2026
 Fix: lineup engine under-roster guard — sub-10 rosters now warn instead of silently leaving positions unassigned · Test: all 11 V2 engine regression tests passing (first clean all-green run) · Ops: /ping + /health endpoints hardened (timestamp, uptime, version) · UX: useBackendHealth hook — cold-start pill on home screen, inline share sheet warning · Docs: docs/ops/UPTIME_MONITORING.md with UptimeRobot setup guide
