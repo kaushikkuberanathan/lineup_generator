@@ -5,6 +5,7 @@ const cors = require('cors');
 const authRouter = require('./src/routes/auth');
 const adminRouter = require('./src/routes/admin');
 const feedbackRouter = require('./src/routes/feedback');
+const teamDataRouter = require('./src/routes/teamData');
 
 const app = express();
 const PORT = 5000;
@@ -97,6 +98,8 @@ app.get('/ping', function(req, res) {
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1', adminRouter);
 app.use('/api/v1', feedbackRouter);
+// Ops/data-protection routes — localhost or X-Admin-Key restricted
+app.use('/api/teams', teamDataRouter);
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

@@ -186,6 +186,25 @@ backend/
 - Admin UI URL (production): https://line-up-generator.vercel.app/admin.html
 - Backend URL: https://lineup-generator-backend.onrender.com
 
+### Data Protection (CRITICAL)
+
+**NEVER write `roster: []` to a team that already has players without `force: true`.**
+
+The roster-wipe incident has occurred twice. Two guards are now in place:
+
+1. **Postgres trigger** — every write to `team_data` is snapshotted in `team_data_history` (last 20 per team). Migration: `backend/migrations/002_team_data_history.sql` — run in Supabase SQL Editor before next data operation.
+
+2. **Backend write guard** — `POST /api/teams/:teamId/data` returns `409 ROSTER_WIPE_GUARD` if incoming `roster` is empty and current DB row has players. Pass `force: true` to override (logged).
+
+3. **Recovery endpoint** — `GET /api/teams/:teamId/history?limit=5&full=true` (localhost or `X-Admin-Key` header required). Returns snapshots with full JSONB. See `backend/migrations/README.md`.
+
+For scripts/migrations: check existing roster before writing. If `roster.length > 0`, skip and log:
+`SKIPPED team_id=[N]: roster already has [M] players, not overwriting`
+
+Add `ADMIN_KEY` to backend `.env` and Render environment to protect the recovery endpoint.
+
+---
+
 ### Zero-Downtime Constraint (CRITICAL)
 **Until Phase 4 cutover, all backend changes are additive only:**
 - Do NOT modify existing route handlers in `index.js`
@@ -247,6 +266,9 @@ The app sets the localStorage key and redirects cleanly. Use `?disable_flag=<nam
 ---
 
 ## Version History
+
+### v1.6.9 — March 29, 2026
+Now Batting inning label above pill strip (syncs with active inning, "INNING —" when none selected) · Fairness Check card post-finalization (bench equity, P/C balance, no back-to-back) with green/amber border · Offline Ready header pill (green/amber/red based on connectivity + local cache state; text hidden in landscape) · Parent View Mode toggle in Game Day (player picker + per-player inning card with color-coded positions)
 
 ### v1.6.8 — March 29, 2026
 Home screen — "Missing Roster" badge replaced with actionable button: "Add Players →" (0 players) or "Complete Roster (N/10) →" (1–9 players); navigates directly to roster tab · Home screen — empty state with contextual icon + copy + "+ Create Team" CTA when no teams exist or search returns nothing

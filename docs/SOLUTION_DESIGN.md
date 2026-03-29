@@ -526,6 +526,56 @@ The `VERSION_HISTORY` array in `App.jsx` powers the in-app changelog. The "Curre
 
 ---
 
+## Data Protection
+
+Two mechanisms guard against the roster-wipe class of incidents that occurred twice before:
+
+### 1. Postgres Snapshot Trigger (`team_data_history`)
+
+Every `INSERT` or `UPDATE` on the `team_data` table fires a trigger that writes an append-only row to `team_data_history`. The snapshot captures the full team state (roster, schedule, grid, etc.) as JSONB alongside metadata:
+
+```sql
+team_data_history (
+  id            bigserial PRIMARY KEY,
+  team_id       text,
+  snapshot      jsonb,           -- full team_data row as JSONB
+  roster_count  int GENERATED,   -- jsonb_array_length(snapshot->'roster')
+  written_at    timestamptz,
+  write_source  text             -- 'app' | 'migration' | 'manual' | 'seed' | 'unknown'
+)
+```
+
+The `write_source` value is set via a Postgres session variable (`app.write_source`) so the trigger knows whether a write came from the app, a script, or a manual operation.
+
+Auto-prune keeps the last 20 snapshots per team (`prune_team_data_history()` — run weekly or on demand).
+
+Migration file: `backend/migrations/002_team_data_history.sql`
+
+### 2. Roster-Wipe Guard (Backend API)
+
+The `POST /api/teams/:teamId/data` endpoint enforces a guard before any write:
+
+- If current DB roster has ≥ 1 player AND incoming roster is empty → returns `409 ROSTER_WIPE_GUARD`
+- Pass `force: true` in the body to bypass (explicit override, logged)
+- All guard triggers are logged to console with timestamp and team_id
+
+Used by scripts and manual data operations. Frontend writes go direct-to-Supabase via anon key (and are covered by the Postgres trigger on the database side).
+
+### 3. Recovery Endpoint
+
+```
+GET /api/teams/:teamId/history?limit=5
+GET /api/teams/:teamId/history?limit=5&full=true   ← includes full snapshot JSONB
+```
+
+Restricted to localhost or `X-Admin-Key` header (env: `ADMIN_KEY`).
+
+Returns `{ snapshots: [{ id, roster_count, written_at, write_source }] }` — or full snapshot when `?full=true`.
+
+Full recovery workflow: `backend/migrations/README.md`
+
+---
+
 ## Known Tradeoffs & Future Considerations
 
 | Decision | Current Rationale | When to Revisit |

@@ -131,9 +131,19 @@ var DEFAULT_ROSTER = [];
 var _mem = {};
 var SCHEMA_VERSION = 2;
 
-var APP_VERSION = "1.6.8";
+var APP_VERSION = "1.6.9";
 
 var VERSION_HISTORY = [
+  {
+    version: "1.6.9",
+    date: "March 29, 2026",
+    changes: [
+      "UX: Inning label above Now Batting strip — shows INNING N driven by active defense inning selection",
+      "UX: Fairness Check card — post-finalization signal showing pass/fail for bench equity, position balance, and consecutive P/C checks",
+      "UX: Offline Ready indicator — header pill shows 🟢 Offline Ready / 🟡 Offline Mode / 🔴 No Connection based on connectivity + cache state",
+      "UX: Parent View Mode — Game Day toggle shows per-player card (batting position + inning-by-inning field assignments); player picker pill row"
+    ]
+  },
   {
     version: "1.6.8",
     date: "March 29, 2026",
@@ -1225,7 +1235,7 @@ function fmtStat(val) {
 // Tapping the batter name advances the index by 1 (cycles).
 // ============================================================
 
-function NowBattingBar({ battingOrder, currentIndex, onAdvance, onBack }) {
+function NowBattingBar({ battingOrder, currentIndex, onAdvance, onBack, activeInning }) {
   if (!battingOrder || battingOrder.length === 0) return null;
   var len = battingOrder.length;
   var nowName    = battingOrder[currentIndex % len] || "";
@@ -1242,11 +1252,18 @@ function NowBattingBar({ battingOrder, currentIndex, onAdvance, onBack }) {
     { label: 'On Deck',     name: onDeckName, active: false },
     { label: 'In Hole',     name: inHoleName, active: false },
   ];
+  var inningLabel = (activeInning !== null && activeInning !== undefined) ? ("INNING " + activeInning) : "INNING —";
   return (
+    <div style={{ display:'flex', flexDirection:'column', flexShrink:0, width:'100%' }}>
+      <div style={{ textAlign:'center', fontSize:'11px', letterSpacing:'0.14em', textTransform:'uppercase',
+        color:'rgba(255,255,255,0.4)', background:'#1e3a5f', paddingTop:'5px', paddingBottom:'1px',
+        fontFamily:"Georgia,'Times New Roman',serif" }}>
+        {inningLabel}
+      </div>
     <div style={{
       background: '#1e3a5f', color: '#ffffff', fontFamily: "Georgia,'Times New Roman',serif",
       padding: '8px 10px', width: '100%', boxSizing: 'border-box',
-      display: 'flex', alignItems: 'stretch', gap: '8px', flexShrink: 0,
+      display: 'flex', alignItems: 'stretch', gap: '8px',
     }}>
       <button onClick={onBack} title="Previous batter" style={btnStyle}>‹</button>
       {pills.map(function(pill) {
@@ -1271,6 +1288,7 @@ function NowBattingBar({ battingOrder, currentIndex, onAdvance, onBack }) {
         );
       })}
       <button onClick={onAdvance} title="Next batter" style={btnStyle}>›</button>
+    </div>
     </div>
   );
 }
@@ -1744,6 +1762,12 @@ export default function App() {
   var battingOrderSaved = _batSaved[0]; var setBattingOrderSaved = _batSaved[1];
   var _preSuggest = useState(null);
   var preSuggestOrder = _preSuggest[0]; var setPreSuggestOrder = _preSuggest[1];
+  var _isOnline = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
+  var isOnline = _isOnline[0]; var setIsOnline = _isOnline[1];
+  var _parentViewActive = useState(false);
+  var parentViewActive = _parentViewActive[0]; var setParentViewActive = _parentViewActive[1];
+  var _selectedParentPlayer = useState(null);
+  var selectedParentPlayer = _selectedParentPlayer[0]; var setSelectedParentPlayer = _selectedParentPlayer[1];
   var _moreTab = useState("about");
   var moreTab = _moreTab[0]; var setMoreTab = _moreTab[1];
   var _sharePayload = useState(null);
@@ -1752,6 +1776,18 @@ export default function App() {
     return !!(new URLSearchParams(window.location.search).get("s"));
   });
   var shareLoading = _shareLoading[0]; var setShareLoading = _shareLoading[1];
+
+  // Online/offline detection
+  useEffect(function() {
+    var goOnline  = function() { setIsOnline(true);  };
+    var goOffline = function() { setIsOnline(false); };
+    window.addEventListener("online",  goOnline);
+    window.addEventListener("offline", goOffline);
+    return function() {
+      window.removeEventListener("online",  goOnline);
+      window.removeEventListener("offline", goOffline);
+    };
+  }, []);
 
   // Feature flag URL bootstrap — ?enable_flag=<name> sets localStorage and reloads
   // ?disable_flag=<name> clears it. Allows per-user flag activation via a shared link.
@@ -4344,6 +4380,51 @@ export default function App() {
             )}
           </div>
         </div>
+        {/* ── Fairness Check card — only when finalized ──── */}
+        {lineupLocked ? (function() {
+          var pcCounts = roster.map(function(p) {
+            return (grid[p.name] || []).filter(function(pos) { return pos === "P" || pos === "C"; }).length;
+          });
+          var totalPC = pcCounts.reduce(function(s,x) { return s+x; }, 0);
+          var avgPC = roster.length > 0 ? totalPC / roster.length : 0;
+          var checkA = roster.every(function(p) {
+            return (grid[p.name] || []).some(function(pos) { return pos === "Bench"; });
+          });
+          var checkB = avgPC === 0 || pcCounts.every(function(c) { return c <= Math.max(2 * avgPC, 1); });
+          var checkC = roster.every(function(p) {
+            var asgn = grid[p.name] || [];
+            for (var i = 0; i < asgn.length - 1; i++) {
+              if ((asgn[i] === "P" || asgn[i] === "C") && (asgn[i+1] === "P" || asgn[i+1] === "C")) return false;
+            }
+            return true;
+          });
+          var allPass = checkA && checkB && checkC;
+          var failCount = [checkA, checkB, checkC].filter(function(c) { return !c; }).length;
+          var checks = [
+            { pass: checkA, label: "Everyone sits at least once" },
+            { pass: checkB, label: "Positions balanced" },
+            { pass: checkC, label: "No consecutive P/C assignments" },
+          ];
+          return (
+            <div style={{ background:C.white, borderRadius:"8px", border:"1px solid " + C.border,
+              borderLeft:"4px solid " + (allPass ? "#27ae60" : "#d4a017"),
+              padding:"12px 14px", marginBottom:"14px",
+              boxShadow:"0 1px 4px rgba(15,31,61,0.06)" }}>
+              <div style={{ fontSize:"13px", fontWeight:"bold", marginBottom:"8px",
+                color: allPass ? "#27ae60" : "#d4a017" }}>
+                {allPass ? "✅ Fairness Check Passed" : "⚠️ Fairness Check — " + failCount + " issue" + (failCount !== 1 ? "s" : "")}
+              </div>
+              {checks.map(function(ch) {
+                return (
+                  <div key={ch.label} style={{ fontSize:"14px", color: ch.pass ? C.text : C.red, marginBottom:"3px" }}>
+                    {ch.pass ? "✅" : "❌"} {ch.label}
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })() : null}
+
         {/* ── Finalized badge ───────────────────────────────── */}
 
         <div style={{ display:"flex", gap:"8px", marginBottom:"14px", flexWrap:"wrap", alignItems:"center" }}>
@@ -8102,14 +8183,20 @@ export default function App() {
               </button>
             );
           })}
+          <button
+            onClick={function() { setParentViewActive(!parentViewActive); if (!parentViewActive) setSelectedParentPlayer(null); }}
+            style={{ ...S.btn(parentViewActive ? "primary" : "ghost"), marginLeft:"auto", padding:"4px 10px", fontSize:"11px" }}>
+            {parentViewActive ? "← Full View" : "👪 Parent View"}
+          </button>
         </div>
       ) : null}
       {primaryTab === "roster"  && rosterTab === "players" ? renderRoster()  : null}
       {primaryTab === "roster"  && rosterTab === "songs"   ? renderSongs()   : null}
-      {primaryTab === "gameday" && gameDayTab === "defense" ? renderGrid()      : null}
-      {primaryTab === "gameday" && gameDayTab === "batting" ? renderBatting()   : null}
-      {primaryTab === "gameday" && gameDayTab === "lineups" ? renderPrint()     : null}
-      {primaryTab === "gameday" && gameDayTab === "songs"   ? renderSongs()     : null}
+      {primaryTab === "gameday" && parentViewActive  ? renderParentView()   : null}
+      {primaryTab === "gameday" && !parentViewActive && gameDayTab === "defense" ? renderGrid()    : null}
+      {primaryTab === "gameday" && !parentViewActive && gameDayTab === "batting" ? renderBatting() : null}
+      {primaryTab === "gameday" && !parentViewActive && gameDayTab === "lineups" ? renderPrint()   : null}
+      {primaryTab === "gameday" && !parentViewActive && gameDayTab === "songs"   ? renderSongs()   : null}
       {primaryTab === "season"  && seasonTab  === "schedule" ? renderSchedule() : null}
       {primaryTab === "season"  && seasonTab  === "snack"    ? renderSnackDuty(): null}
       {primaryTab === "more" && moreTab === "feedback" ? renderFeedback() : null}
@@ -8118,6 +8205,75 @@ export default function App() {
       {primaryTab === "more" && moreTab === "updates"  ? renderUpdates()  : null}
     </div>
   );
+
+  function renderParentView() {
+    var POS_FULL = {
+      P:"Pitcher", C:"Catcher", "1B":"First Base", "2B":"Second Base",
+      "3B":"Third Base", SS:"Shortstop", LF:"Left Field", LC:"Left Center",
+      RC:"Right Center", RF:"Right Field", Bench:"Bench"
+    };
+    var batPos = selectedParentPlayer ? battingOrder.indexOf(selectedParentPlayer) : -1;
+    var assignments = selectedParentPlayer ? (grid[selectedParentPlayer] || []) : [];
+    return (
+      <div style={{ padding:"12px 0" }}>
+        {/* Player picker */}
+        <div style={{ display:"flex", gap:"6px", overflowX:"auto", padding:"0 0 10px",
+          WebkitOverflowScrolling:"touch", scrollbarWidth:"none", marginBottom:"8px" }}>
+          {roster.map(function(p) {
+            var fn = firstName(p.name);
+            var sel = selectedParentPlayer === p.name;
+            return (
+              <button key={p.name}
+                onClick={function(n) { return function() { setSelectedParentPlayer(sel ? null : n); }; }(p.name)}
+                style={{ ...S.btn(sel ? "primary" : "ghost"), flexShrink:0, padding:"6px 14px", fontSize:"12px" }}>
+                {fn}
+              </button>
+            );
+          })}
+        </div>
+        {selectedParentPlayer ? (
+          <div style={{ ...S.card, borderTop:"4px solid " + C.navy }}>
+            {/* Player name */}
+            <div style={{ fontSize:"22px", fontWeight:"bold", color:C.navy, marginBottom:"16px" }}>
+              👤 {firstName(selectedParentPlayer)}
+            </div>
+            {/* Batting position */}
+            <div style={{ marginBottom:"16px" }}>
+              <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:"4px" }}>Batting Order</div>
+              <div style={{ fontSize:"20px", fontWeight:"bold", color: batPos >= 0 ? C.navy : C.textMuted }}>
+                {batPos >= 0 ? "#" + (batPos + 1) + " of " + battingOrder.length : "Not in order"}
+              </div>
+            </div>
+            {/* Positions per inning */}
+            <div>
+              <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:"8px" }}>Positions This Game</div>
+              {assignments.length > 0 ? assignments.map(function(pos, i) {
+                var pc = POS_COLORS[pos] || "#555";
+                var isBench = pos === "Bench";
+                return (
+                  <div key={i} style={{ display:"flex", alignItems:"center", gap:"12px",
+                    padding:"8px 10px", marginBottom:"4px", borderRadius:"6px",
+                    background: isBench ? "rgba(85,85,85,0.06)" : "rgba(15,31,61,0.04)",
+                    borderLeft:"3px solid " + pc }}>
+                    <div style={{ fontSize:"11px", color:C.textMuted, minWidth:"40px" }}>Inn {i+1}</div>
+                    <div style={{ fontSize:"18px", fontWeight:"bold", color: isBench ? C.textMuted : C.navy }}>
+                      {POS_FULL[pos] || pos}
+                    </div>
+                  </div>
+                );
+              }) : (
+                <div style={{ fontSize:"13px", color:C.textMuted }}>No assignments found</div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div style={{ padding:"40px 0", textAlign:"center", color:C.textMuted, fontSize:"13px" }}>
+            Select a player above to view their game day info
+          </div>
+        )}
+      </div>
+    );
+  }
 
   function renderBottomNav() {
     return (
@@ -8165,6 +8321,30 @@ export default function App() {
             ) : null}
           </div>
         </div>
+        {(function() {
+          var hasCache = !!(activeTeamId && loadJSON("team:" + activeTeamId + ":roster", null));
+          if (isOnline && !hasCache) return null;
+          var dot, label, bg, border;
+          if (!isOnline && !hasCache) {
+            dot = "#c8102e"; label = "No Connection"; bg = "rgba(200,16,46,0.15)"; border = "rgba(200,16,46,0.35)";
+          } else if (!isOnline && hasCache) {
+            dot = "#d4a017"; label = "Offline Mode"; bg = "rgba(212,160,23,0.15)"; border = "rgba(212,160,23,0.35)";
+          } else {
+            dot = "#27ae60"; label = "Offline Ready"; bg = "rgba(39,174,96,0.12)"; border = "rgba(39,174,96,0.3)";
+          }
+          return (
+            <div title={label} style={{ display:"flex", alignItems:"center", gap:"5px",
+              padding:"3px 8px", borderRadius:"999px", background:bg, border:"1px solid " + border,
+              cursor:"default", flexShrink:0 }}>
+              <div style={{ width:"7px", height:"7px", borderRadius:"50%", background:dot, flexShrink:0 }} />
+              {!isLandscape ? (
+                <span style={{ fontSize:"10px", color:"rgba(255,255,255,0.75)", letterSpacing:"0.05em", whiteSpace:"nowrap" }}>
+                  {label}
+                </span>
+              ) : null}
+            </div>
+          );
+        })()}
       </div>
       {subTabBar}
       <div style={S.body}>
@@ -8176,6 +8356,7 @@ export default function App() {
         <NowBattingBar
           battingOrder={battingOrder}
           currentIndex={currentBatterIndex}
+          activeInning={diamondInning !== null ? diamondInning + 1 : null}
           onAdvance={function() {
             persistCurrentBatterIndex((currentBatterIndex + 1) % battingOrder.length);
           }}
