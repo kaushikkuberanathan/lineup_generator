@@ -283,7 +283,7 @@ The app sets the localStorage key and redirects cleanly. Use `?disable_flag=<nam
 ## Version History
 
 ### v1.7.0 — March 29, 2026
-Fix: lineup engine under-roster guard — sub-10 rosters now warn instead of silently leaving positions unassigned · Test: all 11 V2 engine regression tests passing (first clean all-green run)
+Fix: lineup engine under-roster guard — sub-10 rosters now warn instead of silently leaving positions unassigned · Test: all 11 V2 engine regression tests passing (first clean all-green run) · Ops: /ping + /health endpoints hardened (timestamp, uptime, version) · UX: useBackendHealth hook — cold-start pill on home screen, inline share sheet warning · Docs: docs/ops/UPTIME_MONITORING.md with UptimeRobot setup guide
 
 ### v1.6.9 — March 29, 2026
 Now Batting inning label above pill strip (syncs with active inning, "INNING —" when none selected) · Fairness Check card post-finalization (bench equity, P/C balance, no back-to-back) with green/amber border · Offline Ready header pill (green/amber/red based on connectivity + local cache state; text hidden in landscape) · Parent View Mode toggle in Game Day (player picker + per-player inning card with color-coded positions)

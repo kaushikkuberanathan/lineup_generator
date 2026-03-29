@@ -8,6 +8,7 @@ import { isSupabaseEnabled, dbSaveTeams, dbDeleteTeam,
 import mixpanel from 'mixpanel-browser';
 import { FEATURE_FLAGS } from '@/config/featureFlags';
 import { generateLineupV2 } from '@/utils/lineupEngineV2';
+import { useBackendHealth } from '@/hooks/useBackendHealth';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 
 var MIXPANEL_TOKEN = "YOUR_MIXPANEL_TOKEN";
@@ -139,7 +140,9 @@ var VERSION_HISTORY = [
     date: "March 29, 2026",
     changes: [
       "Fix: lineup engine under-roster guard — 7-player (sub-10) rosters now correctly warn instead of silently leaving positions unassigned",
-      "Test: all 11 engine regression tests passing (first clean all-green run)"
+      "Test: all 11 engine regression tests passing (first clean all-green run)",
+      "Ops: /ping endpoint returns { status, timestamp }; /health returns uptime + version — both <100ms, no DB calls",
+      "UX: backend health check hook (useBackendHealth) — polls /ping on mount + every 5 min; cold-start pill on home screen (amber 'warming up' / red 'unavailable'); inline share sheet warning when server slow/down"
     ]
   },
   {
@@ -1514,6 +1517,8 @@ function LockFlow({ activeWarnings, nextGame, hasPin, onConfirmLock, onRequestPi
 // ============================================================
 
 export default function App() {
+
+  var backendHealth = useBackendHealth();
 
   var _syncStatus = useState("idle");
   var syncStatus = _syncStatus[0]; var setSyncStatus = _syncStatus[1];
@@ -3103,7 +3108,23 @@ export default function App() {
           {homeMode === "welcome" ? (
             <div>
               <div style={{ marginBottom:"8px" }}>
-                <div style={{ fontSize:"13px", color:"#6b7280", letterSpacing:"0.08em", textTransform:"uppercase", fontFamily:"Georgia,serif" }}>{greeting}, Coach</div>
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:"8px" }}>
+                  <div style={{ fontSize:"13px", color:"#6b7280", letterSpacing:"0.08em", textTransform:"uppercase", fontFamily:"Georgia,serif" }}>{greeting}, Coach</div>
+                  {/* Backend health pill — silence is success; only show non-ok states */}
+                  {backendHealth.status === 'slow' ? (
+                    <span style={{ fontSize:"10px", fontWeight:"bold", padding:"2px 8px", borderRadius:"10px", background:"rgba(180,83,9,0.1)", color:"#92400e", border:"1px solid rgba(180,83,9,0.25)", whiteSpace:"nowrap", flexShrink:0 }}>
+                      ⏳ Server warming up...
+                    </span>
+                  ) : backendHealth.status === 'down' ? (
+                    <span style={{ fontSize:"10px", fontWeight:"bold", padding:"2px 8px", borderRadius:"10px", background:"rgba(200,16,46,0.08)", color:"#991b1b", border:"1px solid rgba(200,16,46,0.2)", whiteSpace:"nowrap", flexShrink:0 }}>
+                      ⚠️ Server unavailable — some features may not work
+                    </span>
+                  ) : backendHealth.checkingVisible ? (
+                    <span style={{ fontSize:"10px", padding:"2px 8px", borderRadius:"10px", background:"rgba(0,0,0,0.05)", color:"#9ca3af", border:"1px solid rgba(0,0,0,0.08)", whiteSpace:"nowrap", flexShrink:0 }}>
+                      Connecting...
+                    </span>
+                  ) : null}
+                </div>
                 <div style={{ fontSize:"11px", color:"#9ca3af", marginTop:"2px" }}>
                   {now.toLocaleDateString("en-US", { timeZone:"America/New_York", weekday:"long", month:"long", day:"numeric" })}
                 </div>
@@ -7232,6 +7253,11 @@ export default function App() {
               <div style={{ fontSize:"13px", fontWeight:"bold", color:C.navy, letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:"16px", textAlign:"center" }}>
                 Share Lineup
               </div>
+              {(backendHealth.status === 'slow' || backendHealth.status === 'down') ? (
+                <div style={{ fontSize:"11px", color:"#92400e", background:"rgba(180,83,9,0.07)", border:"1px solid rgba(180,83,9,0.2)", borderRadius:"8px", padding:"8px 10px" }}>
+                  ⏳ Server is warming up — sharing may take up to 30 seconds
+                </div>
+              ) : null}
               <div style={{ display:"flex", flexDirection:"column", gap:"10px" }}>
                 <button style={{ ...S.btn("ghost"), border:"1px solid rgba(15,31,61,0.2)", padding:"13px", fontSize:"14px", textAlign:"left" }}
                   onClick={function() { setShowShareSheet(false); shareCurrentLineup(); }}>

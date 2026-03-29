@@ -9,7 +9,9 @@ export default defineConfig({
   },
   test: {
     globals: true,
-    environment: 'jsdom',
+    environment: 'node',
+    pool: 'threads',
+    include: ['src/tests/**/*.test.js'],
   },
   plugins: [
     react(),

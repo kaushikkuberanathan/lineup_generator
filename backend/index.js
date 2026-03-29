@@ -23,7 +23,13 @@ app.get('/', (req, res) => {
 });
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok' });
+  const { version } = require('./package.json');
+  res.json({
+    status:    'ok',
+    uptime:    process.uptime(),
+    timestamp: new Date().toISOString(),
+    version,
+  });
 });
 
 app.post('/generate-lineup', (req, res) => {
@@ -92,7 +98,7 @@ app.post('/api/ai', async (req, res) => {
 });
 
 app.get('/ping', function(req, res) {
-  res.json({ status: 'ok', time: new Date().toISOString() });
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
 app.use('/api/v1/auth', authRouter);
