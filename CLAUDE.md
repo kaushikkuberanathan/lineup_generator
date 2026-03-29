@@ -220,7 +220,36 @@ backend/
 - **Phase 4 cutover**: when auth ships fully, existing `index.js` routes will be consolidated; until then, all new code is additive only
 - **Realtime multi-device sync**: planned via Supabase Realtime
 
+## Feature Flags
+
+Feature flags live in `frontend/src/config/featureFlags.js`. Two-level evaluation: global default in the file, per-user localStorage override.
+
+**Guard pattern:**
+```js
+var on = FEATURE_FLAGS.MY_FLAG || localStorage.getItem("flag:my_flag") === "1";
+```
+
+**Enable for one user without a deploy** — send them:
+```
+https://line-up-generator.vercel.app/?enable_flag=<flag_name>
+```
+The app sets the localStorage key and redirects cleanly. Use `?disable_flag=<name>` to revert.
+
+**Full guide:** `docs/features/feature-flags.md`
+
+### Current flags
+
+| Flag | Default | localStorage key | Description |
+|---|---|---|---|
+| `VIEWER_MODE` | `false` | `flag:viewer_mode` | Read-only swipeable inning cards; Share Viewer Link button |
+| `USE_NEW_LINEUP_ENGINE` | `true` | *(not overridable)* | V2 scoring engine |
+
+---
+
 ## Version History
+
+### v1.6.7 — March 29, 2026
+Viewer Mode (feature-flagged OFF) — read-only swipeable inning cards (?s=…&view=true) for parents/players · Feature flag system — featureFlags.js global toggles + localStorage per-user override + URL param bootstrap (?enable_flag / ?disable_flag) · Share as Link + Share Viewer Link both fall back to base64 URL encoding when Supabase unavailable (local dev) · Team season batting totals mini-block (G/AB/H/AVG/R/RBI) in Batting stats box · Suggest Order + 6/7 selector disabled when finalized · Batting order Undo after Suggest Order or ▲▼ arrow · Finalize CTA blocked until batting order saved · Generate Lineup blocked on all surfaces when finalized
 
 ### v1.6.6 — March 29, 2026
 Now Batting Bar — sticky 3-pill strip (Now Batting / On Deck / In Hole) above bottom nav on Game Day tab; ‹ › nav buttons; index persisted to localStorage · Player Filter Toggle — viewer mode pill list highlights selected player across diamond, table view, and batting order

@@ -131,9 +131,24 @@ var DEFAULT_ROSTER = [];
 var _mem = {};
 var SCHEMA_VERSION = 2;
 
-var APP_VERSION = "1.6.6";
+var APP_VERSION = "1.6.7";
 
 var VERSION_HISTORY = [
+  {
+    version: "1.6.7",
+    date: "March 29, 2026",
+    changes: [
+      "Feat: Viewer Mode — read-only swipeable inning cards for parents/players (?s=…&view=true); feature-flagged OFF by default",
+      "Feat: Feature flag system — featureFlags.js for global toggles; per-user localStorage override; URL param bootstrap (?enable_flag=<name> / ?disable_flag=<name>)",
+      "Fix: Share as Link + Share Viewer Link both fall back to base64 URL encoding when Supabase is unavailable (local dev)",
+      "UX: Team season batting totals (G/AB/H/AVG/R/RBI) mini-block at top of Season Batting Stats box",
+      "UX: Suggest Order / 6/7 innings selector disabled and dimmed when lineup is finalized",
+      "UX: Batting order Undo — snapshot captured before Suggest Order or first ▲▼ arrow move; cleared on Save/Finalize",
+      "UX: Finalize CTA disabled until batting order is saved; hover tooltip + inline amber hint explain why",
+      "Fix: Generate Lineup blocked on all surfaces when lineup is finalized — home screen shows ✓ View Lineup instead",
+      "UX: Finalize Lineup — 3-step LockFlow confirmation (Review issues → Confirm game → PIN); replaces direct PIN modal trigger on all 3 Finalize buttons"
+    ]
+  },
   {
     version: "1.6.6",
     date: "March 29, 2026",
@@ -1290,6 +1305,177 @@ function PlayerFilterToggle({ players, selected, onSelect }) {
 }
 
 // ============================================================
+// LOCK FLOW — 3-step confirmation before finalizing lineup
+// ============================================================
+
+function LockFlow({ activeWarnings, nextGame, hasPin, onConfirmLock, onRequestPin, onClose }) {
+  var _step = useState(1);
+  var step = _step[0]; var setStep = _step[1];
+
+  var totalSteps = hasPin ? 3 : 2;
+  var stepLabels = hasPin ? ["Review", "Confirm", "Lock"] : ["Review", "Confirm"];
+
+  var navy = "#0f1f3d";
+  var win  = "#27ae60";
+  var gold = "#b8860b";
+  var textMuted = "rgba(15,31,61,0.45)";
+
+  function StepIndicator() {
+    return (
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:"6px", marginBottom:"22px" }}>
+        {stepLabels.map(function(label, i) {
+          var num = i + 1;
+          var isActive = step === num;
+          var isDone   = step > num;
+          var circleColor = isDone ? win : isActive ? navy : "rgba(15,31,61,0.12)";
+          var circleText  = isDone ? win : isActive ? "#fff" : textMuted;
+          var circleTextColor = isDone ? "#fff" : isActive ? "#fff" : textMuted;
+          return (
+            <div key={i} style={{ display:"flex", alignItems:"center", gap:"6px" }}>
+              <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:"3px" }}>
+                <div style={{ width:"26px", height:"26px", borderRadius:"50%", background:circleColor,
+                  color:circleTextColor, display:"flex", alignItems:"center", justifyContent:"center",
+                  fontSize:"12px", fontWeight:"bold" }}>
+                  {isDone ? "✓" : num}
+                </div>
+                <span style={{ fontSize:"10px", letterSpacing:"0.05em", textTransform:"uppercase",
+                  color: isActive ? navy : textMuted, fontWeight: isActive ? "bold" : "normal" }}>
+                  {label}
+                </span>
+              </div>
+              {i < stepLabels.length - 1 ? (
+                <div style={{ width:"28px", height:"1px", background:"rgba(15,31,61,0.15)", marginBottom:"14px" }} />
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  var hasIssues = activeWarnings && activeWarnings.length > 0;
+
+  function renderStep1() {
+    return (
+      <div>
+        <div style={{ fontSize:"16px", fontWeight:"bold", color:navy, fontFamily:"Georgia,serif", marginBottom:"14px" }}>
+          Review Lineup
+        </div>
+        {!hasIssues ? (
+          <div style={{ display:"flex", alignItems:"center", gap:"10px", background:"rgba(39,174,96,0.08)",
+            border:"1px solid rgba(39,174,96,0.25)", borderRadius:"10px", padding:"14px", marginBottom:"18px" }}>
+            <span style={{ fontSize:"20px" }}>✅</span>
+            <div>
+              <div style={{ fontSize:"14px", fontWeight:"bold", color:win }}>Lineup looks good</div>
+              <div style={{ fontSize:"12px", color:"rgba(39,174,96,0.8)", marginTop:"2px" }}>No issues detected</div>
+            </div>
+          </div>
+        ) : (
+          <div style={{ background:"rgba(200,16,46,0.04)", border:"1px solid rgba(200,16,46,0.15)", borderRadius:"10px", padding:"14px", marginBottom:"18px" }}>
+            <div style={{ fontSize:"13px", fontWeight:"bold", color:"#92400e", marginBottom:"8px" }}>
+              {activeWarnings.length + " issue" + (activeWarnings.length === 1 ? "" : "s") + " must be resolved"}
+            </div>
+            <ul style={{ margin:0, paddingLeft:"18px", marginBottom:"10px" }}>
+              {activeWarnings.map(function(w, i) {
+                return <li key={i} style={{ fontSize:"12px", color:"#78350f", lineHeight:1.6 }}>{w.msg || w}</li>;
+              })}
+            </ul>
+            <div style={{ fontSize:"11px", color:"#92400e", opacity:0.7 }}>
+              Dismissed warnings are shown here — all issues must be fixed before locking.
+            </div>
+          </div>
+        )}
+        <div style={{ display:"flex", gap:"8px", justifyContent:"flex-end", flexWrap:"wrap" }}>
+          <button onClick={onClose}
+            style={{ padding:"9px 18px", borderRadius:"8px", border:"1px solid rgba(15,31,61,0.2)",
+              background:"transparent", color:navy, fontSize:"13px", fontWeight:"bold", cursor:"pointer", fontFamily:"Georgia,serif" }}>
+            Cancel
+          </button>
+          {hasIssues ? (
+            <button onClick={function() { setStep(2); }}
+              style={{ padding:"9px 18px", borderRadius:"8px", border:"1px solid rgba(200,16,46,0.3)",
+                background:"transparent", color:"#b91c1c", fontSize:"13px", fontWeight:"bold", cursor:"pointer", fontFamily:"Georgia,serif" }}>
+              Lock Anyway →
+            </button>
+          ) : null}
+          <button onClick={function() { setStep(2); }} disabled={hasIssues}
+            style={{ padding:"9px 18px", borderRadius:"8px", border:"none",
+              background: hasIssues ? "rgba(15,31,61,0.1)" : navy,
+              color: hasIssues ? textMuted : "#fff", fontSize:"13px", fontWeight:"bold",
+              cursor: hasIssues ? "not-allowed" : "pointer", fontFamily:"Georgia,serif" }}>
+            Continue to Lock →
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  function renderStep2() {
+    var gameLabel = null;
+    if (nextGame) {
+      var d = new Date(nextGame.date + "T12:00:00");
+      var dateStr = d.toLocaleDateString("en-US", { weekday:"short", month:"short", day:"numeric" });
+      gameLabel = dateStr + (nextGame.opponent ? " · vs " + nextGame.opponent : "");
+    }
+    return (
+      <div>
+        <div style={{ fontSize:"16px", fontWeight:"bold", color:navy, fontFamily:"Georgia,serif", marginBottom:"14px" }}>
+          Confirm Lock
+        </div>
+        <div style={{ background:"rgba(15,31,61,0.04)", border:"1px solid rgba(15,31,61,0.1)", borderRadius:"10px", padding:"14px", marginBottom:"18px" }}>
+          <div style={{ fontSize:"13px", color:textMuted, marginBottom:"6px", letterSpacing:"0.05em", textTransform:"uppercase", fontSize:"10px" }}>
+            You are about to lock the lineup for
+          </div>
+          {gameLabel ? (
+            <div style={{ fontSize:"15px", fontWeight:"bold", color:navy, fontFamily:"Georgia,serif" }}>{gameLabel}</div>
+          ) : (
+            <div style={{ fontSize:"14px", color:navy, fontStyle:"italic" }}>Next game</div>
+          )}
+          <div style={{ fontSize:"12px", color:textMuted, marginTop:"8px" }}>
+            Once locked, the lineup is read-only. Use your PIN to unlock and make changes.
+          </div>
+        </div>
+        <div style={{ display:"flex", gap:"8px", justifyContent:"flex-end" }}>
+          <button onClick={function() { setStep(1); }}
+            style={{ padding:"9px 18px", borderRadius:"8px", border:"1px solid rgba(15,31,61,0.2)",
+              background:"transparent", color:navy, fontSize:"13px", fontWeight:"bold", cursor:"pointer", fontFamily:"Georgia,serif" }}>
+            ← Go Back
+          </button>
+          <button onClick={function() {
+              if (hasPin) {
+                onRequestPin();
+                onClose();
+              } else {
+                onConfirmLock();
+                onClose();
+              }
+            }}
+            style={{ padding:"9px 18px", borderRadius:"8px", border:"none",
+              background:win, color:"#fff", fontSize:"13px", fontWeight:"bold", cursor:"pointer", fontFamily:"Georgia,serif" }}>
+            Lock Lineup →
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, background:"rgba(0,0,0,0.55)", zIndex:9000,
+      display:"flex", alignItems:"flex-end", justifyContent:"center" }}
+      onClick={function(e) { if (e.target === e.currentTarget) onClose(); }}>
+      <div style={{ background:"#fff", borderRadius:"16px 16px 0 0", padding:"24px 20px 32px",
+        width:"100%", maxWidth:"520px", maxHeight:"80vh", overflowY:"auto",
+        boxShadow:"0 -4px 24px rgba(0,0,0,0.18)" }}>
+        {/* Close handle */}
+        <div style={{ width:"36px", height:"4px", borderRadius:"2px", background:"rgba(15,31,61,0.15)", margin:"-8px auto 20px" }} />
+        <StepIndicator />
+        {step === 1 ? renderStep1() : renderStep2()}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
 // MAIN COMPONENT
 // ============================================================
 
@@ -1559,6 +1745,24 @@ export default function App() {
   });
   var shareLoading = _shareLoading[0]; var setShareLoading = _shareLoading[1];
 
+  // Feature flag URL bootstrap — ?enable_flag=<name> sets localStorage and reloads
+  // ?disable_flag=<name> clears it. Allows per-user flag activation via a shared link.
+  useEffect(function() {
+    var _ffp = new URLSearchParams(window.location.search);
+    var _ef = _ffp.get("enable_flag");
+    var _df = _ffp.get("disable_flag");
+    if (!_ef && !_df) { return; }
+    if (_ef) { localStorage.setItem("flag:" + _ef, "1"); }
+    if (_df) { localStorage.removeItem("flag:" + _df); }
+    // Strip the param and reload so the flag takes effect cleanly
+    var clean = window.location.pathname;
+    var kept = [];
+    _ffp.forEach(function(v, k) {
+      if (k !== "enable_flag" && k !== "disable_flag") kept.push(k + "=" + encodeURIComponent(v));
+    });
+    window.location.replace(clean + (kept.length ? "?" + kept.join("&") : ""));
+  }, []);
+
   // Fetch short share link payload on mount
   useEffect(function() {
     var sid = new URLSearchParams(window.location.search).get("s");
@@ -1665,6 +1869,10 @@ export default function App() {
   var printOpt = _printOpt[0]; var setPrintOpt = _printOpt[1];
   var _printDefView = useState("grid");
   var printDefView = _printDefView[0]; var setPrintDefView = _printDefView[1];
+  var _showShareSheet = useState(false);
+  var showShareSheet = _showShareSheet[0]; var setShowShareSheet = _showShareSheet[1];
+  var _viewOptsExpanded = useState(false);
+  var viewOptsExpanded = _viewOptsExpanded[0]; var setViewOptsExpanded = _viewOptsExpanded[1];
   var _printDiamondInning = useState(null);
   var printDiamondInning = _printDiamondInning[0]; var setPrintDiamondInning = _printDiamondInning[1];
   var _pdfLoading = useState(false);
@@ -1688,6 +1896,8 @@ export default function App() {
   var pinSessionUnlocked = _pinSession[0]; var setPinSessionUnlocked = _pinSession[1];
   var _pinModal = useState(null);
   var pinModal = _pinModal[0]; var setPinModal = _pinModal[1];
+  var _lockFlowOpen = useState(false);
+  var lockFlowOpen = _lockFlowOpen[0]; var setLockFlowOpen = _lockFlowOpen[1];
   var _pinInput = useState(""); var pinInput = _pinInput[0]; var setPinInput = _pinInput[1];
   var _pinError = useState(""); var pinError = _pinError[0]; var setPinError = _pinError[1];
   var _pinConfirm = useState(""); var pinConfirm = _pinConfirm[0]; var setPinConfirm = _pinConfirm[1];
@@ -4129,25 +4339,11 @@ export default function App() {
               if (confirm("Clear all assignments?")) { persistGrid(initGrid(roster, innings)); setLineupDirty(true); }
             }}>Clear</button>
           ) : null}
-          {/* Finalize button — only show when not locked and lineup looks good */}
+          {/* Finalize button — opens LockFlow 3-step confirmation */}
           {!lineupLocked ? (
             <button
               style={{ ...S.btn("ghost"), color:C.win, border:"1px solid rgba(39,174,96,0.35)", marginLeft:"4px" }}
-              onClick={function() {
-                if (errorCount > 0) {
-                  if (!confirm(errorCount + " issue(s) detected. Finalize anyway?")) { return; }
-                }
-                if (coachPin) {
-                  setPinModal("finalize"); setPinInput(""); setPinError("");
-                } else {
-                  persistLineupLocked(true);
-                  // Surface install banner after finalize — high-engagement moment
-                  if (deferredPrompt && !localStorage.getItem("pwa_installed")) {
-                    var _snoozed = parseInt(localStorage.getItem("pwa_install_snoozed") || "0");
-                    if (Date.now() >= _snoozed) { setShowInstallBanner(true); }
-                  }
-                }
-              }}>
+              onClick={function() { setLockFlowOpen(true); }}>
               ✓ Finalize
             </button>
           ) : null}
@@ -4686,20 +4882,7 @@ export default function App() {
                 <button
                   disabled={battingOrderDirty}
                   style={{ ...S.btn("ghost"), color: battingOrderDirty ? C.textMuted : C.win, border:"1px solid " + (battingOrderDirty ? "rgba(0,0,0,0.12)" : "rgba(39,174,96,0.35)"), opacity: battingOrderDirty ? 0.5 : 1, cursor: battingOrderDirty ? "default" : "pointer" }}
-                  onClick={function() {
-                    if (errorCount > 0) {
-                      if (!confirm(errorCount + " issue(s) detected. Finalize anyway?")) { return; }
-                    }
-                    if (coachPin) {
-                      setPinModal("finalize"); setPinInput(""); setPinError("");
-                    } else {
-                      persistLineupLocked(true);
-                      if (deferredPrompt && !localStorage.getItem("pwa_installed")) {
-                        var _snoozed = parseInt(localStorage.getItem("pwa_install_snoozed") || "0");
-                        if (Date.now() >= _snoozed) { setShowInstallBanner(true); }
-                      }
-                    }
-                  }}>
+                  onClick={function() { setLockFlowOpen(true); }}>
                   ✓ Finalize
                 </button>
                 {battingOrderDirty ? (
@@ -6831,7 +7014,7 @@ export default function App() {
     if (pinModal === "unlock") {
       title = "🔒 Unlock Lineup"; subtitle = "Enter your coach PIN to unlock for editing.";
     } else if (pinModal === "finalize") {
-      title = "✓ Finalize Lineup"; subtitle = "Enter your PIN to lock and protect this lineup.";
+      title = "Enter coach PIN to confirm lock"; subtitle = "Enter your PIN to lock and protect this lineup.";
     } else if (pinModal === "setup") {
       title = "🔐 Set Coach PIN"; subtitle = "Choose a 4-digit PIN to protect your finalized lineup.";
       showConfirm = true;
@@ -6916,71 +7099,110 @@ export default function App() {
 
     return (
       <div>
-        <div style={{ marginBottom:"16px" }}>
-          <div style={{ display:"flex", gap:"8px", alignItems:"center", flexWrap:"wrap", marginBottom:"8px" }}>
-            <div style={{ display:"flex", gap:"6px" }}>
-              {[["Both","both"],["Defense","defense"],["Batting","batting"]].map(function(row) {
-                var active = printOpt === row[1];
-                return (
-                  <button key={row[1]} onClick={function(v) { return function() { setPrintOpt(v); }; }(row[1])}
-                    style={{ ...S.btn(active ? "primary" : "ghost"), padding:"6px 14px" }}>
-                    {row[0]}
+        {/* ── Share bottom sheet ─────────────────────────────────── */}
+        {showShareSheet ? (
+          <>
+            <div onClick={function() { setShowShareSheet(false); }}
+              style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.45)", zIndex:10000 }} />
+            <div style={{ position:"fixed", bottom:0, left:0, right:0, zIndex:10001,
+              background:"#fff", borderRadius:"16px 16px 0 0",
+              padding:"20px 20px 36px", maxWidth:"500px", margin:"0 auto" }}>
+              <div style={{ fontSize:"13px", fontWeight:"bold", color:C.navy, letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:"16px", textAlign:"center" }}>
+                Share Lineup
+              </div>
+              <div style={{ display:"flex", flexDirection:"column", gap:"10px" }}>
+                <button style={{ ...S.btn("ghost"), border:"1px solid rgba(15,31,61,0.2)", padding:"13px", fontSize:"14px", textAlign:"left" }}
+                  onClick={function() { setShowShareSheet(false); shareCurrentLineup(); }}>
+                  🔗 Share as Link
+                </button>
+                {(FEATURE_FLAGS.VIEWER_MODE || localStorage.getItem("flag:viewer_mode") === "1") ? (
+                  <button style={{ ...S.btn("ghost"), border:"1px solid rgba(15,31,61,0.2)", padding:"13px", fontSize:"14px", textAlign:"left" }}
+                    onClick={function() { setShowShareSheet(false); shareViewerLink(); }}>
+                    👁 Share Viewer Link
                   </button>
-                );
-              })}
+                ) : null}
+                <button style={{ ...S.btn("ghost"), border:"1px solid rgba(15,31,61,0.2)", padding:"13px", fontSize:"14px", textAlign:"left" }}
+                  onClick={function() { setShowShareSheet(false); generatePDF("share"); }} disabled={pdfLoading || pdfSharing}>
+                  📤 {pdfSharing ? "Preparing..." : "Share as PDF"}
+                </button>
+                <button style={{ ...S.btn("gold"), padding:"13px", fontSize:"14px" }}
+                  onClick={function() { setShowShareSheet(false); generatePDF("download"); }} disabled={pdfLoading || pdfSharing}>
+                  ⬇ {pdfLoading ? "Generating..." : "Download PDF"}
+                </button>
+                <button style={{ ...S.btn("ghost"), padding:"11px", fontSize:"13px", color:C.textMuted }}
+                  onClick={function() { setShowShareSheet(false); }}>
+                  Cancel
+                </button>
+              </div>
             </div>
-            {(printOpt === "both" || printOpt === "defense") ? (
-              <div style={{ display:"flex", gap:"4px", background:"rgba(15,31,61,0.06)", borderRadius:"8px", padding:"3px", width:"fit-content" }}>
-                {[["Grid","grid"],["Diamond","diamond"]].map(function(opt) {
-                  var active = printDefView === opt[1];
+          </>
+        ) : null}
+
+        {/* ── Primary action bar ─────────────────────────────────── */}
+        <div style={{ marginBottom:"12px" }}>
+          <div style={{ display:"flex", gap:"8px", alignItems:"center", flexWrap:"wrap" }}>
+            {/* Share Lineup — opens bottom sheet */}
+            <button style={{ ...S.btn("primary"), display:"flex", alignItems:"center", gap:"6px" }}
+              onClick={function() { setShowShareSheet(true); }}>
+              <span>📤</span> Share Lineup
+            </button>
+            {/* Edit Lineup — jumps to Defense tab */}
+            <button style={{ ...S.btn("gold"), display:"flex", alignItems:"center", gap:"6px" }}
+              onClick={function() { setGameDayTab("defense"); }}>
+              <span>✏️</span> Edit Lineup
+            </button>
+            {/* Finalize — only when unlocked */}
+            {!lineupLocked ? (
+              <button
+                style={{ ...S.btn("ghost"), color:C.win, border:"1px solid rgba(39,174,96,0.35)" }}
+                onClick={function() { setLockFlowOpen(true); }}>
+                ✓ Finalize
+              </button>
+            ) : null}
+            {/* View Options toggle */}
+            <button
+              onClick={function() { setViewOptsExpanded(!viewOptsExpanded); }}
+              style={{ ...S.btn("ghost"), marginLeft:"auto", display:"flex", alignItems:"center", gap:"4px", fontSize:"11px", color:C.textMuted, border:"1px solid rgba(15,31,61,0.15)" }}>
+              View Options {viewOptsExpanded ? "▲" : "▼"}
+            </button>
+          </div>
+
+          {/* Secondary controls — collapsed by default */}
+          {viewOptsExpanded ? (
+            <div style={{ display:"flex", gap:"8px", alignItems:"center", flexWrap:"wrap", marginTop:"10px",
+              padding:"10px 12px", background:"rgba(15,31,61,0.04)", borderRadius:"8px", border:"1px solid rgba(15,31,61,0.08)" }}>
+              {/* Both / Defense / Batting */}
+              <div style={{ display:"flex", gap:"4px" }}>
+                {[["Both","both"],["Defense","defense"],["Batting","batting"]].map(function(row) {
+                  var active = printOpt === row[1];
                   return (
-                    <button key={opt[1]}
-                      onClick={function(v) { return function() { setPrintDefView(v); if (v !== "diamond") { setPrintDiamondInning(null); } }; }(opt[1])}
-                      style={{ padding:"4px 14px", borderRadius:"6px", border:"none", cursor:"pointer", fontSize:"11px", fontWeight:"bold", fontFamily:"inherit",
-                        background: active ? C.white : "transparent",
-                        color: active ? C.navy : C.textMuted,
-                        boxShadow: active ? "0 1px 3px rgba(0,0,0,0.1)" : "none" }}>
-                      {opt[0]}
+                    <button key={row[1]} onClick={function(v) { return function() { setPrintOpt(v); }; }(row[1])}
+                      style={{ ...S.btn(active ? "primary" : "ghost"), padding:"5px 12px", fontSize:"11px" }}>
+                      {row[0]}
                     </button>
                   );
                 })}
               </div>
-            ) : null}
-            <button style={S.btn("gold")} onClick={function() { generatePDF("download"); }} disabled={pdfLoading || pdfSharing}>
-              {pdfLoading ? "Generating..." : "Download as PDF"}
-            </button>
-            <button style={{ ...S.btn("ghost"), border:"1px solid rgba(15,31,61,0.2)" }} onClick={shareCurrentLineup}>
-              Share as Link
-            </button>
-            {(FEATURE_FLAGS.VIEWER_MODE || localStorage.getItem("flag:viewer_mode") === "1") ? (
-              <button style={{ ...S.btn("ghost"), border:"1px solid rgba(15,31,61,0.2)" }} onClick={shareViewerLink}>
-                Share Viewer Link
-              </button>
-            ) : null}
-            <button style={{ ...S.btn("ghost"), border:"1px solid rgba(15,31,61,0.2)" }} onClick={function() { generatePDF("share"); }} disabled={pdfLoading || pdfSharing}>
-              {pdfSharing ? "Preparing..." : "Share as PDF"}
-            </button>
-            {!lineupLocked ? (
-              <button
-                style={{ ...S.btn("ghost"), color:C.win, border:"1px solid rgba(39,174,96,0.35)" }}
-                onClick={function() {
-                  if (errorCount > 0) {
-                    if (!confirm(errorCount + " issue(s) detected. Finalize anyway?")) { return; }
-                  }
-                  if (coachPin) {
-                    setPinModal("finalize"); setPinInput(""); setPinError("");
-                  } else {
-                    persistLineupLocked(true);
-                    if (deferredPrompt && !localStorage.getItem("pwa_installed")) {
-                      var _snoozed = parseInt(localStorage.getItem("pwa_install_snoozed") || "0");
-                      if (Date.now() >= _snoozed) { setShowInstallBanner(true); }
-                    }
-                  }
-                }}>
-                ✓ Finalize
-              </button>
-            ) : null}
-          </div>
+              {/* Grid / Diamond */}
+              {(printOpt === "both" || printOpt === "defense") ? (
+                <div style={{ display:"flex", gap:"4px", background:"rgba(15,31,61,0.06)", borderRadius:"8px", padding:"3px", width:"fit-content" }}>
+                  {[["Grid","grid"],["Diamond","diamond"]].map(function(opt) {
+                    var active = printDefView === opt[1];
+                    return (
+                      <button key={opt[1]}
+                        onClick={function(v) { return function() { setPrintDefView(v); if (v !== "diamond") { setPrintDiamondInning(null); } }; }(opt[1])}
+                        style={{ padding:"4px 14px", borderRadius:"6px", border:"none", cursor:"pointer", fontSize:"11px", fontWeight:"bold", fontFamily:"inherit",
+                          background: active ? C.white : "transparent",
+                          color: active ? C.navy : C.textMuted,
+                          boxShadow: active ? "0 1px 3px rgba(0,0,0,0.1)" : "none" }}>
+                        {opt[0]}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
         </div>
 
         {/* ── PIN Protection ── */}
@@ -7982,6 +8204,27 @@ export default function App() {
         </div>
       )}
       {renderPinModal()}
+      {lockFlowOpen ? (
+        <LockFlow
+          activeWarnings={warnings}
+          nextGame={(function() {
+            var today = new Date(); today.setHours(0,0,0,0);
+            var up = schedule.filter(function(g) { return !g.result && g.date && new Date(g.date+"T12:00:00") >= today; });
+            up.sort(function(a,b) { return new Date(a.date) - new Date(b.date); });
+            return up.length ? up[0] : null;
+          })()}
+          hasPin={!!coachPin}
+          onConfirmLock={function() {
+            persistLineupLocked(true);
+            if (deferredPrompt && !localStorage.getItem("pwa_installed")) {
+              var _snoozed = parseInt(localStorage.getItem("pwa_install_snoozed") || "0");
+              if (Date.now() >= _snoozed) { setShowInstallBanner(true); }
+            }
+          }}
+          onRequestPin={function() { setPinModal("finalize"); setPinInput(""); setPinError(""); }}
+          onClose={function() { setLockFlowOpen(false); }}
+        />
+      ) : null}
       {editingTeam ? (
         <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, background:"rgba(0,0,0,0.6)", zIndex:10000, display:"flex", alignItems:"center", justifyContent:"center", padding:"20px" }}
           onClick={function(e) { if (e.target === e.currentTarget) { setEditingTeam(null); } }}>

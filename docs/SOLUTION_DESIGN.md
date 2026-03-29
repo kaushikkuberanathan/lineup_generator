@@ -479,6 +479,39 @@ Every production release requires:
 
 ---
 
+## Feature Flag System
+
+Flags control progressive rollout and safe-to-ship-but-not-activate features. Evaluated at render time using a two-level check.
+
+### File
+
+`frontend/src/config/featureFlags.js` — compiled into the bundle. Changing a value requires a frontend deploy.
+
+### Evaluation
+
+```
+FEATURE_FLAGS.<NAME>  (global, compile-time)
+  OR
+localStorage.getItem("flag:<name>") === "1"  (per-user, runtime)
+```
+
+### URL Param Bootstrap
+
+`?enable_flag=<name>` / `?disable_flag=<name>` — app sets the localStorage key on mount and redirects to the clean URL. Enables zero-deploy per-user flag activation via a shared link.
+
+### Upgrade Path
+
+| When | Approach |
+|---|---|
+| Single tester | `localStorage.setItem("flag:name", "1")` or `?enable_flag=name` link |
+| 2–5 coaches | URL param bootstrap link per coach |
+| Broader rollout | Supabase `feature_flags` table (query on load, no deploy) |
+| Multi-team with targeting | PostHog / Flagsmith / GrowthBook |
+
+Full How-To: `docs/features/feature-flags.md`
+
+---
+
 ## Version Management
 
 Versions follow **semver** (`MAJOR.MINOR.PATCH`):
