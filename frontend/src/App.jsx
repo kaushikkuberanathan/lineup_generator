@@ -8,6 +8,7 @@ import { isSupabaseEnabled, dbSaveTeams, dbDeleteTeam,
 import mixpanel from 'mixpanel-browser';
 import { FEATURE_FLAGS } from '@/config/featureFlags';
 import { generateLineupV2 } from '@/utils/lineupEngineV2';
+import { normalizeBattingHand } from '@/utils/playerUtils';
 import { useBackendHealth } from '@/hooks/useBackendHealth';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { ErrorBoundary } from './components/Shared/ErrorBoundary';

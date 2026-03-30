@@ -60,7 +60,8 @@ export function DefenseDiamond({ roster, grid, innings, selectedInning, onSelect
       "RC":"#5c2878",
       "SS":"#8a4a0a", "2B":"#8a4a0a",
       "3B":"#7a1a10", "P":"#7a1a10", "1B":"#7a1a10",
-      "C":"#14406e"
+      "C":"#14406e",
+      "Bench":"#2a2a2a"
     };
     var BOX_H = isSingle ? 54 : (30 + (localInnArr.length * 11) + 4);
     var VB_H  = isSingle ? 640 : (555 + BOX_H + 30);
@@ -74,7 +75,8 @@ export function DefenseDiamond({ roster, grid, innings, selectedInning, onSelect
       { pos:"3B", x:148, y:415, w:112, h:BOX_H },
       { pos:"P",  x:284, y:405, w:112, h:BOX_H },
       { pos:"1B", x:420, y:415, w:112, h:BOX_H },
-      { pos:"C",  x:284, y:555, w:112, h:BOX_H }
+      { pos:"C",  x:284, y:555, w:112, h:BOX_H },
+      { pos:"Bench", x:420, y:520, w:112, h:BOX_H }
     ] : [
       { pos:"LF", x:42,  y:165, w:112, h:BOX_H },
       { pos:"LC", x:170, y:128, w:112, h:BOX_H },
@@ -87,7 +89,6 @@ export function DefenseDiamond({ roster, grid, innings, selectedInning, onSelect
       { pos:"1B", x:420, y:415, w:112, h:BOX_H },
       { pos:"C",  x:284, y:555, w:112, h:BOX_H }
     ];
-    var benchPlayer = isSingle ? getPlayerFn("Bench", innFilter) : "";
     return (
       <div style={{ position:"relative", width:"100%", maxWidth:"680px", margin:"0 auto", marginBottom:"10px" }}>
         <svg viewBox={"0 0 680 " + VB_H} width="100%" style={{ display:"block" }}>
@@ -148,18 +149,6 @@ export function DefenseDiamond({ roster, grid, innings, selectedInning, onSelect
               </g>
             );
           })}
-          {isSingle && benchPlayer && (
-            <g>
-              <rect x="430" y="570" width="130" height="24" rx="12"
-                fill="rgba(0,0,0,0.28)" stroke="white" strokeOpacity="0.15"
-                strokeDasharray="3 2" strokeWidth="1"/>
-              <text x="495" y="586" textAnchor="middle"
-                fontSize="9" fill="rgba(255,255,255,0.7)"
-                fontFamily="system-ui,sans-serif">
-                {"Bench: " + firstName(benchPlayer)}
-              </text>
-            </g>
-          )}
         </svg>
       </div>
     );
