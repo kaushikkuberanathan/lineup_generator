@@ -21,7 +21,6 @@ import { ValidationBanner } from './components/Shared/ValidationBanner';
 import { OfflineIndicator } from './components/Shared/OfflineIndicator';
 import { DefenseDiamond }  from './components/GameDay/DefenseDiamond';
 import { GameModeScreen }  from './components/game-mode/GameModeScreen';
-import { useFeatureFlag }  from './hooks/useFeatureFlag';
 
 var MIXPANEL_TOKEN = "YOUR_MIXPANEL_TOKEN";
 if (MIXPANEL_TOKEN !== "YOUR_MIXPANEL_TOKEN") {
@@ -144,9 +143,17 @@ var DEFAULT_ROSTER = [];
 var _mem = {};
 var SCHEMA_VERSION = 2;
 
-var APP_VERSION = "1.8.1";
+var APP_VERSION = "1.8.2";
 
 var VERSION_HISTORY = [
+  {
+    version: "1.8.2",
+    date: "March 30, 2026",
+    changes: [
+      "Game Mode enabled for all users — feature flag gate removed",
+      "▶ Game Mode button now always visible on Game Day tab",
+    ]
+  },
   {
     version: "1.8.1",
     date: "March 30, 2026",
@@ -1588,7 +1595,6 @@ export default function App() {
   var teams = _teams[0]; var setTeams = _teams[1];
   var _atid = useState(initActiveId);
   var activeTeamId = _atid[0]; var setActiveTeamId = _atid[1];
-  var gameModeFlag = useFeatureFlag("game_mode", activeTeamId);
   var _primaryTab = useState("home");
   var primaryTab = _primaryTab[0]; var setPrimaryTab = _primaryTab[1];
   var _rosterTab = useState("players");
@@ -7700,14 +7706,12 @@ export default function App() {
             style={{ ...S.btn(parentViewActive ? "primary" : "ghost"), marginLeft:"auto", padding:"4px 10px", fontSize:"11px" }}>
             {parentViewActive ? "← Full View" : "👪 Parent View"}
           </button>
-          {(FEATURE_FLAGS.GAME_MODE || localStorage.getItem("flag:game_mode") === "1" || gameModeFlag.enabled) ? (
-            <button
-              onClick={function() { setGameModeActive(true); }}
-              style={{ ...S.btn("primary"), padding:"4px 12px", fontSize:"11px",
-                background:"#e05c2a", border:"none" }}>
-              ▶ Game Mode
-            </button>
-          ) : null}
+          <button
+            onClick={function() { setGameModeActive(true); }}
+            style={{ ...S.btn("primary"), padding:"4px 12px", fontSize:"11px",
+              background:"#e05c2a", border:"none" }}>
+            ▶ Game Mode
+          </button>
         </div>
       ) : null}
       {primaryTab === "team" ? renderTeamTab() : null}
