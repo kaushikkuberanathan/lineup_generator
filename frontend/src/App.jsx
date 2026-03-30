@@ -5429,6 +5429,7 @@ export default function App() {
                 )}
               </div>
 
+
             </div>
           );
         })}
@@ -6020,7 +6021,7 @@ export default function App() {
                       return (
                         <div style={{ marginTop:"6px", paddingTop:"6px", borderTop:"1px solid " + C.subtleBorder }}>
                           <div style={{ display:"flex", gap:"6px", alignItems:"center", flexWrap:"wrap" }}>
-                            <span style={{ fontSize:"11px", color:C.textMuted, flexShrink:0 }}>🍎</span>
+                            <span style={{ fontSize:"11px", color:C.textMuted, flexShrink:0 }}>🍎 Snack Duty</span>
                             <select
                               value={sa.playerName || ""}
                               onChange={function(gid) { return function(e) {
@@ -6036,14 +6037,14 @@ export default function App() {
                               <button onClick={function(gid) { return function() { clearSnackAssignment(gid); }; }(game.id)}
                                 style={{ background:"none", border:"none", cursor:"pointer", fontSize:"12px", color:C.textMuted, padding:"1px 3px", lineHeight:1 }} title="Clear">✕</button>
                             )}
-                            <span style={{ fontSize:"11px", color:C.textMuted, flexShrink:0 }}>⚾</span>
+                            <span style={{ fontSize:"11px", color:C.textMuted, flexShrink:0 }}>⚾ Game Ball</span>
                             <select
                               value={game.gameBall || ""}
                               onChange={function(gid) { return function(e) {
                                 updateSnackField(gid, "gameBall", e.target.value);
                               }; }(game.id)}
                               style={{ flex:"1 1 110px", minWidth:"100px", padding:"3px 6px", borderRadius:"5px", border:"1px solid rgba(15,31,61,0.15)", fontSize:"12px", fontFamily:"inherit", background:C.cardBg, color: game.gameBall ? C.text : C.textMuted }}>
-                              <option value="">— Game Ball —</option>
+                              <option value="">— select player —</option>
                               {roster.slice().sort(function(a,b){ return (a.firstName||a.name||'').toLowerCase().localeCompare((b.firstName||b.name||'').toLowerCase()); }).map(function(p) {
                                 return <option key={p.name} value={p.firstName || p.name}>{p.firstName || p.name}</option>;
                               })}
@@ -7672,7 +7673,7 @@ export default function App() {
     { key:"batting",  label:"Batting" },
     { key:"lineups",  label:"Lineups" },
     { key:"songs",    label:"Songs"   },
-    { key:"gamemode", label:"▶ Game",  launcher:true },
+    { key:"gamemode", label:"GAME MODE", launcher:true },
   ];
   var SEASON_SUBTABS = [
     { key:"schedule", label:"Schedule" },
@@ -7700,18 +7701,36 @@ export default function App() {
   }; };
 
   if (primaryTab === "gameday") {
+    // Hide GAME MODE for completed (W/L/T) or cancelled (X) games
+    var _gmToday = new Date(); _gmToday.setHours(0,0,0,0);
+    var _showGameMode = !!schedule.slice()
+      .filter(function(g) {
+        return g.date &&
+               new Date(g.date + "T12:00:00") >= _gmToday &&
+               g.result !== "X" &&
+               !g.result;
+      }).length;
+
     subTabBar = (
       <div style={{ display:"flex", gap:"4px", alignItems:"center", padding:"8px 12px 4px", background:C.cream, borderBottom:"1px solid " + C.border }}>
         {GAMEDAY_SUBTABS.map(function(st) {
           if (st.launcher) {
+            if (!_showGameMode) { return null; }
+            var gmActive = gameModeActive;
             return (
               <button key={st.key}
                 onClick={function() { setGameModeActive(true); }}
-                style={{ flex:"0 0 auto", padding:"7px 14px", borderRadius:"6px", border:"none",
-                  cursor:"pointer", fontSize:"12px", fontWeight:"bold", fontFamily:"Georgia,serif",
-                  letterSpacing:"0.03em", textTransform:"uppercase",
-                  background:"#e05c2a", color:"#fff",
-                  boxShadow:"0 2px 6px rgba(224,92,42,0.35)" }}>
+                style={{ flex:"0 0 auto", padding: gmActive ? "7px 16px" : "7px 14px", borderRadius:"6px",
+                  border: gmActive ? "2px solid " + C.gold : "none",
+                  cursor:"pointer",
+                  fontSize: gmActive ? "14px" : "12px",
+                  fontWeight:"bold", fontFamily:"Georgia,serif",
+                  letterSpacing:"0.04em", textTransform:"uppercase",
+                  background: gmActive ? C.gold : "#e05c2a",
+                  color: gmActive ? C.navy : "#fff",
+                  boxShadow: gmActive ? "0 3px 10px rgba(245,200,66,0.5)" : "0 2px 6px rgba(224,92,42,0.35)",
+                  transform: gmActive ? "translateY(-2px)" : "none",
+                  transition:"all 0.15s" }}>
                 {st.label}
               </button>
             );
