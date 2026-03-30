@@ -26,6 +26,11 @@ var POS_FULL = {
   RC:"Right Center", RF:"Right Field", Bench:"Bench"
 };
 
+// Baseball scorecard order: P · C · 1B · 2B · 3B · SS · LF · LC · RC · RF · Bench · unassigned
+var POS_ORDER = {
+  P:1, C:2, "1B":3, "2B":4, "3B":5, SS:6, LF:7, LC:8, RC:9, RF:10, Bench:11
+};
+
 function firstName(name) {
   if (!name) return name;
   return name.split(" ")[0];
@@ -84,9 +89,15 @@ export function QuickSwap({ position, inning, roster, grid, onSwap, onClose }) {
           </div>
         </div>
 
-        {/* Player list */}
+        {/* Player list — sorted by baseball scorecard position order */}
         <div style={{ overflowY:"auto", flex:1, padding:"10px 0" }}>
-          {roster.map(function(p) {
+          {roster.slice().sort(function(a, b) {
+            var pa = (grid[a.name] || [])[inning] || "";
+            var pb = (grid[b.name] || [])[inning] || "";
+            var oa = POS_ORDER[pa] !== undefined ? POS_ORDER[pa] : 99;
+            var ob = POS_ORDER[pb] !== undefined ? POS_ORDER[pb] : 99;
+            return oa - ob;
+          }).map(function(p) {
             var playerPos = (grid[p.name] || [])[inning] || "";
             var isCurrent = p.name === currentPlayer;
             var pc = POS_COLORS[playerPos] || POS_COLORS[""];
