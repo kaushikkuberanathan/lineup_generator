@@ -319,6 +319,12 @@ All major sections are wrapped with `<ErrorBoundary>` (class component). On cras
 
 ## Version History
 
+### v1.9.0 — March 30, 2026
+Batting Hand — optional player attribute (L/R/U); normalizeBattingHand util; BattingHandSelector toggle in Add Player + player card; PlayerHandBadge inline badge in roster list, batting order editor, Now Batting/On Deck/In Hole strips; migration 005 backfills existing roster
+
+### v1.8.6 — March 30, 2026
+TEAM tab dashboard polish — emoji stat icons (👥 🏆 📅) with dividers; W/L record colors match Schedule tab; Needs attention box replaced with icon cards
+
 ### v1.8.5 — March 30, 2026
 Home screen: 'View Lineup' → 'View/Update Lineup' · Added 'Game View Mode' CTA (always visible when lineup locked) — launches directly into Game Mode
 

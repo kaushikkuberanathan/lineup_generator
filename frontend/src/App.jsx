@@ -21,7 +21,9 @@ import { ValidationBanner } from './components/Shared/ValidationBanner';
 import { OfflineIndicator } from './components/Shared/OfflineIndicator';
 import { DefenseDiamond }  from './components/GameDay/DefenseDiamond';
 import { GameModeScreen }  from './components/game-mode/GameModeScreen';
-import { LegalSection }    from './components/Support/LegalSection';
+import { LegalSection }       from './components/Support/LegalSection';
+import { BattingHandSelector } from './components/BattingHandSelector';
+import { PlayerHandBadge }     from './components/PlayerHandBadge';
 
 var MIXPANEL_TOKEN = "YOUR_MIXPANEL_TOKEN";
 if (MIXPANEL_TOKEN !== "YOUR_MIXPANEL_TOKEN") {
@@ -144,9 +146,16 @@ var DEFAULT_ROSTER = [];
 var _mem = {};
 var SCHEMA_VERSION = 2;
 
-var APP_VERSION = "1.8.6";
+var APP_VERSION = "1.9.0";
 
 var VERSION_HISTORY = [
+  {
+    version: "1.9.0",
+    date: "March 30, 2026",
+    changes: [
+      "Batting Hand — optional player attribute; captured on roster, editable in player card, displayed in batting order and live game mode strips",
+    ]
+  },
   {
     version: "1.8.6",
     date: "March 30, 2026",
@@ -1757,6 +1766,7 @@ export default function App() {
   var isHydrating = _hydrating[0]; var setIsHydrating = _hydrating[1];
   var _nfn = useState(""); var newFirstName = _nfn[0]; var setNewFirstName = _nfn[1];
   var _nln = useState(""); var newLastName  = _nln[0]; var setNewLastName  = _nln[1];
+  var _nbh = useState("U"); var newBattingHand = _nbh[0]; var setNewBattingHand = _nbh[1];
   var _showAddForm = useState(false);
   var showAddForm = _showAddForm[0]; var setShowAddForm = _showAddForm[1];
   var _summaryOpen = useState(true);
@@ -2465,7 +2475,9 @@ export default function App() {
       skipBench: false, outThisGame: false,
       lastUpdated: null,
       // Walk-up songs
-      walkUpSong: null, walkUpArtist: null, walkUpStart: null, walkUpEnd: null, walkUpNotes: null, walkUpLink: null
+      walkUpSong: null, walkUpArtist: null, walkUpStart: null, walkUpEnd: null, walkUpNotes: null, walkUpLink: null,
+      // Batting hand
+      battingHand: normalizeBattingHand(newBattingHand)
     };
     var next = roster.concat([p]);
     persistRoster(next);
@@ -3388,7 +3400,12 @@ export default function App() {
                 onKeyDown={function(e) { if (e.key === "Enter") { addPlayer(); } }}
                 placeholder="Last name*" maxLength={20} style={{ ...S.input, flex:"1 1 120px" }} />
               <button style={S.btn("primary")} onClick={addPlayer}>Add</button>
-              <button style={S.btn("secondary")} onClick={function() { setShowAddForm(false); setNewFirstName(""); setNewLastName(""); }}>Cancel</button>
+              <button style={S.btn("secondary")} onClick={function() { setShowAddForm(false); setNewFirstName(""); setNewLastName(""); setNewBattingHand("U"); }}>Cancel</button>
+            </div>
+            <div style={{ marginTop:"4px" }}>
+              <div style={{ fontSize:"12px", fontWeight:600, color:"#374151", marginBottom:"2px" }}>Batting Hand</div>
+              <div style={{ fontSize:"11px", color:"#6b7280", marginBottom:"6px" }}>Optional — helps dugout prepare batters</div>
+              <BattingHandSelector value={newBattingHand} onChange={setNewBattingHand} />
             </div>
           </div>
         )}
@@ -3599,7 +3616,10 @@ export default function App() {
                       {isCol ? ">" : "v"}
                     </button>
                   ) : <span style={{ width:"16px", flexShrink:0 }} />}
-                  <div style={{ fontWeight:"bold", fontSize:"14px", flex:1 }}>{info.name}</div>
+                  <div style={{ fontWeight:"bold", fontSize:"14px", flex:1 }}>
+                    {info.name}
+                    {" "}<PlayerHandBadge hand={info.battingHand} style={{ marginLeft:"4px" }} />
+                  </div>
                   {isCol ? (
                     <div style={{ display:"flex", gap:"2px", flexWrap:"wrap" }}>
                       {sk.map(function(key) {
@@ -3836,6 +3856,14 @@ export default function App() {
                       </div>
                       {isV2Open(info.name,"Batting") ? (
                         <div style={{ padding:"8px 12px", background:"white" }}>
+                          <span style={{ fontSize:"10px", fontWeight:600, color:"#666666", marginBottom:"4px", display:"block" }}>Batting Hand</span>
+                          <div style={{ marginBottom:"10px" }}>
+                            <BattingHandSelector
+                              value={normalizeBattingHand(info.battingHand)}
+                              onChange={function(v) { updatePlayer(info.name, { battingHand: normalizeBattingHand(v) }); }}
+                            />
+                            <div style={{ fontSize:"10px", color:"#9ca3af", marginTop:"4px" }}>Optional — helps dugout prepare batters</div>
+                          </div>
                           <span style={{ fontSize:"10px", fontWeight:600, color:"#666666", marginBottom:"4px", display:"block" }}>Contact</span>
                           <div style={{ display:"flex", flexWrap:"wrap", gap:"4px", marginBottom:"6px" }}>
                             {[["High Contact","high"],["Medium Contact","medium"],["Developing Contact","developing"]].map(function(opt) {
@@ -4972,7 +5000,10 @@ export default function App() {
                 </div>
 
                 <div style={{ flex:1 }}>
-                  <div style={{ fontWeight:"bold", fontSize:"13px", marginBottom:"2px" }}>{firstName(name)}</div>
+                  <div style={{ display:"flex", alignItems:"center", gap:"5px", marginBottom:"2px" }}>
+                    <span style={{ fontWeight:"bold", fontSize:"13px" }}>{firstName(name)}</span>
+                    <PlayerHandBadge hand={info.battingHand} />
+                  </div>
                   <div style={{ display:"flex", gap:"3px", flexWrap:"wrap" }}>
                     {bs.map(function(key) {
                       var b = BAT_SKILLS[key]; if (!b) { return null; }
@@ -7754,8 +7785,6 @@ export default function App() {
     contextLabel = "Batting Order \u2022 " + roster.length + " Players";
   } else if (primaryTab === "gameday" && gameDayTab === "lineups") {
     contextLabel = "Print / Share View";
-  } else if (primaryTab === "team" && teamSubTab === "roster") {
-    contextLabel = roster.length + " Player" + (roster.length !== 1 ? "s" : "") + " on Roster";
   } else if (primaryTab === "team" && teamSubTab === "schedule") {
     contextLabel = "Schedule";
   }
@@ -8025,6 +8054,7 @@ export default function App() {
             battingOrder={battingOrder}
             currentIndex={currentBatterIndex}
             activeInning={diamondInning !== null ? diamondInning + 1 : null}
+            roster={roster}
             onAdvance={function() {
               persistCurrentBatterIndex((currentBatterIndex + 1) % battingOrder.length);
             }}

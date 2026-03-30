@@ -250,6 +250,7 @@ export function GameModeScreen({
           activeInning={currentInning + 1}
           onAdvance={onBatterAdvance}
           onBack={onBatterBack}
+          roster={roster}
         />
       </div>
 
