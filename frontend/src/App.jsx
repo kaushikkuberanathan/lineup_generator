@@ -19,6 +19,8 @@ import { ViewerMode } from './components/Viewer/ViewerMode';
 import { EmptyState } from './components/Home/EmptyState';
 import { ValidationBanner } from './components/Shared/ValidationBanner';
 import { OfflineIndicator } from './components/Shared/OfflineIndicator';
+import { GameModeScreen }  from './components/game-mode/GameModeScreen';
+import { useFeatureFlag }  from './hooks/useFeatureFlag';
 
 var MIXPANEL_TOKEN = "YOUR_MIXPANEL_TOKEN";
 if (MIXPANEL_TOKEN !== "YOUR_MIXPANEL_TOKEN") {
@@ -141,9 +143,16 @@ var DEFAULT_ROSTER = [];
 var _mem = {};
 var SCHEMA_VERSION = 2;
 
-var APP_VERSION = "1.7.2";
+var APP_VERSION = "1.7.3";
 
 var VERSION_HISTORY = [
+  {
+    version: "1.7.3",
+    date: "March 30, 2026",
+    changes: [
+      "UX: Defense tab — removed redundant INN OK summary boxes at bottom of grid; inning completion already shown via ✓ in column headers"
+    ]
+  },
   {
     version: "1.7.2",
     date: "March 30, 2026",
@@ -1316,6 +1325,9 @@ export default function App() {
 
   var backendHealth = useBackendHealth();
 
+  var _gameModeActive = useState(false);
+  var gameModeActive = _gameModeActive[0]; var setGameModeActive = _gameModeActive[1];
+
   var _syncStatus = useState("idle");
   var syncStatus = _syncStatus[0]; var setSyncStatus = _syncStatus[1];
 
@@ -1549,6 +1561,7 @@ export default function App() {
   var teams = _teams[0]; var setTeams = _teams[1];
   var _atid = useState(initActiveId);
   var activeTeamId = _atid[0]; var setActiveTeamId = _atid[1];
+  var gameModeFlag = useFeatureFlag("game_mode", activeTeamId);
   var _primaryTab = useState("home");
   var primaryTab = _primaryTab[0]; var setPrimaryTab = _primaryTab[1];
   var _rosterTab = useState("players");
@@ -2014,6 +2027,17 @@ export default function App() {
         }); });
       }
     }
+  }
+
+  function gameModeSwap(inningIdx, playerAName, playerBName) {
+    if (!playerAName || !playerBName || playerAName === playerBName) return;
+    var ng = {};
+    for (var k in grid) { ng[k] = grid[k].slice(); }
+    var posA = ng[playerAName] ? ng[playerAName][inningIdx] : "";
+    var posB = ng[playerBName] ? ng[playerBName][inningIdx] : "";
+    if (ng[playerAName]) ng[playerAName][inningIdx] = posB || "";
+    if (ng[playerBName]) ng[playerBName][inningIdx] = posA || "";
+    persistGrid(ng);
   }
 
   function persistInnings(n) {
@@ -4624,26 +4648,6 @@ export default function App() {
             })()
         ) : null}
 
-        <div style={{ display:"flex", gap:"8px", flexWrap:"wrap", marginTop:"16px" }}>
-          {innArr.map(function(i) {
-            var assigned = {};
-            for (var pi = 0; pi < players.length; pi++) {
-              var pos = (grid[players[pi]] || [])[i];
-              if (pos && pos !== "Bench") { assigned[pos] = true; }
-            }
-            var covered = 0;
-            for (var fpi = 0; fpi < FIELD_POSITIONS.length; fpi++) { if (assigned[FIELD_POSITIONS[fpi]]) { covered++; } }
-            var ok = covered === FIELD_POSITIONS.length;
-            return (
-              <div key={i} style={{ flex:1, minWidth:"80px", padding:"8px", borderRadius:"8px", textAlign:"center",
-                background: ok ? "rgba(39,174,96,0.08)" : "rgba(200,16,46,0.06)",
-                border:"1px solid " + (ok ? "rgba(39,174,96,0.2)" : "rgba(200,16,46,0.2)") }}>
-                <div style={{ fontSize:"10px", color:C.textMuted, marginBottom:"2px" }}>Inn {i+1}</div>
-                <div style={{ fontSize:"13px", fontWeight:"bold", color: ok ? C.win : C.red }}>{ok ? "OK" : covered + "/9"}</div>
-              </div>
-            );
-          })}
-        </div>
       </div>
     );
   }
@@ -7800,6 +7804,14 @@ export default function App() {
             style={{ ...S.btn(parentViewActive ? "primary" : "ghost"), marginLeft:"auto", padding:"4px 10px", fontSize:"11px" }}>
             {parentViewActive ? "← Full View" : "👪 Parent View"}
           </button>
+          {(FEATURE_FLAGS.GAME_MODE || localStorage.getItem("flag:game_mode") === "1" || gameModeFlag.enabled) ? (
+            <button
+              onClick={function() { setGameModeActive(true); }}
+              style={{ ...S.btn("primary"), padding:"4px 12px", fontSize:"11px",
+                background:"#e05c2a", border:"none" }}>
+              ▶ Game Mode
+            </button>
+          ) : null}
         </div>
       ) : null}
       {primaryTab === "roster"  && rosterTab === "players" ? renderRoster()  : null}
@@ -7912,6 +7924,23 @@ export default function App() {
         ) : null}
       </ErrorBoundary>
       {renderBottomNav()}
+      {gameModeActive ? (
+        <GameModeScreen
+          roster={roster}
+          grid={grid}
+          battingOrder={battingOrder}
+          innings={innings}
+          currentBatterIndex={currentBatterIndex}
+          onSwap={gameModeSwap}
+          onBatterAdvance={function() {
+            persistCurrentBatterIndex((currentBatterIndex + 1) % battingOrder.length);
+          }}
+          onBatterBack={function() {
+            persistCurrentBatterIndex((currentBatterIndex - 1 + battingOrder.length) % battingOrder.length);
+          }}
+          onExit={function() { setGameModeActive(false); }}
+        />
+      ) : null}
       {needRefresh && (
         <div style={{
           position: 'fixed',

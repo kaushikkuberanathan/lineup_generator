@@ -319,6 +319,9 @@ All major sections are wrapped with `<ErrorBoundary>` (class component). On cras
 
 ## Version History
 
+### v1.7.3 — March 30, 2026
+UX: Defense tab — removed redundant INN OK summary boxes at bottom; ✓ in column headers already covers this
+
 ### v1.7.2 — March 30, 2026
 Fix: Fairness Check bench rule — flags players benched more than once (was: never benched) · Fix: consecutive rule — consecutive C only, P no longer flagged · Feat: new rule — catcher assigned more than once per game · Component: src/components/GameDay/FairnessCheck.jsx
 
