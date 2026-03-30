@@ -319,6 +319,9 @@ All major sections are wrapped with `<ErrorBoundary>` (class component). On cras
 
 ## Version History
 
+### v1.8.1 — March 30, 2026
+UX: Team dashboard — removed Add Player, Add Game, Snacks quick-action buttons
+
 ### v1.8.0 — March 30, 2026
 Nav restructure: Roster + Season tabs merged into TEAM tab · TEAM subtabs: Roster / Schedule / Snacks · Team dashboard header (player count, record, next game) · Status warnings: missing positions, unassigned snacks · Season renamed to Schedule throughout
 

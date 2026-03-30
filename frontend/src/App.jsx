@@ -144,9 +144,16 @@ var DEFAULT_ROSTER = [];
 var _mem = {};
 var SCHEMA_VERSION = 2;
 
-var APP_VERSION = "1.8.0";
+var APP_VERSION = "1.8.1";
 
 var VERSION_HISTORY = [
+  {
+    version: "1.8.1",
+    date: "March 30, 2026",
+    changes: [
+      "UX: Team dashboard — removed Add Player, Add Game, Snacks quick-action buttons"
+    ]
+  },
   {
     version: "1.8.0",
     date: "March 30, 2026",
@@ -7799,27 +7806,6 @@ export default function App() {
             ) : null}
           </div>
 
-          {/* Quick actions */}
-          <div style={{ display:"flex", gap:"8px" }}>
-            <button onClick={function() { setTeamSubTab("roster"); }}
-              style={{ flex:1, padding:"8px", borderRadius:"8px", border:"none",
-                fontSize:"12px", fontFamily:"inherit", cursor:"pointer", fontWeight:"bold",
-                background:C.navy, color:C.gold }}>
-              + Add Player
-            </button>
-            <button onClick={function() { setTeamSubTab("schedule"); }}
-              style={{ flex:1, padding:"8px", borderRadius:"8px", border:"none",
-                fontSize:"12px", fontFamily:"inherit", cursor:"pointer", fontWeight:"bold",
-                background:C.navy, color:C.gold }}>
-              + Add Game
-            </button>
-            <button onClick={function() { setTeamSubTab("snacks"); }}
-              style={{ flex:1, padding:"8px", borderRadius:"8px", border:"none",
-                fontSize:"12px", fontFamily:"inherit", cursor:"pointer", fontWeight:"bold",
-                background:C.navy, color:C.gold }}>
-              🍎 Snacks
-            </button>
-          </div>
         </div>
 
         {/* ── Status warnings ────────────────────────────────────── */}
