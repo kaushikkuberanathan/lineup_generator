@@ -144,9 +144,21 @@ var DEFAULT_ROSTER = [];
 var _mem = {};
 var SCHEMA_VERSION = 2;
 
-var APP_VERSION = "1.7.4";
+var APP_VERSION = "1.8.0";
 
 var VERSION_HISTORY = [
+  {
+    version: "1.8.0",
+    date: "March 30, 2026",
+    changes: [
+      "Nav restructure: Roster + Season tabs merged into single Team tab",
+      "Team tab: dashboard header with player count, record, and next game",
+      "Team tab subtabs: Roster | Schedule | Snacks",
+      "Season renamed to Schedule throughout",
+      "Quick actions: + Add Player, + Add Game, Snacks",
+      "Status warnings: players missing position preferences, upcoming games without snack assignment"
+    ]
+  },
   {
     version: "1.7.4",
     date: "March 30, 2026",
@@ -1578,6 +1590,8 @@ export default function App() {
   var gameDayTab = _gameDayTab[0]; var setGameDayTab = _gameDayTab[1];
   var _seasonTab = useState("schedule");
   var seasonTab = _seasonTab[0]; var setSeasonTab = _seasonTab[1];
+  var _teamSubTab = useState("roster");
+  var teamSubTab = _teamSubTab[0]; var setTeamSubTab = _teamSubTab[1];
   var _statsSortCol = useState("name");
   var statsSortCol = _statsSortCol[0]; var setStatsSortCol = _statsSortCol[1];
   var _statsSortDir = useState("asc");
@@ -2272,7 +2286,8 @@ export default function App() {
     setLineupLocked(savedLocked);
     setCoachPin(savedPin);
     setPinSessionUnlocked(false);
-    setPrimaryTab("roster");
+    setPrimaryTab("team");
+    setTeamSubTab("roster");
     setScreen("app");
     track("load_team", { team_id: team.id, team_name: team.name });
 
@@ -7540,9 +7555,8 @@ export default function App() {
 
   var PRIMARY_TABS = [
     { key:"home",    label:"Home",     icon:"🏠" },
-    { key:"roster",  label:"Roster",   icon:"👥" },
+    { key:"team",    label:"Team",     icon:"👥" },
     { key:"gameday", label:"Game Day", icon:"🏟" },
-    { key:"season",  label:"Season",   icon:"📅" },
     { key:"more",    label:"Support",  icon:"⚙️" },
   ];
   var ROSTER_SUBTABS = [
@@ -7579,21 +7593,7 @@ export default function App() {
     transform: active ? "translateY(-1px)" : "none"
   }; };
 
-  if (primaryTab === "roster") {
-    subTabBar = (
-      <div style={{ display:"flex", gap:"4px", padding:"8px 12px 4px", background:C.cream, borderBottom:"1px solid " + C.border }}>
-        {ROSTER_SUBTABS.map(function(st) {
-          return (
-            <button key={st.key}
-              onClick={function(k) { return function() { setRosterTab(k); }; }(st.key)}
-              style={subTabStyle(rosterTab === st.key)}>
-              {st.label}
-            </button>
-          );
-        })}
-      </div>
-    );
-  } else if (primaryTab === "gameday") {
+  if (primaryTab === "gameday") {
     subTabBar = (
       <div style={{ display:"flex", gap:"4px", padding:"8px 12px 4px", background:C.cream, borderBottom:"1px solid " + C.border }}>
         {GAMEDAY_SUBTABS.map(function(st) {
@@ -7601,20 +7601,6 @@ export default function App() {
             <button key={st.key}
               onClick={function(k) { return function() { setGameDayTab(k); }; }(st.key)}
               style={subTabStyle(gameDayTab === st.key)}>
-              {st.label}
-            </button>
-          );
-        })}
-      </div>
-    );
-  } else if (primaryTab === "season") {
-    subTabBar = (
-      <div style={{ display:"flex", gap:"4px", padding:"8px 12px 4px", background:C.cream, borderBottom:"1px solid " + C.border }}>
-        {SEASON_SUBTABS.map(function(st) {
-          return (
-            <button key={st.key}
-              onClick={function(k) { return function() { setSeasonTab(k); }; }(st.key)}
-              style={subTabStyle(seasonTab === st.key)}>
               {st.label}
             </button>
           );
@@ -7644,10 +7630,10 @@ export default function App() {
     contextLabel = "Batting Order \u2022 " + roster.length + " Players";
   } else if (primaryTab === "gameday" && gameDayTab === "lineups") {
     contextLabel = "Print / Share View";
-  } else if (primaryTab === "season" && seasonTab === "schedule") {
-    contextLabel = "Season Schedule";
-  } else if (primaryTab === "roster" && rosterTab === "players") {
+  } else if (primaryTab === "team" && teamSubTab === "roster") {
     contextLabel = roster.length + " Player" + (roster.length !== 1 ? "s" : "") + " on Roster";
+  } else if (primaryTab === "team" && teamSubTab === "schedule") {
+    contextLabel = "Schedule";
   }
 
   var tabContent = (
@@ -7717,8 +7703,7 @@ export default function App() {
           ) : null}
         </div>
       ) : null}
-      {primaryTab === "roster"  && rosterTab === "players" ? renderRoster()  : null}
-      {primaryTab === "roster"  && rosterTab === "songs"   ? renderSongs()   : null}
+      {primaryTab === "team" ? renderTeamTab() : null}
       <ErrorBoundary fallback="Game Day">
         <ErrorBoundary fallback="Parent View">
           {primaryTab === "gameday" && parentViewActive ? (
@@ -7739,8 +7724,6 @@ export default function App() {
         {primaryTab === "gameday" && !parentViewActive && gameDayTab === "lineups" ? renderPrint()   : null}
         {primaryTab === "gameday" && !parentViewActive && gameDayTab === "songs"   ? renderSongs()   : null}
       </ErrorBoundary>
-      {primaryTab === "season"  && seasonTab  === "schedule" ? renderSchedule() : null}
-      {primaryTab === "season"  && seasonTab  === "snack"    ? renderSnackDuty(): null}
       {primaryTab === "more" && moreTab === "feedback" ? renderFeedback() : null}
       {primaryTab === "more" && moreTab === "links"    ? renderLinks()    : null}
       {primaryTab === "more" && moreTab === "about"    ? renderAbout()    : null}
@@ -7749,6 +7732,138 @@ export default function App() {
   );
 
   // renderParentView — extracted to components/GameDay/ParentView.jsx
+
+  function renderTeamTab() {
+    var today = new Date(); today.setHours(0,0,0,0);
+
+    // Record from schedule (result strings set by score reporting)
+    var wins = 0; var losses = 0; var ties = 0;
+    for (var ri = 0; ri < schedule.length; ri++) {
+      if (schedule[ri].result === "W") { wins++; }
+      else if (schedule[ri].result === "L") { losses++; }
+      else if (schedule[ri].result === "T") { ties++; }
+    }
+
+    // Next upcoming game
+    var sortedUpcoming = schedule.slice()
+      .filter(function(g) { return g.result !== "X" && !g.scoreReported && g.date && new Date(g.date + "T12:00:00") >= today; })
+      .sort(function(a, b) { return new Date(a.date + "T12:00:00") - new Date(b.date + "T12:00:00"); });
+    var nextGame = sortedUpcoming[0] || null;
+
+    // Status warnings
+    var missingPrefs = roster.filter(function(p) { return !p.prefs || p.prefs.length === 0; }).length;
+    var noSnacks = schedule.filter(function(g) {
+      return g.result !== "X" && !g.snackDuty && g.date && new Date(g.date + "T12:00:00") >= today;
+    }).length;
+
+    var TEAM_SUBTABS = [
+      { key:"roster",   label:"🧢 Roster"   },
+      { key:"schedule", label:"📅 Schedule" },
+      { key:"snacks",   label:"🍎 Snacks"   },
+    ];
+
+    return (
+      <div style={{ paddingBottom:"80px" }}>
+
+        {/* ── Team dashboard header ──────────────────────────────── */}
+        <div style={{ background:C.white, borderRadius:"12px", padding:"16px",
+          margin:"12px 12px 0", border:"1px solid " + C.border,
+          boxShadow:"0 1px 4px rgba(15,31,61,0.06)" }}>
+          <div style={{ fontWeight:"bold", fontSize:"18px", color:C.navy, marginBottom:"2px" }}>
+            {activeTeam ? activeTeam.name : ""}
+          </div>
+          <div style={{ fontSize:"12px", color:C.textMuted, marginBottom:"12px" }}>
+            {activeTeam ? ((activeTeam.ageGroup || "") + (activeTeam.sport ? " \u00b7 " + (activeTeam.sport.charAt(0).toUpperCase() + activeTeam.sport.slice(1)) : "")) : ""}
+          </div>
+
+          {/* Stats row */}
+          <div style={{ display:"flex", gap:"16px", marginBottom:"14px" }}>
+            <div style={{ textAlign:"center" }}>
+              <div style={{ fontSize:"20px", fontWeight:"bold", color:C.navy }}>{roster.length}</div>
+              <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.05em" }}>Players</div>
+            </div>
+            <div style={{ textAlign:"center" }}>
+              <div style={{ fontSize:"20px", fontWeight:"bold", color:C.navy }}>
+                {wins}–{losses}{ties > 0 ? "–" + ties : ""}
+              </div>
+              <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.05em" }}>Record</div>
+            </div>
+            {nextGame ? (
+              <div style={{ textAlign:"center", flex:1 }}>
+                <div style={{ fontSize:"13px", fontWeight:"bold", color:C.navy }}>
+                  {new Date(nextGame.date + "T12:00:00").toLocaleDateString("en-US", { weekday:"short", month:"short", day:"numeric" })}
+                  {nextGame.time ? " \u00b7 " + nextGame.time : ""}
+                </div>
+                <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.05em" }}>Next Game</div>
+              </div>
+            ) : null}
+          </div>
+
+          {/* Quick actions */}
+          <div style={{ display:"flex", gap:"8px" }}>
+            <button onClick={function() { setTeamSubTab("roster"); }}
+              style={{ flex:1, padding:"8px", borderRadius:"8px", border:"none",
+                fontSize:"12px", fontFamily:"inherit", cursor:"pointer", fontWeight:"bold",
+                background:C.navy, color:C.gold }}>
+              + Add Player
+            </button>
+            <button onClick={function() { setTeamSubTab("schedule"); }}
+              style={{ flex:1, padding:"8px", borderRadius:"8px", border:"none",
+                fontSize:"12px", fontFamily:"inherit", cursor:"pointer", fontWeight:"bold",
+                background:C.navy, color:C.gold }}>
+              + Add Game
+            </button>
+            <button onClick={function() { setTeamSubTab("snacks"); }}
+              style={{ flex:1, padding:"8px", borderRadius:"8px", border:"none",
+                fontSize:"12px", fontFamily:"inherit", cursor:"pointer", fontWeight:"bold",
+                background:C.navy, color:C.gold }}>
+              🍎 Snacks
+            </button>
+          </div>
+        </div>
+
+        {/* ── Status warnings ────────────────────────────────────── */}
+        {(missingPrefs > 0 || noSnacks > 0) ? (
+          <div style={{ margin:"8px 12px 0", padding:"10px 14px", borderRadius:"10px",
+            background:"rgba(245,200,66,0.12)", border:"1px solid rgba(245,200,66,0.4)",
+            fontSize:"12px" }}>
+            <div style={{ fontWeight:"bold", marginBottom:"4px", color:C.navy }}>⚠ Needs attention:</div>
+            {missingPrefs > 0 ? (
+              <div style={{ color:C.text, opacity:0.85 }}>
+                · {missingPrefs} player{missingPrefs !== 1 ? "s" : ""} missing position preferences
+              </div>
+            ) : null}
+            {noSnacks > 0 ? (
+              <div style={{ color:C.text, opacity:0.85 }}>
+                · {noSnacks} upcoming game{noSnacks !== 1 ? "s" : ""} without snack assignment
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
+        {/* ── Team subtab bar ────────────────────────────────────── */}
+        <div style={{ display:"flex", gap:"4px", padding:"12px 12px 0" }}>
+          {TEAM_SUBTABS.map(function(st) {
+            return (
+              <button key={st.key}
+                onClick={function(k) { return function() { setTeamSubTab(k); }; }(st.key)}
+                style={subTabStyle(teamSubTab === st.key)}>
+                {st.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* ── Subtab content ─────────────────────────────────────── */}
+        <div style={{ marginTop:"4px" }}>
+          {teamSubTab === "roster"   ? renderRoster()    : null}
+          {teamSubTab === "schedule" ? renderSchedule()  : null}
+          {teamSubTab === "snacks"   ? renderSnackDuty() : null}
+        </div>
+
+      </div>
+    );
+  }
 
   function renderBottomNav() {
     return (

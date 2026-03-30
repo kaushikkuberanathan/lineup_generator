@@ -6,4 +6,9 @@ export const FEATURE_FLAGS = {
   //   localStorage.setItem("flag:viewer_mode", "1")   ← enable for this user
   //   localStorage.removeItem("flag:viewer_mode")     ← disable / revert
   VIEWER_MODE: false,
+
+  // Game Mode — full-screen live game overlay (diamond + bench + batting footer).
+  // Feature-flagged off by default. Enable per-team via Supabase feature_flags table
+  // or locally via: localStorage.setItem("flag:game_mode", "1")
+  GAME_MODE: false,
 };

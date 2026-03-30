@@ -1,6 +1,6 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: March 30, 2026 (v1.7.4)
+> Last updated: March 30, 2026 (v1.8.0)
 > MVP launched: March 24, 2026
 
 ---

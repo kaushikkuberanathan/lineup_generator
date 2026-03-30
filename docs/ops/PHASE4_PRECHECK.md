@@ -82,15 +82,21 @@ WHERE schemaname = 'public'
 ORDER BY tablename, policyname;
 ```
 
-**What to look for:**
-- `team_data` — should have NO policies yet (or a catch-all `USING (true)` policy)
-  that allows anon reads/writes today
-- `teams` — same expectation
-- `roster_snapshots` — same
-- `share_links` — should have open read + insert policies if already set up
-- `team_data_history` — should have NO policies (or RLS disabled)
-- Auth tables (`access_requests`, `profiles`, `team_memberships`, `feedback`) —
-  should already have policies from migrations 001/003
+**What you should see (verified 2026-03-30):**
+
+| Table | RLS? | Policies |
+|-------|------|----------|
+| `teams` | disabled | none — RLS off |
+| `team_data` | disabled | none — RLS off |
+| `roster_snapshots` | disabled | none — RLS off |
+| `team_data_history` | disabled | none — RLS off |
+| `share_links` | ✓ | `"public read"` (anon SELECT) + `"public insert"` (anon INSERT ← gets dropped) |
+| `access_requests` | ✓ | admin ALL + `public_can_request_access` INSERT |
+| `profiles` | ✓ | `user_owns_profile` (owner ALL) |
+| `team_memberships` | ✓ | admin ALL + `user_sees_own_membership` SELECT |
+| `feedback` | ✓ | admin SELECT + owner INSERT |
+
+If your output does not match this table, stop and investigate before running 004.
 
 Copy the output — you will reference it when reviewing 004_rls_fixes.sql.
 
