@@ -23,6 +23,7 @@ import { OfflineIndicator } from './components/Shared/OfflineIndicator';
 import { DefenseDiamond }  from './components/GameDay/DefenseDiamond';
 import { GameModeScreen }  from './components/game-mode/GameModeScreen';
 import { LegalSection }       from './components/Support/LegalSection';
+import { FAQSection }         from './components/Support/FAQSection';
 import { BattingHandSelector } from './components/BattingHandSelector';
 import { PlayerHandBadge }     from './components/PlayerHandBadge';
 
@@ -147,9 +148,21 @@ var DEFAULT_ROSTER = [];
 var _mem = {};
 var SCHEMA_VERSION = 2;
 
-var APP_VERSION = "1.9.0";
+var APP_VERSION = "1.9.1";
 
 var VERSION_HISTORY = [
+  {
+    version: "1.9.1",
+    date: "March 30, 2026",
+    changes: [
+      "Game Mode: bench players shown stacked in infield box; batting hand badge visible on bench cards; duplicate bench strip removed",
+      "Now Batting / On Deck / In Hole strips: batting hand badge (L/R) shown inline next to player name",
+      "Schedule tab: Snack Note field replaced with Game Ball player picker (⚾); also editable from Snacks tab",
+      "Snacks tab: Note field removed; Game Ball row added per game",
+      "Team tab Roster view: removed redundant player count bar (covered by dashboard)",
+      "Fix: normalizeBattingHand import error on Add Player",
+    ]
+  },
   {
     version: "1.9.0",
     date: "March 30, 2026",
@@ -1762,8 +1775,18 @@ export default function App() {
     return tid ? (loadJSON("team:" + tid + ":locked", false) || false) : false;
   });
   var lineupLocked = _locked[0]; var setLineupLocked = _locked[1];
-  var _cbi = useState(function() { return parseInt(loadJSON("ui:currentBatterIndex", 0), 10) || 0; });
+  var _cbi = useState(function() {
+    var tid = localStorage.getItem("activeTeamId");
+    if (!tid) return 0;
+    return parseInt(loadJSON("team:" + tid + ":batterIndex", 0), 10) || 0;
+  });
   var currentBatterIndex = _cbi[0]; var setCurrentBatterIndex = _cbi[1];
+  var _gmi = useState(function() {
+    var tid = localStorage.getItem("activeTeamId");
+    if (!tid) return 0;
+    return parseInt(loadJSON("team:" + tid + ":gameModeInning", 0), 10) || 0;
+  });
+  var gameModeInning = _gmi[0]; var setGameModeInning = _gmi[1];
   var _hydrating = useState(false);
   var isHydrating = _hydrating[0]; var setIsHydrating = _hydrating[1];
   var _nfn = useState(""); var newFirstName = _nfn[0]; var setNewFirstName = _nfn[1];
@@ -2133,7 +2156,12 @@ export default function App() {
 
   function persistCurrentBatterIndex(idx) {
     setCurrentBatterIndex(idx);
-    saveJSON("ui:currentBatterIndex", idx);
+    if (activeTeamId) { saveJSON("team:" + activeTeamId + ":batterIndex", idx); }
+  }
+
+  function persistGameModeInning(inn) {
+    setGameModeInning(inn);
+    if (activeTeamId) { saveJSON("team:" + activeTeamId + ":gameModeInning", inn); }
   }
 
   function persistLineupLocked(val) {
@@ -2327,6 +2355,9 @@ export default function App() {
     var savedLocked    = loadJSON("team:" + team.id + ":locked",    false) || false;
     var savedPin       = loadJSON("team:" + team.id + ":pin",       "")    || "";
 
+    var savedBatterIndex    = parseInt(loadJSON("team:" + team.id + ":batterIndex",    0), 10) || 0;
+    var savedGameModeInning = parseInt(loadJSON("team:" + team.id + ":gameModeInning", 0), 10) || 0;
+
     setActiveTeamId(team.id);
     saveJSON("ui:activeTeam", team.id);
     setRoster(r);
@@ -2341,6 +2372,8 @@ export default function App() {
     setLineupLocked(savedLocked);
     setCoachPin(savedPin);
     setPinSessionUnlocked(false);
+    setCurrentBatterIndex(savedBatterIndex);
+    setGameModeInning(savedGameModeInning);
     setPrimaryTab("team");
     setTeamSubTab("roster");
     setScreen("app");
@@ -2576,6 +2609,8 @@ export default function App() {
     setLineupDirty(false);
     setPrimaryTab("gameday");
     setGameDayTab("defense");
+    persistCurrentBatterIndex(0);
+    persistGameModeInning(0);
 
     track("auto_assign", {
       attempts: result.attempts || 1,
@@ -6775,7 +6810,7 @@ export default function App() {
       },
       {
         title: "Step 4 \u2014 Add Your Schedule",
-        body: "Go to the Season tab, then the Schedule sub-tab. Tap \u201cAdd Game\u201d to enter games manually, or use AI Photo Import to photograph your printed schedule \u2014 it parses automatically in seconds."
+        body: "Go to the Team tab, then the Schedule sub-tab. Tap \u201cAdd Game\u201d to enter games manually, or use AI Photo Import to photograph your printed schedule \u2014 it parses automatically in seconds."
       },
       {
         title: "Step 5 \u2014 Generate a Lineup",
@@ -6787,7 +6822,7 @@ export default function App() {
       },
       {
         title: "Step 7 \u2014 Share With Your Team",
-        body: "Go to the Season tab, then Schedule. Tap a game then \u201cShare Lineup.\u201d Send the link to parents and scorekeepers \u2014 no account needed to view."
+        body: "Go to the Team tab, then Schedule. Tap a game then \u201cShare Lineup.\u201d Send the link to parents and scorekeepers \u2014 no account needed to view."
       },
       {
         title: "Step 8 \u2014 Back Up Your Data",
@@ -7685,6 +7720,7 @@ export default function App() {
     { key:"links",    label:"Links"    },
     { key:"feedback", label:"Feedback" },
     { key:"legal",    label:"Legal"    },
+    { key:"faq",      label:"FAQ"      },
   ];
 
   // Sub-tab bar — rendered inside tabContent when Game Day or Season is active
@@ -7864,6 +7900,7 @@ export default function App() {
       {primaryTab === "more" && moreTab === "about"    ? renderAbout()    : null}
       {primaryTab === "more" && moreTab === "updates"  ? renderUpdates()  : null}
       {primaryTab === "more" && moreTab === "legal"    ? <LegalSection C={C} S={S} /> : null}
+      {primaryTab === "more" && moreTab === "faq"      ? <FAQSection C={C} S={S} />   : null}
     </div>
   );
 
@@ -8086,12 +8123,18 @@ export default function App() {
           battingOrder={battingOrder}
           innings={innings}
           currentBatterIndex={currentBatterIndex}
+          initialInning={gameModeInning}
           onSwap={gameModeSwap}
           onBatterAdvance={function() {
             persistCurrentBatterIndex((currentBatterIndex + 1) % battingOrder.length);
           }}
           onBatterBack={function() {
             persistCurrentBatterIndex((currentBatterIndex - 1 + battingOrder.length) % battingOrder.length);
+          }}
+          onInningChange={persistGameModeInning}
+          onBatterReset={function() {
+            persistCurrentBatterIndex(0);
+            persistGameModeInning(0);
           }}
           onExit={function() { setGameModeActive(false); }}
         />

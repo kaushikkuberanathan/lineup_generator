@@ -13,9 +13,12 @@
  *   battingOrder        {string[]}  ordered player names
  *   innings             {number}    total innings configured (6 or 7)
  *   currentBatterIndex  {number}    current batter (0-based, shared with main app)
+ *   initialInning       {number}    inning to restore to on open (0-based, persisted)
  *   onSwap              {function}  (inningIdx, playerAName, playerBName) → update grid
  *   onBatterAdvance     {function}  advance batter in main app state
  *   onBatterBack        {function}  retreat batter in main app state
+ *   onInningChange      {function}  (newInning) → persist inning in main app state
+ *   onBatterReset       {function}  reset batter index + inning to 0 in main app state
  *   onExit              {function}  close game mode and return to Game Day tab
  */
 
@@ -32,10 +35,12 @@ function firstName(name) {
 
 export function GameModeScreen({
   roster, grid, battingOrder, innings,
-  currentBatterIndex,
-  onSwap, onBatterAdvance, onBatterBack, onExit
+  currentBatterIndex, initialInning,
+  onSwap, onBatterAdvance, onBatterBack,
+  onInningChange, onBatterReset,
+  onExit
 }) {
-  var _inn = useState(0);
+  var _inn = useState(initialInning || 0);
   var currentInning = _inn[0]; var setCurrentInning = _inn[1];
 
   var _modal = useState(false);
@@ -69,10 +74,14 @@ export function GameModeScreen({
     setInningModalOpen(false);
     if (isLastInning) { onExit(); return; }
     setHalfInning("defense");
+    // On deck becomes Now Batting for the next inning
+    onBatterAdvance();
     // Fade out diamond → advance inning → fade in
+    var nextInning = currentInning + 1;
     setDiamondVisible(false);
     setTimeout(function() {
-      setCurrentInning(currentInning + 1);
+      setCurrentInning(nextInning);
+      if (onInningChange) { onInningChange(nextInning); }
       setDiamondVisible(true);
     }, 200);
   }
@@ -101,6 +110,21 @@ export function GameModeScreen({
             background:"transparent", color:"#64748b", cursor:"pointer",
             fontSize:"13px", fontFamily:"Georgia,serif", flexShrink:0 }}>
           ✕ Exit
+        </button>
+
+        {/* Reset batting position */}
+        <button
+          onClick={function() {
+            if (onBatterReset) {
+              setCurrentInning(0);
+              onBatterReset();
+            }
+          }}
+          title="Reset batting position to top of order, inning 1"
+          style={{ padding:"6px 10px", borderRadius:"8px", border:"1px solid rgba(255,255,255,0.1)",
+            background:"transparent", color:"#475569", cursor:"pointer",
+            fontSize:"11px", fontFamily:"Georgia,serif", flexShrink:0 }}>
+          ↺
         </button>
 
         {/* Title */}
