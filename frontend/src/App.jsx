@@ -3060,18 +3060,16 @@ export default function App() {
                                 setTimeout(function() { setPrimaryTab("gameday"); setGameDayTab("defense"); }, 300);
                               }; }(nextGameTeam)}
                               style={{ background:"linear-gradient(135deg,#f5c842,#e6a817)", color:"#0f1f3d", border:"none", borderRadius:"10px", padding:"14px 20px", fontSize:"15px", fontWeight:"bold", cursor:"pointer", width:"100%", fontFamily:"Georgia,serif", letterSpacing:"0.02em", boxShadow:"0 3px 12px rgba(245,200,66,0.35)" }}>
-                              ✓ View Lineup
+                              ✓ View/Update Lineup
                             </button>
-                            {ngDays === 0 ? (
-                              <button
-                                onClick={function(ngt) { return function() {
-                                  loadTeam(ngt);
-                                  setTimeout(function() { setPrimaryTab("gameday"); setGameDayTab("defense"); setGameModeActive(true); }, 300);
-                                }; }(nextGameTeam)}
-                                style={{ background:"#e05c2a", color:"#fff", border:"none", borderRadius:"10px", padding:"12px 20px", fontSize:"14px", fontWeight:"bold", cursor:"pointer", width:"100%", fontFamily:"Georgia,serif", letterSpacing:"0.02em", boxShadow:"0 3px 12px rgba(224,92,42,0.4)" }}>
-                                ▶ Start Game Mode
-                              </button>
-                            ) : null}
+                            <button
+                              onClick={function(ngt) { return function() {
+                                loadTeam(ngt);
+                                setTimeout(function() { setPrimaryTab("gameday"); setGameDayTab("defense"); setGameModeActive(true); }, 300);
+                              }; }(nextGameTeam)}
+                              style={{ background:"#e05c2a", color:"#fff", border:"none", borderRadius:"10px", padding:"12px 20px", fontSize:"14px", fontWeight:"bold", cursor:"pointer", width:"100%", fontFamily:"Georgia,serif", letterSpacing:"0.02em", boxShadow:"0 3px 12px rgba(224,92,42,0.4)" }}>
+                              ▶ Game View Mode
+                            </button>
                           </div>
                         );
                       }

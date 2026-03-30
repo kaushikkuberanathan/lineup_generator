@@ -319,6 +319,9 @@ All major sections are wrapped with `<ErrorBoundary>` (class component). On cras
 
 ## Version History
 
+### v1.8.4 — March 30, 2026
+PWA: autoUpdate service worker — new versions apply immediately without user confirmation · skipWaiting + clientsClaim enabled · resolves stale cache issue
+
 ### v1.8.3 — March 30, 2026
 Support tab: Legal section — Privacy Policy, Terms of Use, Child Safety, Content Standards, Access & Accounts, Report a Problem · No new dependencies (react-markdown not used)
 
