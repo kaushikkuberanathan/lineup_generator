@@ -685,6 +685,7 @@ function migrateSchedule(schedule) {
       home:        g.home        ?? false,
       snackDuty:   g.snackDuty   || "",
       snackNote:   g.snackNote   || "",
+      gameBall:    g.gameBall    || "",
       battingPerf: g.battingPerf || {}
     });
   });
@@ -2049,6 +2050,7 @@ export default function App() {
       var updated = Object.assign({}, g);
       if (field === "playerName") updated.snackDuty = value;
       else if (field === "note") updated.snackNote = value;
+      else if (field === "gameBall") updated.gameBall = value;
       return updated;
     });
     persistSchedule(next);
@@ -2370,7 +2372,7 @@ export default function App() {
         if (dbData.roster && dbData.roster.length > 0) { dbSnapshotRoster(team.id, team.name, dbData.roster, 'app_load'); }
         var migratedDbSchedule = migrateBattingPerf(migrateSchedule(dbData.schedule), migrateRoster(dbData.roster));
         // Merge locally-set fields that Supabase may not have (set during hydration window)
-        var MERGE_FIELDS = ['scoreReported', 'snackDuty', 'snackNote'];
+        var MERGE_FIELDS = ['scoreReported', 'snackDuty', 'snackNote', 'gameBall'];
         var mergedSchedule = migratedDbSchedule.map(function(g) {
           var local = localSchedBeforeHydrate.find(function(x) { return x.id === g.id; });
           if (!local) return g;
@@ -5427,18 +5429,6 @@ export default function App() {
                 )}
               </div>
 
-              {/* Note row */}
-              <div style={{ display:"flex", gap:"8px", alignItems:"center", marginTop:"6px" }}>
-                <span style={{ fontSize:"12px", color:C.textMuted, flexShrink:0 }}>📝 Note:</span>
-                <input
-                  type="text"
-                  placeholder="Optional note (e.g. bring juice boxes)"
-                  value={assignment.note || ""}
-                  onChange={function(gid) { return function(e) {
-                    updateSnackField(gid, "note", e.target.value);
-                  }; }(game.id)}
-                  style={{ flex:1, padding:"5px 8px", borderRadius:"6px", border:"1px solid rgba(15,31,61,0.15)", fontSize:"13px", fontFamily:"inherit", background:C.cardBg }} />
-              </div>
             </div>
           );
         })}
@@ -6046,14 +6036,18 @@ export default function App() {
                               <button onClick={function(gid) { return function() { clearSnackAssignment(gid); }; }(game.id)}
                                 style={{ background:"none", border:"none", cursor:"pointer", fontSize:"12px", color:C.textMuted, padding:"1px 3px", lineHeight:1 }} title="Clear">✕</button>
                             )}
-                            <input
-                              type="text"
-                              placeholder="Snack note (optional)"
-                              value={sa.note || ""}
+                            <span style={{ fontSize:"11px", color:C.textMuted, flexShrink:0 }}>⚾</span>
+                            <select
+                              value={game.gameBall || ""}
                               onChange={function(gid) { return function(e) {
-                                updateSnackField(gid, "note", e.target.value);
+                                updateSnackField(gid, "gameBall", e.target.value);
                               }; }(game.id)}
-                              style={{ flex:"1 1 130px", minWidth:"110px", padding:"3px 6px", borderRadius:"5px", border:"1px solid rgba(15,31,61,0.15)", fontSize:"12px", fontFamily:"inherit", background:C.cardBg }} />
+                              style={{ flex:"1 1 110px", minWidth:"100px", padding:"3px 6px", borderRadius:"5px", border:"1px solid rgba(15,31,61,0.15)", fontSize:"12px", fontFamily:"inherit", background:C.cardBg, color: game.gameBall ? C.text : C.textMuted }}>
+                              <option value="">— Game Ball —</option>
+                              {roster.slice().sort(function(a,b){ return (a.firstName||a.name||'').toLowerCase().localeCompare((b.firstName||b.name||'').toLowerCase()); }).map(function(p) {
+                                return <option key={p.name} value={p.firstName || p.name}>{p.firstName || p.name}</option>;
+                              })}
+                            </select>
                           </div>
                         </div>
                       );
