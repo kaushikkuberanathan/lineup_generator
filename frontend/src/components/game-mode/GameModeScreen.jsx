@@ -22,7 +22,6 @@
 import { useState } from "react";
 import { NowBattingBar }  from "../../components/GameDay/NowBattingStrip";
 import { DefenseDiamond } from "../../components/GameDay/DefenseDiamond";
-import { BenchStrip }     from "./BenchStrip";
 import { InningModal }    from "./InningModal";
 import { QuickSwap }      from "./QuickSwap";
 
@@ -54,11 +53,6 @@ export function GameModeScreen({
   var halfInning = _half[0]; var setHalfInning = _half[1];
 
   var isLastInning = currentInning >= innings - 1;
-
-  // Bench players for current inning
-  var benchPlayers = roster.filter(function(p) {
-    return (grid[p.name] || [])[currentInning] === "Bench";
-  }).map(function(p) { return firstName(p.name); });
 
   function handleTapPosition(pos) {
     setSwapTarget(pos);
@@ -222,9 +216,6 @@ export function GameModeScreen({
           </div>
         ) : null}
       </div>
-
-      {/* ── Bench strip ─────────────────────────────────────── */}
-      <BenchStrip benchPlayers={benchPlayers} />
 
       {/* ── Batting footer ──────────────────────────────────── */}
       <div style={{
