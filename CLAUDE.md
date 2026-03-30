@@ -319,6 +319,9 @@ All major sections are wrapped with `<ErrorBoundary>` (class component). On cras
 
 ## Version History
 
+### v1.8.5 — March 30, 2026
+Home screen: 'View Lineup' → 'View/Update Lineup' · Added 'Game View Mode' CTA (always visible when lineup locked) — launches directly into Game Mode
+
 ### v1.8.4 — March 30, 2026
 PWA: autoUpdate service worker — new versions apply immediately without user confirmation · skipWaiting + clientsClaim enabled · resolves stale cache issue
 

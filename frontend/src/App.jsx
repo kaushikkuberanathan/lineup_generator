@@ -144,9 +144,16 @@ var DEFAULT_ROSTER = [];
 var _mem = {};
 var SCHEMA_VERSION = 2;
 
-var APP_VERSION = "1.8.4";
+var APP_VERSION = "1.8.5";
 
 var VERSION_HISTORY = [
+  {
+    version: "1.8.5",
+    date: "March 30, 2026",
+    changes: [
+      "Home screen: 'View Lineup' renamed to 'View/Update Lineup' · Added 'Game View Mode' CTA (always visible when lineup is locked) — launches directly into Game Mode",
+    ]
+  },
   {
     version: "1.8.4",
     date: "March 30, 2026",
