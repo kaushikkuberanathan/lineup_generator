@@ -1,10 +1,11 @@
 /**
  * GameModeScreen
  * Full-screen live game overlay. Zero scroll, one-handed operation.
- * Layout (top → bottom): header bar · diamond field · bench strip · batting footer.
+ * Layout (top → bottom): header bar · half-inning pill · diamond field · bench strip · batting footer.
  * Inning advances via modal that previews the next inning's lineup.
  * Position circles are tappable for quick player swaps.
  * Diamond fades out/in (200ms each) on inning transition confirmation.
+ * Half-inning pill toggles between DEFENSE and BATTING — visual only, resets on inning advance.
  *
  * Props:
  *   roster              {Array}     player objects with .name
@@ -48,6 +49,10 @@ export function GameModeScreen({
   var _fade = useState(true);
   var diamondVisible = _fade[0]; var setDiamondVisible = _fade[1];
 
+  // Half-inning indicator — visual only, resets to 'defense' on inning advance
+  var _half = useState("defense");
+  var halfInning = _half[0]; var setHalfInning = _half[1];
+
   var isLastInning = currentInning >= innings - 1;
 
   // Bench players for current inning
@@ -69,6 +74,7 @@ export function GameModeScreen({
   function handleInningConfirm() {
     setInningModalOpen(false);
     if (isLastInning) { onExit(); return; }
+    setHalfInning("defense");
     // Fade out diamond → advance inning → fade in
     setDiamondVisible(false);
     setTimeout(function() {
@@ -131,6 +137,49 @@ export function GameModeScreen({
         </button>
       </div>
 
+      {/* ── Half-inning pill ────────────────────────────────── */}
+      <div style={{
+        display:"flex", justifyContent:"center",
+        padding:"8px 16px 0",
+        background:"linear-gradient(180deg,#0b1524,#0b1524)",
+        flexShrink:0,
+      }}>
+        <div style={{
+          display:"inline-flex",
+          borderRadius:"20px",
+          border:"1px solid rgba(255,255,255,0.12)",
+          overflow:"hidden",
+        }}>
+          <button
+            onClick={function() { setHalfInning("defense"); }}
+            style={{
+              padding:"6px 18px",
+              border:"none", cursor:"pointer",
+              fontSize:"11px", fontWeight:"bold", letterSpacing:"0.1em",
+              fontFamily:"Georgia,serif",
+              background: halfInning === "defense" ? "#0f1f3d" : "transparent",
+              color:       halfInning === "defense" ? "#f5c842"  : "#475569",
+              transition:"background 150ms, color 150ms",
+            }}>
+            ⚔ DEFENSE
+          </button>
+          <div style={{ width:"1px", background:"rgba(255,255,255,0.12)", flexShrink:0 }} />
+          <button
+            onClick={function() { setHalfInning("batting"); }}
+            style={{
+              padding:"6px 18px",
+              border:"none", cursor:"pointer",
+              fontSize:"11px", fontWeight:"bold", letterSpacing:"0.1em",
+              fontFamily:"Georgia,serif",
+              background: halfInning === "batting" ? "#f5c842" : "transparent",
+              color:       halfInning === "batting" ? "#0f1f3d" : "#475569",
+              transition:"background 150ms, color 150ms",
+            }}>
+            ⚾ BATTING
+          </button>
+        </div>
+      </div>
+
       {/* ── Diamond (flex:1, fades on inning transition) ────── */}
       {/* gm-diamond-wrap: hides DefenseDiamond's inning selector (first child)   */}
       {/* and its bench table (last child) — inning is driven by Next → only.     */}
@@ -138,33 +187,71 @@ export function GameModeScreen({
         ".gm-diamond-wrap > div > div:first-child { display:none !important; }",
         ".gm-diamond-wrap > div > div:last-child  { display:none !important; }",
       ].join("")}</style>
-      <div className="gm-diamond-wrap" style={{
-        flex:1, overflow:"auto",
+      <div style={{ flex:1, overflow:"auto", position:"relative",
         opacity: diamondVisible ? 1 : 0,
-        transition:"opacity 200ms ease-in-out",
-        padding:"12px 16px",
-      }}>
-        <DefenseDiamond
-          roster={roster}
-          grid={grid}
-          innings={innings}
-          selectedInning={currentInning}
-          onSelectInning={function() {}}
-          onPositionTap={handleTapPosition}
-        />
+        transition:"opacity 200ms ease-in-out" }}>
+        <div className="gm-diamond-wrap" style={{
+          opacity: halfInning === "defense" ? 1 : 0.4,
+          transition:"opacity 200ms ease",
+          padding:"12px 16px",
+        }}>
+          <DefenseDiamond
+            roster={roster}
+            grid={grid}
+            innings={innings}
+            selectedInning={currentInning}
+            onSelectInning={function() {}}
+            onPositionTap={handleTapPosition}
+          />
+        </div>
+        {halfInning === "batting" ? (
+          <div style={{
+            position:"absolute", inset:0, display:"flex",
+            alignItems:"center", justifyContent:"center",
+            pointerEvents:"none",
+          }}>
+            <div style={{
+              padding:"6px 16px", borderRadius:"12px",
+              background:"rgba(11,21,36,0.75)",
+              border:"1px solid rgba(255,255,255,0.12)",
+              fontSize:"10px", fontWeight:"bold", color:"#64748b",
+              letterSpacing:"0.15em", textTransform:"uppercase",
+            }}>
+              ON DEFENSE
+            </div>
+          </div>
+        ) : null}
       </div>
 
       {/* ── Bench strip ─────────────────────────────────────── */}
       <BenchStrip benchPlayers={benchPlayers} />
 
       {/* ── Batting footer ──────────────────────────────────── */}
-      <NowBattingBar
-        battingOrder={battingOrder}
-        currentIndex={currentBatterIndex}
-        activeInning={currentInning + 1}
-        onAdvance={onBatterAdvance}
-        onBack={onBatterBack}
-      />
+      <div style={{
+        opacity: halfInning === "batting" ? 1 : 0.4,
+        transition:"opacity 200ms ease",
+        borderTop: halfInning === "batting"
+          ? "2px solid rgba(245,200,66,0.5)"
+          : "2px solid transparent",
+        flexShrink:0,
+      }}>
+        {halfInning === "defense" ? (
+          <div style={{
+            textAlign:"center", padding:"4px 0 0",
+            fontSize:"9px", fontWeight:"bold", color:"#475569",
+            letterSpacing:"0.15em", textTransform:"uppercase",
+          }}>
+            BATTING NEXT
+          </div>
+        ) : null}
+        <NowBattingBar
+          battingOrder={battingOrder}
+          currentIndex={currentBatterIndex}
+          activeInning={currentInning + 1}
+          onAdvance={onBatterAdvance}
+          onBack={onBatterBack}
+        />
+      </div>
 
       {/* ── Inning transition modal ──────────────────────────── */}
       {inningModalOpen ? (
