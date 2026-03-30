@@ -52,6 +52,14 @@ export function DefenseDiamond({ roster, grid, innings, selectedInning, onSelect
     return "";
   }
 
+  function getGridPlayersFn(pos, inn) {
+    var players = [];
+    for (var pi = 0; pi < roster.length; pi++) {
+      if ((grid[roster[pi].name] || [])[inn] === pos) { players.push(roster[pi].name); }
+    }
+    return players;
+  }
+
   function renderFieldSVG(getPlayerFn, innFilter, localInnArr) {
     var isSingle = innFilter !== null && innFilter !== undefined;
     var HDR_COLORS = {
@@ -64,7 +72,15 @@ export function DefenseDiamond({ roster, grid, innings, selectedInning, onSelect
       "Bench":"#2a2a2a"
     };
     var BOX_H = isSingle ? 54 : (30 + (localInnArr.length * 11) + 4);
-    var VB_H  = isSingle ? 640 : (555 + BOX_H + 30);
+    // For Bench box in single-inning mode, grow height to fit all bench players
+    var benchNames = (isSingle && innFilter !== null && innFilter !== undefined)
+      ? getGridPlayersFn("Bench", innFilter) : [];
+    var BENCH_BOX_H = isSingle
+      ? Math.max(BOX_H, 24 + Math.max(1, benchNames.length) * 16)
+      : BOX_H;
+    var VB_H = isSingle
+      ? Math.max(640, 490 + BENCH_BOX_H + 12)
+      : (555 + BOX_H + 30);
     var SVG_POSITIONS = isSingle ? [
       { pos:"LF", x:42,  y:175, w:112, h:BOX_H },
       { pos:"LC", x:170, y:138, w:112, h:BOX_H },
@@ -76,7 +92,7 @@ export function DefenseDiamond({ roster, grid, innings, selectedInning, onSelect
       { pos:"P",  x:284, y:405, w:112, h:BOX_H },
       { pos:"1B", x:420, y:415, w:112, h:BOX_H },
       { pos:"C",  x:284, y:555, w:112, h:BOX_H },
-      { pos:"Bench", x:420, y:520, w:112, h:BOX_H }
+      { pos:"Bench", x:535, y:490, w:112, h:BENCH_BOX_H }
     ] : [
       { pos:"LF", x:42,  y:165, w:112, h:BOX_H },
       { pos:"LC", x:170, y:128, w:112, h:BOX_H },
@@ -129,11 +145,29 @@ export function DefenseDiamond({ roster, grid, innings, selectedInning, onSelect
                   {slot.pos}
                 </text>
                 {isSingle ? (
-                  <text x={cx} y={slot.y + 40} textAnchor="middle"
-                    fontSize="14" fontWeight="700" fill="white"
-                    fontFamily="system-ui,sans-serif">
-                    {(function() { var n = getPlayerFn(slot.pos, innFilter); return n ? firstName(n) : "-"; })()}
-                  </text>
+                  slot.pos === "Bench" ? (
+                    benchNames.length === 0 ? (
+                      <text x={cx} y={slot.y + 38} textAnchor="middle"
+                        fontSize="13" fontWeight="700" fill="white"
+                        fontFamily="system-ui,sans-serif">-</text>
+                    ) : (
+                      benchNames.map(function(n, idx) {
+                        return (
+                          <text key={n} x={cx} y={slot.y + 34 + (idx * 16)} textAnchor="middle"
+                            fontSize="12" fontWeight="700" fill="white"
+                            fontFamily="system-ui,sans-serif">
+                            {firstName(n)}
+                          </text>
+                        );
+                      })
+                    )
+                  ) : (
+                    <text x={cx} y={slot.y + 40} textAnchor="middle"
+                      fontSize="14" fontWeight="700" fill="white"
+                      fontFamily="system-ui,sans-serif">
+                      {(function() { var n = getPlayerFn(slot.pos, innFilter); return n ? firstName(n) : "-"; })()}
+                    </text>
+                  )
                 ) : (
                   localInnArr.map(function(ii, idx) {
                     var n = getPlayerFn(slot.pos, ii);
