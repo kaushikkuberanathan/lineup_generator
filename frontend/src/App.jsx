@@ -7610,7 +7610,7 @@ export default function App() {
 
   if (primaryTab === "gameday") {
     subTabBar = (
-      <div style={{ display:"flex", gap:"4px", padding:"8px 12px 4px", background:C.cream, borderBottom:"1px solid " + C.border }}>
+      <div style={{ display:"flex", gap:"4px", alignItems:"center", padding:"8px 12px 4px", background:C.cream, borderBottom:"1px solid " + C.border }}>
         {GAMEDAY_SUBTABS.map(function(st) {
           return (
             <button key={st.key}
@@ -7620,6 +7620,37 @@ export default function App() {
             </button>
           );
         })}
+        {/* Innings selector — global game setting, always visible on Game Day */}
+        <div style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:"4px", flexShrink:0 }}>
+          <span style={{ fontSize:"10px", color:C.textMuted, letterSpacing:"0.04em" }}>Inn:</span>
+          {[6,7].map(function(n) {
+            return (
+              <button key={n}
+                disabled={lineupLocked}
+                style={{ padding:"3px 10px", borderRadius:"6px", border:"none", cursor: lineupLocked ? "default" : "pointer",
+                  fontSize:"11px", fontWeight:"bold", fontFamily:"Georgia,serif",
+                  background: innings === n ? C.navy : "rgba(15,31,61,0.07)",
+                  color: innings === n ? "#fff" : C.textMuted,
+                  opacity: lineupLocked ? 0.4 : 1 }}
+                onClick={function(nn) { return function() {
+                  if (lineupLocked) return;
+                  persistInnings(nn);
+                  setLineupDirty(true);
+                  var ng = {};
+                  for (var pi = 0; pi < players.length; pi++) {
+                    var p = players[pi];
+                    var existing = grid[p] || [];
+                    var row = [];
+                    for (var i = 0; i < nn; i++) { row.push(existing[i] || ""); }
+                    ng[p] = row;
+                  }
+                  persistGrid(ng);
+                }; }(n)}>
+                {n}
+              </button>
+            );
+          })}
+        </div>
       </div>
     );
   } else if (primaryTab === "more") {
@@ -7676,42 +7707,18 @@ export default function App() {
           </button>
         </div>
       ) : null}
-      {primaryTab === "gameday" ? (
+      {primaryTab === "gameday" && gameDayTab === "defense" ? (
         <div style={{ display:"flex", gap:"6px", alignItems:"center", padding:"6px 16px",
           background:"rgba(15,31,61,0.03)", borderBottom:"1px solid " + C.border }}>
-          <span style={{ fontSize:"11px", color:C.textMuted, letterSpacing:"0.04em" }}>Innings:</span>
-          {[6,7].map(function(n) {
-            return (
-              <button key={n}
-                disabled={lineupLocked}
-                style={{ ...S.btn(innings === n ? "primary" : "ghost"), padding:"4px 14px", fontSize:"12px",
-                  opacity: lineupLocked ? 0.4 : 1, cursor: lineupLocked ? "default" : "pointer" }}
-                onClick={function(nn) { return function() {
-                  persistInnings(nn);
-                  setLineupDirty(true);
-                  var ng = {};
-                  for (var pi = 0; pi < players.length; pi++) {
-                    var p = players[pi];
-                    var existing = grid[p] || [];
-                    var row = [];
-                    for (var i = 0; i < nn; i++) { row.push(existing[i] || ""); }
-                    ng[p] = row;
-                  }
-                  persistGrid(ng);
-                }; }(n)}>
-                {n}
-              </button>
-            );
-          })}
           <button
             onClick={function() { setParentViewActive(!parentViewActive); if (!parentViewActive) setSelectedParentPlayer(null); }}
-            style={{ ...S.btn(parentViewActive ? "primary" : "ghost"), marginLeft:"auto", padding:"4px 10px", fontSize:"11px" }}>
+            style={{ ...S.btn(parentViewActive ? "primary" : "ghost"), padding:"4px 10px", fontSize:"11px" }}>
             {parentViewActive ? "← Full View" : "👪 Parent View"}
           </button>
           <button
             onClick={function() { setGameModeActive(true); }}
             style={{ ...S.btn("primary"), padding:"4px 12px", fontSize:"11px",
-              background:"#e05c2a", border:"none" }}>
+              background:"#e05c2a", border:"none", marginLeft:"auto" }}>
             ▶ Game Mode
           </button>
         </div>
