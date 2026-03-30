@@ -144,9 +144,16 @@ var DEFAULT_ROSTER = [];
 var _mem = {};
 var SCHEMA_VERSION = 2;
 
-var APP_VERSION = "1.8.3";
+var APP_VERSION = "1.8.4";
 
 var VERSION_HISTORY = [
+  {
+    version: "1.8.4",
+    date: "March 30, 2026",
+    changes: [
+      "PWA: switched to autoUpdate service worker — new versions apply immediately, no manual update step",
+    ]
+  },
   {
     version: "1.8.3",
     date: "March 30, 2026",
@@ -1811,16 +1818,15 @@ export default function App() {
   var _pinError = useState(""); var pinError = _pinError[0]; var setPinError = _pinError[1];
   var _pinConfirm = useState(""); var pinConfirm = _pinConfirm[0]; var setPinConfirm = _pinConfirm[1];
 
-  const {
-    needRefresh: [needRefresh, setNeedRefresh],
-    updateServiceWorker,
-  } = useRegisterSW({
+  useRegisterSW({
     onRegistered(r) {
       if (r) {
         setInterval(() => r.update(), 60 * 60 * 1000);
       }
     }
   });
+  var needRefresh = false;
+  var setNeedRefresh = function() {};
 
   // Landscape: style-only modifier — same layout, tighter spacing + more grid room
   var _landscape = useState(
@@ -2910,14 +2916,28 @@ export default function App() {
               </div>
             ) : null}
           </div>
-          {/* ZONE 2 — Open button */}
-          <button onClick={function(e) { e.stopPropagation(); loadTeam(team); }}
-            style={{ background:"linear-gradient(135deg,#f5c842,#e6a817)", color:"#0f1f3d",
-                      border:"none", borderRadius:"8px", padding:"6px 14px", fontSize:"12px",
-                      fontWeight:"bold", cursor:"pointer", whiteSpace:"nowrap",
-                      flex:"none" }}>
-            Open
-          </button>
+          {/* ZONE 2 — Open / Game Mode buttons */}
+          <div style={{ display:"flex", flexDirection:"column", gap:"5px", flex:"none" }}>
+            <button onClick={function(e) { e.stopPropagation(); loadTeam(team); }}
+              style={{ background:"linear-gradient(135deg,#f5c842,#e6a817)", color:"#0f1f3d",
+                        border:"none", borderRadius:"8px", padding:"6px 14px", fontSize:"12px",
+                        fontWeight:"bold", cursor:"pointer", whiteSpace:"nowrap" }}>
+              Open
+            </button>
+            {nextGame && nextGame.days === 0 ? (
+              <button
+                onClick={function(tm) { return function(e) {
+                  e.stopPropagation();
+                  loadTeam(tm);
+                  setTimeout(function() { setPrimaryTab("gameday"); setGameDayTab("defense"); setGameModeActive(true); }, 300);
+                }; }(team)}
+                style={{ background:"#e05c2a", color:"#fff", border:"none", borderRadius:"8px",
+                  padding:"5px 10px", fontSize:"11px", fontWeight:"bold", cursor:"pointer",
+                  whiteSpace:"nowrap", fontFamily:"inherit" }}>
+                ▶ Game
+              </button>
+            ) : null}
+          </div>
           {/* ZONE 3 — Ellipsis */}
           <div style={{ position:"relative", flex:"none", marginLeft:"4px" }}>
             <button
@@ -3033,25 +3053,49 @@ export default function App() {
                       var isTeamLocked = loadJSON("team:" + nextGameTeam.id + ":locked", false);
                       if (isTeamLocked) {
                         return (
-                          <button
-                            onClick={function(ngt) { return function() {
-                              loadTeam(ngt);
-                              setTimeout(function() { setPrimaryTab("gameday"); setGameDayTab("defense"); }, 300);
-                            }; }(nextGameTeam)}
-                            style={{ background:"linear-gradient(135deg,#f5c842,#e6a817)", color:"#0f1f3d", border:"none", borderRadius:"10px", padding:"14px 20px", fontSize:"15px", fontWeight:"bold", cursor:"pointer", width:"100%", fontFamily:"Georgia,serif", letterSpacing:"0.02em", boxShadow:"0 3px 12px rgba(245,200,66,0.35)" }}>
-                            ✓ View Lineup
-                          </button>
+                          <div style={{ display:"flex", flexDirection:"column", gap:"10px" }}>
+                            <button
+                              onClick={function(ngt) { return function() {
+                                loadTeam(ngt);
+                                setTimeout(function() { setPrimaryTab("gameday"); setGameDayTab("defense"); }, 300);
+                              }; }(nextGameTeam)}
+                              style={{ background:"linear-gradient(135deg,#f5c842,#e6a817)", color:"#0f1f3d", border:"none", borderRadius:"10px", padding:"14px 20px", fontSize:"15px", fontWeight:"bold", cursor:"pointer", width:"100%", fontFamily:"Georgia,serif", letterSpacing:"0.02em", boxShadow:"0 3px 12px rgba(245,200,66,0.35)" }}>
+                              ✓ View Lineup
+                            </button>
+                            {ngDays === 0 ? (
+                              <button
+                                onClick={function(ngt) { return function() {
+                                  loadTeam(ngt);
+                                  setTimeout(function() { setPrimaryTab("gameday"); setGameDayTab("defense"); setGameModeActive(true); }, 300);
+                                }; }(nextGameTeam)}
+                                style={{ background:"#e05c2a", color:"#fff", border:"none", borderRadius:"10px", padding:"12px 20px", fontSize:"14px", fontWeight:"bold", cursor:"pointer", width:"100%", fontFamily:"Georgia,serif", letterSpacing:"0.02em", boxShadow:"0 3px 12px rgba(224,92,42,0.4)" }}>
+                                ▶ Start Game Mode
+                              </button>
+                            ) : null}
+                          </div>
                         );
                       }
                       return (
-                        <button
-                          onClick={function(ngt, ngg) { return function() {
-                            loadTeam(ngt);
-                            setTimeout(function() { setPrimaryTab("gameday"); setGameDayTab("defense"); setTimeout(generateLineup, 100); }, 300);
-                          }; }(nextGameTeam, nextGameGlobal)}
-                          style={{ background:"linear-gradient(135deg,#f5c842,#e6a817)", color:"#0f1f3d", border:"none", borderRadius:"10px", padding:"14px 20px", fontSize:"15px", fontWeight:"bold", cursor:"pointer", width:"100%", fontFamily:"Georgia,serif", letterSpacing:"0.02em", boxShadow:"0 3px 12px rgba(245,200,66,0.35)" }}>
-                          ⚡ Generate Lineup
-                        </button>
+                        <div style={{ display:"flex", flexDirection:"column", gap:"10px" }}>
+                          <button
+                            onClick={function(ngt, ngg) { return function() {
+                              loadTeam(ngt);
+                              setTimeout(function() { setPrimaryTab("gameday"); setGameDayTab("defense"); setTimeout(generateLineup, 100); }, 300);
+                            }; }(nextGameTeam, nextGameGlobal)}
+                            style={{ background:"linear-gradient(135deg,#f5c842,#e6a817)", color:"#0f1f3d", border:"none", borderRadius:"10px", padding:"14px 20px", fontSize:"15px", fontWeight:"bold", cursor:"pointer", width:"100%", fontFamily:"Georgia,serif", letterSpacing:"0.02em", boxShadow:"0 3px 12px rgba(245,200,66,0.35)" }}>
+                            ⚡ Generate Lineup
+                          </button>
+                          {ngDays === 0 ? (
+                            <button
+                              onClick={function(ngt) { return function() {
+                                loadTeam(ngt);
+                                setTimeout(function() { setPrimaryTab("gameday"); setGameDayTab("defense"); setGameModeActive(true); }, 300);
+                              }; }(nextGameTeam)}
+                              style={{ background:"#e05c2a", color:"#fff", border:"none", borderRadius:"10px", padding:"12px 20px", fontSize:"14px", fontWeight:"bold", cursor:"pointer", width:"100%", fontFamily:"Georgia,serif", letterSpacing:"0.02em", boxShadow:"0 3px 12px rgba(224,92,42,0.4)" }}>
+                              ▶ Start Game Mode
+                            </button>
+                          ) : null}
+                        </div>
                       );
                     })()}
                   </div>
@@ -7585,10 +7629,11 @@ export default function App() {
     { key:"songs",   label:"Songs"   },
   ];
   var GAMEDAY_SUBTABS = [
-    { key:"defense", label:"Defense" },
-    { key:"batting", label:"Batting" },
-    { key:"lineups", label:"Lineups" },
-    { key:"songs",   label:"Songs"   },
+    { key:"defense",  label:"Defense" },
+    { key:"batting",  label:"Batting" },
+    { key:"lineups",  label:"Lineups" },
+    { key:"songs",    label:"Songs"   },
+    { key:"gamemode", label:"▶ Game",  launcher:true },
   ];
   var SEASON_SUBTABS = [
     { key:"schedule", label:"Schedule" },
@@ -7619,6 +7664,19 @@ export default function App() {
     subTabBar = (
       <div style={{ display:"flex", gap:"4px", alignItems:"center", padding:"8px 12px 4px", background:C.cream, borderBottom:"1px solid " + C.border }}>
         {GAMEDAY_SUBTABS.map(function(st) {
+          if (st.launcher) {
+            return (
+              <button key={st.key}
+                onClick={function() { setGameModeActive(true); }}
+                style={{ flex:"0 0 auto", padding:"7px 14px", borderRadius:"6px", border:"none",
+                  cursor:"pointer", fontSize:"12px", fontWeight:"bold", fontFamily:"Georgia,serif",
+                  letterSpacing:"0.03em", textTransform:"uppercase",
+                  background:"#e05c2a", color:"#fff",
+                  boxShadow:"0 2px 6px rgba(224,92,42,0.35)" }}>
+                {st.label}
+              </button>
+            );
+          }
           return (
             <button key={st.key}
               onClick={function(k) { return function() { setGameDayTab(k); setParentViewActive(false); }; }(st.key)}
@@ -7721,12 +7779,6 @@ export default function App() {
             onClick={function() { setParentViewActive(!parentViewActive); if (!parentViewActive) setSelectedParentPlayer(null); }}
             style={{ ...S.btn(parentViewActive ? "primary" : "ghost"), padding:"4px 10px", fontSize:"11px" }}>
             {parentViewActive ? "← Full View" : "👪 Parent View"}
-          </button>
-          <button
-            onClick={function() { setGameModeActive(true); }}
-            style={{ ...S.btn("primary"), padding:"4px 12px", fontSize:"11px",
-              background:"#e05c2a", border:"none", marginLeft:"auto" }}>
-            ▶ Game Mode
           </button>
         </div>
       ) : null}
