@@ -34,7 +34,7 @@ function firstName(name) {
   return name.split(" ")[0];
 }
 
-export function DefenseDiamond({ roster, grid, innings, selectedInning, onSelectInning }) {
+export function DefenseDiamond({ roster, grid, innings, selectedInning, onSelectInning, onPositionTap = null }) {
   var _localInn = useState(null);
   var localInn = _localInn[0]; var setLocalInn = _localInn[1];
 
@@ -112,7 +112,9 @@ export function DefenseDiamond({ roster, grid, innings, selectedInning, onSelect
             var cx = slot.x + slot.w / 2;
             var hdrFs = isSingle ? "10" : "8.5";
             return (
-              <g key={slot.pos}>
+              <g key={slot.pos}
+                onClick={onPositionTap ? function() { onPositionTap(slot.pos); } : null}
+                style={{ cursor: onPositionTap ? "pointer" : "default" }}>
                 <rect x={slot.x} y={slot.y} width={slot.w} height={slot.h} rx="6"
                   fill={pc} fillOpacity="0.22"
                   stroke={pc} strokeOpacity="0.55" strokeWidth="0.5"/>

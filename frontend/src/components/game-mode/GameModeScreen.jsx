@@ -150,6 +150,7 @@ export function GameModeScreen({
           innings={innings}
           selectedInning={currentInning}
           onSelectInning={function() {}}
+          onPositionTap={handleTapPosition}
         />
       </div>
 
