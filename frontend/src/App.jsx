@@ -144,7 +144,7 @@ var DEFAULT_ROSTER = [];
 var _mem = {};
 var SCHEMA_VERSION = 2;
 
-var APP_VERSION = "1.8.5";
+var APP_VERSION = "1.8.6";
 
 var VERSION_HISTORY = [
   {
