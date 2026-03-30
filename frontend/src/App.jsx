@@ -21,6 +21,7 @@ import { ValidationBanner } from './components/Shared/ValidationBanner';
 import { OfflineIndicator } from './components/Shared/OfflineIndicator';
 import { DefenseDiamond }  from './components/GameDay/DefenseDiamond';
 import { GameModeScreen }  from './components/game-mode/GameModeScreen';
+import { LegalSection }    from './components/Support/LegalSection';
 
 var MIXPANEL_TOKEN = "YOUR_MIXPANEL_TOKEN";
 if (MIXPANEL_TOKEN !== "YOUR_MIXPANEL_TOKEN") {
@@ -7591,6 +7592,7 @@ export default function App() {
     { key:"updates",  label:"Updates"  },
     { key:"links",    label:"Links"    },
     { key:"feedback", label:"Feedback" },
+    { key:"legal",    label:"Legal"    },
   ];
 
   // Sub-tab bar — rendered inside tabContent when Game Day or Season is active
@@ -7612,7 +7614,7 @@ export default function App() {
         {GAMEDAY_SUBTABS.map(function(st) {
           return (
             <button key={st.key}
-              onClick={function(k) { return function() { setGameDayTab(k); }; }(st.key)}
+              onClick={function(k) { return function() { setGameDayTab(k); setParentViewActive(false); }; }(st.key)}
               style={subTabStyle(gameDayTab === st.key)}>
               {st.label}
             </button>
@@ -7739,6 +7741,7 @@ export default function App() {
       {primaryTab === "more" && moreTab === "links"    ? renderLinks()    : null}
       {primaryTab === "more" && moreTab === "about"    ? renderAbout()    : null}
       {primaryTab === "more" && moreTab === "updates"  ? renderUpdates()  : null}
+      {primaryTab === "more" && moreTab === "legal"    ? <LegalSection C={C} S={S} /> : null}
     </div>
   );
 
