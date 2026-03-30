@@ -19,6 +19,7 @@ import { ViewerMode } from './components/Viewer/ViewerMode';
 import { EmptyState } from './components/Home/EmptyState';
 import { ValidationBanner } from './components/Shared/ValidationBanner';
 import { OfflineIndicator } from './components/Shared/OfflineIndicator';
+import { DefenseDiamond }  from './components/GameDay/DefenseDiamond';
 import { GameModeScreen }  from './components/game-mode/GameModeScreen';
 import { useFeatureFlag }  from './hooks/useFeatureFlag';
 
@@ -143,9 +144,16 @@ var DEFAULT_ROSTER = [];
 var _mem = {};
 var SCHEMA_VERSION = 2;
 
-var APP_VERSION = "1.7.3";
+var APP_VERSION = "1.7.4";
 
 var VERSION_HISTORY = [
+  {
+    version: "1.7.4",
+    date: "March 30, 2026",
+    changes: [
+      "UX: 'More' tab renamed to 'Support'"
+    ]
+  },
   {
     version: "1.7.3",
     date: "March 30, 2026",
@@ -4534,118 +4542,13 @@ export default function App() {
         )}
 
         {showDiamond ? (
-            (function() {
-              // ── Diamond position layout ──────────────────────────────
-              // Shown above the active table view (By Player or By Position).
-              // posBox delegates to shared renderPosBox with grid-tab inning filter
-              function posBox(pos, label) { return renderPosBox(pos, label, diamondInning); }
-              function getGridPlayerFn(pos, inn) {
-                for (var pi = 0; pi < roster.length; pi++) {
-                  if ((grid[roster[pi].name] || [])[inn] === pos) { return roster[pi].name; }
-                }
-                return "";
-              }
-
-              // Bench strip — who is on bench each inning
-              var benchByInning = [];
-              for (var bi = 0; bi < innings; bi++) {
-                var benched = roster.filter(function(r){ return (grid[r.name]||[])[bi] === "Bench"; }).map(function(r){ return r.name; });
-                benchByInning.push(benched);
-              }
-
-              // Build position box data
-              var posSlots = [
-                { row:"of",  pos:"LF" },
-                { row:"of",  pos:"LC" },
-                { row:"of",  pos:"RC" },
-                { row:"of",  pos:"RF" },
-                { row:"if",  pos:"3B" },
-                { row:"if",  pos:"SS" },
-                { row:"if",  pos:"P"  },
-                { row:"if",  pos:"2B" },
-                { row:"if",  pos:"1B" },
-                { row:"home",pos:"C"  }
-              ];
-
-              // Bench filtered to selected inning
-              var benchDisplay = diamondInning !== null
-                ? [benchByInning[diamondInning] || []]
-                : benchByInning;
-              var benchInnLabels = diamondInning !== null
-                ? [diamondInning]
-                : innArr;
-
-              return (
-                <div>
-
-                  {/* ── Inning selector — single scrollable row ────── */}
-                  <div style={{ display:"flex", flexWrap:"nowrap", gap:"4px", alignItems:"center", marginBottom:"12px", overflowX:"auto", WebkitOverflowScrolling:"touch", paddingBottom:"2px" }}>
-                    <span style={{ fontSize:"9px", color:C.textMuted, fontWeight:"bold", textTransform:"uppercase", letterSpacing:"0.08em", flexShrink:0 }}>Inn</span>
-                    <button
-                      onClick={function() { setDiamondInning(null); }}
-                      style={{ padding:"3px 8px", borderRadius:"10px", border:"none", cursor:"pointer", fontSize:"11px", fontWeight:"bold", fontFamily:"inherit", flexShrink:0,
-                        background: diamondInning === null ? C.navy : "rgba(15,31,61,0.07)",
-                        color: diamondInning === null ? "#fff" : C.textMuted }}>
-                      All
-                    </button>
-                    {innArr.map(function(i) {
-                      var active = diamondInning === i;
-                      return (
-                        <button key={i}
-                          onClick={function(idx) { return function() { setDiamondInning(idx); }; }(i)}
-                          style={{ padding:"3px 8px", borderRadius:"10px", border:"none", cursor:"pointer", fontSize:"11px", fontWeight:"bold", fontFamily:"inherit", flexShrink:0,
-                            background: active ? C.red : "rgba(15,31,61,0.07)",
-                            color: active ? "#fff" : C.textMuted }}>
-                          {i + 1}
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {renderFieldSVG(getGridPlayerFn, diamondInning, innArr)}
-
-                                    {/* ── Bench strip ───────────────────────────────── */}
-                  <div style={{ borderTop:"2px solid rgba(15,31,61,0.15)", paddingTop:"10px" }}>
-                    <div style={{ fontSize:"10px", fontWeight:"bold", color:"#555", textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"6px" }}>Bench</div>
-                    <div style={{ overflowX:"auto" }}>
-                      <table style={{ borderCollapse:"collapse", fontSize:"11px", width:"100%" }}>
-                        <thead>
-                          <tr style={{ background:"#f5efe4" }}>
-                            {benchInnLabels.map(function(i) {
-                              return <th key={i} style={{ padding:"4px 10px", textAlign:"center", fontSize:"10px", color:"#555", fontWeight:"bold", letterSpacing:"0.08em", borderBottom:"2px solid rgba(15,31,61,0.15)", minWidth:"52px" }}>Inn {i+1}</th>;
-                            })}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {(function() {
-                            var maxBench = 0;
-                            for (var i = 0; i < benchDisplay.length; i++) {
-                              if (benchDisplay[i].length > maxBench) maxBench = benchDisplay[i].length;
-                            }
-                            var rows = [];
-                            for (var r = 0; r < maxBench; r++) {
-                              rows.push(
-                                <tr key={r}>
-                                  {benchInnLabels.map(function(i, ci) {
-                                    var pname = benchDisplay[ci][r] || "";
-                                    return (
-                                      <td key={i} style={{ padding:"4px 10px", textAlign:"center", borderBottom:"1px solid rgba(15,31,61,0.06)", fontWeight:"bold", color: pname ? "#0f1f3d" : "#ccc" }}>
-                                        {pname ? firstName(pname) : "-"}
-                                      </td>
-                                    );
-                                  })}
-                                </tr>
-                              );
-                            }
-                            return rows;
-                          })()}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </div>
-              );
-            })()
+          <DefenseDiamond
+            roster={roster}
+            grid={grid}
+            innings={innings}
+            selectedInning={diamondInning}
+            onSelectInning={setDiamondInning}
+          />
         ) : null}
 
       </div>
@@ -7640,7 +7543,7 @@ export default function App() {
     { key:"roster",  label:"Roster",   icon:"👥" },
     { key:"gameday", label:"Game Day", icon:"🏟" },
     { key:"season",  label:"Season",   icon:"📅" },
-    { key:"more",    label:"More",     icon:"⚙️" },
+    { key:"more",    label:"Support",  icon:"⚙️" },
   ];
   var ROSTER_SUBTABS = [
     { key:"players", label:"Players" },

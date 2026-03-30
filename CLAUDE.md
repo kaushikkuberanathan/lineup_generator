@@ -319,6 +319,9 @@ All major sections are wrapped with `<ErrorBoundary>` (class component). On cras
 
 ## Version History
 
+### v1.7.4 — March 30, 2026
+UX: "More" tab renamed to "Support"
+
 ### v1.7.3 — March 30, 2026
 UX: Defense tab — removed redundant INN OK summary boxes at bottom; ✓ in column headers already covers this
 
