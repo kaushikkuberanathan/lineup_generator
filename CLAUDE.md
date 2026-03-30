@@ -103,7 +103,9 @@ backend/
 ### What Is Built and Deployed
 - Full phone OTP auth framework deployed to Render
 - Supabase tables: access_requests, profiles, team_memberships, feedback
-- RLS policies on all auth tables
+- RLS policies on all auth tables (access_requests, profiles, team_memberships, feedback) — verified 2026-03-30
+- RLS audit complete — `backend/migrations/004_rls_fixes.sql` written and ready (NOT YET RUN — run at Phase 4 cutover only)
+- Pre-cutover checklist: `docs/ops/PHASE4_PRECHECK.md`
 - activate_membership Postgres function (atomic profile upsert + membership activation)
 - Backend endpoints:
   - POST /api/v1/auth/request-access
@@ -146,12 +148,18 @@ backend/
 - Known issue: /me returns memberships:[] intermittently — suspect token expiry mid-session, needs monitoring once Twilio unblocked
 
 #### TODO: Phase 4 Cutover (do after 2-3 coaches have tested successfully)
-- Fix admin.js teamId UUID validation bug (see below) before running cutover
-- Run `backend/migrations/004_rls_fixes.sql` in Supabase SQL Editor to harden RLS
-- Add requireAuth middleware to existing routes in index.js
-- Deploy to Render
-- Announce to coaches: "next login will ask you to verify your phone"
-- Full pre-cutover checklist: `docs/ops/PHASE4_PRECHECK.md`
+Full step-by-step checklist: **`docs/ops/PHASE4_PRECHECK.md`**
+
+Pre-flight (fix first):
+- Fix admin.js teamId UUID validation bug (see BUG below)
+- Remove debug logs from auth.js + supabase.js
+- Set Stan Hoover team_memberships.status = 'active' (currently 'invited' — will be blocked from team_data after RLS is applied)
+
+Cutover steps (in order):
+1. Run `backend/migrations/004_rls_fixes.sql` in Supabase SQL Editor
+2. Add requireAuth middleware to existing routes in index.js
+3. Deploy to Render
+4. Announce to coaches: "next login will ask you to verify your phone"
 
 #### BUG: admin.js approve route rejects numeric team IDs
 - `body('teamId').isUUID()` in `backend/src/routes/admin.js` rejects `1774297491626`
@@ -310,6 +318,9 @@ All major sections are wrapped with `<ErrorBoundary>` (class component). On cras
 ---
 
 ## Version History
+
+### v1.7.2 — March 30, 2026
+Fix: Fairness Check bench rule — flags players benched more than once (was: never benched) · Fix: consecutive rule — consecutive C only, P no longer flagged · Feat: new rule — catcher assigned more than once per game · Component: src/components/GameDay/FairnessCheck.jsx
 
 ### v1.7.1 — March 29, 2026
 Platform: React Error Boundaries on all major sections — prevents white screen when a section crashes on game day · Component: src/components/Shared/ErrorBoundary.jsx

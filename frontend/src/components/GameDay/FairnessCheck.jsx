@@ -16,24 +16,50 @@ export function FairnessCheck({ roster, grid, C }) {
   var totalPC = pcCounts.reduce(function(s, x) { return s + x; }, 0);
   var avgPC = roster.length > 0 ? totalPC / roster.length : 0;
 
-  var checkA = roster.every(function(p) {
-    return (grid[p.name] || []).some(function(pos) { return pos === "Bench"; });
+  // CHANGE 1: flag bench > 1 (was bench === 0)
+  var benchViolator = null, benchViolatorCount = 0;
+  roster.forEach(function(p) {
+    if (benchViolator) return;
+    var count = (grid[p.name] || []).filter(function(pos) { return pos === "Bench"; }).length;
+    if (count > 1) { benchViolator = p.name; benchViolatorCount = count; }
   });
+  var checkA = benchViolator === null;
+
   var checkB = avgPC === 0 || pcCounts.every(function(c) { return c <= Math.max(2 * avgPC, 1); });
-  var checkC = roster.every(function(p) {
+
+  // CHANGE 2: consecutive C only (was P or C)
+  var consecCViolator = null;
+  roster.forEach(function(p) {
+    if (consecCViolator) return;
     var asgn = grid[p.name] || [];
     for (var i = 0; i < asgn.length - 1; i++) {
-      if ((asgn[i] === "P" || asgn[i] === "C") && (asgn[i + 1] === "P" || asgn[i + 1] === "C")) return false;
+      if (asgn[i] === "C" && asgn[i + 1] === "C") { consecCViolator = p.name; break; }
     }
-    return true;
   });
+  var checkC = consecCViolator === null;
 
-  var allPass = checkA && checkB && checkC;
-  var failCount = [checkA, checkB, checkC].filter(function(c) { return !c; }).length;
+  // BONUS: catcher assigned more than once total
+  var catcherViolator = null, catcherViolatorCount = 0;
+  roster.forEach(function(p) {
+    if (catcherViolator) return;
+    var count = (grid[p.name] || []).filter(function(pos) { return pos === "C"; }).length;
+    if (count > 1) { catcherViolator = p.name; catcherViolatorCount = count; }
+  });
+  var checkD = catcherViolator === null;
+
+  var allPass = checkA && checkB && checkC && checkD;
+  var failCount = [checkA, checkB, checkC, checkD].filter(function(c) { return !c; }).length;
   var checks = [
-    { pass: checkA, label: "Everyone sits at least once" },
+    { pass: checkA, label: checkA
+        ? "No player benched more than once"
+        : benchViolator + " is benched " + benchViolatorCount + " times — no player should bench more than once" },
     { pass: checkB, label: "Positions balanced" },
-    { pass: checkC, label: "No consecutive P/C assignments" },
+    { pass: checkC, label: checkC
+        ? "No back-to-back catching"
+        : consecCViolator + " catches back-to-back innings — rotate the catcher each inning" },
+    { pass: checkD, label: checkD
+        ? "No player catches more than once"
+        : catcherViolator + " catches " + catcherViolatorCount + " innings — catcher should only catch once per game" },
   ];
 
   return (

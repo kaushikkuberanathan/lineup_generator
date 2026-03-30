@@ -141,9 +141,18 @@ var DEFAULT_ROSTER = [];
 var _mem = {};
 var SCHEMA_VERSION = 2;
 
-var APP_VERSION = "1.7.1";
+var APP_VERSION = "1.7.2";
 
 var VERSION_HISTORY = [
+  {
+    version: "1.7.2",
+    date: "March 30, 2026",
+    changes: [
+      "Fix: Fairness Check bench rule — now flags players benched MORE than once (was: flags players never benched)",
+      "Fix: Fairness Check consecutive rule — now flags consecutive C (Catcher) only; consecutive P no longer penalized",
+      "Feat: Fairness Check new rule — flags any player assigned Catcher more than once per game"
+    ]
+  },
   {
     version: "1.7.1",
     date: "March 29, 2026",
