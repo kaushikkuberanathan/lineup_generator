@@ -144,9 +144,16 @@ var DEFAULT_ROSTER = [];
 var _mem = {};
 var SCHEMA_VERSION = 2;
 
-var APP_VERSION = "1.8.2";
+var APP_VERSION = "1.8.3";
 
 var VERSION_HISTORY = [
+  {
+    version: "1.8.3",
+    date: "March 30, 2026",
+    changes: [
+      "Support tab: Legal section — Privacy Policy, Terms of Use, Child Safety, Content Standards, Access & Accounts, Report a Problem",
+    ]
+  },
   {
     version: "1.8.2",
     date: "March 30, 2026",

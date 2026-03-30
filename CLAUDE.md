@@ -319,6 +319,12 @@ All major sections are wrapped with `<ErrorBoundary>` (class component). On cras
 
 ## Version History
 
+### v1.8.3 — March 30, 2026
+Support tab: Legal section — Privacy Policy, Terms of Use, Child Safety, Content Standards, Access & Accounts, Report a Problem · No new dependencies (react-markdown not used)
+
+### v1.8.2 — March 30, 2026
+Game Mode enabled for all users — feature flag gate removed · ▶ Game Mode button always visible on Game Day tab
+
 ### v1.8.1 — March 30, 2026
 UX: Team dashboard — removed Add Player, Add Game, Snacks quick-action buttons
 
