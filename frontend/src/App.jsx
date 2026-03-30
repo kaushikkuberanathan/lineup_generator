@@ -148,6 +148,14 @@ var APP_VERSION = "1.8.6";
 
 var VERSION_HISTORY = [
   {
+    version: "1.8.6",
+    date: "March 30, 2026",
+    changes: [
+      "UX: TEAM tab dashboard — stats row now shows emoji icons (👥 Players · 🏆 Record · 📅 Next Game) with dividers; Next Game always visible",
+      "UX: Needs attention box — icon cards (⚾ missing positions · 🍎 snacks unassigned) replace plain bullet list",
+    ]
+  },
+  {
     version: "1.8.5",
     date: "March 30, 2026",
     changes: [
@@ -2470,7 +2478,7 @@ export default function App() {
     for (var i = 0; i < innings; i++) { row.push(""); }
     ng[n] = row;
     persistGrid(ng);
-    setNewFirstName(""); setNewLastName("");
+    setNewFirstName(""); setNewLastName(""); setNewBattingHand("U");
     setShowAddForm(false);
   }
 
@@ -7862,44 +7870,65 @@ export default function App() {
           </div>
 
           {/* Stats row */}
-          <div style={{ display:"flex", gap:"16px", marginBottom:"14px" }}>
-            <div style={{ textAlign:"center" }}>
-              <div style={{ fontSize:"20px", fontWeight:"bold", color:C.navy }}>{roster.length}</div>
-              <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.05em" }}>Players</div>
+          <div style={{ display:"flex", borderTop:"1px solid " + C.border, paddingTop:"12px", marginTop:"4px" }}>
+            <div style={{ flex:1, textAlign:"center" }}>
+              <div style={{ fontSize:"16px", marginBottom:"2px" }}>👥</div>
+              <div style={{ fontSize:"20px", fontWeight:"bold", color:C.navy, lineHeight:1 }}>{roster.length}</div>
+              <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.05em", marginTop:"3px" }}>Players</div>
             </div>
-            <div style={{ textAlign:"center" }}>
-              <div style={{ fontSize:"20px", fontWeight:"bold", color:C.navy }}>
-                {wins}–{losses}{ties > 0 ? "–" + ties : ""}
+            <div style={{ flex:1, textAlign:"center", borderLeft:"1px solid " + C.border }}>
+              <div style={{ fontSize:"16px", marginBottom:"2px" }}>🏆</div>
+              <div style={{ fontSize:"20px", fontWeight:"bold", lineHeight:1 }}>
+                <span style={{ color:C.win }}>{wins}</span>
+                <span style={{ color:C.textMuted }}>–</span>
+                <span style={{ color:C.red }}>{losses}</span>
+                {ties > 0 ? <><span style={{ color:C.textMuted }}>–</span><span style={{ color:C.tie }}>{ties}</span></> : null}
               </div>
-              <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.05em" }}>Record</div>
+              <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.05em", marginTop:"3px" }}>Record</div>
             </div>
-            {nextGame ? (
-              <div style={{ textAlign:"center", flex:1 }}>
-                <div style={{ fontSize:"13px", fontWeight:"bold", color:C.navy }}>
-                  {new Date(nextGame.date + "T12:00:00").toLocaleDateString("en-US", { weekday:"short", month:"short", day:"numeric" })}
-                  {nextGame.time ? " \u00b7 " + nextGame.time : ""}
-                </div>
-                <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.05em" }}>Next Game</div>
-              </div>
-            ) : null}
+            <div style={{ flex:1, textAlign:"center", borderLeft:"1px solid " + C.border }}>
+              <div style={{ fontSize:"16px", marginBottom:"2px" }}>📅</div>
+              {nextGame ? (
+                <>
+                  <div style={{ fontSize:"12px", fontWeight:"bold", color:C.navy, lineHeight:1.2 }}>
+                    {new Date(nextGame.date + "T12:00:00").toLocaleDateString("en-US", { weekday:"short", month:"short", day:"numeric" })}
+                  </div>
+                  {nextGame.time ? <div style={{ fontSize:"11px", color:C.textMuted }}>{nextGame.time}</div> : null}
+                </>
+              ) : (
+                <div style={{ fontSize:"12px", color:C.textMuted, lineHeight:1.2 }}>–</div>
+              )}
+              <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.05em", marginTop:"3px" }}>Next Game</div>
+            </div>
           </div>
 
         </div>
 
         {/* ── Status warnings ────────────────────────────────────── */}
         {(missingPrefs > 0 || noSnacks > 0) ? (
-          <div style={{ margin:"8px 12px 0", padding:"10px 14px", borderRadius:"10px",
-            background:"rgba(245,200,66,0.12)", border:"1px solid rgba(245,200,66,0.4)",
-            fontSize:"12px" }}>
-            <div style={{ fontWeight:"bold", marginBottom:"4px", color:C.navy }}>⚠ Needs attention:</div>
+          <div style={{ margin:"8px 12px 0", padding:"12px 14px", borderRadius:"10px",
+            background:"rgba(245,200,66,0.12)", border:"1px solid rgba(245,200,66,0.4)" }}>
+            <div style={{ fontWeight:"bold", marginBottom:"8px", color:C.navy, fontSize:"12px", display:"flex", alignItems:"center", gap:"6px" }}>
+              <span style={{ fontSize:"15px" }}>⚠️</span> Needs attention
+            </div>
             {missingPrefs > 0 ? (
-              <div style={{ color:C.text, opacity:0.85 }}>
-                · {missingPrefs} player{missingPrefs !== 1 ? "s" : ""} missing position preferences
+              <div style={{ display:"flex", alignItems:"center", gap:"8px", marginBottom: noSnacks > 0 ? "6px" : 0,
+                background:"rgba(255,255,255,0.55)", borderRadius:"6px", padding:"8px 10px" }}>
+                <span style={{ fontSize:"18px", flexShrink:0 }}>⚾</span>
+                <div>
+                  <div style={{ fontSize:"12px", fontWeight:"600", color:C.navy }}>Missing position preferences</div>
+                  <div style={{ fontSize:"11px", color:C.textMuted }}>{missingPrefs} player{missingPrefs !== 1 ? "s" : ""} — set in Roster tab</div>
+                </div>
               </div>
             ) : null}
             {noSnacks > 0 ? (
-              <div style={{ color:C.text, opacity:0.85 }}>
-                · {noSnacks} upcoming game{noSnacks !== 1 ? "s" : ""} without snack assignment
+              <div style={{ display:"flex", alignItems:"center", gap:"8px",
+                background:"rgba(255,255,255,0.55)", borderRadius:"6px", padding:"8px 10px" }}>
+                <span style={{ fontSize:"18px", flexShrink:0 }}>🍎</span>
+                <div>
+                  <div style={{ fontSize:"12px", fontWeight:"600", color:C.navy }}>Snacks unassigned</div>
+                  <div style={{ fontSize:"11px", color:C.textMuted }}>{noSnacks} upcoming game{noSnacks !== 1 ? "s" : ""} — assign in Snacks tab</div>
+                </div>
               </div>
             ) : null}
           </div>
