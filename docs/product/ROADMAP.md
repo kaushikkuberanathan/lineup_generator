@@ -1,6 +1,6 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: March 31, 2026 (v1.9.9)
+> Last updated: March 31, 2026 (v2.0.5)
 > MVP launched: March 24, 2026
 
 ---
@@ -48,6 +48,27 @@
 - Export / Import backup (JSON)
 - 10-player field configuration: LC + RC replace CF in outfield; 1 bench slot per inning (schema v2, migration auto-remaps saved CF→LC)
 - First-time coach onboarding modal (5-step in-app walkthrough, localStorage completion tracking, always re-accessible via "Getting Started" button in Roster tab)
+
+### v2.0.5 — March 31, 2026
+- **Fix: home screen team card** — Complete Roster badge no longer truncated; text wraps within grid-constrained column
+
+### v2.0.4 — March 31, 2026
+- **Fix: home screen team card** — top row converted to CSS grid (`1fr auto auto`); Open button and ellipsis get fixed width, Zone 1 strictly constrained — badges can no longer bleed into Open button on any screen size
+
+### v2.0.3 — March 31, 2026
+- **Fix: home screen team card** — Open button no longer bleeds into status badge; top row uses `flex-start` alignment
+- **UX: rename** — "Game View Mode" → "Game Mode" on Next Game CTA card; consistent naming across all screens
+
+### v2.0.2 — March 31, 2026
+- **Fix: home screen team card** — Game Mode button moved to its own full-width row below the top row (team info + Open + menu); no longer bleeds into READY badge on narrow screens (iPhone SE / 375px)
+
+### v2.0.1 — March 31, 2026
+- **Fix: home screen team card** — Game Mode button no longer overlaps READY badge; card `alignItems` changed from `center` to `flex-start` so all three zones (team info, buttons, menu) anchor to the top
+
+### v2.0.0 — March 31, 2026
+- **Fix: mobile browser layout** — App shell uses `100svh` (small viewport height) in non-standalone mode; bottom nav no longer clipped by Edge/Safari mobile address bar
+- **Fix: bottom nav padding** — Extra buffer applied in browser mode to prevent toolbar overlap
+- Installed PWA unaffected — continues to use `100dvh` in standalone mode
 
 ### v1.9.9 — March 31, 2026
 - **Game Mode icons**: Baseball bat (GiBaseballBat via react-icons) replaces ⚾ for all batting indicators — BATTING tab, What's Next card label, Start Batting button

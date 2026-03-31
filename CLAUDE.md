@@ -331,6 +331,24 @@ All major sections are wrapped with `<ErrorBoundary>` (class component). On cras
 
 ## Version History
 
+### v2.0.5 — March 31, 2026
+Fix: Complete Roster badge no longer truncated — removed whiteSpace:nowrap, wraps within grid column
+
+### v2.0.4 — March 31, 2026
+Fix: home screen team card top row → CSS grid (1fr auto auto); badges fully constrained, can never bleed into Open button
+
+### v2.0.3 — March 31, 2026
+Fix: Open button no longer bleeds into status badge (flex-start on top row) · Rename "Game View Mode" → "Game Mode" everywhere
+
+### v2.0.2 — March 31, 2026
+Fix: home screen team card — Game Mode button in its own full-width bottom row; no overlap with READY badge on narrow screens
+
+### v2.0.1 — March 31, 2026
+Fix: home screen team card — Game Mode button / READY badge overlap resolved; card alignItems flex-start
+
+### v2.0.0 — March 31, 2026
+Mobile browser layout fix · App shell uses 100svh in browser mode (vs 100dvh in standalone PWA) · Bottom nav no longer clipped by Edge/Safari mobile address bar · isStandalone detection via matchMedia display-mode
+
 ### v1.9.9 — March 31, 2026
 Game Mode icons overhaul · Baseball bat (GiBaseballBat) for all batting indicators · Sport-aware fielding icon: glove (GiBaseballGlove) for baseball, 🥎 for softball · Applied across DEFENSE/BATTING tabs, What's Next modal, Game Ball label, and Needs Attention dashboard card · react-icons dependency added
 

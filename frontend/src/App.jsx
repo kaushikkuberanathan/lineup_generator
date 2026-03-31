@@ -148,9 +148,54 @@ var DEFAULT_ROSTER = [];
 var _mem = {};
 var SCHEMA_VERSION = 2;
 
-var APP_VERSION = "1.9.9";
+var APP_VERSION = "2.0.5";
 
 var VERSION_HISTORY = [
+  {
+    version: "2.0.5",
+    date: "March 31, 2026",
+    changes: [
+      "Fix: home screen team card — Complete Roster badge no longer truncated; removed whiteSpace:nowrap so text wraps within the grid-constrained column",
+    ]
+  },
+  {
+    version: "2.0.4",
+    date: "March 31, 2026",
+    changes: [
+      "Fix: home screen team card — top row converted from flexbox to CSS grid (1fr auto auto) so Open button and ellipsis always get fixed width and Zone 1 (team info/badge) is strictly constrained; COMPLETE ROSTER and READY badges can no longer bleed into Open button on any screen size",
+    ]
+  },
+  {
+    version: "2.0.3",
+    date: "March 31, 2026",
+    changes: [
+      "Fix: home screen team card — Open button no longer bleeds into status badge; top row uses flex-start alignment",
+      "UX: renamed 'Game View Mode' → 'Game Mode' on Next Game CTA card for consistency across all screens",
+    ]
+  },
+  {
+    version: "2.0.2",
+    date: "March 31, 2026",
+    changes: [
+      "Fix: home screen team card — Game Mode button moved to its own full-width row below the team info/Open/menu row; no longer overlaps READY badge on narrow screens (iPhone SE)",
+    ]
+  },
+  {
+    version: "2.0.1",
+    date: "March 31, 2026",
+    changes: [
+      "Fix: home screen team card — Game Mode button no longer bleeds into READY badge; card zones aligned to top (flex-start) instead of center",
+    ]
+  },
+  {
+    version: "2.0.0",
+    date: "March 31, 2026",
+    changes: [
+      "Fix: mobile browser layout — app shell now uses 100svh (small viewport height) in browser mode so bottom nav is never clipped by Edge/Safari address bar",
+      "Fix: bottom nav padding increased in mobile browser mode to prevent toolbar overlap",
+      "Installed PWA behavior unchanged — continues to use 100dvh in standalone mode",
+    ]
+  },
   {
     version: "1.9.9",
     date: "March 31, 2026",
@@ -1960,6 +2005,11 @@ export default function App() {
   var needRefresh = false;
   var setNeedRefresh = function() {};
 
+  // Standalone: true when running as installed PWA (no browser chrome)
+  var isStandalone = typeof window !== "undefined" && window.matchMedia
+    ? window.matchMedia("(display-mode: standalone)").matches
+    : false;
+
   // Landscape: style-only modifier — same layout, tighter spacing + more grid room
   var _landscape = useState(
     typeof window !== "undefined" && window.matchMedia
@@ -3088,71 +3138,47 @@ export default function App() {
       }
 
       return (
-        <div key={team.id} onClick={function() { loadTeam(team); }} style={{ background:"#fafafa", border:"1px solid rgba(0,0,0,0.07)", borderRadius:"10px", padding:"12px 14px", marginBottom:"8px", cursor:"pointer", boxShadow:"none", display:"flex", alignItems:"center", gap:"8px" }}>
-          {/* ZONE 1 — Team info */}
-          <div style={{ flex:1, minWidth:0 }}>
-            <div style={{ fontSize:"15px", fontWeight:"bold", color:"#0f1f3d", fontFamily:"Georgia,serif", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
-              {team.name}
-              {team.ageGroup ? <span style={{ fontSize:"10px", color:"#6b7280", fontWeight:"normal", marginLeft:"6px" }}>{team.ageGroup}</span> : null}
-            </div>
-            {statusBadge === "Missing roster" ? (
-              <button
-                onClick={function(e) { e.stopPropagation(); loadTeam(team); }}
-                style={{ display:"inline-flex", alignItems:"center", gap:"4px", fontSize:"10px", fontWeight:"bold",
-                  letterSpacing:"0.05em", textTransform:"uppercase", color:"#92400e",
-                  background:"rgba(180,83,9,0.08)", border:"1px solid rgba(180,83,9,0.35)",
-                  borderRadius:"4px", padding:"2px 8px", marginTop:"4px", cursor:"pointer",
-                  fontFamily:"inherit", lineHeight:"16px", whiteSpace:"nowrap" }}>
-                <span style={{ display:"inline-block", width:"6px", height:"6px", borderRadius:"50%", background:"#b45309", flexShrink:0 }} />
-                {teamRoster.length === 0 ? "Add Players →" : "Complete Roster (" + teamRoster.length + "/10) →"}
-              </button>
-            ) : (
-              <span style={{ display:"inline-block", width:"120px", textAlign:"center", fontSize:"10px", fontWeight:"bold", letterSpacing:"0.06em", textTransform:"uppercase", color:statusColor, border:"1px solid " + statusColor, borderRadius:"4px", padding:"2px 6px", opacity:0.9, marginTop:"4px" }}>
-                <span style={{ display:"inline-block", width:"6px", height:"6px", borderRadius:"50%", background:statusColor, marginRight:"4px", verticalAlign:"middle" }} />
-                {statusBadge}
-              </span>
-            )}
-            {nextGame ? (
-              <div style={{ fontSize:"12px", color:"#6b7280", marginTop:"3px", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
-                {nextGame.days === 0 ? "Today" : nextGame.days === 1 ? "Tomorrow" : nextGame.days + " days"}{nextGame.game.opponent ? " \u00b7 vs " + nextGame.game.opponent : ""}
+        <div key={team.id} onClick={function() { loadTeam(team); }} style={{ background:"#fafafa", border:"1px solid rgba(0,0,0,0.07)", borderRadius:"10px", padding:"12px 14px", marginBottom:"8px", cursor:"pointer", boxShadow:"none", display:"flex", flexDirection:"column", gap:"8px" }}>
+          {/* TOP ROW — Team info + Open + Ellipsis */}
+          <div style={{ display:"grid", gridTemplateColumns:"1fr auto auto", gap:"8px", alignItems:"start" }}>
+            {/* ZONE 1 — Team info */}
+            <div style={{ minWidth:0, overflow:"hidden" }}>
+              <div style={{ fontSize:"15px", fontWeight:"bold", color:"#0f1f3d", fontFamily:"Georgia,serif", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+                {team.name}
+                {team.ageGroup ? <span style={{ fontSize:"10px", color:"#6b7280", fontWeight:"normal", marginLeft:"6px" }}>{team.ageGroup}</span> : null}
               </div>
-            ) : null}
-          </div>
-          {/* ZONE 2 — Open / Game Mode buttons */}
-          {(function() {
-            var cardGrid = loadJSON("team:" + team.id + ":grid", null);
-            var hasLineup = cardGrid && Object.keys(cardGrid).length > 0;
-            var isReady = statusBadge === "Ready";
-            return (
-              <div style={{ display:"flex", flexDirection:"column", gap:"5px", flex:"none", alignItems:"flex-end" }}>
-                <button onClick={function(e) { e.stopPropagation(); loadTeam(team); }}
-                  style={{ background:"linear-gradient(135deg,#f5c842,#e6a817)", color:"#0f1f3d",
-                            border:"none", borderRadius:"8px", padding:"6px 14px", fontSize:"12px",
-                            fontWeight:"bold", cursor:"pointer", whiteSpace:"nowrap" }}>
-                  Open
+              {statusBadge === "Missing roster" ? (
+                <button
+                  onClick={function(e) { e.stopPropagation(); loadTeam(team); }}
+                  style={{ display:"inline-flex", alignItems:"center", gap:"4px", fontSize:"10px", fontWeight:"bold",
+                    letterSpacing:"0.05em", textTransform:"uppercase", color:"#92400e",
+                    background:"rgba(180,83,9,0.08)", border:"1px solid rgba(180,83,9,0.35)",
+                    borderRadius:"4px", padding:"2px 8px", marginTop:"4px", cursor:"pointer",
+                    fontFamily:"inherit", lineHeight:"16px" }}>
+                  <span style={{ display:"inline-block", width:"6px", height:"6px", borderRadius:"50%", background:"#b45309", flexShrink:0 }} />
+                  {teamRoster.length === 0 ? "Add Players →" : "Complete Roster (" + teamRoster.length + "/10) →"}
                 </button>
-                {isReady && hasLineup ? (
-                  <button
-                    onClick={function(tm) { return function(e) {
-                      e.stopPropagation();
-                      loadTeam(tm);
-                      setTimeout(function() { setPrimaryTab("gameday"); setGameDayTab("defense"); setGameModeActive(true); }, 300);
-                    }; }(team)}
-                    style={{ background:"#e05c2a", color:"#fff", border:"none", borderRadius:"8px",
-                      padding:"5px 10px", fontSize:"11px", fontWeight:"bold", cursor:"pointer",
-                      whiteSpace:"nowrap", fontFamily:"inherit" }}>
-                    ▶ Game Mode
-                  </button>
-                ) : isReady ? (
-                  <div style={{ fontSize:"9px", color:"#9ca3af", textAlign:"right", maxWidth:"80px", lineHeight:1.3 }}>
-                    Generate a lineup to unlock
-                  </div>
-                ) : null}
-              </div>
-            );
-          })()}
-          {/* ZONE 3 — Ellipsis */}
-          <div style={{ position:"relative", flex:"none", marginLeft:"4px" }}>
+              ) : (
+                <span style={{ display:"inline-block", width:"120px", textAlign:"center", fontSize:"10px", fontWeight:"bold", letterSpacing:"0.06em", textTransform:"uppercase", color:statusColor, border:"1px solid " + statusColor, borderRadius:"4px", padding:"2px 6px", opacity:0.9, marginTop:"4px" }}>
+                  <span style={{ display:"inline-block", width:"6px", height:"6px", borderRadius:"50%", background:statusColor, marginRight:"4px", verticalAlign:"middle" }} />
+                  {statusBadge}
+                </span>
+              )}
+              {nextGame ? (
+                <div style={{ fontSize:"12px", color:"#6b7280", marginTop:"3px", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+                  {nextGame.days === 0 ? "Today" : nextGame.days === 1 ? "Tomorrow" : nextGame.days + " days"}{nextGame.game.opponent ? " \u00b7 vs " + nextGame.game.opponent : ""}
+                </div>
+              ) : null}
+            </div>
+            {/* ZONE 2 — Open button only */}
+            <button onClick={function(e) { e.stopPropagation(); loadTeam(team); }}
+              style={{ background:"linear-gradient(135deg,#f5c842,#e6a817)", color:"#0f1f3d",
+                        border:"none", borderRadius:"8px", padding:"6px 14px", fontSize:"12px",
+                        fontWeight:"bold", cursor:"pointer", whiteSpace:"nowrap" }}>
+              Open
+            </button>
+            {/* ZONE 3 — Ellipsis */}
+            <div style={{ position:"relative" }}>
             <button
               onClick={function(e) { e.stopPropagation(); setOpenMenuTeamId(openMenuTeamId === team.id ? null : team.id); }}
               style={{ padding:"8px 10px", borderRadius:"8px", border:"1px solid rgba(0,0,0,0.12)", cursor:"pointer", fontSize:"16px", fontFamily:"inherit", background:"transparent", color:"rgba(0,0,0,0.3)", lineHeight:1, letterSpacing:"1px" }}>
@@ -3194,6 +3220,36 @@ export default function App() {
               </>
             )}
           </div>
+          </div>{/* end TOP ROW */}
+          {/* BOTTOM ROW — Game Mode button (full width, only when ready + lineup exists) */}
+          {(function() {
+            var cardGrid = loadJSON("team:" + team.id + ":grid", null);
+            var hasLineup = cardGrid && Object.keys(cardGrid).length > 0;
+            var isReady = statusBadge === "Ready";
+            if (isReady && hasLineup) {
+              return (
+                <button
+                  onClick={function(tm) { return function(e) {
+                    e.stopPropagation();
+                    loadTeam(tm);
+                    setTimeout(function() { setPrimaryTab("gameday"); setGameDayTab("defense"); setGameModeActive(true); }, 300);
+                  }; }(team)}
+                  style={{ width:"100%", background:"#e05c2a", color:"#fff", border:"none", borderRadius:"8px",
+                    padding:"8px 10px", fontSize:"12px", fontWeight:"bold", cursor:"pointer",
+                    whiteSpace:"nowrap", fontFamily:"inherit", textAlign:"center" }}>
+                  ▶ Game Mode
+                </button>
+              );
+            }
+            if (isReady) {
+              return (
+                <div style={{ fontSize:"9px", color:"#9ca3af", textAlign:"center", lineHeight:1.3 }}>
+                  Generate a lineup to unlock Game Mode
+                </div>
+              );
+            }
+            return null;
+          })()}
         </div>
       );
     }
@@ -3281,7 +3337,7 @@ export default function App() {
                                 setTimeout(function() { setPrimaryTab("gameday"); setGameDayTab("defense"); setGameModeActive(true); }, 300);
                               }; }(nextGameTeam)}
                               style={{ background:"#e05c2a", color:"#fff", border:"none", borderRadius:"10px", padding:"12px 20px", fontSize:"14px", fontWeight:"bold", cursor:"pointer", width:"100%", fontFamily:"Georgia,serif", letterSpacing:"0.02em", boxShadow:"0 3px 12px rgba(224,92,42,0.4)" }}>
-                              ▶ Game View Mode
+                              ▶ Game Mode
                             </button>
                           </div>
                         );
@@ -8233,7 +8289,7 @@ export default function App() {
 
   function renderBottomNav() {
     return (
-      <div style={{ flexShrink:0, background:C.navy, borderTop:"2px solid " + C.red, display:"flex", paddingBottom:"env(safe-area-inset-bottom, 0px)" }}>
+      <div style={{ flexShrink:0, background:C.navy, borderTop:"2px solid " + C.red, display:"flex", paddingBottom: isStandalone ? "env(safe-area-inset-bottom, 0px)" : "env(safe-area-inset-bottom, 12px)" }}>
         {PRIMARY_TABS.map(function(t) {
           var active = primaryTab === t.key;
           var disabled = (t.key !== "more" && t.key !== "home" && screen !== "app");
@@ -8266,7 +8322,7 @@ export default function App() {
   // ── Always column: header + top tabs + scrollable content ──────────────
   // TODO: extract — deferred (Header depends on syncStatus, isLandscape, screen, activeTeam, isOnline, activeTeamId — extract after OfflineIndicator is stable and state prop drilling pattern is established)
   return (
-    <div style={{ height:"100dvh", display:"flex", flexDirection:"column", overflow:"hidden", background: primaryTab === "more" ? "linear-gradient(160deg,#0f1f3d 0%,#1a3260 55%,#2a0a0a 100%)" : C.cream, fontFamily:"Georgia,'Times New Roman',serif", color:C.text }}>
+    <div style={{ height: isStandalone ? "100dvh" : "100svh", display:"flex", flexDirection:"column", overflow:"hidden", background: primaryTab === "more" ? "linear-gradient(160deg,#0f1f3d 0%,#1a3260 55%,#2a0a0a 100%)" : C.cream, fontFamily:"Georgia,'Times New Roman',serif", color:C.text }}>
       <div style={Object.assign({}, S.header, isLandscape ? { padding:"5px 16px" } : {})}>
         <div style={S.logoWrap} onClick={function() {
           if (primaryTab === "team" || primaryTab === "gameday") { setShowExitSheet(true); return; }
