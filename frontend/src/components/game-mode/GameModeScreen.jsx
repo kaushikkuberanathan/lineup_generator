@@ -53,11 +53,29 @@ export function GameModeScreen({
   var _fade = useState(true);
   var diamondVisible = _fade[0]; var setDiamondVisible = _fade[1];
 
-  // Half-inning indicator — visual only, resets to 'defense' on inning advance
+  // Half-inning indicator — resets to 'defense' on inning advance
   var _half = useState("defense");
   var halfInning = _half[0]; var setHalfInning = _half[1];
 
+  // Half completion tracking — both must be done before inning can advance
+  var _defDone = useState(false);
+  var defDone = _defDone[0]; var setDefDone = _defDone[1];
+  var _batDone = useState(false);
+  var batDone = _batDone[0]; var setBatDone = _batDone[1];
+  var bothHalvesDone = defDone && batDone;
+
   var isLastInning = currentInning >= innings - 1;
+
+  // Mark current half complete, switch to other half if not yet done
+  function handleEndHalf() {
+    if (halfInning === "defense") {
+      setDefDone(true);
+      if (!batDone) setHalfInning("batting");
+    } else {
+      setBatDone(true);
+      if (!defDone) setHalfInning("defense");
+    }
+  }
 
   // ── Saved flash — shows 1.5s after every batter advance/back ──────────
   var _sf = useState(false);
@@ -95,6 +113,8 @@ export function GameModeScreen({
     setInningModalOpen(false);
     if (isLastInning) { onExit(); return; }
     setHalfInning("defense");
+    setDefDone(false);
+    setBatDone(false);
     // On deck becomes Now Batting for the next inning
     onBatterAdvance();
     // Fade out diamond → advance inning → fade in
@@ -168,16 +188,26 @@ export function GameModeScreen({
           </div>
         </div>
 
-        {/* Inning advance */}
+        {/* Inning advance — gated until both halves are marked done */}
         <button
-          onClick={function() { setInningModalOpen(true); }}
+          onClick={function() {
+            if (bothHalvesDone) { setInningModalOpen(true); }
+            else { handleEndHalf(); }
+          }}
           style={{ padding:"8px 14px", borderRadius:"8px",
-            background: isLastInning ? "rgba(255,255,255,0.06)" : "#f5c842",
-            border:"none",
-            color: isLastInning ? "#475569" : "#0f1f3d",
-            cursor:"pointer", fontSize:"13px", fontWeight:"bold",
-            fontFamily:"Georgia,serif", flexShrink:0 }}>
-          {isLastInning ? "End ⏹" : "Next →"}
+            background: bothHalvesDone
+              ? (isLastInning ? "rgba(255,255,255,0.06)" : "#f5c842")
+              : "rgba(245,200,66,0.18)",
+            border: bothHalvesDone ? "none" : "1px solid rgba(245,200,66,0.3)",
+            color: bothHalvesDone
+              ? (isLastInning ? "#475569" : "#0f1f3d")
+              : "#f5c842",
+            cursor:"pointer", fontSize:"12px", fontWeight:"bold",
+            fontFamily:"Georgia,serif", flexShrink:0, textAlign:"center",
+            lineHeight:1.2 }}>
+          {bothHalvesDone
+            ? (isLastInning ? "End ⏹" : "Next →")
+            : (halfInning === "defense" ? "End Defense →" : "End Batting →")}
         </button>
       </div>
 
@@ -221,10 +251,10 @@ export function GameModeScreen({
               fontSize:"11px", fontWeight:"bold", letterSpacing:"0.1em",
               fontFamily:"Georgia,serif",
               background: halfInning === "defense" ? "#0f1f3d" : "transparent",
-              color:       halfInning === "defense" ? "#f5c842"  : "#475569",
+              color: defDone ? "#22c55e" : (halfInning === "defense" ? "#f5c842" : "#475569"),
               transition:"background 150ms, color 150ms",
             }}>
-            ⚔ DEFENSE
+            {defDone ? "✓" : "⚔"} DEFENSE
           </button>
           <div style={{ width:"1px", background:"rgba(255,255,255,0.12)", flexShrink:0 }} />
           <button
@@ -235,10 +265,12 @@ export function GameModeScreen({
               fontSize:"11px", fontWeight:"bold", letterSpacing:"0.1em",
               fontFamily:"Georgia,serif",
               background: halfInning === "batting" ? "#f5c842" : "transparent",
-              color:       halfInning === "batting" ? "#0f1f3d" : "#475569",
+              color: batDone
+                ? (halfInning === "batting" ? "#0f1f3d" : "#22c55e")
+                : (halfInning === "batting" ? "#0f1f3d" : "#475569"),
               transition:"background 150ms, color 150ms",
             }}>
-            ⚾ BATTING
+            {batDone ? "✓" : "⚾"} BATTING
           </button>
         </div>
       </div>
@@ -321,6 +353,9 @@ export function GameModeScreen({
           totalInnings={innings}
           roster={roster}
           grid={grid}
+          halfInning={halfInning}
+          battingOrder={battingOrder}
+          currentBatterIndex={currentBatterIndex}
           onConfirm={handleInningConfirm}
           onCancel={function() { setInningModalOpen(false); }}
         />

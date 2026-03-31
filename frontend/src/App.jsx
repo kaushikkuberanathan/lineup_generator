@@ -2460,6 +2460,58 @@ export default function App() {
     loadTeam(t);
   }
 
+  function loadDemoTeam() {
+    var tid = "demo_" + Date.now();
+    var t = { id: tid, name: "Demo All-Stars", ageGroup: "10U", sport: "baseball", year: new Date().getFullYear() };
+
+    var today = new Date();
+    var fmtDate = function(d) { var x = new Date(d); return x.toISOString().slice(0, 10); };
+    var addDays = function(n) { var x = new Date(today); x.setDate(today.getDate() + n); return x; };
+
+    var demoRoster = [
+      { firstName:"Jake",  lastName:"Martinez",  name:"Jake Martinez",  skills:["strongArm","gameAware"], tags:[], prefs:["P","SS"],  dislikes:["C"],  batSkills:[], battingHand:"R", skipBench:false, outThisGame:false },
+      { firstName:"Mia",   lastName:"Chen",      name:"Mia Chen",       skills:["naturalCatcher"],        tags:[], prefs:["C","1B"],  dislikes:[],     batSkills:[], battingHand:"R", skipBench:false, outThisGame:false },
+      { firstName:"Luca",  lastName:"Thompson",  name:"Luca Thompson",  skills:["developing"],            tags:[], prefs:["2B","3B"], dislikes:[],     batSkills:[], battingHand:"L", skipBench:false, outThisGame:false },
+      { firstName:"Sofia", lastName:"Williams",  name:"Sofia Williams", skills:["goodGlove","hustles"],   tags:[], prefs:["SS","2B"], dislikes:[],     batSkills:[], battingHand:"R", skipBench:false, outThisGame:false },
+      { firstName:"Owen",  lastName:"Davis",     name:"Owen Davis",     skills:["bigKid"],                tags:[], prefs:["1B","3B"], dislikes:["P"],  batSkills:[], battingHand:"R", skipBench:false, outThisGame:false },
+      { firstName:"Lily",  lastName:"Rodriguez", name:"Lily Rodriguez", skills:["fastRunner"],            tags:[], prefs:["LC","CF"], dislikes:[],     batSkills:[], battingHand:"L", skipBench:false, outThisGame:false },
+      { firstName:"Ethan", lastName:"Kim",       name:"Ethan Kim",      skills:["goodGlove","callsForBall"],tags:[],prefs:["CF","RC"],dislikes:[],     batSkills:[], battingHand:"R", skipBench:false, outThisGame:false },
+      { firstName:"Chloe", lastName:"Johnson",   name:"Chloe Johnson",  skills:["developing"],            tags:[], prefs:["RF","LF"], dislikes:[],     batSkills:[], battingHand:"R", skipBench:false, outThisGame:false },
+      { firstName:"Noah",  lastName:"Patel",     name:"Noah Patel",     skills:["accurateThrower"],       tags:[], prefs:["3B","SS"], dislikes:[],     batSkills:[], battingHand:"L", skipBench:false, outThisGame:false },
+      { firstName:"Emma",  lastName:"Brown",     name:"Emma Brown",     skills:["developing"],            tags:[], prefs:["2B","1B"], dislikes:[],     batSkills:[], battingHand:"R", skipBench:false, outThisGame:false },
+      { firstName:"Aiden", lastName:"Garcia",    name:"Aiden Garcia",   skills:["strongArm","highEnergy"],tags:[], prefs:["P","3B"],  dislikes:[],     batSkills:[], battingHand:"R", skipBench:false, outThisGame:false },
+      { firstName:"Zoe",   lastName:"Wilson",    name:"Zoe Wilson",     skills:["developing"],            tags:[], prefs:["C","1B"],  dislikes:[],     batSkills:[], battingHand:"L", skipBench:false, outThisGame:false },
+    ].map(function(p) {
+      return Object.assign({
+        reliability:"average", reaction:"average", armStrength:"average", ballType:"developing",
+        knowsWhereToThrow:false, callsForBall:false, backsUpPlays:false, anticipatesPlays:false,
+        contact:"medium", power:"low", swingDiscipline:"free_swinger",
+        tracksBallWell:false, patientAtPlate:false, confidentHitter:false,
+        speed:"average", runsThroughFirst:false, listensToCoaches:false, awareOnBases:false,
+        effort:null, developmentFocus:"balanced", lastUpdated:null,
+        walkUpSong:null, walkUpArtist:null, walkUpStart:null, walkUpEnd:null, walkUpNotes:null, walkUpLink:null,
+      }, p);
+    });
+
+    var demoSchedule = [
+      { id:"demo_g_1", date:fmtDate(addDays(-7)),  time:"10:00", location:"Riverside Park", opponent:"Tigers", result:"W", ourScore:"8", theirScore:"3", home:true,  snackDuty:"",           snackNote:"", gameBall:"Jake Martinez", battingPerf:{} },
+      { id:"demo_g_2", date:fmtDate(addDays(5)),   time:"10:00", location:"Memorial Field", opponent:"Sharks", result:"",  ourScore:"",  theirScore:"",  home:false, snackDuty:"Mia Chen",   snackNote:"", gameBall:"", battingPerf:{} },
+      { id:"demo_g_3", date:fmtDate(addDays(19)),  time:"14:00", location:"Riverside Park", opponent:"Eagles", result:"",  ourScore:"",  theirScore:"",  home:true,  snackDuty:"",           snackNote:"", gameBall:"", battingPerf:{} },
+    ];
+
+    saveJSON("team:" + tid + ":roster",    demoRoster);
+    saveJSON("team:" + tid + ":schedule",  demoSchedule);
+    saveJSON("team:" + tid + ":practices", []);
+    saveJSON("team:" + tid + ":batting",   demoRoster.map(function(p) { return p.name; }));
+    saveJSON("team:" + tid + ":innings",   6);
+    saveJSON("team:" + tid + ":locked",    false);
+
+    var next = teams.concat([t]);
+    setTeams(next);
+    saveJSON("app:teams", next);
+    loadTeam(t);
+  }
+
   function saveTeamEdits() {
     if (!editingTeam || !editingTeam.name.trim()) { return; }
     var updated = teams.map(function(t) {
@@ -3236,6 +3288,10 @@ export default function App() {
                 </div>
               ) : null}
               </ErrorBoundary>
+              <button onClick={loadDemoTeam}
+                style={{ width:"100%", padding:"12px", borderRadius:"12px", background:"linear-gradient(135deg,#f5c842,#e6a817)", color:"#0f1f3d", border:"none", fontSize:"13px", fontWeight:"bold", fontFamily:"Georgia,serif", cursor:"pointer", marginBottom:"10px", letterSpacing:"0.04em" }}>
+                Try Demo Team
+              </button>
               {teams.length === 0 ? (
                 <button onClick={function() { setNewTeam({ name:"", ageGroup:"", sport:"", year: new Date().getFullYear() }); setHomeMode("create"); }}
                   style={{ width:"100%", padding:"16px", borderRadius:"12px", background:"linear-gradient(135deg,#c8102e,#a00d25)", color:"#fff", border:"none", fontSize:"16px", fontWeight:"bold", fontFamily:"Georgia,serif", cursor:"pointer", marginBottom:"12px", letterSpacing:"0.04em" }}>
@@ -3255,17 +3311,17 @@ export default function App() {
             <div style={{ background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.15)", borderRadius:"14px", padding:"22px" }}>
               <div style={{ fontSize:"15px", fontWeight:"bold", color:"#fff", marginBottom:"16px" }}>Create a New Team</div>
               <div style={{ marginBottom:"12px" }}>
-                <div style={{ fontSize:"10px", color:"rgba(255,255,255,0.4)", letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:"5px" }}>Team Name</div>
+                <div style={{ fontSize:"10px", color:"rgba(255,255,255,0.7)", letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:"5px" }}>Team Name</div>
                 <input type="text" value={newTeam.name} placeholder="Team Name" maxLength={40} autoFocus
                   onChange={function(e) { var next = {}; for (var k in newTeam) { next[k]=newTeam[k]; } next.name=e.target.value; setNewTeam(next); }}
-                  style={{ width:"100%", background:"rgba(255,255,255,0.1)", border:"1px solid rgba(255,255,255,0.18)", borderRadius:"8px", padding:"10px 12px", color:"#fff", fontFamily:"inherit", fontSize:"13px", outline:"none", boxSizing:"border-box" }} />
+                  style={{ width:"100%", background:"#fff", border:"1px solid rgba(255,255,255,0.3)", borderRadius:"8px", padding:"10px 12px", color:"#0f1f3d", fontFamily:"inherit", fontSize:"13px", outline:"none", boxSizing:"border-box" }} />
               </div>
               <div style={{ display:"flex", gap:"10px", marginBottom:"12px" }}>
                 <div style={{ flex:1 }}>
-                  <div style={{ fontSize:"10px", color:"rgba(255,255,255,0.4)", letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:"5px" }}>Age Group</div>
+                  <div style={{ fontSize:"10px", color:"rgba(255,255,255,0.7)", letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:"5px" }}>Age Group</div>
                   <select value={newTeam.ageGroup}
                     onChange={function(e) { var next = {}; for (var k in newTeam) { next[k]=newTeam[k]; } next.ageGroup=e.target.value; setNewTeam(next); }}
-                    style={{ width:"100%", background:"#1a2a4a", border:"1px solid rgba(255,255,255,0.18)", borderRadius:"8px", padding:"10px 12px", color: newTeam.ageGroup ? "#fff" : "rgba(255,255,255,0.35)", fontFamily:"inherit", fontSize:"13px", outline:"none", boxSizing:"border-box", appearance:"none", cursor:"pointer" }}>
+                    style={{ width:"100%", background:"#fff", border:"1px solid rgba(255,255,255,0.3)", borderRadius:"8px", padding:"10px 12px", color: newTeam.ageGroup ? "#0f1f3d" : "#9ca3af", fontFamily:"inherit", fontSize:"13px", outline:"none", boxSizing:"border-box", cursor:"pointer" }}>
                     <option value="">— Age —</option>
                     {["5U","6U","7U","8U","9U","10U","11U","12U"].map(function(ag) {
                       return <option key={ag} value={ag}>{ag}</option>;
@@ -3273,10 +3329,10 @@ export default function App() {
                   </select>
                 </div>
                 <div style={{ flex:1 }}>
-                  <div style={{ fontSize:"10px", color:"rgba(255,255,255,0.4)", letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:"5px" }}>Sport</div>
+                  <div style={{ fontSize:"10px", color:"rgba(255,255,255,0.7)", letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:"5px" }}>Sport</div>
                   <select value={newTeam.sport}
                     onChange={function(e) { var next = {}; for (var k in newTeam) { next[k]=newTeam[k]; } next.sport=e.target.value; setNewTeam(next); }}
-                    style={{ width:"100%", background:"#1a2a4a", border:"1px solid rgba(255,255,255,0.18)", borderRadius:"8px", padding:"10px 12px", color: newTeam.sport ? "#fff" : "rgba(255,255,255,0.35)", fontFamily:"inherit", fontSize:"13px", outline:"none", boxSizing:"border-box", appearance:"none", cursor:"pointer" }}>
+                    style={{ width:"100%", background:"#fff", border:"1px solid rgba(255,255,255,0.3)", borderRadius:"8px", padding:"10px 12px", color: newTeam.sport ? "#0f1f3d" : "#9ca3af", fontFamily:"inherit", fontSize:"13px", outline:"none", boxSizing:"border-box", cursor:"pointer" }}>
                     <option value="">— Sport —</option>
                     <option value="baseball">Baseball</option>
                     <option value="softball">Softball</option>
@@ -7737,15 +7793,8 @@ export default function App() {
   }; };
 
   if (primaryTab === "gameday") {
-    // Hide GAME MODE for completed (W/L/T) or cancelled (X) games
-    var _gmToday = new Date(); _gmToday.setHours(0,0,0,0);
-    var _showGameMode = !!schedule.slice()
-      .filter(function(g) {
-        return g.date &&
-               new Date(g.date + "T12:00:00") >= _gmToday &&
-               g.result !== "X" &&
-               !g.result;
-      }).length;
+    // Show GAME MODE for any team with roster + schedule set up
+    var _showGameMode = roster.length > 0 && schedule.length > 0;
 
     subTabBar = (
       <div style={{ display:"flex", gap:"4px", alignItems:"center", padding:"8px 12px 4px", background:C.cream, borderBottom:"1px solid " + C.border }}>
