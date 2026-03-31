@@ -148,9 +148,17 @@ var DEFAULT_ROSTER = [];
 var _mem = {};
 var SCHEMA_VERSION = 2;
 
-var APP_VERSION = "1.9.7";
+var APP_VERSION = "1.9.8";
 
 var VERSION_HISTORY = [
+  {
+    version: "1.9.8",
+    date: "March 31, 2026",
+    changes: [
+      "UX: Parent View renamed to MyPlayer View throughout — toggle button moved from Defense-tab-only strip to persistent Game Day subtab bar header",
+      "MyPlayer View button always visible on Game Day (all subtabs); '👁 MyPlayer' / '← Back' toggle; navy active state",
+    ]
+  },
   {
     version: "1.9.7",
     date: "March 31, 2026",
@@ -7908,8 +7916,20 @@ export default function App() {
             </button>
           );
         })}
+        {/* MyPlayer View toggle — always visible on Game Day */}
+        <button
+          onClick={function() { setParentViewActive(!parentViewActive); if (!parentViewActive) setSelectedParentPlayer(null); }}
+          style={{ flex:"0 0 auto", marginLeft:"auto", padding:"5px 10px", borderRadius:"6px",
+            border: parentViewActive ? "2px solid " + C.navy : "1px solid rgba(15,31,61,0.18)",
+            cursor:"pointer", fontSize:"11px", fontWeight:"bold", fontFamily:"Georgia,serif",
+            letterSpacing:"0.04em",
+            background: parentViewActive ? C.navy : "rgba(15,31,61,0.06)",
+            color: parentViewActive ? "#fff" : C.textMuted,
+            flexShrink:0 }}>
+          {parentViewActive ? "← Back" : "👁 MyPlayer"}
+        </button>
         {/* Innings selector — global game setting, always visible on Game Day */}
-        <div style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:"4px", flexShrink:0 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:"4px", flexShrink:0 }}>
           <span style={{ fontSize:"10px", color:C.textMuted, letterSpacing:"0.04em" }}>Inn:</span>
           {[6,7].map(function(n) {
             return (
@@ -7993,19 +8013,9 @@ export default function App() {
           </button>
         </div>
       ) : null}
-      {primaryTab === "gameday" && gameDayTab === "defense" ? (
-        <div style={{ display:"flex", gap:"6px", alignItems:"center", padding:"6px 16px",
-          background:"rgba(15,31,61,0.03)", borderBottom:"1px solid " + C.border }}>
-          <button
-            onClick={function() { setParentViewActive(!parentViewActive); if (!parentViewActive) setSelectedParentPlayer(null); }}
-            style={{ ...S.btn(parentViewActive ? "primary" : "ghost"), padding:"4px 10px", fontSize:"11px" }}>
-            {parentViewActive ? "← Full View" : "👪 Parent View"}
-          </button>
-        </div>
-      ) : null}
       {primaryTab === "team" ? renderTeamTab() : null}
       <ErrorBoundary fallback="Game Day">
-        <ErrorBoundary fallback="Parent View">
+        <ErrorBoundary fallback="MyPlayer View">
           {primaryTab === "gameday" && parentViewActive ? (
             <ParentView
               roster={roster}

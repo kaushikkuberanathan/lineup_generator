@@ -153,7 +153,7 @@ export var FAQ_CATEGORIES = [
       },
       {
         q: "I want to see a specific player's position assignments for the whole game, not just now.",
-        a: "Tap the 👪 Parent View button on the Game Day tab. Select the player from the picker. You'll see their position for every inning on one screen — field positions color-coded, bench slots clearly marked. Coaches use this to spot a player mid-game and confirm where they should be going."
+        a: "Tap the 👁 MyPlayer View button on the Game Day tab. Select the player from the picker. You'll see their position for every inning on one screen — field positions color-coded, bench slots clearly marked. Coaches use this to spot a player mid-game and confirm where they should be going."
       },
       {
         q: "There's a runner on second and I want to know the outfielder's arm strength before I wave them home. Is that in here?",
