@@ -3317,7 +3317,7 @@ export default function App() {
                 </div>
               ) : null}
               </ErrorBoundary>
-              {teams.length === 0 ? (
+              {!teams.find(function(t) { return t.name === "Demo All-Stars"; }) ? (
                 <button onClick={loadDemoTeam}
                   style={{ width:"100%", padding:"12px", borderRadius:"12px", background:"linear-gradient(135deg,#f5c842,#e6a817)", color:"#0f1f3d", border:"none", fontSize:"13px", fontWeight:"bold", fontFamily:"Georgia,serif", cursor:"pointer", marginBottom:"10px", letterSpacing:"0.04em" }}>
                   Try Demo Team
