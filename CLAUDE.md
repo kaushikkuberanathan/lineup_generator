@@ -331,6 +331,12 @@ All major sections are wrapped with `<ErrorBoundary>` (class component). On cras
 
 ## Version History
 
+### v1.9.9 — March 31, 2026
+Game Mode icons overhaul · Baseball bat (GiBaseballBat) for all batting indicators · Sport-aware fielding icon: glove (GiBaseballGlove) for baseball, 🥎 for softball · Applied across DEFENSE/BATTING tabs, What's Next modal, Game Ball label, and Needs Attention dashboard card · react-icons dependency added
+
+### v1.9.8 — March 31, 2026
+MyPlayer View renamed from Parent View · toggle moved to persistent Game Day subtab bar header · always visible across all Game Day subtabs
+
 ### v1.9.7 — March 31, 2026
 Accessibility Phase 2 (ACCESSIBILITY_V1) · NowBattingStrip 3-tier hierarchy · Now Batting 36px gold dominant · On Deck 22px / In the Hole 17px muted · Aria-live batter announcer · InningModal batting preview upgrade · Position label aria-label expansion
 

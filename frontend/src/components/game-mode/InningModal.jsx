@@ -17,6 +17,7 @@
  */
 
 import { useEffect } from "react";
+import { GiBaseballBat, GiBaseballGlove } from "react-icons/gi";
 import { isFlagEnabled } from "../../config/featureFlags";
 import { POSITION_LABELS } from "../../constants/positions";
 
@@ -34,9 +35,14 @@ function firstName(name) {
 export function InningModal({
   currentInning, totalInnings, roster, grid,
   halfInning, battingOrder, currentBatterIndex,
+  sport,
   onConfirm, onCancel
 }) {
   var a11y = isFlagEnabled('ACCESSIBILITY_V1');
+  var isSoftball = (sport || "baseball").toLowerCase() === "softball";
+  var FieldIcon = isSoftball
+    ? function() { return <span style={{ fontSize:"1em" }}>🥎</span>; }
+    : GiBaseballGlove;
 
   var nextInning = currentInning + 1;  // 0-based
   var isLastInning = currentInning >= totalInnings - 1;
@@ -112,7 +118,7 @@ export function InningModal({
         {/* ── Last inning / end of game ── */}
         {isLastInning ? (
           <div style={{ textAlign:"center", padding:"40px 0", color: a11y ? "#e2e8f0" : "#475569" }}>
-            <div style={{ fontSize:"32px", marginBottom:"12px" }}>⚾</div>
+            <div style={{ fontSize:"32px", marginBottom:"12px" }}><GiBaseballBat /></div>
             <div style={{ fontSize:"16px" }}>
               Game complete. Return to the lineup to unlock or share.
             </div>
@@ -131,7 +137,7 @@ export function InningModal({
                 borderBottom:"1px solid rgba(245,200,66,0.15)",
                 fontSize: a11y ? "12px" : "10px", fontWeight:"bold", color:"#f5c842",
                 letterSpacing:"0.15em", textTransform:"uppercase" }}>
-                ⚾ Batting Order
+                <GiBaseballBat style={{ verticalAlign:"middle", marginRight:"5px" }} />Batting Order
               </div>
               <div style={{ padding:"10px 14px", display:"flex", flexDirection:"column", gap:"6px" }}>
                 {leadOff ? (
@@ -199,7 +205,7 @@ export function InningModal({
                 borderBottom:"1px solid rgba(74,222,128,0.15)",
                 fontSize: a11y ? "12px" : "10px", fontWeight:"bold", color:"#4ade80",
                 letterSpacing:"0.15em", textTransform:"uppercase" }}>
-                ⚔ Inning {nextInning + 1} Positions
+                <FieldIcon style={{ verticalAlign:"middle", marginRight:"5px" }} />Inning {nextInning + 1} Positions
               </div>
               <div style={{ padding:"10px 14px" }}>
                 <div style={{ display:"flex", flexDirection:"column", gap:"5px" }}>
@@ -272,7 +278,7 @@ export function InningModal({
                 background:"#f5c842", border:"none",
                 color:"#0f1f3d", fontSize:"15px", fontWeight:"bold", cursor:"pointer",
                 fontFamily:"Georgia,serif" }}>
-              ⚾ Start Batting — Inning {nextInning + 1}
+              <GiBaseballBat style={{ verticalAlign:"middle", marginRight:"6px" }} />Start Batting — Inning {nextInning + 1}
             </button>
             <button
               onClick={function() { onConfirm("defense"); }}
@@ -281,7 +287,7 @@ export function InningModal({
                 background:"#4ade80", border:"none",
                 color:"#0f1f3d", fontSize:"15px", fontWeight:"bold", cursor:"pointer",
                 fontFamily:"Georgia,serif" }}>
-              ⚔ Take the Field — Inning {nextInning + 1}
+              <FieldIcon style={{ verticalAlign:"middle", marginRight:"6px" }} />Take the Field — Inning {nextInning + 1}
             </button>
           </>
         )}

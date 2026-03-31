@@ -23,6 +23,7 @@
  */
 
 import { useState, useEffect, useRef } from "react";
+import { GiBaseballGlove, GiBaseballBat } from "react-icons/gi";
 import { NowBattingBar }  from "../../components/GameDay/NowBattingStrip";
 import { DefenseDiamond } from "../../components/GameDay/DefenseDiamond";
 import { InningModal }    from "./InningModal";
@@ -38,6 +39,7 @@ function firstName(name) {
 export function GameModeScreen({
   roster, grid, battingOrder, innings,
   currentBatterIndex, initialInning,
+  sport,
   onSwap, onBatterAdvance, onBatterBack,
   onInningChange, onBatterReset,
   onExit
@@ -352,7 +354,7 @@ export function GameModeScreen({
                 color: defDone ? "#22c55e" : (halfInning === "defense" ? "#f5c842" : "#475569"),
                 transition:"background 150ms, color 150ms",
               }}>
-              {defDone ? "✓" : "⚔"} DEFENSE
+              {defDone ? "✓" : ((sport || "baseball").toLowerCase() === "softball" ? "🥎" : <GiBaseballGlove style={{ verticalAlign:"middle" }} />)} DEFENSE
             </button>
           </div>
           <div style={{ width:"1px", background:"rgba(255,255,255,0.12)", flexShrink:0 }} />
@@ -373,7 +375,7 @@ export function GameModeScreen({
                   : (halfInning === "batting" ? "#0f1f3d" : "#475569"),
                 transition:"background 150ms, color 150ms",
               }}>
-              {batDone ? "✓" : "⚾"} BATTING
+              {batDone ? "✓" : <GiBaseballBat style={{ verticalAlign:"middle" }} />} BATTING
             </button>
           </div>
         </div>
@@ -460,6 +462,7 @@ export function GameModeScreen({
           halfInning={halfInning}
           battingOrder={battingOrder}
           currentBatterIndex={currentBatterIndex}
+          sport={sport}
           onConfirm={handleInningConfirm}
           onCancel={function() { setInningModalOpen(false); }}
         />

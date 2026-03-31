@@ -152,6 +152,16 @@ var APP_VERSION = "1.9.8";
 
 var VERSION_HISTORY = [
   {
+    version: "1.9.9",
+    date: "March 31, 2026",
+    changes: [
+      "Game Mode: baseball bat icon (GiBaseballBat) replaces ⚾ emoji for all batting indicators — BATTING tab, card label, and Start Batting button",
+      "Game Mode: fielding icon is now sport-aware — baseball teams show a glove (GiBaseballGlove), softball teams show 🥎 — applies to DEFENSE tab, card label, Take the Field button, and What's Next modal",
+      "Dependency: react-icons added for GiBaseballBat and GiBaseballGlove (game-icons set)",
+      "Sport-aware icons extended app-wide: Game Ball label on Schedule tab and Needs Attention dashboard card now show ⚾ for baseball and 🥎 for softball",
+    ]
+  },
+  {
     version: "1.9.8",
     date: "March 31, 2026",
     changes: [
@@ -6216,7 +6226,7 @@ export default function App() {
                               <button onClick={function(gid) { return function() { clearSnackAssignment(gid); }; }(game.id)}
                                 style={{ background:"none", border:"none", cursor:"pointer", fontSize:"12px", color:C.textMuted, padding:"1px 3px", lineHeight:1 }} title="Clear">✕</button>
                             )}
-                            <span style={{ fontSize:"11px", color:C.textMuted, flexShrink:0 }}>⚾ Game Ball</span>
+                            <span style={{ fontSize:"11px", color:C.textMuted, flexShrink:0 }}>{(activeTeam && (activeTeam.sport || "baseball").toLowerCase() === "softball") ? "🥎" : "⚾"} Game Ball</span>
                             <select
                               value={game.gameBall || ""}
                               onChange={function(gid) { return function(e) {
@@ -8133,7 +8143,7 @@ export default function App() {
             {missingPrefs > 0 ? (
               <div style={{ display:"flex", alignItems:"center", gap:"8px", marginBottom: noSnacks > 0 ? "6px" : 0,
                 background:"rgba(255,255,255,0.55)", borderRadius:"6px", padding:"8px 10px" }}>
-                <span style={{ fontSize:"18px", flexShrink:0 }}>⚾</span>
+                <span style={{ fontSize:"18px", flexShrink:0 }}>{(activeTeam && (activeTeam.sport || "baseball").toLowerCase() === "softball") ? "🥎" : "⚾"}</span>
                 <div>
                   <div style={{ fontSize:"12px", fontWeight:"600", color:C.navy }}>Missing position preferences</div>
                   <div style={{ fontSize:"11px", color:C.textMuted }}>{missingPrefs} player{missingPrefs !== 1 ? "s" : ""} — set in Roster tab</div>
@@ -8312,6 +8322,7 @@ export default function App() {
           grid={grid}
           battingOrder={battingOrder}
           innings={innings}
+          sport={activeTeam ? activeTeam.sport : "baseball"}
           currentBatterIndex={currentBatterIndex}
           initialInning={gameModeInning}
           onSwap={gameModeSwap}
