@@ -1,6 +1,6 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: March 30, 2026 (v1.9.6)
+> Last updated: March 31, 2026 (v1.9.9)
 > MVP launched: March 24, 2026
 
 ---
@@ -48,6 +48,16 @@
 - Export / Import backup (JSON)
 - 10-player field configuration: LC + RC replace CF in outfield; 1 bench slot per inning (schema v2, migration auto-remaps saved CF→LC)
 - First-time coach onboarding modal (5-step in-app walkthrough, localStorage completion tracking, always re-accessible via "Getting Started" button in Roster tab)
+
+### v1.9.9 — March 31, 2026
+- **Game Mode icons**: Baseball bat (GiBaseballBat via react-icons) replaces ⚾ for all batting indicators — BATTING tab, What's Next card label, Start Batting button
+- **Sport-aware fielding icon**: DEFENSE tab, What's Next fielding card + Take the Field button now show GiBaseballGlove for baseball teams and 🥎 for softball teams
+- **App-wide sport awareness**: Game Ball label (Schedule tab) and Needs Attention dashboard card now use ⚾ vs 🥎 based on team sport
+- **What's Next — player sort**: Field players and bench players in the fielding preview card are now sorted alphabetically by first name
+- **Dependency**: react-icons added (GiBaseballBat, GiBaseballGlove from game-icons set)
+
+### v1.9.8 — March 31, 2026
+- **MyPlayer View**: renamed from Parent View; toggle moved to persistent Game Day subtab bar header; always visible across all Game Day subtabs
 
 ### v1.9.7 — March 31, 2026
 - **Now Batting**: 36px bold, gold border, dominant visual treatment (ACCESSIBILITY_V1)

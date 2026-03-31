@@ -69,8 +69,10 @@ export function InningModal({
     var pos = (grid[p.name] || [])[nextInning] || "";
     return { name: p.name, pos: pos };
   }).filter(function(a) { return a.pos !== ""; });
-  var fieldPlayers = nextAssignments.filter(function(a) { return a.pos !== "Bench"; });
-  var benchPlayers = nextAssignments.filter(function(a) { return a.pos === "Bench"; });
+  var fieldPlayers = nextAssignments.filter(function(a) { return a.pos !== "Bench"; })
+    .sort(function(a, b) { return firstName(a.name).localeCompare(firstName(b.name)); });
+  var benchPlayers = nextAssignments.filter(function(a) { return a.pos === "Bench"; })
+    .sort(function(a, b) { return firstName(a.name).localeCompare(firstName(b.name)); });
 
   // ── Focus first confirm button on mount when a11y is on ──────
   useEffect(function() {
