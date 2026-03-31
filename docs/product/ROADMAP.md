@@ -65,8 +65,10 @@
   - Aria labels: advance button (dynamic), defense/batting pill toggles (aria-pressed), modal (role=dialog), Cancel/Confirm buttons
   - Position abbreviation labels: `aria-label="Pitcher"` etc. on defensive position chips
   - Focus management: Confirm button focused on InningModal mount
+  - **Full feature guide**: `docs/features/accessibility-v1.md`
 - **Reduced motion**: `prefers-reduced-motion` media query in global CSS (`src/index.css`) — disables all animations/transitions when OS setting is active
 - `isFlagEnabled(flagName)` utility exported from featureFlags.js with localStorage override support
+- **Test coverage**: `src/tests/accessibility.v1.test.js` — 19 tests across 4 groups (POSITION_LABELS completeness, flag registry, isFlagEnabled defaults, localStorage overrides)
 
 ### v1.9.4 — March 30, 2026
 - **UX**: Home screen — 'View/Update Lineup' button renamed to 'View Lineup'

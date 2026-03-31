@@ -257,11 +257,23 @@ Add `ADMIN_KEY` to backend `.env` and Render environment to protect the recovery
 Tests live in `frontend/src/tests/`. Run with `npm test` from `frontend/`.
 
 - **Framework**: Vitest (configured in `vite.config.js` under the `test` key)
-- **Test file**: `src/tests/engine.v2.test.js` — 5 groups, 11 tests
 - **Fixtures**: `src/tests/fixtures/mockRoster.js`, `mockConfig.js`
 - **Docs**: `src/tests/README.md`
 
-### Rule: any change to `src/utils/lineupEngineV2.js`, `scoringEngine.js`, or `playerMapper.js` must pass `npm test` before commit.
+### Test files
+
+| File | Groups | Tests | Covers |
+|------|--------|-------|--------|
+| `engine.v2.test.js` | 5 | 11 | V2 lineup engine: position assignment, bench, batting order keys, fallback guard, output shape |
+| `accessibility.v1.test.js` | 4 | 19 | POSITION_LABELS shape + engine coverage; FEATURE_FLAGS registry; isFlagEnabled defaults + localStorage overrides |
+
+**Total: 30 tests across 2 files.**
+
+Known failing test: **engine.v2 test 2.3** (7-player roster produces no warning — confirmed bug, fix in separate session).
+
+### Rules
+- Any change to `src/utils/lineupEngineV2.js`, `scoringEngine.js`, or `playerMapper.js` must pass `npm test` before commit.
+- Any change to `src/config/featureFlags.js` or `src/constants/positions.js` must pass `npm test` before commit.
 
 Known failing test: **2.3** (7-player roster produces no warning — confirmed bug, fix in separate session).
 

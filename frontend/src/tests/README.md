@@ -1,6 +1,6 @@
 # Lineup Generator — Test Suite
 
-Engine regression tests for the V2 lineup engine (`src/utils/lineupEngineV2.js`).
+Regression tests for the V2 lineup engine and Accessibility Phase 1 utilities.
 
 ---
 
@@ -13,12 +13,20 @@ npm run test:watch # Watch mode (dev)
 npm run test:ui    # Browser UI (vitest --ui)
 ```
 
-Tests live in `src/tests/engine.v2.test.js`.
+---
+
+## Test Files
+
+| File | What it covers |
+|------|---------------|
+| `engine.v2.test.js` | V2 lineup engine: position assignment, bench correctness, batting order key format, fallback guard, output shape stability |
+| `accessibility.v1.test.js` | Accessibility Phase 1: POSITION_LABELS completeness, isFlagEnabled defaults and localStorage overrides, ACCESSIBILITY_V1 flag registry |
+
 Fixtures live in `src/tests/fixtures/`.
 
 ---
 
-## Test Groups
+## engine.v2.test.js — Groups
 
 | Group | What it covers |
 |-------|---------------|
@@ -30,9 +38,23 @@ Fixtures live in `src/tests/fixtures/`.
 
 ---
 
+## accessibility.v1.test.js — Groups
+
+| Group | What it covers |
+|-------|---------------|
+| **1 — POSITION_LABELS** | Object shape, all values non-empty strings, covers all 11 engine positions (P C 1B 2B 3B SS LF LC RC RF Bench), known label values correct |
+| **2 — FEATURE_FLAGS registry** | ACCESSIBILITY_V1 present and defaults to false; existing flags (USE_NEW_LINEUP_ENGINE, VIEWER_MODE, GAME_MODE) are untouched |
+| **3 — isFlagEnabled defaults** | Returns correct default for each flag; returns false for unknown flag names |
+| **4 — isFlagEnabled localStorage override** | `"true"` activates a default-off flag; `"false"` suppresses a default-on flag; `removeItem` restores default; unrelated keys don't interfere; arbitrary strings (`"1"`, `"yes"`) fall back to default |
+
+**Rule:** any change to `src/config/featureFlags.js` or `src/constants/positions.js`
+must pass `npm test` before commit.
+
+---
+
 ## Known Failing Test (Confirmed Bug)
 
-**Test 2.3** fails intentionally — it documents a confirmed bug:
+**Test 2.3 in engine.v2.test.js** fails intentionally — it documents a confirmed bug:
 
 > With a 7-player roster (fewer than the 10 field positions), the engine assigns players and returns `warnings: []`. Three field positions are silently left unassigned each inning.
 

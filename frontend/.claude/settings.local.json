@@ -43,7 +43,9 @@
       "Bash(curl -s -I https://line-up-generator.vercel.app/)",
       "Bash(curl --max-time 10 -s \"https://line-up-generator.vercel.app/\")",
       "Bash(echo \"EXIT_CODE:$?\")",
-      "Bash(find C:UsersKKUBERANA1Documentslineup-generatorfrontendsrc -name *supabase* -o -name *db*)"
+      "Bash(find C:UsersKKUBERANA1Documentslineup-generatorfrontendsrc -name *supabase* -o -name *db*)",
+      "Bash(grep -A 20 '\"\"test\"\"' vite.config.js)",
+      "Bash(xargs grep:*)"
     ]
   }
 }
