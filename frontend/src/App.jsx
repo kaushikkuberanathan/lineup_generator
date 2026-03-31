@@ -148,9 +148,21 @@ var DEFAULT_ROSTER = [];
 var _mem = {};
 var SCHEMA_VERSION = 2;
 
-var APP_VERSION = "1.9.5";
+var APP_VERSION = "1.9.6";
 
 var VERSION_HISTORY = [
+  {
+    version: "1.9.6",
+    date: "March 30, 2026",
+    changes: [
+      "Support tab: FAQ sub-tab — 6 role-based categories (Head Coach, Dugout Parent, DJ Parent, Catcher Parent, Base Coaches, Setup & Sharing) with accordion Q&A",
+      "Game Mode: inning transition modal now dynamically shows batting order (finished defense) or field positions (finished batting) — gold/green themed",
+      "Game Mode: half-completion gate — both DEFENSE and BATTING halves must be marked done before Next → unlocks; pill shows ✓ on each completed half",
+      "Fix: graceful exit sheet when tapping Home tab or logo while on Team/Game Day — warns if lineup dirty, two actions: Keep Working or Go Home",
+      "Fix: deleted teams no longer restored from Supabase on app reload — localStorage is authoritative when non-empty",
+      "Fix: duplicate Demo All-Stars teams — Try Demo Team hidden when demo exists; guard opens existing instead of creating duplicate",
+    ]
+  },
   {
     version: "1.9.5",
     date: "March 30, 2026",
