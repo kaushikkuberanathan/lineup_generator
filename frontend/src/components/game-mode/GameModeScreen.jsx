@@ -22,7 +22,7 @@
  *   onExit              {function}  close game mode and return to Game Day tab
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { NowBattingBar }  from "../../components/GameDay/NowBattingStrip";
 import { DefenseDiamond } from "../../components/GameDay/DefenseDiamond";
 import { InningModal }    from "./InningModal";
@@ -58,6 +58,27 @@ export function GameModeScreen({
   var halfInning = _half[0]; var setHalfInning = _half[1];
 
   var isLastInning = currentInning >= innings - 1;
+
+  // ── Saved flash — shows 1.5s after every batter advance/back ──────────
+  var _sf = useState(false);
+  var savedFlash = _sf[0]; var setSavedFlash = _sf[1];
+  function flashSaved() {
+    setSavedFlash(true);
+    setTimeout(function() { setSavedFlash(false); }, 1500);
+  }
+
+  // ── Resume banner — shows 3s on re-entry if not at top of order ───────
+  var _atStart = currentBatterIndex === 0 && (initialInning || 0) === 0;
+  var _rb = useState(!_atStart);
+  var showResume = _rb[0]; var setShowResume = _rb[1];
+  useEffect(function() {
+    if (!showResume) return;
+    var t = setTimeout(function() { setShowResume(false); }, 3000);
+    return function() { clearTimeout(t); };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  var lastBatterName = battingOrder.length > 0
+    ? battingOrder[(currentBatterIndex - 1 + battingOrder.length) % battingOrder.length]
+    : null;
 
   function handleTapPosition(pos) {
     setSwapTarget(pos);
@@ -130,8 +151,13 @@ export function GameModeScreen({
         {/* Title */}
         <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", minWidth:0 }}>
           <div style={{ fontSize:"11px", color:"#475569", textTransform:"uppercase",
-            letterSpacing:"0.15em" }}>
+            letterSpacing:"0.15em", display:"flex", alignItems:"center", gap:"6px" }}>
             Game Mode
+            {savedFlash ? (
+              <span style={{ fontSize:"10px", color:"#22c55e", letterSpacing:"0", textTransform:"none" }}>
+                ● Saved
+              </span>
+            ) : null}
           </div>
           <div style={{ fontSize:"18px", fontWeight:"bold", color:"#f5c842", lineHeight:1 }}>
             Inning {currentInning + 1}
@@ -154,6 +180,25 @@ export function GameModeScreen({
           {isLastInning ? "End ⏹" : "Next →"}
         </button>
       </div>
+
+      {/* ── Resume banner ───────────────────────────────────── */}
+      {showResume && lastBatterName ? (
+        <div style={{
+          display:"flex", alignItems:"center", gap:"8px",
+          padding:"6px 16px", flexShrink:0,
+          background:"rgba(245,200,66,0.10)",
+          borderBottom:"1px solid rgba(245,200,66,0.25)",
+        }}>
+          <span style={{ fontSize:"16px" }}>↑</span>
+          <div>
+            <span style={{ fontSize:"11px", fontWeight:"bold", color:"#f5c842",
+              textTransform:"uppercase", letterSpacing:"0.08em" }}>Resumed</span>
+            <span style={{ fontSize:"11px", color:"#94a3b8", marginLeft:"6px" }}>
+              Inning {(initialInning || 0) + 1} · {firstName(lastBatterName)} last at bat
+            </span>
+          </div>
+        </div>
+      ) : null}
 
       {/* ── Half-inning pill ────────────────────────────────── */}
       <div style={{
@@ -263,8 +308,8 @@ export function GameModeScreen({
           battingOrder={battingOrder}
           currentIndex={currentBatterIndex}
           activeInning={currentInning + 1}
-          onAdvance={onBatterAdvance}
-          onBack={onBatterBack}
+          onAdvance={function() { onBatterAdvance(); flashSaved(); }}
+          onBack={function() { onBatterBack(); flashSaved(); }}
           roster={roster}
         />
       </div>
