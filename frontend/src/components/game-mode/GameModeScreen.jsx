@@ -22,7 +22,7 @@
  *   onExit              {function}  close game mode and return to Game Day tab
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { NowBattingBar }  from "../../components/GameDay/NowBattingStrip";
 import { DefenseDiamond } from "../../components/GameDay/DefenseDiamond";
 import { InningModal }    from "./InningModal";
@@ -79,6 +79,53 @@ export function GameModeScreen({
       setBatDone(true);
       if (!defDone) setHalfInning("defense");
     }
+  }
+
+  // ── Orientation hint toast ─────────────────────────────────────────────
+  var _oh = useState({ visible: false, message: '' });
+  var orientationHint = _oh[0]; var setOrientationHint = _oh[1];
+  var hintCooldownRef = useRef({ batting: 0, defense: 0 });
+  var hintDismissTimer = useRef(null);
+  var HINT_COOLDOWN_MS = 10 * 60 * 1000;
+
+  useEffect(function() {
+    var COOLDOWN = HINT_COOLDOWN_MS;
+    function isLandscape() { return window.innerWidth > window.innerHeight; }
+    function now() { return Date.now(); }
+
+    function triggerHint(message) {
+      if (hintDismissTimer.current) clearTimeout(hintDismissTimer.current);
+      setOrientationHint({ visible: true, message: message });
+      hintDismissTimer.current = setTimeout(function() {
+        setOrientationHint({ visible: false, message: '' });
+      }, 3000);
+    }
+
+    function checkAndShowHint() {
+      var onBatting = halfInning === 'batting';
+      var onDefense = halfInning === 'defense';
+      var landscape = isLandscape();
+      var t = hintCooldownRef.current;
+      if (onBatting && !landscape && now() - t.batting > COOLDOWN) {
+        t.batting = now();
+        triggerHint('↺ Rotate to landscape for batting order');
+      } else if (onDefense && landscape && now() - t.defense > COOLDOWN) {
+        t.defense = now();
+        triggerHint('↺ Rotate to portrait for the diamond');
+      }
+    }
+
+    checkAndShowHint();
+    window.addEventListener('resize', checkAndShowHint);
+    return function() {
+      window.removeEventListener('resize', checkAndShowHint);
+      if (hintDismissTimer.current) clearTimeout(hintDismissTimer.current);
+    };
+  }, [halfInning]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function dismissOrientationHint() {
+    if (hintDismissTimer.current) clearTimeout(hintDismissTimer.current);
+    setOrientationHint({ visible: false, message: '' });
   }
 
   // ── Saved flash — shows 1.5s after every batter advance/back ──────────
@@ -148,6 +195,36 @@ export function GameModeScreen({
       fontFamily:"Georgia,'Times New Roman',serif",
       overflow:"hidden",
     }}>
+
+      {/* ── Orientation hint toast ──────────────────────────── */}
+      {orientationHint.visible ? (
+        <div
+          onClick={dismissOrientationHint}
+          style={{
+            position: 'absolute',
+            top: '56px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 2100,
+            backgroundColor: '#d97706',
+            color: '#ffffff',
+            fontSize: '15px',
+            fontWeight: 700,
+            padding: '12px 24px',
+            borderRadius: '999px',
+            whiteSpace: 'nowrap',
+            cursor: 'pointer',
+            boxShadow: '0 4px 18px rgba(0,0,0,0.55)',
+            userSelect: 'none',
+            letterSpacing: '0.02em',
+            border: '2px solid rgba(255,255,255,0.25)',
+            opacity: 1,
+            transition: 'opacity 0.25s ease',
+          }}
+        >
+          {orientationHint.message}
+        </div>
+      ) : null}
 
       {/* ── Top bar ─────────────────────────────────────────── */}
       <div style={{
