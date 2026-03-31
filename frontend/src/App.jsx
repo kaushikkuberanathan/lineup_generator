@@ -155,6 +155,12 @@ var VERSION_HISTORY = [
     version: "1.9.7",
     date: "March 31, 2026",
     changes: [
+      "Accessibility Phase 2 (ACCESSIBILITY_V1): Now Batting dominant — 36px bold, gold border",
+      "Batting queue 3-tier hierarchy: Now Batting 36px / On Deck 22px / In the Hole 17px",
+      "Color-coded tiers: gold → light white → muted gray, distinct at arm's length",
+      "NowBattingStrip: aria-live region announces batter change to screen readers",
+      "InningModal batting preview: font hierarchy matches NowBattingStrip tiers",
+      "Position abbreviation expansion: aria-label with full position name",
       "Home screen: Game Mode button visible on all Ready team cards (roster + schedule set) · shows when lineup generated; 'Generate a lineup to unlock' hint when not yet generated",
     ]
   },

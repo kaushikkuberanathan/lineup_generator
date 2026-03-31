@@ -49,6 +49,13 @@
 - 10-player field configuration: LC + RC replace CF in outfield; 1 bench slot per inning (schema v2, migration auto-remaps saved CF→LC)
 - First-time coach onboarding modal (5-step in-app walkthrough, localStorage completion tracking, always re-accessible via "Getting Started" button in Roster tab)
 
+### v1.9.7 — March 31, 2026
+- **Now Batting**: 36px bold, gold border, dominant visual treatment (ACCESSIBILITY_V1)
+- **Batting queue**: 3-tier size hierarchy — 36px / 22px / 17px, color-coded
+- **Aria-live**: NowBattingStrip announces batter changes silently to screen readers
+- **InningModal**: batting preview font tiers match NowBattingStrip
+- **Position labels**: full name in aria-label throughout game-day view
+
 ### v1.9.6 — March 30, 2026
 - **Support tab**: FAQ sub-tab — 6 role-based categories (Head Coach, Dugout Parent, DJ Parent, Catcher Parent, Base Coaches, Setup & Sharing); 36 real-field Q&As; accordion with category picker; answer panel uses distinct background for readability
 - **Game Mode**: inning transition modal dynamically shows batting order (team just finished defense → now batting) or defensive positions (team just finished batting → now fielding); gold/green color themes per context; batting section shows lead-off, on deck, in hole with L/R badges and dugout cues

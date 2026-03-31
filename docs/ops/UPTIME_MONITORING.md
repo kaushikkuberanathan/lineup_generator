@@ -53,4 +53,5 @@ If a share action is attempted while `slow` or `down`, the share sheet shows:
 
 ## Status
 
-- [ ] UptimeRobot monitor created — **PENDING** (as of v1.7.0)
+- [x] UptimeRobot monitor created — **ACTIVE** (as of 2026-03-31)
+- Status page: https://stats.uptimerobot.com/UwuyX1l0na

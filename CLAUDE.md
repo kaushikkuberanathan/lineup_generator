@@ -331,6 +331,9 @@ All major sections are wrapped with `<ErrorBoundary>` (class component). On cras
 
 ## Version History
 
+### v1.9.7 — March 31, 2026
+Accessibility Phase 2 (ACCESSIBILITY_V1) · NowBattingStrip 3-tier hierarchy · Now Batting 36px gold dominant · On Deck 22px / In the Hole 17px muted · Aria-live batter announcer · InningModal batting preview upgrade · Position label aria-label expansion
+
 ### v1.9.6 — March 30, 2026
 Support: FAQ sub-tab — 6 role-based categories (Head Coach, Dugout Parent, DJ Parent, Catcher Parent, Base Coaches, Setup & Sharing), accordion Q&A · Game Mode: dynamic inning transition modal (batting order after defense, field positions after batting) · Game Mode: half-completion gate — both DEFENSE + BATTING must be marked done before Next → unlocks · Fix: graceful exit sheet on Home/logo tap from Team or Game Day (warns if dirty) · Fix: deleted teams no longer restored from Supabase on hydration · Fix: duplicate Demo All-Stars guard
 

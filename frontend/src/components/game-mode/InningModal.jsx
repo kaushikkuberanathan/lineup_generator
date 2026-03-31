@@ -126,7 +126,7 @@ export function InningModal({
               : "⚔ Take the Field"}
         </div>
         {!isLastInning ? (
-          <div style={{ fontSize:"12px", color: a11y ? "#cbd5e1" : "#64748b", marginTop:"6px" }}>
+          <div style={{ fontSize: a11y ? "14px" : "12px", color: a11y ? "#94a3b8" : "#64748b", marginTop:"6px" }}>
             {nextIsBatting
               ? "Dugout — get " + firstName(leadOff) + " in the box"
               : "Inning " + (nextInning + 1) + " positions are set"}
@@ -154,15 +154,16 @@ export function InningModal({
 
               {/* Lead-off — large */}
               {leadOff ? (
-                <div style={{ padding:"14px 16px", borderRadius:"12px",
+                <div style={{ paddingTop: a11y ? "18px" : "14px", paddingBottom: a11y ? "18px" : "14px",
+                  paddingLeft:"16px", paddingRight:"16px", borderRadius:"12px",
                   background:"rgba(245,200,66,0.12)",
-                  border:"2px solid rgba(245,200,66,0.5)" }}>
+                  border: a11y ? "2px solid rgba(245,200,66,0.6)" : "2px solid rgba(245,200,66,0.5)" }}>
                   <div style={{ fontSize: a11y ? "12px" : "10px", fontWeight:"bold", color:"#f5c842",
                     letterSpacing:"0.15em", textTransform:"uppercase", marginBottom:"4px" }}>
                     Now Batting
                   </div>
                   <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
-                    <div style={{ fontSize:"26px", fontWeight:"bold", color:"#f1f5f9",
+                    <div style={{ fontSize: a11y ? "32px" : "26px", fontWeight:"bold", color:"#f1f5f9",
                       flex:1 }}>
                       {firstName(leadOff)}
                     </div>
@@ -173,7 +174,7 @@ export function InningModal({
                         {getHand(leadOff)}
                       </div>
                     ) : null}
-                    <div style={{ fontSize:"13px", color:"#f5c842", fontWeight:"bold" }}>→ Box</div>
+                    <div style={{ fontSize: a11y ? "14px" : "13px", color:"#f5c842", fontWeight:"bold" }}>→ Box</div>
                   </div>
                 </div>
               ) : null}
@@ -183,12 +184,12 @@ export function InningModal({
                 <div style={{ padding:"10px 14px", borderRadius:"10px",
                   background:"rgba(255,255,255,0.05)",
                   border:"1px solid rgba(255,255,255,0.12)" }}>
-                  <div style={{ fontSize: a11y ? "12px" : "9px", fontWeight:"bold", color:"#94a3b8",
+                  <div style={{ fontSize: a11y ? "11px" : "9px", fontWeight:"bold", color:"#94a3b8",
                     letterSpacing:"0.15em", textTransform:"uppercase", marginBottom:"2px" }}>
                     On Deck
                   </div>
                   <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
-                    <div style={{ fontSize:"18px", fontWeight:"bold", color:"#e2e8f0",
+                    <div style={{ fontSize: a11y ? "20px" : "18px", fontWeight:"bold", color:"#e2e8f0",
                       flex:1 }}>
                       {firstName(onDeck)}
                     </div>
@@ -199,7 +200,7 @@ export function InningModal({
                         {getHand(onDeck)}
                       </div>
                     ) : null}
-                    <div style={{ fontSize:"11px", color: a11y ? "#cbd5e1" : "#64748b" }}>→ On-deck circle</div>
+                    <div style={{ fontSize: a11y ? "12px" : "11px", color: a11y ? "#94a3b8" : "#64748b" }}>→ On-deck circle</div>
                   </div>
                 </div>
               ) : null}
@@ -209,7 +210,7 @@ export function InningModal({
                 <div style={{ padding:"9px 14px", borderRadius:"10px",
                   background:"rgba(255,255,255,0.03)",
                   border:"1px solid rgba(255,255,255,0.07)" }}>
-                  <div style={{ fontSize: a11y ? "12px" : "9px", fontWeight:"bold",
+                  <div style={{ fontSize: a11y ? "11px" : "9px", fontWeight:"bold",
                     color: a11y ? "#e2e8f0" : "#475569",
                     letterSpacing:"0.15em", textTransform:"uppercase", marginBottom:"2px" }}>
                     In the Hole
@@ -226,7 +227,7 @@ export function InningModal({
                         {getHand(inHole)}
                       </div>
                     ) : null}
-                    <div style={{ fontSize:"11px", color: a11y ? "#94a3b8" : "#334155" }}>→ Gear up</div>
+                    <div style={{ fontSize:"11px", color: a11y ? "#64748b" : "#334155" }}>→ Gear up</div>
                   </div>
                 </div>
               ) : null}
