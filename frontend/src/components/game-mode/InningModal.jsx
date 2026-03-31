@@ -1,8 +1,8 @@
 /**
  * InningModal
  * Full-screen overlay confirming the transition from one inning to the next.
- * Dynamically shows either the batting order (if team just finished fielding)
- * or the defensive positions (if team just finished batting), based on halfInning.
+ * Shows both batting order and defensive positions so the coach can choose
+ * which half to start next.
  *
  * Props:
  *   currentInning        {number}    0-based current inning
@@ -12,7 +12,7 @@
  *   halfInning           {string}    "defense" | "batting" — what the team just finished
  *   battingOrder         {string[]}  ordered player names
  *   currentBatterIndex   {number}    0-based index of current lead-off batter
- *   onConfirm            {function}  called when coach confirms the inning advance
+ *   onConfirm            {function}  called with nextHalf ("batting"|"defense") when coach confirms
  *   onCancel             {function}  called when coach cancels
  */
 
@@ -41,11 +41,6 @@ export function InningModal({
   var nextInning = currentInning + 1;  // 0-based
   var isLastInning = currentInning >= totalInnings - 1;
 
-  // What comes NEXT:
-  //   just finished "defense" → team now BATS → show batting order
-  //   just finished "batting" → team now FIELDS → show defensive positions
-  var nextIsBatting = (halfInning === "defense");
-
   // ── Batting order helpers ─────────────────────────────────────
   function getHand(name) {
     var p = (roster || []).find(function(r) { return r.name === name; });
@@ -71,29 +66,12 @@ export function InningModal({
   var fieldPlayers = nextAssignments.filter(function(a) { return a.pos !== "Bench"; });
   var benchPlayers = nextAssignments.filter(function(a) { return a.pos === "Bench"; });
 
-  // ── Theme colors ──────────────────────────────────────────────
-  var accentColor  = nextIsBatting ? "#f5c842" : "#4ade80";
-  var headerBg     = nextIsBatting
-    ? "linear-gradient(180deg,#1a1100,#0b0d00)"
-    : "linear-gradient(180deg,#001a0d,#0b1524)";
-  var confirmBg    = nextIsBatting ? "#f5c842" : "#4ade80";
-  var confirmColor = "#0f1f3d";
-
-  // ── Focus confirm button on mount when a11y is on ────────────
+  // ── Focus first confirm button on mount when a11y is on ──────
   useEffect(function() {
     if (!a11y) return;
     var confirmBtn = document.querySelector('[data-inning-confirm]');
     if (confirmBtn) confirmBtn.focus();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // ── Confirm button aria-label (dynamic) ──────────────────────
-  var confirmAriaLabel = a11y
-    ? (isLastInning
-        ? "Exit game mode"
-        : nextIsBatting
-          ? "Start batting for inning " + (nextInning + 1)
-          : "Take the field for inning " + (nextInning + 1))
-    : undefined;
 
   // ── Modal aria-label (dynamic) ───────────────────────────────
   var modalAriaLabel = a11y
@@ -112,24 +90,18 @@ export function InningModal({
 
       {/* ── Header ────────────────────────────────────────────── */}
       <div style={{ padding:"20px 20px 16px", textAlign:"center",
-        background: headerBg,
+        background:"linear-gradient(180deg,#0f1a2e,#0b1524)",
         borderBottom:"1px solid rgba(255,255,255,0.08)" }}>
         <div style={{ fontSize: a11y ? "12px" : "11px", color: a11y ? "#cbd5e1" : "#64748b",
           textTransform:"uppercase", letterSpacing:"0.15em", marginBottom:"6px" }}>
           {isLastInning ? "Final Inning" : "Inning " + (currentInning + 1) + " Complete"}
         </div>
-        <div style={{ fontSize:"26px", fontWeight:"bold", color: accentColor, lineHeight:1.2 }}>
-          {isLastInning
-            ? "End of Game"
-            : nextIsBatting
-              ? "⚾ Your Half — Batting"
-              : "⚔ Take the Field"}
+        <div style={{ fontSize:"26px", fontWeight:"bold", color:"#f1f5f9", lineHeight:1.2 }}>
+          {isLastInning ? "End of Game" : "What's Next?"}
         </div>
         {!isLastInning ? (
           <div style={{ fontSize: a11y ? "14px" : "12px", color: a11y ? "#94a3b8" : "#64748b", marginTop:"6px" }}>
-            {nextIsBatting
-              ? "Dugout — get " + firstName(leadOff) + " in the box"
-              : "Inning " + (nextInning + 1) + " positions are set"}
+            Choose which half to start
           </div>
         ) : null}
       </div>
@@ -146,196 +118,182 @@ export function InningModal({
             </div>
           </div>
 
-        /* ── Batting order view ── */
-        ) : nextIsBatting ? (
-          <>
-            {/* Top 3 batters */}
-            <div style={{ display:"flex", flexDirection:"column", gap:"8px", marginBottom:"16px" }}>
+        /* ── Both halves preview ── */
+        ) : (
+          <div style={{ display:"flex", flexDirection:"column", gap:"12px" }}>
 
-              {/* Lead-off — large */}
-              {leadOff ? (
-                <div style={{ paddingTop: a11y ? "18px" : "14px", paddingBottom: a11y ? "18px" : "14px",
-                  paddingLeft:"16px", paddingRight:"16px", borderRadius:"12px",
-                  background:"rgba(245,200,66,0.12)",
-                  border: a11y ? "2px solid rgba(245,200,66,0.6)" : "2px solid rgba(245,200,66,0.5)" }}>
-                  <div style={{ fontSize: a11y ? "12px" : "10px", fontWeight:"bold", color:"#f5c842",
-                    letterSpacing:"0.15em", textTransform:"uppercase", marginBottom:"4px" }}>
-                    Now Batting
-                  </div>
-                  <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
-                    <div style={{ fontSize: a11y ? "32px" : "26px", fontWeight:"bold", color:"#f1f5f9",
-                      flex:1 }}>
+            {/* ── Batting preview card ── */}
+            <div style={{ borderRadius:"12px", overflow:"hidden",
+              border:"1px solid rgba(245,200,66,0.25)",
+              background:"rgba(245,200,66,0.05)" }}>
+              <div style={{ padding:"8px 14px",
+                background:"rgba(245,200,66,0.12)",
+                borderBottom:"1px solid rgba(245,200,66,0.15)",
+                fontSize: a11y ? "12px" : "10px", fontWeight:"bold", color:"#f5c842",
+                letterSpacing:"0.15em", textTransform:"uppercase" }}>
+                ⚾ Batting Order
+              </div>
+              <div style={{ padding:"10px 14px", display:"flex", flexDirection:"column", gap:"6px" }}>
+                {leadOff ? (
+                  <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
+                    <div style={{ fontSize: a11y ? "11px" : "9px", color:"#f5c842",
+                      textTransform:"uppercase", letterSpacing:"0.1em", minWidth:"60px" }}>Now Batting</div>
+                    <div style={{ fontSize: a11y ? "18px" : "16px", fontWeight:"bold", color:"#f1f5f9", flex:1 }}>
                       {firstName(leadOff)}
                     </div>
                     {getHand(leadOff) !== "U" ? (
-                      <div style={{ fontSize:"11px", fontWeight:"bold", padding:"3px 8px",
-                        borderRadius:"6px", background:"rgba(245,200,66,0.25)",
-                        color:"#f5c842", letterSpacing:"0.05em" }}>
+                      <div style={{ fontSize:"10px", fontWeight:"bold", padding:"2px 7px",
+                        borderRadius:"5px", background:"rgba(245,200,66,0.2)", color:"#f5c842" }}>
                         {getHand(leadOff)}
                       </div>
                     ) : null}
-                    <div style={{ fontSize: a11y ? "14px" : "13px", color:"#f5c842", fontWeight:"bold" }}>→ Box</div>
                   </div>
-                </div>
-              ) : null}
-
-              {/* On deck */}
-              {onDeck ? (
-                <div style={{ padding:"10px 14px", borderRadius:"10px",
-                  background:"rgba(255,255,255,0.05)",
-                  border:"1px solid rgba(255,255,255,0.12)" }}>
-                  <div style={{ fontSize: a11y ? "11px" : "9px", fontWeight:"bold", color:"#94a3b8",
-                    letterSpacing:"0.15em", textTransform:"uppercase", marginBottom:"2px" }}>
-                    On Deck
-                  </div>
+                ) : null}
+                {onDeck ? (
                   <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
-                    <div style={{ fontSize: a11y ? "20px" : "18px", fontWeight:"bold", color:"#e2e8f0",
-                      flex:1 }}>
+                    <div style={{ fontSize: a11y ? "11px" : "9px", color:"#64748b",
+                      textTransform:"uppercase", letterSpacing:"0.1em", minWidth:"60px" }}>On Deck</div>
+                    <div style={{ fontSize: a11y ? "15px" : "13px", fontWeight:"bold", color:"#94a3b8", flex:1 }}>
                       {firstName(onDeck)}
                     </div>
                     {getHand(onDeck) !== "U" ? (
                       <div style={{ fontSize:"10px", fontWeight:"bold", padding:"2px 7px",
-                        borderRadius:"5px", background:"rgba(255,255,255,0.1)",
-                        color:"#94a3b8" }}>
+                        borderRadius:"5px", background:"rgba(255,255,255,0.08)", color:"#64748b" }}>
                         {getHand(onDeck)}
                       </div>
                     ) : null}
-                    <div style={{ fontSize: a11y ? "12px" : "11px", color: a11y ? "#94a3b8" : "#64748b" }}>→ On-deck circle</div>
                   </div>
-                </div>
-              ) : null}
-
-              {/* In the hole */}
-              {inHole ? (
-                <div style={{ padding:"9px 14px", borderRadius:"10px",
-                  background:"rgba(255,255,255,0.03)",
-                  border:"1px solid rgba(255,255,255,0.07)" }}>
-                  <div style={{ fontSize: a11y ? "11px" : "9px", fontWeight:"bold",
-                    color: a11y ? "#e2e8f0" : "#475569",
-                    letterSpacing:"0.15em", textTransform:"uppercase", marginBottom:"2px" }}>
-                    In the Hole
-                  </div>
+                ) : null}
+                {inHole ? (
                   <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
-                    <div style={{ fontSize:"16px", fontWeight:"bold", color:"#94a3b8",
-                      flex:1 }}>
+                    <div style={{ fontSize: a11y ? "11px" : "9px", color:"#475569",
+                      textTransform:"uppercase", letterSpacing:"0.1em", minWidth:"60px" }}>In Hole</div>
+                    <div style={{ fontSize: a11y ? "14px" : "12px", color:"#64748b", flex:1 }}>
                       {firstName(inHole)}
                     </div>
-                    {getHand(inHole) !== "U" ? (
-                      <div style={{ fontSize:"10px", fontWeight:"bold", padding:"2px 7px",
-                        borderRadius:"5px", background:"rgba(255,255,255,0.06)",
-                        color: a11y ? "#e2e8f0" : "#475569" }}>
-                        {getHand(inHole)}
-                      </div>
-                    ) : null}
-                    <div style={{ fontSize:"11px", color: a11y ? "#64748b" : "#334155" }}>→ Gear up</div>
                   </div>
-                </div>
-              ) : null}
-            </div>
-
-            {/* Rest of the order */}
-            {restBatters.length > 0 ? (
-              <>
-                <div style={{ fontSize: a11y ? "12px" : "9px",
-                  color: a11y ? "#e2e8f0" : "#475569", textTransform:"uppercase",
-                  letterSpacing:"0.12em", marginBottom:"6px" }}>
-                  Batting order continues
-                </div>
-                <div style={{ display:"flex", flexWrap:"wrap", gap:"6px" }}>
-                  {restBatters.map(function(name, i) {
-                    return (
-                      <div key={name} style={{ padding:"4px 10px", borderRadius:"14px",
-                        background:"rgba(255,255,255,0.04)",
-                        border:"1px solid rgba(255,255,255,0.07)",
-                        fontSize:"12px", color: a11y ? "#e2e8f0" : "#475569" }}>
-                        {leadIdx + 4 + i}. {firstName(name)}
-                      </div>
-                    );
-                  })}
-                </div>
-              </>
-            ) : null}
-          </>
-
-        /* ── Defensive positions view ── */
-        ) : (
-          <>
-            <div style={{ fontSize: a11y ? "12px" : "10px", color:"#4ade80",
-              textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:"10px" }}>
-              Inning {nextInning + 1} Positions
-            </div>
-            <div style={{ display:"flex", flexDirection:"column", gap:"6px" }}>
-              {fieldPlayers.map(function(a) {
-                var pc = POS_COLORS[a.pos] || "#555";
-                return (
-                  <div key={a.name} style={{ display:"flex", alignItems:"center", gap:"12px",
-                    padding:"9px 12px", borderRadius:"8px",
-                    background:"rgba(255,255,255,0.05)",
-                    borderLeft:"3px solid " + pc }}>
-                    <div
-                      aria-label={a11y ? (POSITION_LABELS[a.pos] || a.pos) : undefined}
-                      style={{ fontSize:"11px", fontWeight:"bold", color:pc,
-                        minWidth:"28px", textAlign:"right" }}>{a.pos}</div>
-                    <div style={{ fontSize:"17px", fontWeight:"bold", color:"#e2e8f0" }}>
-                      {firstName(a.name)}
-                    </div>
+                ) : null}
+                {restBatters.length > 0 ? (
+                  <div style={{ display:"flex", flexWrap:"wrap", gap:"4px", paddingTop:"4px",
+                    borderTop:"1px solid rgba(255,255,255,0.06)" }}>
+                    {restBatters.map(function(name, i) {
+                      return (
+                        <div key={name} style={{ padding:"2px 8px", borderRadius:"10px",
+                          background:"rgba(255,255,255,0.04)",
+                          fontSize: a11y ? "12px" : "11px", color: a11y ? "#94a3b8" : "#475569" }}>
+                          {leadIdx + 4 + i}. {firstName(name)}
+                        </div>
+                      );
+                    })}
                   </div>
-                );
-              })}
-            </div>
-            {benchPlayers.length > 0 ? (
-              <div style={{ marginTop:"14px" }}>
-                <div style={{ fontSize: a11y ? "12px" : "10px",
-                  color: a11y ? "#e2e8f0" : "#475569", textTransform:"uppercase",
-                  letterSpacing:"0.12em", marginBottom:"8px" }}>Bench</div>
-                <div style={{ display:"flex", flexWrap:"wrap", gap:"8px" }}>
-                  {benchPlayers.map(function(a) {
-                    return (
-                      <div key={a.name} style={{ padding:"5px 12px", borderRadius:"16px",
-                        background:"rgba(255,255,255,0.06)",
-                        border:"1px solid rgba(255,255,255,0.1)",
-                        fontSize:"13px", color: a11y ? "#cbd5e1" : "#64748b" }}>
-                        {firstName(a.name)}
-                      </div>
-                    );
-                  })}
-                </div>
+                ) : null}
               </div>
-            ) : null}
-          </>
+            </div>
+
+            {/* ── Defense preview card ── */}
+            <div style={{ borderRadius:"12px", overflow:"hidden",
+              border:"1px solid rgba(74,222,128,0.25)",
+              background:"rgba(74,222,128,0.04)" }}>
+              <div style={{ padding:"8px 14px",
+                background:"rgba(74,222,128,0.10)",
+                borderBottom:"1px solid rgba(74,222,128,0.15)",
+                fontSize: a11y ? "12px" : "10px", fontWeight:"bold", color:"#4ade80",
+                letterSpacing:"0.15em", textTransform:"uppercase" }}>
+                ⚔ Inning {nextInning + 1} Positions
+              </div>
+              <div style={{ padding:"10px 14px" }}>
+                <div style={{ display:"flex", flexDirection:"column", gap:"5px" }}>
+                  {fieldPlayers.map(function(a) {
+                    var pc = POS_COLORS[a.pos] || "#555";
+                    return (
+                      <div key={a.name} style={{ display:"flex", alignItems:"center", gap:"10px",
+                        padding:"6px 10px", borderRadius:"7px",
+                        background:"rgba(255,255,255,0.04)",
+                        borderLeft:"3px solid " + pc }}>
+                        <div
+                          aria-label={a11y ? (POSITION_LABELS[a.pos] || a.pos) : undefined}
+                          style={{ fontSize:"10px", fontWeight:"bold", color:pc,
+                            minWidth:"24px", textAlign:"right" }}>{a.pos}</div>
+                        <div style={{ fontSize: a11y ? "15px" : "14px", fontWeight:"bold", color:"#e2e8f0" }}>
+                          {firstName(a.name)}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                {benchPlayers.length > 0 ? (
+                  <div style={{ marginTop:"10px", display:"flex", flexWrap:"wrap", gap:"6px",
+                    paddingTop:"8px", borderTop:"1px solid rgba(255,255,255,0.06)" }}>
+                    <div style={{ fontSize: a11y ? "11px" : "9px", color: a11y ? "#94a3b8" : "#475569",
+                      textTransform:"uppercase", letterSpacing:"0.1em", width:"100%",
+                      marginBottom:"2px" }}>Bench</div>
+                    {benchPlayers.map(function(a) {
+                      return (
+                        <div key={a.name} style={{ padding:"3px 10px", borderRadius:"12px",
+                          background:"rgba(255,255,255,0.05)",
+                          border:"1px solid rgba(255,255,255,0.08)",
+                          fontSize:"12px", color: a11y ? "#94a3b8" : "#64748b" }}>
+                          {firstName(a.name)}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : null}
+              </div>
+            </div>
+
+          </div>
         )}
       </div>
 
       {/* ── Action buttons ────────────────────────────────────── */}
-      <div style={{ display:"flex", gap:"12px", padding:"16px 20px",
+      <div style={{ display:"flex", flexDirection:"column", gap:"8px", padding:"16px 20px",
         paddingBottom:"max(16px, env(safe-area-inset-bottom, 16px))",
         borderTop:"1px solid rgba(255,255,255,0.08)" }}>
+
+        {isLastInning ? (
+          <button
+            onClick={function() { onConfirm(null); }}
+            data-inning-confirm
+            aria-label={a11y ? "Exit game mode" : undefined}
+            style={{ padding:"14px", borderRadius:"10px", minHeight:44,
+              background:"#334155", border:"none",
+              color:"#94a3b8", fontSize:"15px", fontWeight:"bold", cursor:"pointer",
+              fontFamily:"Georgia,serif" }}>
+            Exit Game Mode
+          </button>
+        ) : (
+          <>
+            <button
+              onClick={function() { onConfirm("batting"); }}
+              data-inning-confirm
+              aria-label={a11y ? "Start batting for inning " + (nextInning + 1) : undefined}
+              style={{ padding:"14px", borderRadius:"10px", minHeight:44,
+                background:"#f5c842", border:"none",
+                color:"#0f1f3d", fontSize:"15px", fontWeight:"bold", cursor:"pointer",
+                fontFamily:"Georgia,serif" }}>
+              ⚾ Start Batting — Inning {nextInning + 1}
+            </button>
+            <button
+              onClick={function() { onConfirm("defense"); }}
+              aria-label={a11y ? "Take the field for inning " + (nextInning + 1) : undefined}
+              style={{ padding:"14px", borderRadius:"10px", minHeight:44,
+                background:"#4ade80", border:"none",
+                color:"#0f1f3d", fontSize:"15px", fontWeight:"bold", cursor:"pointer",
+                fontFamily:"Georgia,serif" }}>
+              ⚔ Take the Field — Inning {nextInning + 1}
+            </button>
+          </>
+        )}
+
         <button
           onClick={onCancel}
           aria-label={a11y ? "Cancel inning advance" : undefined}
-          style={{ flex:1, padding:"14px", borderRadius:"10px",
-            minHeight: 44,
+          style={{ padding:"12px", borderRadius:"10px", minHeight:44,
             background:"transparent", border:"1px solid rgba(255,255,255,0.15)",
-            color:"#94a3b8", fontSize:"15px", cursor:"pointer",
+            color:"#94a3b8", fontSize:"14px", cursor:"pointer",
             fontFamily:"Georgia,serif" }}>
           Cancel
-        </button>
-        <button
-          onClick={onConfirm}
-          data-inning-confirm
-          aria-label={confirmAriaLabel}
-          style={{ flex:2, padding:"14px", borderRadius:"10px",
-            minHeight: 44,
-            background: isLastInning ? "#334155" : confirmBg,
-            border:"none",
-            color: isLastInning ? "#94a3b8" : confirmColor,
-            fontSize:"15px", fontWeight:"bold", cursor:"pointer",
-            fontFamily:"Georgia,serif" }}>
-          {isLastInning
-            ? "Exit Game Mode"
-            : nextIsBatting
-              ? "⚾ Start Batting — Inning " + (nextInning + 1)
-              : "⚔ Take the Field — Inning " + (nextInning + 1)}
         </button>
       </div>
     </div>

@@ -160,10 +160,10 @@ export function GameModeScreen({
     setSwapTarget(null);
   }
 
-  function handleInningConfirm() {
+  function handleInningConfirm(nextHalf) {
     setInningModalOpen(false);
     if (isLastInning) { onExit(); return; }
-    setHalfInning("defense");
+    setHalfInning(nextHalf || "defense");
     setDefDone(false);
     setBatDone(false);
     // On deck becomes Now Batting for the next inning
