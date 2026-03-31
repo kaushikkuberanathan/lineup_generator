@@ -319,6 +319,9 @@ All major sections are wrapped with `<ErrorBoundary>` (class component). On cras
 
 ## Version History
 
+### v1.9.1 — March 30, 2026
+Game Mode bench: players stacked in infield box, batting hand badges on bench cards, duplicate strip removed · Now Batting/On Deck/In Hole: batting hand L/R badge inline · Schedule: Snack Note → Game Ball picker (⚾); also on Snacks tab · Snacks tab: Note field removed · Team/Roster: player count bar removed (redundant) · Fix: normalizeBattingHand import on Add Player · Onboarding: Step 4 + 7 updated to Team tab
+
 ### v1.9.0 — March 30, 2026
 Batting Hand — optional player attribute (L/R/U); normalizeBattingHand util; BattingHandSelector toggle in Add Player + player card; PlayerHandBadge inline badge in roster list, batting order editor, Now Batting/On Deck/In Hole strips; migration 005 backfills existing roster
 
