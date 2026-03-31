@@ -319,6 +319,12 @@ All major sections are wrapped with `<ErrorBoundary>` (class component). On cras
 
 ## Version History
 
+### v1.9.5 — March 30, 2026
+Accessibility Phase 1 (ACCESSIBILITY_V1 flag): font floor 12–14px in Game Mode overlays · touch targets ≥44px on advance/pill buttons · contrast uplift (#475569→#e2e8f0 etc.) in InningModal · aria labels on all Game Mode buttons and modal · position abbreviation labels · prefers-reduced-motion CSS global · isFlagEnabled() utility in featureFlags.js
+
+### v1.9.4 — March 30, 2026
+UX: Home screen — 'View/Update Lineup' button renamed to 'View Lineup'
+
 ### v1.9.3 — March 30, 2026
 Create Team form: labels darker + bolder, field text larger and near-black, borders more visible, placeholder shows example team name
 

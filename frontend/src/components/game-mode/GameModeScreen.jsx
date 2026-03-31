@@ -27,6 +27,8 @@ import { NowBattingBar }  from "../../components/GameDay/NowBattingStrip";
 import { DefenseDiamond } from "../../components/GameDay/DefenseDiamond";
 import { InningModal }    from "./InningModal";
 import { QuickSwap }      from "./QuickSwap";
+import { isFlagEnabled }  from "../../config/featureFlags";
+import { POSITION_LABELS } from "../../constants/positions";
 
 function firstName(name) {
   if (!name) return name;
@@ -40,6 +42,8 @@ export function GameModeScreen({
   onInningChange, onBatterReset,
   onExit
 }) {
+  var a11y = isFlagEnabled('ACCESSIBILITY_V1');
+
   var _inn = useState(initialInning || 0);
   var currentInning = _inn[0]; var setCurrentInning = _inn[1];
 
@@ -127,6 +131,15 @@ export function GameModeScreen({
     }, 200);
   }
 
+  // ── Advance button aria-label (dynamic) ──────────────────────────────
+  var advanceAriaLabel = a11y
+    ? (bothHalvesDone
+        ? (isLastInning ? "End game" : "Advance to inning " + (currentInning + 2))
+        : (halfInning === "defense"
+            ? "Mark defense complete for inning " + (currentInning + 1)
+            : "Mark batting complete for inning " + (currentInning + 1)))
+    : undefined;
+
   return (
     <div style={{
       position:"fixed", inset:0, zIndex:2000,
@@ -170,7 +183,7 @@ export function GameModeScreen({
 
         {/* Title */}
         <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", minWidth:0 }}>
-          <div style={{ fontSize:"11px", color:"#475569", textTransform:"uppercase",
+          <div style={{ fontSize: a11y ? "13px" : "11px", color:"#475569", textTransform:"uppercase",
             letterSpacing:"0.15em", display:"flex", alignItems:"center", gap:"6px" }}>
             Game Mode
             {savedFlash ? (
@@ -181,7 +194,7 @@ export function GameModeScreen({
           </div>
           <div style={{ fontSize:"18px", fontWeight:"bold", color:"#f5c842", lineHeight:1 }}>
             Inning {currentInning + 1}
-            <span style={{ fontSize:"11px", color:"#475569", fontWeight:"normal",
+            <span style={{ fontSize: a11y ? "13px" : "11px", color:"#475569", fontWeight:"normal",
               marginLeft:"4px" }}>
               of {innings}
             </span>
@@ -194,7 +207,11 @@ export function GameModeScreen({
             if (bothHalvesDone) { setInningModalOpen(true); }
             else { handleEndHalf(); }
           }}
-          style={{ padding:"8px 14px", borderRadius:"8px",
+          aria-label={advanceAriaLabel}
+          style={{
+            padding: a11y ? "13px 16px" : "8px 14px",
+            minHeight: a11y ? 44 : undefined,
+            borderRadius:"8px",
             background: bothHalvesDone
               ? (isLastInning ? "rgba(255,255,255,0.06)" : "#f5c842")
               : "rgba(245,200,66,0.18)",
@@ -202,7 +219,7 @@ export function GameModeScreen({
             color: bothHalvesDone
               ? (isLastInning ? "#475569" : "#0f1f3d")
               : "#f5c842",
-            cursor:"pointer", fontSize:"12px", fontWeight:"bold",
+            cursor:"pointer", fontSize: a11y ? "14px" : "12px", fontWeight:"bold",
             fontFamily:"Georgia,serif", flexShrink:0, textAlign:"center",
             lineHeight:1.2 }}>
           {bothHalvesDone
@@ -243,35 +260,45 @@ export function GameModeScreen({
           border:"1px solid rgba(255,255,255,0.12)",
           overflow:"hidden",
         }}>
-          <button
-            onClick={function() { setHalfInning("defense"); }}
-            style={{
-              padding:"6px 18px",
-              border:"none", cursor:"pointer",
-              fontSize:"11px", fontWeight:"bold", letterSpacing:"0.1em",
-              fontFamily:"Georgia,serif",
-              background: halfInning === "defense" ? "#0f1f3d" : "transparent",
-              color: defDone ? "#22c55e" : (halfInning === "defense" ? "#f5c842" : "#475569"),
-              transition:"background 150ms, color 150ms",
-            }}>
-            {defDone ? "✓" : "⚔"} DEFENSE
-          </button>
+          {/* Defense pill — wrapper gives touch target, pill stays visually compact */}
+          <div style={ a11y ? { display:"flex", alignItems:"center", minHeight:44 } : {} }>
+            <button
+              onClick={function() { setHalfInning("defense"); }}
+              aria-label={a11y ? (defDone ? "Defense complete" : "Switch to defense view") : undefined}
+              aria-pressed={a11y ? halfInning === "defense" : undefined}
+              style={{
+                padding:"6px 18px",
+                border:"none", cursor:"pointer",
+                fontSize: a11y ? "13px" : "11px", fontWeight:"bold", letterSpacing:"0.1em",
+                fontFamily:"Georgia,serif",
+                background: halfInning === "defense" ? "#0f1f3d" : "transparent",
+                color: defDone ? "#22c55e" : (halfInning === "defense" ? "#f5c842" : "#475569"),
+                transition:"background 150ms, color 150ms",
+              }}>
+              {defDone ? "✓" : "⚔"} DEFENSE
+            </button>
+          </div>
           <div style={{ width:"1px", background:"rgba(255,255,255,0.12)", flexShrink:0 }} />
-          <button
-            onClick={function() { setHalfInning("batting"); }}
-            style={{
-              padding:"6px 18px",
-              border:"none", cursor:"pointer",
-              fontSize:"11px", fontWeight:"bold", letterSpacing:"0.1em",
-              fontFamily:"Georgia,serif",
-              background: halfInning === "batting" ? "#f5c842" : "transparent",
-              color: batDone
-                ? (halfInning === "batting" ? "#0f1f3d" : "#22c55e")
-                : (halfInning === "batting" ? "#0f1f3d" : "#475569"),
-              transition:"background 150ms, color 150ms",
-            }}>
-            {batDone ? "✓" : "⚾"} BATTING
-          </button>
+          {/* Batting pill */}
+          <div style={ a11y ? { display:"flex", alignItems:"center", minHeight:44 } : {} }>
+            <button
+              onClick={function() { setHalfInning("batting"); }}
+              aria-label={a11y ? (batDone ? "Batting complete" : "Switch to batting view") : undefined}
+              aria-pressed={a11y ? halfInning === "batting" : undefined}
+              style={{
+                padding:"6px 18px",
+                border:"none", cursor:"pointer",
+                fontSize: a11y ? "13px" : "11px", fontWeight:"bold", letterSpacing:"0.1em",
+                fontFamily:"Georgia,serif",
+                background: halfInning === "batting" ? "#f5c842" : "transparent",
+                color: batDone
+                  ? (halfInning === "batting" ? "#0f1f3d" : "#22c55e")
+                  : (halfInning === "batting" ? "#0f1f3d" : "#475569"),
+                transition:"background 150ms, color 150ms",
+              }}>
+              {batDone ? "✓" : "⚾"} BATTING
+            </button>
+          </div>
         </div>
       </div>
 
@@ -330,7 +357,7 @@ export function GameModeScreen({
         {halfInning === "defense" ? (
           <div style={{
             textAlign:"center", padding:"4px 0 0",
-            fontSize:"9px", fontWeight:"bold", color:"#475569",
+            fontSize: a11y ? "12px" : "9px", fontWeight:"bold", color:"#475569",
             letterSpacing:"0.15em", textTransform:"uppercase",
           }}>
             BATTING NEXT

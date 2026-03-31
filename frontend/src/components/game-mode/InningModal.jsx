@@ -16,6 +16,10 @@
  *   onCancel             {function}  called when coach cancels
  */
 
+import { useEffect } from "react";
+import { isFlagEnabled } from "../../config/featureFlags";
+import { POSITION_LABELS } from "../../constants/positions";
+
 var POS_COLORS = {
   P:"#e05c2a", C:"#7f3f3f", "1B":"#2471a3", "2B":"#2980b9",
   "3B":"#6c3483", SS:"#8e44ad", LF:"#1e8449", LC:"#27ae60",
@@ -32,6 +36,8 @@ export function InningModal({
   halfInning, battingOrder, currentBatterIndex,
   onConfirm, onCancel
 }) {
+  var a11y = isFlagEnabled('ACCESSIBILITY_V1');
+
   var nextInning = currentInning + 1;  // 0-based
   var isLastInning = currentInning >= totalInnings - 1;
 
@@ -73,18 +79,43 @@ export function InningModal({
   var confirmBg    = nextIsBatting ? "#f5c842" : "#4ade80";
   var confirmColor = "#0f1f3d";
 
+  // ── Focus confirm button on mount when a11y is on ────────────
+  useEffect(function() {
+    if (!a11y) return;
+    var confirmBtn = document.querySelector('[data-inning-confirm]');
+    if (confirmBtn) confirmBtn.focus();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Confirm button aria-label (dynamic) ──────────────────────
+  var confirmAriaLabel = a11y
+    ? (isLastInning
+        ? "Exit game mode"
+        : nextIsBatting
+          ? "Start batting for inning " + (nextInning + 1)
+          : "Take the field for inning " + (nextInning + 1))
+    : undefined;
+
+  // ── Modal aria-label (dynamic) ───────────────────────────────
+  var modalAriaLabel = a11y
+    ? (isLastInning ? "Game complete" : "Inning " + (currentInning + 1) + " complete")
+    : undefined;
+
   return (
-    <div style={{ position:"fixed", inset:0, zIndex:3000,
-      background:"rgba(5,10,25,0.97)",
-      display:"flex", flexDirection:"column",
-      fontFamily:"Georgia,'Times New Roman',serif" }}>
+    <div
+      role={a11y ? "dialog" : undefined}
+      aria-modal={a11y ? "true" : undefined}
+      aria-label={modalAriaLabel}
+      style={{ position:"fixed", inset:0, zIndex:3000,
+        background:"rgba(5,10,25,0.97)",
+        display:"flex", flexDirection:"column",
+        fontFamily:"Georgia,'Times New Roman',serif" }}>
 
       {/* ── Header ────────────────────────────────────────────── */}
       <div style={{ padding:"20px 20px 16px", textAlign:"center",
         background: headerBg,
         borderBottom:"1px solid rgba(255,255,255,0.08)" }}>
-        <div style={{ fontSize:"11px", color:"#64748b", textTransform:"uppercase",
-          letterSpacing:"0.15em", marginBottom:"6px" }}>
+        <div style={{ fontSize: a11y ? "12px" : "11px", color: a11y ? "#cbd5e1" : "#64748b",
+          textTransform:"uppercase", letterSpacing:"0.15em", marginBottom:"6px" }}>
           {isLastInning ? "Final Inning" : "Inning " + (currentInning + 1) + " Complete"}
         </div>
         <div style={{ fontSize:"26px", fontWeight:"bold", color: accentColor, lineHeight:1.2 }}>
@@ -95,7 +126,7 @@ export function InningModal({
               : "⚔ Take the Field"}
         </div>
         {!isLastInning ? (
-          <div style={{ fontSize:"12px", color:"#64748b", marginTop:"6px" }}>
+          <div style={{ fontSize:"12px", color: a11y ? "#cbd5e1" : "#64748b", marginTop:"6px" }}>
             {nextIsBatting
               ? "Dugout — get " + firstName(leadOff) + " in the box"
               : "Inning " + (nextInning + 1) + " positions are set"}
@@ -108,7 +139,7 @@ export function InningModal({
 
         {/* ── Last inning / end of game ── */}
         {isLastInning ? (
-          <div style={{ textAlign:"center", padding:"40px 0", color:"#475569" }}>
+          <div style={{ textAlign:"center", padding:"40px 0", color: a11y ? "#e2e8f0" : "#475569" }}>
             <div style={{ fontSize:"32px", marginBottom:"12px" }}>⚾</div>
             <div style={{ fontSize:"16px" }}>
               Game complete. Return to the lineup to unlock or share.
@@ -126,7 +157,7 @@ export function InningModal({
                 <div style={{ padding:"14px 16px", borderRadius:"12px",
                   background:"rgba(245,200,66,0.12)",
                   border:"2px solid rgba(245,200,66,0.5)" }}>
-                  <div style={{ fontSize:"10px", fontWeight:"bold", color:"#f5c842",
+                  <div style={{ fontSize: a11y ? "12px" : "10px", fontWeight:"bold", color:"#f5c842",
                     letterSpacing:"0.15em", textTransform:"uppercase", marginBottom:"4px" }}>
                     Now Batting
                   </div>
@@ -152,7 +183,7 @@ export function InningModal({
                 <div style={{ padding:"10px 14px", borderRadius:"10px",
                   background:"rgba(255,255,255,0.05)",
                   border:"1px solid rgba(255,255,255,0.12)" }}>
-                  <div style={{ fontSize:"9px", fontWeight:"bold", color:"#94a3b8",
+                  <div style={{ fontSize: a11y ? "12px" : "9px", fontWeight:"bold", color:"#94a3b8",
                     letterSpacing:"0.15em", textTransform:"uppercase", marginBottom:"2px" }}>
                     On Deck
                   </div>
@@ -168,7 +199,7 @@ export function InningModal({
                         {getHand(onDeck)}
                       </div>
                     ) : null}
-                    <div style={{ fontSize:"11px", color:"#64748b" }}>→ On-deck circle</div>
+                    <div style={{ fontSize:"11px", color: a11y ? "#cbd5e1" : "#64748b" }}>→ On-deck circle</div>
                   </div>
                 </div>
               ) : null}
@@ -178,7 +209,8 @@ export function InningModal({
                 <div style={{ padding:"9px 14px", borderRadius:"10px",
                   background:"rgba(255,255,255,0.03)",
                   border:"1px solid rgba(255,255,255,0.07)" }}>
-                  <div style={{ fontSize:"9px", fontWeight:"bold", color:"#475569",
+                  <div style={{ fontSize: a11y ? "12px" : "9px", fontWeight:"bold",
+                    color: a11y ? "#e2e8f0" : "#475569",
                     letterSpacing:"0.15em", textTransform:"uppercase", marginBottom:"2px" }}>
                     In the Hole
                   </div>
@@ -190,11 +222,11 @@ export function InningModal({
                     {getHand(inHole) !== "U" ? (
                       <div style={{ fontSize:"10px", fontWeight:"bold", padding:"2px 7px",
                         borderRadius:"5px", background:"rgba(255,255,255,0.06)",
-                        color:"#475569" }}>
+                        color: a11y ? "#e2e8f0" : "#475569" }}>
                         {getHand(inHole)}
                       </div>
                     ) : null}
-                    <div style={{ fontSize:"11px", color:"#334155" }}>→ Gear up</div>
+                    <div style={{ fontSize:"11px", color: a11y ? "#94a3b8" : "#334155" }}>→ Gear up</div>
                   </div>
                 </div>
               ) : null}
@@ -203,7 +235,8 @@ export function InningModal({
             {/* Rest of the order */}
             {restBatters.length > 0 ? (
               <>
-                <div style={{ fontSize:"9px", color:"#475569", textTransform:"uppercase",
+                <div style={{ fontSize: a11y ? "12px" : "9px",
+                  color: a11y ? "#e2e8f0" : "#475569", textTransform:"uppercase",
                   letterSpacing:"0.12em", marginBottom:"6px" }}>
                   Batting order continues
                 </div>
@@ -213,7 +246,7 @@ export function InningModal({
                       <div key={name} style={{ padding:"4px 10px", borderRadius:"14px",
                         background:"rgba(255,255,255,0.04)",
                         border:"1px solid rgba(255,255,255,0.07)",
-                        fontSize:"12px", color:"#475569" }}>
+                        fontSize:"12px", color: a11y ? "#e2e8f0" : "#475569" }}>
                         {leadIdx + 4 + i}. {firstName(name)}
                       </div>
                     );
@@ -226,8 +259,8 @@ export function InningModal({
         /* ── Defensive positions view ── */
         ) : (
           <>
-            <div style={{ fontSize:"10px", color:"#4ade80", textTransform:"uppercase",
-              letterSpacing:"0.12em", marginBottom:"10px" }}>
+            <div style={{ fontSize: a11y ? "12px" : "10px", color:"#4ade80",
+              textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:"10px" }}>
               Inning {nextInning + 1} Positions
             </div>
             <div style={{ display:"flex", flexDirection:"column", gap:"6px" }}>
@@ -238,8 +271,10 @@ export function InningModal({
                     padding:"9px 12px", borderRadius:"8px",
                     background:"rgba(255,255,255,0.05)",
                     borderLeft:"3px solid " + pc }}>
-                    <div style={{ fontSize:"11px", fontWeight:"bold", color:pc,
-                      minWidth:"28px", textAlign:"right" }}>{a.pos}</div>
+                    <div
+                      aria-label={a11y ? (POSITION_LABELS[a.pos] || a.pos) : undefined}
+                      style={{ fontSize:"11px", fontWeight:"bold", color:pc,
+                        minWidth:"28px", textAlign:"right" }}>{a.pos}</div>
                     <div style={{ fontSize:"17px", fontWeight:"bold", color:"#e2e8f0" }}>
                       {firstName(a.name)}
                     </div>
@@ -249,7 +284,8 @@ export function InningModal({
             </div>
             {benchPlayers.length > 0 ? (
               <div style={{ marginTop:"14px" }}>
-                <div style={{ fontSize:"10px", color:"#475569", textTransform:"uppercase",
+                <div style={{ fontSize: a11y ? "12px" : "10px",
+                  color: a11y ? "#e2e8f0" : "#475569", textTransform:"uppercase",
                   letterSpacing:"0.12em", marginBottom:"8px" }}>Bench</div>
                 <div style={{ display:"flex", flexWrap:"wrap", gap:"8px" }}>
                   {benchPlayers.map(function(a) {
@@ -257,7 +293,7 @@ export function InningModal({
                       <div key={a.name} style={{ padding:"5px 12px", borderRadius:"16px",
                         background:"rgba(255,255,255,0.06)",
                         border:"1px solid rgba(255,255,255,0.1)",
-                        fontSize:"13px", color:"#64748b" }}>
+                        fontSize:"13px", color: a11y ? "#cbd5e1" : "#64748b" }}>
                         {firstName(a.name)}
                       </div>
                     );
@@ -273,15 +309,22 @@ export function InningModal({
       <div style={{ display:"flex", gap:"12px", padding:"16px 20px",
         paddingBottom:"max(16px, env(safe-area-inset-bottom, 16px))",
         borderTop:"1px solid rgba(255,255,255,0.08)" }}>
-        <button onClick={onCancel}
+        <button
+          onClick={onCancel}
+          aria-label={a11y ? "Cancel inning advance" : undefined}
           style={{ flex:1, padding:"14px", borderRadius:"10px",
+            minHeight: 44,
             background:"transparent", border:"1px solid rgba(255,255,255,0.15)",
             color:"#94a3b8", fontSize:"15px", cursor:"pointer",
             fontFamily:"Georgia,serif" }}>
           Cancel
         </button>
-        <button onClick={onConfirm}
+        <button
+          onClick={onConfirm}
+          data-inning-confirm
+          aria-label={confirmAriaLabel}
           style={{ flex:2, padding:"14px", borderRadius:"10px",
+            minHeight: 44,
             background: isLastInning ? "#334155" : confirmBg,
             border:"none",
             color: isLastInning ? "#94a3b8" : confirmColor,

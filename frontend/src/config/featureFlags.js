@@ -11,4 +11,25 @@ export const FEATURE_FLAGS = {
   // Feature-flagged off by default. Enable per-team via Supabase feature_flags table
   // or locally via: localStorage.setItem("flag:game_mode", "1")
   GAME_MODE: false,
+
+  // Accessibility Phase 1 — font floor 12–14px, touch targets ≥44px,
+  // contrast uplift in Game Mode overlays, aria labels, position abbreviation labels.
+  // Enable locally: localStorage.setItem("flag_ACCESSIBILITY_V1", "true")
+  // Disable locally: localStorage.setItem("flag_ACCESSIBILITY_V1", "false")
+  ACCESSIBILITY_V1: false,
 };
+
+/**
+ * Evaluate a feature flag with localStorage override support.
+ * Override keys use "flag_" prefix (e.g. flag_ACCESSIBILITY_V1).
+ *   localStorage.setItem("flag_ACCESSIBILITY_V1", "true")  → force on
+ *   localStorage.setItem("flag_ACCESSIBILITY_V1", "false") → force off
+ *   localStorage.removeItem("flag_ACCESSIBILITY_V1")       → use default
+ */
+export function isFlagEnabled(flagName) {
+  var lsKey = 'flag_' + flagName;
+  var override = localStorage.getItem(lsKey);
+  if (override === 'true') return true;
+  if (override === 'false') return false;
+  return FEATURE_FLAGS[flagName] === true;
+}

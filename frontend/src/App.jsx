@@ -148,9 +148,20 @@ var DEFAULT_ROSTER = [];
 var _mem = {};
 var SCHEMA_VERSION = 2;
 
-var APP_VERSION = "1.9.4";
+var APP_VERSION = "1.9.5";
 
 var VERSION_HISTORY = [
+  {
+    version: "1.9.5",
+    date: "March 30, 2026",
+    changes: [
+      "Accessibility Phase 1: font floor 12–14px, touch targets ≥44px, contrast uplift in Game Mode overlays",
+      "Reduced motion: respects prefers-reduced-motion OS setting globally",
+      "Aria labels on Game Mode advance, pill toggle, and inning transition modal buttons",
+      "Position abbreviation accessibility labels (Pitcher, Shortstop, etc.) on defensive positions list",
+      "Feature flag: ACCESSIBILITY_V1 (localStorage override: flag_ACCESSIBILITY_V1=true)",
+    ]
+  },
   {
     version: "1.9.4",
     date: "March 30, 2026",
@@ -1813,6 +1824,8 @@ export default function App() {
     return parseInt(loadJSON("team:" + tid + ":gameModeInning", 0), 10) || 0;
   });
   var gameModeInning = _gmi[0]; var setGameModeInning = _gmi[1];
+  var _exitSheet = useState(false);
+  var showExitSheet = _exitSheet[0]; var setShowExitSheet = _exitSheet[1];
   var _hydrating = useState(false);
   var isHydrating = _hydrating[0]; var setIsHydrating = _hydrating[1];
   var _nfn = useState(""); var newFirstName = _nfn[0]; var setNewFirstName = _nfn[1];
@@ -8118,6 +8131,50 @@ export default function App() {
     );
   }
 
+  function renderExitSheet() {
+    if (!showExitSheet) return null;
+    var teamName = activeTeam ? activeTeam.name : "this team";
+    return (
+      <div
+        onClick={function() { setShowExitSheet(false); }}
+        style={{ position:"fixed", inset:0, zIndex:1500, background:"rgba(0,0,0,0.5)", display:"flex", flexDirection:"column", justifyContent:"flex-end" }}>
+        <div
+          onClick={function(e) { e.stopPropagation(); }}
+          style={{ background:C.navy, borderTop:"2px solid " + C.red, borderRadius:"16px 16px 0 0", padding:"20px 20px 0", paddingBottom:"max(20px, env(safe-area-inset-bottom, 20px))", fontFamily:"Georgia,serif" }}>
+          <div style={{ textAlign:"center", marginBottom:"4px" }}>
+            <div style={{ width:"36px", height:"4px", borderRadius:"2px", background:"rgba(255,255,255,0.2)", margin:"0 auto 16px" }} />
+            <div style={{ fontSize:"11px", color:"rgba(255,255,255,0.45)", textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:"4px" }}>
+              Leave team?
+            </div>
+            <div style={{ fontSize:"17px", fontWeight:"bold", color:"#fff", marginBottom:"6px" }}>
+              {teamName}
+            </div>
+            {lineupDirty && !lineupLocked ? (
+              <div style={{ fontSize:"12px", color:"#f5c842", marginBottom:"4px" }}>
+                ⚠ You have unsaved lineup changes
+              </div>
+            ) : null}
+            <div style={{ fontSize:"12px", color:"rgba(255,255,255,0.4)", marginBottom:"16px" }}>
+              Your roster and schedule are saved. You can return to this team anytime from the home screen.
+            </div>
+          </div>
+          <div style={{ display:"flex", flexDirection:"column", gap:"10px", marginBottom:"12px" }}>
+            <button
+              onClick={function() { setShowExitSheet(false); }}
+              style={{ width:"100%", padding:"14px", borderRadius:"10px", background:C.gold, border:"none", color:C.navy, fontSize:"15px", fontWeight:"bold", fontFamily:"Georgia,serif", cursor:"pointer" }}>
+              Keep Working
+            </button>
+            <button
+              onClick={function() { setShowExitSheet(false); setScreen("home"); setPrimaryTab("home"); setHomeMode("welcome"); }}
+              style={{ width:"100%", padding:"13px", borderRadius:"10px", background:"transparent", border:"1px solid rgba(255,255,255,0.2)", color:"rgba(255,255,255,0.6)", fontSize:"14px", fontFamily:"Georgia,serif", cursor:"pointer" }}>
+              ← Go to Home Screen
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   function renderBottomNav() {
     return (
       <div style={{ flexShrink:0, background:C.navy, borderTop:"2px solid " + C.red, display:"flex", paddingBottom:"env(safe-area-inset-bottom, 0px)" }}>
@@ -8127,7 +8184,10 @@ export default function App() {
           return (
             <button key={t.key}
               onClick={function(k, d) { return function() {
-                if (k === "home") { setScreen("home"); setPrimaryTab("home"); setHomeMode("welcome"); return; }
+                if (k === "home") {
+                  if (primaryTab === "team" || primaryTab === "gameday") { setShowExitSheet(true); return; }
+                  setScreen("home"); setPrimaryTab("home"); setHomeMode("welcome"); return;
+                }
                 if (d) return;
                 setPrimaryTab(k);
                 if (k !== "more") setScreen("app");
@@ -8152,7 +8212,10 @@ export default function App() {
   return (
     <div style={{ height:"100dvh", display:"flex", flexDirection:"column", overflow:"hidden", background: primaryTab === "more" ? "linear-gradient(160deg,#0f1f3d 0%,#1a3260 55%,#2a0a0a 100%)" : C.cream, fontFamily:"Georgia,'Times New Roman',serif", color:C.text }}>
       <div style={Object.assign({}, S.header, isLandscape ? { padding:"5px 16px" } : {})}>
-        <div style={S.logoWrap} onClick={function() { setScreen("home"); setPrimaryTab("home"); setHomeMode("welcome"); }}>
+        <div style={S.logoWrap} onClick={function() {
+          if (primaryTab === "team" || primaryTab === "gameday") { setShowExitSheet(true); return; }
+          setScreen("home"); setPrimaryTab("home"); setHomeMode("welcome");
+        }}>
           <div style={Object.assign({}, S.logoCircle, isLandscape ? { width:"30px", height:"30px", fontSize:"13px" } : {})}>{screen === "app" && primaryTab !== "more" && activeTeam ? activeTeam.name.charAt(0).toUpperCase() : "L"}</div>
           <div>
             <div style={Object.assign({}, S.logoTitle, isLandscape ? { fontSize:"14px" } : {})}>{screen === "app" && primaryTab !== "more" && activeTeam ? activeTeam.name : "Lineup Generator"}</div>
@@ -8196,6 +8259,7 @@ export default function App() {
         ) : null}
       </ErrorBoundary>
       {renderBottomNav()}
+      {renderExitSheet()}
       {gameModeActive ? (
         <GameModeScreen
           roster={roster}

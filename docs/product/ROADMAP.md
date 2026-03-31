@@ -1,6 +1,6 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: March 30, 2026 (v1.9.3)
+> Last updated: March 30, 2026 (v1.9.5)
 > MVP launched: March 24, 2026
 
 ---
@@ -48,6 +48,20 @@
 - Export / Import backup (JSON)
 - 10-player field configuration: LC + RC replace CF in outfield; 1 bench slot per inning (schema v2, migration auto-remaps saved CF→LC)
 - First-time coach onboarding modal (5-step in-app walkthrough, localStorage completion tracking, always re-accessible via "Getting Started" button in Roster tab)
+
+### v1.9.5 — March 30, 2026
+- **Accessibility Phase 1** (`ACCESSIBILITY_V1` flag, localStorage override `flag_ACCESSIBILITY_V1=true`):
+  - Font floor: section labels 12px min, advance/pill button text 13–14px min in Game Mode
+  - Touch targets: advance button ≥44px (padding 13px), pill toggles wrapped in 44px hit area
+  - Contrast uplift in InningModal (dark overlay): `#475569`→`#e2e8f0`, `#64748b`→`#cbd5e1`, `#334155`→`#94a3b8`
+  - Aria labels: advance button (dynamic), defense/batting pill toggles (aria-pressed), modal (role=dialog), Cancel/Confirm buttons
+  - Position abbreviation labels: `aria-label="Pitcher"` etc. on defensive position chips
+  - Focus management: Confirm button focused on InningModal mount
+- **Reduced motion**: `prefers-reduced-motion` media query in global CSS (`src/index.css`) — disables all animations/transitions when OS setting is active
+- `isFlagEnabled(flagName)` utility exported from featureFlags.js with localStorage override support
+
+### v1.9.4 — March 30, 2026
+- **UX**: Home screen — 'View/Update Lineup' button renamed to 'View Lineup'
 
 ### v1.9.3 — March 30, 2026
 - **Create Team form**: labels darker and bolder, field text larger (14px) and near-black, borders more visible, placeholder shows example team name
