@@ -319,6 +319,9 @@ All major sections are wrapped with `<ErrorBoundary>` (class component). On cras
 
 ## Version History
 
+### v1.9.3 — March 30, 2026
+Create Team form: labels darker + bolder, field text larger and near-black, borders more visible, placeholder shows example team name
+
 ### v1.9.2 — March 30, 2026
 Game Mode available for any team with roster + schedule (no longer gated on upcoming game date) · Demo All-Stars pre-seeded team loadable from home screen · Create Team form fields use white background for readability
 

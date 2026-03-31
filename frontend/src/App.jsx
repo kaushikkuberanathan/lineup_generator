@@ -148,9 +148,16 @@ var DEFAULT_ROSTER = [];
 var _mem = {};
 var SCHEMA_VERSION = 2;
 
-var APP_VERSION = "1.9.2";
+var APP_VERSION = "1.9.3";
 
 var VERSION_HISTORY = [
+  {
+    version: "1.9.3",
+    date: "March 30, 2026",
+    changes: [
+      "Create Team form: labels darker and bolder, field text larger and near-black, borders more visible, placeholder updated to example text",
+    ]
+  },
   {
     version: "1.9.2",
     date: "March 30, 2026",
@@ -1453,13 +1460,16 @@ export default function App() {
     window._lineupDbBooted = true;
     dbLoadTeams().then(function(dbTeams) {
       var localTeams = loadJSON("app:teams", []) || [];
-      var merged = dbTeams ? dbTeams.slice() : [];
-      for (var li = 0; li < localTeams.length; li++) {
-        var found = false;
-        for (var di = 0; di < merged.length; di++) {
-          if (merged[di].id === localTeams[li].id) { found = true; break; }
-        }
-        if (!found) { merged.push(localTeams[li]); }
+      var dbList = dbTeams || [];
+      var merged;
+      if (localTeams.length === 0 && dbList.length > 0) {
+        // Local is empty (new install / cleared storage) — seed from Supabase.
+        merged = dbList.slice();
+      } else {
+        // Local teams exist — localStorage is authoritative.
+        // Never add Supabase-only teams back: a team in Supabase but not in local
+        // was deleted locally and the async Supabase delete just hasn't landed yet.
+        merged = localTeams.slice();
       }
       if (merged.length > 0) {
         saveJSON("app:teams", merged);
@@ -3317,20 +3327,20 @@ export default function App() {
               </div>
             </div>
           ) : (
-            <div style={{ background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.15)", borderRadius:"14px", padding:"22px" }}>
-              <div style={{ fontSize:"15px", fontWeight:"bold", color:"#fff", marginBottom:"16px" }}>Create a New Team</div>
+            <div style={{ background:"#fff", border:"1px solid #e5e7eb", borderRadius:"14px", padding:"22px" }}>
+              <div style={{ fontSize:"15px", fontWeight:"bold", color:"#111827", marginBottom:"16px" }}>Create a New Team</div>
               <div style={{ marginBottom:"12px" }}>
-                <div style={{ fontSize:"10px", color:"rgba(255,255,255,0.7)", letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:"5px" }}>Team Name</div>
-                <input type="text" value={newTeam.name} placeholder="Team Name" maxLength={40} autoFocus
+                <div style={{ fontSize:"11px", fontWeight:"600", color:"#111827", letterSpacing:"0.05em", textTransform:"uppercase", marginBottom:"6px" }}>Team Name</div>
+                <input type="text" value={newTeam.name} placeholder="e.g. Mud Hens" maxLength={40} autoFocus
                   onChange={function(e) { var next = {}; for (var k in newTeam) { next[k]=newTeam[k]; } next.name=e.target.value; setNewTeam(next); }}
-                  style={{ width:"100%", background:"#fff", border:"1px solid rgba(255,255,255,0.3)", borderRadius:"8px", padding:"10px 12px", color:"#0f1f3d", fontFamily:"inherit", fontSize:"13px", outline:"none", boxSizing:"border-box" }} />
+                  style={{ width:"100%", background:"#fff", border:"1.5px solid #9ca3af", borderRadius:"8px", padding:"10px 12px", color:"#111827", fontFamily:"inherit", fontSize:"14px", outline:"none", boxSizing:"border-box" }} />
               </div>
               <div style={{ display:"flex", gap:"10px", marginBottom:"12px" }}>
                 <div style={{ flex:1 }}>
-                  <div style={{ fontSize:"10px", color:"rgba(255,255,255,0.7)", letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:"5px" }}>Age Group</div>
+                  <div style={{ fontSize:"11px", fontWeight:"600", color:"#111827", letterSpacing:"0.05em", textTransform:"uppercase", marginBottom:"6px" }}>Age Group</div>
                   <select value={newTeam.ageGroup}
                     onChange={function(e) { var next = {}; for (var k in newTeam) { next[k]=newTeam[k]; } next.ageGroup=e.target.value; setNewTeam(next); }}
-                    style={{ width:"100%", background:"#fff", border:"1px solid rgba(255,255,255,0.3)", borderRadius:"8px", padding:"10px 12px", color: newTeam.ageGroup ? "#0f1f3d" : "#9ca3af", fontFamily:"inherit", fontSize:"13px", outline:"none", boxSizing:"border-box", cursor:"pointer" }}>
+                    style={{ width:"100%", background:"#fff", border:"1.5px solid #9ca3af", borderRadius:"8px", padding:"10px 12px", color: newTeam.ageGroup ? "#111827" : "#6b7280", fontFamily:"inherit", fontSize:"14px", outline:"none", boxSizing:"border-box", cursor:"pointer" }}>
                     <option value="">— Age —</option>
                     {["5U","6U","7U","8U","9U","10U","11U","12U"].map(function(ag) {
                       return <option key={ag} value={ag}>{ag}</option>;
@@ -3338,10 +3348,10 @@ export default function App() {
                   </select>
                 </div>
                 <div style={{ flex:1 }}>
-                  <div style={{ fontSize:"10px", color:"rgba(255,255,255,0.7)", letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:"5px" }}>Sport</div>
+                  <div style={{ fontSize:"11px", fontWeight:"600", color:"#111827", letterSpacing:"0.05em", textTransform:"uppercase", marginBottom:"6px" }}>Sport</div>
                   <select value={newTeam.sport}
                     onChange={function(e) { var next = {}; for (var k in newTeam) { next[k]=newTeam[k]; } next.sport=e.target.value; setNewTeam(next); }}
-                    style={{ width:"100%", background:"#fff", border:"1px solid rgba(255,255,255,0.3)", borderRadius:"8px", padding:"10px 12px", color: newTeam.sport ? "#0f1f3d" : "#9ca3af", fontFamily:"inherit", fontSize:"13px", outline:"none", boxSizing:"border-box", cursor:"pointer" }}>
+                    style={{ width:"100%", background:"#fff", border:"1.5px solid #9ca3af", borderRadius:"8px", padding:"10px 12px", color: newTeam.sport ? "#111827" : "#6b7280", fontFamily:"inherit", fontSize:"14px", outline:"none", boxSizing:"border-box", cursor:"pointer" }}>
                     <option value="">— Sport —</option>
                     <option value="baseball">Baseball</option>
                     <option value="softball">Softball</option>
@@ -3349,10 +3359,10 @@ export default function App() {
                 </div>
               </div>
               <div style={{ display:"flex", gap:"10px", marginTop:"8px" }}>
-                <button onClick={createTeam} disabled={!newTeam.name.trim()} style={{ flex:1, padding:"12px", borderRadius:"8px", border:"none", cursor:"pointer", fontWeight:"bold", fontSize:"14px", fontFamily:"inherit", background: newTeam.name.trim() ? "linear-gradient(135deg,#c8102e,#9b0c22)" : "rgba(255,255,255,0.1)", color: newTeam.name.trim() ? "#fff" : "rgba(255,255,255,0.3)" }}>
+                <button onClick={createTeam} disabled={!newTeam.name.trim()} style={{ flex:1, padding:"12px", borderRadius:"8px", border:"none", cursor:"pointer", fontWeight:"bold", fontSize:"14px", fontFamily:"inherit", background: newTeam.name.trim() ? "linear-gradient(135deg,#c8102e,#9b0c22)" : "#e5e7eb", color: newTeam.name.trim() ? "#fff" : "#9ca3af" }}>
                   Create Team
                 </button>
-                <button onClick={function() { setNewTeam({ name:"", ageGroup:"", sport:"", year: new Date().getFullYear() }); setHomeMode("welcome"); }} style={{ padding:"12px 16px", borderRadius:"8px", border:"1px solid rgba(255,255,255,0.18)", background:"transparent", color:"rgba(255,255,255,0.45)", fontSize:"13px", fontFamily:"inherit", cursor:"pointer" }}>
+                <button onClick={function() { setNewTeam({ name:"", ageGroup:"", sport:"", year: new Date().getFullYear() }); setHomeMode("welcome"); }} style={{ padding:"12px 16px", borderRadius:"8px", border:"1px solid #d1d5db", background:"transparent", color:"#6b7280", fontSize:"13px", fontFamily:"inherit", cursor:"pointer" }}>
                   Cancel
                 </button>
               </div>

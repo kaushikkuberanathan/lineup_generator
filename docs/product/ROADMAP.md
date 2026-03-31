@@ -1,6 +1,6 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: March 30, 2026 (v1.9.2)
+> Last updated: March 30, 2026 (v1.9.3)
 > MVP launched: March 24, 2026
 
 ---
@@ -48,6 +48,9 @@
 - Export / Import backup (JSON)
 - 10-player field configuration: LC + RC replace CF in outfield; 1 bench slot per inning (schema v2, migration auto-remaps saved CF→LC)
 - First-time coach onboarding modal (5-step in-app walkthrough, localStorage completion tracking, always re-accessible via "Getting Started" button in Roster tab)
+
+### v1.9.3 — March 30, 2026
+- **Create Team form**: labels darker and bolder, field text larger (14px) and near-black, borders more visible, placeholder shows example team name
 
 ### v1.9.2 — March 30, 2026
 - **Game Mode**: now available for any team with roster + schedule set — no longer gated on having an upcoming game date
