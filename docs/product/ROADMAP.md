@@ -1,6 +1,6 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: March 30, 2026 (v1.9.1)
+> Last updated: March 30, 2026 (v1.9.2)
 > MVP launched: March 24, 2026
 
 ---
@@ -48,6 +48,11 @@
 - Export / Import backup (JSON)
 - 10-player field configuration: LC + RC replace CF in outfield; 1 bench slot per inning (schema v2, migration auto-remaps saved CF→LC)
 - First-time coach onboarding modal (5-step in-app walkthrough, localStorage completion tracking, always re-accessible via "Getting Started" button in Roster tab)
+
+### v1.9.2 — March 30, 2026
+- **Game Mode**: now available for any team with roster + schedule set — no longer gated on having an upcoming game date
+- **Demo All-Stars**: pre-seeded 12-player team loadable from home screen via "Try Demo Team" button — lets coaches explore all features without setup
+- **Create Team form**: input fields now use white background with dark text for readability on the dark home screen
 
 ### v1.9.1 — March 30, 2026
 - **Game Mode bench**: all bench players shown stacked in infield position box; batting hand badge visible on each bench card; duplicate bench strip removed

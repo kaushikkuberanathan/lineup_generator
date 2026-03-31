@@ -148,9 +148,18 @@ var DEFAULT_ROSTER = [];
 var _mem = {};
 var SCHEMA_VERSION = 2;
 
-var APP_VERSION = "1.9.1";
+var APP_VERSION = "1.9.2";
 
 var VERSION_HISTORY = [
+  {
+    version: "1.9.2",
+    date: "March 30, 2026",
+    changes: [
+      "Game Mode now available for any team with roster + schedule set (no longer requires an upcoming game on the schedule)",
+      "Demo All-Stars: pre-seeded 12-player team with schedule — load from home screen to explore all features",
+      "Create Team form: fields now use white background with dark text for readability",
+    ]
+  },
   {
     version: "1.9.1",
     date: "March 30, 2026",

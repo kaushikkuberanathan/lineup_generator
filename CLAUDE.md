@@ -319,6 +319,9 @@ All major sections are wrapped with `<ErrorBoundary>` (class component). On cras
 
 ## Version History
 
+### v1.9.2 — March 30, 2026
+Game Mode available for any team with roster + schedule (no longer gated on upcoming game date) · Demo All-Stars pre-seeded team loadable from home screen · Create Team form fields use white background for readability
+
 ### v1.9.1 — March 30, 2026
 Game Mode bench: players stacked in infield box, batting hand badges on bench cards, duplicate strip removed · Now Batting/On Deck/In Hole: batting hand L/R badge inline · Schedule: Snack Note → Game Ball picker (⚾); also on Snacks tab · Snacks tab: Note field removed · Team/Roster: player count bar removed (redundant) · Fix: normalizeBattingHand import on Add Player · Onboarding: Step 4 + 7 updated to Team tab
 
