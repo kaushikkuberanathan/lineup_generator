@@ -148,9 +148,16 @@ var DEFAULT_ROSTER = [];
 var _mem = {};
 var SCHEMA_VERSION = 2;
 
-var APP_VERSION = "1.9.6";
+var APP_VERSION = "1.9.7";
 
 var VERSION_HISTORY = [
+  {
+    version: "1.9.7",
+    date: "March 31, 2026",
+    changes: [
+      "Home screen: Game Mode button visible on all Ready team cards (roster + schedule set) · shows when lineup generated; 'Generate a lineup to unlock' hint when not yet generated",
+    ]
+  },
   {
     version: "1.9.6",
     date: "March 30, 2026",
@@ -3088,27 +3095,38 @@ export default function App() {
             ) : null}
           </div>
           {/* ZONE 2 — Open / Game Mode buttons */}
-          <div style={{ display:"flex", flexDirection:"column", gap:"5px", flex:"none" }}>
-            <button onClick={function(e) { e.stopPropagation(); loadTeam(team); }}
-              style={{ background:"linear-gradient(135deg,#f5c842,#e6a817)", color:"#0f1f3d",
-                        border:"none", borderRadius:"8px", padding:"6px 14px", fontSize:"12px",
-                        fontWeight:"bold", cursor:"pointer", whiteSpace:"nowrap" }}>
-              Open
-            </button>
-            {nextGame && nextGame.days === 0 ? (
-              <button
-                onClick={function(tm) { return function(e) {
-                  e.stopPropagation();
-                  loadTeam(tm);
-                  setTimeout(function() { setPrimaryTab("gameday"); setGameDayTab("defense"); setGameModeActive(true); }, 300);
-                }; }(team)}
-                style={{ background:"#e05c2a", color:"#fff", border:"none", borderRadius:"8px",
-                  padding:"5px 10px", fontSize:"11px", fontWeight:"bold", cursor:"pointer",
-                  whiteSpace:"nowrap", fontFamily:"inherit" }}>
-                ▶ Game
-              </button>
-            ) : null}
-          </div>
+          {(function() {
+            var cardGrid = loadJSON("team:" + team.id + ":grid", null);
+            var hasLineup = cardGrid && Object.keys(cardGrid).length > 0;
+            var isReady = statusBadge === "Ready";
+            return (
+              <div style={{ display:"flex", flexDirection:"column", gap:"5px", flex:"none", alignItems:"flex-end" }}>
+                <button onClick={function(e) { e.stopPropagation(); loadTeam(team); }}
+                  style={{ background:"linear-gradient(135deg,#f5c842,#e6a817)", color:"#0f1f3d",
+                            border:"none", borderRadius:"8px", padding:"6px 14px", fontSize:"12px",
+                            fontWeight:"bold", cursor:"pointer", whiteSpace:"nowrap" }}>
+                  Open
+                </button>
+                {isReady && hasLineup ? (
+                  <button
+                    onClick={function(tm) { return function(e) {
+                      e.stopPropagation();
+                      loadTeam(tm);
+                      setTimeout(function() { setPrimaryTab("gameday"); setGameDayTab("defense"); setGameModeActive(true); }, 300);
+                    }; }(team)}
+                    style={{ background:"#e05c2a", color:"#fff", border:"none", borderRadius:"8px",
+                      padding:"5px 10px", fontSize:"11px", fontWeight:"bold", cursor:"pointer",
+                      whiteSpace:"nowrap", fontFamily:"inherit" }}>
+                    ▶ Game Mode
+                  </button>
+                ) : isReady ? (
+                  <div style={{ fontSize:"9px", color:"#9ca3af", textAlign:"right", maxWidth:"80px", lineHeight:1.3 }}>
+                    Generate a lineup to unlock
+                  </div>
+                ) : null}
+              </div>
+            );
+          })()}
           {/* ZONE 3 — Ellipsis */}
           <div style={{ position:"relative", flex:"none", marginLeft:"4px" }}>
             <button
