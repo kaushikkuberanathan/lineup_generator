@@ -148,9 +148,16 @@ var DEFAULT_ROSTER = [];
 var _mem = {};
 var SCHEMA_VERSION = 2;
 
-var APP_VERSION = "1.9.3";
+var APP_VERSION = "1.9.4";
 
 var VERSION_HISTORY = [
+  {
+    version: "1.9.4",
+    date: "March 30, 2026",
+    changes: [
+      "UX: Home screen — 'View/Update Lineup' button renamed to 'View Lineup'",
+    ]
+  },
   {
     version: "1.9.3",
     date: "March 30, 2026",
@@ -2480,6 +2487,9 @@ export default function App() {
   }
 
   function loadDemoTeam() {
+    // Don't create a second demo team if one already exists
+    var existingDemo = teams.find(function(t) { return t.name === "Demo All-Stars"; });
+    if (existingDemo) { loadTeam(existingDemo); return; }
     var tid = "demo_" + Date.now();
     var t = { id: tid, name: "Demo All-Stars", ageGroup: "10U", sport: "baseball", year: new Date().getFullYear() };
 
@@ -3196,7 +3206,7 @@ export default function App() {
                                 setTimeout(function() { setPrimaryTab("gameday"); setGameDayTab("defense"); }, 300);
                               }; }(nextGameTeam)}
                               style={{ background:"linear-gradient(135deg,#f5c842,#e6a817)", color:"#0f1f3d", border:"none", borderRadius:"10px", padding:"14px 20px", fontSize:"15px", fontWeight:"bold", cursor:"pointer", width:"100%", fontFamily:"Georgia,serif", letterSpacing:"0.02em", boxShadow:"0 3px 12px rgba(245,200,66,0.35)" }}>
-                              ✓ View/Update Lineup
+                              ✓ View Lineup
                             </button>
                             <button
                               onClick={function(ngt) { return function() {
@@ -3307,10 +3317,12 @@ export default function App() {
                 </div>
               ) : null}
               </ErrorBoundary>
-              <button onClick={loadDemoTeam}
-                style={{ width:"100%", padding:"12px", borderRadius:"12px", background:"linear-gradient(135deg,#f5c842,#e6a817)", color:"#0f1f3d", border:"none", fontSize:"13px", fontWeight:"bold", fontFamily:"Georgia,serif", cursor:"pointer", marginBottom:"10px", letterSpacing:"0.04em" }}>
-                Try Demo Team
-              </button>
+              {teams.length === 0 ? (
+                <button onClick={loadDemoTeam}
+                  style={{ width:"100%", padding:"12px", borderRadius:"12px", background:"linear-gradient(135deg,#f5c842,#e6a817)", color:"#0f1f3d", border:"none", fontSize:"13px", fontWeight:"bold", fontFamily:"Georgia,serif", cursor:"pointer", marginBottom:"10px", letterSpacing:"0.04em" }}>
+                  Try Demo Team
+                </button>
+              ) : null}
               {teams.length === 0 ? (
                 <button onClick={function() { setNewTeam({ name:"", ageGroup:"", sport:"", year: new Date().getFullYear() }); setHomeMode("create"); }}
                   style={{ width:"100%", padding:"16px", borderRadius:"12px", background:"linear-gradient(135deg,#c8102e,#a00d25)", color:"#fff", border:"none", fontSize:"16px", fontWeight:"bold", fontFamily:"Georgia,serif", cursor:"pointer", marginBottom:"12px", letterSpacing:"0.04em" }}>
