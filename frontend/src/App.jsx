@@ -1583,14 +1583,17 @@ export default function App() {
       }
 
       // If a team was already active (e.g. returning user on fresh browser),
-      // hydrate its roster from Supabase so the home screen shows the correct
-      // player count without requiring the user to tap into the team first.
+      // hydrate its data from Supabase so the home screen shows the correct
+      // status badge and CTAs without requiring the user to tap into the team first.
       var bootActiveId = loadJSON("ui:activeTeam", null);
       if (bootActiveId) {
         dbLoadTeamData(bootActiveId).then(function(dbData) {
           if (!dbData || !dbData.roster || dbData.roster.length === 0) { return; }
-          saveJSON("team:" + bootActiveId + ":roster", dbData.roster);
+          saveJSON("team:" + bootActiveId + ":roster",   dbData.roster);
+          saveJSON("team:" + bootActiveId + ":schedule", Array.isArray(dbData.schedule) ? dbData.schedule : []);
+          saveJSON("team:" + bootActiveId + ":grid",     dbData.grid);
           setRoster(migrateRoster(dbData.roster));
+          setSchedule(migrateSchedule(Array.isArray(dbData.schedule) ? dbData.schedule : []));
           var bootTeam = merged.find ? merged.find(function(t) { return t.id === bootActiveId; }) : null;
           if (bootTeam) { dbSnapshotRoster(bootActiveId, bootTeam.name, dbData.roster, 'app_load'); }
         }).catch(function(err) {
@@ -2174,7 +2177,7 @@ export default function App() {
     setLineupDirty(true);
     if (activeTeamId) {
       saveJSON("team:" + activeTeamId + ":roster", next);
-      if (next.length > 0) {
+      if (next.length > 0 && !isHydrating) {
         dbSync(function() { return dbSaveTeamData(activeTeamId, {
           roster: next, schedule: schedule, practices: practices,
           battingOrder: battingOrder, grid: grid, innings: innings, locked: lineupLocked
@@ -2193,10 +2196,12 @@ export default function App() {
       setLineupDirty(true);
       if (activeTeamId) {
         saveJSON("team:" + activeTeamId + ":roster", prev);
-        dbSync(function() { return dbSaveTeamData(activeTeamId, {
-          roster: prev, schedule: schedule, practices: practices,
-          battingOrder: battingOrder, grid: grid, innings: innings, locked: lineupLocked
-        }); });
+        if (!isHydrating) {
+          dbSync(function() { return dbSaveTeamData(activeTeamId, {
+            roster: prev, schedule: schedule, practices: practices,
+            battingOrder: battingOrder, grid: grid, innings: innings, locked: lineupLocked
+          }); });
+        }
       }
       return next;
     });
@@ -2335,10 +2340,12 @@ export default function App() {
     setCoachPin(val);
     if (activeTeamId) {
       saveJSON("team:" + activeTeamId + ":pin", val);
-      dbSync(function() { return dbSaveTeamData(activeTeamId, {
-        roster: roster, schedule: schedule, practices: practices,
-        battingOrder: battingOrder, grid: grid, innings: innings, locked: lineupLocked, coachPin: val
-      }); });
+      if (!isHydrating) {
+        dbSync(function() { return dbSaveTeamData(activeTeamId, {
+          roster: roster, schedule: schedule, practices: practices,
+          battingOrder: battingOrder, grid: grid, innings: innings, locked: lineupLocked, coachPin: val
+        }); });
+      }
     }
   }
 
@@ -2544,7 +2551,7 @@ export default function App() {
         // locally-set flags (scoreReported) that may not have synced to Supabase yet
         var localSchedBeforeHydrate = loadJSON("team:" + team.id + ":schedule", []);
         saveJSON("team:" + team.id + ":roster",    dbData.roster);
-        saveJSON("team:" + team.id + ":schedule",  dbData.schedule);
+        saveJSON("team:" + team.id + ":schedule",  Array.isArray(dbData.schedule) ? dbData.schedule : []);
         saveJSON("team:" + team.id + ":practices", dbData.practices);
         saveJSON("team:" + team.id + ":batting",   dbData.battingOrder);
         saveJSON("team:" + team.id + ":grid",      dbData.grid);
@@ -2553,7 +2560,7 @@ export default function App() {
         saveJSON("team:" + team.id + ":pin",        dbData.coachPin || "");
         setRoster(migrateRoster(dbData.roster));
         if (dbData.roster && dbData.roster.length > 0) { dbSnapshotRoster(team.id, team.name, dbData.roster, 'app_load'); }
-        var migratedDbSchedule = migrateBattingPerf(migrateSchedule(dbData.schedule), migrateRoster(dbData.roster));
+        var migratedDbSchedule = migrateBattingPerf(migrateSchedule(Array.isArray(dbData.schedule) ? dbData.schedule : []), migrateRoster(dbData.roster));
         // Merge locally-set fields that Supabase may not have (set during hydration window)
         var MERGE_FIELDS = ['scoreReported', 'snackDuty', 'snackNote', 'gameBall'];
         var mergedSchedule = migratedDbSchedule.map(function(g) {
