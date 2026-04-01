@@ -1589,10 +1589,12 @@ export default function App() {
       if (bootActiveId) {
         dbLoadTeamData(bootActiveId).then(function(dbData) {
           if (!dbData || !dbData.roster || dbData.roster.length === 0) { return; }
-          saveJSON("team:" + bootActiveId + ":roster",   dbData.roster);
-          saveJSON("team:" + bootActiveId + ":schedule", Array.isArray(dbData.schedule) ? dbData.schedule : []);
-          saveJSON("team:" + bootActiveId + ":grid",     dbData.grid);
+          saveJSON("team:" + bootActiveId + ":roster", dbData.roster);
+          saveJSON("team:" + bootActiveId + ":grid",   dbData.grid);
           setRoster(migrateRoster(dbData.roster));
+          // Do NOT saveJSON schedule here — would wipe local-only fields (snackDuty, gameBall,
+          // snackNote, scoreReported) before loadTeam's MERGE_FIELDS rescue can run.
+          // Active team reads schedule from React state, so setSchedule is sufficient.
           setSchedule(migrateSchedule(Array.isArray(dbData.schedule) ? dbData.schedule : []));
           var bootTeam = merged.find ? merged.find(function(t) { return t.id === bootActiveId; }) : null;
           if (bootTeam) { dbSnapshotRoster(bootActiveId, bootTeam.name, dbData.roster, 'app_load'); }
