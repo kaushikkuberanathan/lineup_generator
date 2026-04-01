@@ -1589,17 +1589,30 @@ export default function App() {
       if (bootActiveId) {
         dbLoadTeamData(bootActiveId).then(function(dbData) {
           if (!dbData || !dbData.roster || dbData.roster.length === 0) { return; }
-          saveJSON("team:" + bootActiveId + ":roster", dbData.roster);
-          saveJSON("team:" + bootActiveId + ":grid",   dbData.grid);
-          setRoster(migrateRoster(dbData.roster));
-          // Do NOT saveJSON schedule here — would wipe local-only fields (snackDuty, gameBall,
-          // snackNote, scoreReported) before loadTeam's MERGE_FIELDS rescue can run.
-          // Active team reads schedule from React state, so setSchedule is sufficient.
-          setSchedule(migrateSchedule(Array.isArray(dbData.schedule) ? dbData.schedule : []));
+          // Read existing local values BEFORE touching anything
+          var localRoster = loadJSON("team:" + bootActiveId + ":roster", null);
+          var localGrid   = loadJSON("team:" + bootActiveId + ":grid",   null);
+          var localSched  = loadJSON("team:" + bootActiveId + ":schedule", null);
+          // Only write to localStorage when it is empty — this serves iOS fresh-install
+          // (empty localStorage) without overwriting offline changes on existing installs.
+          // Never blindly overwrite: local data may have edits not yet synced to Supabase.
+          if (!localRoster || localRoster.length === 0) {
+            saveJSON("team:" + bootActiveId + ":roster", dbData.roster);
+            localRoster = dbData.roster;
+          }
+          if (!localGrid) {
+            saveJSON("team:" + bootActiveId + ":grid", dbData.grid);
+          }
+          // React state: prefer localStorage (may have offline changes) over Supabase
+          setRoster(migrateRoster(localRoster));
+          var schedToUse = (localSched && localSched.length > 0)
+            ? localSched
+            : (Array.isArray(dbData.schedule) ? dbData.schedule : []);
+          setSchedule(migrateSchedule(schedToUse));
           var bootTeam = merged.find ? merged.find(function(t) { return t.id === bootActiveId; }) : null;
           if (bootTeam) { dbSnapshotRoster(bootActiveId, bootTeam.name, dbData.roster, 'app_load'); }
         }).catch(function(err) {
-          console.error("[boot] failed to hydrate active team roster:", err);
+          console.error("[boot] failed to hydrate active team:", err);
         });
       }
 
@@ -2179,7 +2192,7 @@ export default function App() {
     setLineupDirty(true);
     if (activeTeamId) {
       saveJSON("team:" + activeTeamId + ":roster", next);
-      if (next.length > 0 && !isHydrating) {
+      if (next.length > 0) {
         dbSync(function() { return dbSaveTeamData(activeTeamId, {
           roster: next, schedule: schedule, practices: practices,
           battingOrder: battingOrder, grid: grid, innings: innings, locked: lineupLocked
@@ -2198,12 +2211,10 @@ export default function App() {
       setLineupDirty(true);
       if (activeTeamId) {
         saveJSON("team:" + activeTeamId + ":roster", prev);
-        if (!isHydrating) {
-          dbSync(function() { return dbSaveTeamData(activeTeamId, {
-            roster: prev, schedule: schedule, practices: practices,
-            battingOrder: battingOrder, grid: grid, innings: innings, locked: lineupLocked
-          }); });
-        }
+        dbSync(function() { return dbSaveTeamData(activeTeamId, {
+          roster: prev, schedule: schedule, practices: practices,
+          battingOrder: battingOrder, grid: grid, innings: innings, locked: lineupLocked
+        }); });
       }
       return next;
     });
@@ -2214,12 +2225,13 @@ export default function App() {
     setSchedule(next);
     if (activeTeamId) {
       saveJSON("team:" + activeTeamId + ":schedule", next);
-      if (!isHydrating) {
-        dbSync(function() { return dbSaveTeamData(activeTeamId, {
-          roster: roster, schedule: next, practices: practices,
-          battingOrder: battingOrder, grid: grid, innings: innings, locked: lineupLocked
-        }); });
-      }
+      // Always write to Supabase — the lastWrite > loadTimestamp guard in loadTeam hydration
+      // already handles the race condition, so the isHydrating guard here is redundant
+      // and causes snackDuty/gameBall/scoreReported to silently miss Supabase.
+      dbSync(function() { return dbSaveTeamData(activeTeamId, {
+        roster: roster, schedule: next, practices: practices,
+        battingOrder: battingOrder, grid: grid, innings: innings, locked: lineupLocked
+      }); });
     }
   }
 
@@ -2249,12 +2261,10 @@ export default function App() {
     setPractices(next);
     if (activeTeamId) {
       saveJSON("team:" + activeTeamId + ":practices", next);
-      if (!isHydrating) {
-        dbSync(function() { return dbSaveTeamData(activeTeamId, {
-          roster: roster, schedule: schedule, practices: next,
-          battingOrder: battingOrder, grid: grid, innings: innings, locked: lineupLocked
-        }); });
-      }
+      dbSync(function() { return dbSaveTeamData(activeTeamId, {
+        roster: roster, schedule: schedule, practices: next,
+        battingOrder: battingOrder, grid: grid, innings: innings, locked: lineupLocked
+      }); });
     }
   }
 
@@ -2263,12 +2273,10 @@ export default function App() {
     setBattingOrder(next);
     if (activeTeamId) {
       saveJSON("team:" + activeTeamId + ":batting", next);
-      if (!isHydrating) {
-        dbSync(function() { return dbSaveTeamData(activeTeamId, {
-          roster: roster, schedule: schedule, practices: practices,
-          battingOrder: next, grid: grid, innings: innings, locked: lineupLocked
-        }); });
-      }
+      dbSync(function() { return dbSaveTeamData(activeTeamId, {
+        roster: roster, schedule: schedule, practices: practices,
+        battingOrder: next, grid: grid, innings: innings, locked: lineupLocked
+      }); });
     }
   }
 
@@ -2277,12 +2285,10 @@ export default function App() {
     setGrid(next);
     if (activeTeamId) {
       saveJSON("team:" + activeTeamId + ":grid", next);
-      if (!isHydrating) {
-        dbSync(function() { return dbSaveTeamData(activeTeamId, {
-          roster: roster, schedule: schedule, practices: practices,
-          battingOrder: battingOrder, grid: next, innings: innings, locked: lineupLocked
-        }); });
-      }
+      dbSync(function() { return dbSaveTeamData(activeTeamId, {
+        roster: roster, schedule: schedule, practices: practices,
+        battingOrder: battingOrder, grid: next, innings: innings, locked: lineupLocked
+      }); });
     }
   }
 
@@ -2302,12 +2308,10 @@ export default function App() {
     setInnings(n);
     if (activeTeamId) {
       saveJSON("team:" + activeTeamId + ":innings", n);
-      if (!isHydrating) {
-        dbSync(function() { return dbSaveTeamData(activeTeamId, {
-          roster: roster, schedule: schedule, practices: practices,
-          battingOrder: battingOrder, grid: grid, innings: n, locked: lineupLocked
-        }); });
-      }
+      dbSync(function() { return dbSaveTeamData(activeTeamId, {
+        roster: roster, schedule: schedule, practices: practices,
+        battingOrder: battingOrder, grid: grid, innings: n, locked: lineupLocked
+      }); });
     }
   }
 
@@ -2326,12 +2330,10 @@ export default function App() {
     setLineupLocked(val);
     if (activeTeamId) {
       saveJSON("team:" + activeTeamId + ":locked", val);
-      if (!isHydrating) {
-        dbSync(function() { return dbSaveTeamData(activeTeamId, {
-          roster: roster, schedule: schedule, practices: practices,
-          battingOrder: battingOrder, grid: grid, innings: innings, locked: val
-        }); });
-      }
+      dbSync(function() { return dbSaveTeamData(activeTeamId, {
+        roster: roster, schedule: schedule, practices: practices,
+        battingOrder: battingOrder, grid: grid, innings: innings, locked: val
+      }); });
     }
     if (val) {
       track("finalize_lineup", { roster_size: roster.length, innings: innings });
@@ -2342,12 +2344,10 @@ export default function App() {
     setCoachPin(val);
     if (activeTeamId) {
       saveJSON("team:" + activeTeamId + ":pin", val);
-      if (!isHydrating) {
-        dbSync(function() { return dbSaveTeamData(activeTeamId, {
-          roster: roster, schedule: schedule, practices: practices,
-          battingOrder: battingOrder, grid: grid, innings: innings, locked: lineupLocked, coachPin: val
-        }); });
-      }
+      dbSync(function() { return dbSaveTeamData(activeTeamId, {
+        roster: roster, schedule: schedule, practices: practices,
+        battingOrder: battingOrder, grid: grid, innings: innings, locked: lineupLocked, coachPin: val
+      }); });
     }
   }
 
