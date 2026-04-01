@@ -3632,11 +3632,12 @@ export default function App() {
         if (!game.result || game.result === '') continue;
         if (game.battingPerf && game.battingPerf[playerName]) {
           var perf = game.battingPerf[playerName];
-          ab  += parseInt(perf.ab  || 0, 10);
+          var perfAb = parseInt(perf.ab || 0, 10);
+          ab  += perfAb;
           h   += parseInt(perf.h   || 0, 10);
           r   += parseInt(perf.r   || 0, 10);
           rbi += parseInt(perf.rbi || 0, 10);
-          games += 1;
+          if (perfAb > 0) { games += 1; }
         }
       }
       return { ab:ab, h:h, r:r, rbi:rbi, games:games };
@@ -4279,12 +4280,13 @@ export default function App() {
                         var sg = schedule[sgi];
                         if (!sg.result || !sg.battingPerf || !sg.battingPerf[info.name]) { continue; }
                         var perf = sg.battingPerf[info.name];
-                        st.ab   += parseInt(perf.ab  || 0, 10);
+                        var perfAb = parseInt(perf.ab || 0, 10);
+                        st.ab   += perfAb;
                         st.h    += parseInt(perf.h   || 0, 10);
                         st.r    += parseInt(perf.r   || 0, 10);
                         st.rbi  += parseInt(perf.rbi || 0, 10);
                         st.bb   += parseInt(perf.bb  || 0, 10);
-                        st.games++;
+                        if (perfAb > 0) { st.games++; }
                       }
                       if (st.games === 0) { return null; }
                       var avg = fmtAvg(st.h, st.ab);
@@ -5034,12 +5036,13 @@ export default function App() {
         if (!seasonStats[pname]) {
           seasonStats[pname] = { ab:0, h:0, r:0, rbi:0, bb:0, games:0 };
         }
-        seasonStats[pname].ab   += parseInt(perf.ab  || 0, 10);
+        var perfAb = parseInt(perf.ab || 0, 10);
+        seasonStats[pname].ab   += perfAb;
         seasonStats[pname].h    += parseInt(perf.h   || 0, 10);
         seasonStats[pname].r    += parseInt(perf.r   || 0, 10);
         seasonStats[pname].rbi  += parseInt(perf.rbi || 0, 10);
         seasonStats[pname].bb   += parseInt(perf.bb  || 0, 10);
-        seasonStats[pname].games++;
+        if (perfAb > 0) { seasonStats[pname].games++; }
       }
     }
     var hasAnyStats = Object.keys(seasonStats).length > 0;
