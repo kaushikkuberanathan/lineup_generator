@@ -1,7 +1,25 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: March 31, 2026 (v2.0.5)
+> Last updated: April 1, 2026 (v2.1.0)
 > MVP launched: March 24, 2026
+
+---
+
+## v2.1.0 — Phase 4B: Email OTP Auth (2026-04-01)
+### Shipped
+- Email OTP authentication via Supabase + Resend
+- Access request pipeline (submit → admin notified → 1-tap approve → user notified)
+- auth_events audit table with full device context on every auth action
+- Migrations 008-012: email columns, role expansion, partial unique indexes
+- Backend test suite: 60 tests across 9 categories
+- Approve/deny link security TODO documented (Phase 5 item)
+- PORT env var fix, DEFAULT_TEAM_ID fix, debug log cleanup
+
+### Outstanding (Phase 4C)
+- Frontend auth screens (LoginScreen, RequestAccessScreen, AuthGate)
+- requireAuth gate activation on protected routes
+- RLS enforcement (004_rls_fixes.sql — parked until frontend auth complete)
+- Twilio phone OTP (Phase 4D — pending toll-free verification)
 
 ---
 
@@ -524,6 +542,16 @@
 8. **Set up GitHub Actions CI** — block Vercel auto-deploy unless build + engine tests pass; 2-hour setup, eliminates broken deploys
 
 > **Note:** File split (P3 code quality) should happen in parallel with or just before Phase 3 auth work. It will reduce new feature implementation time by ~40%.
+
+---
+
+## Phase 5 — Security Hardening
+
+### Approve-Link Token Security
+- Current approve/deny links in admin emails are unsecured (UUID only)
+- Phase 5: implement HMAC-signed tokens with 24hr expiry
+- See docs/TODO_approve_link_security.md for full implementation plan
+- Blocks: none — implement before opening to multiple teams
 
 ---
 

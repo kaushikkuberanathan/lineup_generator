@@ -148,9 +148,24 @@ var DEFAULT_ROSTER = [];
 var _mem = {};
 var SCHEMA_VERSION = 2;
 
-var APP_VERSION = "2.0.5";
+var APP_VERSION = "2.1.0";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.1.0',
+    date: '2026-04-01',
+    changes: [
+      'Phase 4B: Email OTP authentication live',
+      'Access request pipeline with admin notification emails',
+      '1-tap approve/deny links in admin emails',
+      'Approval confirmation email to users with pre-filled login link',
+      'auth_events audit logging on all auth actions',
+      'Device context capture (platform, browser, access mode, app version)',
+      'Migrations 008-012: email support across all auth tables',
+      'Backend test suite: 60 tests, 54 automated, 6 manual',
+      'PORT env var fix, DEFAULT_TEAM_ID fix, debug log cleanup'
+    ]
+  },
   {
     version: "2.0.5",
     date: "March 31, 2026",

@@ -108,6 +108,10 @@ app.get('/ping', function(req, res) {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+app.get('/test-public', (req, res) => {
+  res.json({ ok: true });
+});
+
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1', adminRouter);
 app.use('/api/v1', feedbackRouter);

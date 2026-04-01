@@ -230,6 +230,25 @@ Add `ADMIN_KEY` to backend `.env` and Render environment to protect the recovery
 
 ---
 
+## Migration naming collision — important
+Two files share the 004_ prefix but live in different directories
+and serve different purposes:
+
+- `backend/src/db/migrations/004_rls_policies.sql`
+  RLS on auth tables (access_requests, profiles, team_memberships)
+  STATUS: Already applied
+
+- `backend/migrations/004_rls_fixes.sql`
+  RLS hardening on existing tables (teams, team_data, share_links)
+  STATUS: Parked — do not run until Phase 4C cutover
+  BLOCKS ON: Frontend auth screens (LoginScreen, AuthGate) being live
+  REASON: Will break anon writes that coaches rely on today
+
+`backend/migrations/` is the legacy directory — no new files go there.
+All future migrations go in `backend/src/db/migrations/` only.
+
+---
+
 ### Zero-Downtime Constraint (CRITICAL)
 **Until Phase 4 cutover, all backend changes are additive only:**
 - Do NOT modify existing route handlers in `index.js`
@@ -330,6 +349,18 @@ All major sections are wrapped with `<ErrorBoundary>` (class component). On cras
 ---
 
 ## Version History
+
+### v2.1.0 — April 1, 2026
+- Phase 4B complete: email OTP auth, Resend notifications, auth_events
+- Migrations 008-012 applied
+- Backend test suite added (scripts/tests/)
+- npm test wired to test-runner.js
+- New lib files: authEvents.js, email.js
+- New routes: approve-link, deny-link (unauthenticated GET)
+- Env vars added: RESEND_API_KEY, APP_URL, BACKEND_URL, ADMIN_EMAIL,
+  RESEND_TEST_RECIPIENT, RESEND_DOMAIN_VERIFIED
+- CLAUDE.md rule: canonical migration directory is backend/src/db/migrations/ only
+- TODO: approve-link security hardening in docs/TODO_approve_link_security.md
 
 ### v2.0.5 — March 31, 2026
 Fix: Complete Roster badge no longer truncated — removed whiteSpace:nowrap, wraps within grid column

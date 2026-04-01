@@ -14,4 +14,11 @@ for (const key of required) {
   }
 }
 
+const optional = ['RESEND_API_KEY', 'APP_URL'];
+for (const key of optional) {
+  if (!process.env[key]) {
+    console.warn(`[env] Optional variable not set: ${key}`);
+  }
+}
+
 module.exports = {};

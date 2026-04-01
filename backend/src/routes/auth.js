@@ -28,6 +28,7 @@ const rateLimit = require('express-rate-limit');
 const { supabaseAdmin, supabaseAnon } = require('../lib/supabase');
 const requireAuth = require('../middleware/requireAuth');
 const { logAuthEvent } = require('../lib/authEvents');
+const { sendAdminNotification } = require('../lib/email');
 
 const router = express.Router();
 
@@ -164,6 +165,18 @@ router.post(
         teamId: String(teamId),
         authChannel: channel,
         deviceContext: deviceContext ?? {},
+      });
+
+      await sendAdminNotification({
+        requestId: data.id,
+        firstName,
+        lastName,
+        email:         email ?? null,
+        requestedRole,
+        teamId:        String(teamId),
+        platform:      deviceContext?.platform    ?? 'unknown',
+        accessMode:    deviceContext?.access_mode ?? 'unknown',
+        appVersion:    deviceContext?.app_version ?? 'unknown',
       });
 
       return res.status(201).json({
