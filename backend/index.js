@@ -8,14 +8,21 @@ const feedbackRouter = require('./src/routes/feedback');
 const teamDataRouter = require('./src/routes/teamData');
 
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 
 const ALLOWED_ORIGINS = [
   'https://line-up-generator.vercel.app',
-  'http://localhost:5173',
-  'http://localhost:5000',
 ];
-app.use(cors({ origin: ALLOWED_ORIGINS }));
+app.use(cors({
+  origin: function(origin, callback) {
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    // Allow any localhost port for local dev
+    if (/^http:\/\/localhost(:\d+)?$/.test(origin)) return callback(null, true);
+    if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
+    callback(new Error('Not allowed by CORS'));
+  }
+}));
 app.use(express.json());
 
 app.get('/', (req, res) => {

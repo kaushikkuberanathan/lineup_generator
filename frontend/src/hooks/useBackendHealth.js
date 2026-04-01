@@ -15,6 +15,10 @@ const BACKEND_URL =
   (import.meta.env && import.meta.env.VITE_BACKEND_URL) ||
   'https://lineup-generator-backend.onrender.com';
 
+// In local dev without an explicit backend URL, skip the health check entirely
+// (no point pinging production from localhost — it causes CORS noise)
+const IS_LOCAL_DEV = import.meta.env.DEV && !(import.meta.env && import.meta.env.VITE_BACKEND_URL);
+
 const TIMEOUT_MS         = 8000;   // abort if no response
 const SLOW_THRESHOLD_MS  = 2000;   // >2s = cold-starting
 const RECHECK_MS         = 5 * 60 * 1000;  // re-ping every 5 minutes
@@ -65,6 +69,11 @@ export function useBackendHealth() {
   }
 
   useEffect(function() {
+    if (IS_LOCAL_DEV) {
+      setStatus('ok');
+      setCheckingVisible(false);
+      return;
+    }
     check();
     recheckRef.current = setInterval(check, RECHECK_MS);
     return function() {
