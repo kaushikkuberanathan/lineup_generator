@@ -1877,6 +1877,21 @@ export default function App() {
       window.removeEventListener("beforeinstallprompt", handler);
     };
   }, []);
+
+  // iOS install banner — Safari doesn't fire beforeinstallprompt; show manual instructions instead
+  useEffect(function() {
+    if (!isIOS) return;
+    if (isStandalone) return;
+    if (localStorage.getItem("pwa_installed")) return;
+    if (localStorage.getItem("ios_install_dismissed")) return;
+    // Only show after user has visited once (not on very first load)
+    if (!localStorage.getItem("pwa_visited")) {
+      localStorage.setItem("pwa_visited", "1");
+      return;
+    }
+    setShowIOSInstallBanner(true);
+  }, []);
+
   var _ros = useState(initRoster);
   var roster = _ros[0]; var setRoster = _ros[1];
   var _rosterHistory = useState([]);
@@ -2098,6 +2113,9 @@ export default function App() {
   var showInstallBanner = _showInstallBanner[0]; var setShowInstallBanner = _showInstallBanner[1];
   var _deferredPrompt = useState(null);
   var deferredPrompt = _deferredPrompt[0]; var setDeferredPrompt = _deferredPrompt[1];
+  var isIOS = typeof window !== "undefined" && /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  var _showIOSInstallBanner = useState(false);
+  var showIOSInstallBanner = _showIOSInstallBanner[0]; var setShowIOSInstallBanner = _showIOSInstallBanner[1];
 
   var warnings = useMemo(function() { return validateGrid(grid, roster, innings); }, [grid, roster, innings]);
 
@@ -3394,6 +3412,40 @@ export default function App() {
                         background:"#f5c842", color:"#0f1f3d", border:"none",
                         borderRadius:6, cursor:"pointer", whiteSpace:"nowrap" }}>
                       Install
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+
+              {showIOSInstallBanner ? (
+                <div style={{ margin:"12px 0", padding:"14px", background:"#1a2f5e",
+                  border:"1px solid rgba(245,200,66,0.3)", borderRadius:10,
+                  boxShadow:"0 2px 8px rgba(0,0,0,0.15)" }}>
+                  <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:8 }}>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:13, fontWeight:700, color:"#fff", marginBottom:6 }}>
+                        📲 Add to Home Screen
+                      </div>
+                      <div style={{ fontSize:12, color:"rgba(255,255,255,0.8)", lineHeight:1.6 }}>
+                        Install this app for one-tap access on game day:
+                      </div>
+                      <div style={{ fontSize:12, color:"rgba(255,255,255,0.7)", lineHeight:1.8, marginTop:4 }}>
+                        1. Tap the <span style={{ fontWeight:700, color:"#f5c842" }}>Share</span> button{" "}
+                        <span style={{ fontSize:15 }}>⎙</span> at the bottom of Safari
+                      </div>
+                      <div style={{ fontSize:12, color:"rgba(255,255,255,0.7)", lineHeight:1.8 }}>
+                        2. Scroll down and tap{" "}
+                        <span style={{ fontWeight:700, color:"#f5c842" }}>"Add to Home Screen"</span>
+                      </div>
+                    </div>
+                    <button onClick={function() {
+                        setShowIOSInstallBanner(false);
+                        localStorage.setItem("ios_install_dismissed", "1");
+                      }}
+                      style={{ padding:"4px 8px", fontSize:18, background:"transparent",
+                        color:"rgba(255,255,255,0.4)", border:"none",
+                        borderRadius:6, cursor:"pointer", lineHeight:1, flexShrink:0 }}>
+                      ×
                     </button>
                   </div>
                 </div>
@@ -5705,6 +5757,8 @@ export default function App() {
       setNewGame(g);
       setEditingGame(game);
       setShowGameForm(true);
+      var scrollEl = document.getElementById('app-scroll-body');
+      if (scrollEl) { scrollEl.scrollTop = 0; }
     }
 
     function buildShareUrl(game) {
@@ -8349,7 +8403,7 @@ export default function App() {
         </ErrorBoundary>
       </div>
       {subTabBar}
-      <div style={S.body}>
+      <div id="app-scroll-body" style={S.body}>
         <div style={{ width:"100%", maxWidth:"480px", marginLeft:"auto", marginRight:"auto", paddingLeft:"16px", paddingRight:"16px", boxSizing:"border-box" }}>
           {(primaryTab === "home" || (!activeTeam && primaryTab !== "more")) ? renderHome() : tabContent}
         </div>
