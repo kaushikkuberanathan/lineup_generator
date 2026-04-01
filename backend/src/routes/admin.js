@@ -51,7 +51,7 @@ router.post(
   '/approve',
   [
     body('requestId').isUUID(),
-    body('teamId').isUUID(),
+    body('teamId').notEmpty().trim(),
     body('role').isIn(['coach', 'scorekeeper', 'viewer']),
   ],
   async (req, res) => {
