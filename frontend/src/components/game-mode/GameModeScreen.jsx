@@ -239,8 +239,8 @@ export function GameModeScreen({
       }}>
         {/* Exit */}
         <button onClick={onExit}
-          style={{ padding:"8px 12px", borderRadius:"8px", border:"1px solid rgba(255,255,255,0.15)",
-            background:"transparent", color:"#64748b", cursor:"pointer",
+          style={{ padding:"8px 12px", borderRadius:"8px", border:"1px solid rgba(200,16,46,0.6)",
+            background:"rgba(200,16,46,0.15)", color:"#fca5a5", cursor:"pointer",
             fontSize:"13px", fontFamily:"Georgia,serif", flexShrink:0 }}>
           ✕ Exit
         </button>
@@ -254,9 +254,9 @@ export function GameModeScreen({
             }
           }}
           title="Reset batting position to top of order, inning 1"
-          style={{ padding:"6px 10px", borderRadius:"8px", border:"1px solid rgba(255,255,255,0.1)",
-            background:"transparent", color:"#475569", cursor:"pointer",
-            fontSize:"11px", fontFamily:"Georgia,serif", flexShrink:0 }}>
+          style={{ padding:"6px 10px", borderRadius:"8px", border:"1px solid rgba(255,255,255,0.3)",
+            background:"rgba(255,255,255,0.08)", color:"#e2e8f0", cursor:"pointer",
+            fontSize:"14px", fontFamily:"Georgia,serif", flexShrink:0 }}>
           ↺
         </button>
 
