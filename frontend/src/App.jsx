@@ -158,9 +158,17 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.1.5";
+var APP_VERSION = "2.1.6";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.1.6',
+    date: '2026-04-02',
+    changes: [
+      'Fix: Rules of Hooks violation — extracted renderSharedView into proper SharedView component',
+      'Fix: non-active team card hydration — eager Supabase fetch on boot with warm localStorage skip and skeleton state while pending'
+    ]
+  },
   {
     version: '2.1.5',
     date: '2026-04-02',

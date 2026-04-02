@@ -1,7 +1,13 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: April 2, 2026 (v2.1.5)
+> Last updated: April 2, 2026 (v2.1.6)
 > MVP launched: March 24, 2026
+
+---
+
+## v2.1.6 — 2026-04-02
+- Fix: Rules of Hooks violation — extracted renderSharedView into proper SharedView component
+- Fix: non-active team card hydration — eager Supabase fetch on boot, warm localStorage skip, skeleton state while pending
 
 ---
 

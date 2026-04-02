@@ -359,6 +359,10 @@ All major sections are wrapped with `<ErrorBoundary>` (class component). On cras
 
 ## Version History
 
+### v2.1.6 — April 2, 2026
+- Fix: Rules of Hooks violation — renderSharedView extracted into proper SharedView component
+- Fix: non-active team card hydration — eager Supabase fetch on boot, skeleton while pending
+
 ### v2.1.5 — April 2, 2026
 - Supabase-backed runtime feature flags — all flags now toggle from dashboard without a deploy
 - Maintenance mode screen + coach bypass (?coach_access=mudhen2026)
