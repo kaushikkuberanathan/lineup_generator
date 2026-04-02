@@ -88,17 +88,16 @@ In the lineup generator project, execute the full deployment
 checklist in this exact order. Do not skip any step.
 
 STEP 0 — Enable maintenance mode (no deploy needed):
-  In Supabase SQL Editor:
+  In Supabase SQL Editor run:
   UPDATE feature_flags 
   SET enabled = true, updated_at = now()
   WHERE flag_name = 'MAINTENANCE_MODE' AND team_id IS NULL;
-  Wait 10 seconds. Verify dugoutlineup.com shows maintenance screen.
-  Coach bypass: https://dugoutlineup.com/?coach_access=mudhen2026
 
-  After verifying prod, disable:
-  UPDATE feature_flags 
-  SET enabled = false, updated_at = now()
-  WHERE flag_name = 'MAINTENANCE_MODE' AND team_id IS NULL;
+  Wait 10 seconds. Open dugoutlineup.com in incognito —
+  confirm maintenance screen appears.
+
+  Coach bypass to verify prod while maintenance is on:
+  https://dugoutlineup.com/?coach_access=mudhen2026
 
 STEP 1 — Version bumps (all files):
 In frontend/src/App.jsx:
@@ -150,6 +149,16 @@ git push origin main
 STEP 5 — Confirm:
 Show full build output, git commit hash, and confirm push
 succeeded with remote branch reference.
+STEP 6 — Verify prod as coach:
+  Visit: https://dugoutlineup.com/?coach_access=mudhen2026
+  Confirm new version in About tab.
+  Run game-day validation checklist.
+STEP 7 — Disable maintenance mode:
+  UPDATE feature_flags 
+  SET enabled = false, updated_at = now()
+  WHERE flag_name = 'MAINTENANCE_MODE' AND team_id IS NULL;
+
+  Reload incognito — confirm normal app returns.
 
 ### Version Bump Rules
 - Patch (`x.x.X`) — bug fixes, copy, style tweaks
@@ -253,26 +262,37 @@ CLAUDE.md                               — project rules + version history
 
 ## Feature Flags Reference
 
-All flags live in the Supabase feature_flags table.
-Toggle instantly without a deploy — changes take effect on next page load.
+All flags live in the Supabase `feature_flags` table (global flags have `team_id = null`). Toggle instantly without a deploy — changes take effect on next page load.
 
-| Flag | Default | Purpose |
-|---|---|---|
-| MAINTENANCE_MODE | false | Show maintenance screen to all users |
-| GAME_MODE | true | Full-screen live game overlay |
-| VIEWER_MODE | false | Read-only share link viewer mode |
-| ACCESSIBILITY_V1 | false | Font floor, touch targets, contrast uplift |
+| Flag | Default | Current | Purpose |
+|---|---|---|---|
+| MAINTENANCE_MODE | false | false | Show maintenance screen during deploys |
+| GAME_MODE | true | true | Full-screen live game overlay |
+| VIEWER_MODE | false | false | Read-only share link viewer mode |
+| ACCESSIBILITY_V1 | false | false | Font floor, touch targets, contrast uplift |
 
-Toggle SQL:
-  UPDATE feature_flags 
-  SET enabled = true/false, updated_at = now()
-  WHERE flag_name = 'FLAG_NAME' AND team_id IS NULL;
+Toggle SQL (replace FLAG_NAME and true/false as needed):
+```sql
+UPDATE feature_flags 
+SET enabled = true, updated_at = now()
+WHERE flag_name = 'FLAG_NAME' AND team_id IS NULL;
+```
+
+Add a new flag:
+```sql
+INSERT INTO feature_flags (flag_name, enabled, team_id, description)
+VALUES ('NEW_FLAG', false, null, 'What this flag does');
+```
+
+RLS: anon role has SELECT only. No public write.
+Coach bypass: https://dugoutlineup.com/?coach_access=mudhen2026
+Revoke bypass: https://dugoutlineup.com/?clear_bypass=1
 
 ---
 
 ## Outstanding Manual Actions
 
-- [ ] Run Supabase SQL migrations 002 and 003
+- [ ] Migrations 002 and 003 status — confirm if roster_history and original feature_flags tables were ever executed
 - [ ] Complete Twilio toll-free verification (blocks Phase 4 auth)
 - [ ] Add `ADMIN_KEY` to Render environment variables
 - [ ] Drop deprecated column: `ALTER TABLE team_data DROP COLUMN snack_duty`
@@ -282,8 +302,8 @@ Toggle SQL:
 
 ## Next Session Priorities
 
-1. Extract `renderSharedView` into proper React component — fixes blank screen on bare `?s=` links
-2. Remove `FEATURE_FLAGS.VIEWER_MODE` gate from Share Viewer Link button
+1. Extract `renderSharedView` into proper React component (fixes blank screen on bare `?s=` share links)
+2. Remove `VIEWER_MODE` gate from Share Viewer Link button
 3. Game Mode via share link (`?mode=dugout`) for dugout coaches
 4. Make `shareCurrentLineup()` always generate `&view=true` links
 
