@@ -1,0 +1,28 @@
+{
+  "name": "lineup-generator",
+  "version": "1.0.0",
+  "description": "> **Baseball and softball lineup management for youth coaches — built on the sideline, for the sideline.**",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepare": "husky"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kaushikkuberanathan/lineup_generator.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/kaushikkuberanathan/lineup_generator/issues"
+  },
+  "homepage": "https://github.com/kaushikkuberanathan/lineup_generator#readme",
+  "devDependencies": {
+    "husky": "^9.1.7"
+  }
+}
