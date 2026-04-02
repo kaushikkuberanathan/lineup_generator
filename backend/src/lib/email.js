@@ -20,9 +20,9 @@
  */
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const FROM_ADDRESS   = 'Lineup Generator <onboarding@resend.dev>';
+const FROM_ADDRESS   = 'Lineup Generator <noreply@dugoutlineup.com>';
 const ADMIN_EMAIL    = process.env.ADMIN_EMAIL || 'kaushik.kuberanathan@gmail.com';
-const APP_URL        = process.env.APP_URL || 'https://line-up-generator.vercel.app';
+const APP_URL        = process.env.APP_URL || 'https://dugoutlineup.com';
 
 /**
  * Send email via Resend REST API.
@@ -90,6 +90,7 @@ async function sendAdminNotification(opts) {
     email,
     requestedRole,
     teamId,
+    teamName    = 'Unknown Team',
     platform    = 'unknown',
     accessMode  = 'unknown',
     appVersion  = 'unknown',
@@ -99,7 +100,7 @@ async function sendAdminNotification(opts) {
   const approveUrl = `${BACKEND_URL}/api/v1/admin/approve-link?requestId=${requestId}&teamId=${teamId}`;
   const denyUrl    = `${BACKEND_URL}/api/v1/admin/deny-link?requestId=${requestId}`;
 
-  const subject = `New access request — ${firstName} ${lastName} (${requestedRole})`;
+  const subject = `New access request — ${firstName} ${lastName} (${requestedRole}) · ${teamName}`;
 
   const html = `
     <div style="font-family: sans-serif; max-width: 520px; margin: 0 auto;">
@@ -117,6 +118,10 @@ async function sendAdminNotification(opts) {
         <tr>
           <td style="padding: 8px 0; color: #666;">Requested role</td>
           <td style="padding: 8px 0; font-weight: 500; text-transform: capitalize;">${requestedRole.replace('_', ' ')}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #666; width: 140px;">Team</td>
+          <td style="padding: 8px 0;">${teamName} <span style="color: #999; font-size: 12px;">(${teamId})</span></td>
         </tr>
         <tr>
           <td style="padding: 8px 0; color: #666;">Platform</td>

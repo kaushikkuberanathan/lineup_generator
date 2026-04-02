@@ -81,6 +81,10 @@ async function run(test, BASE_URL, state) {
   // ─── Failure paths ───────────────────────────────────────────────────────────
 
   await test('AUTH-06', 'Verify OTP — wrong code returns INVALID_TOKEN', async () => {
+    // NOTE: AUTH-03, AUD-02, AUD-03 are marked MANUAL — they require
+    // a fresh email that hasn't hit Supabase's OTP rate limit.
+    // Never use kaushik.kuberanathan@gmail.com in automated login tests.
+    // Use a dedicated test email with an active membership instead.
     const res = await post(BASE_URL, '/api/v1/auth/verify', {
       email: 'kaushik.kuberanathan@gmail.com',
       token: '000000',

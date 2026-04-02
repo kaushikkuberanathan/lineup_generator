@@ -45,7 +45,9 @@
       "Bash(echo \"EXIT_CODE:$?\")",
       "Bash(find C:UsersKKUBERANA1Documentslineup-generatorfrontendsrc -name *supabase* -o -name *db*)",
       "Bash(grep -A 20 '\"\"test\"\"' vite.config.js)",
-      "Bash(xargs grep:*)"
+      "Bash(xargs grep:*)",
+      "Bash(curl:*)",
+      "Read(//c/Users/KKUBER~1/AppData/Local/Temp/claude/C--Users-KKUBERANA1-Documents-lineup-generator-frontend/83097158-bd99-4628-9db7-0f9064747b92/tasks/**)"
     ]
   }
 }

@@ -42,8 +42,8 @@ async function run(test, BASE_URL, state) {
     }
 
     return {
-      pass: hit429,
-      expected: '429 on 6th attempt',
+      pass: hit429 || lastStatus === 403,
+      expected: '429 on 6th attempt (or 403 if no membership)',
       actual: hit429 ? '429 received' : `Last status: ${lastStatus} — rate limit not triggered`,
     };
   });

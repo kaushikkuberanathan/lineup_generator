@@ -555,6 +555,37 @@
 
 ---
 
+## Phase 5 — Multi-Team & Delegated Access
+
+### Phase 5A — Self-service team creation
+- Head coaches can create their own team without platform_admin involvement
+- Team creation flow: name, age group, sport, division
+- Auto-assigns creator as team_admin of the new team
+
+### Phase 5B — Delegated approval
+- team_admin can approve coach/coordinator requests for their own team
+- platform_admin only receives and approves team_admin requests
+- Notification routing: team_admin requests → platform_admin, 
+  coach/coordinator requests → team_admin of that team
+
+### Phase 5C — Team switcher UI
+- Multi-team users see team switcher on home screen
+- Favourite badge to pin primary team
+- Search bar to find other teams
+- One Supabase user, multiple team_memberships rows
+
+### Phase 5D — Team join links
+- Head coach generates QR code / shareable link for their team
+- Pre-fills team ID and role in RequestAccessScreen
+- Separate links per role (head coach link, assistant link, coordinator link)
+
+### Phase 5E — Head coach onboarding flow (replaces manual Supabase creation)
+- Platform admin sends "Create your team" invite link to new head coach
+- Head coach fills out team details + their own profile
+- Team is created, head coach gets team_admin membership automatically
+
+---
+
 ## Architecture Notes
 
 - **Storage:** Supabase (primary) + localStorage (offline cache with sync-on-connect)

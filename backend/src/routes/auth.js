@@ -160,6 +160,16 @@ router.post(
 
       if (error) throw error;
 
+      let teamName = 'Unknown Team';
+      try {
+        const { data: teamRow } = await supabaseAdmin
+          .from('teams')
+          .select('name')
+          .eq('id', String(teamId))
+          .maybeSingle();
+        if (teamRow?.name) teamName = teamRow.name;
+      } catch { /* non-blocking */ }
+
       // Log auth event
       await logAuthEvent('access_requested', {
         teamId: String(teamId),
@@ -174,6 +184,7 @@ router.post(
         email:         email ?? null,
         requestedRole,
         teamId:        String(teamId),
+        teamName,
         platform:      deviceContext?.platform    ?? 'unknown',
         accessMode:    deviceContext?.access_mode ?? 'unknown',
         appVersion:    deviceContext?.app_version ?? 'unknown',
@@ -261,9 +272,13 @@ router.post(
 
       if (otpError) {
         console.error('[auth/login] OTP send error:', otpError.message);
-        return res.status(500).json({
-          error: 'OTP_SEND_FAILED',
-          message: 'Failed to send login code. Please try again.',
+        const isRateLimit = otpError.message?.toLowerCase().includes('security purposes') ||
+                            otpError.message?.toLowerCase().includes('after');
+        return res.status(isRateLimit ? 429 : 500).json({
+          error: isRateLimit ? 'TOO_MANY_ATTEMPTS' : 'OTP_SEND_FAILED',
+          message: isRateLimit
+            ? 'Too many login attempts. Please wait a few minutes and try again.'
+            : 'Failed to send login code. Please try again.',
         });
       }
 
@@ -350,26 +365,26 @@ router.post(
       }
 
       const userId = verifyData.user.id;
+      const contactFilter = channel === 'email' ? { email } : { phone_e164: phone };
 
-      // Activate membership via RPC (atomic — handles invited → active transition)
-      const contactParam = channel === 'email'
-        ? { p_email: email, p_phone: null }
-        : { p_phone: phone, p_email: null };
-
-      const { data: activateData, error: activateError } = await supabaseAdmin
-        .rpc('activate_membership', {
-          p_user_id: userId,
-          p_team_id: String(teamId),
-          ...contactParam,
-        });
+      // Direct membership activation — bypasses RPC
+      // TODO Phase 4C cleanup: update activate_membership RPC to support
+      // email + team_id params, then restore RPC call
+      const { error: activateError } = await supabaseAdmin
+        .from('team_memberships')
+        .update({
+          user_id:      userId,
+          status:       'active',
+          activated_at: new Date().toISOString(),
+        })
+        .match({ ...contactFilter, team_id: String(teamId) })
+        .in('status', ['invited', 'active']);
 
       if (activateError) {
-        console.error('[auth/verify] activate_membership error:', activateError.message);
-        // Don't block login — membership may already be active
+        console.error('[auth/verify] membership activation error:', activateError.message);
       }
 
       // Fetch membership + profile for response
-      const contactFilter = channel === 'email' ? { email } : { phone_e164: phone };
 
       const { data: membership } = await supabaseAdmin
         .from('team_memberships')

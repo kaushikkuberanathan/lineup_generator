@@ -31,6 +31,19 @@ node index.js      # Start Express server (default port 3001)
 
 ## Architecture
 
+## Multi-team design (Phase 5 — established Phase 4C session)
+- One Supabase auth.users record per person regardless of how many teams
+- One team_memberships row per (user, team) combination
+- team_admin role is team-scoped — a user can be team_admin on Team A 
+  and coach on Team B simultaneously
+- platform_admin is the only truly global role — stored separately from 
+  team_memberships
+- team_id in team_memberships is the join key — always a text field matching teams.id
+- Phase 4 MVP: platform_admin manually creates teams in Supabase
+- Phase 5A: self-service team creation replaces manual process
+- Approval routing in Phase 4: ALL requests → platform_admin (icoachyouthball@gmail.com)
+- Approval routing in Phase 5B: coach/coordinator → team_admin, team_admin → platform_admin
+
 ### Persistence: Three-Layer Pattern
 ```
 User Action → React state (instant) → localStorage (instant) → Supabase (async, fire-and-forget)
@@ -270,6 +283,14 @@ All future migrations go in `backend/src/db/migrations/` only.
 ## Deployment
 - **Frontend**: Vercel auto-deploys from `main` (config: `frontend/vercel.json`)
 - **Backend**: Render auto-deploys from `main` (root dir: `backend/`)
+
+## Pre-deploy checklist additions (Phase 4B)
+- [ ] Reset loginLimiter max from 50 back to 5 in backend/src/routes/auth.js
+- [ ] Confirm RESEND_DOMAIN_VERIFIED=true in Render env vars
+      (only after custom domain is verified — enables emails to all recipients)
+- [ ] Run npm test and confirm 54 passed / 0 failed before pushing
+- [ ] Never use kaushik.kuberanathan@gmail.com in automated test suites
+      (Supabase rate limits OTP sends per address — use dedicated test emails)
 
 ## Test Suite
 

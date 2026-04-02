@@ -75,6 +75,10 @@ async function run(test, BASE_URL, supabaseAdmin, state) {
   await test('AUD-04', 'otp_failed event logged on wrong OTP', async () => {
     const before = new Date();
 
+    // NOTE: AUTH-03, AUD-02, AUD-03 are marked MANUAL — they require
+    // a fresh email that hasn't hit Supabase's OTP rate limit.
+    // Never use kaushik.kuberanathan@gmail.com in automated login tests.
+    // Use a dedicated test email with an active membership instead.
     await post(BASE_URL, '/api/v1/auth/verify', {
       email: 'kaushik.kuberanathan@gmail.com',
       token: '000000', teamId: TEAM_ID, deviceContext: DEVICE,

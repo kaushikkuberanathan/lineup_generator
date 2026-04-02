@@ -26,6 +26,10 @@ import { LegalSection }       from './components/Support/LegalSection';
 import { FAQSection }         from './components/Support/FAQSection';
 import { BattingHandSelector } from './components/BattingHandSelector';
 import { PlayerHandBadge }     from './components/PlayerHandBadge';
+import { useAuth } from './hooks/useAuth';
+import { LoginScreen } from './components/Auth/LoginScreen';
+import { RequestAccessScreen } from './components/Auth/RequestAccessScreen';
+import { PendingApprovalScreen } from './components/Auth/PendingApprovalScreen';
 
 var MIXPANEL_TOKEN = "YOUR_MIXPANEL_TOKEN";
 if (MIXPANEL_TOKEN !== "YOUR_MIXPANEL_TOKEN") {
@@ -1845,6 +1849,20 @@ export default function App() {
     return !!(new URLSearchParams(window.location.search).get("s"));
   });
   var shareLoading = _shareLoading[0]; var setShareLoading = _shareLoading[1];
+
+  const {
+    authState,
+    session,
+    user,
+    membership,
+    role,
+    requestOtp,
+    verifyOtp,
+    requestAccess,
+    logout,
+  } = useAuth();
+
+  const [authScreen, setAuthScreen] = useState('login');
 
   // Online/offline detection
   useEffect(function() {
@@ -7973,6 +7991,45 @@ export default function App() {
       </div>
     );
   }
+
+  if (authState === 'loading') {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center',
+                    justifyContent: 'center', backgroundColor: '#f8fafc' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '32px', marginBottom: '12px' }}>⚾</div>
+          <p style={{ color: '#64748b', fontSize: '14px' }}>Loading…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (authState === 'unauthenticated') {
+    if (authScreen === 'request') {
+      return (
+        <RequestAccessScreen
+          onBack={() => setAuthScreen('login')}
+          requestAccess={requestAccess}
+        />
+      );
+    }
+    return (
+      <LoginScreen
+        onRequestAccess={() => setAuthScreen('request')}
+        requestOtp={requestOtp}
+        verifyOtp={verifyOtp}
+      />
+    );
+  }
+
+  if (authState === 'pending_approval') {
+    return (
+      <PendingApprovalScreen
+        onTryLogin={() => setAuthScreen('login')}
+      />
+    );
+  }
+
   try {
     var urlParams = new URLSearchParams(window.location.search);
     var shareParam = urlParams.get("share");
