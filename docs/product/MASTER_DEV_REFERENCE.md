@@ -293,7 +293,6 @@ Revoke bypass: https://dugoutlineup.com/?clear_bypass=1
 ## Outstanding Manual Actions
 
 - [ ] Migrations 002 and 003 status — confirm if roster_history and original feature_flags tables were ever executed
-- [ ] Complete Twilio toll-free verification (blocks Phase 4 auth)
 - [ ] Add `ADMIN_KEY` to Render environment variables
 - [ ] Drop deprecated column: `ALTER TABLE team_data DROP COLUMN snack_duty`
 - [ ] Fix silent admin approval bug — `.isUUID()` rejects numeric team ID `1774297491626`

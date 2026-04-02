@@ -274,7 +274,7 @@ Returns server version and uptime. Used for deploy verification.
 
 ## Auth Architecture (Phase 3)
 
-The auth system is **deployed but not yet gated** — backend infrastructure is live on Render, frontend cutover pending Twilio toll-free verification.
+The auth system is **deployed but not yet gated** — backend infrastructure is live on Render, frontend cutover pending. [Twilio removed — using Supabase email magic-link + Google OAuth]
 
 ### Strategy
 
@@ -398,12 +398,12 @@ Pre-cutover checklist: `docs/ops/PHASE4_PRECHECK.md`
 
 | Blocker | Status |
 |---------|--------|
-| Twilio toll-free verification | Submitted — 2–3 business day SLA |
-| Phase 4 cutover (add `requireAuth` to existing routes) | Pending Twilio + 2–3 coach pilot users |
+| [Twilio removed — using Supabase email magic-link + Google OAuth] | — |
+| Phase 4 cutover (add `requireAuth` to existing routes) | Pending 2–3 coach pilot users |
 
 ### Workaround (Dev/Test)
 
-Supabase test OTP: phone `+14044930548`, code `123456` — set in Supabase Auth > Providers > Phone > Test phone numbers. Remove after Twilio verified.
+[Twilio removed — using Supabase email magic-link + Google OAuth]
 
 ---
 
@@ -609,7 +609,7 @@ Full recovery workflow: `backend/migrations/README.md`
 | Decision | Current Rationale | When to Revisit |
 |---|---|---|
 | All logic in `App.jsx` (~6,600 lines) | Single-file build simplified early iteration | Before Phase 3 auth ships — file split is P3 backlog, will reduce feature velocity by ~40% if not done first |
-| No auth in MVP | Single-coach, single-device scope; share link is read-only | Phase 3 — Supabase OTP (Twilio toll-free verification pending) |
+| No auth in MVP | Single-coach, single-device scope; share link is read-only | Phase 3 — Supabase email magic-link + Google OAuth [Twilio removed — using Supabase email magic-link + Google OAuth] |
 | Render free tier | Zero cost for personal tool | Upgrade if cold-start latency becomes user-facing despite UptimeRobot |
 | JSONB for all team data | Mirrors localStorage, zero transformation overhead | Normalize if query patterns require filtering inside game/player arrays |
 | Backtracking solver in frontend | Fast enough at 11-player / 6-inning scale | Move server-side if multi-game batch generation or 20+ player rosters are added |

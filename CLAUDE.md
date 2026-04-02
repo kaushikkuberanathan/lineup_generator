@@ -145,20 +145,8 @@ backend/
 
 ### What Is NOT Done Yet (Parking Lot)
 
-#### BLOCKED: Twilio Toll-Free Verification
-- Twilio toll-free number cannot send SMS until verified
-- Verification submitted, takes 2-3 business days
-- Error seen: "Toll-Free Number Has Not Been Verified"
-- Once verified: real OTP SMS will work end to end
-- Workaround for now: Supabase test OTP (phone: +14044930548, code: 123456) — set in Supabase Auth > Providers > Phone > Test phone numbers
-- TODO: Once Twilio verified, remove test OTP entry from Supabase
-
-#### BLOCKED: Admin UI Login (depends on Twilio)
-- admin.html is built and deployed at /admin.html on frontend
-- Login flow works mechanically but OTP never arrives due to Twilio toll-free block
-- Once Twilio verified, log in at https://dugoutlineup.com/admin.html
-- Admin check: reads /me, looks for memberships[0].role === 'admin'
-- Known issue: /me returns memberships:[] intermittently — suspect token expiry mid-session, needs monitoring once Twilio unblocked
+#### Phone OTP — Removed
+Twilio phone OTP was planned but abandoned. Verification process failed. Auth is now email magic-link + Google OAuth (admin console). No phone/SMS dependency anywhere in the stack.
 
 #### TODO: Phase 4 Cutover (do after 2-3 coaches have tested successfully)
 Full step-by-step checklist: **`docs/ops/PHASE4_PRECHECK.md`**

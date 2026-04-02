@@ -1,5 +1,9 @@
 # Phase 4 Auth Cutover — Pre-Cutover Checklist
 
+> NOTE: Phase 4 phone OTP cutover abandoned.
+> Auth replaced with email magic-link + Google OAuth.
+> This document is archived for reference only.
+
 ## What Phase 4 Is
 
 Adding `requireAuth` middleware to the existing routes in `backend/index.js` — the
@@ -14,10 +18,8 @@ the switch.
 
 ## Pre-conditions (must all be true before proceeding)
 
-- [ ] **Twilio toll-free verification approved** — OTP SMS delivery is confirmed working
-      end to end (not just via Supabase test phone/code workaround)
-- [ ] **At least 2–3 coaches have tested the full OTP flow** — request access → admin
-      approves → login → verify → see their team
+- [ ] **At least 2–3 coaches have tested the full magic-link flow** — request access → admin
+      approves → login via email → see their team
 - [ ] **Admin UI is functional** — you can log in at `/admin.html`, view pending
       requests, approve, and see the Members list correctly (no empty memberships bug)
 - [ ] **Stan Hoover account tested** — his status should be `active` (not `invited`)

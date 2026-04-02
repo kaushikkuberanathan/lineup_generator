@@ -1467,6 +1467,298 @@ function PlayerFilterToggle({ players, selected, onSelect }) {
   );
 }
 
+function SharedView({ payload, renderFieldSVG }) {
+  // Derive inning count from grid
+  var innCount = 0;
+  for (var k in payload.grid) {
+    if ((payload.grid[k] || []).length > innCount) { innCount = payload.grid[k].length; }
+  }
+  var innArr = [];
+  for (var i = 0; i < innCount; i++) { innArr.push(i); }
+  var rosterNames = payload.roster || [];
+
+  // Local state for inning filter, view mode, and player filter
+  var _svInn = useState(null);
+  var svInn = _svInn[0]; var setSvInn = _svInn[1];
+  var _svView = useState("diamond");
+  var svView = _svView[0]; var setSvView = _svView[1];
+  var _svPlayer = useState(null);
+  var svPlayer = _svPlayer[0]; var setSvPlayer = _svPlayer[1];
+
+  // Build position box from payload.grid (no live React state here)
+  function sharedPosBox(pos) {
+    var pc = POS_COLORS[pos] || "#555";
+    var isSingle = svInn !== null;
+    var innPlayers = [];
+    for (var ii = 0; ii < innCount; ii++) {
+      if (isSingle && ii !== svInn) { continue; }
+      var found = "";
+      for (var pi = 0; pi < rosterNames.length; pi++) {
+        if ((payload.grid[rosterNames[pi]] || [])[ii] === pos) { found = rosterNames[pi]; break; }
+      }
+      innPlayers.push({ inn: ii + 1, name: found });
+    }
+    var hasSelectedPlayer = svPlayer && innPlayers.some(function(row) { return row.name === svPlayer; });
+    return (
+      <div style={{ background: hasSelectedPlayer ? "rgba(245,166,35,0.10)" : "rgba(255,255,255,0.97)",
+        border: "2px solid " + (hasSelectedPlayer ? "#f5a623" : pc), borderRadius:"7px",
+        padding: isSingle ? "5px 8px" : "3px 5px", width:"100%", boxSizing:"border-box",
+        boxShadow:"0 1px 5px rgba(0,0,0,0.14)", overflow:"hidden", minWidth:0 }}>
+        <div style={{ fontSize:"9px", fontWeight:"bold", color:pc, textAlign:"center",
+          borderBottom:"1px solid "+pc+"44", paddingBottom:"2px", marginBottom: isSingle ? "4px" : "2px" }}>{pos}</div>
+        {innPlayers.map(function(row) {
+          var isHighlighted = svPlayer && row.name === svPlayer;
+          return isSingle ? (
+            <div key={row.inn} style={{ fontSize:"12px", fontWeight: row.name ? "bold" : "normal",
+              color: isHighlighted ? "#b45309" : (row.name ? C.navy : "#bbb"), textAlign:"center", padding:"1px 0",
+              overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+              {row.name ? firstName(row.name) : "-"}
+            </div>
+          ) : (
+            <div key={row.inn} style={{ display:"flex", gap:"2px", alignItems:"baseline", fontSize:"9.5px", lineHeight:"1.5", overflow:"hidden" }}>
+              <span style={{ color:"#aaa", fontSize:"7.5px", minWidth:"8px", textAlign:"right", flexShrink:0 }}>{row.inn}</span>
+              <span style={{ fontWeight: (row.name ? "bold" : "normal"), color: isHighlighted ? "#b45309" : (row.name ? C.navy : "#ccc"),
+                overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", minWidth:0, flex:1 }}>{row.name ? firstName(row.name) : "-"}</span>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  // Bench for selected inning(s)
+  var benchByInning = innArr.map(function(ii) {
+    return rosterNames.filter(function(n) { return (payload.grid[n] || [])[ii] === "Bench"; });
+  });
+  var benchDisplay   = svInn !== null ? [benchByInning[svInn] || []] : benchByInning;
+  var benchLabels    = svInn !== null ? [svInn] : innArr;
+  function getSharedPlayerFn(pos, inn) {
+    for (var pi = 0; pi < rosterNames.length; pi++) {
+      if ((payload.grid[rosterNames[pi]] || [])[inn] === pos) { return rosterNames[pi]; }
+    }
+    return "";
+  }
+
+  var teamInitial = payload.team ? payload.team.charAt(0).toUpperCase() : "L";
+  var IF_POSITIONS = ["3B","SS","P","2B","1B"];
+  var OF_POSITIONS = ["LF","LC","RC","RF"];
+
+  return (
+    <div style={{ minHeight:"100vh", background:C.cream, fontFamily:"Georgia,'Times New Roman',serif", color:C.text }}>
+
+      {/* ── Header ─────────────────────────────────────────────── */}
+      <div style={{ background:"linear-gradient(135deg,#0f1f3d,#1a3260)", borderBottom:"4px solid " + C.red, padding:"14px 20px" }}>
+        <div style={{ maxWidth:"800px", margin:"0 auto", display:"flex", alignItems:"center", gap:"12px" }}>
+          <div style={{ width:"42px", height:"42px", borderRadius:"50%", background:C.red, border:"2.5px solid "+C.gold,
+            display:"flex", alignItems:"center", justifyContent:"center", fontSize:"18px", fontWeight:"bold", color:C.gold, flexShrink:0 }}>
+            {teamInitial}
+          </div>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontSize:"17px", fontWeight:"bold", color:C.gold, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+              {payload.team}
+            </div>
+            {payload.game ? (
+              <div style={{ fontSize:"11px", color:"rgba(255,255,255,0.6)", marginTop:"1px" }}>
+                vs {payload.game.opponent}
+                {payload.game.date ? " · " + new Date(payload.game.date+"T12:00:00").toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"}) : ""}
+                {payload.game.time ? " · " + payload.game.time : ""}
+              </div>
+            ) : (
+              <div style={{ fontSize:"11px", color:"rgba(255,255,255,0.45)", marginTop:"1px" }}>Game Day Lineup</div>
+            )}
+          </div>
+          <button onClick={function() { window.print(); }}
+            style={{ padding:"6px 14px", borderRadius:"6px", border:"1px solid rgba(255,255,255,0.25)", background:"rgba(255,255,255,0.1)",
+              color:"rgba(255,255,255,0.75)", fontSize:"11px", fontWeight:"bold", fontFamily:"inherit", cursor:"pointer", flexShrink:0 }}>
+            Print
+          </button>
+        </div>
+      </div>
+
+      <div style={{ maxWidth:"800px", margin:"0 auto", padding:"16px 20px" }}>
+
+        {/* ── Player filter pills ──────────────────────────────── */}
+        {rosterNames.length > 0 ? (
+          <div style={{ marginBottom:"12px" }}>
+            <PlayerFilterToggle
+              players={rosterNames}
+              selected={svPlayer}
+              onSelect={setSvPlayer}
+            />
+          </div>
+        ) : null}
+
+        {/* ── Controls row: inning filter + view toggle ───────── */}
+        <div style={{ display:"flex", gap:"8px", alignItems:"center", marginBottom:"16px", flexWrap:"wrap" }}>
+          {/* Inning pills */}
+          <div style={{ display:"flex", flexWrap:"nowrap", gap:"4px", alignItems:"center", overflowX:"auto", WebkitOverflowScrolling:"touch", flex:1, minWidth:0 }}>
+            <span style={{ fontSize:"9px", color:C.textMuted, fontWeight:"bold", textTransform:"uppercase", letterSpacing:"0.08em", flexShrink:0 }}>Inn</span>
+            <button onClick={function() { setSvInn(null); }}
+              style={{ padding:"3px 8px", borderRadius:"10px", border:"none", cursor:"pointer", fontSize:"11px", fontWeight:"bold", fontFamily:"inherit", flexShrink:0,
+                background: svInn === null ? C.navy : "rgba(15,31,61,0.08)", color: svInn === null ? "#fff" : C.textMuted }}>All</button>
+            {innArr.map(function(i) {
+              var active = svInn === i;
+              return (
+                <button key={i} onClick={function(idx) { return function() { setSvInn(idx); }; }(i)}
+                  style={{ padding:"3px 8px", borderRadius:"10px", border:"none", cursor:"pointer", fontSize:"11px", fontWeight:"bold", fontFamily:"inherit", flexShrink:0,
+                    background: active ? C.red : "rgba(15,31,61,0.08)", color: active ? "#fff" : C.textMuted }}>
+                  {i + 1}
+                </button>
+              );
+            })}
+          </div>
+          {/* View toggle */}
+          <div style={{ display:"flex", gap:"3px", background:"rgba(15,31,61,0.06)", borderRadius:"8px", padding:"3px", flexShrink:0 }}>
+            {[["◆","diamond"],["≡","table"]].map(function(opt) {
+              var active = svView === opt[1];
+              return (
+                <button key={opt[1]} onClick={function(v) { return function() { setSvView(v); }; }(opt[1])}
+                  title={opt[1] === "diamond" ? "Diamond view" : "Table view"}
+                  style={{ padding:"4px 10px", borderRadius:"5px", border:"none", cursor:"pointer", fontSize:"12px", fontFamily:"inherit", fontWeight:"bold",
+                    background: active ? C.white : "transparent", color: active ? C.navy : C.textMuted,
+                    boxShadow: active ? "0 1px 3px rgba(0,0,0,0.1)" : "none" }}>
+                  {opt[0]}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ── Diamond view ─────────────────────────────────────── */}
+        {svView === "diamond" ? (
+          <div style={{ marginBottom:"16px" }}>
+            {renderFieldSVG(getSharedPlayerFn, svInn, innArr)}
+                          {/* Bench strip */}
+            <div style={{ borderTop:"2px solid rgba(15,31,61,0.12)", paddingTop:"8px" }}>
+              <div style={{ fontSize:"10px", fontWeight:"bold", color:"#555", textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"6px" }}>Bench</div>
+              <div style={{ overflowX:"auto" }}>
+                <table style={{ borderCollapse:"collapse", fontSize:"11px", width:"100%" }}>
+                  <thead>
+                    <tr style={{ background:"#f5efe4" }}>
+                      {benchLabels.map(function(ii) {
+                        return <th key={ii} style={{ padding:"4px 10px", textAlign:"center", fontSize:"10px", color:"#555", fontWeight:"bold", borderBottom:"2px solid rgba(15,31,61,0.12)", minWidth:"52px" }}>Inn {ii+1}</th>;
+                      })}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(function() {
+                      var maxB = 0;
+                      for (var di = 0; di < benchDisplay.length; di++) { if (benchDisplay[di].length > maxB) maxB = benchDisplay[di].length; }
+                      var rows = [];
+                      for (var r = 0; r < maxB; r++) {
+                        rows.push(
+                          <tr key={r}>
+                            {benchLabels.map(function(lbl, ci) {
+                              var pn = benchDisplay[ci][r] || "";
+                              return <td key={lbl} style={{ padding:"4px 10px", textAlign:"center", borderBottom:"1px solid rgba(15,31,61,0.06)", fontWeight:"bold", color: pn ? C.navy : "#ccc" }}>{pn ? firstName(pn) : "-"}</td>;
+                            })}
+                          </tr>
+                        );
+                      }
+                      return rows;
+                    })()}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* ── Table view ──────────────────────────────────────── */
+          <div style={{ marginBottom:"16px" }}>
+            <div style={{ overflowX:"auto" }}>
+              <table style={{ width:"100%", borderCollapse:"collapse", fontSize:"12px" }}>
+                <thead>
+                  <tr style={{ background:"#f5efe4" }}>
+                    <th style={{ padding:"7px 12px", textAlign:"left", fontSize:"10px", color:C.textMuted, borderBottom:"2px solid rgba(15,31,61,0.1)", position:"sticky", left:0, background:"#f5efe4" }}>Player</th>
+                    {(svInn !== null ? [svInn] : innArr).map(function(i) {
+                      return <th key={i} style={{ padding:"7px 10px", textAlign:"center", fontSize:"10px", color:C.textMuted, borderBottom:"2px solid rgba(15,31,61,0.1)", minWidth:"60px" }}>Inn {i+1}</th>;
+                    })}
+                  </tr>
+                </thead>
+                <tbody>
+                  {rosterNames.map(function(name, ri) {
+                    var isSelectedRow = svPlayer && name === svPlayer;
+                    var rowBg = isSelectedRow ? "rgba(245,166,35,0.12)" : (ri%2===0 ? "#fff" : "#faf8f5");
+                    return (
+                      <tr key={name} style={{ background: rowBg }}>
+                        <td style={{ padding:"6px 12px", fontWeight:"bold", position:"sticky", left:0, background: rowBg, borderBottom:"1px solid rgba(15,31,61,0.04)", color: isSelectedRow ? "#b45309" : C.navy }}>{firstName(name)}</td>
+                        {(svInn !== null ? [svInn] : innArr).map(function(i) {
+                          var pos = (payload.grid[name] || [])[i] || "";
+                          return (
+                            <td key={i} style={{ padding:"4px 6px", textAlign:"center", borderBottom:"1px solid rgba(15,31,61,0.04)" }}>
+                              {pos ? <span style={{ display:"inline-block", padding:"2px 5px", borderRadius:"4px", fontWeight:"bold", fontSize:"11px", background:(POS_COLORS[pos]||"#555")+"cc", color:"#fff" }}>{pos}</span> : <span style={{ color:"#ccc" }}>-</span>}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* ── Batting order ─────────────────────────────────────── */}
+        {payload.batting && payload.batting.length > 0 ? (
+          <div style={{ ...S.card, marginTop:"4px" }}>
+            <div style={S.sectionTitle}>Batting Order</div>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))", gap:"6px" }}>
+              {payload.batting.map(function(name, idx) {
+                var isSelectedBatter = svPlayer && name === svPlayer;
+                var fieldPos = [];
+                for (var ii = 0; ii < innCount; ii++) {
+                  var pos = (payload.grid[name] || [])[ii];
+                  if (!pos || pos === "") {
+                    fieldPos.push("-");
+                  } else if (pos === "Bench") {
+                    fieldPos.push("–");
+                  } else {
+                    fieldPos.push(pos);
+                  }
+                }
+                return (
+                  <div key={name} style={{ display:"flex", alignItems:"center", gap:"8px", padding:"7px 10px",
+                    border:"1px solid " + (isSelectedBatter ? "#f5a623" : "rgba(15,31,61,0.08)"),
+                    background: isSelectedBatter ? "rgba(245,166,35,0.08)" : undefined,
+                    borderRadius:"6px" }}>
+                    <div style={{ width:"20px", height:"20px", borderRadius:"50%",
+                      background: isSelectedBatter ? "#f5a623" : C.navy,
+                      color: isSelectedBatter ? "#0f1f3d" : "#fff",
+                      fontSize:"10px", fontWeight:"bold", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{idx+1}</div>
+                    <div style={{ minWidth:0 }}>
+                      <div style={{ fontWeight:"bold", fontSize:"12px", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",
+                        color: isSelectedBatter ? "#b45309" : undefined }}>{firstName(name)}</div>
+                      {fieldPos.length > 0 ? <div style={{ fontSize:"9px", color:C.textMuted }}>{fieldPos.join(", ")}</div> : null}
+                      {(function() {
+                        var songData = payload.songs && payload.songs[name];
+                        if (!songData || (!songData.song && !songData.artist)) return null;
+                        return (
+                          <div style={{ marginTop:"4px", paddingTop:"4px", borderTop:"1px solid rgba(15,31,61,0.08)" }}>
+                            {songData.song && <div style={{ fontSize:"10px", fontWeight:"600", color:"#1e293b" }}>🎵 {songData.song}</div>}
+                            {songData.artist && <div style={{ fontSize:"9px", color:"#64748b" }}>🎤 {songData.artist}</div>}
+                            {songData.start && songData.end && <div style={{ fontSize:"9px", color:"#94a3b8" }}>⏱ {songData.start} → {songData.end}</div>}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
+
+        {/* ── Footer ─────────────────────────────────────────────── */}
+        <div style={{ textAlign:"center", marginTop:"24px", fontSize:"11px", color:C.textMuted, borderTop:"1px solid rgba(15,31,61,0.08)", paddingTop:"16px" }}>
+          <div style={{ marginBottom:"4px" }}>View-only lineup · Dugout Lineup</div>
+          <div style={{ fontSize:"10px", color:"rgba(15,31,61,0.25)" }}>Tap Print to save as PDF or screenshot this page</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // LockFlow — extracted to components/GameDay/LockFlow.jsx
 
 // ============================================================
@@ -1478,6 +1770,9 @@ export default function App() {
   var backendHealth = useBackendHealth();
   var _featureFlags = useFeatureFlags();
   var runtimeFlags = _featureFlags.flags; var flagsLoading = _featureFlags.loading;
+
+  var _hydratedTeamIds = useState({});
+  var hydratedTeamIds = _hydratedTeamIds[0]; var setHydratedTeamIds = _hydratedTeamIds[1];
 
   var _gameModeActive = useState(false);
   var gameModeActive = _gameModeActive[0]; var setGameModeActive = _gameModeActive[1];
@@ -1558,6 +1853,33 @@ export default function App() {
         }).catch(function(err) {
           console.error("[boot] failed to hydrate active team:", err);
         });
+      }
+
+      // Hydrate non-active teams into localStorage so TeamCard renders correct
+      // status badges on first paint — without this, teams not yet visited on
+      // this device show empty localStorage and flash "Missing roster".
+      for (var bi = 0; bi < merged.length; bi++) {
+        (function(t) {
+          if (t.id === bootActiveId) { return; } // active team already hydrated above
+          var alreadyInStorage = loadJSON("team:" + t.id + ":roster", null);
+          if (alreadyInStorage && alreadyInStorage.length > 0) {
+            // localStorage is warm — mark hydrated immediately, no fetch needed
+            setHydratedTeamIds(function(prev) { var n = Object.assign({}, prev); n[t.id] = true; return n; });
+            return;
+          }
+          dbLoadTeamData(t.id).then(function(dbData) {
+            if (dbData && dbData.roster && dbData.roster.length > 0) {
+              saveJSON("team:" + t.id + ":roster",   dbData.roster);
+              saveJSON("team:" + t.id + ":schedule", Array.isArray(dbData.schedule) ? dbData.schedule : []);
+              saveJSON("team:" + t.id + ":grid",     dbData.grid);
+            }
+            setHydratedTeamIds(function(prev) { var n = Object.assign({}, prev); n[t.id] = true; return n; });
+          }).catch(function() {
+            // Fail open — card will show its real localStorage state (may be "Missing roster"
+            // but at least it's not a false negative caused by a fetch we never tried)
+            setHydratedTeamIds(function(prev) { var n = Object.assign({}, prev); n[t.id] = true; return n; });
+          });
+        })(merged[bi]);
       }
 
       // MIGRATION: seed division teams that do not yet exist in DB
@@ -3073,6 +3395,36 @@ export default function App() {
     // TODO: extract — deferred (TeamCard depends on getNextGame/getNextPractice inner functions and loadTeam handler — extract after renderHome is refactored)
     function TeamCard(props) {
       var team = props.team;
+
+      // Show skeleton while Supabase is fetching this team's data for the first time.
+      // Prevents the card from flashing "Missing roster" / no Game Mode button
+      // for teams not yet visited on this device.
+      var isPendingHydration = isSupabaseEnabled
+        && team.id !== activeTeamId
+        && !hydratedTeamIds[team.id];
+
+      if (isPendingHydration) {
+        return (
+          <div style={{ background:"#fafafa", border:"1px solid rgba(0,0,0,0.07)", borderRadius:"10px",
+            padding:"12px 14px", marginBottom:"8px", opacity:0.55 }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:"8px" }}>
+              <div style={{ minWidth:0, flex:1 }}>
+                <div style={{ fontWeight:"bold", fontSize:"15px", color:"#0f1f3d", fontFamily:"Georgia,serif",
+                  whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{team.name}</div>
+                <div style={{ marginTop:"6px", height:"10px", width:"72px", borderRadius:"4px",
+                  background:"rgba(0,0,0,0.08)" }} />
+              </div>
+              <button onClick={function(e) { e.stopPropagation(); loadTeam(team); }}
+                style={{ background:"linear-gradient(135deg,#f5c842,#e6a817)", color:"#0f1f3d",
+                  border:"none", borderRadius:"8px", padding:"6px 14px", fontSize:"12px",
+                  fontWeight:"bold", cursor:"pointer", whiteSpace:"nowrap" }}>
+                Open
+              </button>
+            </div>
+          </div>
+        );
+      }
+
       // For the active team, use live React state for accurate counts.
       // For other teams, read from storage.
       var teamRoster, teamSched;
@@ -7597,298 +7949,7 @@ export default function App() {
   // ============================================================
   // renderViewerMode — extracted to components/Viewer/ViewerMode.jsx
 
-  function renderSharedView(payload) {
-    // Derive inning count from grid
-    var innCount = 0;
-    for (var k in payload.grid) {
-      if ((payload.grid[k] || []).length > innCount) { innCount = payload.grid[k].length; }
-    }
-    var innArr = [];
-    for (var i = 0; i < innCount; i++) { innArr.push(i); }
-    var rosterNames = payload.roster || [];
-
-    // Local state for inning filter, view mode, and player filter
-    var _svInn = useState(null);
-    var svInn = _svInn[0]; var setSvInn = _svInn[1];
-    var _svView = useState("diamond");
-    var svView = _svView[0]; var setSvView = _svView[1];
-    var _svPlayer = useState(null);
-    var svPlayer = _svPlayer[0]; var setSvPlayer = _svPlayer[1];
-
-    // Build position box from payload.grid (no live React state here)
-    function sharedPosBox(pos) {
-      var pc = POS_COLORS[pos] || "#555";
-      var isSingle = svInn !== null;
-      var innPlayers = [];
-      for (var ii = 0; ii < innCount; ii++) {
-        if (isSingle && ii !== svInn) { continue; }
-        var found = "";
-        for (var pi = 0; pi < rosterNames.length; pi++) {
-          if ((payload.grid[rosterNames[pi]] || [])[ii] === pos) { found = rosterNames[pi]; break; }
-        }
-        innPlayers.push({ inn: ii + 1, name: found });
-      }
-      var hasSelectedPlayer = svPlayer && innPlayers.some(function(row) { return row.name === svPlayer; });
-      return (
-        <div style={{ background: hasSelectedPlayer ? "rgba(245,166,35,0.10)" : "rgba(255,255,255,0.97)",
-          border: "2px solid " + (hasSelectedPlayer ? "#f5a623" : pc), borderRadius:"7px",
-          padding: isSingle ? "5px 8px" : "3px 5px", width:"100%", boxSizing:"border-box",
-          boxShadow:"0 1px 5px rgba(0,0,0,0.14)", overflow:"hidden", minWidth:0 }}>
-          <div style={{ fontSize:"9px", fontWeight:"bold", color:pc, textAlign:"center",
-            borderBottom:"1px solid "+pc+"44", paddingBottom:"2px", marginBottom: isSingle ? "4px" : "2px" }}>{pos}</div>
-          {innPlayers.map(function(row) {
-            var isHighlighted = svPlayer && row.name === svPlayer;
-            return isSingle ? (
-              <div key={row.inn} style={{ fontSize:"12px", fontWeight: row.name ? "bold" : "normal",
-                color: isHighlighted ? "#b45309" : (row.name ? C.navy : "#bbb"), textAlign:"center", padding:"1px 0",
-                overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-                {row.name ? firstName(row.name) : "-"}
-              </div>
-            ) : (
-              <div key={row.inn} style={{ display:"flex", gap:"2px", alignItems:"baseline", fontSize:"9.5px", lineHeight:"1.5", overflow:"hidden" }}>
-                <span style={{ color:"#aaa", fontSize:"7.5px", minWidth:"8px", textAlign:"right", flexShrink:0 }}>{row.inn}</span>
-                <span style={{ fontWeight: (row.name ? "bold" : "normal"), color: isHighlighted ? "#b45309" : (row.name ? C.navy : "#ccc"),
-                  overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", minWidth:0, flex:1 }}>{row.name ? firstName(row.name) : "-"}</span>
-              </div>
-            );
-          })}
-        </div>
-      );
-    }
-
-    // Bench for selected inning(s)
-    var benchByInning = innArr.map(function(ii) {
-      return rosterNames.filter(function(n) { return (payload.grid[n] || [])[ii] === "Bench"; });
-    });
-    var benchDisplay   = svInn !== null ? [benchByInning[svInn] || []] : benchByInning;
-    var benchLabels    = svInn !== null ? [svInn] : innArr;
-    function getSharedPlayerFn(pos, inn) {
-      for (var pi = 0; pi < rosterNames.length; pi++) {
-        if ((payload.grid[rosterNames[pi]] || [])[inn] === pos) { return rosterNames[pi]; }
-      }
-      return "";
-    }
-
-    var teamInitial = payload.team ? payload.team.charAt(0).toUpperCase() : "L";
-    var IF_POSITIONS = ["3B","SS","P","2B","1B"];
-    var OF_POSITIONS = ["LF","LC","RC","RF"];
-
-    return (
-      <div style={{ minHeight:"100vh", background:C.cream, fontFamily:"Georgia,'Times New Roman',serif", color:C.text }}>
-
-        {/* ── Header ─────────────────────────────────────────────── */}
-        <div style={{ background:"linear-gradient(135deg,#0f1f3d,#1a3260)", borderBottom:"4px solid " + C.red, padding:"14px 20px" }}>
-          <div style={{ maxWidth:"800px", margin:"0 auto", display:"flex", alignItems:"center", gap:"12px" }}>
-            <div style={{ width:"42px", height:"42px", borderRadius:"50%", background:C.red, border:"2.5px solid "+C.gold,
-              display:"flex", alignItems:"center", justifyContent:"center", fontSize:"18px", fontWeight:"bold", color:C.gold, flexShrink:0 }}>
-              {teamInitial}
-            </div>
-            <div style={{ flex:1, minWidth:0 }}>
-              <div style={{ fontSize:"17px", fontWeight:"bold", color:C.gold, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-                {payload.team}
-              </div>
-              {payload.game ? (
-                <div style={{ fontSize:"11px", color:"rgba(255,255,255,0.6)", marginTop:"1px" }}>
-                  vs {payload.game.opponent}
-                  {payload.game.date ? " · " + new Date(payload.game.date+"T12:00:00").toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"}) : ""}
-                  {payload.game.time ? " · " + payload.game.time : ""}
-                </div>
-              ) : (
-                <div style={{ fontSize:"11px", color:"rgba(255,255,255,0.45)", marginTop:"1px" }}>Game Day Lineup</div>
-              )}
-            </div>
-            <button onClick={function() { window.print(); }}
-              style={{ padding:"6px 14px", borderRadius:"6px", border:"1px solid rgba(255,255,255,0.25)", background:"rgba(255,255,255,0.1)",
-                color:"rgba(255,255,255,0.75)", fontSize:"11px", fontWeight:"bold", fontFamily:"inherit", cursor:"pointer", flexShrink:0 }}>
-              Print
-            </button>
-          </div>
-        </div>
-
-        <div style={{ maxWidth:"800px", margin:"0 auto", padding:"16px 20px" }}>
-
-          {/* ── Player filter pills ──────────────────────────────── */}
-          {rosterNames.length > 0 ? (
-            <div style={{ marginBottom:"12px" }}>
-              <PlayerFilterToggle
-                players={rosterNames}
-                selected={svPlayer}
-                onSelect={setSvPlayer}
-              />
-            </div>
-          ) : null}
-
-          {/* ── Controls row: inning filter + view toggle ───────── */}
-          <div style={{ display:"flex", gap:"8px", alignItems:"center", marginBottom:"16px", flexWrap:"wrap" }}>
-            {/* Inning pills */}
-            <div style={{ display:"flex", flexWrap:"nowrap", gap:"4px", alignItems:"center", overflowX:"auto", WebkitOverflowScrolling:"touch", flex:1, minWidth:0 }}>
-              <span style={{ fontSize:"9px", color:C.textMuted, fontWeight:"bold", textTransform:"uppercase", letterSpacing:"0.08em", flexShrink:0 }}>Inn</span>
-              <button onClick={function() { setSvInn(null); }}
-                style={{ padding:"3px 8px", borderRadius:"10px", border:"none", cursor:"pointer", fontSize:"11px", fontWeight:"bold", fontFamily:"inherit", flexShrink:0,
-                  background: svInn === null ? C.navy : "rgba(15,31,61,0.08)", color: svInn === null ? "#fff" : C.textMuted }}>All</button>
-              {innArr.map(function(i) {
-                var active = svInn === i;
-                return (
-                  <button key={i} onClick={function(idx) { return function() { setSvInn(idx); }; }(i)}
-                    style={{ padding:"3px 8px", borderRadius:"10px", border:"none", cursor:"pointer", fontSize:"11px", fontWeight:"bold", fontFamily:"inherit", flexShrink:0,
-                      background: active ? C.red : "rgba(15,31,61,0.08)", color: active ? "#fff" : C.textMuted }}>
-                    {i + 1}
-                  </button>
-                );
-              })}
-            </div>
-            {/* View toggle */}
-            <div style={{ display:"flex", gap:"3px", background:"rgba(15,31,61,0.06)", borderRadius:"8px", padding:"3px", flexShrink:0 }}>
-              {[["◆","diamond"],["≡","table"]].map(function(opt) {
-                var active = svView === opt[1];
-                return (
-                  <button key={opt[1]} onClick={function(v) { return function() { setSvView(v); }; }(opt[1])}
-                    title={opt[1] === "diamond" ? "Diamond view" : "Table view"}
-                    style={{ padding:"4px 10px", borderRadius:"5px", border:"none", cursor:"pointer", fontSize:"12px", fontFamily:"inherit", fontWeight:"bold",
-                      background: active ? C.white : "transparent", color: active ? C.navy : C.textMuted,
-                      boxShadow: active ? "0 1px 3px rgba(0,0,0,0.1)" : "none" }}>
-                    {opt[0]}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* ── Diamond view ─────────────────────────────────────── */}
-          {svView === "diamond" ? (
-            <div style={{ marginBottom:"16px" }}>
-              {renderFieldSVG(getSharedPlayerFn, svInn, innArr)}
-                            {/* Bench strip */}
-              <div style={{ borderTop:"2px solid rgba(15,31,61,0.12)", paddingTop:"8px" }}>
-                <div style={{ fontSize:"10px", fontWeight:"bold", color:"#555", textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"6px" }}>Bench</div>
-                <div style={{ overflowX:"auto" }}>
-                  <table style={{ borderCollapse:"collapse", fontSize:"11px", width:"100%" }}>
-                    <thead>
-                      <tr style={{ background:"#f5efe4" }}>
-                        {benchLabels.map(function(ii) {
-                          return <th key={ii} style={{ padding:"4px 10px", textAlign:"center", fontSize:"10px", color:"#555", fontWeight:"bold", borderBottom:"2px solid rgba(15,31,61,0.12)", minWidth:"52px" }}>Inn {ii+1}</th>;
-                        })}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(function() {
-                        var maxB = 0;
-                        for (var di = 0; di < benchDisplay.length; di++) { if (benchDisplay[di].length > maxB) maxB = benchDisplay[di].length; }
-                        var rows = [];
-                        for (var r = 0; r < maxB; r++) {
-                          rows.push(
-                            <tr key={r}>
-                              {benchLabels.map(function(lbl, ci) {
-                                var pn = benchDisplay[ci][r] || "";
-                                return <td key={lbl} style={{ padding:"4px 10px", textAlign:"center", borderBottom:"1px solid rgba(15,31,61,0.06)", fontWeight:"bold", color: pn ? C.navy : "#ccc" }}>{pn ? firstName(pn) : "-"}</td>;
-                              })}
-                            </tr>
-                          );
-                        }
-                        return rows;
-                      })()}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          ) : (
-            /* ── Table view ──────────────────────────────────────── */
-            <div style={{ marginBottom:"16px" }}>
-              <div style={{ overflowX:"auto" }}>
-                <table style={{ width:"100%", borderCollapse:"collapse", fontSize:"12px" }}>
-                  <thead>
-                    <tr style={{ background:"#f5efe4" }}>
-                      <th style={{ padding:"7px 12px", textAlign:"left", fontSize:"10px", color:C.textMuted, borderBottom:"2px solid rgba(15,31,61,0.1)", position:"sticky", left:0, background:"#f5efe4" }}>Player</th>
-                      {(svInn !== null ? [svInn] : innArr).map(function(i) {
-                        return <th key={i} style={{ padding:"7px 10px", textAlign:"center", fontSize:"10px", color:C.textMuted, borderBottom:"2px solid rgba(15,31,61,0.1)", minWidth:"60px" }}>Inn {i+1}</th>;
-                      })}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rosterNames.map(function(name, ri) {
-                      var isSelectedRow = svPlayer && name === svPlayer;
-                      var rowBg = isSelectedRow ? "rgba(245,166,35,0.12)" : (ri%2===0 ? "#fff" : "#faf8f5");
-                      return (
-                        <tr key={name} style={{ background: rowBg }}>
-                          <td style={{ padding:"6px 12px", fontWeight:"bold", position:"sticky", left:0, background: rowBg, borderBottom:"1px solid rgba(15,31,61,0.04)", color: isSelectedRow ? "#b45309" : C.navy }}>{firstName(name)}</td>
-                          {(svInn !== null ? [svInn] : innArr).map(function(i) {
-                            var pos = (payload.grid[name] || [])[i] || "";
-                            return (
-                              <td key={i} style={{ padding:"4px 6px", textAlign:"center", borderBottom:"1px solid rgba(15,31,61,0.04)" }}>
-                                {pos ? <span style={{ display:"inline-block", padding:"2px 5px", borderRadius:"4px", fontWeight:"bold", fontSize:"11px", background:(POS_COLORS[pos]||"#555")+"cc", color:"#fff" }}>{pos}</span> : <span style={{ color:"#ccc" }}>-</span>}
-                              </td>
-                            );
-                          })}
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* ── Batting order ─────────────────────────────────────── */}
-          {payload.batting && payload.batting.length > 0 ? (
-            <div style={{ ...S.card, marginTop:"4px" }}>
-              <div style={S.sectionTitle}>Batting Order</div>
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))", gap:"6px" }}>
-                {payload.batting.map(function(name, idx) {
-                  var isSelectedBatter = svPlayer && name === svPlayer;
-                  var fieldPos = [];
-                  for (var ii = 0; ii < innCount; ii++) {
-                    var pos = (payload.grid[name] || [])[ii];
-                    if (!pos || pos === "") {
-                      fieldPos.push("-");
-                    } else if (pos === "Bench") {
-                      fieldPos.push("–");
-                    } else {
-                      fieldPos.push(pos);
-                    }
-                  }
-                  return (
-                    <div key={name} style={{ display:"flex", alignItems:"center", gap:"8px", padding:"7px 10px",
-                      border:"1px solid " + (isSelectedBatter ? "#f5a623" : "rgba(15,31,61,0.08)"),
-                      background: isSelectedBatter ? "rgba(245,166,35,0.08)" : undefined,
-                      borderRadius:"6px" }}>
-                      <div style={{ width:"20px", height:"20px", borderRadius:"50%",
-                        background: isSelectedBatter ? "#f5a623" : C.navy,
-                        color: isSelectedBatter ? "#0f1f3d" : "#fff",
-                        fontSize:"10px", fontWeight:"bold", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{idx+1}</div>
-                      <div style={{ minWidth:0 }}>
-                        <div style={{ fontWeight:"bold", fontSize:"12px", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",
-                          color: isSelectedBatter ? "#b45309" : undefined }}>{firstName(name)}</div>
-                        {fieldPos.length > 0 ? <div style={{ fontSize:"9px", color:C.textMuted }}>{fieldPos.join(", ")}</div> : null}
-                        {(function() {
-                          var songData = payload.songs && payload.songs[name];
-                          if (!songData || (!songData.song && !songData.artist)) return null;
-                          return (
-                            <div style={{ marginTop:"4px", paddingTop:"4px", borderTop:"1px solid rgba(15,31,61,0.08)" }}>
-                              {songData.song && <div style={{ fontSize:"10px", fontWeight:"600", color:"#1e293b" }}>🎵 {songData.song}</div>}
-                              {songData.artist && <div style={{ fontSize:"9px", color:"#64748b" }}>🎤 {songData.artist}</div>}
-                              {songData.start && songData.end && <div style={{ fontSize:"9px", color:"#94a3b8" }}>⏱ {songData.start} → {songData.end}</div>}
-                            </div>
-                          );
-                        })()}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          ) : null}
-
-          {/* ── Footer ─────────────────────────────────────────────── */}
-          <div style={{ textAlign:"center", marginTop:"24px", fontSize:"11px", color:C.textMuted, borderTop:"1px solid rgba(15,31,61,0.08)", paddingTop:"16px" }}>
-            <div style={{ marginBottom:"4px" }}>View-only lineup · Dugout Lineup</div>
-            <div style={{ fontSize:"10px", color:"rgba(15,31,61,0.25)" }}>Tap Print to save as PDF or screenshot this page</div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
+  // renderSharedView — extracted to SharedView component above App()
 
   // ============================================================
   // MAIN RETURN
@@ -7924,7 +7985,7 @@ export default function App() {
       var _vp = new URLSearchParams(window.location.search);
       var _viewerFlagOn = runtimeFlags.VIEWER_MODE || localStorage.getItem("flag:viewer_mode") === "1";
       var isViewer = _viewerFlagOn && (_vp.get("view") === "true" || _vp.get("role") === "viewer");
-      return <ErrorBoundary fallback="Viewer Mode">{isViewer ? <ViewerMode payload={sharePayload} /> : renderSharedView(sharePayload)}</ErrorBoundary>;
+      return <ErrorBoundary fallback="Viewer Mode">{isViewer ? <ViewerMode payload={sharePayload} /> : <SharedView payload={sharePayload} renderFieldSVG={renderFieldSVG} />}</ErrorBoundary>;
     }
     return (
       <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", minHeight:"100vh", background:"#fdf8f0", gap:"12px" }}>
@@ -7980,7 +8041,7 @@ export default function App() {
       var payload = JSON.parse(decodeURIComponent(escape(atob(shareParam))));
       var _viewerFlagOn64 = runtimeFlags.VIEWER_MODE || localStorage.getItem("flag:viewer_mode") === "1";
       var isViewer64 = _viewerFlagOn64 && (urlParams.get("view") === "true" || urlParams.get("role") === "viewer");
-      return <ErrorBoundary fallback="Viewer Mode">{isViewer64 ? <ViewerMode payload={payload} /> : renderSharedView(payload)}</ErrorBoundary>;
+      return <ErrorBoundary fallback="Viewer Mode">{isViewer64 ? <ViewerMode payload={payload} /> : <SharedView payload={payload} renderFieldSVG={renderFieldSVG} />}</ErrorBoundary>;
     }
   } catch (e) {}
 

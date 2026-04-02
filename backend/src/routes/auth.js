@@ -1,6 +1,6 @@
 /**
  * routes/auth.js
- * Authentication routes — email OTP (primary) + phone OTP (when Twilio live)
+ * Authentication routes — email magic-link (primary)
  *
  * POST /request-access  — submit access request (email or phone)
  * POST /login           — request OTP via email or phone

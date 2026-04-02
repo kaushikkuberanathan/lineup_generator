@@ -45,7 +45,7 @@
 - Frontend auth screens (LoginScreen, RequestAccessScreen, AuthGate)
 - requireAuth gate activation on protected routes
 - RLS enforcement (004_rls_fixes.sql — parked until frontend auth complete)
-- Twilio phone OTP (Phase 4D — pending toll-free verification)
+- Auth: email magic-link + Google OAuth (Twilio removed)
 
 ---
 
@@ -387,7 +387,7 @@
 - `playerMapper.js`: safe V1→V2 field mapping with defaults for all missing fields
 - `migrateRoster()` updated to preserve all V2 fields across team switches
 - `featureFlags.js`: `USE_NEW_LINEUP_ENGINE=true` (V2 active, V1 fallback on error)
-- Auth system (parallel, not yet gated): request access, OTP login, admin approval, admin UI at `/admin.html` — pending Twilio toll-free verification before Phase 4 cutover
+- Auth system (parallel, not yet gated): request access, email magic-link login, admin approval, admin UI at `/admin.html`
 
 ### v1.2.1 — March 24, 2026
 - Added Sharon Springs Athletics link to Links tab (sharonspringsathletics.org)
@@ -455,7 +455,7 @@
 
 | # | Item | Notes |
 |---|------|-------|
-| 1 | **Auth Phase 4 cutover** | Blocked pending Twilio toll-free verification (submitted, 2–3 business days). Once verified: OTP SMS works end-to-end, then add requireAuth middleware to existing routes. |
+| 1 | **Auth Phase 4 cutover** | Add requireAuth middleware to existing routes. Auth: email magic-link + Google OAuth (Twilio removed). |
 
 ---
 
@@ -523,18 +523,18 @@
 
 ## 🔵 Phase 3 — Auth + Multi-Coach
 
-> **Backend infrastructure deployed as of v1.3.0. Frontend cutover pending Twilio toll-free verification.**
+> **Backend infrastructure deployed as of v1.3.0. Auth: email magic-link + Google OAuth (Twilio removed).**
 
 | # | Item | Status | Notes |
 |---|------|--------|-------|
-| 1 | **Supabase phone OTP auth** | ✅ Backend live | No-password flow; OTP via Twilio SMS; `request-access` → admin approval → OTP login |
+| 1 | **Email magic-link auth** | ✅ Backend live | No-password flow; magic link via Supabase + Resend; `request-access` → admin approval → magic-link login |
 | 2 | **Admin UI** | ✅ Live at `/admin.html` | 4-tab UI: Pending Requests, Members, Feedback, Settings |
 | 3 | **access_requests + profiles + team_memberships tables** | ✅ Deployed | RLS policies active; `activate_membership` Postgres function atomic |
 | 4 | **Feedback backend endpoint** | ✅ Live | `POST /api/v1/feedback` → `feedback` table in Supabase |
 | 5 | **Coach backfill** | ✅ Done | Kaushik (admin) + Stan Hoover (coach) seeded in `team_memberships` |
-| 6 | **Phase 4 cutover** | 🔴 Blocked | Add `requireAuth` middleware to existing routes — blocked on Twilio toll-free verification |
+| 6 | **Phase 4 cutover** | 🔴 Blocked | Add `requireAuth` middleware to existing routes |
 | 7 | **Role system (frontend)** | ❌ Not started | Head Coach / Assistant (edit) / Viewer (read-only) — requires Phase 4 cutover first |
-| 8 | **Invite flow (frontend)** | ❌ Not started | Coach → Settings → Invite by phone → OTP → auto-assigned to team |
+| 8 | **Invite flow (frontend)** | ❌ Not started | Coach → Settings → Invite by email → magic-link → auto-assigned to team |
 | 9 | **Viewer-mode shell** | ❌ Not started | Stripped tab bar; skill/tags hidden from viewer role |
 | 10 | **Supabase Realtime** | ❌ Not started | Lineup lock → live push to assistant and viewer phones |
 | 11 | **Season-end skill calibration report** | ❌ Not started | Compare auto-assigned vs actual played positions |
@@ -617,4 +617,4 @@
 - **Storage:** Supabase (primary) + localStorage (offline cache with sync-on-connect)
 - **AI backend:** Render free tier — keep warm via UptimeRobot 5-min ping at `https://lineup-generator-backend.onrender.com/ping`
 - **Frontend:** Vercel — auto-deploys on push to `main`
-- **Auth backend deployed (Phase 3):** Phone OTP infrastructure live on Render. Frontend cutover blocked on Twilio toll-free verification. Until then, all routes remain open (no `requireAuth` middleware on existing routes).
+- **Auth backend deployed (Phase 3):** Email magic-link auth live on Render (Twilio removed). Frontend cutover pending. Until then, all routes remain open (no `requireAuth` middleware on existing routes).
