@@ -78,50 +78,38 @@ async function run(test, BASE_URL, state) {
     return { pass: res.status === 201 || res.status === 400, expected: '201 or 400', actual: String(res.status) };
   });
 
-  // ─── /login validation ───────────────────────────────────────────────────────
+  // ─── /magic-link validation ──────────────────────────────────────────────────
 
-  await test('VAL-08', '/login: missing teamId', async () => {
-    const res = await post(BASE_URL, '/api/v1/auth/login', {
+  await test('VAL-08', '/magic-link: missing teamId', async () => {
+    const res = await post(BASE_URL, '/api/v1/auth/magic-link', {
       email: 'val08@test.com', deviceContext: DEVICE,
     });
     return { pass: res.status === 400, expected: '400', actual: String(res.status) };
   });
 
-  await test('VAL-09', '/login: no contact method', async () => {
-    const res = await post(BASE_URL, '/api/v1/auth/login', {
+  await test('VAL-09', '/magic-link: no email', async () => {
+    const res = await post(BASE_URL, '/api/v1/auth/magic-link', {
       teamId: TEAM_ID, deviceContext: DEVICE,
     });
-    return { pass: res.status === 400, expected: '400 CONTACT_REQUIRED', actual: String(res.status) };
+    return { pass: res.status === 400, expected: '400', actual: String(res.status) };
   });
 
-  // ─── /verify validation ──────────────────────────────────────────────────────
+  // ─── /verify validation (removed — replaced by magic link flow) ──────────────
 
   await test('VAL-10', '/verify: missing token', async () => {
-    const res = await post(BASE_URL, '/api/v1/auth/verify', {
-      email: 'val10@test.com', teamId: TEAM_ID, deviceContext: DEVICE,
-    });
-    return { pass: res.status === 400, expected: '400', actual: String(res.status) };
+    return { skip: true, expected: '400', reason: 'OTP verify route removed — replaced by magic link flow' };
   });
 
   await test('VAL-11', '/verify: token too short', async () => {
-    const res = await post(BASE_URL, '/api/v1/auth/verify', {
-      email: 'val11@test.com', token: '123', teamId: TEAM_ID, deviceContext: DEVICE,
-    });
-    return { pass: res.status === 400, expected: '400', actual: String(res.status) };
+    return { skip: true, expected: '400', reason: 'OTP verify route removed — replaced by magic link flow' };
   });
 
   await test('VAL-12', '/verify: token too long', async () => {
-    const res = await post(BASE_URL, '/api/v1/auth/verify', {
-      email: 'val12@test.com', token: '123456789', teamId: TEAM_ID, deviceContext: DEVICE,
-    });
-    return { pass: res.status === 400, expected: '400', actual: String(res.status) };
+    return { skip: true, expected: '400', reason: 'OTP verify route removed — replaced by magic link flow' };
   });
 
   await test('VAL-13', '/verify: missing teamId', async () => {
-    const res = await post(BASE_URL, '/api/v1/auth/verify', {
-      email: 'val13@test.com', token: '123456', deviceContext: DEVICE,
-    });
-    return { pass: res.status === 400, expected: '400', actual: String(res.status) };
+    return { skip: true, expected: '400', reason: 'OTP verify route removed — replaced by magic link flow' };
   });
 
   // ─── approve-link validation ─────────────────────────────────────────────────

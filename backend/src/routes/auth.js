@@ -34,22 +34,6 @@ const router = express.Router();
 
 // ─── Rate Limiters ────────────────────────────────────────────────────────────
 
-const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,  // 15 minutes
-  max: 5,
-  message: { error: 'TOO_MANY_ATTEMPTS', message: 'Too many login attempts. Try again in 15 minutes.' },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-const verifyLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 10,
-  message: { error: 'TOO_MANY_ATTEMPTS', message: 'Too many verification attempts. Try again in 15 minutes.' },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 /**
@@ -203,12 +187,15 @@ router.post(
   }
 );
 
-// ─── POST /login ──────────────────────────────────────────────────────────────
+// ─── POST /magic-link ─────────────────────────────────────────────────────────
+// Sends a magic link email via Supabase.
+// User clicks the link → lands on /auth/callback → session established.
+// Replaces the two-step OTP flow (login + verify).
 
 router.post(
-  '/login',
-  loginLimiter,
+  '/magic-link',
   [
+    body('email').isEmail().normalizeEmail(),
     body('teamId').notEmpty().trim(),
   ],
   async (req, res) => {
@@ -217,25 +204,15 @@ router.post(
       return res.status(400).json({ error: 'VALIDATION_ERROR', details: errors.array() });
     }
 
-    const { teamId, deviceContext } = req.body;
-    const channel = detectChannel(req.body);
-
-    if (!channel) {
-      return res.status(400).json({
-        error: 'CONTACT_REQUIRED',
-        message: 'Email or phone number is required.',
-      });
-    }
-
-    const { email, phone } = normalizeContact(req.body, channel);
-    const contactFilter = channel === 'email' ? { email } : { phone_e164: phone };
+    const { email, teamId, deviceContext } = req.body;
 
     try {
       // Verify membership exists and is invited or active
       const { data: membership, error: membershipError } = await supabaseAdmin
         .from('team_memberships')
         .select('id, status, role, team_id')
-        .match({ ...contactFilter, team_id: String(teamId) })
+        .eq('email', email)
+        .eq('team_id', String(teamId))
         .in('status', ['invited', 'active'])
         .maybeSingle();
 
@@ -244,7 +221,7 @@ router.post(
       if (!membership) {
         await logAuthEvent('access_denied', {
           teamId: String(teamId),
-          authChannel: channel,
+          authChannel: 'email',
           deviceContext: deviceContext ?? {},
         });
         return res.status(403).json({
@@ -253,174 +230,41 @@ router.post(
         });
       }
 
-      // Send OTP via appropriate channel
-      let otpError;
-
-      if (channel === 'email') {
-        const { error } = await supabaseAnon.auth.signInWithOtp({
-          email,
-          options: { shouldCreateUser: true },
-        });
-        otpError = error;
-      } else {
-        const { error } = await supabaseAnon.auth.signInWithOtp({
-          phone,
-          options: { shouldCreateUser: true },
-        });
-        otpError = error;
-      }
-
-      if (otpError) {
-        console.error('[auth/login] OTP send error:', otpError.message);
-        const isRateLimit = otpError.message?.toLowerCase().includes('security purposes') ||
-                            otpError.message?.toLowerCase().includes('after');
-        return res.status(isRateLimit ? 429 : 500).json({
-          error: isRateLimit ? 'TOO_MANY_ATTEMPTS' : 'OTP_SEND_FAILED',
-          message: isRateLimit
-            ? 'Too many login attempts. Please wait a few minutes and try again.'
-            : 'Failed to send login code. Please try again.',
-        });
-      }
-
-      // Log auth event
-      await logAuthEvent('otp_requested', {
-        teamId: String(teamId),
-        role: membership.role,
-        authChannel: channel,
-        deviceContext: deviceContext ?? {},
-      });
-
-      return res.status(200).json({
-        success: true,
-        channel,
-        message: channel === 'email'
-          ? 'Login code sent to your email. Check your inbox.'
-          : 'Login code sent via SMS.',
-      });
-
-    } catch (err) {
-      console.error('[auth/login]', err.message);
-      return res.status(500).json({ error: 'INTERNAL_ERROR' });
-    }
-  }
-);
-
-// ─── POST /verify ─────────────────────────────────────────────────────────────
-
-router.post(
-  '/verify',
-  verifyLimiter,
-  [
-    body('token').notEmpty().trim().isLength({ min: 6, max: 8 }).withMessage('Token must be 6-8 digits'),
-    body('teamId').notEmpty().trim(),
-  ],
-  async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ error: 'VALIDATION_ERROR', details: errors.array() });
-    }
-
-    const { token, teamId, deviceContext } = req.body;
-    const channel = detectChannel(req.body);
-
-    if (!channel) {
-      return res.status(400).json({
-        error: 'CONTACT_REQUIRED',
-        message: 'Email or phone number is required.',
-      });
-    }
-
-    const { email, phone } = normalizeContact(req.body, channel);
-
-    try {
-      // Verify OTP with Supabase
-      let verifyResult;
-
-      if (channel === 'email') {
-        verifyResult = await supabaseAnon.auth.verifyOtp({
-          email,
-          token,
-          type: 'email',
-        });
-      } else {
-        verifyResult = await supabaseAnon.auth.verifyOtp({
-          phone,
-          token,
-          type: 'sms',
-        });
-      }
-
-      const { data: verifyData, error: verifyError } = verifyResult;
-
-      if (verifyError || !verifyData?.user) {
-        await logAuthEvent('otp_failed', {
-          teamId: String(teamId),
-          authChannel: channel,
-          deviceContext: deviceContext ?? {},
-        });
-        return res.status(401).json({
-          error: 'INVALID_TOKEN',
-          message: 'Invalid or expired login code. Please request a new one.',
-        });
-      }
-
-      const userId = verifyData.user.id;
-      const contactFilter = channel === 'email' ? { email } : { phone_e164: phone };
-
-      // Direct membership activation — bypasses RPC
-      // TODO Phase 4C cleanup: update activate_membership RPC to support
-      // email + team_id params, then restore RPC call
-      const { error: activateError } = await supabaseAdmin
-        .from('team_memberships')
-        .update({
-          user_id:      userId,
-          status:       'active',
-          activated_at: new Date().toISOString(),
-        })
-        .match({ ...contactFilter, team_id: String(teamId) })
-        .in('status', ['invited', 'active']);
-
-      if (activateError) {
-        console.error('[auth/verify] membership activation error:', activateError.message);
-      }
-
-      // Fetch membership + profile for response
-
-      const { data: membership } = await supabaseAdmin
-        .from('team_memberships')
-        .select('id, role, status, team_id')
-        .match({ ...contactFilter, team_id: String(teamId) })
-        .single();
-
-      const { data: profile } = await supabaseAdmin
-        .from('profiles')
-        .select('id, first_name, last_name, email, phone_e164')
-        .eq('id', userId)
-        .maybeSingle();
-
-      // Log successful verification
-      await logAuthEvent('otp_verified', {
-        userId,
-        teamId: String(teamId),
-        role: membership?.role ?? null,
-        authChannel: channel,
-        deviceContext: deviceContext ?? {},
-      });
-
-      return res.status(200).json({
-        success: true,
-        session: verifyData.session,
-        user: {
-          id: userId,
-          email: verifyData.user.email ?? null,
-          phone: verifyData.user.phone ?? null,
-          profile: profile ?? null,
-          membership: membership ?? null,
+      // Send magic link via Supabase
+      const { error: magicLinkError } = await supabaseAnon.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: `${process.env.APP_URL}/auth/callback`,
+          shouldCreateUser: true,
         },
       });
 
+      if (magicLinkError) {
+        console.error('[auth/magic-link] error:', magicLinkError.message);
+        const isRateLimit = magicLinkError.message?.toLowerCase().includes('security purposes') ||
+                            magicLinkError.message?.toLowerCase().includes('after');
+        return res.status(isRateLimit ? 429 : 500).json({
+          error: isRateLimit ? 'TOO_MANY_ATTEMPTS' : 'MAGIC_LINK_FAILED',
+          message: isRateLimit
+            ? 'Please wait a moment before requesting another link.'
+            : 'Failed to send login link. Please try again.',
+        });
+      }
+
+      await logAuthEvent('magic_link_requested', {
+        teamId: String(teamId),
+        role: membership.role,
+        authChannel: 'email',
+        deviceContext: deviceContext ?? {},
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: 'Login link sent. Check your email and tap the link to sign in.',
+      });
+
     } catch (err) {
-      console.error('[auth/verify]', err.message);
+      console.error('[auth/magic-link]', err.message);
       return res.status(500).json({ error: 'INTERNAL_ERROR' });
     }
   }

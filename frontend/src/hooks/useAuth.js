@@ -39,6 +39,23 @@ export function useAuth() {
   useEffect(() => {
     async function checkSession() {
       try {
+        // Handle Supabase auth redirect (magic link callback)
+        const hash = window.location.hash;
+        if (hash && hash.includes('access_token')) {
+          // Let Supabase parse the hash and establish the session
+          const { data, error } = await supabase.auth.getSession();
+          if (error) {
+            console.error('[useAuth] session error:', error.message);
+            window.history.replaceState(null, '', window.location.pathname);
+            setAuthState('unauthenticated');
+            return;
+          }
+          if (data?.session) {
+            window.history.replaceState(null, '', window.location.pathname);
+            // Continue — the getSession() call below will pick it up
+          }
+        }
+
         const { data: { session: existingSession } } = await supabase.auth.getSession();
 
         if (!existingSession) {
@@ -74,14 +91,51 @@ export function useAuth() {
     checkSession();
   }, []);
 
-  // ─── Request OTP ─────────────────────────────────────────────────────────────
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, newSession) => {
+        if (event === 'SIGNED_IN' && newSession) {
+          // Fetch membership from backend
+          try {
+            const res = await fetch(`${BACKEND_URL}/api/v1/auth/me`, {
+              headers: { Authorization: `Bearer ${newSession.access_token}` },
+            });
+            if (res.ok) {
+              const data = await res.json();
+              setSession(newSession);
+              setUser(data.user);
+              const memberships = data.user.memberships ?? [];
+              setMemberships(memberships);
+              setMembership(memberships[0] ?? null);
+              setAuthState('authenticated');
+              // Clear hash from URL
+              if (window.location.hash) {
+                window.history.replaceState(null, '', window.location.pathname);
+              }
+            }
+          } catch (err) {
+            console.error('[useAuth] onAuthStateChange error:', err.message);
+          }
+        }
+        if (event === 'SIGNED_OUT') {
+          setSession(null);
+          setUser(null);
+          setMembership(null);
+          setMemberships([]);
+          setAuthState('unauthenticated');
+        }
+      }
+    );
+    return () => subscription.unsubscribe();
+  }, []);
 
-  const requestOtp = useCallback(async (email, tid) => {
-    setError(null);
+  // ─── Send Magic Link ─────────────────────────────────────────────────────────
+
+  const sendMagicLink = useCallback(async (email, tid) => {
     const resolvedTeamId = tid || teamId;
 
     try {
-      const res = await fetch(`${BACKEND_URL}/api/v1/auth/login`, {
+      const res = await fetch(`${BACKEND_URL}/api/v1/auth/magic-link`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -97,55 +151,13 @@ export function useAuth() {
         if (data.error === 'NOT_AUTHORIZED') {
           return { success: false, error: 'no_membership' };
         }
-        return { success: false, error: data.message || 'Failed to send code' };
+        return { success: false, error: data.message || 'Failed to send link' };
       }
 
       if (resolvedTeamId) {
         localStorage.setItem('lg_team_id', resolvedTeamId);
         setTeamId(resolvedTeamId);
       }
-
-      return { success: true };
-
-    } catch {
-      return { success: false, error: 'Network error — check your connection' };
-    }
-  }, [teamId]);
-
-  // ─── Verify OTP ──────────────────────────────────────────────────────────────
-
-  const verifyOtp = useCallback(async (email, token) => {
-    setError(null);
-
-    try {
-      const res = await fetch(`${BACKEND_URL}/api/v1/auth/verify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email,
-          token,
-          teamId,
-          deviceContext: getDeviceContext(APP_VERSION),
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        return { success: false, error: data.message || 'Invalid code' };
-      }
-
-      // Restore session into Supabase client
-      await supabase.auth.setSession({
-        access_token:  data.session.access_token,
-        refresh_token: data.session.refresh_token,
-      });
-
-      setSession(data.session);
-      setUser(data.user);
-      setMembership(data.user.membership ?? null);
-      setMemberships(data.user.membership ? [data.user.membership] : []);
-      setAuthState('authenticated');
 
       return { success: true };
 
@@ -234,8 +246,7 @@ export function useAuth() {
     role: membership?.role ?? null,
     error,
     teamId,
-    requestOtp,
-    verifyOtp,
+    sendMagicLink,
     requestAccess,
     logout,
   };

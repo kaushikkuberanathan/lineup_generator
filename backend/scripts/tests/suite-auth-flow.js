@@ -40,8 +40,8 @@ async function run(test, BASE_URL, state) {
     };
   });
 
-  await test('AUTH-02', 'Login — no membership returns NOT_AUTHORIZED', async () => {
-    const res = await post(BASE_URL, '/api/v1/auth/login', {
+  await test('AUTH-02', 'Magic link — no membership returns NOT_AUTHORIZED', async () => {
+    const res = await post(BASE_URL, '/api/v1/auth/magic-link', {
       email: 'nobody-nomembership@test.com', teamId: TEAM_ID, deviceContext: DEVICE,
     });
     const data = await res.json();
@@ -52,11 +52,11 @@ async function run(test, BASE_URL, state) {
     };
   });
 
-  await test('AUTH-03', 'Login — valid email with active membership sends OTP', async () => {
+  await test('AUTH-03', 'Magic link — valid email with active membership sends link', async () => {
     return {
       skip: true,
-      expected: '200 success=true channel=email',
-      reason: 'Supabase rate limits OTP sends per email address — run manually with a fresh email',
+      expected: '200 success=true',
+      reason: 'Magic link sent to email — cannot automate email click',
     };
   });
 
@@ -81,21 +81,10 @@ async function run(test, BASE_URL, state) {
   // ─── Failure paths ───────────────────────────────────────────────────────────
 
   await test('AUTH-06', 'Verify OTP — wrong code returns INVALID_TOKEN', async () => {
-    // NOTE: AUTH-03, AUD-02, AUD-03 are marked MANUAL — they require
-    // a fresh email that hasn't hit Supabase's OTP rate limit.
-    // Never use kaushik.kuberanathan@gmail.com in automated login tests.
-    // Use a dedicated test email with an active membership instead.
-    const res = await post(BASE_URL, '/api/v1/auth/verify', {
-      email: 'kaushik.kuberanathan@gmail.com',
-      token: '000000',
-      teamId: TEAM_ID,
-      deviceContext: DEVICE,
-    });
-    const data = await res.json();
     return {
-      pass: res.status === 401 && data.error === 'INVALID_TOKEN',
+      skip: true,
       expected: '401 INVALID_TOKEN',
-      actual: `${res.status} ${data.error}`,
+      reason: 'OTP verify route removed — replaced by magic link flow',
     };
   });
 

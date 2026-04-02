@@ -1856,8 +1856,7 @@ export default function App() {
     user,
     membership,
     role,
-    requestOtp,
-    verifyOtp,
+    sendMagicLink,
     requestAccess,
     logout,
   } = useAuth();
@@ -8016,8 +8015,7 @@ export default function App() {
     return (
       <LoginScreen
         onRequestAccess={() => setAuthScreen('request')}
-        requestOtp={requestOtp}
-        verifyOtp={verifyOtp}
+        sendMagicLink={sendMagicLink}
       />
     );
   }
