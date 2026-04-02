@@ -371,6 +371,11 @@ All major sections are wrapped with `<ErrorBoundary>` (class component). On cras
 
 ## Version History
 
+### v2.1.4 — April 2, 2026
+- 154 frontend tests across 7 files — migration, scoring, formatters, flag bootstrap, bench equity
+- Extracted migrations.js, formatters.js, flagBootstrap.js from App.jsx; App.jsx imports them
+- Husky pre-push hook — tests run before every push; failing tests block the push
+
 ### v2.1.3 — April 2, 2026
 - Rebrand: all customer-facing surfaces renamed from Lineup Generator to Dugout Lineup — PWA manifest, index.html, login/access screens, legal docs, admin UI, About tab, PDF header, share text, and install banner
 

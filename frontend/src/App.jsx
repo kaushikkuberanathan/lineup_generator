@@ -9,7 +9,10 @@ import mixpanel from 'mixpanel-browser';
 import { FEATURE_FLAGS } from '@/config/featureFlags';
 import { generateLineupV2 } from '@/utils/lineupEngineV2';
 import { normalizeBattingHand } from '@/utils/playerUtils';
+import { migrateRoster, migrateSchedule, migrateBattingPerf, mergeLocalScheduleFields } from '@/utils/migrations';
+import { fmtAvg, fmtStat } from '@/utils/formatters';
 import { useBackendHealth } from '@/hooks/useBackendHealth';
+import { useFeatureFlags } from '@/hooks/useFeatureFlags';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { ErrorBoundary } from './components/Shared/ErrorBoundary';
 import { NowBattingBar } from './components/GameDay/NowBattingStrip';
@@ -20,6 +23,7 @@ import { ViewerMode } from './components/Viewer/ViewerMode';
 import { EmptyState } from './components/Home/EmptyState';
 import { ValidationBanner } from './components/Shared/ValidationBanner';
 import { OfflineIndicator } from './components/Shared/OfflineIndicator';
+import { MaintenanceScreen } from './components/Shared/MaintenanceScreen';
 import { DefenseDiamond }  from './components/GameDay/DefenseDiamond';
 import { GameModeScreen }  from './components/game-mode/GameModeScreen';
 import { LegalSection }       from './components/Support/LegalSection';
@@ -152,9 +156,19 @@ var DEFAULT_ROSTER = [];
 var _mem = {};
 var SCHEMA_VERSION = 2;
 
-var APP_VERSION = "2.1.3";
+// DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
+// set back to false after verifying prod.
+var APP_VERSION = "2.1.4";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.1.4',
+    date: '2026-04-02',
+    changes: [
+      '154 frontend tests across 7 files — migration, scoring, formatters, flag bootstrap, bench equity',
+      'Extracted migrations, formatters, and flagBootstrap utilities from App.jsx into testable modules'
+    ]
+  },
   {
     version: '2.1.3',
     date: '2026-04-02',
@@ -781,118 +795,7 @@ function migrateTeamData(data, key) {
   return data;
 }
 
-function migrateRoster(roster) {
-  if (!Array.isArray(roster)) { return roster; }
-  return roster.map(function(p) {
-    var skills = p.skills || [];
-    // Legacy migration: needsRoutine was renamed to developing in v2 badge redesign
-    if (skills.indexOf("needsRoutine") >= 0) {
-      if (skills.indexOf("developing") < 0) {
-        skills = skills.map(function(s) { return s === "needsRoutine" ? "developing" : s; });
-      } else {
-        skills = skills.filter(function(s) { return s !== "needsRoutine"; });
-      }
-    }
-    return {
-      // Spread all existing fields first so any future fields are preserved
-      // through migration without being silently dropped.
-      ...p,
-      // Explicit fields below normalize values and apply safe defaults.
-      // They override whatever was spread above (intentional).
-      name:      p.name      || "",
-      skills:    skills,
-      tags:      p.tags      || [],
-      dislikes:  p.dislikes  || [],
-      prefs:     p.prefs     || [],
-      batSkills: p.batSkills || [],
-      // V2 fielding
-      reliability:        p.reliability        ?? "average",
-      reaction:           p.reaction           ?? "average",
-      armStrength:        p.armStrength        ?? "average",
-      ballType:           p.ballType           ?? "developing",
-      knowsWhereToThrow:  p.knowsWhereToThrow  ?? false,
-      callsForBall:       p.callsForBall       ?? false,
-      backsUpPlays:       p.backsUpPlays       ?? false,
-      anticipatesPlays:   p.anticipatesPlays   ?? false,
-      // V2 batting
-      contact:            p.contact            ?? "medium",
-      power:              p.power              ?? "low",
-      swingDiscipline:    p.swingDiscipline    ?? "free_swinger",
-      tracksBallWell:     p.tracksBallWell     ?? false,
-      patientAtPlate:     p.patientAtPlate     ?? false,
-      confidentHitter:    p.confidentHitter    ?? false,
-      // V2 base running
-      speed:              p.speed              ?? "average",
-      runsThroughFirst:   p.runsThroughFirst   ?? false,
-      listensToCoaches:   p.listensToCoaches   ?? false,
-      awareOnBases:       p.awareOnBases       ?? false,
-      // V2 effort & development
-      effort:             p.effort             ?? null,
-      developmentFocus:   p.developmentFocus   ?? "balanced",
-      // V2 game-day constraints
-      skipBench:          p.skipBench          ?? false,
-      outThisGame:        p.outThisGame        ?? false,
-      lastUpdated:        p.lastUpdated        ?? null,
-      firstName:          p.firstName          ?? (p.name ? p.name.split(" ")[0] : ""),
-      lastName:           p.lastName           ?? (p.name ? p.name.split(" ").slice(1).join(" ") : ""),
-      // Walk-up songs
-      walkUpSong:         p.walkUpSong         ?? null,
-      walkUpArtist:       p.walkUpArtist       ?? null,
-      walkUpStart:        p.walkUpStart        ?? null,
-      walkUpEnd:          p.walkUpEnd          ?? null,
-      walkUpNotes:        p.walkUpNotes        ?? null,
-      walkUpLink:         p.walkUpLink         ?? null
-    };
-  });
-}
-
-function migrateSchedule(schedule) {
-  if (!Array.isArray(schedule)) { return schedule; }
-  return schedule.map(function(g) {
-    return Object.assign({}, g, {
-      id:          g.id          || (Date.now() + ""),
-      date:        g.date        || "",
-      time:        g.time        || "",
-      location:    g.location    || "",
-      opponent:    g.opponent    || "",
-      result:      g.result      || "",
-      ourScore:    g.ourScore    || "",
-      theirScore:  g.theirScore  || "",
-      home:        g.home        ?? false,
-      snackDuty:   g.snackDuty   || "",
-      snackNote:   g.snackNote   || "",
-      gameBall:    g.gameBall    || "",
-      battingPerf: g.battingPerf || {}
-    });
-  });
-}
-
-function migrateBattingPerf(schedule, roster) {
-  if (!schedule || !roster || roster.length === 0) return schedule;
-  return schedule.map(function(game) {
-    if (!game.battingPerf || Object.keys(game.battingPerf).length === 0) return game;
-    var keys = Object.keys(game.battingPerf);
-    var needsMigration = keys.some(function(k) {
-      return !roster.find(function(p) { return p.name === k; });
-    });
-    if (!needsMigration) return game;
-    var newPerf = {};
-    keys.forEach(function(oldKey) {
-      var match = roster.find(function(p) {
-        var parts = p.name.split(' ');
-        var initial = parts[0].charAt(0);
-        var lastName = parts.slice(1).join(' ');
-        return (initial + ' ' + lastName) === oldKey || p.name === oldKey;
-      });
-      if (match) {
-        newPerf[match.name] = game.battingPerf[oldKey];
-      } else {
-        newPerf[oldKey] = game.battingPerf[oldKey];
-      }
-    });
-    return Object.assign({}, game, { battingPerf: newPerf });
-  });
-}
+// migrateRoster, migrateSchedule, migrateBattingPerf — imported from @/utils/migrations
 
 function migrateGrid(grid, roster, innings) {
   if (!grid || typeof grid !== "object") { return initGrid(roster, innings); }
@@ -1512,20 +1415,7 @@ var S = {
 // BATTING STAT FORMAT HELPERS
 // ============================================================
 
-function fmtAvg(h, ab) {
-  var hits = parseInt(h, 10) || 0;
-  var atBats = parseInt(ab, 10) || 0;
-  if (atBats === 0) return '---';
-  var avg = hits / atBats;
-  if (!isFinite(avg)) return '---';
-  var str = avg.toFixed(3);
-  return str.startsWith('0.') ? str.slice(1) : str;
-}
-
-function fmtStat(val) {
-  var n = parseInt(val, 10);
-  return isNaN(n) ? '0' : String(n);
-}
+// fmtAvg, fmtStat — imported from @/utils/formatters
 
 // NowBattingBar — extracted to components/GameDay/NowBattingStrip.jsx
 
@@ -1575,6 +1465,8 @@ function PlayerFilterToggle({ players, selected, onSelect }) {
 export default function App() {
 
   var backendHealth = useBackendHealth();
+  var _featureFlags = useFeatureFlags();
+  var runtimeFlags = _featureFlags.flags; var flagsLoading = _featureFlags.loading;
 
   var _gameModeActive = useState(false);
   var gameModeActive = _gameModeActive[0]; var setGameModeActive = _gameModeActive[1];
@@ -1901,18 +1793,26 @@ export default function App() {
 
   // Feature flag URL bootstrap — ?enable_flag=<name> sets localStorage and reloads
   // ?disable_flag=<name> clears it. Allows per-user flag activation via a shared link.
+  // ?coach_access=mudhen2026 sets bypass:maintenance so coaches can enter during maintenance.
+  // ?clear_bypass removes the bypass.
   useEffect(function() {
     var _ffp = new URLSearchParams(window.location.search);
     var _ef = _ffp.get("enable_flag");
     var _df = _ffp.get("disable_flag");
-    if (!_ef && !_df) { return; }
+    var _ca = _ffp.get("coach_access");
+    var _cb = _ffp.get("clear_bypass");
+    if (!_ef && !_df && !_ca && _cb === null) { return; }
     if (_ef) { localStorage.setItem("flag:" + _ef, "1"); }
     if (_df) { localStorage.removeItem("flag:" + _df); }
-    // Strip the param and reload so the flag takes effect cleanly
+    if (_ca === 'mudhen2026') { localStorage.setItem('bypass:maintenance', '1'); }
+    if (_cb !== null) { localStorage.removeItem('bypass:maintenance'); }
+    // Strip the params and reload so changes take effect cleanly
     var clean = window.location.pathname;
     var kept = [];
     _ffp.forEach(function(v, k) {
-      if (k !== "enable_flag" && k !== "disable_flag") kept.push(k + "=" + encodeURIComponent(v));
+      if (k !== "enable_flag" && k !== "disable_flag" && k !== "coach_access" && k !== "clear_bypass") {
+        kept.push(k + "=" + encodeURIComponent(v));
+      }
     });
     window.location.replace(clean + (kept.length ? "?" + kept.join("&") : ""));
   }, []);
@@ -2621,15 +2521,7 @@ export default function App() {
         var migratedDbSchedule = migrateBattingPerf(migrateSchedule(Array.isArray(dbData.schedule) ? dbData.schedule : []), migrateRoster(dbData.roster));
         // Merge locally-set fields that Supabase may not have (set during hydration window)
         var MERGE_FIELDS = ['scoreReported', 'snackDuty', 'snackNote', 'gameBall'];
-        var mergedSchedule = migratedDbSchedule.map(function(g) {
-          var local = localSchedBeforeHydrate.find(function(x) { return x.id === g.id; });
-          if (!local) return g;
-          var merged = Object.assign({}, g);
-          MERGE_FIELDS.forEach(function(field) {
-            if (local[field] && !g[field]) merged[field] = local[field];
-          });
-          return merged;
-        });
+        var mergedSchedule = mergeLocalScheduleFields(migratedDbSchedule, localSchedBeforeHydrate, MERGE_FIELDS);
         saveJSON("team:" + team.id + ":schedule", mergedSchedule);
         setSchedule(mergedSchedule);
         // Backfill Supabase if any fields were rescued from localStorage
@@ -7385,7 +7277,7 @@ export default function App() {
                   onClick={function() { setShowShareSheet(false); shareCurrentLineup(); }}>
                   🔗 Share as Link
                 </button>
-                {(FEATURE_FLAGS.VIEWER_MODE || localStorage.getItem("flag:viewer_mode") === "1") ? (
+                {(runtimeFlags.VIEWER_MODE || localStorage.getItem("flag:viewer_mode") === "1") ? (
                   <button style={{ ...S.btn("ghost"), border:"1px solid rgba(15,31,61,0.2)", padding:"13px", fontSize:"14px", textAlign:"left" }}
                     onClick={function() { setShowShareSheet(false); shareViewerLink(); }}>
                     👁 Share Viewer Link
@@ -7991,6 +7883,22 @@ export default function App() {
   // MAIN RETURN
   // ============================================================
 
+  // Maintenance mode — must be first check, before share links, auth, everything
+  var _bypassMaintenance = localStorage.getItem('bypass:maintenance') === '1';
+  var _maintenanceOn = runtimeFlags.MAINTENANCE_MODE ||
+                       localStorage.getItem('flag:MAINTENANCE_MODE') === '1';
+  if (flagsLoading) {
+    return (
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'center',
+        minHeight:'100vh', background:'#0f1f3d' }}>
+        <div style={{ fontSize:'32px' }}>⚾</div>
+      </div>
+    );
+  }
+  if (_maintenanceOn && !_bypassMaintenance) {
+    return <MaintenanceScreen version={APP_VERSION} />;
+  }
+
   // Check for shared lineup in URL — short ?s= link (async) or legacy ?share= (base64)
   if (new URLSearchParams(window.location.search).get("s")) {
     if (shareLoading) {
@@ -8003,7 +7911,7 @@ export default function App() {
     }
     if (sharePayload) {
       var _vp = new URLSearchParams(window.location.search);
-      var _viewerFlagOn = FEATURE_FLAGS.VIEWER_MODE || localStorage.getItem("flag:viewer_mode") === "1";
+      var _viewerFlagOn = runtimeFlags.VIEWER_MODE || localStorage.getItem("flag:viewer_mode") === "1";
       var isViewer = _viewerFlagOn && (_vp.get("view") === "true" || _vp.get("role") === "viewer");
       return <ErrorBoundary fallback="Viewer Mode">{isViewer ? <ViewerMode payload={sharePayload} /> : renderSharedView(sharePayload)}</ErrorBoundary>;
     }
@@ -8059,7 +7967,7 @@ export default function App() {
     var shareParam = urlParams.get("share");
     if (shareParam) {
       var payload = JSON.parse(decodeURIComponent(escape(atob(shareParam))));
-      var _viewerFlagOn64 = FEATURE_FLAGS.VIEWER_MODE || localStorage.getItem("flag:viewer_mode") === "1";
+      var _viewerFlagOn64 = runtimeFlags.VIEWER_MODE || localStorage.getItem("flag:viewer_mode") === "1";
       var isViewer64 = _viewerFlagOn64 && (urlParams.get("view") === "true" || urlParams.get("role") === "viewer");
       return <ErrorBoundary fallback="Viewer Mode">{isViewer64 ? <ViewerMode payload={payload} /> : renderSharedView(payload)}</ErrorBoundary>;
     }

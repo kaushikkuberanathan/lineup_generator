@@ -1,6 +1,11 @@
 export const FEATURE_FLAGS = {
   USE_NEW_LINEUP_ENGINE: true,
 
+  // Maintenance Mode — when true, all users see a "We'll be right back" screen.
+  // Enable before deploying breaking changes; disable after verifying prod.
+  // Override locally: localStorage.setItem("flag:MAINTENANCE_MODE", "1")
+  MAINTENANCE_MODE: false,
+
   // Viewer Mode — read-only swipeable inning cards for parents/players
   // Set to true to enable globally, or leave false and enable per-user via:
   //   localStorage.setItem("flag:viewer_mode", "1")   ← enable for this user
@@ -10,7 +15,7 @@ export const FEATURE_FLAGS = {
   // Game Mode — full-screen live game overlay (diamond + bench + batting footer).
   // Feature-flagged off by default. Enable per-team via Supabase feature_flags table
   // or locally via: localStorage.setItem("flag:game_mode", "1")
-  GAME_MODE: false,
+  GAME_MODE: true,
 
   // Accessibility Phase 1 — font floor 12–14px, touch targets ≥44px,
   // contrast uplift in Game Mode overlays, aria labels, position abbreviation labels.

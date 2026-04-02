@@ -1,7 +1,14 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: April 2, 2026 (v2.1.3)
+> Last updated: April 2, 2026 (v2.1.4)
 > MVP launched: March 24, 2026
+
+---
+
+## v2.1.4 — 2026-04-02
+- 154 frontend tests across 7 files (migration, scoring, formatters, flag bootstrap, bench equity)
+- Extracted migrations.js, formatters.js, flagBootstrap.js utilities from App.jsx
+- Husky pre-push hook: test suite runs before every push; failing tests block the push
 
 ---
 
