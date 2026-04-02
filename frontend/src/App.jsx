@@ -152,9 +152,17 @@ var DEFAULT_ROSTER = [];
 var _mem = {};
 var SCHEMA_VERSION = 2;
 
-var APP_VERSION = "2.1.1";
+var APP_VERSION = "2.1.2";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.1.2',
+    date: '2026-04-02',
+    changes: [
+      'Fix: bottom nav now fixed to viewport — no longer scrolls away on mobile',
+      'Fix: bottom nav and Now Batting bar hidden during Game Mode for full-screen clarity'
+    ]
+  },
   {
   version: '2.1.1',
   date: '2026-04-02',
@@ -1438,7 +1446,7 @@ var S = {
       color: active ? "#fff" : "rgba(255,255,255,0.55)"
     };
   },
-  body: { flex:1, overflowY:"auto", WebkitOverflowScrolling:"touch", display:"flex", flexDirection:"column", alignItems:"center", width:"100%", maxWidth:"600px", marginLeft:"auto", marginRight:"auto" },
+  body: { flex:1, overflowY:"auto", WebkitOverflowScrolling:"touch", display:"flex", flexDirection:"column", alignItems:"center", width:"100%", maxWidth:"600px", marginLeft:"auto", marginRight:"auto", paddingBottom:"80px" },
   card: {
     background:C.white, borderRadius:"10px", padding:"16px 18px",
     boxShadow:"0 2px 8px rgba(15,31,61,0.06)", marginBottom:"14px",
@@ -8436,7 +8444,7 @@ export default function App() {
 
   function renderBottomNav() {
     return (
-      <div style={{ flexShrink:0, background:C.navy, borderTop:"2px solid " + C.red, display:"flex", paddingBottom: isStandalone ? "env(safe-area-inset-bottom, 0px)" : "env(safe-area-inset-bottom, 12px)" }}>
+      <div style={{ position:"fixed", bottom:0, left:0, right:0, zIndex:200, background:C.navy, borderTop:"2px solid " + C.red, display:"flex", paddingBottom: isStandalone ? "env(safe-area-inset-bottom, 0px)" : "env(safe-area-inset-bottom, 12px)" }}>
         {PRIMARY_TABS.map(function(t) {
           var active = primaryTab === t.key;
           var disabled = (t.key !== "more" && t.key !== "home" && screen !== "app");
@@ -8502,7 +8510,7 @@ export default function App() {
         </div>
       </div>
       <ErrorBoundary fallback="Now Batting">
-        {primaryTab === "gameday" && battingOrder && battingOrder.length > 0 ? (
+        {!gameModeActive && primaryTab === "gameday" && battingOrder && battingOrder.length > 0 ? (
           <NowBattingBar
             battingOrder={battingOrder}
             currentIndex={currentBatterIndex}
@@ -8517,7 +8525,7 @@ export default function App() {
           />
         ) : null}
       </ErrorBoundary>
-      {renderBottomNav()}
+      {!gameModeActive ? renderBottomNav() : null}
       {renderExitSheet()}
       {gameModeActive ? (
         <GameModeScreen
