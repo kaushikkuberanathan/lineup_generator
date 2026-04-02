@@ -1681,11 +1681,13 @@ export default function App() {
                       return {
                         id: seed.id, date: seed.date, time: seed.time,
                         location: seed.location, opponent: seed.opponent, home: seed.home,
-                        result:      prev.result      || seed.result,
-                        ourScore:    prev.ourScore    || seed.ourScore,
-                        theirScore:  prev.theirScore  || seed.theirScore,
-                        snackDuty:   prev.snackDuty   || seed.snackDuty  || "",
-                        snackNote:   prev.snackNote   || seed.snackNote  || "",
+                        result:        prev.result        || seed.result,
+                        ourScore:      prev.ourScore      || seed.ourScore,
+                        theirScore:    prev.theirScore    || seed.theirScore,
+                        snackDuty:     prev.snackDuty     || seed.snackDuty   || "",
+                        snackNote:     prev.snackNote     || seed.snackNote   || "",
+                        gameBall:      prev.gameBall      || seed.gameBall    || "",
+                        scoreReported: prev.scoreReported || seed.scoreReported || false,
                         battingPerf: getLocalBattingPerf(seed.id) || (prev.battingPerf && Object.keys(prev.battingPerf).length > 0
                                      ? prev.battingPerf : (seed.battingPerf || {}))
                       };
