@@ -3,3 +3,6 @@
 
 # Claude Code local settings
 **/.claude/settings.local.json
+
+# Node modules (root-level, for husky and other root devDependencies)
+node_modules/
