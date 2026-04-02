@@ -371,6 +371,10 @@ All major sections are wrapped with `<ErrorBoundary>` (class component). On cras
 
 ## Version History
 
+### v2.1.2 — April 2, 2026
+- Fix: bottom nav fixed to viewport on mobile (position:fixed)
+- Fix: bottom nav and Now Batting bar hidden during Game Mode for full-screen clarity
+
 ### v2.1.0 — April 1, 2026
 - Phase 4B complete: email OTP auth, Resend notifications, auth_events
 - Migrations 008-012 applied

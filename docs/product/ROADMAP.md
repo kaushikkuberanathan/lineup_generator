@@ -1,7 +1,13 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: April 1, 2026 (v2.1.0)
+> Last updated: April 2, 2026 (v2.1.2)
 > MVP launched: March 24, 2026
+
+---
+
+## v2.1.2 — 2026-04-02
+- Fix: bottom nav fixed to viewport on mobile
+- Fix: bottom nav and Now Batting bar hidden during Game Mode
 
 ---
 
