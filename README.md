@@ -2,7 +2,7 @@
 
 > **Baseball and softball lineup management for youth coaches — built on the sideline, for the sideline.**
 
-🌐 **Live app: [line-up-generator.vercel.app](https://line-up-generator.vercel.app)**
+🌐 **Live app: [dugoutlineup.com](https://dugoutlineup.com)**
 
 ---
 

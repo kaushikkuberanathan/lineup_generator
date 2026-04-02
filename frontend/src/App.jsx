@@ -158,9 +158,20 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.1.4";
+var APP_VERSION = "2.1.5";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.1.5',
+    date: '2026-04-02',
+    changes: [
+      'Feat: Supabase-backed runtime feature flags — all flags now toggle from dashboard without a deploy',
+      'Feat: maintenance mode screen — shown to all users during deploys',
+      'Feat: coach bypass via ?coach_access=mudhen2026 to verify prod while maintenance is on',
+      'Fix: GAME_MODE flag normalized to uppercase in Supabase, global default set to true',
+      'Chore: replaced all legacy line-up-generator.vercel.app URLs with dugoutlineup.com — Open in Browser, Share App Now, CORS allowed origins, README, CLAUDE.md, feature-flags docs'
+    ]
+  },
   {
     version: '2.1.4',
     date: '2026-04-02',
@@ -7081,14 +7092,14 @@ export default function App() {
           <div style={{ fontSize:"20px", fontWeight:"bold", color:C.navy, marginBottom:"4px" }}>Dugout Lineup &#x26be; <span style={{ fontSize:"13px", fontWeight:"normal", color:C.textMuted }}>v{APP_VERSION}</span></div>
           <div style={{ fontSize:"12px", color:C.textMuted, marginBottom:"12px" }}>Built for youth baseball coaches. Runs at the field.</div>
           <div style={{ marginBottom:"14px" }}>
-            <a href="https://line-up-generator.vercel.app" target="_blank" rel="noopener noreferrer"
+            <a href="https://dugoutlineup.com" target="_blank" rel="noopener noreferrer"
               style={{ fontSize:"12px", color:C.red, fontWeight:"bold", textDecoration:"none" }}>
               Open in Browser ↗
             </a>
           </div>
           <button style={S.btn("primary")}
             onClick={function() {
-              var url = "https://line-up-generator.vercel.app";
+              var url = "https://dugoutlineup.com";
               var text = "Dugout Lineup — free lineup tool for youth baseball coaches. Runs at the field, works offline.";
               if (navigator.share) {
                 navigator.share({ title: "Dugout Lineup", text: text, url: url }).catch(function() {});

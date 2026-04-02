@@ -156,7 +156,7 @@ backend/
 #### BLOCKED: Admin UI Login (depends on Twilio)
 - admin.html is built and deployed at /admin.html on frontend
 - Login flow works mechanically but OTP never arrives due to Twilio toll-free block
-- Once Twilio verified, log in at https://line-up-generator.vercel.app/admin.html
+- Once Twilio verified, log in at https://dugoutlineup.com/admin.html
 - Admin check: reads /me, looks for memberships[0].role === 'admin'
 - Known issue: /me returns memberships:[] intermittently — suspect token expiry mid-session, needs monitoring once Twilio unblocked
 
@@ -221,7 +221,7 @@ Cutover steps (in order):
 - Mud Hens team ID: 1774297491626
 - Kaushik user_id: 7ba2bd81-9e08-40b0-bb2b-f96a82ab9e9a
 - Supabase test OTP: phone +14044930548, code 123456
-- Admin UI URL (production): https://line-up-generator.vercel.app/admin.html
+- Admin UI URL (production): https://dugoutlineup.com/admin.html
 - Backend URL: https://lineup-generator-backend.onrender.com
 
 ### Data Protection (CRITICAL)
@@ -340,7 +340,7 @@ var on = FEATURE_FLAGS.MY_FLAG || localStorage.getItem("flag:my_flag") === "1";
 
 **Enable for one user without a deploy** — send them:
 ```
-https://line-up-generator.vercel.app/?enable_flag=<flag_name>
+https://dugoutlineup.com/?enable_flag=<flag_name>
 ```
 The app sets the localStorage key and redirects cleanly. Use `?disable_flag=<name>` to revert.
 
@@ -370,6 +370,12 @@ All major sections are wrapped with `<ErrorBoundary>` (class component). On cras
 ---
 
 ## Version History
+
+### v2.1.5 — April 2, 2026
+- Supabase-backed runtime feature flags — all flags now toggle from dashboard without a deploy
+- Maintenance mode screen + coach bypass (?coach_access=mudhen2026)
+- All legacy line-up-generator.vercel.app URLs replaced with dugoutlineup.com
+- GAME_MODE global default set to true; flag name normalized to uppercase in Supabase
 
 ### v2.1.4 — April 2, 2026
 - 154 frontend tests across 7 files — migration, scoring, formatters, flag bootstrap, bench equity

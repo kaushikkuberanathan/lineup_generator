@@ -144,13 +144,13 @@ Send anyone a URL with `?enable_flag=<name>` appended. When they open it, the ap
 
 ```
 # Enable viewer mode for the person who opens this link:
-https://line-up-generator.vercel.app/?enable_flag=viewer_mode
+https://dugoutlineup.com/?enable_flag=viewer_mode
 
 # Disable it (useful for reverting a tester):
-https://line-up-generator.vercel.app/?disable_flag=viewer_mode
+https://dugoutlineup.com/?disable_flag=viewer_mode
 
 # Combine with a share link — viewer opens in viewer mode AND gets the flag set:
-https://line-up-generator.vercel.app/?s=abc123&view=true&enable_flag=viewer_mode
+https://dugoutlineup.com/?s=abc123&view=true&enable_flag=viewer_mode
 ```
 
 This is the **recommended path for rolling out to specific coaches** before a global release.

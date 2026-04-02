@@ -86,6 +86,20 @@ Required before any deploy touching lineup, game mode, or share links:
 Use this Claude Code command — fill in bracketed values:
 In the lineup generator project, execute the full deployment
 checklist in this exact order. Do not skip any step.
+
+STEP 0 — Enable maintenance mode (no deploy needed):
+  In Supabase SQL Editor:
+  UPDATE feature_flags 
+  SET enabled = true, updated_at = now()
+  WHERE flag_name = 'MAINTENANCE_MODE' AND team_id IS NULL;
+  Wait 10 seconds. Verify dugoutlineup.com shows maintenance screen.
+  Coach bypass: https://dugoutlineup.com/?coach_access=mudhen2026
+
+  After verifying prod, disable:
+  UPDATE feature_flags 
+  SET enabled = false, updated_at = now()
+  WHERE flag_name = 'MAINTENANCE_MODE' AND team_id IS NULL;
+
 STEP 1 — Version bumps (all files):
 In frontend/src/App.jsx:
 
@@ -234,6 +248,25 @@ backend/package.json                    — backend version
 docs/product/ROADMAP.md                 — roadmap + version log
 docs/product/MASTER_DEV_REFERENCE.md   — this file
 CLAUDE.md                               — project rules + version history
+
+---
+
+## Feature Flags Reference
+
+All flags live in the Supabase feature_flags table.
+Toggle instantly without a deploy — changes take effect on next page load.
+
+| Flag | Default | Purpose |
+|---|---|---|
+| MAINTENANCE_MODE | false | Show maintenance screen to all users |
+| GAME_MODE | true | Full-screen live game overlay |
+| VIEWER_MODE | false | Read-only share link viewer mode |
+| ACCESSIBILITY_V1 | false | Font floor, touch targets, contrast uplift |
+
+Toggle SQL:
+  UPDATE feature_flags 
+  SET enabled = true/false, updated_at = now()
+  WHERE flag_name = 'FLAG_NAME' AND team_id IS NULL;
 
 ---
 

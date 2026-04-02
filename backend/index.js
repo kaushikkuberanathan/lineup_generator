@@ -11,7 +11,7 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 const ALLOWED_ORIGINS = [
-  'https://line-up-generator.vercel.app',
+  'https://dugoutlineup.com',
 ];
 app.use(cors({
   origin: function(origin, callback) {

@@ -1,7 +1,15 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: April 2, 2026 (v2.1.4)
+> Last updated: April 2, 2026 (v2.1.5)
 > MVP launched: March 24, 2026
+
+---
+
+## v2.1.5 — 2026-04-02
+- Feat: Supabase runtime feature flags (007 migration)
+- Feat: maintenance mode + coach bypass (?coach_access=mudhen2026)
+- Feat: VIEWER_MODE, GAME_MODE, ACCESSIBILITY_V1 all toggle from Supabase dashboard instantly — no deploy needed
+- Chore: all legacy line-up-generator.vercel.app URLs replaced with dugoutlineup.com
 
 ---
 
