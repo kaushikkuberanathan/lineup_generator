@@ -15,7 +15,7 @@ export var LEGAL_DOCS = [
     sections: [
       {
         type: "p",
-        text: "Lineup Generator is a free tool for youth baseball and softball coaches. This policy explains how your data is handled."
+        text: "Dugout Lineup is a free tool for youth baseball and softball coaches. This policy explains how your data is handled."
       },
       { type: "h3", text: "What We Collect" },
       {
@@ -35,7 +35,7 @@ export var LEGAL_DOCS = [
       { type: "h3", text: "Children's Privacy (COPPA)" },
       {
         type: "p",
-        text: "Lineup Generator is used by coaches — adult volunteers who manage youth teams. The app does not collect data directly from children. Player first names entered by a coach are stored as roster data; no other child information is collected. We do not knowingly collect personal information from anyone under 13."
+        text: "Dugout Lineup is used by coaches — adult volunteers who manage youth teams. The app does not collect data directly from children. Player first names entered by a coach are stored as roster data; no other child information is collected. We do not knowingly collect personal information from anyone under 13."
       },
       { type: "h3", text: "Analytics" },
       {
@@ -58,7 +58,7 @@ export var LEGAL_DOCS = [
     sections: [
       {
         type: "p",
-        text: "By using Lineup Generator, you agree to these terms. The app is provided free of charge for personal, non-commercial use by coaches and team staff."
+        text: "By using Dugout Lineup, you agree to these terms. The app is provided free of charge for personal, non-commercial use by coaches and team staff."
       },
       { type: "h3", text: "Acceptable Use" },
       {
@@ -81,7 +81,7 @@ export var LEGAL_DOCS = [
       { type: "h3", text: "No Warranty" },
       {
         type: "p",
-        text: "Lineup Generator is provided 'as is.' We make no guarantees about uptime, data preservation, or fitness for any particular purpose. Always keep a backup of important roster data using the Download Backup feature."
+        text: "Dugout Lineup is provided 'as is.' We make no guarantees about uptime, data preservation, or fitness for any particular purpose. Always keep a backup of important roster data using the Download Backup feature."
       },
       { type: "h3", text: "Changes to Terms" },
       {
@@ -99,7 +99,7 @@ export var LEGAL_DOCS = [
     sections: [
       {
         type: "p",
-        text: "Lineup Generator is designed to be used safely with youth sports teams. We take child safety seriously."
+        text: "Dugout Lineup is designed to be used safely with youth sports teams. We take child safety seriously."
       },
       { type: "h3", text: "Coach-Only Access" },
       {
@@ -114,7 +114,7 @@ export var LEGAL_DOCS = [
       { type: "h3", text: "No Direct Contact With Minors" },
       {
         type: "p",
-        text: "Lineup Generator does not communicate directly with players or children. All communication (shared links, notifications) goes through the coach."
+        text: "Dugout Lineup does not communicate directly with players or children. All communication (shared links, notifications) goes through the coach."
       },
       { type: "h3", text: "Reporting Concerns" },
       {
@@ -132,7 +132,7 @@ export var LEGAL_DOCS = [
     sections: [
       {
         type: "p",
-        text: "Coaches are responsible for the content they enter into Lineup Generator. By using the app, you agree to these content guidelines."
+        text: "Coaches are responsible for the content they enter into Dugout Lineup. By using the app, you agree to these content guidelines."
       },
       { type: "h3", text: "Appropriate Content" },
       {
@@ -169,7 +169,7 @@ export var LEGAL_DOCS = [
     sections: [
       {
         type: "p",
-        text: "Lineup Generator currently operates in an invite-only beta. Here's how access works."
+        text: "Dugout Lineup currently operates in an invite-only beta. Here's how access works."
       },
       { type: "h3", text: "No Account Required (Offline Mode)" },
       {

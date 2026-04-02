@@ -45,7 +45,7 @@ export function LoginScreen({ onRequestAccess, sendMagicLink }) {
           <div style={styles.header}>
             <div style={styles.logoMark}>⚾</div>
             <h1 style={styles.title}>Check your email</h1>
-            <p style={styles.subtitle}>Mud Hens · Lineup Generator</p>
+            <p style={styles.subtitle}>Mud Hens · Dugout Lineup</p>
           </div>
           <div style={styles.sentBox}>
             <p style={styles.sentText}>
@@ -69,7 +69,7 @@ export function LoginScreen({ onRequestAccess, sendMagicLink }) {
       <div style={styles.card}>
         <div style={styles.header}>
           <div style={styles.logoMark}>⚾</div>
-          <h1 style={styles.title}>Lineup Generator</h1>
+          <h1 style={styles.title}>Dugout Lineup</h1>
           <p style={styles.subtitle}>Mud Hens</p>
         </div>
         <form onSubmit={handleSend} style={styles.form}>

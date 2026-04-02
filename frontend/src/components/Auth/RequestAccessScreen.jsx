@@ -76,7 +76,7 @@ export function RequestAccessScreen({ onBack, requestAccess }) {
         <div style={styles.header}>
           <div style={styles.logoMark}>⚾</div>
           <h1 style={styles.title}>Request Access</h1>
-          <p style={styles.subtitle}>Mud Hens · Lineup Generator</p>
+          <p style={styles.subtitle}>Mud Hens · Dugout Lineup</p>
         </div>
 
         <form onSubmit={handleSubmit} style={styles.form}>

@@ -1,7 +1,12 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: April 2, 2026 (v2.1.2)
+> Last updated: April 2, 2026 (v2.1.3)
 > MVP launched: March 24, 2026
+
+---
+
+## v2.1.3 — 2026-04-02
+- Rebrand: all customer-facing surfaces renamed from Lineup Generator to Dugout Lineup (PWA manifest, index.html, login/access screens, legal docs, admin UI, About tab, PDF header, share text, install banner)
 
 ---
 

@@ -19,9 +19,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'pwa-192x192.png', 'pwa-512x512.png'],
       manifest: {
-        name: 'Lineup Generator',
-        short_name: 'Lineup Generator',
-        description: 'Baseball lineup manager for youth coaches',
+        name: 'Dugout Lineup',
+        short_name: 'Dugout Lineup',
+        description: 'Game-day lineup manager for youth baseball coaches',
         theme_color: '#0f1f3d',
         background_color: '#fdf6ec',
         display: 'standalone',

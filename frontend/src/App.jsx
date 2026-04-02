@@ -152,9 +152,16 @@ var DEFAULT_ROSTER = [];
 var _mem = {};
 var SCHEMA_VERSION = 2;
 
-var APP_VERSION = "2.1.2";
+var APP_VERSION = "2.1.3";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.1.3',
+    date: '2026-04-02',
+    changes: [
+      'Rebrand: all customer-facing surfaces renamed from Lineup Generator to Dugout Lineup — PWA manifest, index.html, login/access screens, legal docs, admin UI, About tab, PDF header, share text, and install banner'
+    ]
+  },
   {
     version: '2.1.2',
     date: '2026-04-02',
@@ -724,7 +731,7 @@ var VERSION_HISTORY = [
     version: "1.0.0",
     date: "March 24, 2026",
     changes: [
-      "MVP launch — Lineup Generator live on Vercel",
+      "MVP launch — Dugout Lineup live on Vercel",
       "11-constraint auto-assign engine with retry fallback",
       "10-player defensive grid (P, C, 1B, 2B, 3B, SS, LF, LC, RC, RF)",
       "Manual cell overrides with issue detection and Auto-Fix All",
@@ -3452,7 +3459,7 @@ export default function App() {
                   borderRadius:10, boxShadow:"0 2px 8px rgba(0,0,0,0.15)" }}>
                   <div style={{ flex:1, minWidth:0 }}>
                     <div style={{ fontSize:13, fontWeight:700, color:"#fff", marginBottom:2 }}>
-                      📲 Install Lineup Generator
+                      📲 Install Dugout Lineup
                     </div>
                     <div style={{ fontSize:11, color:"rgba(255,255,255,0.65)", lineHeight:1.4 }}>
                       One tap access on game day — no browser needed
@@ -6973,7 +6980,7 @@ export default function App() {
         doc.setTextColor(150, 160, 175);
         doc.setFontSize(7);
         doc.setFont("helvetica","normal");
-        doc.text("Lineup Generator - " + teamName + (activeTeam && activeTeam.ageGroup ? " " + activeTeam.ageGroup : ""), margin, pageH - 8);
+        doc.text("Dugout Lineup - " + teamName + (activeTeam && activeTeam.ageGroup ? " " + activeTeam.ageGroup : ""), margin, pageH - 8);
         doc.text(today, W - margin, pageH - 8, { align:"right" });
 
         // ── Save or Share ────────────────────────────────────────
@@ -7159,9 +7166,9 @@ export default function App() {
       <div>
         {/* ── Section 0: What Is This App ─────────────────────── */}
         <div style={S.card}>
-          <div style={{ fontSize:"15px", fontWeight:"bold", color:C.navy, marginBottom:"10px" }}>What is Lineup Generator?</div>
+          <div style={{ fontSize:"15px", fontWeight:"bold", color:C.navy, marginBottom:"10px" }}>What is Dugout Lineup?</div>
           <div style={{ fontSize:"13px", color:C.text, lineHeight:"1.7", marginBottom:"10px" }}>
-            Lineup Generator is a free tool built for youth baseball and softball coaches. It takes the stress out of game day by helping you build a fair, smart field lineup in seconds — no spreadsheets, no paper charts, no arguments about who played where last game.
+            Dugout Lineup is a free tool built for youth baseball and softball coaches. It takes the stress out of game day by helping you build a fair, smart field lineup in seconds — no spreadsheets, no paper charts, no arguments about who played where last game.
           </div>
           <div style={{ fontSize:"13px", color:C.text, lineHeight:"1.7", marginBottom:"10px" }}>
             Tell it your roster, your players' positions, and how many innings you're playing. Tap Auto-Assign and it rotates every kid fairly — keeping track of bench time, position preferences, and who played where across every inning.
@@ -7179,7 +7186,7 @@ export default function App() {
         </div>
         {/* ── Section 1: App Info ──────────────────────────────── */}
         <div style={S.card}>
-          <div style={{ fontSize:"20px", fontWeight:"bold", color:C.navy, marginBottom:"4px" }}>Lineup Generator &#x26be; <span style={{ fontSize:"13px", fontWeight:"normal", color:C.textMuted }}>v{APP_VERSION}</span></div>
+          <div style={{ fontSize:"20px", fontWeight:"bold", color:C.navy, marginBottom:"4px" }}>Dugout Lineup &#x26be; <span style={{ fontSize:"13px", fontWeight:"normal", color:C.textMuted }}>v{APP_VERSION}</span></div>
           <div style={{ fontSize:"12px", color:C.textMuted, marginBottom:"12px" }}>Built for youth baseball coaches. Runs at the field.</div>
           <div style={{ marginBottom:"14px" }}>
             <a href="https://line-up-generator.vercel.app" target="_blank" rel="noopener noreferrer"
@@ -7190,9 +7197,9 @@ export default function App() {
           <button style={S.btn("primary")}
             onClick={function() {
               var url = "https://line-up-generator.vercel.app";
-              var text = "Lineup Generator — free lineup tool for youth baseball coaches. Runs at the field, works offline.";
+              var text = "Dugout Lineup — free lineup tool for youth baseball coaches. Runs at the field, works offline.";
               if (navigator.share) {
-                navigator.share({ title: "Lineup Generator", text: text, url: url }).catch(function() {});
+                navigator.share({ title: "Dugout Lineup", text: text, url: url }).catch(function() {});
               } else {
                 try { navigator.clipboard.writeText(url); alert("Link copied to clipboard!"); } catch(e) {}
               }
@@ -7971,7 +7978,7 @@ export default function App() {
 
           {/* ── Footer ─────────────────────────────────────────────── */}
           <div style={{ textAlign:"center", marginTop:"24px", fontSize:"11px", color:C.textMuted, borderTop:"1px solid rgba(15,31,61,0.08)", paddingTop:"16px" }}>
-            <div style={{ marginBottom:"4px" }}>View-only lineup · Lineup Generator</div>
+            <div style={{ marginBottom:"4px" }}>View-only lineup · Dugout Lineup</div>
             <div style={{ fontSize:"10px", color:"rgba(15,31,61,0.25)" }}>Tap Print to save as PDF or screenshot this page</div>
           </div>
         </div>
@@ -8485,7 +8492,7 @@ export default function App() {
         }}>
           <div style={Object.assign({}, S.logoCircle, isLandscape ? { width:"30px", height:"30px", fontSize:"13px" } : {})}>{screen === "app" && primaryTab !== "more" && activeTeam ? activeTeam.name.charAt(0).toUpperCase() : "L"}</div>
           <div>
-            <div style={Object.assign({}, S.logoTitle, isLandscape ? { fontSize:"14px" } : {})}>{screen === "app" && primaryTab !== "more" && activeTeam ? activeTeam.name : "Lineup Generator"}</div>
+            <div style={Object.assign({}, S.logoTitle, isLandscape ? { fontSize:"14px" } : {})}>{screen === "app" && primaryTab !== "more" && activeTeam ? activeTeam.name : "Dugout Lineup"}</div>
             {!isLandscape && <div style={S.logoSub}>{screen === "app" && primaryTab !== "more" && activeTeam ? (activeTeam.ageGroup || "") + " " + (activeTeam.year || "") + "  ⌂" : "Youth Baseball & Softball"}</div>}
             {screen === "app" && primaryTab !== "more" && isSupabaseEnabled ? (
               <div title={syncStatus === "synced" ? "Saved to cloud" : syncStatus === "syncing" ? "Saving..." : syncStatus === "error" ? "Sync error — data saved locally" : ""}

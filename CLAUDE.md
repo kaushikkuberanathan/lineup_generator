@@ -371,6 +371,9 @@ All major sections are wrapped with `<ErrorBoundary>` (class component). On cras
 
 ## Version History
 
+### v2.1.3 — April 2, 2026
+- Rebrand: all customer-facing surfaces renamed from Lineup Generator to Dugout Lineup — PWA manifest, index.html, login/access screens, legal docs, admin UI, About tab, PDF header, share text, and install banner
+
 ### v2.1.2 — April 2, 2026
 - Fix: bottom nav fixed to viewport on mobile (position:fixed)
 - Fix: bottom nav and Now Batting bar hidden during Game Mode for full-screen clarity
