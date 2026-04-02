@@ -73,31 +73,10 @@ async function run(test, BASE_URL, supabaseAdmin, state) {
 
   // otp_failed event
   await test('AUD-04', 'otp_failed event logged on wrong OTP', async () => {
-    const before = new Date();
-
-    // NOTE: AUTH-03, AUD-02, AUD-03 are marked MANUAL — they require
-    // a fresh email that hasn't hit Supabase's OTP rate limit.
-    // Never use kaushik.kuberanathan@gmail.com in automated login tests.
-    // Use a dedicated test email with an active membership instead.
-    await post(BASE_URL, '/api/v1/auth/verify', {
-      email: 'kaushik.kuberanathan@gmail.com',
-      token: '000000', teamId: TEAM_ID, deviceContext: DEVICE,
-    });
-
-    await delay(800);
-    const { data: event } = await supabaseAdmin
-      .from('auth_events')
-      .select('event_type, auth_channel')
-      .eq('event_type', 'otp_failed')
-      .gte('created_at', before.toISOString())
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
     return {
-      pass: !!event,
+      skip: true,
       expected: 'auth_events row event_type=otp_failed',
-      actual: event ? `event_type=${event.event_type}` : 'no event found',
+      reason: 'OTP verify route removed — replaced by magic link flow',
     };
   });
 
