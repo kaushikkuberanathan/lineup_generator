@@ -92,6 +92,8 @@ export function useAuth() {
   }, []);
 
   useEffect(() => {
+    if (!supabase) return;
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
         if (event === 'SIGNED_IN' && newSession) {

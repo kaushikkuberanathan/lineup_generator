@@ -7991,6 +7991,7 @@ export default function App() {
     );
   }
 
+  /* AUTH GATE — commented out for local dev (no Supabase session required)
   if (authState === 'loading') {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center',
@@ -8027,6 +8028,7 @@ export default function App() {
       />
     );
   }
+  */
 
   try {
     var urlParams = new URLSearchParams(window.location.search);
