@@ -152,9 +152,16 @@ var DEFAULT_ROSTER = [];
 var _mem = {};
 var SCHEMA_VERSION = 2;
 
-var APP_VERSION = "2.1.0";
+var APP_VERSION = "2.1.1";
 
 var VERSION_HISTORY = [
+  {
+  version: '2.1.1',
+  date: '2026-04-02',
+  changes: [
+    'Fix: useBackendHealth — 2 retries before marking server down, slow threshold raised to 5s, 2s initial delay before first check'
+  ]
+},
   {
     version: '2.1.0',
     date: '2026-04-01',
