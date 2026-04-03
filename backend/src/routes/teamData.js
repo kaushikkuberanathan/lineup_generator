@@ -13,8 +13,22 @@
 
 const { Router } = require('express');
 const { supabaseAdmin } = require('../lib/supabase');
+const { rejectTestDataInProd } = require('../middleware/envGuard');
 
 const router = Router();
+
+// ── Env guard — runs before any route with :teamId ───────────────────────────
+router.param('teamId', (req, res, next, teamId) => {
+  try {
+    rejectTestDataInProd(teamId);
+    next();
+  } catch (err) {
+    if (err.status === 403) {
+      return res.status(403).json({ error: err.code, message: err.message });
+    }
+    next(err);
+  }
+});
 
 // ── Auth helper ───────────────────────────────────────────────────────────────
 

@@ -1,7 +1,15 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: April 3, 2026 (v2.2.0)
+> Last updated: April 3, 2026 (v2.2.1)
 > MVP launched: March 24, 2026
+
+---
+
+## v2.2.1 — 2026-04-03
+- Ops: develop branch created with GitHub branch protection rules
+- Ops: Render DEV service + dev.dugoutlineup.com environment planned
+- Ops: backend envGuard middleware — rejectTestDataInProd checks TEST_TEAM_IDS; 403 in prod, console.warn in dev for real team IDs
+- Ops: ci.yml triggers on both main and develop branches
 
 ---
 

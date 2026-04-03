@@ -158,9 +158,19 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.2.0";
+var APP_VERSION = "2.2.1";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.2.1',
+    date: '2026-04-03',
+    changes: [
+      'Ops: develop branch created with GitHub branch protection rules',
+      'Ops: Render DEV service + dev.dugoutlineup.com environment planned',
+      'Ops: backend envGuard middleware — TEST_TEAM_IDS blocks test data in production',
+      'Ops: ci.yml triggers on both main and develop branches'
+    ]
+  },
   {
     version: '2.2.0',
     date: '2026-04-03',

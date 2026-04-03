@@ -359,6 +359,12 @@ All major sections are wrapped with `<ErrorBoundary>` (class component). On cras
 
 ## Version History
 
+### v2.2.1 — April 3, 2026
+- Ops: develop branch created with GitHub branch protection rules
+- Ops: Render DEV service + dev.dugoutlineup.com environment planned
+- Ops: backend envGuard middleware (backend/src/middleware/envGuard.js) — rejectTestDataInProd blocks TEST_TEAM_IDS in production, warns on real teamId in non-prod
+- Ops: ci.yml triggers on both main and develop branches
+
 ### v2.2.0 — April 3, 2026
 - Chore: test suite cleanup — deleted 7 stale OTP tests (VAL-10/11/12/13, AUTH-06, AUD-04, RATE-02); updated AUD-02/03 skip reasons
 - Chore: VAL-07 XSS assertion tightened; RATE-01 split into RATE-01a (403 no membership) + RATE-01b (429 rapid-fire)
