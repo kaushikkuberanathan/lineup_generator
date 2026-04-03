@@ -276,7 +276,7 @@ All future migrations go in `backend/src/db/migrations/` only.
 - [ ] Reset loginLimiter max from 50 back to 5 in backend/src/routes/auth.js
 - [ ] Confirm RESEND_DOMAIN_VERIFIED=true in Render env vars
       (only after custom domain is verified — enables emails to all recipients)
-- [ ] Run npm test and confirm 54 passed / 0 failed before pushing
+- [ ] Run npm test and confirm 204 passed / 1 skipped / 0 failed before pushing
 - [ ] Never use kaushik.kuberanathan@gmail.com in automated test suites
       (Supabase rate limits OTP sends per address — use dedicated test emails)
 
@@ -358,6 +358,19 @@ All major sections are wrapped with `<ErrorBoundary>` (class component). On cras
 ---
 
 ## Version History
+
+### v2.2.0 — April 3, 2026
+- Chore: test suite cleanup — deleted 7 stale OTP tests (VAL-10/11/12/13, AUTH-06, AUD-04, RATE-02); updated AUD-02/03 skip reasons
+- Chore: VAL-07 XSS assertion tightened; RATE-01 split into RATE-01a (403 no membership) + RATE-01b (429 rapid-fire)
+- Chore: suite-idempotency.js refactored — upfront seed block + seedFailed guard removes inter-test dependency chain
+- Chore: suite-auth-middleware.js added (AUTH-MW-01–08) — all protected endpoints verified to reject without token
+- Chore: scoring.test.js Group 1 parameterized — 28 individual tests via forEach table
+- Chore: lineupEngineV2-unit.test.js added — 30 tests across Groups A–E (shape, assignment, bench, batting order, edge cases)
+- Chore: frontend test total 205 (204 passed / 1 skipped) across 8 files
+- Ops: ci.yml — frontend build step added before Vitest; compile errors now block CI
+- Ops: /health endpoint upgraded — async DB connectivity check (Supabase teams read); db:ok/error + db_latency_ms; 503 on DB failure
+- Ops: health-check.yml — new 6h cron with /health db:ok check, share link smoke (HEALTH_SHARE_KEY secret), /generate-lineup shape check
+- Docs: MASTER_DEV_REFERENCE.md — UptimeRobot gap documented; health-check.yml referenced
 
 ### v2.1.9 — April 3, 2026
 - Fix: admin magic link redirectTo /admin.html

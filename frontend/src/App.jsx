@@ -158,9 +158,23 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.1.9";
+var APP_VERSION = "2.2.0";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.2.0',
+    date: '2026-04-03',
+    changes: [
+      'Chore: test suite cleanup — removed 7 stale OTP tests, fixed VAL-07 XSS assertion, split RATE-01 into RATE-01a/RATE-01b',
+      'Chore: suite-auth-middleware.js added (8 tests — all protected endpoints reject without token)',
+      'Chore: scoring.test.js Group 1 parameterized (28 individual tests via forEach table)',
+      'Chore: lineupEngineV2-unit.test.js added (30 tests — output shape, assignment, bench, batting order, edge cases)',
+      'Chore: suite-idempotency.js refactored — upfront seed block, seedFailed guard, no inter-test dependencies',
+      'Ops: ci.yml — frontend build step added before Vitest so compile errors block CI',
+      'Ops: /health endpoint now checks DB connectivity (Supabase teams read); returns db:ok/error + db_latency_ms; 503 on DB failure',
+      'Ops: health-check.yml — new 6h cron with three functional checks: /health db:ok, share link smoke, /generate-lineup response shape'
+    ]
+  },
   {
     version: '2.1.9',
     date: '2026-04-03',

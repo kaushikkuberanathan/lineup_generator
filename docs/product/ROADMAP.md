@@ -1,7 +1,21 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: April 3, 2026 (v2.1.9)
+> Last updated: April 3, 2026 (v2.2.0)
 > MVP launched: March 24, 2026
+
+---
+
+## v2.2.0 — 2026-04-03
+- Chore: test suite cleanup — deleted 7 stale OTP tests; fixed VAL-07 XSS; split RATE-01a/b; updated AUD-02/03 skip reasons
+- Chore: suite-idempotency.js — upfront seed block, seedFailed guard, no inter-test dependency chain
+- Chore: suite-auth-middleware.js added (AUTH-MW-01–08) — 8 protected endpoint rejection tests
+- Chore: scoring.test.js Group 1 parameterized (7 bundled → 28 individual forEach tests)
+- Chore: lineupEngineV2-unit.test.js added (30 tests: Groups A–E — output shape, field assignment, bench logic, batting order, edge cases)
+- Chore: frontend test suite 205 total (204 passed / 1 skipped) across 8 files
+- Ops: ci.yml — frontend build step added before Vitest so compile errors block CI gate
+- Ops: /health — async DB connectivity check via Supabase teams read; db:ok/error + db_latency_ms; returns 503 on DB failure
+- Ops: health-check.yml — new 6-hour GitHub Actions cron: /health db:ok, share link smoke (HEALTH_SHARE_KEY), /generate-lineup shape
+- Docs: MASTER_DEV_REFERENCE.md — UptimeRobot gap documented, health-check.yml referenced
 
 ---
 
