@@ -1,7 +1,14 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: April 3, 2026 (v2.1.7)
+> Last updated: April 3, 2026 (v2.1.8)
 > MVP launched: March 24, 2026
+
+---
+
+## v2.1.8 — 2026-04-03
+- Chore: suite-team-data.js (7 tests), suite-feedback.js (6 tests), suite-contracts.js (7 tests)
+- Chore: GitHub Actions ci.yml — push-to-main gate (Vitest + backend CI_SAFE mode against Render prod)
+- Chore: GitHub Actions health.yml — cron every other day 7am ET, /ping + frontend load + job summary
 
 ---
 

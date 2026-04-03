@@ -359,6 +359,9 @@ All major sections are wrapped with `<ErrorBoundary>` (class component). On cras
 
 ## Version History
 
+### v2.1.8 — April 3, 2026
+- Chore: full automated test suite (suite-team-data, suite-feedback, suite-contracts) + GitHub Actions CI + health monitor cron
+
 ### v2.1.7 — April 3, 2026
 - Fix: admin approve writes email + user_id to team_memberships; members endpoint returns both fields
 - Fix: all four admin email notifications look up team name from DB (no hardcoded team name)

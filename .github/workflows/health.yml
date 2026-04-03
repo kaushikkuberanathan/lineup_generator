@@ -1,0 +1,115 @@
+name: Health Check
+
+# Runs at 11:00 UTC (7:00 AM ET) every other day.
+# Also triggerable manually from the Actions tab.
+
+on:
+  schedule:
+    - cron: '0 11 */2 * *'
+  workflow_dispatch:
+
+jobs:
+  health-check:
+    name: Endpoint Health Check
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── Check 1: Backend /ping ──────────────────────────────────────────────
+
+      - name: Ping backend
+        id: ping
+        run: |
+          HTTP_STATUS=$(curl -s -o /tmp/ping_body.json -w "%{http_code}" \
+            https://lineup-generator-backend.onrender.com/ping)
+          BODY=$(cat /tmp/ping_body.json)
+          echo "http_status=$HTTP_STATUS" >> $GITHUB_OUTPUT
+          echo "body=$BODY"              >> $GITHUB_OUTPUT
+          echo "HTTP $HTTP_STATUS — $BODY"
+
+      - name: Assert /ping OK
+        id: ping_result
+        run: |
+          STATUS="${{ steps.ping.outputs.http_status }}"
+          BODY='${{ steps.ping.outputs.body }}'
+          if [ "$STATUS" != "200" ]; then
+            echo "result=FAIL" >> $GITHUB_OUTPUT
+            echo "❌ /ping returned HTTP $STATUS (expected 200)" && exit 1
+          fi
+          if ! echo "$BODY" | grep -q '"ok"'; then
+            echo "result=FAIL" >> $GITHUB_OUTPUT
+            echo "❌ /ping body does not contain '\"ok\"' — body: $BODY" && exit 1
+          fi
+          echo "result=PASS" >> $GITHUB_OUTPUT
+          echo "✅ /ping → 200 ok"
+
+      # ── Check 2: Frontend app loads ─────────────────────────────────────────
+
+      - name: Check frontend
+        id: frontend
+        run: |
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://dugoutlineup.com)
+          echo "http_status=$HTTP_STATUS" >> $GITHUB_OUTPUT
+          echo "HTTP $HTTP_STATUS — https://dugoutlineup.com"
+
+      - name: Assert frontend OK
+        id: frontend_result
+        run: |
+          STATUS="${{ steps.frontend.outputs.http_status }}"
+          if [ "$STATUS" != "200" ]; then
+            echo "result=FAIL" >> $GITHUB_OUTPUT
+            echo "❌ dugoutlineup.com returned HTTP $STATUS (expected 200)" && exit 1
+          fi
+          echo "result=PASS" >> $GITHUB_OUTPUT
+          echo "✅ dugoutlineup.com → 200"
+
+      # ── Check 3: Share link smoke test ──────────────────────────────────────
+      # TODO: replace SHARE_LINK_ID with a real pinned share link ID once one
+      # is designated for monitoring. For now this check is disabled.
+      # Uncomment and set SHARE_LINK_ID when ready:
+      #
+      # - name: Share link smoke test
+      #   id: share_link
+      #   run: |
+      #     SHARE_LINK_ID="<pinned-share-link-id>"
+      #     HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+      #       "https://dugoutlineup.com/?s=${SHARE_LINK_ID}&view=true")
+      #     echo "http_status=$HTTP_STATUS" >> $GITHUB_OUTPUT
+      #     echo "HTTP $HTTP_STATUS — share link"
+      #
+      # - name: Assert share link OK
+      #   run: |
+      #     STATUS="${{ steps.share_link.outputs.http_status }}"
+      #     if [ "$STATUS" != "200" ]; then
+      #       echo "❌ Share link returned HTTP $STATUS" && exit 1
+      #     fi
+      #     echo "✅ Share link → 200"
+
+      # ── Job Summary ─────────────────────────────────────────────────────────
+
+      - name: Write job summary
+        if: always()
+        run: |
+          PING_STATUS="${{ steps.ping.outputs.http_status }}"
+          FRONTEND_STATUS="${{ steps.frontend.outputs.http_status }}"
+          NOW=$(date -u '+%Y-%m-%d %H:%M UTC')
+
+          ping_icon="✅"
+          frontend_icon="✅"
+          [ "$PING_STATUS"    != "200" ] && ping_icon="❌"
+          [ "$FRONTEND_STATUS" != "200" ] && frontend_icon="❌"
+
+          pass=0
+          fail=0
+          [ "$ping_icon"     = "✅" ] && pass=$((pass+1)) || fail=$((fail+1))
+          [ "$frontend_icon" = "✅" ] && pass=$((pass+1)) || fail=$((fail+1))
+
+          echo "## Health Check Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| # | Check | URL | HTTP | Result |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|-------|-----|------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| 1 | Backend /ping | lineup-generator-backend.onrender.com/ping | $PING_STATUS | $ping_icon |" >> $GITHUB_STEP_SUMMARY
+          echo "| 2 | Frontend app | dugoutlineup.com | $FRONTEND_STATUS | $frontend_icon |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**$pass passed / $fail failed** — $NOW" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "> Share link smoke test disabled — set a pinned share link ID in health.yml to enable." >> $GITHUB_STEP_SUMMARY

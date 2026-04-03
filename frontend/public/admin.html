@@ -3,956 +3,1226 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Admin — Dugout Lineup</title>
+  <title>Admin Console — Dugout Lineup</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    :root {
+      --navy:  #0f1f3d;
+      --navy2: #1a2f5e;
+      --gold:  #f5c842;
+      --red:   #c8102e;
+      --text:  #ffffff;
+      --muted: rgba(255,255,255,0.55);
+      --border: rgba(255,255,255,0.1);
+      --green: #22c55e;
+    }
+
     body {
       font-family: system-ui, -apple-system, sans-serif;
-      background: #fff;
-      color: #1a1a1a;
-      font-size: 15px;
+      background: var(--navy);
+      color: var(--text);
+      font-size: 14px;
       min-height: 100vh;
     }
 
     /* ── Loading ── */
     #loading-screen {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      color: #9ca3af;
-      font-size: 14px;
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; color: var(--muted); font-size: 14px; gap: 10px;
     }
 
     /* ── Login ── */
     #login-screen {
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      padding: 24px;
+      display: none; align-items: center; justify-content: center;
+      min-height: 100vh; padding: 24px;
     }
-
-    #login-screen h1 {
-      font-size: 20px;
-      font-weight: 600;
-      margin-bottom: 24px;
-      color: #1a1a1a;
+    .login-card {
+      background: var(--navy2); border: 1px solid var(--border);
+      border-radius: 10px; padding: 40px 32px; width: 100%; max-width: 360px;
+      display: flex; flex-direction: column; gap: 20px;
     }
-
-    .login-box {
-      width: 100%;
-      max-width: 360px;
-      border: 1px solid #e5e5e5;
-      border-radius: 8px;
-      padding: 24px;
-    }
-
-    .login-box label {
-      display: block;
-      font-size: 13px;
-      font-weight: 500;
-      color: #555;
-      margin-bottom: 6px;
-    }
-
-    .login-box input {
-      display: block;
-      width: 100%;
-      padding: 10px 12px;
-      border: 1px solid #d1d5db;
-      border-radius: 6px;
-      font-size: 15px;
-      font-family: inherit;
-      margin-bottom: 10px;
-      outline: none;
-    }
-
-    .login-box input:focus {
-      border-color: #2563eb;
-      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
-    }
-
-    .field-error {
-      color: #dc2626;
-      font-size: 13px;
-      margin-bottom: 10px;
-      min-height: 18px;
-    }
-
-    /* ── Access denied ── */
-    #access-denied {
-      display: none;
+    .login-card h1 {
+      font-family: Georgia, serif; color: var(--gold); font-size: 22px;
       text-align: center;
-      padding: 80px 24px;
-      color: #6b7280;
+    }
+    .login-card .subtitle { text-align: center; color: var(--muted); font-size: 13px; }
+    .divider {
+      display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 12px;
+    }
+    .divider::before, .divider::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
     }
 
-    #access-denied .denied-icon { font-size: 40px; margin-bottom: 16px; }
-    #access-denied h2 { font-size: 18px; font-weight: 600; color: #1a1a1a; margin-bottom: 8px; }
-
-    /* ── Admin layout ── */
-    #admin-screen { display: none; }
-
-    .tab-bar {
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      background: #fff;
-      border-bottom: 1px solid #e5e5e5;
-      display: flex;
+    /* ── Access Denied ── */
+    #denied-screen {
+      display: none; align-items: center; justify-content: center;
+      min-height: 100vh; padding: 24px;
     }
+    .denied-card {
+      background: var(--navy2); border: 1px solid rgba(200,16,46,0.4);
+      border-radius: 10px; padding: 40px 32px; text-align: center;
+      max-width: 360px; display: flex; flex-direction: column; gap: 16px;
+    }
+    .denied-card h2 { color: var(--red); font-family: Georgia, serif; }
+    .denied-card p { color: var(--muted); font-size: 13px; }
 
-    .tab-btn {
-      flex: 1;
-      padding: 12px 4px;
-      background: none;
-      border: none;
-      border-bottom: 2px solid transparent;
-      font-family: inherit;
-      font-size: 14px;
-      font-weight: 500;
-      color: #6b7280;
-      cursor: pointer;
+    /* ── Main App ── */
+    #app { display: none; flex-direction: column; min-height: 100vh; }
+
+    /* Header */
+    #header {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      background: var(--navy); border-bottom: 2px solid var(--gold);
+      padding: 12px 20px; display: flex; align-items: center;
+      justify-content: space-between; gap: 12px;
+    }
+    #header h1 {
+      font-family: Georgia, serif; color: var(--gold); font-size: 18px;
       white-space: nowrap;
     }
+    .header-right { display: flex; align-items: center; gap: 12px; }
+    #user-email { color: var(--muted); font-size: 12px; }
 
-    .tab-btn.active { color: #2563eb; border-bottom-color: #2563eb; }
-
-    .tab-content {
-      display: none;
-      padding: 16px;
-      max-width: 640px;
-      margin: 0 auto;
+    /* Tab bar */
+    #tab-bar {
+      position: fixed; top: 53px; left: 0; right: 0; z-index: 99;
+      background: var(--navy2); border-bottom: 1px solid var(--border);
+      display: flex; overflow-x: auto; scrollbar-width: none;
     }
-
-    .tab-content.active { display: block; }
-
-    /* ── Cards ── */
-    .card {
-      border: 1px solid #e5e5e5;
-      border-radius: 8px;
-      padding: 16px;
-      margin-bottom: 12px;
+    #tab-bar::-webkit-scrollbar { display: none; }
+    .tab-btn {
+      flex: none; padding: 10px 18px; border: none; background: transparent;
+      color: var(--muted); font-size: 13px; font-weight: 600; cursor: pointer;
+      border-bottom: 2px solid transparent; white-space: nowrap;
+      transition: color 0.15s;
     }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { color: var(--gold); border-bottom-color: var(--gold); }
 
-    .card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 4px;
+    /* Content */
+    #content {
+      margin-top: 97px; padding: 24px 20px;
+      max-width: 900px; margin-left: auto; margin-right: auto;
+      padding-top: 121px;
     }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
 
-    .card-name { font-weight: 600; font-size: 15px; }
-
-    .card-meta { font-size: 13px; color: #6b7280; margin-bottom: 10px; }
-
-    /* ── Badges ── */
-    .badge {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 500;
-    }
-
-    .badge-admin       { background: #ede9fe; color: #6d28d9; }
-    .badge-coach       { background: #dbeafe; color: #1d4ed8; }
-    .badge-scorekeeper { background: #ccfbf1; color: #0f766e; }
-    .badge-viewer      { background: #f3f4f6; color: #374151; }
-    .badge-active      { background: #dcfce7; color: #166534; }
-    .badge-invited     { background: #fef9c3; color: #854d0e; }
-    .badge-suspended   { background: #fee2e2; color: #991b1b; }
-    .badge-feedback    { background: #dbeafe; color: #1d4ed8; }
-    .badge-bug         { background: #fee2e2; color: #991b1b; }
-    .sev-blocks        { background: #fee2e2; color: #991b1b; }
-    .sev-annoying      { background: #ffedd5; color: #9a3412; }
-    .sev-minor         { background: #f3f4f6; color: #374151; }
-
-    /* ── Buttons ── */
+    /* ── UI Components ── */
     .btn {
-      display: inline-block;
-      padding: 7px 14px;
-      border-radius: 6px;
-      font-family: inherit;
-      font-size: 13px;
-      font-weight: 500;
-      cursor: pointer;
-      border: 1px solid transparent;
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 14px; border-radius: 6px; border: none;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      font-family: inherit; transition: opacity 0.15s;
+      white-space: nowrap;
+    }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn-gold { background: var(--gold); color: var(--navy); }
+    .btn-ghost {
+      background: transparent; color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { border-color: rgba(255,255,255,0.3); }
+    .btn-danger { background: var(--red); color: #fff; }
+    .btn-sm { padding: 4px 10px; font-size: 12px; }
+    .btn-full { width: 100%; justify-content: center; padding: 11px; }
+
+    input, select, textarea {
+      background: rgba(255,255,255,0.07); border: 1px solid var(--border);
+      border-radius: 6px; color: var(--text); font-size: 13px;
+      font-family: inherit; padding: 8px 10px; width: 100%;
+      outline: none; transition: border-color 0.15s;
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--gold);
+    }
+    input::placeholder, textarea::placeholder { color: var(--muted); }
+    select option { background: var(--navy2); }
+
+    label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 4px; }
+
+    .form-group { display: flex; flex-direction: column; gap: 4px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 500px) { .form-row { grid-template-columns: 1fr; } }
+
+    .card {
+      background: var(--navy2); border: 1px solid var(--border);
+      border-radius: 10px; padding: 20px;
+    }
+    .card + .card { margin-top: 16px; }
+    .card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px; flex-wrap: wrap; gap: 10px;
+    }
+    .card-title {
+      font-family: Georgia, serif; font-size: 15px; color: var(--gold);
+    }
+    .section-label {
+      font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--muted); margin-bottom: 10px;
     }
 
-    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-    .btn-primary { background: #2563eb; color: #fff; border-color: #2563eb; }
-    .btn-danger  { background: #dc2626; color: #fff; border-color: #dc2626; }
-    .btn-ghost   { background: transparent; color: #374151; border-color: #d1d5db; }
-    .btn-warn    { background: transparent; color: #dc2626; border-color: #fecaca; }
-    .btn-full    { width: 100%; text-align: center; }
-    .btn-sm      { padding: 5px 10px; font-size: 12px; }
-
-    .btn-row {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-top: 10px;
+    /* Tables */
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 480px; }
+    th {
+      text-align: left; padding: 8px 10px; font-size: 11px; font-weight: 700;
+      letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted);
+      border-bottom: 1px solid var(--border);
     }
-
-    /* ── Inline action panels ── */
-    .inline-action {
-      display: none;
-      margin-top: 10px;
-      padding: 12px;
-      background: #f9fafb;
-      border-radius: 6px;
-      border: 1px solid #e5e5e5;
+    td {
+      padding: 9px 10px; border-bottom: 1px solid rgba(255,255,255,0.04);
+      vertical-align: middle;
     }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,0.03); }
 
-    .inline-action.open { display: block; }
-
-    .inline-action p {
-      font-size: 13px;
-      color: #374151;
-      margin-bottom: 10px;
+    /* Status badges */
+    .badge {
+      display: inline-block; padding: 2px 8px; border-radius: 10px;
+      font-size: 11px; font-weight: 700; letter-spacing: 0.04em;
     }
+    .badge-green { background: rgba(34,197,94,0.15); color: var(--green); }
+    .badge-amber { background: rgba(251,191,36,0.15); color: #fbbf24; }
+    .badge-red   { background: rgba(200,16,46,0.15);  color: #f87171; }
+    .badge-gray  { background: rgba(255,255,255,0.08); color: var(--muted); }
 
-    .inline-action select {
-      padding: 7px 10px;
-      border: 1px solid #d1d5db;
-      border-radius: 6px;
-      font-family: inherit;
-      font-size: 14px;
-      background: #fff;
+    /* Toggle switch */
+    .toggle-wrap {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 0; border-bottom: 1px solid var(--border);
     }
-
-    /* ── Feedback filter toggles ── */
-    .toggle-row { display: flex; gap: 8px; margin-bottom: 16px; }
-
-    .toggle-btn {
-      padding: 6px 16px;
-      border-radius: 999px;
-      border: 1px solid #d1d5db;
-      background: #fff;
-      font-family: inherit;
-      font-size: 13px;
-      font-weight: 500;
-      cursor: pointer;
-      color: #374151;
+    .toggle-wrap:last-child { border-bottom: none; }
+    .toggle-info { display: flex; flex-direction: column; gap: 3px; }
+    .toggle-name { font-weight: 700; font-size: 13px; }
+    .toggle-desc { font-size: 12px; color: var(--muted); }
+    .toggle-meta { font-size: 11px; color: rgba(255,255,255,0.3); margin-top: 2px; }
+    .switch {
+      position: relative; width: 42px; height: 24px; flex-shrink: 0;
     }
-
-    .toggle-btn.active { background: #2563eb; color: #fff; border-color: #2563eb; }
-
-    /* ── Misc ── */
-    .section-header {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 13px;
-      font-weight: 600;
-      color: #6b7280;
-      padding: 10px 0 6px;
-      cursor: pointer;
-      user-select: none;
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .switch-track {
+      position: absolute; inset: 0; border-radius: 12px;
+      background: rgba(255,255,255,0.15); cursor: pointer;
+      transition: background 0.2s;
     }
-
-    .change-types { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
-
-    .ct-tag {
-      background: #f3f4f6;
-      color: #374151;
-      border-radius: 4px;
-      padding: 2px 7px;
-      font-size: 12px;
+    .switch-track::after {
+      content: ''; position: absolute; width: 18px; height: 18px;
+      border-radius: 50%; background: white; top: 3px; left: 3px;
+      transition: transform 0.2s;
     }
+    .switch input:checked + .switch-track { background: var(--gold); }
+    .switch input:checked + .switch-track::after { transform: translateX(18px); }
 
-    .body-text {
-      font-size: 14px;
-      color: #374151;
-      line-height: 1.5;
-      margin-top: 8px;
-      white-space: pre-wrap;
+    /* Alerts */
+    .alert {
+      padding: 10px 14px; border-radius: 6px; font-size: 13px;
+      margin-bottom: 14px;
     }
+    .alert-error { background: rgba(200,16,46,0.15); color: #f87171; border: 1px solid rgba(200,16,46,0.3); }
+    .alert-success { background: rgba(34,197,94,0.12); color: var(--green); border: 1px solid rgba(34,197,94,0.25); }
+    .alert-info { background: rgba(245,200,66,0.1); color: var(--gold); border: 1px solid rgba(245,200,66,0.2); }
+
+    /* Inline loading spinner */
+    .spinner {
+      display: inline-block; width: 14px; height: 14px;
+      border: 2px solid rgba(255,255,255,0.2);
+      border-top-color: var(--gold); border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
     .empty-state {
-      text-align: center;
-      color: #9ca3af;
-      font-size: 14px;
-      padding: 48px 0;
+      text-align: center; color: var(--muted); padding: 32px 0; font-size: 13px;
     }
 
-    /* ── Settings ── */
-    .settings-section { margin-bottom: 28px; }
-
-    .settings-section h3 {
-      font-size: 11px;
-      font-weight: 600;
-      color: #9ca3af;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      margin-bottom: 4px;
+    /* Collapsible */
+    .collapse-toggle {
+      background: none; border: none; color: var(--muted); font-size: 12px;
+      cursor: pointer; font-family: inherit; padding: 8px 0;
+      display: flex; align-items: center; gap: 6px;
     }
+    .collapse-toggle:hover { color: var(--text); }
+    .collapse-content { overflow: hidden; transition: max-height 0.25s ease; }
 
-    .settings-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px 0;
-      border-bottom: 1px solid #f3f4f6;
-      font-size: 14px;
+    /* Approve inline form */
+    .approve-form {
+      background: rgba(245,200,66,0.06); border: 1px solid rgba(245,200,66,0.2);
+      border-radius: 8px; padding: 12px; margin-top: 8px;
+      display: none; flex-direction: column; gap: 10px;
     }
-
-    .settings-row:last-child { border-bottom: none; }
-    .settings-label { color: #6b7280; }
-    .settings-value { font-weight: 500; text-align: right; }
-
-    /* ── Toast ── */
-    .toast {
-      position: fixed;
-      bottom: 24px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #1a1a1a;
-      color: #fff;
-      padding: 10px 20px;
-      border-radius: 8px;
-      font-size: 14px;
-      z-index: 9999;
-      pointer-events: none;
-      white-space: nowrap;
-      animation: fadein 0.15s ease;
-    }
-
-    .toast-error { background: #dc2626; }
-
-    @keyframes fadein {
-      from { opacity: 0; transform: translateX(-50%) translateY(6px); }
-      to   { opacity: 1; transform: translateX(-50%) translateY(0); }
-    }
+    .approve-form.open { display: flex; }
   </style>
 </head>
 <body>
 
 <!-- Loading -->
-<div id="loading-screen">Loading…</div>
+<div id="loading-screen">
+  <div class="spinner"></div> <span>Loading…</span>
+</div>
 
 <!-- Login -->
 <div id="login-screen">
-  <h1>Dugout Lineup Admin</h1>
-  <div class="login-box">
-    <div id="step-phone">
-      <label for="inp-phone">Phone number</label>
-      <input type="tel" id="inp-phone" placeholder="(555) 555-0100"
-             autocomplete="tel" inputmode="tel"
-             onkeydown="if(event.key==='Enter') sendOtp()">
-      <div class="field-error" id="err-phone"></div>
-      <button id="btn-send" class="btn btn-primary btn-full" onclick="sendOtp()">Send OTP</button>
+  <div class="login-card">
+    <h1>⚾ Dugout Lineup</h1>
+    <p class="subtitle">Admin Console — sign in to continue</p>
+    <button class="btn btn-gold btn-full" id="google-btn">
+      <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
+        <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.703-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
+        <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/>
+        <path d="M3.964 10.71A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
+        <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+      </svg>
+      Sign in with Google
+    </button>
+    <div class="divider">or</div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div class="form-group">
+        <label for="magic-email">Email address</label>
+        <input type="email" id="magic-email" placeholder="coach@example.com">
+      </div>
+      <button class="btn btn-ghost btn-full" id="magic-btn">Send Magic Link</button>
     </div>
-    <div id="step-otp" style="display:none">
-      <label for="inp-otp">6-digit code</label>
-      <input type="text" id="inp-otp" placeholder="123456"
-             inputmode="numeric" maxlength="6" autocomplete="one-time-code"
-             onkeydown="if(event.key==='Enter') verifyOtp()">
-      <div class="field-error" id="err-otp"></div>
-      <button id="btn-verify" class="btn btn-primary btn-full" style="margin-bottom:8px" onclick="verifyOtp()">Verify</button>
-      <button class="btn btn-ghost btn-full" onclick="backToPhone()">← Back</button>
-    </div>
+    <div id="login-msg"></div>
   </div>
 </div>
 
 <!-- Access Denied -->
-<div id="access-denied">
-  <div class="denied-icon">🚫</div>
-  <h2>Access denied</h2>
-  <p>Your account doesn't have admin access.</p>
-  <button class="btn btn-ghost" style="margin-top:20px" onclick="logout()">Sign out</button>
+<div id="denied-screen">
+  <div class="denied-card">
+    <h2>🚫 Access Denied</h2>
+    <p>Your account doesn't have admin access to this console.</p>
+    <p id="denied-email" style="color:var(--muted);font-size:12px;"></p>
+    <button class="btn btn-ghost" id="denied-logout">Sign Out</button>
+  </div>
 </div>
 
-<!-- Admin UI -->
-<div id="admin-screen">
-  <div class="tab-bar">
-    <button class="tab-btn active" id="tab-btn-requests"  onclick="switchTab('requests')">Requests</button>
-    <button class="tab-btn"        id="tab-btn-coaches"   onclick="switchTab('coaches')">Coaches</button>
-    <button class="tab-btn"        id="tab-btn-feedback"  onclick="switchTab('feedback')">Feedback</button>
-    <button class="tab-btn"        id="tab-btn-settings"  onclick="switchTab('settings')">Settings</button>
-  </div>
-
-  <!-- Requests -->
-  <div id="tab-requests" class="tab-content active">
-    <div id="requests-body"></div>
-  </div>
-
-  <!-- Coaches -->
-  <div id="tab-coaches" class="tab-content">
-    <div id="coaches-body"></div>
-  </div>
-
-  <!-- Feedback -->
-  <div id="tab-feedback" class="tab-content">
-    <div class="toggle-row">
-      <button class="toggle-btn active" id="filter-all"      onclick="setFilter('',         this)">All</button>
-      <button class="toggle-btn"        id="filter-feedback"  onclick="setFilter('feedback', this)">Feedback</button>
-      <button class="toggle-btn"        id="filter-bug"       onclick="setFilter('bug',      this)">Bugs</button>
+<!-- Main App -->
+<div id="app">
+  <div id="header">
+    <h1>⚾ Dugout Lineup Admin</h1>
+    <div class="header-right">
+      <span id="user-email"></span>
+      <button class="btn btn-ghost btn-sm" id="signout-btn">Sign Out</button>
     </div>
-    <div id="feedback-body"></div>
   </div>
 
-  <!-- Settings -->
-  <div id="tab-settings" class="tab-content">
-    <div id="settings-body"></div>
+  <div id="tab-bar">
+    <button class="tab-btn active" data-tab="teams">Teams</button>
+    <button class="tab-btn" data-tab="coaches">Coaches</button>
+    <button class="tab-btn" data-tab="requests">Requests</button>
+    <button class="tab-btn" data-tab="rosters">Rosters</button>
+    <button class="tab-btn" data-tab="schedules">Schedules</button>
+    <button class="tab-btn" data-tab="flags">Feature Flags</button>
   </div>
-</div>
+
+  <div id="content">
+
+    <!-- TAB: TEAMS -->
+    <div id="tab-teams" class="tab-panel active">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Teams</span>
+          <button class="btn btn-gold btn-sm" id="add-team-btn">+ Add Team</button>
+        </div>
+        <div id="add-team-form" style="display:none;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:16px;">
+          <div class="section-label">New Team</div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div class="form-group"><label>Team Name</label><input type="text" id="team-name" placeholder="e.g. Mud Hens"></div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Age Group</label>
+                <select id="team-age">
+                  <option value="">— select —</option>
+                  <option>5U</option><option>6U</option><option>7U</option><option>8U</option>
+                  <option>9U</option><option>10U</option><option>11U</option><option>12U</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Sport</label>
+                <select id="team-sport"><option value="baseball">Baseball</option><option value="softball">Softball</option></select>
+              </div>
+            </div>
+            <div class="form-group"><label>Year</label><input type="number" id="team-year" placeholder="2026" value="2026"></div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-gold" id="save-team-btn">Save Team</button>
+              <button class="btn btn-ghost" id="cancel-team-btn">Cancel</button>
+            </div>
+            <div id="team-form-msg"></div>
+          </div>
+        </div>
+        <div id="teams-msg"></div>
+        <div id="teams-loading" style="text-align:center;padding:20px;"><div class="spinner"></div></div>
+        <div id="teams-table" class="table-wrap" style="display:none;">
+          <table>
+            <thead><tr><th>Name</th><th>Age</th><th>Sport</th><th>Year</th><th>ID</th><th></th></tr></thead>
+            <tbody id="teams-body"></tbody>
+          </table>
+        </div>
+        <div id="teams-empty" class="empty-state" style="display:none;">No teams yet.</div>
+      </div>
+    </div>
+
+    <!-- TAB: COACHES -->
+    <div id="tab-coaches" class="tab-panel">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Coaches</span>
+          <button class="btn btn-gold btn-sm" id="add-coach-btn">+ Add Coach</button>
+        </div>
+        <div id="add-coach-form" style="display:none;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:16px;">
+          <div class="section-label">Add Coach</div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div class="form-group"><label>Email</label><input type="email" id="coach-email" placeholder="coach@example.com"></div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Role</label>
+                <select id="coach-role"><option value="coach">Coach</option><option value="coordinator">Coordinator</option></select>
+              </div>
+              <div class="form-group">
+                <label>Team</label>
+                <select id="coach-team"><option value="">— select team —</option></select>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-gold" id="save-coach-btn">Add Coach</button>
+              <button class="btn btn-ghost" id="cancel-coach-btn">Cancel</button>
+            </div>
+            <div id="coach-form-msg"></div>
+          </div>
+        </div>
+        <div id="coaches-msg"></div>
+        <div id="coaches-loading" style="text-align:center;padding:20px;"><div class="spinner"></div></div>
+        <div id="coaches-table" class="table-wrap" style="display:none;">
+          <table>
+            <thead><tr><th>Email</th><th>Role</th><th>Status</th><th>Team</th><th>Activated</th><th></th></tr></thead>
+            <tbody id="coaches-body"></tbody>
+          </table>
+        </div>
+        <div id="coaches-empty" class="empty-state" style="display:none;">No coaches yet.</div>
+      </div>
+    </div>
+
+    <!-- TAB: ACCESS REQUESTS -->
+    <div id="tab-requests" class="tab-panel">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Pending Requests</span></div>
+        <div id="requests-msg"></div>
+        <div id="requests-loading" style="text-align:center;padding:20px;"><div class="spinner"></div></div>
+        <div id="requests-content" style="display:none;"></div>
+      </div>
+      <div class="card" style="margin-top:16px;">
+        <button class="collapse-toggle" id="history-toggle">▶ Approved / Denied history</button>
+        <div class="collapse-content" id="history-content" style="max-height:0;overflow:hidden;">
+          <div id="history-loading" style="text-align:center;padding:20px;display:none;"><div class="spinner"></div></div>
+          <div id="history-table" class="table-wrap" style="margin-top:12px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: ROSTERS -->
+    <div id="tab-rosters" class="tab-panel">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Rosters</span></div>
+        <div class="form-group" style="margin-bottom:16px;">
+          <label>Select Team</label>
+          <select id="roster-team-select"><option value="">— select a team —</option></select>
+        </div>
+        <div id="roster-content" style="display:none;">
+          <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:16px;">
+            <div class="section-label">Add Player</div>
+            <div class="form-row">
+              <div class="form-group"><label>First Name</label><input type="text" id="player-first" placeholder="First"></div>
+              <div class="form-group"><label>Last Name</label><input type="text" id="player-last" placeholder="Last"></div>
+            </div>
+            <div><button class="btn btn-gold btn-sm" id="add-player-btn">Add Player</button></div>
+            <div id="player-msg"></div>
+          </div>
+          <div style="margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:16px;">
+            <div class="section-label">CSV Import (FirstName,LastName — one per line)</div>
+            <textarea id="roster-csv" rows="4" placeholder="Jane,Smith&#10;Bob,Jones"></textarea>
+            <div style="margin-top:8px;"><button class="btn btn-ghost btn-sm" id="import-roster-btn">Import CSV</button></div>
+            <div id="import-roster-msg"></div>
+          </div>
+          <div id="roster-msg"></div>
+          <div id="roster-loading" style="text-align:center;padding:20px;"><div class="spinner"></div></div>
+          <div id="roster-table-wrap" class="table-wrap" style="display:none;">
+            <table>
+              <thead><tr><th>#</th><th>Name</th><th>Tags</th><th></th></tr></thead>
+              <tbody id="roster-body"></tbody>
+            </table>
+          </div>
+          <div id="roster-empty" class="empty-state" style="display:none;">No players yet.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: SCHEDULES -->
+    <div id="tab-schedules" class="tab-panel">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Schedules</span></div>
+        <div class="form-group" style="margin-bottom:16px;">
+          <label>Select Team</label>
+          <select id="sched-team-select"><option value="">— select a team —</option></select>
+        </div>
+        <div id="sched-content" style="display:none;">
+          <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:16px;">
+            <div class="section-label">Add Game</div>
+            <div class="form-row">
+              <div class="form-group"><label>Date</label><input type="date" id="game-date"></div>
+              <div class="form-group"><label>Time</label><input type="time" id="game-time"></div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label>Opponent</label><input type="text" id="game-opponent" placeholder="vs. Team Name"></div>
+              <div class="form-group"><label>Location</label><input type="text" id="game-location" placeholder="Field / Address"></div>
+            </div>
+            <div><button class="btn btn-gold btn-sm" id="add-game-btn">Add Game</button></div>
+            <div id="game-msg"></div>
+          </div>
+          <div style="margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:16px;">
+            <div class="section-label">CSV Import (Date,Time,Opponent,Location — header row optional)</div>
+            <textarea id="sched-csv" rows="4" placeholder="2026-04-10,6:00 PM,Tigers,Riverside Park&#10;2026-04-17,10:00 AM,Bears,Home"></textarea>
+            <div style="margin-top:8px;display:flex;gap:8px;align-items:center;">
+              <button class="btn btn-ghost btn-sm" id="import-sched-btn">Import CSV</button>
+              <button class="btn btn-danger btn-sm" id="clear-sched-btn">Clear Schedule</button>
+            </div>
+            <div id="import-sched-msg"></div>
+          </div>
+          <div id="sched-msg"></div>
+          <div id="sched-loading" style="text-align:center;padding:20px;"><div class="spinner"></div></div>
+          <div id="sched-table-wrap" class="table-wrap" style="display:none;">
+            <table>
+              <thead><tr><th>Date</th><th>Time</th><th>Opponent</th><th>Location</th><th>Result</th></tr></thead>
+              <tbody id="sched-body"></tbody>
+            </table>
+          </div>
+          <div id="sched-empty" class="empty-state" style="display:none;">No games yet.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: FEATURE FLAGS -->
+    <div id="tab-flags" class="tab-panel">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Feature Flags</span></div>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Global flags (team_id IS NULL). Changes take effect on next page load. Add/remove flags via SQL only.</p>
+        <div id="flags-msg"></div>
+        <div id="flags-loading" style="text-align:center;padding:20px;"><div class="spinner"></div></div>
+        <div id="flags-list" style="display:none;"></div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /app -->
 
 <script>
-'use strict';
+(function() {
+  'use strict';
 
-const BACKEND     = 'https://lineup-generator-backend.onrender.com';
-const SESSION_KEY = 'lineup_admin_session';
+  const SUPABASE_URL = 'https://hzaajccyurlyeweekvma.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh6YWFqY2N5dXJseWV3ZWVrdm1hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyOTM5NjUsImV4cCI6MjA4OTg2OTk2NX0.XGDOs8BjGTk219XZDQv_vEzp5GouQimJ_453ON_fqQQ';
 
-let session     = null;
-let currentUser = null;
-let activeTab   = 'requests';
-let fbFilter    = '';
-let suspendedOpen = false;
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// ── Utilities ─────────────────────────────────────────────────────────────────
+  // ── Screen helpers ───────────────────────────────────────────
+  function show(id) { document.getElementById(id).style.display = 'flex'; }
+  function hide(id) { document.getElementById(id).style.display = 'none'; }
+  function showBlock(id) { document.getElementById(id).style.display = 'block'; }
 
-function esc(s) {
-  if (s == null) return '';
-  return String(s)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
-
-function timeAgo(ts) {
-  if (!ts) return '—';
-  const d = Date.now() - new Date(ts).getTime();
-  const m = Math.floor(d / 60000);
-  if (m < 1)  return 'just now';
-  if (m < 60) return m + ' min ago';
-  const h = Math.floor(m / 60);
-  if (h < 24) return h + ' hr' + (h === 1 ? '' : 's') + ' ago';
-  const dy = Math.floor(h / 24);
-  if (dy < 30) return dy + ' day' + (dy === 1 ? '' : 's') + ' ago';
-  return new Date(ts).toLocaleDateString();
-}
-
-function showToast(msg, type) {
-  const el = document.createElement('div');
-  el.className = 'toast' + (type === 'error' ? ' toast-error' : '');
-  el.textContent = msg;
-  document.body.appendChild(el);
-  setTimeout(() => el.remove(), 3000);
-}
-
-function logout() {
-  localStorage.removeItem(SESSION_KEY);
-  location.reload();
-}
-
-// ── API helper ────────────────────────────────────────────────────────────────
-
-async function api(method, path, body) {
-  const opts = {
-    method,
-    headers: {
-      'Authorization': 'Bearer ' + session.access_token,
-      'Content-Type': 'application/json',
-    },
-  };
-  if (body !== undefined) opts.body = JSON.stringify(body);
-  const res = await fetch(BACKEND + path, opts);
-  let data = {};
-  try { data = await res.json(); } catch (_) {}
-  if (!res.ok) {
-    const err = new Error(data.error || 'Request failed');
-    err.status = res.status;
-    err.data = data;
-    throw err;
+  function showMsg(id, msg, type, autoClear) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = '<div class="alert alert-' + type + '">' + esc(msg) + '</div>';
+    if (autoClear) setTimeout(function() { if (el) el.innerHTML = ''; }, 3000);
   }
-  return data;
-}
+  function clearMsg(id) { var el = document.getElementById(id); if (el) el.innerHTML = ''; }
 
-// ── Screen switching ──────────────────────────────────────────────────────────
-
-function showScreen(name) {
-  document.getElementById('loading-screen').style.display = 'none';
-  document.getElementById('login-screen').style.display   = name === 'login'  ? 'flex'  : 'none';
-  document.getElementById('access-denied').style.display  = name === 'denied' ? 'block' : 'none';
-  document.getElementById('admin-screen').style.display   = name === 'admin'  ? 'block' : 'none';
-}
-
-// ── Boot ──────────────────────────────────────────────────────────────────────
-
-async function init() {
-  const raw = localStorage.getItem(SESSION_KEY);
-  if (raw) {
-    try { session = JSON.parse(raw); } catch (_) { session = null; }
+  function esc(s) {
+    return String(s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
-  if (!session?.access_token) {
-    showScreen('login');
-    return;
+  function fmtDate(s) {
+    if (!s) return '—';
+    try { return new Date(s).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }); }
+    catch(e) { return s; }
   }
 
-  try {
-    const me = await api('GET', '/api/v1/auth/me');
-    const isAdmin = (me.memberships || []).some(m => m.role === 'admin' && m.status === 'active');
-    if (!isAdmin) { showScreen('denied'); return; }
-    currentUser = me;
-    showScreen('admin');
-    loadTab('requests');
-  } catch (err) {
-    if (err.status === 401) { localStorage.removeItem(SESSION_KEY); showScreen('login'); }
-    else { showScreen('denied'); }
+  function genId() {
+    return Date.now() + '' + Math.floor(Math.random() * 1000);
   }
-}
 
-// ── Login ─────────────────────────────────────────────────────────────────────
+  // ── Cached data ──────────────────────────────────────────────
+  var _teams = [];
+  var _currentUser = null;
 
-let loginPhone = '';
-
-async function sendOtp() {
-  const phoneEl = document.getElementById('inp-phone');
-  const errEl   = document.getElementById('err-phone');
-  const btn     = document.getElementById('btn-send');
-  loginPhone = phoneEl.value.trim();
-  errEl.textContent = '';
-
-  if (!loginPhone) { errEl.textContent = 'Phone number is required.'; return; }
-
-  btn.disabled = true;
-  btn.textContent = 'Sending…';
-  try {
-    const res = await fetch(BACKEND + '/api/v1/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone: loginPhone }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Failed');
-    document.getElementById('step-phone').style.display = 'none';
-    document.getElementById('step-otp').style.display   = 'block';
-    document.getElementById('inp-otp').focus();
-  } catch (err) {
-    errEl.textContent = err.message === 'ACCESS_NOT_APPROVED'
-      ? 'Your access has not been approved.'
-      : 'Could not send code. Try again.';
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Send OTP';
+  // ── Auth ─────────────────────────────────────────────────────
+  async function init() {
+    const { data: { session } } = await sb.auth.getSession();
+    if (session) {
+      await handleSession(session);
+    } else {
+      hide('loading-screen');
+      show('login-screen');
+    }
   }
-}
 
-async function verifyOtp() {
-  const otpEl = document.getElementById('inp-otp');
-  const errEl = document.getElementById('err-otp');
-  const btn   = document.getElementById('btn-verify');
-  const token = otpEl.value.trim();
-  errEl.textContent = '';
+  sb.auth.onAuthStateChange(async function(event, session) {
+    if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session) {
+      hide('login-screen');
+      show('loading-screen');
+      document.getElementById('loading-screen').style.display = 'flex';
+      await handleSession(session);
+    }
+  });
 
-  if (!token) { errEl.textContent = 'Enter the 6-digit code.'; return; }
+  async function handleSession(session) {
+    _currentUser = session.user;
 
-  btn.disabled = true;
-  btn.textContent = 'Verifying…';
-  try {
-    const res = await fetch(BACKEND + '/api/v1/auth/verify', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone: loginPhone, token }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Failed');
-    localStorage.setItem(SESSION_KEY, JSON.stringify(data.session));
-    location.reload();
-  } catch (err) {
-    const m = err.message;
-    errEl.textContent = m === 'OTP_EXPIRED'   ? 'Code expired. Go back and resend.'
-                      : m === 'INVALID_OTP'   ? 'Incorrect code. Try again.'
-                      : 'Verification failed. Try again.';
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Verify';
-  }
-}
+    // Check by user_id first (fastest, most reliable)
+    let { data, error } = await sb
+      .from('team_memberships')
+      .select('role')
+      .eq('user_id', session.user.id)
+      .eq('role', 'admin')
+      .eq('status', 'active')
+      .limit(1);
 
-function backToPhone() {
-  document.getElementById('step-otp').style.display   = 'none';
-  document.getElementById('step-phone').style.display = 'block';
-  document.getElementById('err-otp').textContent = '';
-  document.getElementById('inp-otp').value = '';
-}
+    // Fallback: check by email (handles newly approved admins
+    // whose user_id hasn't been linked yet)
+    if (!error && (!data || data.length === 0) && session.user.email) {
+      ({ data, error } = await sb
+        .from('team_memberships')
+        .select('role')
+        .eq('email', session.user.email)
+        .eq('role', 'admin')
+        .eq('status', 'active')
+        .limit(1));
 
-// ── Tab routing ───────────────────────────────────────────────────────────────
+      // If found by email, backfill user_id silently
+      if (!error && data && data.length > 0) {
+        await sb
+          .from('team_memberships')
+          .update({ user_id: session.user.id })
+          .eq('email', session.user.email)
+          .eq('role', 'admin')
+          .is('user_id', null);
+      }
+    }
 
-function switchTab(name) {
-  activeTab = name;
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-  document.getElementById('tab-btn-' + name).classList.add('active');
-  document.getElementById('tab-' + name).classList.add('active');
-  loadTab(name);
-}
+    hide('loading-screen');
 
-function loadTab(name) {
-  if (name === 'requests') loadRequests();
-  else if (name === 'coaches')  loadCoaches();
-  else if (name === 'feedback') loadFeedback();
-  else if (name === 'settings') renderSettings();
-}
-
-// ── Requests ──────────────────────────────────────────────────────────────────
-
-async function loadRequests() {
-  const el = document.getElementById('requests-body');
-  el.innerHTML = '<div class="empty-state">Loading…</div>';
-  try {
-    const { requests } = await api('GET', '/api/v1/admin/requests?status=pending');
-    if (!requests.length) {
-      el.innerHTML = '<div class="empty-state">No pending requests</div>';
+    if (error || !data || data.length === 0) {
+      document.getElementById('denied-email').textContent = session.user.email || '';
+      show('denied-screen');
       return;
     }
-    el.innerHTML = requests.map(reqCard).join('');
-  } catch (_) {
-    el.innerHTML = '<div class="empty-state">Failed to load requests.</div>';
-  }
-}
 
-function reqCard(r) {
-  const id = esc(r.id);
-  return `
-    <div class="card" id="req-${id}">
-      <div class="card-header">
-        <span class="card-name">${esc(r.first_name)} ${esc(r.last_name)}</span>
-        <span style="font-size:12px;color:#9ca3af">${timeAgo(r.requested_at)}</span>
-      </div>
-      <div class="card-meta">${esc(r.phone_e164)}</div>
-      <div class="btn-row">
-        <button class="btn btn-primary btn-sm" onclick="openReqAction('${id}','approve')">Approve</button>
-        <button class="btn btn-ghost btn-sm"   onclick="openReqAction('${id}','reject')">Reject</button>
-      </div>
-      <div class="inline-action" id="req-approve-${id}">
-        <p>Select a role then confirm:</p>
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-          <select id="req-role-${id}">
-            <option value="coach">Coach</option>
-            <option value="scorekeeper">Scorekeeper</option>
-            <option value="viewer">Viewer</option>
-          </select>
-          <button class="btn btn-primary btn-sm" onclick="confirmApprove('${id}')">Confirm Approve</button>
-          <button class="btn btn-ghost btn-sm"   onclick="closeReqActions('${id}')">Cancel</button>
-        </div>
-      </div>
-      <div class="inline-action" id="req-reject-${id}">
-        <p>Reject this request?</p>
-        <div class="btn-row">
-          <button class="btn btn-danger btn-sm" onclick="confirmReject('${id}')">Yes, Reject</button>
-          <button class="btn btn-ghost btn-sm"  onclick="closeReqActions('${id}')">Cancel</button>
-        </div>
-      </div>
-    </div>`;
-}
-
-function openReqAction(id, action) {
-  closeReqActions(id);
-  document.getElementById('req-' + action + '-' + id).classList.add('open');
-}
-
-function closeReqActions(id) {
-  const card = document.getElementById('req-' + id);
-  if (card) card.querySelectorAll('.inline-action').forEach(el => el.classList.remove('open'));
-}
-
-async function confirmApprove(id) {
-  const role   = document.getElementById('req-role-' + id).value;
-  const teamId = currentUser.memberships?.[0]?.teamId;
-  if (!teamId) { showToast('Could not determine team ID.', 'error'); return; }
-  try {
-    await api('POST', '/api/v1/admin/approve', { requestId: id, teamId, role });
-    document.getElementById('req-' + id)?.remove();
-    showToast('Approved.');
-    checkEmpty('requests-body', 'No pending requests');
-  } catch (err) {
-    showToast(err.data?.error === 'ALREADY_PROCESSED' ? 'Already processed.' : 'Approve failed.', 'error');
-  }
-}
-
-async function confirmReject(id) {
-  try {
-    await api('POST', '/api/v1/admin/reject', { requestId: id });
-    document.getElementById('req-' + id)?.remove();
-    showToast('Request rejected.');
-    checkEmpty('requests-body', 'No pending requests');
-  } catch (_) {
-    showToast('Reject failed.', 'error');
-  }
-}
-
-// ── Coaches ───────────────────────────────────────────────────────────────────
-
-async function loadCoaches() {
-  const el = document.getElementById('coaches-body');
-  el.innerHTML = '<div class="empty-state">Loading…</div>';
-  try {
-    const { members } = await api('GET', '/api/v1/admin/members');
-    renderMembers(members || []);
-  } catch (_) {
-    el.innerHTML = '<div class="empty-state">Failed to load members.</div>';
-  }
-}
-
-function renderMembers(members) {
-  const el = document.getElementById('coaches-body');
-  const active    = members.filter(m => m.status !== 'suspended');
-  const suspended = members.filter(m => m.status === 'suspended');
-
-  if (!active.length && !suspended.length) {
-    el.innerHTML = '<div class="empty-state">No members yet</div>';
-    return;
+    document.getElementById('user-email').textContent = session.user.email || '';
+    document.getElementById('app').style.display = 'flex';
+    await loadTeams();
+    loadActiveTab();
   }
 
-  let html = active.map(memberCard).join('');
+  // Login
+  document.getElementById('google-btn').addEventListener('click', async function() {
+    clearMsg('login-msg');
+    await sb.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.href }
+    });
+  });
 
-  if (suspended.length) {
-    html += `
-      <div class="section-header" onclick="toggleSuspended()">
-        <span id="susp-chevron">${suspendedOpen ? '▾' : '▸'}</span>
-        Suspended (${suspended.length})
-      </div>
-      <div id="susp-list" style="display:${suspendedOpen ? 'block' : 'none'}">
-        ${suspended.map(memberCard).join('')}
-      </div>`;
+  document.getElementById('magic-btn').addEventListener('click', async function() {
+    var email = document.getElementById('magic-email').value.trim();
+    if (!email) { showMsg('login-msg', 'Enter your email address.', 'error'); return; }
+    this.disabled = true;
+    clearMsg('login-msg');
+    var { error } = await sb.auth.signInWithOtp({ email: email });
+    this.disabled = false;
+    if (error) { showMsg('login-msg', error.message, 'error'); }
+    else { showMsg('login-msg', '✓ Check your email for a magic link.', 'success'); }
+  });
+
+  document.getElementById('signout-btn').addEventListener('click', signOut);
+  document.getElementById('denied-logout').addEventListener('click', signOut);
+
+  async function signOut() {
+    await sb.auth.signOut();
+    window.location.reload();
   }
 
-  el.innerHTML = html;
-}
+  // ── Tabs ──────────────────────────────────────────────────────
+  document.querySelectorAll('.tab-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+      document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+      btn.classList.add('active');
+      var tab = btn.dataset.tab;
+      document.getElementById('tab-' + tab).classList.add('active');
+      loadTab(tab);
+    });
+  });
 
-function memberCard(m) {
-  const id   = esc(m.membershipId);
-  const name = [m.firstName, m.lastName].filter(Boolean).join(' ') || '(no name)';
-  const suspendBtn = m.status !== 'suspended'
-    ? `<button class="btn btn-warn btn-sm" onclick="openMemAction('${id}','suspend')">Suspend</button>`
-    : '';
-  return `
-    <div class="card" id="mem-${id}">
-      <div class="card-header">
-        <span class="card-name">${esc(name)}</span>
-        <div style="display:flex;gap:4px;flex-wrap:wrap">
-          <span class="badge badge-${esc(m.role)}">${esc(m.role)}</span>
-          <span class="badge badge-${esc(m.status)}">${esc(m.status)}</span>
-        </div>
-      </div>
-      <div class="card-meta">${esc(m.phone || '—')}</div>
-      <div class="btn-row">
-        <button class="btn btn-ghost btn-sm" onclick="openMemAction('${id}','changerole')">Change Role</button>
-        <button class="btn btn-ghost btn-sm" onclick="openMemAction('${id}','reset')">Reset Access</button>
-        ${suspendBtn}
-      </div>
-      <div class="inline-action" id="mem-changerole-${id}">
-        <p>Select new role:</p>
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-          <select id="mem-newrole-${id}">
-            <option value="admin">Admin</option>
-            <option value="coach">Coach</option>
-            <option value="scorekeeper">Scorekeeper</option>
-            <option value="viewer">Viewer</option>
-          </select>
-          <button class="btn btn-primary btn-sm" onclick="confirmChangeRole('${id}')">Confirm</button>
-          <button class="btn btn-ghost btn-sm"   onclick="closeMemActions('${id}')">Cancel</button>
-        </div>
-      </div>
-      <div class="inline-action" id="mem-reset-${id}">
-        <p>Reset access? Sets status to "invited" and clears the linked account.</p>
-        <div class="btn-row">
-          <button class="btn btn-danger btn-sm" onclick="confirmResetAccess('${id}')">Yes, Reset</button>
-          <button class="btn btn-ghost btn-sm"  onclick="closeMemActions('${id}')">Cancel</button>
-        </div>
-      </div>
-      <div class="inline-action" id="mem-suspend-${id}">
-        <p>Suspend this member? They will no longer be able to log in.</p>
-        <div class="btn-row">
-          <button class="btn btn-danger btn-sm" onclick="confirmSuspend('${id}')">Yes, Suspend</button>
-          <button class="btn btn-ghost btn-sm"  onclick="closeMemActions('${id}')">Cancel</button>
-        </div>
-      </div>
-    </div>`;
-}
-
-function toggleSuspended() {
-  suspendedOpen = !suspendedOpen;
-  const list    = document.getElementById('susp-list');
-  const chevron = document.getElementById('susp-chevron');
-  if (list)    list.style.display    = suspendedOpen ? 'block' : 'none';
-  if (chevron) chevron.textContent   = suspendedOpen ? '▾' : '▸';
-}
-
-function openMemAction(id, action) {
-  closeMemActions(id);
-  document.getElementById('mem-' + action + '-' + id).classList.add('open');
-}
-
-function closeMemActions(id) {
-  const card = document.getElementById('mem-' + id);
-  if (card) card.querySelectorAll('.inline-action').forEach(el => el.classList.remove('open'));
-}
-
-async function confirmChangeRole(id) {
-  const role = document.getElementById('mem-newrole-' + id).value;
-  try {
-    await api('POST', '/api/v1/admin/update-role', { membershipId: id, role });
-    showToast('Role updated.');
-    loadCoaches();
-  } catch (_) { showToast('Failed to update role.', 'error'); }
-}
-
-async function confirmResetAccess(id) {
-  try {
-    await api('POST', '/api/v1/admin/reset-access', { membershipId: id });
-    showToast('Access reset.');
-    loadCoaches();
-  } catch (_) { showToast('Failed to reset access.', 'error'); }
-}
-
-async function confirmSuspend(id) {
-  try {
-    await api('POST', '/api/v1/admin/suspend', { membershipId: id });
-    showToast('Member suspended.');
-    loadCoaches();
-  } catch (_) { showToast('Failed to suspend member.', 'error'); }
-}
-
-// ── Feedback ──────────────────────────────────────────────────────────────────
-
-async function loadFeedback() {
-  const el = document.getElementById('feedback-body');
-  el.innerHTML = '<div class="empty-state">Loading…</div>';
-  try {
-    const path = '/api/v1/admin/feedback' + (fbFilter ? '?type=' + fbFilter : '');
-    const { feedback } = await api('GET', path);
-    if (!feedback.length) {
-      el.innerHTML = '<div class="empty-state">No feedback submitted yet</div>';
-      return;
-    }
-    el.innerHTML = feedback.map(fbCard).join('');
-  } catch (_) {
-    el.innerHTML = '<div class="empty-state">Failed to load feedback.</div>';
+  function loadActiveTab() {
+    var active = document.querySelector('.tab-btn.active');
+    if (active) loadTab(active.dataset.tab);
   }
-}
 
-function setFilter(type, btn) {
-  fbFilter = type;
-  document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  loadFeedback();
-}
+  function loadTab(tab) {
+    if (tab === 'teams')     loadTeamsTab();
+    if (tab === 'coaches')   loadCoachesTab();
+    if (tab === 'requests')  loadRequestsTab();
+    if (tab === 'rosters')   initRostersTab();
+    if (tab === 'schedules') initSchedulesTab();
+    if (tab === 'flags')     loadFlagsTab();
+  }
 
-function sevClass(sev) {
-  if (!sev) return 'sev-minor';
-  if (sev.startsWith('Blocks'))    return 'sev-blocks';
-  if (sev.startsWith('Annoying'))  return 'sev-annoying';
-  return 'sev-minor';
-}
+  // ── Shared: load teams ────────────────────────────────────────
+  async function loadTeams() {
+    var { data } = await sb.from('teams').select('*').order('name');
+    _teams = data || [];
+    populateTeamDropdowns();
+  }
 
-function fbCard(f) {
-  const profile = f.profiles || {};
-  const name  = [profile.first_name, profile.last_name].filter(Boolean).join(' ') || '(unknown)';
-  const phone = profile.phone_e164 || f.phone_e164 || '—';
-  const label = f.type === 'bug' ? 'Bug' : 'Feedback';
+  function populateTeamDropdowns() {
+    var selects = ['coach-team', 'approve-team', 'roster-team-select', 'sched-team-select'];
+    selects.forEach(function(id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      var cur = el.value;
+      var base = id === 'roster-team-select' || id === 'sched-team-select'
+        ? '<option value="">— select a team —</option>'
+        : '<option value="">— select team —</option>';
+      el.innerHTML = base + _teams.map(function(t) {
+        return '<option value="' + esc(t.id) + '">' + esc(t.name) + (t.age_group ? ' (' + esc(t.age_group) + ')' : '') + '</option>';
+      }).join('');
+      if (cur) el.value = cur;
+    });
+  }
 
-  let detail = '';
-  if (f.type === 'feedback') {
-    if (f.category) {
-      detail += `<div style="font-size:13px;color:#6b7280;margin-top:6px">Category: <strong>${esc(f.category)}</strong></div>`;
-    }
-    if (Array.isArray(f.change_types) && f.change_types.length) {
-      detail += `<div class="change-types">${f.change_types.map(t => `<span class="ct-tag">${esc(t)}</span>`).join('')}</div>`;
-    }
-  } else {
-    if (f.location) {
-      detail += `<div style="font-size:13px;color:#6b7280;margin-top:6px">Location: <strong>${esc(f.location)}</strong></div>`;
-    }
-    if (f.severity) {
-      detail += `<div style="margin-top:6px"><span class="badge ${sevClass(f.severity)}">${esc(f.severity)}</span></div>`;
+  // ── TAB: TEAMS ────────────────────────────────────────────────
+  async function loadTeamsTab() {
+    hide('teams-table'); hide('teams-empty');
+    showBlock('teams-loading');
+    clearMsg('teams-msg');
+    var { data, error } = await sb.from('teams').select('*').order('name');
+    hide('teams-loading');
+    if (error) { showMsg('teams-msg', 'Error: ' + error.message, 'error'); return; }
+    _teams = data || [];
+    populateTeamDropdowns();
+    var tbody = document.getElementById('teams-body');
+    tbody.innerHTML = '';
+    if (!_teams.length) { showBlock('teams-empty'); return; }
+    _teams.forEach(function(t) {
+      var tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td><strong>' + esc(t.name) + '</strong></td>' +
+        '<td>' + esc(t.age_group || '—') + '</td>' +
+        '<td style="text-transform:capitalize">' + esc(t.sport || '—') + '</td>' +
+        '<td>' + esc(t.year || '—') + '</td>' +
+        '<td style="font-size:11px;color:var(--muted);">' + esc(t.id) + '</td>' +
+        '<td><button class="btn btn-danger btn-sm del-team-btn" data-id="' + esc(t.id) + '" data-name="' + esc(t.name) + '">Delete</button></td>';
+      tbody.appendChild(tr);
+    });
+    showBlock('teams-table');
+    document.getElementById('teams-table').style.display = 'block';
+    document.querySelectorAll('.del-team-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        if (!confirm('Delete team "' + btn.dataset.name + '"? This cannot be undone.')) return;
+        deleteTeam(btn.dataset.id);
+      });
+    });
+  }
+
+  async function deleteTeam(id) {
+    var { error } = await sb.from('teams').delete().eq('id', id);
+    if (error) { showMsg('teams-msg', 'Error: ' + error.message, 'error'); }
+    else { showMsg('teams-msg', 'Team deleted.', 'success', true); loadTeamsTab(); }
+  }
+
+  document.getElementById('add-team-btn').addEventListener('click', function() {
+    var f = document.getElementById('add-team-form');
+    f.style.display = f.style.display === 'none' ? 'block' : 'none';
+  });
+  document.getElementById('cancel-team-btn').addEventListener('click', function() {
+    document.getElementById('add-team-form').style.display = 'none';
+  });
+  document.getElementById('save-team-btn').addEventListener('click', async function() {
+    var name = document.getElementById('team-name').value.trim();
+    var age  = document.getElementById('team-age').value;
+    var sport= document.getElementById('team-sport').value;
+    var year = parseInt(document.getElementById('team-year').value) || new Date().getFullYear();
+    if (!name) { showMsg('team-form-msg', 'Team name is required.', 'error'); return; }
+    this.disabled = true;
+    var id = genId();
+    var { error } = await sb.from('teams').insert({ id, name, age_group: age, sport, year });
+    this.disabled = false;
+    if (error) { showMsg('team-form-msg', 'Error: ' + error.message, 'error'); return; }
+    document.getElementById('team-name').value = '';
+    document.getElementById('team-age').value = '';
+    document.getElementById('add-team-form').style.display = 'none';
+    showMsg('teams-msg', 'Team added.', 'success', true);
+    loadTeamsTab();
+  });
+
+  // ── TAB: COACHES ──────────────────────────────────────────────
+  async function loadCoachesTab() {
+    hide('coaches-table'); hide('coaches-empty');
+    showBlock('coaches-loading');
+    document.getElementById('coaches-loading').style.display = 'block';
+    clearMsg('coaches-msg');
+    var { data, error } = await sb
+      .from('team_memberships')
+      .select('*, teams(name)')
+      .neq('role', 'admin')
+      .order('activated_at', { ascending: false });
+    hide('coaches-loading');
+    if (error) { showMsg('coaches-msg', 'Error: ' + error.message, 'error'); return; }
+    var rows = data || [];
+    var tbody = document.getElementById('coaches-body');
+    tbody.innerHTML = '';
+    if (!rows.length) { showBlock('coaches-empty'); return; }
+    rows.forEach(function(m) {
+      var statusClass = m.status === 'active' ? 'badge-green' : m.status === 'invited' ? 'badge-amber' : 'badge-gray';
+      var tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td>' + esc(m.email || '—') + '</td>' +
+        '<td style="text-transform:capitalize">' + esc(m.role || '—') + '</td>' +
+        '<td><span class="badge ' + statusClass + '">' + esc(m.status || '—') + '</span></td>' +
+        '<td>' + esc((m.teams && m.teams.name) || m.team_id || '—') + '</td>' +
+        '<td style="font-size:11px;color:var(--muted);">' + fmtDate(m.activated_at) + '</td>' +
+        '<td><button class="btn btn-danger btn-sm rm-coach-btn" data-id="' + esc(m.id) + '" data-email="' + esc(m.email || '') + '">Remove</button></td>';
+      tbody.appendChild(tr);
+    });
+    document.getElementById('coaches-table').style.display = 'block';
+    document.querySelectorAll('.rm-coach-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        if (!confirm('Remove coach "' + btn.dataset.email + '"?')) return;
+        removeCoach(btn.dataset.id);
+      });
+    });
+  }
+
+  async function removeCoach(id) {
+    var { error } = await sb.from('team_memberships').delete().eq('id', id);
+    if (error) { showMsg('coaches-msg', 'Error: ' + error.message, 'error'); }
+    else { showMsg('coaches-msg', 'Coach removed.', 'success', true); loadCoachesTab(); }
+  }
+
+  document.getElementById('add-coach-btn').addEventListener('click', function() {
+    var f = document.getElementById('add-coach-form');
+    f.style.display = f.style.display === 'none' ? 'block' : 'none';
+    populateTeamDropdowns();
+  });
+  document.getElementById('cancel-coach-btn').addEventListener('click', function() {
+    document.getElementById('add-coach-form').style.display = 'none';
+  });
+  document.getElementById('save-coach-btn').addEventListener('click', async function() {
+    var email  = document.getElementById('coach-email').value.trim();
+    var role   = document.getElementById('coach-role').value;
+    var teamId = document.getElementById('coach-team').value;
+    if (!email) { showMsg('coach-form-msg', 'Email is required.', 'error'); return; }
+    if (!teamId) { showMsg('coach-form-msg', 'Select a team.', 'error'); return; }
+    this.disabled = true;
+    var { error } = await sb.from('team_memberships').insert({
+      email, role, team_id: teamId, status: 'active',
+      activated_at: new Date().toISOString()
+    });
+    this.disabled = false;
+    if (error) { showMsg('coach-form-msg', 'Error: ' + error.message, 'error'); return; }
+    document.getElementById('coach-email').value = '';
+    document.getElementById('add-coach-form').style.display = 'none';
+    showMsg('coaches-msg', 'Coach added.', 'success', true);
+    loadCoachesTab();
+  });
+
+  // ── TAB: ACCESS REQUESTS ──────────────────────────────────────
+  async function loadRequestsTab() {
+    clearMsg('requests-msg');
+    document.getElementById('requests-loading').style.display = 'block';
+    document.getElementById('requests-content').style.display = 'none';
+
+    var { data, error } = await sb
+      .from('access_requests')
+      .select('*')
+      .eq('status', 'pending')
+      .order('requested_at', { ascending: false });
+
+    document.getElementById('requests-loading').style.display = 'none';
+    if (error) { showMsg('requests-msg', 'Error: ' + error.message, 'error'); return; }
+
+    var pending = data || [];
+    var container = document.getElementById('requests-content');
+    container.style.display = 'block';
+
+    if (!pending.length) {
+      container.innerHTML = '<div class="empty-state">No pending requests ✓</div>';
+    } else {
+      container.innerHTML = renderRequestCards(pending);
+      wireRequestButtons();
     }
   }
 
-  return `
-    <div class="card">
-      <div class="card-header">
-        <div>
-          <span class="card-name">${esc(name)}</span>
-          <span class="badge badge-${esc(f.type)}" style="margin-left:8px">${esc(label)}</span>
-        </div>
-        <span style="font-size:12px;color:#9ca3af;white-space:nowrap;margin-left:8px">${timeAgo(f.submitted_at)}</span>
-      </div>
-      <div class="card-meta">${esc(phone)}${f.app_version ? ' · v' + esc(f.app_version) : ''}</div>
-      ${detail}
-      <div class="body-text">${esc(f.body)}</div>
-    </div>`;
-}
-
-// ── Settings ──────────────────────────────────────────────────────────────────
-
-function renderSettings() {
-  const m = currentUser.memberships?.[0] || {};
-  document.getElementById('settings-body').innerHTML = `
-    <div class="settings-section">
-      <h3>Your Info</h3>
-      <div class="settings-row">
-        <span class="settings-label">Name</span>
-        <span class="settings-value">${esc([currentUser.firstName, currentUser.lastName].filter(Boolean).join(' ') || '—')}</span>
-      </div>
-      <div class="settings-row">
-        <span class="settings-label">Phone</span>
-        <span class="settings-value">${esc(currentUser.phone || '—')}</span>
-      </div>
-      <div class="settings-row">
-        <span class="settings-label">Role</span>
-        <span class="settings-value"><span class="badge badge-${esc(m.role)}">${esc(m.role || '—')}</span></span>
-      </div>
-    </div>
-    <div class="settings-section">
-      <h3>Session</h3>
-      <div class="settings-row">
-        <span class="settings-label">User ID</span>
-        <span class="settings-value" style="font-size:11px;font-family:monospace;word-break:break-all">${esc(currentUser.id || '—')}</span>
-      </div>
-      <div class="settings-row">
-        <span class="settings-label">Team ID</span>
-        <span class="settings-value" style="font-size:11px;font-family:monospace;word-break:break-all">${esc(m.teamId || '—')}</span>
-      </div>
-    </div>
-    <div class="settings-section">
-      <h3>Actions</h3>
-      <div class="btn-row">
-        <button class="btn btn-ghost" onclick="refreshMe()">Refresh Session</button>
-        <button class="btn btn-warn"  onclick="logout()">Sign Out</button>
-      </div>
-    </div>`;
-}
-
-async function refreshMe() {
-  try {
-    currentUser = await api('GET', '/api/v1/auth/me');
-    renderSettings();
-    showToast('Session refreshed.');
-  } catch (_) {
-    showToast('Failed to refresh session.', 'error');
+  function renderRequestCards(rows) {
+    return rows.map(function(r) {
+      return '<div class="card" style="margin-bottom:12px;" id="req-' + esc(r.id) + '">' +
+        '<div style="display:flex;justify-content:space-between;align-items:start;gap:12px;flex-wrap:wrap;">' +
+          '<div>' +
+            '<div style="font-weight:700;font-size:14px;">' + esc(r.name || '—') + '</div>' +
+            '<div style="font-size:12px;color:var(--muted);margin-top:2px;">' + esc(r.email || '—') + '</div>' +
+            (r.message ? '<div style="font-size:12px;color:var(--muted);margin-top:6px;font-style:italic;">"' + esc(r.message) + '"</div>' : '') +
+            '<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:4px;">' + fmtDate(r.requested_at) + '</div>' +
+          '</div>' +
+          '<div style="display:flex;gap:8px;flex-shrink:0;">' +
+            '<button class="btn btn-gold btn-sm approve-open-btn" data-id="' + esc(r.id) + '">Approve</button>' +
+            '<button class="btn btn-danger btn-sm deny-btn" data-id="' + esc(r.id) + '" data-email="' + esc(r.email||'') + '">Deny</button>' +
+          '</div>' +
+        '</div>' +
+        '<div class="approve-form" id="approve-form-' + esc(r.id) + '">' +
+          '<div class="form-row">' +
+            '<div class="form-group"><label>Role</label><select id="approve-role-' + esc(r.id) + '"><option value="coach">Coach</option><option value="coordinator">Coordinator</option></select></div>' +
+            '<div class="form-group"><label>Team</label><select id="approve-team-' + esc(r.id) + '"><option value="">— select team —</option>' +
+              _teams.map(function(t) { return '<option value="' + esc(t.id) + '">' + esc(t.name) + '</option>'; }).join('') +
+            '</select></div>' +
+          '</div>' +
+          '<div style="display:flex;gap:8px;">' +
+            '<button class="btn btn-gold btn-sm confirm-approve-btn" data-id="' + esc(r.id) + '" data-email="' + esc(r.email||'') + '">Confirm Approve</button>' +
+            '<button class="btn btn-ghost btn-sm cancel-approve-btn" data-id="' + esc(r.id) + '">Cancel</button>' +
+          '</div>' +
+          '<div id="approve-msg-' + esc(r.id) + '"></div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
   }
-}
 
-// ── Shared helpers ────────────────────────────────────────────────────────────
-
-function checkEmpty(containerId, msg) {
-  const el = document.getElementById(containerId);
-  if (el && !el.querySelector('.card')) {
-    el.innerHTML = `<div class="empty-state">${msg}</div>`;
+  function wireRequestButtons() {
+    document.querySelectorAll('.approve-open-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var form = document.getElementById('approve-form-' + btn.dataset.id);
+        if (form) form.classList.toggle('open');
+      });
+    });
+    document.querySelectorAll('.cancel-approve-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var form = document.getElementById('approve-form-' + btn.dataset.id);
+        if (form) form.classList.remove('open');
+      });
+    });
+    document.querySelectorAll('.deny-btn').forEach(function(btn) {
+      btn.addEventListener('click', async function() {
+        if (!confirm('Deny request from "' + btn.dataset.email + '"?')) return;
+        var { error } = await sb.from('access_requests').update({ status: 'denied' }).eq('id', btn.dataset.id);
+        if (error) { showMsg('requests-msg', 'Error: ' + error.message, 'error'); }
+        else { showMsg('requests-msg', 'Request denied.', 'success', true); loadRequestsTab(); }
+      });
+    });
+    document.querySelectorAll('.confirm-approve-btn').forEach(function(btn) {
+      btn.addEventListener('click', async function() {
+        var role   = document.getElementById('approve-role-' + btn.dataset.id).value;
+        var teamId = document.getElementById('approve-team-' + btn.dataset.id).value;
+        if (!teamId) { showMsg('approve-msg-' + btn.dataset.id, 'Select a team.', 'error'); return; }
+        this.disabled = true;
+        var insertErr = (await sb.from('team_memberships').insert({
+          email: btn.dataset.email, role, team_id: teamId,
+          status: 'active', activated_at: new Date().toISOString()
+        })).error;
+        if (insertErr) { showMsg('approve-msg-' + btn.dataset.id, 'Error: ' + insertErr.message, 'error'); this.disabled=false; return; }
+        var { error } = await sb.from('access_requests').update({ status: 'approved' }).eq('id', btn.dataset.id);
+        this.disabled = false;
+        if (error) { showMsg('approve-msg-' + btn.dataset.id, 'Approved but could not update request: ' + error.message, 'error'); }
+        else { showMsg('requests-msg', 'Request approved.', 'success', true); loadRequestsTab(); }
+      });
+    });
   }
-}
 
-// ── Start ─────────────────────────────────────────────────────────────────────
+  // History collapse
+  var historyOpen = false;
+  document.getElementById('history-toggle').addEventListener('click', async function() {
+    historyOpen = !historyOpen;
+    var content = document.getElementById('history-content');
+    var arrow = historyOpen ? '▼' : '▶';
+    this.innerHTML = arrow + ' Approved / Denied history';
+    if (historyOpen) {
+      content.style.maxHeight = '2000px';
+      await loadHistory();
+    } else {
+      content.style.maxHeight = '0';
+    }
+  });
 
-init();
+  async function loadHistory() {
+    document.getElementById('history-loading').style.display = 'block';
+    var { data, error } = await sb
+      .from('access_requests')
+      .select('*')
+      .in('status', ['approved', 'denied'])
+      .order('requested_at', { ascending: false });
+    document.getElementById('history-loading').style.display = 'none';
+    var container = document.getElementById('history-table');
+    if (error) { container.innerHTML = '<div class="alert alert-error">Error: ' + esc(error.message) + '</div>'; return; }
+    var rows = data || [];
+    if (!rows.length) { container.innerHTML = '<div class="empty-state">No history yet.</div>'; return; }
+    var html = '<table><thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Date</th></tr></thead><tbody>';
+    rows.forEach(function(r) {
+      var cls = r.status === 'approved' ? 'badge-green' : 'badge-red';
+      html += '<tr><td>' + esc(r.name||'—') + '</td><td>' + esc(r.email||'—') + '</td>' +
+        '<td><span class="badge ' + cls + '">' + esc(r.status) + '</span></td>' +
+        '<td style="font-size:11px;color:var(--muted)">' + fmtDate(r.requested_at) + '</td></tr>';
+    });
+    container.innerHTML = html + '</tbody></table>';
+  }
+
+  // ── TAB: ROSTERS ──────────────────────────────────────────────
+  var _rosterTeamId = null;
+  var _rosterData   = null;
+
+  function initRostersTab() {
+    populateTeamDropdowns();
+  }
+
+  document.getElementById('roster-team-select').addEventListener('change', async function() {
+    _rosterTeamId = this.value;
+    if (!_rosterTeamId) { document.getElementById('roster-content').style.display = 'none'; return; }
+    document.getElementById('roster-content').style.display = 'block';
+    await loadRoster();
+  });
+
+  async function loadRoster() {
+    clearMsg('roster-msg');
+    document.getElementById('roster-loading').style.display = 'block';
+    document.getElementById('roster-table-wrap').style.display = 'none';
+    document.getElementById('roster-empty').style.display = 'none';
+    var { data, error } = await sb
+      .from('team_data')
+      .select('roster')
+      .eq('team_id', _rosterTeamId)
+      .single();
+    document.getElementById('roster-loading').style.display = 'none';
+    if (error && error.code !== 'PGRST116') { showMsg('roster-msg', 'Error: ' + error.message, 'error'); return; }
+    _rosterData = (data && data.roster) ? data.roster : [];
+    renderRoster();
+  }
+
+  function renderRoster() {
+    var tbody = document.getElementById('roster-body');
+    tbody.innerHTML = '';
+    if (!_rosterData.length) { document.getElementById('roster-empty').style.display = 'block'; return; }
+    _rosterData.forEach(function(p, i) {
+      var name = p.firstName && p.lastName ? p.firstName + ' ' + p.lastName : (p.name || '—');
+      var tags = (p.tags || []).join(', ') || '—';
+      var tr = document.createElement('tr');
+      tr.innerHTML = '<td style="color:var(--muted)">' + (i+1) + '</td>' +
+        '<td><strong>' + esc(name) + '</strong></td>' +
+        '<td style="font-size:12px;color:var(--muted)">' + esc(tags) + '</td>' +
+        '<td><button class="btn btn-danger btn-sm rm-player-btn" data-idx="' + i + '" data-name="' + esc(name) + '">Remove</button></td>';
+      tbody.appendChild(tr);
+    });
+    document.getElementById('roster-table-wrap').style.display = 'block';
+    document.querySelectorAll('.rm-player-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        if (!confirm('Remove "' + btn.dataset.name + '"?')) return;
+        _rosterData.splice(parseInt(btn.dataset.idx), 1);
+        saveRoster('roster-msg', 'Player removed.');
+      });
+    });
+  }
+
+  async function saveRoster(msgId, successMsg) {
+    var { error } = await sb
+      .from('team_data')
+      .upsert({ team_id: _rosterTeamId, roster: _rosterData }, { onConflict: 'team_id' });
+    if (error) { showMsg(msgId, 'Error: ' + error.message, 'error'); }
+    else { showMsg(msgId, successMsg, 'success', true); renderRoster(); }
+  }
+
+  document.getElementById('add-player-btn').addEventListener('click', async function() {
+    var first = document.getElementById('player-first').value.trim();
+    var last  = document.getElementById('player-last').value.trim();
+    if (!first) { showMsg('player-msg', 'First name is required.', 'error'); return; }
+    var name = first + (last ? ' ' + last : '');
+    _rosterData.push({ name, firstName: first, lastName: last, skills:[], tags:[], prefs:[], dislikes:[], batSkills:[] });
+    document.getElementById('player-first').value = '';
+    document.getElementById('player-last').value = '';
+    await saveRoster('player-msg', 'Player added.');
+  });
+
+  document.getElementById('import-roster-btn').addEventListener('click', async function() {
+    var raw = document.getElementById('roster-csv').value.trim();
+    if (!raw) { showMsg('import-roster-msg', 'Paste CSV data first.', 'error'); return; }
+    var lines = raw.split('\n').map(function(l) { return l.trim(); }).filter(Boolean);
+    var added = 0;
+    lines.forEach(function(line) {
+      var parts = line.split(',');
+      var first = (parts[0] || '').trim();
+      var last  = (parts[1] || '').trim();
+      if (!first) return;
+      var name = first + (last ? ' ' + last : '');
+      _rosterData.push({ name, firstName: first, lastName: last, skills:[], tags:[], prefs:[], dislikes:[], batSkills:[] });
+      added++;
+    });
+    if (!added) { showMsg('import-roster-msg', 'No valid rows found.', 'error'); return; }
+    document.getElementById('roster-csv').value = '';
+    await saveRoster('import-roster-msg', added + ' player(s) imported.');
+  });
+
+  // ── TAB: SCHEDULES ────────────────────────────────────────────
+  var _schedTeamId = null;
+  var _schedData   = null;
+
+  function initSchedulesTab() {
+    populateTeamDropdowns();
+  }
+
+  document.getElementById('sched-team-select').addEventListener('change', async function() {
+    _schedTeamId = this.value;
+    if (!_schedTeamId) { document.getElementById('sched-content').style.display = 'none'; return; }
+    document.getElementById('sched-content').style.display = 'block';
+    await loadSchedule();
+  });
+
+  async function loadSchedule() {
+    clearMsg('sched-msg');
+    document.getElementById('sched-loading').style.display = 'block';
+    document.getElementById('sched-table-wrap').style.display = 'none';
+    document.getElementById('sched-empty').style.display = 'none';
+    var { data, error } = await sb
+      .from('team_data')
+      .select('schedule')
+      .eq('team_id', _schedTeamId)
+      .single();
+    document.getElementById('sched-loading').style.display = 'none';
+    if (error && error.code !== 'PGRST116') { showMsg('sched-msg', 'Error: ' + error.message, 'error'); return; }
+    _schedData = (data && Array.isArray(data.schedule)) ? data.schedule : [];
+    renderSchedule();
+  }
+
+  function renderSchedule() {
+    var tbody = document.getElementById('sched-body');
+    tbody.innerHTML = '';
+    if (!_schedData.length) { document.getElementById('sched-empty').style.display = 'block'; return; }
+    var sorted = _schedData.slice().sort(function(a,b) { return (a.date||'') < (b.date||'') ? -1 : 1; });
+    sorted.forEach(function(g) {
+      var resultBadge = g.result
+        ? '<span class="badge ' + (g.result==='W'?'badge-green':g.result==='L'?'badge-red':'badge-gray') + '">' + esc(g.result) + '</span>'
+        : '<span style="color:var(--muted)">—</span>';
+      var tr = document.createElement('tr');
+      tr.innerHTML = '<td>' + esc(g.date||'—') + '</td><td>' + esc(g.time||'—') + '</td>' +
+        '<td><strong>' + esc(g.opponent||'—') + '</strong></td>' +
+        '<td style="font-size:12px">' + esc(g.location||'—') + '</td><td>' + resultBadge + '</td>';
+      tbody.appendChild(tr);
+    });
+    document.getElementById('sched-table-wrap').style.display = 'block';
+  }
+
+  async function saveSchedule(msgId, successMsg) {
+    var { error } = await sb
+      .from('team_data')
+      .upsert({ team_id: _schedTeamId, schedule: _schedData }, { onConflict: 'team_id' });
+    if (error) { showMsg(msgId, 'Error: ' + error.message, 'error'); }
+    else { showMsg(msgId, successMsg, 'success', true); renderSchedule(); }
+  }
+
+  document.getElementById('add-game-btn').addEventListener('click', async function() {
+    var date     = document.getElementById('game-date').value;
+    var time     = document.getElementById('game-time').value;
+    var opponent = document.getElementById('game-opponent').value.trim();
+    var location = document.getElementById('game-location').value.trim();
+    if (!date || !opponent) { showMsg('game-msg', 'Date and opponent are required.', 'error'); return; }
+    _schedData.push({ id: genId(), date, time, opponent, location, result: '', ourScore: '', theirScore: '', home: false });
+    document.getElementById('game-date').value = '';
+    document.getElementById('game-time').value = '';
+    document.getElementById('game-opponent').value = '';
+    document.getElementById('game-location').value = '';
+    await saveSchedule('game-msg', 'Game added.');
+  });
+
+  document.getElementById('import-sched-btn').addEventListener('click', async function() {
+    var raw = document.getElementById('sched-csv').value.trim();
+    if (!raw) { showMsg('import-sched-msg', 'Paste CSV data first.', 'error'); return; }
+    var lines = raw.split('\n').map(function(l) { return l.trim(); }).filter(Boolean);
+    var added = 0;
+    lines.forEach(function(line, idx) {
+      if (idx === 0 && /date/i.test(line.split(',')[0])) return; // skip header
+      var parts = line.split(',');
+      var date     = (parts[0] || '').trim();
+      var time     = (parts[1] || '').trim();
+      var opponent = (parts[2] || '').trim();
+      var location = (parts[3] || '').trim();
+      if (!date) return;
+      _schedData.push({ id: genId(), date, time, opponent, location, result: '', ourScore: '', theirScore: '', home: false });
+      added++;
+    });
+    if (!added) { showMsg('import-sched-msg', 'No valid rows found.', 'error'); return; }
+    document.getElementById('sched-csv').value = '';
+    await saveSchedule('import-sched-msg', added + ' game(s) imported.');
+  });
+
+  document.getElementById('clear-sched-btn').addEventListener('click', async function() {
+    if (!confirm('Clear the entire schedule for this team? This cannot be undone.')) return;
+    _schedData = [];
+    await saveSchedule('sched-msg', 'Schedule cleared.');
+  });
+
+  // ── TAB: FEATURE FLAGS ────────────────────────────────────────
+  async function loadFlagsTab() {
+    clearMsg('flags-msg');
+    document.getElementById('flags-loading').style.display = 'block';
+    document.getElementById('flags-list').style.display = 'none';
+    var { data, error } = await sb
+      .from('feature_flags')
+      .select('*')
+      .is('team_id', null)
+      .order('flag_name');
+    document.getElementById('flags-loading').style.display = 'none';
+    if (error) { showMsg('flags-msg', 'Error: ' + error.message, 'error'); return; }
+    var flags = data || [];
+    var list = document.getElementById('flags-list');
+    if (!flags.length) { list.innerHTML = '<div class="empty-state">No global flags found. Run migration 007.</div>'; list.style.display = 'block'; return; }
+    list.innerHTML = flags.map(function(f) {
+      var ts = f.updated_at ? fmtDate(f.updated_at) : '—';
+      return '<div class="toggle-wrap">' +
+        '<div class="toggle-info">' +
+          '<div class="toggle-name">' + esc(f.flag_name) + '</div>' +
+          (f.description ? '<div class="toggle-desc">' + esc(f.description) + '</div>' : '') +
+          '<div class="toggle-meta">Updated ' + ts + '</div>' +
+        '</div>' +
+        '<label class="switch">' +
+          '<input type="checkbox" class="flag-toggle" data-flag="' + esc(f.flag_name) + '" ' + (f.enabled ? 'checked' : '') + '>' +
+          '<span class="switch-track"></span>' +
+        '</label>' +
+      '</div>';
+    }).join('');
+    list.style.display = 'block';
+    document.querySelectorAll('.flag-toggle').forEach(function(chk) {
+      chk.addEventListener('change', async function() {
+        var flagName = chk.dataset.flag;
+        var enabled  = chk.checked;
+        chk.disabled = true;
+        var { error } = await sb
+          .from('feature_flags')
+          .update({ enabled, updated_at: new Date().toISOString() })
+          .eq('flag_name', flagName)
+          .is('team_id', null);
+        chk.disabled = false;
+        if (error) {
+          showMsg('flags-msg', 'Error updating ' + flagName + ': ' + error.message, 'error');
+          chk.checked = !enabled; // revert
+        } else {
+          showMsg('flags-msg', flagName + ' set to ' + (enabled ? 'ON' : 'OFF') + '.', 'success', true);
+          loadFlagsTab(); // refresh timestamps
+        }
+      });
+    });
+  }
+
+  // ── Boot ─────────────────────────────────────────────────────
+  init();
+
+})();
 </script>
 </body>
 </html>

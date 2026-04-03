@@ -158,9 +158,18 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.1.7";
+var APP_VERSION = "2.1.8";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.1.8',
+    date: '2026-04-03',
+    changes: [
+      'Chore: full automated test suite — suite-team-data.js (7 tests), suite-feedback.js (6 tests), suite-contracts.js (7 tests)',
+      'Chore: GitHub Actions ci.yml — push-to-main gate (Vitest + backend CI_SAFE integration tests)',
+      'Chore: GitHub Actions health.yml — cron every other day 7am ET, checks /ping + frontend load'
+    ]
+  },
   {
     version: '2.1.7',
     date: '2026-04-03',

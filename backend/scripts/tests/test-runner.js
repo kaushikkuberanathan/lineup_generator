@@ -15,7 +15,10 @@
 require('../../src/lib/env');
 const { createClient } = require('@supabase/supabase-js');
 
-const BASE_URL = `http://localhost:${process.env.PORT || 3000}`;
+// BACKEND_URL lets CI point at the production Render instance without starting a local server.
+// CI_SAFE=true skips suites that write to the database, keeping CI runs read-only against prod.
+const BASE_URL = process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 3000}`;
+const CI_SAFE  = process.env.CI_SAFE === 'true';
 
 const supabaseAdmin = createClient(
   process.env.SUPABASE_URL,
@@ -60,15 +63,19 @@ const state = {
 
 // ─── Suite Imports ────────────────────────────────────────────────────────────
 
-const suiteRegression     = require('./suite-regression');
-const suiteValidation     = require('./suite-validation');
-const suiteAuthFlow       = require('./suite-auth-flow');
-const suiteIdempotency    = require('./suite-idempotency');
+const suiteRegression      = require('./suite-regression');
+const suiteValidation      = require('./suite-validation');
+const suiteAuthFlow        = require('./suite-auth-flow');
+const suiteIdempotency     = require('./suite-idempotency');
 const suiteAdminProtection = require('./suite-admin');
-const suiteDeviceContext  = require('./suite-device-context');
-const suiteAuditTrail     = require('./suite-audit-trail');
-const suiteDataIntegrity  = require('./suite-data-integrity');
-const suiteRateLimits     = require('./suite-rate-limits');
+const suiteDeviceContext   = require('./suite-device-context');
+const suiteAuditTrail      = require('./suite-audit-trail');
+const suiteDataIntegrity   = require('./suite-data-integrity');
+const suiteRateLimits      = require('./suite-rate-limits');
+// Phase A additions
+const suiteTeamData        = require('./suite-team-data');
+const suiteFeedback        = require('./suite-feedback');
+const suiteContracts       = require('./suite-contracts');
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -80,18 +87,31 @@ async function run() {
 
   console.log('\n🧪 Lineup Generator — Backend Test Suite');
   console.log(`   Target: ${BASE_URL}`);
+  if (CI_SAFE) {
+    console.log('   🔒 CI_SAFE mode: write-heavy suites skipped (auth-flow, idempotency, device-context, audit-trail, data-integrity)');
+  }
   console.log('   ⚠️  Restart server between runs to reset rate limits\n');
   console.log('   Running...\n');
 
+  // ── Read-only / safe suites (always run) ──────────────────────────────────
   await suiteRegression.run(test, BASE_URL, state);
   await suiteValidation.run(test, BASE_URL, state);
-  await suiteAuthFlow.run(test, BASE_URL, state);
-  await suiteIdempotency.run(test, BASE_URL, state);
   await suiteAdminProtection.run(test, BASE_URL, state);
-  await suiteDeviceContext.run(test, BASE_URL, supabaseAdmin, state);
-  await suiteAuditTrail.run(test, BASE_URL, supabaseAdmin, state);
-  await suiteDataIntegrity.run(test, BASE_URL, supabaseAdmin, state);
+  await suiteTeamData.run(test, BASE_URL, supabaseAdmin, state);
+  await suiteFeedback.run(test, BASE_URL, state);
+  await suiteContracts.run(test, BASE_URL, supabaseAdmin, state);
   await suiteRateLimits.run(test, BASE_URL, state); // must run last — exhausts rate limits
+
+  // ── Write-heavy suites (skipped in CI_SAFE mode) ──────────────────────────
+  // WRITE-HEAVY: these suites create rows in access_requests, team_memberships,
+  // and auth_events. Do not run against prod without cleanup being available.
+  if (!CI_SAFE) {
+    await suiteAuthFlow.run(test, BASE_URL, state);
+    await suiteIdempotency.run(test, BASE_URL, state);
+    await suiteDeviceContext.run(test, BASE_URL, supabaseAdmin, state);
+    await suiteAuditTrail.run(test, BASE_URL, supabaseAdmin, state);
+    await suiteDataIntegrity.run(test, BASE_URL, supabaseAdmin, state);
+  }
 
   // ─── Cleanup ────────────────────────────────────────────────────────────────
   // Remove test rows created during this run

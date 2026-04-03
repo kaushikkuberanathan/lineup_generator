@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  # ── Job 1: Frontend Vitest ──────────────────────────────────────────────────
+  # Pure unit tests — no external dependencies, no secrets required.
+
+  frontend:
+    name: Frontend Tests (Vitest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Run Vitest
+        run: npm test
+        working-directory: frontend
+
+  # ── Job 2: Backend Integration Tests (CI_SAFE / read-only) ─────────────────
+  # Runs against the PRODUCTION Render backend — no local server needed.
+  # CI_SAFE=true skips all suites that write to the database:
+  #   SKIPPED: auth-flow, idempotency, device-context, audit-trail, data-integrity
+  #   RUNS:    regression, validation, admin, team-data (reads + wipe-guard check),
+  #            feedback (auth-rejection only), contracts, rate-limits
+  #
+  # Required GitHub secrets:
+  #   SUPABASE_URL             — Supabase project URL
+  #   SUPABASE_SERVICE_ROLE_KEY — Service role key (server-side only, never expose)
+
+  backend:
+    name: Backend Integration Tests (CI_SAFE, prod read-only)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: backend
+
+      - name: Run backend test suite
+        run: npm test
+        working-directory: backend
+        env:
+          SUPABASE_URL:              ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          BACKEND_URL:               https://lineup-generator-backend.onrender.com
+          CI_SAFE:                   'true'
