@@ -35,8 +35,8 @@ import { LoginScreen } from './components/Auth/LoginScreen';
 import { RequestAccessScreen } from './components/Auth/RequestAccessScreen';
 import { PendingApprovalScreen } from './components/Auth/PendingApprovalScreen';
 
-var MIXPANEL_TOKEN = "YOUR_MIXPANEL_TOKEN";
-if (MIXPANEL_TOKEN !== "YOUR_MIXPANEL_TOKEN") {
+var MIXPANEL_TOKEN = import.meta.env.VITE_MIXPANEL_TOKEN || "";
+if (MIXPANEL_TOKEN !== "") {
   mixpanel.init(MIXPANEL_TOKEN, {
     track_pageview: true,
     persistence: "localStorage",
@@ -47,7 +47,7 @@ if (MIXPANEL_TOKEN !== "YOUR_MIXPANEL_TOKEN") {
 
 function track(event, props) {
   try {
-    if (MIXPANEL_TOKEN !== "YOUR_MIXPANEL_TOKEN") {
+    if (MIXPANEL_TOKEN !== "") {
       mixpanel.track(event, props || {});
     }
     if (window.location.hostname === "localhost") {
@@ -158,9 +158,16 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.2.3";
+var APP_VERSION = "2.2.4";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.2.4',
+    date: '2026-04-03',
+    changes: [
+      'Activated Mixpanel analytics — wired VITE_MIXPANEL_TOKEN env var, 14 existing track() call sites now live in production'
+    ]
+  },
   {
     version: '2.2.3',
     date: '2026-04-03',

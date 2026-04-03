@@ -1,7 +1,12 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: April 3, 2026 (v2.2.3)
+> Last updated: April 3, 2026 (v2.2.4)
 > MVP launched: March 24, 2026
+
+---
+
+## v2.2.4 — 2026-04-03
+- Ops: activated Mixpanel analytics — wired VITE_MIXPANEL_TOKEN env var; 14 existing track() call sites now live in production
 
 ---
 

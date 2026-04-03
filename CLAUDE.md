@@ -359,6 +359,9 @@ All major sections are wrapped with `<ErrorBoundary>` (class component). On cras
 
 ## Version History
 
+### v2.2.4 — April 3, 2026
+- Ops: activated Mixpanel analytics — wired VITE_MIXPANEL_TOKEN env var; 14 existing track() call sites now live in production
+
 ### v2.2.3 — April 3, 2026
 - Feat: personalized home screen greeting uses coach first name from user.profile; falls back to "Coach" for guests/unauthenticated
 - Fix: time bands corrected — Good night covers 9pm–5am; Good morning now starts at 5am (was midnight)
