@@ -1,7 +1,13 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: April 3, 2026 (v2.2.2)
+> Last updated: April 3, 2026 (v2.2.3)
 > MVP launched: March 24, 2026
+
+---
+
+## v2.2.3 — 2026-04-03
+- Feat: personalized home screen greeting uses coach first name from user.profile; falls back to "Coach" for guests/unauthenticated
+- Fix: time bands corrected — Good night covers 9pm–5am; Good morning now starts at 5am (was midnight)
 
 ---
 
