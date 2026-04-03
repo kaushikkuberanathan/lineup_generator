@@ -158,9 +158,16 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.1.8";
+var APP_VERSION = "2.1.9";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.1.9',
+    date: '2026-04-03',
+    changes: [
+      'Fix: admin console magic link now redirects back to /admin.html after email click'
+    ]
+  },
   {
     version: '2.1.8',
     date: '2026-04-03',

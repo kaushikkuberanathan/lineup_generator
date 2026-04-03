@@ -641,7 +641,10 @@
     if (!email) { showMsg('login-msg', 'Enter your email address.', 'error'); return; }
     this.disabled = true;
     clearMsg('login-msg');
-    var { error } = await sb.auth.signInWithOtp({ email: email });
+    var { error } = await sb.auth.signInWithOtp({
+      email: email,
+      options: { emailRedirectTo: window.location.origin + '/admin.html' }
+    });
     this.disabled = false;
     if (error) { showMsg('login-msg', error.message, 'error'); }
     else { showMsg('login-msg', '✓ Check your email for a magic link.', 'success'); }
