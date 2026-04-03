@@ -3322,15 +3322,19 @@ export default function App() {
     }
 
     var BACKEND = "https://lineup-generator-backend.onrender.com";
+    var _ctrl = new AbortController();
+    var _timeoutId = setTimeout(function() { _ctrl.abort(); }, 35000);
     return fetch(BACKEND + "/api/ai", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      signal: _ctrl.signal,
       body: JSON.stringify({
         type: "result",
         systemPrompt: systemPrompt,
         userContent: userContent
       })
     }).then(function(res) {
+      clearTimeout(_timeoutId);
       if (!res.ok) { throw new Error("Backend error " + res.status); }
       return res.json();
     }).then(function(data) {
