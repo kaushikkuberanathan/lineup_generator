@@ -581,9 +581,6 @@
 
   async function handleSession(session) {
     _currentUser = session.user;
-    // TEMP DEBUG — remove after confirming admin membership linkage
-    console.log('[handleSession] id:', session.user.id, 'email:', session.user.email, 'identities:', JSON.stringify(session.user.identities));
-
     // Check by user_id first (fastest, most reliable)
     let { data, error } = await sb
       .from('team_memberships')
