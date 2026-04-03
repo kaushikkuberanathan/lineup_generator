@@ -361,6 +361,7 @@ All major sections are wrapped with `<ErrorBoundary>` (class component). On cras
 
 ### v2.1.9 — April 3, 2026
 - Fix: admin magic link redirectTo /admin.html
+- Fix: Add Result button invisible on game day (gameDate <= today)
 
 ### v2.1.8 — April 3, 2026
 - Chore: full automated test suite (suite-team-data, suite-feedback, suite-contracts) + GitHub Actions CI + health monitor cron

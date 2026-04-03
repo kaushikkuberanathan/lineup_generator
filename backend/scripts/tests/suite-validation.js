@@ -94,24 +94,6 @@ async function run(test, BASE_URL, state) {
     return { pass: res.status === 400, expected: '400', actual: String(res.status) };
   });
 
-  // ─── /verify validation (removed — replaced by magic link flow) ──────────────
-
-  await test('VAL-10', '/verify: missing token', async () => {
-    return { skip: true, expected: '400', reason: 'OTP verify route removed — replaced by magic link flow' };
-  });
-
-  await test('VAL-11', '/verify: token too short', async () => {
-    return { skip: true, expected: '400', reason: 'OTP verify route removed — replaced by magic link flow' };
-  });
-
-  await test('VAL-12', '/verify: token too long', async () => {
-    return { skip: true, expected: '400', reason: 'OTP verify route removed — replaced by magic link flow' };
-  });
-
-  await test('VAL-13', '/verify: missing teamId', async () => {
-    return { skip: true, expected: '400', reason: 'OTP verify route removed — replaced by magic link flow' };
-  });
-
   // ─── approve-link validation ─────────────────────────────────────────────────
 
   await test('VAL-14', '/admin/approve-link: missing requestId', async () => {

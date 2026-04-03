@@ -165,7 +165,8 @@ var VERSION_HISTORY = [
     version: '2.1.9',
     date: '2026-04-03',
     changes: [
-      'Fix: admin console magic link now redirects back to /admin.html after email click'
+      'Fix: admin console magic link now redirects back to /admin.html after email click',
+      'Fix: Add Result button invisible on game day (gameDate <= today)'
     ]
   },
   {
@@ -6713,7 +6714,7 @@ export default function App() {
                     {(function() {
                       var today = new Date(); today.setHours(0,0,0,0);
                       var gameDate = game.date ? new Date(game.date + "T12:00:00") : null;
-                      var isPast = gameDate && gameDate < today;
+                      var isPast = gameDate && gameDate <= today;
                       if (isCanceled) {
                         return (
                           <button style={{ ...S.btn("ghost"), color:cancelColor, fontSize:"11px" }}

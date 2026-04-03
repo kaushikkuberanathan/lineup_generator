@@ -7,6 +7,7 @@
 
 ## v2.1.9 — 2026-04-03
 - Fix: admin magic link redirectTo /admin.html
+- Fix: Add Result button invisible on game day (gameDate <= today)
 
 ---
 
