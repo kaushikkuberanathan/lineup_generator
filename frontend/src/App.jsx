@@ -158,9 +158,18 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.1.6";
+var APP_VERSION = "2.1.7";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.1.7',
+    date: '2026-04-03',
+    changes: [
+      'Fix: admin approve route now writes email + user_id to team_memberships (phone_e164 set to null)',
+      'Fix: admin members endpoint now returns email and user_id fields',
+      'Fix: all four admin email notifications look up team name from DB — no more hardcoded team name'
+    ]
+  },
   {
     version: '2.1.6',
     date: '2026-04-02',

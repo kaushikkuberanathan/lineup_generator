@@ -1,7 +1,14 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: April 2, 2026 (v2.1.6)
+> Last updated: April 3, 2026 (v2.1.7)
 > MVP launched: March 24, 2026
+
+---
+
+## v2.1.7 — 2026-04-03
+- Fix: admin approve route writes email + user_id to team_memberships (phone_e164 null)
+- Fix: admin members endpoint returns email and user_id fields
+- Fix: all four admin email notifications (approve/deny links + approve/reject API) look up team name from DB
 
 ---
 

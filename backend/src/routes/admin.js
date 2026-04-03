@@ -62,12 +62,20 @@ router.get('/admin/approve-link', async (req, res) => {
       .update({ status: 'approved', reviewed_at: new Date().toISOString() })
       .eq('id', requestId);
 
+    // Look up team name for approval email
+    const { data: teamRowLink } = await supabaseAdmin
+      .from('teams')
+      .select('name')
+      .eq('id', teamId)
+      .single();
+    const teamNameLink = teamRowLink?.name || 'your team';
+
     // Send approval email to user
     await sendApprovalEmail({
       firstName: accessRequest.first_name,
       email:     accessRequest.email ?? accessRequest.phone_e164,
       role:      accessRequest.requested_role ?? 'coach',
-      teamName:  'Mud Hens',
+      teamName:  teamNameLink,
       teamId:    String(teamId),
     });
 
@@ -112,10 +120,17 @@ router.get('/admin/deny-link', async (req, res) => {
       .update({ status: 'denied', reviewed_at: new Date().toISOString() })
       .eq('id', requestId);
 
+    const { data: teamRowDenyLink } = await supabaseAdmin
+      .from('teams')
+      .select('name')
+      .eq('id', accessRequest.team_id)
+      .single();
+    const teamNameDenyLink = teamRowDenyLink?.name || 'your team';
+
     await sendDenialEmail({
       firstName: accessRequest.first_name,
       email:     accessRequest.email ?? accessRequest.phone_e164,
-      teamName:  'Mud Hens',
+      teamName:  teamNameDenyLink,
     });
 
     return res.status(200).send(htmlPage('Denied',
@@ -221,14 +236,20 @@ router.post(
       return res.status(409).json({ error: 'ALREADY_PROCESSED' });
     }
 
+    // Look up auth user by email — may not exist yet; will link on first login
+    const { data: userListData } = await supabaseAdmin.auth.admin.listUsers();
+    const authUser = userListData?.users?.find(u => u.email === accessRequest.email);
+    const userId = authUser?.id ?? null;
+
     const { error: insertError } = await supabaseAdmin
       .from('team_memberships')
       .insert({
-        phone_e164: accessRequest.phone_e164,
-        team_id: teamId,
+        email:      accessRequest.email ?? null,
+        phone_e164: null,
+        team_id:    teamId,
         role,
-        status: 'invited',
-        user_id: null,
+        status:     'invited',
+        user_id:    userId,
       });
 
     if (insertError) {
@@ -250,11 +271,19 @@ router.post(
       return res.status(500).json({ error: 'DB_ERROR' });
     }
 
+    // Look up team name for approval email
+    const { data: teamRow } = await supabaseAdmin
+      .from('teams')
+      .select('name')
+      .eq('id', teamId)
+      .single();
+    const teamName = teamRow?.name || 'your team';
+
     await sendApprovalEmail({
       firstName: accessRequest.first_name,
       email:     accessRequest.email ?? accessRequest.phone_e164,
       role:      role ?? 'coach',
-      teamName:  'Mud Hens',
+      teamName,
       teamId:    String(teamId),
     });
 
@@ -307,10 +336,17 @@ router.post(
       return res.status(500).json({ error: 'DB_ERROR' });
     }
 
+    const { data: teamRowReject } = await supabaseAdmin
+      .from('teams')
+      .select('name')
+      .eq('id', accessRequest.team_id)
+      .single();
+    const teamNameReject = teamRowReject?.name || 'your team';
+
     await sendDenialEmail({
       firstName: accessRequest.first_name,
       email:     accessRequest.email ?? accessRequest.phone_e164,
-      teamName:  'Mud Hens',
+      teamName:  teamNameReject,
     });
 
     return res.status(200).json({ message: 'Request rejected.' });
@@ -329,6 +365,8 @@ router.get('/members', async (req, res) => {
       team_id,
       role,
       status,
+      email,
+      user_id,
       phone_e164,
       activated_at,
       profiles (
@@ -350,6 +388,8 @@ router.get('/members', async (req, res) => {
     status: m.status,
     firstName: m.profiles?.first_name ?? null,
     lastName: m.profiles?.last_name ?? null,
+    email: m.email,
+    userId: m.user_id,
     phone: m.phone_e164,
     activatedAt: m.activated_at,
   }));

@@ -359,6 +359,10 @@ All major sections are wrapped with `<ErrorBoundary>` (class component). On cras
 
 ## Version History
 
+### v2.1.7 — April 3, 2026
+- Fix: admin approve writes email + user_id to team_memberships; members endpoint returns both fields
+- Fix: all four admin email notifications look up team name from DB (no hardcoded team name)
+
 ### v2.1.6 — April 2, 2026
 - Fix: Rules of Hooks violation — renderSharedView extracted into proper SharedView component
 - Fix: non-active team card hydration — eager Supabase fetch on boot, skeleton while pending
