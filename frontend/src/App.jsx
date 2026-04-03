@@ -6453,6 +6453,9 @@ export default function App() {
                           if (!file) { return; }
                           setResultImport({ gameId: editingGame ? editingGame.id : null, loading:true, error:"" });
                           var reader = new FileReader();
+                          reader.onerror = function() {
+                            setResultImport({ gameId:null, loading:false, error:"Could not read file. Try entering stats manually." });
+                          };
                           reader.onload = function(ev) {
                             var b64 = ev.target.result.split(",")[1];
                             var sType = file.type === "application/pdf" ? "pdf" : "image";
@@ -6488,6 +6491,9 @@ export default function App() {
                           if (!file) { return; }
                           setResultImport({ gameId: editingGame ? editingGame.id : null, loading:true, error:"" });
                           var reader = new FileReader();
+                          reader.onerror = function() {
+                            setResultImport({ gameId:null, loading:false, error:"Could not read photo. Try entering stats manually." });
+                          };
                           reader.onload = function(ev) {
                             var b64 = ev.target.result.split(",")[1];
                             parseGameResult("image", b64, file.type)
