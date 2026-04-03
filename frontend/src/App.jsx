@@ -6724,7 +6724,7 @@ export default function App() {
                             }}>Uncancel</button>
                         );
                       }
-                      if (!isPlayed && isPast) {
+                      if (isPast && !game.scoreReported) {
                         return <button style={S.btn("primary")} onClick={function(g) { return function() {
                           var gCopy = {}; for (var k in g) { gCopy[k] = g[k]; }
                           if (!gCopy.battingPerf) { gCopy.battingPerf = {}; }
@@ -6732,7 +6732,7 @@ export default function App() {
                           setEditingGame(g);
                           setShowGameForm(true);
                           setResultImport({ gameId:g.id, loading:false, error:"" });
-                        }; }(game)}>Add Result</button>;
+                        }; }(game)}>{isPlayed ? "Edit Result" : "Add Result"}</button>;
                       }
                       return null;
                     })()}
