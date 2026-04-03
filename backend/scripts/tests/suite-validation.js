@@ -68,14 +68,22 @@ async function run(test, BASE_URL, state) {
     return { pass: res.status === 400, expected: '400 CONTACT_REQUIRED', actual: String(res.status) };
   });
 
-  await test('VAL-07', '/request-access: XSS in firstName is escaped', async () => {
+  await test('VAL-07', '/request-access: XSS in firstName is rejected or stored escaped', async () => {
     const res = await post(BASE_URL, '/api/v1/auth/request-access', {
       firstName: '<script>alert(1)</script>', lastName: 'Test',
       email: TEST_EMAIL, teamId: TEAM_ID,
       requestedRole: 'coach', deviceContext: DEVICE,
     });
-    // Should succeed (escaped) or reject — must not crash
-    return { pass: res.status === 201 || res.status === 400, expected: '201 or 400', actual: String(res.status) };
+    // Prefer 400 (reject on input). If 201, body must not echo raw <script> tag.
+    if (res.status === 400) {
+      return { pass: true, expected: '400 (XSS rejected)', actual: '400' };
+    }
+    if (res.status === 201) {
+      const body = await res.text();
+      const unescaped = body.includes('<script>');
+      return { pass: !unescaped, expected: '201 without raw <script> in response', actual: unescaped ? '201 with unescaped XSS' : '201 clean' };
+    }
+    return { pass: false, expected: '400 or 201', actual: String(res.status) };
   });
 
   // ─── /magic-link validation ──────────────────────────────────────────────────

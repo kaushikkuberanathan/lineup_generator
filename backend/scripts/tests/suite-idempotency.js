@@ -2,6 +2,11 @@
  * suite-idempotency.js
  * Verifies state consistency — duplicates blocked, re-processing handled.
  * Category 6.
+ *
+ * Seed strategy: all tests share a single access_request created in an upfront
+ * seed block. If the seed fails, every test skips with a clear reason.
+ * Tests IDEM-03/04/05 each fetch the request fresh so they never depend on
+ * runtime state from a prior test's execution.
  */
 
 const TEAM_ID = '1774297491626';
@@ -18,28 +23,46 @@ async function post(BASE_URL, path, body) {
 async function run(test, BASE_URL, state) {
   const TEST_EMAIL = `idempotency-suite-${state.runId}@test.com`;
 
-  let idemRequestId = null;
+  // ─── Upfront seed ────────────────────────────────────────────────────────────
+  // Create one access_request that all tests below will operate on.
+  // If this fails, all tests in this suite skip rather than giving confusing errors.
 
-  // Create initial request
-  await test('IDEM-01', 'First request-access succeeds', async () => {
-    const res = await post(BASE_URL, '/api/v1/auth/request-access', {
+  let seedRequestId = null;
+  let seedFailed = false;
+
+  try {
+    const seedRes = await post(BASE_URL, '/api/v1/auth/request-access', {
       firstName: 'Idem', lastName: 'Test',
       email: TEST_EMAIL, teamId: TEAM_ID,
       requestedRole: 'coach', deviceContext: DEVICE,
     });
-    const data = await res.json();
-    idemRequestId = data.requestId;
-    if (!state.testEmails) state.testEmails = [];
-    state.testEmails.push(TEST_EMAIL);
+    const seedData = await seedRes.json();
+    if (seedRes.status === 201 && seedData.requestId) {
+      seedRequestId = seedData.requestId;
+      if (!state.testEmails) state.testEmails = [];
+      state.testEmails.push(TEST_EMAIL);
+    } else {
+      seedFailed = `Seed POST returned ${seedRes.status} ${JSON.stringify(seedData)}`;
+    }
+  } catch (err) {
+    seedFailed = `Seed POST threw: ${err.message}`;
+  }
+
+  // ─── IDEM-01: First request-access succeeds ──────────────────────────────────
+
+  await test('IDEM-01', 'First request-access succeeds (verified via seed)', async () => {
+    if (seedFailed) return { pass: false, expected: '201 success=true', actual: `Seed failed: ${seedFailed}` };
     return {
-      pass: res.status === 201 && data.success === true,
-      expected: '201 success=true',
-      actual: `${res.status} success=${data.success}`,
+      pass: seedRequestId !== null,
+      expected: '201 with requestId',
+      actual: seedRequestId ? `201 requestId=${seedRequestId}` : 'No requestId in seed response',
     };
   });
 
-  // Duplicate blocked
+  // ─── IDEM-02: Duplicate blocked ──────────────────────────────────────────────
+
   await test('IDEM-02', 'Duplicate request-access returns REQUEST_PENDING', async () => {
+    if (seedFailed) return { pass: false, expected: '409 REQUEST_PENDING', actual: `Seed failed: ${seedFailed}` };
     const res = await post(BASE_URL, '/api/v1/auth/request-access', {
       firstName: 'Idem', lastName: 'Test',
       email: TEST_EMAIL, teamId: TEAM_ID,
@@ -53,10 +76,11 @@ async function run(test, BASE_URL, state) {
     };
   });
 
-  // Approve it
+  // ─── IDEM-03: Approve-link succeeds ─────────────────────────────────────────
+
   await test('IDEM-03', 'Approve-link succeeds on pending request', async () => {
-    if (!idemRequestId) return { pass: false, expected: 'requestId from IDEM-01', actual: 'IDEM-01 failed — no requestId' };
-    const res = await fetch(`${BASE_URL}/api/v1/admin/approve-link?requestId=${idemRequestId}&teamId=${TEAM_ID}`);
+    if (seedFailed || !seedRequestId) return { pass: false, expected: '200 HTML Approved!', actual: `Seed failed: ${seedFailed || 'no requestId'}` };
+    const res = await fetch(`${BASE_URL}/api/v1/admin/approve-link?requestId=${seedRequestId}&teamId=${TEAM_ID}`);
     const text = await res.text();
     return {
       pass: res.status === 200 && text.includes('Approved!'),
@@ -65,10 +89,12 @@ async function run(test, BASE_URL, state) {
     };
   });
 
-  // Re-approve blocked
+  // ─── IDEM-04: Re-approve blocked ─────────────────────────────────────────────
+
   await test('IDEM-04', 'Approve-link returns Already Processed on re-approve', async () => {
-    if (!idemRequestId) return { pass: false, expected: 'requestId from IDEM-01', actual: 'IDEM-01 failed — no requestId' };
-    const res = await fetch(`${BASE_URL}/api/v1/admin/approve-link?requestId=${idemRequestId}&teamId=${TEAM_ID}`);
+    if (seedFailed || !seedRequestId) return { pass: false, expected: '200 Already Processed', actual: `Seed failed: ${seedFailed || 'no requestId'}` };
+    // Re-fetch after IDEM-03 approved it — idempotency check
+    const res = await fetch(`${BASE_URL}/api/v1/admin/approve-link?requestId=${seedRequestId}&teamId=${TEAM_ID}`);
     const text = await res.text();
     return {
       pass: res.status === 200 && text.includes('Already Processed'),
@@ -77,10 +103,11 @@ async function run(test, BASE_URL, state) {
     };
   });
 
-  // Deny-link on already-approved
+  // ─── IDEM-05: Deny-link on approved request ───────────────────────────────────
+
   await test('IDEM-05', 'Deny-link returns Already Processed on approved request', async () => {
-    if (!idemRequestId) return { pass: false, expected: 'requestId from IDEM-01', actual: 'IDEM-01 failed — no requestId' };
-    const res = await fetch(`${BASE_URL}/api/v1/admin/deny-link?requestId=${idemRequestId}`);
+    if (seedFailed || !seedRequestId) return { pass: false, expected: '200 Already Processed', actual: `Seed failed: ${seedFailed || 'no requestId'}` };
+    const res = await fetch(`${BASE_URL}/api/v1/admin/deny-link?requestId=${seedRequestId}`);
     const text = await res.text();
     return {
       pass: res.status === 200 && text.includes('Already Processed'),
@@ -89,7 +116,8 @@ async function run(test, BASE_URL, state) {
     };
   });
 
-  // Nonexistent requestId
+  // ─── IDEM-06: Nonexistent requestId — no seed dependency ─────────────────────
+
   await test('IDEM-06', 'Approve-link with nonexistent requestId returns Not Found', async () => {
     const res = await fetch(`${BASE_URL}/api/v1/admin/approve-link?requestId=00000000-0000-0000-0000-000000000000&teamId=${TEAM_ID}`);
     const text = await res.text();

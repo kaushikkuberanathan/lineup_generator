@@ -76,53 +76,47 @@ function defaultPlayer(overrides) {
 
 describe('Group 1 — Level-to-number mappers', function () {
 
-  test('1.1: getReliabilityValue — high=1.0, average=0.7, needs_support=0.4, unknown=0.7', function () {
-    expect(getReliabilityValue({ reliability: 'high' })).toBe(1.0);
-    expect(getReliabilityValue({ reliability: 'average' })).toBe(0.7);
-    expect(getReliabilityValue({ reliability: 'needs_support' })).toBe(0.4);
-    expect(getReliabilityValue({ reliability: 'unknown_value' })).toBe(0.7);
-    expect(getReliabilityValue({})).toBe(0.7);
-  });
-
-  test('1.2: getReactionValue — quick=1.0, average=0.7, slow=0.4', function () {
-    expect(getReactionValue({ reaction: 'quick' })).toBe(1.0);
-    expect(getReactionValue({ reaction: 'average' })).toBe(0.7);
-    expect(getReactionValue({ reaction: 'slow' })).toBe(0.4);
-    expect(getReactionValue({})).toBe(0.7);
-  });
-
-  test('1.3: getArmStrengthValue — strong=1.0, average=0.7, developing=0.4', function () {
-    expect(getArmStrengthValue({ armStrength: 'strong' })).toBe(1.0);
-    expect(getArmStrengthValue({ armStrength: 'average' })).toBe(0.7);
-    expect(getArmStrengthValue({ armStrength: 'developing' })).toBe(0.4);
-    expect(getArmStrengthValue({})).toBe(0.7);
-  });
-
-  test('1.4: getContactValue — high=1.0, medium=0.7, developing=0.4', function () {
-    expect(getContactValue({ contact: 'high' })).toBe(1.0);
-    expect(getContactValue({ contact: 'medium' })).toBe(0.7);
-    expect(getContactValue({ contact: 'developing' })).toBe(0.4);
-    expect(getContactValue({})).toBe(0.7);
-  });
-
-  test('1.5: getPowerValue — high=1.0, medium=0.7, low=0.4', function () {
-    expect(getPowerValue({ power: 'high' })).toBe(1.0);
-    expect(getPowerValue({ power: 'medium' })).toBe(0.7);
-    expect(getPowerValue({ power: 'low' })).toBe(0.4);
-    expect(getPowerValue({})).toBe(0.4); // default is 0.4 (low)
-  });
-
-  test('1.6: getDisciplineValue — disciplined=1.0, anything else=0.5', function () {
-    expect(getDisciplineValue({ swingDiscipline: 'disciplined' })).toBe(1.0);
-    expect(getDisciplineValue({ swingDiscipline: 'free_swinger' })).toBe(0.5);
-    expect(getDisciplineValue({})).toBe(0.5);
-  });
-
-  test('1.7: getSpeedValue — fast=1.0, average=0.7, developing=0.4', function () {
-    expect(getSpeedValue({ speed: 'fast' })).toBe(1.0);
-    expect(getSpeedValue({ speed: 'average' })).toBe(0.7);
-    expect(getSpeedValue({ speed: 'developing' })).toBe(0.4);
-    expect(getSpeedValue({})).toBe(0.7);
+  // 28 individual parameterized cases — one assertion each
+  [
+    // getReliabilityValue
+    ['getReliabilityValue: high → 1.0',              () => getReliabilityValue({ reliability: 'high' }),           1.0],
+    ['getReliabilityValue: average → 0.7',           () => getReliabilityValue({ reliability: 'average' }),        0.7],
+    ['getReliabilityValue: needs_support → 0.4',     () => getReliabilityValue({ reliability: 'needs_support' }),  0.4],
+    ['getReliabilityValue: unknown → 0.7 (default)', () => getReliabilityValue({ reliability: 'unknown_value' }),  0.7],
+    ['getReliabilityValue: missing → 0.7 (default)', () => getReliabilityValue({}),                                0.7],
+    // getReactionValue
+    ['getReactionValue: quick → 1.0',                () => getReactionValue({ reaction: 'quick' }),                1.0],
+    ['getReactionValue: average → 0.7',              () => getReactionValue({ reaction: 'average' }),              0.7],
+    ['getReactionValue: slow → 0.4',                 () => getReactionValue({ reaction: 'slow' }),                 0.4],
+    ['getReactionValue: missing → 0.7',              () => getReactionValue({}),                                   0.7],
+    // getArmStrengthValue
+    ['getArmStrengthValue: strong → 1.0',            () => getArmStrengthValue({ armStrength: 'strong' }),         1.0],
+    ['getArmStrengthValue: average → 0.7',           () => getArmStrengthValue({ armStrength: 'average' }),        0.7],
+    ['getArmStrengthValue: developing → 0.4',        () => getArmStrengthValue({ armStrength: 'developing' }),     0.4],
+    ['getArmStrengthValue: missing → 0.7',           () => getArmStrengthValue({}),                                0.7],
+    // getContactValue
+    ['getContactValue: high → 1.0',                  () => getContactValue({ contact: 'high' }),                   1.0],
+    ['getContactValue: medium → 0.7',                () => getContactValue({ contact: 'medium' }),                 0.7],
+    ['getContactValue: developing → 0.4',            () => getContactValue({ contact: 'developing' }),             0.4],
+    ['getContactValue: missing → 0.7',               () => getContactValue({}),                                    0.7],
+    // getPowerValue
+    ['getPowerValue: high → 1.0',                    () => getPowerValue({ power: 'high' }),                       1.0],
+    ['getPowerValue: medium → 0.7',                  () => getPowerValue({ power: 'medium' }),                     0.7],
+    ['getPowerValue: low → 0.4',                     () => getPowerValue({ power: 'low' }),                        0.4],
+    ['getPowerValue: missing → 0.4 (default low)',   () => getPowerValue({}),                                      0.4],
+    // getDisciplineValue
+    ['getDisciplineValue: disciplined → 1.0',        () => getDisciplineValue({ swingDiscipline: 'disciplined' }), 1.0],
+    ['getDisciplineValue: free_swinger → 0.5',       () => getDisciplineValue({ swingDiscipline: 'free_swinger' }),0.5],
+    ['getDisciplineValue: missing → 0.5',            () => getDisciplineValue({}),                                 0.5],
+    // getSpeedValue
+    ['getSpeedValue: fast → 1.0',                    () => getSpeedValue({ speed: 'fast' }),                       1.0],
+    ['getSpeedValue: average → 0.7',                 () => getSpeedValue({ speed: 'average' }),                    0.7],
+    ['getSpeedValue: developing → 0.4',              () => getSpeedValue({ speed: 'developing' }),                 0.4],
+    ['getSpeedValue: missing → 0.7',                 () => getSpeedValue({}),                                      0.7],
+  ].forEach(function ([label, fn, expected]) {
+    test('1.x: ' + label, function () {
+      expect(fn()).toBe(expected);
+    });
   });
 });
 

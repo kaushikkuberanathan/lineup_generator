@@ -76,6 +76,7 @@ const suiteRateLimits      = require('./suite-rate-limits');
 const suiteTeamData        = require('./suite-team-data');
 const suiteFeedback        = require('./suite-feedback');
 const suiteContracts       = require('./suite-contracts');
+const suiteAuthMiddleware  = require('./suite-auth-middleware');
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -89,6 +90,7 @@ async function run() {
   console.log(`   Target: ${BASE_URL}`);
   if (CI_SAFE) {
     console.log('   🔒 CI_SAFE mode: write-heavy suites skipped (auth-flow, idempotency, device-context, audit-trail, data-integrity)');
+    console.log('   ✅ auth-middleware suite always runs (rejection tests only)');
   }
   console.log('   ⚠️  Restart server between runs to reset rate limits\n');
   console.log('   Running...\n');
@@ -100,6 +102,7 @@ async function run() {
   await suiteTeamData.run(test, BASE_URL, supabaseAdmin, state);
   await suiteFeedback.run(test, BASE_URL, state);
   await suiteContracts.run(test, BASE_URL, supabaseAdmin, state);
+  await suiteAuthMiddleware.run(test, BASE_URL, state);
   await suiteRateLimits.run(test, BASE_URL, state); // must run last — exhausts rate limits
 
   // ── Write-heavy suites (skipped in CI_SAFE mode) ──────────────────────────

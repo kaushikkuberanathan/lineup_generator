@@ -80,14 +80,6 @@ async function run(test, BASE_URL, state) {
 
   // ─── Failure paths ───────────────────────────────────────────────────────────
 
-  await test('AUTH-06', 'Verify OTP — wrong code returns INVALID_TOKEN', async () => {
-    return {
-      skip: true,
-      expected: '401 INVALID_TOKEN',
-      reason: 'OTP verify route removed — replaced by magic link flow',
-    };
-  });
-
   await test('AUTH-07', 'GET /me — no token returns UNAUTHORIZED', async () => {
     const res = await fetch(`${BASE_URL}/api/v1/auth/me`);
     const data = await res.json();

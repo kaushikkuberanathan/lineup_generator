@@ -53,12 +53,12 @@ async function run(test, BASE_URL, supabaseAdmin, state) {
     };
   });
 
-  // otp_requested event
-  await test('AUD-02', 'otp_requested event logged on login', async () => {
+  // magic_link_requested event
+  await test('AUD-02', 'magic_link_requested event logged on login', async () => {
     return {
       skip: true,
-      expected: 'auth_events row event_type=otp_requested',
-      reason: 'Depends on OTP send — Supabase rate limits rapid OTP requests',
+      expected: 'auth_events row event_type=magic_link_requested',
+      reason: 'Requires magic-link email click — cannot automate in CI',
     };
   });
 
@@ -67,16 +67,7 @@ async function run(test, BASE_URL, supabaseAdmin, state) {
     return {
       skip: true,
       expected: 'auth_events row event_type=access_denied',
-      reason: 'Depends on OTP send to unknown email — Supabase rate limits rapid OTP requests',
-    };
-  });
-
-  // otp_failed event
-  await test('AUD-04', 'otp_failed event logged on wrong OTP', async () => {
-    return {
-      skip: true,
-      expected: 'auth_events row event_type=otp_failed',
-      reason: 'OTP verify route removed — replaced by magic link flow',
+      reason: 'Requires magic-link email click to unknown address — cannot automate in CI',
     };
   });
 
