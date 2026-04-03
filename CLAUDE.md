@@ -359,6 +359,11 @@ All major sections are wrapped with `<ErrorBoundary>` (class component). On cras
 
 ## Version History
 
+### v2.2.2 — April 3, 2026
+- Fix: newGame useState initializer + both setNewGame reset calls now include gameBall:"" and scoreReported:false
+- Fix: non-active team boot hydration (App.jsx ~1931) wraps Supabase schedule with migrateSchedule + mergeLocalScheduleFields before writing localStorage
+- Fix: Mud Hens migration patch (App.jsx ~2090) now preserves snackDuty, gameBall, scoreReported from prior game data
+
 ### v2.2.1 — April 3, 2026
 - Ops: develop branch created with GitHub branch protection rules
 - Ops: Render DEV service + dev.dugoutlineup.com environment planned

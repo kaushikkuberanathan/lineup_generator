@@ -158,9 +158,18 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.2.1";
+var APP_VERSION = "2.2.2";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.2.2',
+    date: '2026-04-03',
+    changes: [
+      'Fix: new game form now initialises gameBall and scoreReported (were missing from template)',
+      'Fix: non-active team boot hydration now runs migrateSchedule + mergeLocalScheduleFields before writing to localStorage',
+      'Fix: Mud Hens migration patch now preserves snackDuty, gameBall, and scoreReported from existing games'
+    ]
+  },
   {
     version: '2.2.1',
     date: '2026-04-03',
@@ -1927,8 +1936,12 @@ export default function App() {
           }
           dbLoadTeamData(t.id).then(function(dbData) {
             if (dbData && dbData.roster && dbData.roster.length > 0) {
-              saveJSON("team:" + t.id + ":roster",   dbData.roster);
-              saveJSON("team:" + t.id + ":schedule", Array.isArray(dbData.schedule) ? dbData.schedule : []);
+              saveJSON("team:" + t.id + ":roster", dbData.roster);
+              var localSched = loadJSON("team:" + t.id + ":schedule", []);
+              var migratedDbSched = migrateSchedule(Array.isArray(dbData.schedule) ? dbData.schedule : []);
+              var MERGE_FIELDS = ['scoreReported', 'snackDuty', 'snackNote', 'gameBall'];
+              var safeSched = mergeLocalScheduleFields(migratedDbSched, localSched, MERGE_FIELDS);
+              saveJSON("team:" + t.id + ":schedule", safeSched);
               saveJSON("team:" + t.id + ":grid",     dbData.grid);
             }
             setHydratedTeamIds(function(prev) { var n = Object.assign({}, prev); n[t.id] = true; return n; });
@@ -2088,10 +2101,13 @@ export default function App() {
                 var prev = existingById[og.id];
                 if (!prev) return og;
                 return Object.assign({}, og, {
-                  result:      prev.result      !== undefined ? prev.result      : og.result,
-                  ourScore:    prev.ourScore     !== undefined ? prev.ourScore    : og.ourScore,
-                  theirScore:  prev.theirScore   !== undefined ? prev.theirScore  : og.theirScore,
-                  battingPerf: prev.battingPerf  && Object.keys(prev.battingPerf).length > 0 ? prev.battingPerf : og.battingPerf
+                  result:        prev.result        !== undefined ? prev.result        : og.result,
+                  ourScore:      prev.ourScore       !== undefined ? prev.ourScore      : og.ourScore,
+                  theirScore:    prev.theirScore     !== undefined ? prev.theirScore    : og.theirScore,
+                  battingPerf:   prev.battingPerf    && Object.keys(prev.battingPerf).length > 0 ? prev.battingPerf : og.battingPerf,
+                  snackDuty:     prev.snackDuty      !== undefined ? prev.snackDuty     : (og.snackDuty     || ""),
+                  gameBall:      prev.gameBall       !== undefined ? prev.gameBall      : (og.gameBall      || ""),
+                  scoreReported: prev.scoreReported  !== undefined ? prev.scoreReported : (og.scoreReported || false)
                 });
               });
               dbSaveTeamData(capturedTeam.id, {
@@ -2409,7 +2425,7 @@ export default function App() {
   var printNotes = _printNotes[0]; var setPrintNotes = _printNotes[1];
   var _songsView = useState("display");
   var songsView = _songsView[0]; var setSongsView = _songsView[1];
-  var _newGame = useState({ date:"", time:"", location:"", opponent:"", result:"", ourScore:"", theirScore:"", battingPerf:{}, snackDuty:"" });
+  var _newGame = useState({ date:"", time:"", location:"", opponent:"", result:"", ourScore:"", theirScore:"", battingPerf:{}, snackDuty:"", gameBall:"", scoreReported:false });
   var newGame = _newGame[0]; var setNewGame = _newGame[1];
   var _editGame = useState(null);
   var editingGame = _editGame[0]; var setEditingGame = _editGame[1];
@@ -3213,7 +3229,7 @@ export default function App() {
       game.id = Date.now() + "";
       persistSchedule(schedule.concat([game]));
     }
-    setNewGame({ date:"", time:"", location:"", opponent:"", result:"", ourScore:"", theirScore:"", battingPerf:{}, snackDuty:"" });
+    setNewGame({ date:"", time:"", location:"", opponent:"", result:"", ourScore:"", theirScore:"", battingPerf:{}, snackDuty:"", gameBall:"", scoreReported:false });
     setShowGameForm(false);
     setEditingGame(null);
   }
@@ -6198,7 +6214,7 @@ export default function App() {
 
         <div style={{ display:"flex", gap:"8px", marginBottom:"14px", flexWrap:"wrap" }}>
           <button style={S.btn("primary")} onClick={function() {
-            setNewGame({ date:"", time:"", location:"", opponent:"", result:"", ourScore:"", theirScore:"", battingPerf:{}, snackDuty:"" });
+            setNewGame({ date:"", time:"", location:"", opponent:"", result:"", ourScore:"", theirScore:"", battingPerf:{}, snackDuty:"", gameBall:"", scoreReported:false });
             setEditingGame(null);
             setShowGameForm(true);
             setImportMode(null);

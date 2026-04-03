@@ -1,7 +1,14 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: April 3, 2026 (v2.2.1)
+> Last updated: April 3, 2026 (v2.2.2)
 > MVP launched: March 24, 2026
+
+---
+
+## v2.2.2 — 2026-04-03
+- Fix: newGame template initializer and both setNewGame reset calls now include gameBall:"" and scoreReported:false
+- Fix: non-active team boot hydration applies migrateSchedule + mergeLocalScheduleFields before writing to localStorage
+- Fix: Mud Hens migration patch preserves snackDuty, gameBall, scoreReported from existing game entries
 
 ---
 
