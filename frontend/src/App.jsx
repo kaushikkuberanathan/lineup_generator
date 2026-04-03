@@ -6712,9 +6712,8 @@ export default function App() {
                   </div>
                   <div style={{ display:"flex", gap:"6px", flexWrap:"wrap" }}>
                     {(function() {
-                      var today = new Date(); today.setHours(0,0,0,0);
-                      var gameDate = game.date ? new Date(game.date + "T12:00:00") : null;
-                      var isPast = gameDate && gameDate <= today;
+                      var todayStr = new Date().toLocaleDateString('en-CA');
+                      var isPast = game.date && game.date <= todayStr;
                       if (isCanceled) {
                         return (
                           <button style={{ ...S.btn("ghost"), color:cancelColor, fontSize:"11px" }}
