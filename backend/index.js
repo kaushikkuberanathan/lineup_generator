@@ -6,6 +6,7 @@ const authRouter = require('./src/routes/auth');
 const adminRouter = require('./src/routes/admin');
 const feedbackRouter = require('./src/routes/feedback');
 const teamDataRouter = require('./src/routes/teamData');
+const { supabaseAdmin } = require('./src/lib/supabase');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -23,19 +24,51 @@ app.use(cors({
     callback(new Error('Not allowed by CORS'));
   }
 }));
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 
 app.get('/', (req, res) => {
   res.send('Lineup Generator API is running');
 });
 
-app.get('/health', (req, res) => {
+app.get('/health', async (req, res) => {
   const { version } = require('./package.json');
-  res.json({
-    status:    'ok',
-    uptime:    process.uptime(),
-    timestamp: new Date().toISOString(),
+
+  // DB connectivity check — lightweight read of the Mud Hens team row
+  const DB_TEAM_ID = '1774297491626';
+  let db = 'error';
+  let db_latency_ms = null;
+  let db_error = null;
+
+  try {
+    const t0 = Date.now();
+    const { data, error } = await supabaseAdmin
+      .from('teams')
+      .select('id')
+      .eq('id', DB_TEAM_ID)
+      .single();
+    db_latency_ms = Date.now() - t0;
+
+    if (error || !data) {
+      db = 'error';
+      db_error = error?.message ?? 'row not found';
+    } else {
+      db = 'ok';
+    }
+  } catch (err) {
+    db = 'error';
+    db_error = err.message;
+  }
+
+  const httpStatus = db === 'ok' ? 200 : 503;
+
+  res.status(httpStatus).json({
+    status:        db === 'ok' ? 'ok' : 'degraded',
+    uptime:        process.uptime(),
+    timestamp:     new Date().toISOString(),
     version,
+    db,
+    db_latency_ms,
+    ...(db_error ? { db_error } : {}),
   });
 });
 

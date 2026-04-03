@@ -248,6 +248,8 @@ Triggers: UptimeRobot alert OR "Server unavailable" pill in prod
 | Uptime monitor | uptimerobot.com — monitor #802733786 | Pings /ping every 5 min |
 | Repo | github.com/kaushikkuberanathan/lineup_generator | monorepo |
 
+> **NOTE:** UptimeRobot only monitors /ping (HTTP 200). Real functional health (DB connectivity, share link rendering, lineup generation) is validated by the GitHub Actions health-check.yml cron — check .github/workflows/health-check.yml for details.
+
 ### Key File Locations
 frontend/src/App.jsx                    — APP_VERSION + VERSION_HISTORY
 frontend/src/config/featureFlags.js     — feature flag definitions

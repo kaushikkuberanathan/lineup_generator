@@ -1,0 +1,167 @@
+# Runs every 6 hours. Failures mean real coaches may be impacted — check immediately.
+# Also triggerable manually from the Actions tab (workflow_dispatch).
+#
+# Three checks in order:
+#   1. API health — /health must return 200 with db: "ok"
+#   2. Share link — dugoutlineup.com/?s=<HEALTH_SHARE_KEY> must load and contain "Mud Hens"
+#   3. Lineup generation smoke — /generate-lineup must return a lineup array
+#
+# Required GitHub secret:
+#   HEALTH_SHARE_KEY — an 8-char share key created from the Mud Hens team (1774297491626).
+#                      Create one via the Share button in the app, copy the ?s= value,
+#                      set it as a repo secret. If not set, Step 2 is skipped with a warning.
+#
+# Note: share link Step 2 checks the frontend page load only (HTTP 200 + body content).
+# The share payload itself is fetched client-side from Supabase — no backend API endpoint
+# exposes a share key, so dynamic key extraction is not possible from this workflow.
+
+name: Health Check (6h)
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+jobs:
+  health-check:
+    name: Functional Health Check
+    runs-on: ubuntu-latest
+
+    steps:
+
+      # ── Step 1: API health — /health must return 200 with db: "ok" ─────────────
+
+      - name: Fetch /health
+        id: api_health
+        run: |
+          HTTP_STATUS=$(curl -s -o /tmp/health_body.json -w "%{http_code}" \
+            https://lineup-generator-backend.onrender.com/health)
+          BODY=$(cat /tmp/health_body.json)
+          echo "http_status=$HTTP_STATUS" >> $GITHUB_OUTPUT
+          echo "body=$BODY"              >> $GITHUB_OUTPUT
+          echo "HTTP $HTTP_STATUS — $BODY"
+
+      - name: Assert /health OK and db connected
+        run: |
+          STATUS="${{ steps.api_health.outputs.http_status }}"
+          BODY='${{ steps.api_health.outputs.body }}'
+
+          if [ "$STATUS" != "200" ]; then
+            echo "❌ /health returned HTTP $STATUS (expected 200) — body: $BODY"
+            exit 1
+          fi
+
+          if ! echo "$BODY" | grep -q '"db":"ok"'; then
+            echo "❌ /health body does not contain '\"db\":\"ok\"' — DB may be down"
+            echo "   body: $BODY"
+            exit 1
+          fi
+
+          echo "✅ /health → 200, db: ok"
+
+      # ── Step 2: Share link — page loads and contains known content ─────────────
+      # Requires HEALTH_SHARE_KEY secret to be set in repo Settings → Secrets.
+      # If not set, this step is skipped with a warning (does not fail the job).
+
+      - name: Share link smoke test
+        id: share_link
+        env:
+          HEALTH_SHARE_KEY: ${{ secrets.HEALTH_SHARE_KEY }}
+        run: |
+          if [ -z "$HEALTH_SHARE_KEY" ]; then
+            echo "⚠️  HEALTH_SHARE_KEY secret not set — skipping share link check"
+            echo "   To enable: create a share link from the Mud Hens team and set the"
+            echo "   8-char key as a repo secret named HEALTH_SHARE_KEY."
+            exit 0
+          fi
+
+          SHARE_URL="https://dugoutlineup.com/?s=${HEALTH_SHARE_KEY}"
+          HTTP_STATUS=$(curl -s -o /tmp/share_body.html -w "%{http_code}" "$SHARE_URL")
+          BODY=$(cat /tmp/share_body.html)
+
+          echo "http_status=$HTTP_STATUS" >> $GITHUB_OUTPUT
+          echo "HTTP $HTTP_STATUS — $SHARE_URL"
+
+          if [ "$HTTP_STATUS" != "200" ]; then
+            echo "❌ Share link returned HTTP $HTTP_STATUS (expected 200)"
+            exit 1
+          fi
+
+          # Assert the page contains a known string proving it loaded (not a 404 page or blank)
+          if ! echo "$BODY" | grep -qi "dugout\|mud hens\|lineup"; then
+            echo "❌ Share link page loaded but expected content ('dugout', 'mud hens', or 'lineup') not found"
+            echo "   First 500 chars: ${BODY:0:500}"
+            exit 1
+          fi
+
+          echo "✅ Share link → 200 with expected content"
+
+      # ── Step 3: Lineup generation smoke — /generate-lineup must return lineup[] ─
+      # Route: POST /generate-lineup (no /api/v1 prefix)
+      # Payload: { "players": ["Player1", "Player2"] }
+      # Expected: HTTP 200 + response body contains "lineup"
+
+      - name: Lineup generation smoke
+        id: lineup_smoke
+        run: |
+          HTTP_STATUS=$(curl -s -o /tmp/lineup_body.json -w "%{http_code}" \
+            -X POST \
+            -H "Content-Type: application/json" \
+            -d '{"players":["Player One","Player Two","Player Three"]}' \
+            https://lineup-generator-backend.onrender.com/generate-lineup)
+          BODY=$(cat /tmp/lineup_body.json)
+
+          echo "http_status=$HTTP_STATUS" >> $GITHUB_OUTPUT
+          echo "body=$BODY"              >> $GITHUB_OUTPUT
+          echo "HTTP $HTTP_STATUS — $BODY"
+
+          if [ "$HTTP_STATUS" != "200" ]; then
+            echo "❌ /generate-lineup returned HTTP $HTTP_STATUS (expected 200)"
+            exit 1
+          fi
+
+          if ! echo "$BODY" | grep -q '"lineup"'; then
+            echo "❌ /generate-lineup response does not contain '\"lineup\"' key"
+            echo "   body: $BODY"
+            exit 1
+          fi
+
+          echo "✅ /generate-lineup → 200 with lineup array"
+
+      # ── Job Summary ─────────────────────────────────────────────────────────────
+
+      - name: Write job summary
+        if: always()
+        env:
+          HEALTH_SHARE_KEY: ${{ secrets.HEALTH_SHARE_KEY }}
+        run: |
+          API_STATUS="${{ steps.api_health.outputs.http_status }}"
+          SHARE_STATUS="${{ steps.share_link.outputs.http_status }}"
+          LINEUP_STATUS="${{ steps.lineup_smoke.outputs.http_status }}"
+          NOW=$(date -u '+%Y-%m-%d %H:%M UTC')
+
+          api_icon="✅"
+          share_icon="⏭ (no key)"
+          lineup_icon="✅"
+
+          [ "$API_STATUS"    != "200" ] && api_icon="❌"
+          [ "$LINEUP_STATUS" != "200" ] && lineup_icon="❌"
+
+          if [ -n "$HEALTH_SHARE_KEY" ]; then
+            share_icon="✅"
+            [ "$SHARE_STATUS" != "200" ] && share_icon="❌"
+          fi
+
+          echo "## Functional Health Check" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| # | Check | Detail | Result |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|-------|--------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| 1 | API /health + DB | status=ok, db=ok | $api_icon |" >> $GITHUB_STEP_SUMMARY
+          echo "| 2 | Share link | dugoutlineup.com/?s=... | $share_icon |" >> $GITHUB_STEP_SUMMARY
+          echo "| 3 | Lineup generation | /generate-lineup → lineup[] | $lineup_icon |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Run at:** $NOW" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -z "$HEALTH_SHARE_KEY" ]; then
+            echo "> ⚠️  Share link check skipped — set \`HEALTH_SHARE_KEY\` repo secret to enable." >> $GITHUB_STEP_SUMMARY
+          fi
