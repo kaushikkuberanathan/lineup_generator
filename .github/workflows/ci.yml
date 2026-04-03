@@ -68,3 +68,38 @@ jobs:
           SUPABASE_ANON_KEY:         ${{ secrets.SUPABASE_ANON_KEY }}
           BACKEND_URL:               https://lineup-generator-backend.onrender.com
           CI_SAFE:                   'true'
+
+  # ── Job 3: Smoke Test (dev environment) ────────────────────────────────────
+  # Runs on main only, after both frontend and backend jobs pass.
+  # Requires GitHub secrets: DEV_BACKEND_URL, DEV_FRONTEND_URL
+  # (SUPABASE_URL and SUPABASE_ANON_KEY already exist from the backend job)
+
+  smoke:
+    name: Smoke Test (dev)
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    needs: [frontend, backend]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Write .env.smoke
+        run: |
+          cat > .env.smoke << EOF
+          DEV_BACKEND_URL=${{ secrets.DEV_BACKEND_URL }}
+          PROD_BACKEND_URL=${{ secrets.PROD_BACKEND_URL }}
+          DEV_FRONTEND_URL=${{ secrets.DEV_FRONTEND_URL }}
+          PROD_FRONTEND_URL=${{ secrets.PROD_FRONTEND_URL }}
+          DEV_SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+          PROD_SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+          DEV_SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+          PROD_SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+          DEV_TEAM_ID=1774297491626
+          PROD_TEAM_ID=
+          EOF
+
+      - name: Run smoke test (dev)
+        run: npm run smoke:dev

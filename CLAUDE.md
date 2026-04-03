@@ -359,6 +359,14 @@ All major sections are wrapped with `<ErrorBoundary>` (class component). On cras
 
 ## Version History
 
+### v2.2.3 — April 3, 2026
+- Feat: personalized home screen greeting uses coach first name from user.profile; falls back to "Coach" for guests/unauthenticated
+- Fix: time bands corrected — Good night covers 9pm–5am; Good morning now starts at 5am (was midnight)
+- Ops: 22 schedule integrity tests (suite-schedule-integrity.js) — Phase 1 complete; 233 tests total across frontend + backend
+- Ops: scripts/smoke-test.js — 5-category post-deploy smoke script (env config, /ping health, Supabase tables, schedule fields, share link); node scripts/smoke-test.js --env=dev|prod
+- Ops: CI smoke job added to ci.yml — runs after frontend + backend on main only; requires DEV_BACKEND_URL + DEV_FRONTEND_URL secrets
+- Ops: .env.smoke.example added at repo root (safe to commit); .env.smoke already gitignored
+
 ### v2.2.2 — April 3, 2026
 - Fix: newGame useState initializer + both setNewGame reset calls now include gameBall:"" and scoreReported:false
 - Fix: non-active team boot hydration (App.jsx ~1931) wraps Supabase schedule with migrateSchedule + mergeLocalScheduleFields before writing localStorage

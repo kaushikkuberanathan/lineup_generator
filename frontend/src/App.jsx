@@ -158,9 +158,17 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.2.2";
+var APP_VERSION = "2.2.3";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.2.3',
+    date: '2026-04-03',
+    changes: [
+      'Personalized greeting uses coach first name from user.profile; falls back to "Coach" for guests',
+      'Fixed time bands: Good night 9pm–5am, Good morning now starts at 5am not midnight'
+    ]
+  },
   {
     version: '2.2.2',
     date: '2026-04-03',
@@ -3435,7 +3443,11 @@ export default function App() {
   function renderHome() {
     var now = new Date();
     var etHour = new Date(now.toLocaleString("en-US", { timeZone:"America/New_York" })).getHours();
-    var greeting = etHour < 12 ? "Good morning" : etHour < 17 ? "Good afternoon" : "Good evening";
+    var greeting = etHour >= 5 && etHour < 12 ? "Good morning"
+      : etHour < 17 ? "Good afternoon"
+      : etHour < 21 ? "Good evening"
+      : "Good night";
+    var firstName = user && user.profile && user.profile.first_name ? user.profile.first_name : null;
 
     function getNextGame(team) {
       var today = new Date(); today.setHours(0,0,0,0);
@@ -3679,7 +3691,7 @@ export default function App() {
             <div>
               <div style={{ marginBottom:"8px" }}>
                 <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:"8px" }}>
-                  <div style={{ fontSize:"13px", color:"#6b7280", letterSpacing:"0.08em", textTransform:"uppercase", fontFamily:"Georgia,serif" }}>{greeting}, Coach</div>
+                  <div style={{ fontSize:"13px", color:"#6b7280", letterSpacing:"0.08em", textTransform:"uppercase", fontFamily:"Georgia,serif" }}>{greeting}, {firstName || "Coach"}</div>
                   {/* Backend health pill — silence is success; only show non-ok states */}
                   {backendHealth.status === 'slow' ? (
                     <span style={{ fontSize:"10px", fontWeight:"bold", padding:"2px 8px", borderRadius:"10px", background:"rgba(180,83,9,0.1)", color:"#92400e", border:"1px solid rgba(180,83,9,0.25)", whiteSpace:"nowrap", flexShrink:0 }}>

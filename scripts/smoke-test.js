@@ -39,20 +39,22 @@ const PREFIX = ENV.toUpperCase();
 
 // ── Load .env.smoke ───────────────────────────────────────────────────────────
 const envSmokePath = path.join(__dirname, '..', '.env.smoke');
-const envVars = {};
-if (fs.existsSync(envSmokePath)) {
-  fs.readFileSync(envSmokePath, 'utf8')
-    .split('\n')
-    .forEach(line => {
-      const trimmed = line.trim();
-      if (!trimmed || trimmed.startsWith('#')) return;
-      const eq = trimmed.indexOf('=');
-      if (eq === -1) return;
-      const key = trimmed.slice(0, eq).trim();
-      const val = trimmed.slice(eq + 1).trim();
-      envVars[key] = val;
-    });
+if (!fs.existsSync(envSmokePath)) {
+  console.error('[FATAL] .env.smoke not found at repo root. Copy .env.smoke.example and fill in values.');
+  process.exit(1);
 }
+const envVars = {};
+fs.readFileSync(envSmokePath, 'utf8')
+  .split('\n')
+  .forEach(line => {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) return;
+    const eq = trimmed.indexOf('=');
+    if (eq === -1) return;
+    const key = trimmed.slice(0, eq).trim();
+    const val = trimmed.slice(eq + 1).trim();
+    envVars[key] = val;
+  });
 
 function env(key) { return envVars[key] || ''; }
 
@@ -136,27 +138,29 @@ async function checkBackend(backendUrl) {
   if (!backendUrl) { fail('/ping reachable', 'no backend URL — skipping'); return; }
 
   try {
-    const { res, ms } = await timedFetch(`${backendUrl}/ping`);
+    const { res, ms } = await timedFetch(`${backendUrl}/ping`, {
+      signal: AbortSignal.timeout(2000),
+    });
     if (ms > 1000) warn('/ping response time', `${ms}ms — cold start risk`);
 
     if (res.status === 200) {
       let body = {};
       try { body = await res.json(); } catch (_) {}
-      if (ms <= 2000) {
-        pass('GET /ping responds 200', `${ms}ms`);
-      } else {
-        fail('GET /ping responds 200 within 2000ms', `${ms}ms`);
-      }
+      pass('GET /ping responds 200', `${ms}ms`);
       if (body.status === 'ok') {
         pass('GET /ping body contains status: "ok"');
       } else {
         fail('GET /ping body contains status: "ok"', `got: ${JSON.stringify(body.status)}`);
       }
     } else {
-      fail('GET /ping responds 200', `got ${res.status}`);
+      fail('GET /ping responds 200', `got ${res.status} in ${ms}ms`);
     }
   } catch (err) {
-    fail('GET /ping reachable', err.message);
+    if (err.name === 'TimeoutError' || err.name === 'AbortError') {
+      fail('GET /ping responds 200 within 2000ms', 'timed out after 2000ms');
+    } else {
+      fail('GET /ping reachable', err.message);
+    }
   }
 }
 
@@ -177,7 +181,7 @@ async function checkSupabase(supabaseUrl, supabaseKey) {
   const tables = [
     { name: 'teams',           check: 'at least one row' },
     { name: 'feature_flags',   check: 'table exists'     },
-    { name: 'team_data_history', check: 'table exists'   },
+    { name: 'roster_history',    check: 'table exists'   },
   ];
 
   for (const { name, check } of tables) {
