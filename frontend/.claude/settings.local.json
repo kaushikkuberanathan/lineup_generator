@@ -51,7 +51,11 @@
       "Bash(npm list:*)",
       "Bash(npm init:*)",
       "Bash(npx husky:*)",
-      "Bash(bash:*)"
+      "Bash(bash:*)",
+      "Bash(npm ci:*)",
+      "Bash(grep:*)",
+      "Bash(rm:*)",
+      "Bash(npm audit:*)"
     ]
   }
 }
