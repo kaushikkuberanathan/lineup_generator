@@ -279,6 +279,17 @@ All future migrations go in `backend/src/db/migrations/` only.
 - [ ] Run npm test and confirm 204 passed / 1 skipped / 0 failed before pushing
 - [ ] Never use kaushik.kuberanathan@gmail.com in automated test suites
       (Supabase rate limits OTP sends per address — use dedicated test emails)
+- [ ] 8) Bump VITE_APP_VERSION in frontend/.env to match App.jsx version
+- [ ] 9) If .env is gitignored: update VITE_APP_VERSION in Vercel project settings → Environment Variables
+
+## Analytics
+- 27 Mixpanel events + 4 Vercel Analytics events
+- Full reference: docs/analytics/ANALYTICS.md
+- track() helper and deviceContext: src/utils/analytics.js
+- Super properties (auto on every event): os, device_type, platform, is_pwa, screen_width, screen_height, app_version
+- Mixpanel identity: established in loadTeam() via mixpanel.identify()
+- Auth events wired but gated — activate with auth gate in App.jsx
+- loginLimiter max MUST be reset to 5 before next prod auth deploy
 
 ## Test Suite
 
@@ -358,6 +369,13 @@ All major sections are wrapped with `<ErrorBoundary>` (class component). On cras
 ---
 
 ## Version History
+
+### v2.2.6 — April 4, 2026
+- Analytics: device context super properties (os, device_type, platform, is_pwa, screen_width/height, app_version) via mixpanel.register()
+- Analytics: PWA install events (pwa_install_prompted, pwa_installed); super property override on install
+- Analytics: first launch detection — is_first_launch on app_opened; first_launch event
+- Analytics: VITE_APP_VERSION wired as build-time env var
+- Docs: docs/analytics/ANALYTICS.md created — full event reference, identity model, dashboard configs
 
 ### v2.2.5 — April 4, 2026
 - Analytics: 15 new Mixpanel events across Game Mode, QuickSwap, share link, auth funnel, batting hand, game result, app open, identity on team load

@@ -1,7 +1,16 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: April 4, 2026 (v2.2.5)
+> Last updated: April 4, 2026 (v2.2.6)
 > MVP launched: March 24, 2026
+
+---
+
+## v2.2.6 — 2026-04-04
+- Analytics: device context super properties (os, device_type, platform, is_pwa, screen_width, screen_height, app_version) registered via mixpanel.register()
+- Analytics: PWA install events (pwa_install_prompted, pwa_installed); super property override on install
+- Analytics: first launch detection (is_first_launch on app_opened; first_launch event)
+- Analytics: VITE_APP_VERSION wired as build-time env var
+- Docs: docs/analytics/ANALYTICS.md — full event reference, identity model, dashboard configs
 
 ---
 

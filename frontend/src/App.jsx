@@ -5,7 +5,7 @@ import { isSupabaseEnabled, dbSaveTeams, dbDeleteTeam,
          dbLoadTeams, dbLoadTeamData, dbSaveTeamData,
          dbSnapshotRoster, dbGetRosterSnapshots,
          dbSaveShareLink, dbLoadShareLink } from './supabase.js';
-import { track, mixpanel } from '@/utils/analytics';
+import { track, mixpanel, deviceContext } from '@/utils/analytics';
 import { inject, track as vaTrack } from '@vercel/analytics';
 import { FEATURE_FLAGS } from '@/config/featureFlags';
 import { generateLineupV2 } from '@/utils/lineupEngineV2';
@@ -138,9 +138,20 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.2.5";
+var APP_VERSION = "2.2.6";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.2.6',
+    date: '2026-04-04',
+    changes: [
+      'Analytics: device context super properties (os, device_type, platform, is_pwa, screen_width, screen_height, app_version) — auto-attached to every Mixpanel event via mixpanel.register()',
+      'Analytics: PWA install events — pwa_install_prompted + pwa_installed; is_pwa super property updated immediately on install',
+      'Analytics: first launch detection — is_first_launch prop on app_opened; first_launch event on first-ever session',
+      'Analytics: VITE_APP_VERSION wired via build-time env var — app_version super property now populated in production',
+      'Docs: docs/analytics/ANALYTICS.md — full event reference, super properties, identity model, dashboard configs, deployment checklist'
+    ]
+  },
   {
     version: '2.2.5',
     date: '2026-04-04',
@@ -2235,7 +2246,17 @@ export default function App() {
     dbLoadShareLink(sid).then(function(payload) {
       if (payload) {
         setSharePayload(payload);
-        track("share_link_viewed", { has_lineup: true, viewer_type: "parent" });
+        track("share_link_viewed", {
+          has_lineup: true,
+          viewer_type: "parent",
+          referrer: document.referrer || "direct",
+          platform: /iPhone|iPad|iPod/.test(navigator.userAgent)
+            ? "ios"
+            : /Android/.test(navigator.userAgent)
+            ? "android"
+            : "desktop",
+          is_pwa: window.matchMedia('(display-mode: standalone)').matches
+        });
         vaTrack("share_link_viewed");
       } else {
         track("share_link_view_failed", { error: "fetch_failed" });
@@ -2250,11 +2271,15 @@ export default function App() {
   // Analytics: app opened — fires once on mount; teams is synchronously initialized from localStorage
   useEffect(function() {
     vaTrack("app_loaded");
-    if (teams.length > 0) {
-      track("app_opened", { coach_name_set: true,  team_count: teams.length, app_version: APP_VERSION });
-    } else {
-      track("app_opened", { coach_name_set: false, team_count: 0,            app_version: APP_VERSION });
-    }
+    var isFirstLaunch = !localStorage.getItem("app:first_launched");
+    if (isFirstLaunch) { localStorage.setItem("app:first_launched", String(Date.now())); }
+    track("app_opened", {
+      coach_name_set: teams.length > 0,
+      team_count: teams.length,
+      app_version: APP_VERSION,
+      is_first_launch: isFirstLaunch
+    });
+    if (isFirstLaunch) { track("first_launch", { team_count: teams.length, app_version: APP_VERSION }); }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Vercel Analytics: game mode screen view — fires each time game mode is entered
@@ -2273,6 +2298,7 @@ export default function App() {
       var isInstalled = localStorage.getItem("pwa_installed");
       if (hasVisitedBefore && !isSnoozed && !isInstalled) {
         setShowInstallBanner(true);
+        track("pwa_install_prompted");
       }
       localStorage.setItem("pwa_visited", "1");
     };
@@ -2281,6 +2307,8 @@ export default function App() {
       setShowInstallBanner(false);
       setDeferredPrompt(null);
       localStorage.setItem("pwa_installed", "1");
+      track("pwa_installed");
+      mixpanel.register({ is_pwa: true, platform: "pwa_" + deviceContext.device_os });
     });
     return function() {
       window.removeEventListener("beforeinstallprompt", handler);
@@ -2728,7 +2756,10 @@ export default function App() {
     }
     if (val) {
       track("finalize_lineup", { roster_size: roster.length, innings: innings });
+      track("lineup_locked", { team_id: activeTeamId, roster_size: roster.length, innings: innings, inning_count: innings });
       vaTrack("lineup_finalized");
+    } else {
+      track("lineup_unlocked", { team_id: activeTeamId, innings_since_lock: 0 });
     }
   }
 
@@ -2751,7 +2782,13 @@ export default function App() {
   }
 
   function shareCurrentLineup() {
-    track("share_link", {});
+    var shareMethod = navigator.canShare ? "native_share_sheet" : "copy_to_clipboard";
+    track("share_link", {
+      team_id: activeTeamId,
+      method: shareMethod,
+      has_game_id: false,
+      share_type: "lineup_view"
+    });
     var payload = {
       team:    activeTeam ? activeTeam.name + (activeTeam.ageGroup ? " " + activeTeam.ageGroup : "") : "Lineup",
       game:    null,
@@ -2930,12 +2967,21 @@ export default function App() {
     setScreen("app");
     track("load_team", { team_id: team.id, team_name: team.name });
     mixpanel.identify(team.id);
+    var coachName = user && user.profile && user.profile.first_name ? user.profile.first_name : null;
+    try { if (coachName) { mixpanel.alias(coachName + "_" + team.id); } } catch(e) {}
     mixpanel.people.set({
-      $name: team.name,
+      $name: coachName || team.name,
+      coach_name: coachName || null,
       team_id: team.id,
+      team_name: team.name,
+      age_group: team.ageGroup || "unknown",
       roster_size: r.length,
       app_version: APP_VERSION,
-      age_group: team.ageGroup || "unknown"
+      role: team.role || "team_admin",
+      team_count: teams.length,
+      is_pwa: deviceContext.is_pwa,
+      platform: deviceContext.platform,
+      device_os: deviceContext.device_os
     });
 
     if (isSupabaseEnabled) {
@@ -7442,7 +7488,11 @@ export default function App() {
 
         // ── Save or Share ────────────────────────────────────────
         var filename = teamName.replace(/[^a-z0-9]/gi, "-").toLowerCase() + "-lineup-" + new Date().toISOString().slice(0,10) + ".pdf";
-        track(mode === "share" ? "share_pdf" : "download_pdf", {});
+        if (mode === "share") {
+          track("share_pdf", { team_id: activeTeamId, method: "pdf_download", share_type: "lineup_pdf", has_game_id: false });
+        } else {
+          track("download_pdf", {});
+        }
 
         if (mode === "share") {
           // Web Share API v2 file sharing.
