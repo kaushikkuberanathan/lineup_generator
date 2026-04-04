@@ -1,7 +1,14 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: April 3, 2026 (v2.2.4)
+> Last updated: April 4, 2026 (v2.2.5)
 > MVP launched: March 24, 2026
+
+---
+
+## v2.2.5 — 2026-04-04
+- Analytics: 15 new Mixpanel events — Game Mode, QuickSwap, share link, auth funnel, batting hand, game result, app open, Mixpanel identity on team load
+- Analytics: Vercel Analytics screen events (app_loaded, game_mode_entered, share_link_viewed, lineup_finalized)
+- Analytics: track() + mixpanel init extracted to src/utils/analytics.js; imported in 6 files
 
 ---
 

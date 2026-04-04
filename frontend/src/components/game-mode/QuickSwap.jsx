@@ -13,6 +13,8 @@
  *   onClose     {function}  close the sheet without swapping
  */
 
+import { track } from "../../utils/analytics";
+
 var POS_COLORS = {
   P:"#e05c2a", C:"#7f3f3f", "1B":"#2471a3", "2B":"#2980b9",
   "3B":"#6c3483", SS:"#8e44ad", LF:"#1e8449", LC:"#2980b9",
@@ -37,6 +39,11 @@ function firstName(name) {
 }
 
 export function QuickSwap({ position, inning, roster, grid, onSwap, onClose }) {
+  function handleClose() {
+    track("quick_swap_cancelled", { position: position, inning: inning });
+    onClose();
+  }
+
   // Find who currently occupies this position in this inning
   var currentPlayer = null;
   for (var ri = 0; ri < roster.length; ri++) {
@@ -50,7 +57,7 @@ export function QuickSwap({ position, inning, roster, grid, onSwap, onClose }) {
   return (
     <>
       {/* Backdrop */}
-      <div onClick={onClose}
+      <div onClick={handleClose}
         style={{ position:"fixed", inset:0, zIndex:3100, background:"rgba(0,0,0,0.6)" }} />
 
       {/* Sheet */}
@@ -76,7 +83,7 @@ export function QuickSwap({ position, inning, roster, grid, onSwap, onClose }) {
               </span>
               <span style={{ fontSize:"11px", color:"#475569", marginLeft:"6px" }}>{posLabel}</span>
             </div>
-            <button onClick={onClose}
+            <button onClick={handleClose}
               style={{ background:"transparent", border:"none", color:"#475569",
                 fontSize:"22px", cursor:"pointer", padding:"0 0 0 16px", lineHeight:1 }}>
               ×
@@ -105,7 +112,14 @@ export function QuickSwap({ position, inning, roster, grid, onSwap, onClose }) {
             return (
               <button key={p.name}
                 onClick={function(n) { return function() {
-                  if (!isCurrent) onSwap(currentPlayer, n);
+                  if (!isCurrent) {
+                    onSwap(currentPlayer, n);
+                    track("quick_swap_completed", {
+                      position: position,
+                      inning: inning,
+                      swapped_in: n
+                    });
+                  }
                 }; }(p.name)}
                 disabled={isCurrent}
                 style={{

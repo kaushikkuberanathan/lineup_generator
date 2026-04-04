@@ -6,7 +6,10 @@
  * Props:
  *   value     {string}   current value: "R", "L", or "U" (not set)
  *   onChange  {function} called with the new value string when a button is clicked
+ *   teamId    {string}   active team ID — used for analytics only
  */
+
+import { track } from "../utils/analytics";
 
 var OPTIONS = [
   { label: "Right",   value: "R" },
@@ -29,7 +32,7 @@ var BASE_STYLE = {
   lineHeight: "1.4",
 };
 
-export function BattingHandSelector({ value, onChange }) {
+export function BattingHandSelector({ value, onChange, teamId }) {
   return (
     <div style={{ display: "flex", gap: "8px" }}>
       {OPTIONS.map(function(opt) {
@@ -38,7 +41,10 @@ export function BattingHandSelector({ value, onChange }) {
           <button
             key={opt.value}
             type="button"
-            onClick={function() { onChange(opt.value); }}
+            onClick={function() {
+              onChange(opt.value);
+              track("batting_hand_set", { team_id: teamId, hand: opt.value });
+            }}
             style={Object.assign({}, BASE_STYLE, active ? ACTIVE_STYLE : INACTIVE_STYLE)}>
             {opt.label}
           </button>

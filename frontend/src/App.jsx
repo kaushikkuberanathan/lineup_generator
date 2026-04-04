@@ -5,7 +5,8 @@ import { isSupabaseEnabled, dbSaveTeams, dbDeleteTeam,
          dbLoadTeams, dbLoadTeamData, dbSaveTeamData,
          dbSnapshotRoster, dbGetRosterSnapshots,
          dbSaveShareLink, dbLoadShareLink } from './supabase.js';
-import mixpanel from 'mixpanel-browser';
+import { track, mixpanel } from '@/utils/analytics';
+import { inject, track as vaTrack } from '@vercel/analytics';
 import { FEATURE_FLAGS } from '@/config/featureFlags';
 import { generateLineupV2 } from '@/utils/lineupEngineV2';
 import { normalizeBattingHand } from '@/utils/playerUtils';
@@ -34,27 +35,6 @@ import { useAuth } from './hooks/useAuth';
 import { LoginScreen } from './components/Auth/LoginScreen';
 import { RequestAccessScreen } from './components/Auth/RequestAccessScreen';
 import { PendingApprovalScreen } from './components/Auth/PendingApprovalScreen';
-
-var MIXPANEL_TOKEN = import.meta.env.VITE_MIXPANEL_TOKEN || "";
-if (MIXPANEL_TOKEN !== "") {
-  mixpanel.init(MIXPANEL_TOKEN, {
-    track_pageview: true,
-    persistence: "localStorage",
-    ignore_dnt: false,
-    opt_out_tracking_by_default: false
-  });
-}
-
-function track(event, props) {
-  try {
-    if (MIXPANEL_TOKEN !== "") {
-      mixpanel.track(event, props || {});
-    }
-    if (window.location.hostname === "localhost") {
-      console.log("[analytics]", event, props || {});
-    }
-  } catch (e) {}
-}
 
 // ============================================================
 // HELPERS
@@ -158,9 +138,18 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.2.4";
+var APP_VERSION = "2.2.5";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.2.5',
+    date: '2026-04-04',
+    changes: [
+      'Analytics: 15 new Mixpanel events — Game Mode instrumentation, QuickSwap tracking, share link viewed, Mixpanel identity on team load, auth funnel prep (login_requested/succeeded/failed, access_requested)',
+      'Analytics: Vercel Analytics screen events (app_loaded, game_mode_entered, share_link_viewed, lineup_finalized)',
+      'Analytics: extracted track() + mixpanel init to src/utils/analytics.js — shared across App.jsx, GameModeScreen, QuickSwap, BattingHandSelector, auth screens'
+    ]
+  },
   {
     version: '2.2.4',
     date: '2026-04-03',
@@ -2244,10 +2233,34 @@ export default function App() {
     var sid = new URLSearchParams(window.location.search).get("s");
     if (!sid) { return; }
     dbLoadShareLink(sid).then(function(payload) {
-      if (payload) { setSharePayload(payload); }
+      if (payload) {
+        setSharePayload(payload);
+        track("share_link_viewed", { has_lineup: true, viewer_type: "parent" });
+        vaTrack("share_link_viewed");
+      } else {
+        track("share_link_view_failed", { error: "fetch_failed" });
+      }
       setShareLoading(false);
-    }).catch(function() { setShareLoading(false); });
+    }).catch(function() {
+      track("share_link_view_failed", { error: "fetch_failed" });
+      setShareLoading(false);
+    });
   }, []);
+
+  // Analytics: app opened — fires once on mount; teams is synchronously initialized from localStorage
+  useEffect(function() {
+    vaTrack("app_loaded");
+    if (teams.length > 0) {
+      track("app_opened", { coach_name_set: true,  team_count: teams.length, app_version: APP_VERSION });
+    } else {
+      track("app_opened", { coach_name_set: false, team_count: 0,            app_version: APP_VERSION });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Vercel Analytics: game mode screen view — fires each time game mode is entered
+  useEffect(function() {
+    if (gameModeActive) vaTrack("game_mode_entered");
+  }, [gameModeActive]);
 
   // PWA install prompt — capture and defer until coach chooses to install
   useEffect(function() {
@@ -2715,6 +2728,7 @@ export default function App() {
     }
     if (val) {
       track("finalize_lineup", { roster_size: roster.length, innings: innings });
+      vaTrack("lineup_finalized");
     }
   }
 
@@ -2915,6 +2929,14 @@ export default function App() {
     setTeamSubTab("roster");
     setScreen("app");
     track("load_team", { team_id: team.id, team_name: team.name });
+    mixpanel.identify(team.id);
+    mixpanel.people.set({
+      $name: team.name,
+      team_id: team.id,
+      roster_size: r.length,
+      app_version: APP_VERSION,
+      age_group: team.ageGroup || "unknown"
+    });
 
     if (isSupabaseEnabled) {
       var loadTimestamp = Date.now();
@@ -3244,6 +3266,9 @@ export default function App() {
       game.id = Date.now() + "";
       persistSchedule(schedule.concat([game]));
     }
+    if (game.result) {
+      track("game_result_logged", { team_id: activeTeamId, result: game.result });
+    }
     setNewGame({ date:"", time:"", location:"", opponent:"", result:"", ourScore:"", theirScore:"", battingPerf:{}, snackDuty:"", gameBall:"", scoreReported:false });
     setShowGameForm(false);
     setEditingGame(null);
@@ -3328,9 +3353,46 @@ export default function App() {
   }
 
   // --- AI schedule parser ---
-  function callAI(messages) {
+
+  // Resize an image file to max 1600px on longest edge before base64 encoding.
+  // PDFs pass through unchanged. Uses only browser-native APIs (Canvas, Image, Blob).
+  function resizeImage(file) {
+    if (file.type === 'application/pdf') { return Promise.resolve(file); }
+    return new Promise(function(resolve) {
+      var MAX_EDGE = 1600;
+      var origKb = Math.round(file.size / 1024);
+      var img = new window.Image();
+      var objectUrl = URL.createObjectURL(file);
+      img.onerror = function() {
+        URL.revokeObjectURL(objectUrl);
+        resolve(file); // fall through unchanged on decode error
+      };
+      img.onload = function() {
+        URL.revokeObjectURL(objectUrl);
+        var w = img.naturalWidth, h = img.naturalHeight;
+        if (w <= MAX_EDGE && h <= MAX_EDGE) {
+          console.log('[AI] Original: ' + origKb + 'kb — within 1600px, no resize');
+          resolve(file);
+          return;
+        }
+        var scale = MAX_EDGE / Math.max(w, h);
+        var cw = Math.round(w * scale), ch = Math.round(h * scale);
+        var canvas = document.createElement('canvas');
+        canvas.width = cw; canvas.height = ch;
+        canvas.getContext('2d').drawImage(img, 0, 0, cw, ch);
+        canvas.toBlob(function(blob) {
+          var resizedKb = Math.round(blob.size / 1024);
+          console.log('[AI] Original: ' + origKb + 'kb → Resized: ' + resizedKb + 'kb (' + cw + 'x' + ch + ')');
+          resolve(blob);
+        }, 'image/jpeg', 0.85);
+      };
+      img.src = objectUrl;
+    });
+  }
+
+  function callAI(messages, signal) {
     var BACKEND = "https://lineup-generator-backend.onrender.com";
-    return fetch(BACKEND + "/api/ai", {
+    var fetchOpts = {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -3338,15 +3400,24 @@ export default function App() {
         systemPrompt: "You are a baseball schedule parser. Return ONLY a valid JSON array of game objects. Each object: { date:'YYYY-MM-DD', time:'HH:MM AM/PM', opponent:'Team Name', location:'Field', result:'', ourScore:'', theirScore:'', battingPerf:{} }. No markdown, no explanation. Empty array if no games found.",
         userContent: messages[0].content
       })
-    }).then(function(res) {
-      if (!res.ok) { throw new Error("Backend error " + res.status); }
-      return res.json();
-    }).then(function(data) {
-      var block = data.content && data.content.filter(function(b) { return b.type === "text"; })[0];
-      var text = block ? block.text : "[]";
-      var clean = text.replace(/^```[\w]*\n?/i, "").replace(/\n?```$/i, "").trim();
-      return JSON.parse(clean);
-    });
+    };
+    if (signal) { fetchOpts.signal = signal; }
+    return fetch(BACKEND + "/api/ai", fetchOpts)
+      .then(function(res) {
+        if (!res.ok) {
+          return res.json().catch(function() { return {}; }).then(function(b) {
+            var e = new Error("Backend error " + res.status);
+            e.code = b.error || "";
+            throw e;
+          });
+        }
+        return res.json();
+      }).then(function(data) {
+        var block = data.content && data.content.filter(function(b) { return b.type === "text"; })[0];
+        var text = block ? block.text : "[]";
+        var clean = text.replace(/^```[\w]*\n?/i, "").replace(/\n?```$/i, "").trim();
+        return JSON.parse(clean);
+      });
   }
 
   function parseGameResult(sourceType, sourceData, mediaType) {
@@ -3390,7 +3461,13 @@ export default function App() {
       })
     }).then(function(res) {
       clearTimeout(_timeoutId);
-      if (!res.ok) { throw new Error("Backend error " + res.status); }
+      if (!res.ok) {
+        return res.json().catch(function() { return {}; }).then(function(b) {
+          var e = new Error("Backend error " + res.status);
+          e.code = b.error || "";
+          throw e;
+        });
+      }
       return res.json();
     }).then(function(data) {
       var block = data.content && data.content.filter(function(b) { return b.type === "text"; })[0];
@@ -3418,11 +3495,14 @@ export default function App() {
 
   function parseScheduleImage(b64, mediaType) {
     setImportState({ mode:"image", text:"", image:{ b64:b64, mediaType:mediaType }, loading:true, error:"", preview:[] });
+    var _ctrl = new AbortController();
+    var _timeoutId = setTimeout(function() { _ctrl.abort(); }, 35000);
     callAI([{ role:"user", content:[
       { type:"image", source:{ type:"base64", media_type:mediaType, data:b64 } },
       { type:"text", text:"Extract all game schedule info. Team is " + (activeTeam ? activeTeam.name : "our team") + "." }
-    ]}])
+    ]}], _ctrl.signal)
       .then(function(games) {
+        clearTimeout(_timeoutId);
         var preview = games.map(function(g) {
           var gp = {}; for (var k in g) { gp[k] = g[k]; } gp.id = Date.now() + Math.random() + "";
           return gp;
@@ -3430,8 +3510,13 @@ export default function App() {
         track("import_schedule_photo", { games_found: games.length });
         setImportState({ mode:"image", text:"", image:{ b64:b64, mediaType:mediaType }, loading:false, error:"", preview:preview });
       })
-      .catch(function() {
-        setImportState({ mode:"image", text:"", image:null, loading:false, error:"Could not read image.", preview:[] });
+      .catch(function(err) {
+        clearTimeout(_timeoutId);
+        if (err && err.code === 'AI_NOT_CONFIGURED') {
+          setImportState({ mode:"image", text:"", image:null, loading:false, error:"AI import is temporarily unavailable. Enter stats manually.", preview:[] });
+        } else {
+          setImportState({ mode:"image", text:"", image:null, loading:false, error:"Could not read image.", preview:[] });
+        }
       });
   }
 
@@ -4123,7 +4208,7 @@ export default function App() {
             <div style={{ marginTop:"4px" }}>
               <div style={{ fontSize:"12px", fontWeight:600, color:"#374151", marginBottom:"2px" }}>Batting Hand</div>
               <div style={{ fontSize:"11px", color:"#6b7280", marginBottom:"6px" }}>Optional — helps dugout prepare batters</div>
-              <BattingHandSelector value={newBattingHand} onChange={setNewBattingHand} />
+              <BattingHandSelector value={newBattingHand} onChange={setNewBattingHand} teamId={activeTeamId} />
             </div>
           </div>
         )}
@@ -4579,6 +4664,7 @@ export default function App() {
                             <BattingHandSelector
                               value={normalizeBattingHand(info.battingHand)}
                               onChange={function(v) { updatePlayer(info.name, { battingHand: normalizeBattingHand(v) }); }}
+                              teamId={activeTeamId}
                             />
                             <div style={{ fontSize:"10px", color:"#9ca3af", marginTop:"4px" }}>Optional — helps dugout prepare batters</div>
                           </div>
@@ -6294,13 +6380,15 @@ export default function App() {
                     onChange={function(e) {
                       var file = e.target.files && e.target.files[0];
                       if (!file) { return; }
-                      var reader = new FileReader();
-                      reader.onload = function(ev) {
-                        var b64 = ev.target.result.split(",")[1];
-                        parseScheduleImage(b64, file.type);
-                      };
-                      reader.readAsDataURL(file);
                       e.target.value = "";
+                      resizeImage(file).then(function(resized) {
+                        var reader = new FileReader();
+                        reader.onload = function(ev) {
+                          var b64 = ev.target.result.split(",")[1];
+                          parseScheduleImage(b64, resized.type || file.type);
+                        };
+                        reader.readAsDataURL(resized);
+                      });
                     }}
                     style={{ display:"none" }} />
                 </label>
@@ -6315,13 +6403,15 @@ export default function App() {
                     onChange={function(e) {
                       var file = e.target.files && e.target.files[0];
                       if (!file) { return; }
-                      var reader = new FileReader();
-                      reader.onload = function(ev) {
-                        var b64 = ev.target.result.split(",")[1];
-                        parseScheduleImage(b64, file.type);
-                      };
-                      reader.readAsDataURL(file);
                       e.target.value = "";
+                      resizeImage(file).then(function(resized) {
+                        var reader = new FileReader();
+                        reader.onload = function(ev) {
+                          var b64 = ev.target.result.split(",")[1];
+                          parseScheduleImage(b64, resized.type || file.type);
+                        };
+                        reader.readAsDataURL(resized);
+                      });
                     }}
                     style={{ display:"none" }} />
                 </label>
@@ -6497,34 +6587,39 @@ export default function App() {
                           var file = e.target.files && e.target.files[0];
                           if (!file) { return; }
                           setResultImport({ gameId: editingGame ? editingGame.id : null, loading:true, error:"" });
-                          var reader = new FileReader();
-                          reader.onerror = function() {
-                            setResultImport({ gameId:null, loading:false, error:"Could not read file. Try entering stats manually." });
-                          };
-                          reader.onload = function(ev) {
-                            var b64 = ev.target.result.split(",")[1];
-                            var sType = file.type === "application/pdf" ? "pdf" : "image";
-                            parseGameResult(sType, b64, file.type)
-                              .then(function(parsed) {
-                                track(sType === "text" ? "import_result_text" : "import_result_photo", {});
-                                var g = {}; for (var k in newGame) { g[k] = newGame[k]; }
-                                if (parsed.result)     { g.result     = parsed.result; }
-                                if (parsed.ourScore)   { g.ourScore   = parsed.ourScore; }
-                                if (parsed.theirScore) { g.theirScore = parsed.theirScore; }
-                                if (parsed.battingPerf) {
-                                  var bp = {}; for (var k2 in (g.battingPerf || {})) { bp[k2] = g.battingPerf[k2]; }
-                                  for (var pn in parsed.battingPerf) { bp[pn] = parsed.battingPerf[pn]; }
-                                  g.battingPerf = bp;
-                                }
-                                setNewGame(g);
-                                setResultImport({ gameId: null, loading:false, error:"" });
-                              })
-                              .catch(function() {
-                                setResultImport({ gameId:null, loading:false, error:"Could not read file. Try entering stats manually." });
-                              });
-                          };
-                          reader.readAsDataURL(file);
                           e.target.value = "";
+                          resizeImage(file).then(function(resized) {
+                            var reader = new FileReader();
+                            reader.onerror = function() {
+                              setResultImport({ gameId:null, loading:false, error:"Could not read file. Try entering stats manually." });
+                            };
+                            reader.onload = function(ev) {
+                              var b64 = ev.target.result.split(",")[1];
+                              var sType = file.type === "application/pdf" ? "pdf" : "image";
+                              parseGameResult(sType, b64, resized.type || file.type)
+                                .then(function(parsed) {
+                                  track(sType === "text" ? "import_result_text" : "import_result_photo", {});
+                                  var g = {}; for (var k in newGame) { g[k] = newGame[k]; }
+                                  if (parsed.result)     { g.result     = parsed.result; }
+                                  if (parsed.ourScore)   { g.ourScore   = parsed.ourScore; }
+                                  if (parsed.theirScore) { g.theirScore = parsed.theirScore; }
+                                  if (parsed.battingPerf) {
+                                    var bp = {}; for (var k2 in (g.battingPerf || {})) { bp[k2] = g.battingPerf[k2]; }
+                                    for (var pn in parsed.battingPerf) { bp[pn] = parsed.battingPerf[pn]; }
+                                    g.battingPerf = bp;
+                                  }
+                                  setNewGame(g);
+                                  setResultImport({ gameId: null, loading:false, error:"" });
+                                })
+                                .catch(function(err) {
+                                  var msg = err && err.code === 'AI_NOT_CONFIGURED'
+                                    ? "AI import is temporarily unavailable. Enter stats manually."
+                                    : "Could not read file. Try entering stats manually.";
+                                  setResultImport({ gameId:null, loading:false, error: msg });
+                                });
+                            };
+                            reader.readAsDataURL(resized);
+                          });
                         }}
                         style={{ display:"none" }} />
                     </label>
@@ -6535,33 +6630,38 @@ export default function App() {
                           var file = e.target.files && e.target.files[0];
                           if (!file) { return; }
                           setResultImport({ gameId: editingGame ? editingGame.id : null, loading:true, error:"" });
-                          var reader = new FileReader();
-                          reader.onerror = function() {
-                            setResultImport({ gameId:null, loading:false, error:"Could not read photo. Try entering stats manually." });
-                          };
-                          reader.onload = function(ev) {
-                            var b64 = ev.target.result.split(",")[1];
-                            parseGameResult("image", b64, file.type)
-                              .then(function(parsed) {
-                                track("import_result_photo", {});
-                                var g = {}; for (var k in newGame) { g[k] = newGame[k]; }
-                                if (parsed.result)     { g.result     = parsed.result; }
-                                if (parsed.ourScore)   { g.ourScore   = parsed.ourScore; }
-                                if (parsed.theirScore) { g.theirScore = parsed.theirScore; }
-                                if (parsed.battingPerf) {
-                                  var bp = {}; for (var k2 in (g.battingPerf || {})) { bp[k2] = g.battingPerf[k2]; }
-                                  for (var pn in parsed.battingPerf) { bp[pn] = parsed.battingPerf[pn]; }
-                                  g.battingPerf = bp;
-                                }
-                                setNewGame(g);
-                                setResultImport({ gameId:null, loading:false, error:"" });
-                              })
-                              .catch(function() {
-                                setResultImport({ gameId:null, loading:false, error:"Could not read photo. Try entering stats manually." });
-                              });
-                          };
-                          reader.readAsDataURL(file);
                           e.target.value = "";
+                          resizeImage(file).then(function(resized) {
+                            var reader = new FileReader();
+                            reader.onerror = function() {
+                              setResultImport({ gameId:null, loading:false, error:"Could not read photo. Try entering stats manually." });
+                            };
+                            reader.onload = function(ev) {
+                              var b64 = ev.target.result.split(",")[1];
+                              parseGameResult("image", b64, resized.type || file.type)
+                                .then(function(parsed) {
+                                  track("import_result_photo", {});
+                                  var g = {}; for (var k in newGame) { g[k] = newGame[k]; }
+                                  if (parsed.result)     { g.result     = parsed.result; }
+                                  if (parsed.ourScore)   { g.ourScore   = parsed.ourScore; }
+                                  if (parsed.theirScore) { g.theirScore = parsed.theirScore; }
+                                  if (parsed.battingPerf) {
+                                    var bp = {}; for (var k2 in (g.battingPerf || {})) { bp[k2] = g.battingPerf[k2]; }
+                                    for (var pn in parsed.battingPerf) { bp[pn] = parsed.battingPerf[pn]; }
+                                    g.battingPerf = bp;
+                                  }
+                                  setNewGame(g);
+                                  setResultImport({ gameId:null, loading:false, error:"" });
+                                })
+                                .catch(function(err) {
+                                  var msg = err && err.code === 'AI_NOT_CONFIGURED'
+                                    ? "AI import is temporarily unavailable. Enter stats manually."
+                                    : "Could not read photo. Try entering stats manually.";
+                                  setResultImport({ gameId:null, loading:false, error: msg });
+                                });
+                            };
+                            reader.readAsDataURL(resized);
+                          });
                         }}
                         style={{ display:"none" }} />
                     </label>
@@ -8618,6 +8718,7 @@ export default function App() {
       {renderExitSheet()}
       {gameModeActive ? (
         <GameModeScreen
+          teamId={activeTeamId}
           roster={roster}
           grid={grid}
           battingOrder={battingOrder}

@@ -359,6 +359,11 @@ All major sections are wrapped with `<ErrorBoundary>` (class component). On cras
 
 ## Version History
 
+### v2.2.5 — April 4, 2026
+- Analytics: 15 new Mixpanel events across Game Mode, QuickSwap, share link, auth funnel, batting hand, game result, app open, identity on team load
+- Analytics: Vercel Analytics screen events (app_loaded, game_mode_entered, share_link_viewed, lineup_finalized)
+- Analytics: track() extracted to src/utils/analytics.js — shared utility across all instrumented files
+
 ### v2.2.4 — April 3, 2026
 - Ops: activated Mixpanel analytics — wired VITE_MIXPANEL_TOKEN env var; 14 existing track() call sites now live in production
 

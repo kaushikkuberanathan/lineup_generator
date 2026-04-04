@@ -11,6 +11,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { track } from '@/utils/analytics';
 
 const TEAM_ID = import.meta.env.VITE_DEFAULT_TEAM_ID || '1774297491626';
 
@@ -65,6 +66,8 @@ export function RequestAccessScreen({ onBack, requestAccess }) {
       } else {
         setError(result.error || 'Something went wrong. Try again.');
       }
+    } else {
+      track("access_requested", { team_id: teamId.trim() || TEAM_ID });
     }
     // On success, useAuth sets authState → 'pending_approval'
   }

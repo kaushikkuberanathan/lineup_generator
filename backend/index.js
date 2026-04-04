@@ -85,12 +85,12 @@ app.post('/generate-lineup', (req, res) => {
 
 // Anthropic API proxy — keeps API key server-side
 const MAX_BODY_BYTES = 5 * 1024 * 1024; // 5MB
-const TIMEOUT_MS = 25000;
+const TIMEOUT_MS = 30000;
 
 app.post('/api/ai', async (req, res) => {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    return res.status(503).json({ error: 'Service not configured' });
+    return res.status(503).json({ error: 'AI_NOT_CONFIGURED' });
   }
 
   const contentLength = parseInt(req.headers['content-length'] || '0', 10);

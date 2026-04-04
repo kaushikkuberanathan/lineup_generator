@@ -23,6 +23,7 @@
  */
 
 import { useState, useEffect, useRef } from "react";
+import { track } from "../../utils/analytics";
 import { GiBaseballGlove, GiBaseballBat } from "react-icons/gi";
 import { NowBattingBar }  from "../../components/GameDay/NowBattingStrip";
 import { DefenseDiamond } from "../../components/GameDay/DefenseDiamond";
@@ -37,6 +38,7 @@ function firstName(name) {
 }
 
 export function GameModeScreen({
+  teamId,
   roster, grid, battingOrder, innings,
   currentBatterIndex, initialInning,
   sport,
@@ -71,6 +73,27 @@ export function GameModeScreen({
   var bothHalvesDone = defDone && batDone;
 
   var isLastInning = currentInning >= innings - 1;
+
+  // ── Analytics: keep a ref so cleanup always reads latest inning ──────
+  var currentInningRef = useRef(currentInning);
+  useEffect(function() {
+    currentInningRef.current = currentInning;
+  }, [currentInning]);
+
+  // ── Analytics: entry + exit events ───────────────────────────────────
+  useEffect(function() {
+    track("game_mode_entered", {
+      team_id: teamId,
+      lineup_locked: true,
+      starting_inning: currentInning
+    });
+    return function() {
+      track("game_mode_exited", {
+        team_id: teamId,
+        innings_completed: currentInningRef.current
+      });
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Mark current half complete, switch to other half if not yet done
   function handleEndHalf() {
@@ -153,6 +176,10 @@ export function GameModeScreen({
 
   function handleTapPosition(pos) {
     setSwapTarget(pos);
+    track("quick_swap_triggered", {
+      position: pos,
+      inning: currentInning
+    });
   }
 
   function handleSwap(playerAName, playerBName) {
@@ -172,6 +199,11 @@ export function GameModeScreen({
     onBatterAdvance();
     // Fade out diamond → advance inning → fade in
     var nextInning = currentInning + 1;
+    track("inning_advanced", {
+      team_id: teamId,
+      from_inning: currentInning,
+      to_inning: nextInning
+    });
     setDiamondVisible(false);
     setTimeout(function() {
       setCurrentInning(nextInning);
@@ -342,7 +374,10 @@ export function GameModeScreen({
           {/* Defense pill — wrapper gives touch target, pill stays visually compact */}
           <div style={ a11y ? { display:"flex", alignItems:"center", minHeight:44 } : {} }>
             <button
-              onClick={function() { setHalfInning("defense"); }}
+              onClick={function() {
+                setHalfInning("defense");
+                track("defense_batting_toggled", { team_id: teamId, to_tab: "defense", inning: currentInning });
+              }}
               aria-label={a11y ? (defDone ? "Defense complete" : "Switch to defense view") : undefined}
               aria-pressed={a11y ? halfInning === "defense" : undefined}
               style={{
@@ -361,7 +396,10 @@ export function GameModeScreen({
           {/* Batting pill */}
           <div style={ a11y ? { display:"flex", alignItems:"center", minHeight:44 } : {} }>
             <button
-              onClick={function() { setHalfInning("batting"); }}
+              onClick={function() {
+                setHalfInning("batting");
+                track("defense_batting_toggled", { team_id: teamId, to_tab: "batting", inning: currentInning });
+              }}
               aria-label={a11y ? (batDone ? "Batting complete" : "Switch to batting view") : undefined}
               aria-pressed={a11y ? halfInning === "batting" : undefined}
               style={{
@@ -446,7 +484,15 @@ export function GameModeScreen({
           battingOrder={battingOrder}
           currentIndex={currentBatterIndex}
           activeInning={currentInning + 1}
-          onAdvance={function() { onBatterAdvance(); flashSaved(); }}
+          onAdvance={function() {
+            onBatterAdvance();
+            flashSaved();
+            track("batter_advanced", {
+              team_id: teamId,
+              inning: currentInning,
+              batter_index: currentBatterIndex
+            });
+          }}
           onBack={function() { onBatterBack(); flashSaved(); }}
           roster={roster}
         />

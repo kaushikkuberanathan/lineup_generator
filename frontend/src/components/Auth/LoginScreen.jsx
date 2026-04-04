@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { track } from '@/utils/analytics';
 
 const TEAM_ID = import.meta.env.VITE_DEFAULT_TEAM_ID || '1774297491626';
 
@@ -20,11 +21,13 @@ export function LoginScreen({ onRequestAccess, sendMagicLink }) {
     if (!email.trim()) return setError('Please enter your email address');
     setError('');
     setLoading(true);
+    track("login_requested", { method: "magic_link" });
 
     const result = await sendMagicLink(email.trim().toLowerCase(), TEAM_ID);
     setLoading(false);
 
     if (!result.success) {
+      track("login_failed", { method: "magic_link", error: result.error || "unknown" });
       if (result.error === 'no_membership') {
         setError("We don't have this email on file. Request access below.");
       } else if (result.error?.includes('wait') || result.error?.includes('moment')) {
@@ -35,6 +38,7 @@ export function LoginScreen({ onRequestAccess, sendMagicLink }) {
       return;
     }
 
+    track("login_succeeded", { method: "magic_link" });
     setSent(true);
   }
 

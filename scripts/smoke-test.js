@@ -128,6 +128,14 @@ function checkConfig() {
       !supabaseUrl ? 'SUPABASE_URL missing' : 'SUPABASE_ANON_KEY missing');
   }
 
+  // ANTHROPIC_API_KEY — presence only (value never logged)
+  const anthropicKey = env('ANTHROPIC_API_KEY');
+  if (anthropicKey) {
+    pass('ANTHROPIC_API_KEY present');
+  } else {
+    fail('ANTHROPIC_API_KEY', 'missing from .env.smoke — AI photo import will return 503 in prod');
+  }
+
   return { backendUrl, frontendUrl, supabaseUrl, supabaseKey };
 }
 
