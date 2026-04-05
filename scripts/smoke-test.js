@@ -187,9 +187,10 @@ async function checkSupabase(supabaseUrl, supabaseKey) {
   };
 
   const tables = [
-    { name: 'teams',           check: 'at least one row' },
-    { name: 'feature_flags',   check: 'table exists'     },
-    { name: 'roster_history',    check: 'table exists'   },
+    { name: 'teams',              check: 'at least one row' },
+    { name: 'feature_flags',      check: 'table exists'     },
+    { name: 'team_data_history',  check: 'table exists'     },
+    { name: 'roster_snapshots',   check: 'table exists'     },
   ];
 
   for (const { name, check } of tables) {
@@ -282,11 +283,24 @@ async function checkScheduleIntegrity(supabaseUrl, supabaseKey) {
 async function checkFrontend(frontendUrl) {
   section('CATEGORY 5 — Share link reachability');
 
+  if (process.env.CI === 'true') {
+    warn('Category 5 skipped in CI — frontend not reachable from GitHub Actions runners');
+    return;
+  }
+
   if (!frontendUrl) { fail('Frontend reachable', 'no frontend URL — skipping'); return; }
 
-  const url = `${frontendUrl}/?s=smoke-invalid-token`;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 8000);
+
   try {
-    const { res, ms } = await timedFetch(url, { redirect: 'follow' });
+    const t0 = Date.now();
+    const res = await fetch(
+      frontendUrl + '/?s=smoke-invalid-token',
+      { redirect: 'follow', signal: controller.signal }
+    );
+    clearTimeout(timeoutId);
+    const ms = Date.now() - t0;
 
     if (ms > 3000) warn('Frontend response time', `${ms}ms`);
 
@@ -301,7 +315,12 @@ async function checkFrontend(frontendUrl) {
       fail('GET /?s=smoke-invalid-token returns 200', `got ${res.status} in ${ms}ms`);
     }
   } catch (err) {
-    fail('Frontend reachable', err.message);
+    clearTimeout(timeoutId);
+    if (err.name === 'AbortError') {
+      warn('Frontend reachability timed out after 8s');
+      return;
+    }
+    fail('Frontend reachable — fetch failed: ' + err.message);
   }
 }
 

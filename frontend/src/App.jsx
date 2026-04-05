@@ -138,9 +138,19 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.2.6";
+var APP_VERSION = "2.2.7";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.2.7',
+    date: '2026-04-04',
+    changes: [
+      'Fix: smoke test table name corrected (roster_history → team_data_history); roster_snapshots added as second check',
+      'Fix: Category 5 CI guard — skips frontend reachability check in GitHub Actions (process.env.CI === "true")',
+      'Fix: Category 5 AbortController timeout — hard 8s abort, soft warn instead of fail on timeout',
+      'Fix: analytics.js SSR window/navigator guard in getDeviceContext() and mixpanel.register()'
+    ]
+  },
   {
     version: '2.2.6',
     date: '2026-04-04',

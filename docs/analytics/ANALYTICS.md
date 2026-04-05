@@ -1,6 +1,6 @@
 # Dugout Lineup — Analytics Reference
 
-> **App version:** v2.2.6
+> **App version:** v2.2.7
 > **Last updated:** April 2026
 > **Owner:** Platform Admin (KK)
 > **Stack:** Mixpanel + Vercel Analytics
