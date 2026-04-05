@@ -280,6 +280,42 @@ All future migrations go in `backend/src/db/migrations/` only.
 - [ ] Never use kaushik.kuberanathan@gmail.com in automated test suites
       (Supabase rate limits OTP sends per address — use dedicated test emails)
 - Note: app_version in analytics is derived automatically from frontend/package.json at build time via vite.config.js define. No manual env var sync needed — bumping package.json is sufficient.
+- [ ] Prepend to VERSION_HISTORY in frontend/src/App.jsx. Use the dual-layer schema — both layers required:
+
+  ```js
+  {
+    version: "x.x.x",
+    date: "Month YYYY",
+
+    // USER-FACING — rendered in the app Updates tab
+    headline: "One sentence: what the coach gets, not what was built",
+    userChanges: [
+      "Plain English benefit — what does the coach experience differently?",
+    ],
+    techNote: "Bug fixes and performance improvements",
+    // techNote must be one of these four strings:
+    //   "Bug fixes and performance improvements"
+    //   "Under-the-hood stability improvements"
+    //   "Performance and reliability improvements"
+    //   "Minor fixes and internal improvements"
+    // Omit techNote only for pure user-facing releases with zero tech changes.
+
+    // INTERNAL — NOT rendered, preserved for audit trail
+    internalChanges: [
+      "Exact technical detail — what was built/changed/fixed",
+      "Specific file, function, or system affected",
+    ],
+  }
+  ```
+
+  RULE: userChanges answers "What does the coach experience differently tomorrow?" — never expose refactors, hooks, middleware, CI, migrations, or internal tooling in userChanges. Those go in internalChanges only.
+
+  RULE: internalChanges is the canonical technical record for this version. It replaces the old `changes` array and should be as detailed as the prior entries were. GitHub commit messages and ROADMAP.md remain unchanged.
+
+> UPDATES TAB CONTENT RULE: The Updates tab is coach-facing.
+> `headline` and `userChanges` must be written in plain English as coach benefits. Technical details belong in
+> `internalChanges`, git commit messages, and ROADMAP.md only.
+> The `internalChanges` field is never rendered in the UI.
 
 ## Analytics
 - 27 Mixpanel events + 4 Vercel Analytics events
@@ -368,6 +404,29 @@ All major sections are wrapped with `<ErrorBoundary>` (class component). On cras
 ---
 
 ## Version History
+
+### v2.2.12 — April 4, 2026
+- Ops: ci.yml backend job — wait-for-Render step added before test suite; 90s sleep + 5-attempt /ping poll (15s intervals) ensures backend is live before integration tests run
+
+### v2.2.11 — April 4, 2026
+- Fix: replace .catch() chain on supabaseAdmin.rpc() with nested try/catch block in teamData.js POST handler
+
+### v2.2.10 — April 4, 2026
+- Fix: TD-04 CI auth — X-Admin-Key header added to all teamData test fetches; ADMIN_KEY secret wired into ci.yml backend job
+- Fix: debug logging removed from suite-team-data.js
+
+### v2.2.9 — April 4, 2026
+- Fix: teamData.js POST + GET handlers wrapped in try/catch — Express 4 does not auto-catch async errors
+- Fix: global error handler in index.js respects err.status for non-500 errors
+- Ops: timing-attack-safe key comparison TODO comment added above isAdminRequest()
+
+### v2.2.8 — April 4, 2026
+- Ops: __APP_VERSION__ auto-injected from package.json at build time via vite.config.js define — eliminates VITE_APP_VERSION env var and manual sync
+
+### v2.2.7 — April 4, 2026
+- Fix: smoke-test.js Category 3 table name corrected (roster_history → team_data_history; roster_snapshots added)
+- Fix: smoke-test.js Category 5 CI guard + AbortController 8s timeout — prevents hang in GitHub Actions
+- Fix: analytics.js SSR guard — getDeviceContext() + mixpanel.register() wrapped in typeof window checks
 
 ### v2.2.6 — April 4, 2026
 - Analytics: device context super properties (os, device_type, platform, is_pwa, screen_width/height, app_version) via mixpanel.register()

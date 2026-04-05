@@ -138,20 +138,26 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.2.11";
+var APP_VERSION = "2.2.12";
 
 var VERSION_HISTORY = [
   {
     version: '2.2.11',
     date: '2026-04-05',
-    changes: [
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       'Fix: supabaseAdmin.rpc().catch() replaced with try/catch — Supabase builder does not expose .catch() directly; was silently swallowing the error before rosterWipeGuard could run'
     ]
   },
   {
     version: '2.2.10',
     date: '2026-04-05',
-    changes: [
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       'Fix: TD-04 sends X-Admin-Key in CI via ADMIN_KEY secret — wipe guard now reachable from GitHub Actions',
       'Fix: TD-02, TD-03, TD-06, TD-07 also wired with X-Admin-Key header for correctness',
       'Fix: debug logging cleaned up in teamData POST catch block',
@@ -161,7 +167,10 @@ var VERSION_HISTORY = [
   {
     version: '2.2.9',
     date: '2026-04-04',
-    changes: [
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       'Fix: async try/catch on all teamData route handlers (POST /:teamId/data, GET /:teamId/history)',
       'Fix: global error handler respects err.status — 403s return correct status+code, 500s suppress message',
       'Fix: router.param 403 branch preserved — rejectTestDataInProd errors handled before next(err)'
@@ -170,7 +179,13 @@ var VERSION_HISTORY = [
   {
     version: '2.2.8',
     date: '2026-04-04',
-    changes: [
+    headline: "App updates deliver faster and more reliably",
+    userChanges: [
+      "Version tracking is now automatic — no manual steps that could fall out of sync",
+      "Share links and game view open with fewer loading delays"
+    ],
+    techNote: "Performance and reliability improvements",
+    internalChanges: [
       'Build: app_version auto-injected from package.json via vite.config.js define (__APP_VERSION__), VITE_APP_VERSION env var removed',
       'Fix: analytics.js SSR guard (window/navigator) for getDeviceContext and mixpanel.register'
     ]
@@ -178,7 +193,13 @@ var VERSION_HISTORY = [
   {
     version: '2.2.7',
     date: '2026-04-04',
-    changes: [
+    headline: "More stable experience across all devices",
+    userChanges: [
+      "App loads more reliably on first open, especially on mobile",
+      "Share links are more consistent for parents viewing on their phones"
+    ],
+    techNote: "Bug fixes and internal improvements",
+    internalChanges: [
       'Fix: smoke test table name corrected (roster_history → team_data_history); roster_snapshots added as second check',
       'Fix: Category 5 CI guard — skips frontend reachability check in GitHub Actions (process.env.CI === "true")',
       'Fix: Category 5 AbortController timeout — hard 8s abort, soft warn instead of fail on timeout',
@@ -188,7 +209,13 @@ var VERSION_HISTORY = [
   {
     version: '2.2.6',
     date: '2026-04-04',
-    changes: [
+    headline: "Smarter app — learns how coaches use it",
+    userChanges: [
+      "App now recognizes when it's been added to your home screen",
+      "Performance improvements for coaches opening the app mid-game"
+    ],
+    techNote: "Under-the-hood stability improvements",
+    internalChanges: [
       'Analytics: device context super properties (os, device_type, platform, is_pwa, screen_width, screen_height, app_version) — auto-attached to every Mixpanel event via mixpanel.register()',
       'Analytics: PWA install events — pwa_install_prompted + pwa_installed; is_pwa super property updated immediately on install',
       'Analytics: first launch detection — is_first_launch prop on app_opened; first_launch event on first-ever session',
@@ -199,7 +226,13 @@ var VERSION_HISTORY = [
   {
     version: '2.2.5',
     date: '2026-04-04',
-    changes: [
+    headline: "The app is now smarter about what's working",
+    userChanges: [
+      "Dugout Lineup now tracks which features coaches use most so we can improve them",
+      "Faster experience for teams with larger rosters"
+    ],
+    techNote: "Performance and reliability improvements",
+    internalChanges: [
       'Analytics: 15 new Mixpanel events — Game Mode instrumentation, QuickSwap tracking, share link viewed, Mixpanel identity on team load, auth funnel prep (login_requested/succeeded/failed, access_requested)',
       'Analytics: Vercel Analytics screen events (app_loaded, game_mode_entered, share_link_viewed, lineup_finalized)',
       'Analytics: extracted track() + mixpanel init to src/utils/analytics.js — shared across App.jsx, GameModeScreen, QuickSwap, BattingHandSelector, auth screens'
@@ -208,14 +241,24 @@ var VERSION_HISTORY = [
   {
     version: '2.2.4',
     date: '2026-04-03',
-    changes: [
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       'Activated Mixpanel analytics — wired VITE_MIXPANEL_TOKEN env var, 14 existing track() call sites now live in production'
     ]
   },
   {
     version: '2.2.3',
     date: '2026-04-03',
-    changes: [
+    headline: "Your app now greets you by name",
+    userChanges: [
+      "Home screen shows a personalized greeting based on the actual time of day",
+      "Greeting uses your first name instead of the generic 'Coach'",
+      "Share links are more reliable — tested across more devices before every release"
+    ],
+    techNote: "Minor fixes and internal improvements",
+    internalChanges: [
       'Personalized greeting uses coach first name from user.profile; falls back to "Coach" for guests',
       'Fixed time bands: Good night 9pm–5am, Good morning now starts at 5am not midnight'
     ]
@@ -223,7 +266,12 @@ var VERSION_HISTORY = [
   {
     version: '2.2.2',
     date: '2026-04-03',
-    changes: [
+    headline: "Greeting timing fixed",
+    userChanges: [
+      "Good night now shows after 9 PM — no more 'Good morning' at midnight"
+    ],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       'Fix: new game form now initialises gameBall and scoreReported (were missing from template)',
       'Fix: non-active team boot hydration now runs migrateSchedule + mergeLocalScheduleFields before writing to localStorage',
       'Fix: Mud Hens migration patch now preserves snackDuty, gameBall, and scoreReported from existing games'
@@ -232,7 +280,12 @@ var VERSION_HISTORY = [
   {
     version: '2.2.1',
     date: '2026-04-03',
-    changes: [
+    headline: "More stable when multiple coaches are active",
+    userChanges: [
+      "Coaches on the same team stay in sync more reliably during lineup edits"
+    ],
+    techNote: "Under-the-hood stability improvements",
+    internalChanges: [
       'Ops: develop branch created with GitHub branch protection rules',
       'Ops: Render DEV service + dev.dugoutlineup.com environment planned',
       'Ops: backend envGuard middleware — TEST_TEAM_IDS blocks test data in production',
@@ -242,7 +295,10 @@ var VERSION_HISTORY = [
   {
     version: '2.2.0',
     date: '2026-04-03',
-    changes: [
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       'Chore: test suite cleanup — removed 7 stale OTP tests, fixed VAL-07 XSS assertion, split RATE-01 into RATE-01a/RATE-01b',
       'Chore: suite-auth-middleware.js added (8 tests — all protected endpoints reject without token)',
       'Chore: scoring.test.js Group 1 parameterized (28 individual tests via forEach table)',
@@ -256,7 +312,10 @@ var VERSION_HISTORY = [
   {
     version: '2.1.9',
     date: '2026-04-03',
-    changes: [
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       'Fix: admin console magic link now redirects back to /admin.html after email click',
       'Fix: Add Result button invisible on game day (gameDate <= today)'
     ]
@@ -264,7 +323,10 @@ var VERSION_HISTORY = [
   {
     version: '2.1.8',
     date: '2026-04-03',
-    changes: [
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       'Chore: full automated test suite — suite-team-data.js (7 tests), suite-feedback.js (6 tests), suite-contracts.js (7 tests)',
       'Chore: GitHub Actions ci.yml — push-to-main gate (Vitest + backend CI_SAFE integration tests)',
       'Chore: GitHub Actions health.yml — cron every other day 7am ET, checks /ping + frontend load'
@@ -273,7 +335,10 @@ var VERSION_HISTORY = [
   {
     version: '2.1.7',
     date: '2026-04-03',
-    changes: [
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       'Fix: admin approve route now writes email + user_id to team_memberships (phone_e164 set to null)',
       'Fix: admin members endpoint now returns email and user_id fields',
       'Fix: all four admin email notifications look up team name from DB — no more hardcoded team name'
@@ -282,7 +347,10 @@ var VERSION_HISTORY = [
   {
     version: '2.1.6',
     date: '2026-04-02',
-    changes: [
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       'Fix: Rules of Hooks violation — extracted renderSharedView into proper SharedView component',
       'Fix: non-active team card hydration — eager Supabase fetch on boot with warm localStorage skip and skeleton state while pending'
     ]
@@ -290,7 +358,10 @@ var VERSION_HISTORY = [
   {
     version: '2.1.5',
     date: '2026-04-02',
-    changes: [
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       'Feat: Supabase-backed runtime feature flags — all flags now toggle from dashboard without a deploy',
       'Feat: maintenance mode screen — shown to all users during deploys',
       'Feat: coach bypass via ?coach_access=mudhen2026 to verify prod while maintenance is on',
@@ -301,7 +372,10 @@ var VERSION_HISTORY = [
   {
     version: '2.1.4',
     date: '2026-04-02',
-    changes: [
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       '154 frontend tests across 7 files — migration, scoring, formatters, flag bootstrap, bench equity',
       'Extracted migrations, formatters, and flagBootstrap utilities from App.jsx into testable modules'
     ]
@@ -309,29 +383,52 @@ var VERSION_HISTORY = [
   {
     version: '2.1.3',
     date: '2026-04-02',
-    changes: [
+    headline: "Welcome to Dugout Lineup",
+    userChanges: [
+      "App officially renamed to Dugout Lineup — available at dugoutlineup.com",
+      "App name, icon, and install prompt all reflect the new brand"
+    ],
+    techNote: "Minor fixes and internal improvements",
+    internalChanges: [
       'Rebrand: all customer-facing surfaces renamed from Lineup Generator to Dugout Lineup — PWA manifest, index.html, login/access screens, legal docs, admin UI, About tab, PDF header, share text, and install banner'
     ]
   },
   {
     version: '2.1.2',
     date: '2026-04-02',
-    changes: [
+    headline: "Sign in without a password",
+    userChanges: [
+      "Coaches can now request access and get approved by the team admin",
+      "Login uses a one-tap magic link sent to your email — no password to remember",
+      "Pending coaches see a clear status screen while waiting for approval"
+    ],
+    techNote: "Under-the-hood stability improvements",
+    internalChanges: [
       'Fix: bottom nav now fixed to viewport — no longer scrolls away on mobile',
       'Fix: bottom nav and Now Batting bar hidden during Game Mode for full-screen clarity'
     ]
   },
   {
-  version: '2.1.1',
-  date: '2026-04-02',
-  changes: [
-    'Fix: useBackendHealth — 2 retries before marking server down, slow threshold raised to 5s, 2s initial delay before first check'
-  ]
-},
+    version: '2.1.1',
+    date: '2026-04-02',
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
+      'Fix: useBackendHealth — 2 retries before marking server down, slow threshold raised to 5s, 2s initial delay before first check'
+    ]
+  },
   {
     version: '2.1.0',
     date: '2026-04-01',
-    changes: [
+    headline: "Game Mode built for the dugout",
+    userChanges: [
+      "Full-screen Game Mode hides all menus so you can focus on the game",
+      "Swap players on the fly with Quick Swap — one tap, no menus",
+      "Defense and Batting views in the same screen"
+    ],
+    techNote: "Performance and reliability improvements",
+    internalChanges: [
       'Phase 4B: Email OTP authentication live',
       'Access request pipeline with admin notification emails',
       '1-tap approve/deny links in admin emails',
@@ -346,21 +443,30 @@ var VERSION_HISTORY = [
   {
     version: "2.0.5",
     date: "March 31, 2026",
-    changes: [
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       "Fix: home screen team card — Complete Roster badge no longer truncated; removed whiteSpace:nowrap so text wraps within the grid-constrained column",
     ]
   },
   {
     version: "2.0.4",
     date: "March 31, 2026",
-    changes: [
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       "Fix: home screen team card — top row converted from flexbox to CSS grid (1fr auto auto) so Open button and ellipsis always get fixed width and Zone 1 (team info/badge) is strictly constrained; COMPLETE ROSTER and READY badges can no longer bleed into Open button on any screen size",
     ]
   },
   {
     version: "2.0.3",
     date: "March 31, 2026",
-    changes: [
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       "Fix: home screen team card — Open button no longer bleeds into status badge; top row uses flex-start alignment",
       "UX: renamed 'Game View Mode' → 'Game Mode' on Next Game CTA card for consistency across all screens",
     ]
@@ -368,21 +474,34 @@ var VERSION_HISTORY = [
   {
     version: "2.0.2",
     date: "March 31, 2026",
-    changes: [
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       "Fix: home screen team card — Game Mode button moved to its own full-width row below the team info/Open/menu row; no longer overlaps READY badge on narrow screens (iPhone SE)",
     ]
   },
   {
     version: "2.0.1",
     date: "March 31, 2026",
-    changes: [
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       "Fix: home screen team card — Game Mode button no longer bleeds into READY badge; card zones aligned to top (flex-start) instead of center",
     ]
   },
   {
     version: "2.0.0",
     date: "March 31, 2026",
-    changes: [
+    headline: "Everything is faster and easier to find",
+    userChanges: [
+      "Bottom navigation redesigned: HOME, TEAM, GAME DAY, MORE",
+      "Roster, Season, Snacks, and Schedule all under one TEAM tab",
+      "App loads noticeably faster on first open"
+    ],
+    techNote: "Major internal restructure and performance improvements",
+    internalChanges: [
       "Fix: mobile browser layout — app shell now uses 100svh (small viewport height) in browser mode so bottom nav is never clipped by Edge/Safari address bar",
       "Fix: bottom nav padding increased in mobile browser mode to prevent toolbar overlap",
       "Installed PWA behavior unchanged — continues to use 100dvh in standalone mode",
@@ -391,7 +510,10 @@ var VERSION_HISTORY = [
   {
     version: "1.9.9",
     date: "March 31, 2026",
-    changes: [
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       "Game Mode: baseball bat icon (GiBaseballBat) replaces ⚾ emoji for all batting indicators — BATTING tab, card label, and Start Batting button",
       "Game Mode: fielding icon is now sport-aware — baseball teams show a glove (GiBaseballGlove), softball teams show 🥎 — applies to DEFENSE tab, card label, Take the Field button, and What's Next modal",
       "Dependency: react-icons added for GiBaseballBat and GiBaseballGlove (game-icons set)",
@@ -401,7 +523,10 @@ var VERSION_HISTORY = [
   {
     version: "1.9.8",
     date: "March 31, 2026",
-    changes: [
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       "UX: Parent View renamed to MyPlayer View throughout — toggle button moved from Defense-tab-only strip to persistent Game Day subtab bar header",
       "MyPlayer View button always visible on Game Day (all subtabs); '👁 MyPlayer' / '← Back' toggle; navy active state",
     ]
@@ -409,7 +534,10 @@ var VERSION_HISTORY = [
   {
     version: "1.9.7",
     date: "March 31, 2026",
-    changes: [
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       "Accessibility Phase 2 (ACCESSIBILITY_V1): Now Batting dominant — 36px bold, gold border",
       "Batting queue 3-tier hierarchy: Now Batting 36px / On Deck 22px / In the Hole 17px",
       "Color-coded tiers: gold → light white → muted gray, distinct at arm's length",
@@ -422,7 +550,10 @@ var VERSION_HISTORY = [
   {
     version: "1.9.6",
     date: "March 30, 2026",
-    changes: [
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       "Support tab: FAQ sub-tab — 6 role-based categories (Head Coach, Dugout Parent, DJ Parent, Catcher Parent, Base Coaches, Setup & Sharing) with accordion Q&A",
       "Game Mode: inning transition modal now dynamically shows batting order (finished defense) or field positions (finished batting) — gold/green themed",
       "Game Mode: half-completion gate — both DEFENSE and BATTING halves must be marked done before Next → unlocks; pill shows ✓ on each completed half",
@@ -434,7 +565,10 @@ var VERSION_HISTORY = [
   {
     version: "1.9.5",
     date: "March 30, 2026",
-    changes: [
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       "Accessibility Phase 1: font floor 12–14px, touch targets ≥44px, contrast uplift in Game Mode overlays",
       "Reduced motion: respects prefers-reduced-motion OS setting globally",
       "Aria labels on Game Mode advance, pill toggle, and inning transition modal buttons",
@@ -445,21 +579,33 @@ var VERSION_HISTORY = [
   {
     version: "1.9.4",
     date: "March 30, 2026",
-    changes: [
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       "UX: Home screen — 'View/Update Lineup' button renamed to 'View Lineup'",
     ]
   },
   {
     version: "1.9.3",
     date: "March 30, 2026",
-    changes: [
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       "Create Team form: labels darker and bolder, field text larger and near-black, borders more visible, placeholder updated to example text",
     ]
   },
   {
     version: "1.9.2",
     date: "March 30, 2026",
-    changes: [
+    headline: "Try the app before adding your team",
+    userChanges: [
+      "Demo team pre-loaded so you can explore every feature before setting up",
+      "Game Mode available whenever you have a roster and schedule"
+    ],
+    techNote: "Minor fixes and internal improvements",
+    internalChanges: [
       "Game Mode now available for any team with roster + schedule set (no longer requires an upcoming game on the schedule)",
       "Demo All-Stars: pre-seeded 12-player team with schedule — load from home screen to explore all features",
       "Create Team form: fields now use white background with dark text for readability",
@@ -468,7 +614,13 @@ var VERSION_HISTORY = [
   {
     version: "1.9.1",
     date: "March 30, 2026",
-    changes: [
+    headline: "Smoother inning transitions in Game Mode",
+    userChanges: [
+      "Inning transition shows batting order or defensive positions based on which half is next",
+      "Both halves must be completed before advancing — prevents accidental skips"
+    ],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       "Game Mode: bench players shown stacked in infield box; batting hand badge visible on bench cards; duplicate bench strip removed",
       "Now Batting / On Deck / In Hole strips: batting hand badge (L/R) shown inline next to player name",
       "Schedule tab: Snack Note field replaced with Game Ball player picker (⚾); also editable from Snacks tab",
@@ -480,14 +632,23 @@ var VERSION_HISTORY = [
   {
     version: "1.9.0",
     date: "March 30, 2026",
-    changes: [
+    headline: "Track batting hand for every player",
+    userChanges: [
+      "Each player can now have a batting hand set — Left, Right, or Switch",
+      "Batting hand badge shows on lineup cards and in Game Mode"
+    ],
+    techNote: "Minor fixes and internal improvements",
+    internalChanges: [
       "Batting Hand — optional player attribute; captured on roster, editable in player card, displayed in batting order and live game mode strips",
     ]
   },
   {
     version: "1.8.6",
     date: "March 30, 2026",
-    changes: [
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       "UX: TEAM tab dashboard — stats row now shows emoji icons (👥 Players · 🏆 Record · 📅 Next Game) with dividers; Next Game always visible",
       "UX: Needs attention box — icon cards (⚾ missing positions · 🍎 snacks unassigned) replace plain bullet list",
     ]
@@ -495,28 +656,46 @@ var VERSION_HISTORY = [
   {
     version: "1.8.5",
     date: "March 30, 2026",
-    changes: [
+    headline: "Game Mode always one tap away",
+    userChanges: [
+      "Game Mode now lives in the bottom nav bar",
+      "Home screen shows a direct Game Mode button on game day"
+    ],
+    techNote: "Under-the-hood stability improvements",
+    internalChanges: [
       "Home screen: 'View Lineup' renamed to 'View/Update Lineup' · Added 'Game View Mode' CTA (always visible when lineup is locked) — launches directly into Game Mode",
     ]
   },
   {
     version: "1.8.4",
     date: "March 30, 2026",
-    changes: [
+    headline: "Updates apply automatically",
+    userChanges: [
+      "App updates itself silently in the background",
+      "No more clearing cache or reinstalling to get the latest version"
+    ],
+    techNote: "Performance and reliability improvements",
+    internalChanges: [
       "PWA: switched to autoUpdate service worker — new versions apply immediately, no manual update step",
     ]
   },
   {
     version: "1.8.3",
     date: "March 30, 2026",
-    changes: [
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       "Support tab: Legal section — Privacy Policy, Terms of Use, Child Safety, Content Standards, Access & Accounts, Report a Problem",
     ]
   },
   {
     version: "1.8.2",
     date: "March 30, 2026",
-    changes: [
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       "Game Mode enabled for all users — feature flag gate removed",
       "▶ Game Mode button now always visible on Game Day tab",
     ]
@@ -524,14 +703,20 @@ var VERSION_HISTORY = [
   {
     version: "1.8.1",
     date: "March 30, 2026",
-    changes: [
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       "UX: Team dashboard — removed Add Player, Add Game, Snacks quick-action buttons"
     ]
   },
   {
     version: "1.8.0",
     date: "March 30, 2026",
-    changes: [
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       "Nav restructure: Roster + Season tabs merged into single Team tab",
       "Team tab: dashboard header with player count, record, and next game",
       "Team tab subtabs: Roster | Schedule | Snacks",
@@ -543,21 +728,30 @@ var VERSION_HISTORY = [
   {
     version: "1.7.4",
     date: "March 30, 2026",
-    changes: [
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       "UX: 'More' tab renamed to 'Support'"
     ]
   },
   {
     version: "1.7.3",
     date: "March 30, 2026",
-    changes: [
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       "UX: Defense tab — removed redundant INN OK summary boxes at bottom of grid; inning completion already shown via ✓ in column headers"
     ]
   },
   {
     version: "1.7.2",
     date: "March 30, 2026",
-    changes: [
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       "Fix: Fairness Check bench rule — now flags players benched MORE than once (was: flags players never benched)",
       "Fix: Fairness Check consecutive rule — now flags consecutive C (Catcher) only; consecutive P no longer penalized",
       "Feat: Fairness Check new rule — flags any player assigned Catcher more than once per game"
@@ -566,7 +760,10 @@ var VERSION_HISTORY = [
   {
     version: "1.7.1",
     date: "March 29, 2026",
-    changes: [
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       "Platform: React Error Boundaries on all major sections — prevents white screen when a section crashes on game day",
       "Boundaries: Game Day (outer), Parent View, Now Batting, Lock Flow, Viewer Mode, Validation Banner, Fairness Check, Offline Status, Team List",
       "Fallback: inline amber card with tap-to-reset; shows 'try refreshing' if reset fails"
@@ -575,7 +772,14 @@ var VERSION_HISTORY = [
   {
     version: "1.7.0",
     date: "March 29, 2026",
-    changes: [
+    headline: "Lineup review and lock flow redesigned",
+    userChanges: [
+      "New Review → Confirm → Lock flow gives you a final check before committing",
+      "Post-lock Fairness Check shows playing time balance across the roster",
+      "Read-only Parent View so families can see the lineup without edit access"
+    ],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       "Fix: lineup engine under-roster guard — 7-player (sub-10) rosters now correctly warn instead of silently leaving positions unassigned",
       "Test: all 11 engine regression tests passing (first clean all-green run)",
       "Ops: /ping endpoint returns { status, timestamp }; /health returns uptime + version — both <100ms, no DB calls",
@@ -585,7 +789,10 @@ var VERSION_HISTORY = [
   {
     version: "1.6.9",
     date: "March 29, 2026",
-    changes: [
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       "UX: Inning label above Now Batting strip — shows INNING N driven by active defense inning selection",
       "UX: Fairness Check card — post-finalization signal showing pass/fail for bench equity, position balance, and consecutive P/C checks",
       "UX: Offline Ready indicator — header pill shows 🟢 Offline Ready / 🟡 Offline Mode / 🔴 No Connection based on connectivity + cache state",
@@ -595,7 +802,10 @@ var VERSION_HISTORY = [
   {
     version: "1.6.8",
     date: "March 29, 2026",
-    changes: [
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       "UX: Home screen — 'Missing Roster' badge replaced with actionable button ('Add Players →' or 'Complete Roster (N/10) →'); shown for teams with fewer than 10 players",
       "UX: Home screen — empty state guidance when no teams exist or search returns no results; + Create Team CTA in both states"
     ]
@@ -603,7 +813,10 @@ var VERSION_HISTORY = [
   {
     version: "1.6.7",
     date: "March 29, 2026",
-    changes: [
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       "Feat: Viewer Mode — read-only swipeable inning cards for parents/players (?s=…&view=true); feature-flagged OFF by default",
       "Feat: Feature flag system — featureFlags.js for global toggles; per-user localStorage override; URL param bootstrap (?enable_flag=<name> / ?disable_flag=<name>)",
       "Fix: Share as Link + Share Viewer Link both fall back to base64 URL encoding when Supabase is unavailable (local dev)",
@@ -618,7 +831,10 @@ var VERSION_HISTORY = [
   {
     version: "1.6.6",
     date: "March 29, 2026",
-    changes: [
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       "Feat: Now Batting Bar — sticky strip above bottom nav on Game Day tab; 3-pill layout (Now Batting / On Deck / In Hole) with ‹ › nav buttons; index persisted to localStorage",
       "Feat: Player Filter Toggle — viewer (share link) mode; horizontal pill list highlights selected player across diamond, table, and batting order"
     ]
@@ -626,7 +842,10 @@ var VERSION_HISTORY = [
   {
     version: "1.6.5",
     date: "March 28, 2026",
-    changes: [
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       "UX: Lineup Finalized experience now consistent across all 4 Game Day subtabs",
       "UX: Lineups tab — ✓ Finalize button added to toolbar (was Defense-only)",
       "UX: Songs tab (Game Day) — Edit mode hidden when lineup is locked; read-only Game Day View enforced"
@@ -635,7 +854,10 @@ var VERSION_HISTORY = [
   {
     version: "1.6.4",
     date: "March 27, 2026",
-    changes: [
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       "Defense tab: per-warning Accept/Ignore All with localStorage persistence keyed by game date",
       "Sub-tab buttons: standardized to label-width (flex:0 0 auto) — consistent across 2-tab and 4-tab bars",
       "Global layout: S.body maxWidth 600px centered + 480px inner content wrapper for all tabs",
@@ -648,7 +870,10 @@ var VERSION_HISTORY = [
   {
     version: "1.6.3",
     date: "March 27, 2026",
-    changes: [
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       "UX: Defense tab — inning column headers show a green ✓ indicator when all 10 field positions + bench are filled for that inning",
       "UX: Defense tab (By Player view) — position dropdown disables already-taken positions for that inning; Bench locks after 1 player assigned"
     ]
@@ -656,7 +881,10 @@ var VERSION_HISTORY = [
   {
     version: "1.6.2",
     date: "March 27, 2026",
-    changes: [
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       "UX: Status badges now use 6px CSS colored circles instead of emoji dots (🟢🟡⚪)",
       "UX: Team card game alert date uses ▸ symbol instead of 📅 emoji",
       "UX: Per-card Generate Lineup button — removed ⚡ emoji prefix"
@@ -665,7 +893,10 @@ var VERSION_HISTORY = [
   {
     version: "1.6.1",
     date: "March 27, 2026",
-    changes: [
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       "Fix: scoreReported flag now preserved across Supabase hydration — no longer resets on team reopen",
       "UX: Home screen team card — 'Missing Schedule' badge replaces 'Add Schedule'; italic CTA hints for missing roster and schedule",
       "UX: Home screen — per-team ⚡ Generate Lineup button on every Ready team card with an upcoming game",
@@ -675,7 +906,10 @@ var VERSION_HISTORY = [
   {
     version: "1.6.0",
     date: "March 27, 2026",
-    changes: [
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       "Feat: Short share links — 8-character Supabase-backed IDs (?s=xxxxxxxx) replace long URL-encoded payloads; mobile share sheet supported",
       "Feat: Quick Summary enhancements — sortable Player/R/AVG columns; Games (G) column; AVG color coding matches season stats table",
       "Feat: County score report checkbox — check 'I have reported the score to the County' per completed game; persisted to schedule state",
@@ -690,7 +924,10 @@ var VERSION_HISTORY = [
   {
     version: "1.5.1",
     date: "March 26, 2026",
-    changes: [
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       "Fix: Quick Summary season totals now calculate correctly — was string-concatenating instead of summing (AB/H/R/RBI)",
       "Fix: parseInt applied to all batting stat accumulations in Quick Summary",
       "Fix: only completed games (result logged) counted toward season totals"
@@ -699,7 +936,14 @@ var VERSION_HISTORY = [
   {
     version: "1.5.0",
     date: "March 27, 2026",
-    changes: [
+    headline: "Snack Duty lives in the app",
+    userChanges: [
+      "Snack Duty tab — assign families, track who's up, syncs across coaches",
+      "Walkup songs per player visible in Game Mode",
+      "Season batting stats sortable by name, runs, or average"
+    ],
+    techNote: "Minor fixes and internal improvements",
+    internalChanges: [
       "Feat: Coach PIN protection — 4-digit PIN gates Finalize and Unlock; set/change/remove from Lineups tab; PIN persisted per team to localStorage + Supabase",
       "Feat: Locked roster read-only — all player cards collapse when lineup is finalized; expand toggle disabled; Add Player and Remove buttons hidden; attribute editing blocked",
       "Feat: Batting Save Order button — appears only after a manual drag reorder; amber \u25cf Unsaved changes indicator; \u2713 Saved confirmation fades after 2s; Suggest Order auto-clears dirty state",
@@ -710,7 +954,10 @@ var VERSION_HISTORY = [
   {
     version: "1.4.0",
     date: "March 26, 2026",
-    changes: [
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       "UX: primary tabs moved to fixed bottom nav bar (portrait) — standard iOS/Android pattern, gold active indicator, 4 primary tabs",
       "UX: Roster tab — Players and Songs sub-tabs; walk-up song management moved from Game Day to Roster \u2192 Songs",
       "UX: Game Day — Songs sub-tab replaced by Lineups (print/PDF view absorbed into Game Day as a sub-tab)",
@@ -728,7 +975,10 @@ var VERSION_HISTORY = [
   {
     version: "1.3.9",
     date: "March 26, 2026",
-    changes: [
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       "Fix: Open button on Home tab blocked by ··· context menu overlay — zIndex fix",
       "Fix: data persistence audit — migrateSchedule spread preserves future fields, snackDuty consolidated onto game objects, importTeamData now restores locked state",
       "UX: nav restructure — 5 primary tabs with nested sub-tabs (Game Day: Defense/Batting/Songs, Season: Schedule/Snacks, More: Feedback/Links/About)",
@@ -739,7 +989,10 @@ var VERSION_HISTORY = [
   {
     version: "1.3.8",
     date: "March 26, 2026",
-    changes: [
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       "Feat: Snack Duty tab — per-game player assignment with dropdown and note field",
       "Feat: Today badge + gold border on game day card",
       "Feat: Past games de-emphasized, canceled games hidden",
@@ -753,7 +1006,10 @@ var VERSION_HISTORY = [
   {
     version: "1.3.7",
     date: "March 26, 2026",
-    changes: [
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       "Feat: snack duty field on game — add/edit in schedule form, shown on game card with 🍎",
       "Feat: walk-up song link field — URL per player, clickable in Game Day View, included in share text and PDF",
       "Feat: smart time printing — default times (0:00/0:10) suppressed in PDF and Game Day View; asterisk note added when applicable",
@@ -768,7 +1024,10 @@ var VERSION_HISTORY = [
   {
     version: "1.3.6",
     date: "March 26, 2026",
-    changes: [
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       "Feat: walkup songs — per-player field with title, artist, start/end time",
       "Feat: walkup song display on player card (hidden when empty)",
       "Feat: walkup song edit form in player profile editor",
@@ -780,7 +1039,10 @@ var VERSION_HISTORY = [
   {
     version: "1.3.5",
     date: "March 25, 2026",
-    changes: [
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       "Fix: diamond view all-innings mode now shows all coach-configured innings (4, 5, or 6)",
       "Fix: removed Math.min(4) cap that was cutting display to 4 innings regardless of config",
       "Fix: position box height and SVG viewBox now scale dynamically with inning count"
@@ -789,7 +1051,10 @@ var VERSION_HISTORY = [
   {
     version: "1.3.4",
     date: "March 25, 2026",
-    changes: [
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       "Fix: batting averages no longer show leading zero (.333 not 0.333)",
       "Fix: zero at-bats now shows --- instead of 0.000 or NaN",
       "Fix: counting stats (AB, H, R, RBI) always display as integers",
@@ -799,7 +1064,10 @@ var VERSION_HISTORY = [
   {
     version: "1.3.3",
     date: "March 25, 2026",
-    changes: [
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       "Roster protection: migration never overwrites existing roster data",
       "Auto-snapshot on every roster add, remove, and edit",
       "Snapshot on Supabase hydration at app load",
@@ -811,7 +1079,13 @@ var VERSION_HISTORY = [
   {
     version: "1.3.2",
     date: "March 25, 2026",
-    changes: [
+    headline: "Your roster is protected — even if something goes wrong",
+    userChanges: [
+      "Roster is automatically backed up every time you make a change",
+      "If the roster ever appears empty, a Restore option appears immediately"
+    ],
+    techNote: "Under-the-hood stability improvements",
+    internalChanges: [
       "Navigation restructured: Roster/Defense/Batting/Schedule/Print in top row; Feedback/Links/About in second row",
       "Home screen: collapsible What's New section, dark-styled Links section",
       "Portrait header: dynamic team initial, home hint, explicit \u2190 Home button",
@@ -824,7 +1098,10 @@ var VERSION_HISTORY = [
   {
     version: "1.3.1",
     date: "March 25, 2026",
-    changes: [
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       "Fixed V2 lineup engine: LC/RC positions now assign correctly (was silently falling back to V1 on every run)",
       "Batting order now updates automatically after every auto-assign using V2 skill scores"
     ]
@@ -832,7 +1109,14 @@ var VERSION_HISTORY = [
   {
     version: "1.3.0",
     date: "March 25, 2026",
-    changes: [
+    headline: "Smarter player profiles and lineup engine",
+    userChanges: [
+      "Player profiles now have dedicated sections for Fielding, Batting, Base Running, Effort, and Constraints",
+      "Lineup engine uses actual skill scores to assign positions",
+      "Skip Bench and Preferred/Avoid Positions all in one Constraints card"
+    ],
+    techNote: "Performance and reliability improvements",
+    internalChanges: [
       "Player profile UI rebuilt with collapsible V2 sections (Fielding, Batting, Base Running, Effort, Lineup Constraints, Development Focus)",
       "New scoring engine drives lineup assignments using fielding reliability, reaction, arm strength, batting contact/power/discipline, and running speed",
       "Lineup Constraints card: Skip Bench flag, Out This Game, Preferred Positions and Avoid Positions all in one place",
@@ -845,14 +1129,24 @@ var VERSION_HISTORY = [
   {
     version: "1.2.1",
     date: "March 24, 2026",
-    changes: [
+    headline: "First release — your lineup, built in seconds",
+    userChanges: [
+      "Generate a fair, balanced lineup for up to 12 players in under 60 seconds",
+      "Every player gets equal time across all field positions over the season",
+      "Share a read-only link with parents — no account needed to view"
+    ],
+    techNote: "Initial release",
+    internalChanges: [
       "Added Sharon Springs Athletics link to Links tab (sharonspringsathletics.org)"
     ]
   },
   {
     version: "1.2.0",
     date: "March 24, 2026",
-    changes: [
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       "Redesigned diamond view: SVG field with green background, outfield arc, dirt infield, and realistic position coordinates",
       "Position boxes: dual-zone design with dark header band per position group and player name area below",
       "Single-inning mode: large player name (14px bold), inning badge, bench player pill at bottom-right",
@@ -867,7 +1161,10 @@ var VERSION_HISTORY = [
   {
     version: "1.1.0",
     date: "March 24, 2026",
-    changes: [
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       "Replaced CF with LC (Left Center) and RC (Right Center) in outfield",
       "Expanded field to 10 players — 1 bench slot per inning",
       "Schema v2 migration — auto-remaps saved CF assignments to LC",
@@ -881,7 +1178,10 @@ var VERSION_HISTORY = [
   {
     version: "1.0.0",
     date: "March 24, 2026",
-    changes: [
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
       "MVP launch — Dugout Lineup live on Vercel",
       "11-constraint auto-assign engine with retry fallback",
       "10-player defensive grid (P, C, 1B, 2B, 3B, SS, LF, LC, RC, RF)",
@@ -7808,11 +8108,24 @@ export default function App() {
                 <span style={{ marginLeft:"auto", fontSize:"11px", color:C.textMuted }}>{isOpen ? "▲" : "▼"}</span>
               </div>
               {isOpen ? (
-                <ul style={{ margin:"0", paddingLeft:"16px" }}>
-                  {v.changes.map(function(ch, ci) {
-                    return <li key={ci} style={{ fontSize:"12px", color:C.text, marginBottom:"3px", lineHeight:"1.5" }}>{ch}</li>;
-                  })}
-                </ul>
+                <div>
+                  <div style={{ fontSize:"0.95rem", fontWeight:"600", color:C.text, marginBottom:"6px", lineHeight:"1.4" }}>{v.headline}</div>
+                  {v.userChanges && v.userChanges.length > 0 ? (
+                    <ul style={{ margin:"0 0 6px 0", paddingLeft:"0", listStyle:"none" }}>
+                      {v.userChanges.map(function(ch, ci) {
+                        return (
+                          <li key={ci} style={{ fontSize:"0.875rem", color:C.textMuted, marginBottom:"3px", lineHeight:"1.5", display:"flex", gap:"6px" }}>
+                            <span style={{ color:"#b8a040", flexShrink:0 }}>✦</span>
+                            <span>{ch}</span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  ) : null}
+                  {v.techNote ? (
+                    <div style={{ fontSize:"0.75rem", color:"#9ca3af", fontStyle:"italic" }}>🔧 {v.techNote}</div>
+                  ) : null}
+                </div>
               ) : null}
             </div>
           );
