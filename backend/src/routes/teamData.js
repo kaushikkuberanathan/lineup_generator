@@ -24,7 +24,10 @@ router.param('teamId', (req, res, next, teamId) => {
     next();
   } catch (err) {
     if (err.status === 403) {
-      return res.status(403).json({ error: err.code, message: err.message });
+      return res.status(403).json({
+        error: err.code,
+        message: err.message
+      });
     }
     next(err);
   }
@@ -101,92 +104,102 @@ async function rosterWipeGuard(teamId, incomingRoster, force) {
 // ── POST /api/teams/:teamId/data ──────────────────────────────────────────────
 
 router.post('/:teamId/data', async (req, res) => {
-  if (!isAdminRequest(req)) {
-    return res.status(403).json({ error: 'FORBIDDEN' });
+  try {
+    if (!isAdminRequest(req)) {
+      return res.status(403).json({ error: 'FORBIDDEN' });
+    }
+
+    const { teamId } = req.params;
+    const { roster, schedule, practices, battingOrder, grid, innings, locked, force, writeSource } = req.body;
+
+    // Guard: refuse to wipe a live roster with an empty one
+    const guard = await rosterWipeGuard(teamId, roster, force);
+    if (guard.blocked) {
+      return res.status(409).json({
+        error: 'ROSTER_WIPE_GUARD',
+        message:
+          'Refusing to overwrite a non-empty roster with an empty one. ' +
+          'Pass force: true to override.',
+        currentRosterCount: guard.currentRosterCount,
+        ...(guard.readError ? { readError: guard.readError } : {}),
+      });
+    }
+
+    const upsertObj = {
+      team_id:       String(teamId),
+      roster:        roster        ?? [],
+      schedule:      schedule      ?? [],
+      practices:     practices     ?? [],
+      batting_order: battingOrder  ?? [],
+      grid:          grid          ?? {},
+      innings:       innings       ?? 6,
+      locked:        locked        ?? false,
+    };
+
+    // Tag the write source so the Postgres trigger can record it in team_data_history
+    const source = writeSource || 'manual';
+
+    // Set session-level write_source so the snapshot trigger captures it
+    await supabaseAdmin.rpc('set_config', {
+      setting: 'app.write_source',
+      value: source,
+      is_local: true,
+    }).catch(() => { /* non-fatal if set_config RPC is unavailable */ });
+
+    const { error } = await supabaseAdmin
+      .from('team_data')
+      .upsert(upsertObj, { onConflict: 'team_id' });
+
+    if (error) {
+      console.error(`[teamData/write] DB upsert error for team ${teamId}:`, error.message);
+      return res.status(500).json({ error: 'DB_ERROR', message: error.message });
+    }
+
+    console.log(
+      `[${new Date().toISOString()}] team_data write OK — team_id=${teamId} ` +
+      `roster=${Array.isArray(roster) ? roster.length : '?'} source=${source}`
+    );
+
+    return res.status(200).json({ ok: true });
+  } catch (err) {
+    console.error('[teamData] POST /:teamId/data uncaught error:', err.message);
+    return res.status(500).json({ error: 'INTERNAL_ERROR', message: err.message });
   }
-
-  const { teamId } = req.params;
-  const { roster, schedule, practices, battingOrder, grid, innings, locked, force, writeSource } = req.body;
-
-  // Guard: refuse to wipe a live roster with an empty one
-  const guard = await rosterWipeGuard(teamId, roster, force);
-  if (guard.blocked) {
-    return res.status(409).json({
-      error: 'ROSTER_WIPE_GUARD',
-      message:
-        'Refusing to overwrite a non-empty roster with an empty one. ' +
-        'Pass force: true to override.',
-      currentRosterCount: guard.currentRosterCount,
-      ...(guard.readError ? { readError: guard.readError } : {}),
-    });
-  }
-
-  const upsertObj = {
-    team_id:       String(teamId),
-    roster:        roster        ?? [],
-    schedule:      schedule      ?? [],
-    practices:     practices     ?? [],
-    batting_order: battingOrder  ?? [],
-    grid:          grid          ?? {},
-    innings:       innings       ?? 6,
-    locked:        locked        ?? false,
-  };
-
-  // Tag the write source so the Postgres trigger can record it in team_data_history
-  const source = writeSource || 'manual';
-
-  // Set session-level write_source so the snapshot trigger captures it
-  await supabaseAdmin.rpc('set_config', {
-    setting: 'app.write_source',
-    value: source,
-    is_local: true,
-  }).catch(() => { /* non-fatal if set_config RPC is unavailable */ });
-
-  const { error } = await supabaseAdmin
-    .from('team_data')
-    .upsert(upsertObj, { onConflict: 'team_id' });
-
-  if (error) {
-    console.error(`[teamData/write] DB upsert error for team ${teamId}:`, error.message);
-    return res.status(500).json({ error: 'DB_ERROR', message: error.message });
-  }
-
-  console.log(
-    `[${new Date().toISOString()}] team_data write OK — team_id=${teamId} ` +
-    `roster=${Array.isArray(roster) ? roster.length : '?'} source=${source}`
-  );
-
-  return res.status(200).json({ ok: true });
 });
 
 // ── GET /api/teams/:teamId/history ────────────────────────────────────────────
 
 router.get('/:teamId/history', async (req, res) => {
-  if (!isAdminRequest(req)) {
-    return res.status(403).json({ error: 'FORBIDDEN' });
+  try {
+    if (!isAdminRequest(req)) {
+      return res.status(403).json({ error: 'FORBIDDEN' });
+    }
+
+    const { teamId } = req.params;
+    const limit = Math.min(parseInt(req.query.limit || '5', 10), 50);
+    const full = req.query.full === 'true';
+
+    const selectCols = full
+      ? 'id, team_id, roster_count, written_at, write_source, snapshot'
+      : 'id, team_id, roster_count, written_at, write_source';
+
+    const { data, error } = await supabaseAdmin
+      .from('team_data_history')
+      .select(selectCols)
+      .eq('team_id', String(teamId))
+      .order('written_at', { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      console.error(`[teamData/history] DB error for team ${teamId}:`, error.message);
+      return res.status(500).json({ error: 'DB_ERROR', message: error.message });
+    }
+
+    return res.status(200).json({ snapshots: data || [] });
+  } catch (err) {
+    console.error('[teamData] GET /:teamId/history uncaught error:', err.message);
+    return res.status(500).json({ error: 'INTERNAL_ERROR', message: err.message });
   }
-
-  const { teamId } = req.params;
-  const limit = Math.min(parseInt(req.query.limit || '5', 10), 50);
-  const full = req.query.full === 'true';
-
-  const selectCols = full
-    ? 'id, team_id, roster_count, written_at, write_source, snapshot'
-    : 'id, team_id, roster_count, written_at, write_source';
-
-  const { data, error } = await supabaseAdmin
-    .from('team_data_history')
-    .select(selectCols)
-    .eq('team_id', String(teamId))
-    .order('written_at', { ascending: false })
-    .limit(limit);
-
-  if (error) {
-    console.error(`[teamData/history] DB error for team ${teamId}:`, error.message);
-    return res.status(500).json({ error: 'DB_ERROR', message: error.message });
-  }
-
-  return res.status(200).json({ snapshots: data || [] });
 });
 
 // ── Export guard helper for use in scripts ────────────────────────────────────

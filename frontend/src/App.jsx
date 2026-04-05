@@ -138,9 +138,18 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.2.8";
+var APP_VERSION = "2.2.9";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.2.9',
+    date: '2026-04-04',
+    changes: [
+      'Fix: async try/catch on all teamData route handlers (POST /:teamId/data, GET /:teamId/history)',
+      'Fix: global error handler respects err.status — 403s return correct status+code, 500s suppress message',
+      'Fix: router.param 403 branch preserved — rejectTestDataInProd errors handled before next(err)'
+    ]
+  },
   {
     version: '2.2.8',
     date: '2026-04-04',

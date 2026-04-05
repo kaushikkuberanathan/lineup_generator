@@ -156,6 +156,11 @@ app.listen(PORT, () => {
 });
 
 app.use((err, req, res, next) => {
-  console.error('[ERROR]', err.message);
-  res.status(500).json({ error: 'INTERNAL_ERROR' });
+  const status = err.status || err.statusCode || 500;
+  const code = err.code || (status === 500 ? 'INTERNAL_ERROR' : 'ERROR');
+  console.error('[ERROR]', status, err.message);
+  res.status(status).json({
+    error: code,
+    message: status === 500 ? undefined : err.message
+  });
 });
