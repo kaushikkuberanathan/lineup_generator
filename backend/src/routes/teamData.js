@@ -141,11 +141,15 @@ router.post('/:teamId/data', async (req, res) => {
     const source = writeSource || 'manual';
 
     // Set session-level write_source so the snapshot trigger captures it
-    await supabaseAdmin.rpc('set_config', {
-      setting: 'app.write_source',
-      value: source,
-      is_local: true,
-    }).catch(() => { /* non-fatal if set_config RPC is unavailable */ });
+    try {
+      await supabaseAdmin.rpc('set_config', {
+        setting: 'app.write_source',
+        value: source,
+        is_local: true,
+      });
+    } catch (_) {
+      // set_config is best-effort — not fatal if unsupported
+    }
 
     const { error } = await supabaseAdmin
       .from('team_data')

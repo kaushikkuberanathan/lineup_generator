@@ -138,9 +138,16 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.2.10";
+var APP_VERSION = "2.2.11";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.2.11',
+    date: '2026-04-05',
+    changes: [
+      'Fix: supabaseAdmin.rpc().catch() replaced with try/catch — Supabase builder does not expose .catch() directly; was silently swallowing the error before rosterWipeGuard could run'
+    ]
+  },
   {
     version: '2.2.10',
     date: '2026-04-05',
