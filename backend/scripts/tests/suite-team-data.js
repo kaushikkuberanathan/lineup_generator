@@ -40,7 +40,10 @@ async function run(test, BASE_URL, supabaseAdmin, state) {
     }
     const res = await fetch(`${BASE_URL}/api/teams/${TEST_TEAM_ID}/data`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(process.env.ADMIN_KEY ? { 'X-Admin-Key': process.env.ADMIN_KEY } : {})
+      },
       body: JSON.stringify({
         roster:      [{ id: 'p1', firstName: 'Test', lastName: 'Player' }],
         schedule:    [],
@@ -64,7 +67,10 @@ async function run(test, BASE_URL, supabaseAdmin, state) {
     const emptyTeamId = `test-td-empty-${state.runId}`;
     const res = await fetch(`${BASE_URL}/api/teams/${emptyTeamId}/data`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(process.env.ADMIN_KEY ? { 'X-Admin-Key': process.env.ADMIN_KEY } : {})
+      },
       body: JSON.stringify({ roster: [], writeSource: 'test-suite' }),
     });
     const data = await res.json();
@@ -85,7 +91,10 @@ async function run(test, BASE_URL, supabaseAdmin, state) {
   await test('TD-04', 'POST empty roster on live team → 409 ROSTER_WIPE_GUARD', async () => {
     const res = await fetch(`${BASE_URL}/api/teams/${TEAM_ID}/data`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(process.env.ADMIN_KEY ? { 'X-Admin-Key': process.env.ADMIN_KEY } : {})
+      },
       body: JSON.stringify({ roster: [], writeSource: 'test-suite' }),
     });
     const data = await res.json();
@@ -110,7 +119,9 @@ async function run(test, BASE_URL, supabaseAdmin, state) {
   // ── TD-06: history returns snapshots array ───────────────────────────────────
 
   await test('TD-06', 'GET /api/teams/:id/history → 200 { snapshots: [...] }', async () => {
-    const res = await fetch(`${BASE_URL}/api/teams/${TEAM_ID}/history`);
+    const res = await fetch(`${BASE_URL}/api/teams/${TEAM_ID}/history`, {
+      headers: { ...(process.env.ADMIN_KEY ? { 'X-Admin-Key': process.env.ADMIN_KEY } : {}) }
+    });
     const data = await res.json();
     return {
       pass: res.status === 200 && Array.isArray(data.snapshots),
@@ -122,7 +133,9 @@ async function run(test, BASE_URL, supabaseAdmin, state) {
   // ── TD-07: snapshot shape ────────────────────────────────────────────────────
 
   await test('TD-07', 'GET /history — snapshots have id, team_id, roster_count, written_at', async () => {
-    const res = await fetch(`${BASE_URL}/api/teams/${TEAM_ID}/history`);
+    const res = await fetch(`${BASE_URL}/api/teams/${TEAM_ID}/history`, {
+      headers: { ...(process.env.ADMIN_KEY ? { 'X-Admin-Key': process.env.ADMIN_KEY } : {}) }
+    });
     const data = await res.json();
     const snap = data.snapshots?.[0];
     if (!snap) {

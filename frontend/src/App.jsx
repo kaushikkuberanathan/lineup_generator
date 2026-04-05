@@ -138,9 +138,19 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.2.9";
+var APP_VERSION = "2.2.10";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.2.10',
+    date: '2026-04-05',
+    changes: [
+      'Fix: TD-04 sends X-Admin-Key in CI via ADMIN_KEY secret — wipe guard now reachable from GitHub Actions',
+      'Fix: TD-02, TD-03, TD-06, TD-07 also wired with X-Admin-Key header for correctness',
+      'Fix: debug logging cleaned up in teamData POST catch block',
+      'Docs: timing attack TODO documented on isAdminRequest() === comparison'
+    ]
+  },
   {
     version: '2.2.9',
     date: '2026-04-04',

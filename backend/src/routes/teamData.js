@@ -34,6 +34,7 @@ router.param('teamId', (req, res, next, teamId) => {
 });
 
 // ── Auth helper ───────────────────────────────────────────────────────────────
+// TODO: replace === with crypto.timingSafeEqual() for timing-attack-safe key comparison (Phase 5)
 
 function isAdminRequest(req) {
   const isLocalhost =
@@ -162,8 +163,8 @@ router.post('/:teamId/data', async (req, res) => {
 
     return res.status(200).json({ ok: true });
   } catch (err) {
-    console.error('[teamData] POST /:teamId/data uncaught error:', err.message);
-    return res.status(500).json({ error: 'INTERNAL_ERROR', message: err.message });
+    console.error('[teamData] POST /:teamId/data uncaught:', err.message, err.stack);
+    return res.status(500).json({ error: 'INTERNAL_ERROR' });
   }
 });
 
