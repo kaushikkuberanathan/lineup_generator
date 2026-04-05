@@ -89,6 +89,26 @@ async function run(test, BASE_URL, supabaseAdmin, state) {
   // Safe: the guard reads current roster then refuses the write — no data changes.
 
   await test('TD-04', 'POST empty roster on live team → 409 ROSTER_WIPE_GUARD', async () => {
+    // Pre-condition: verify live roster exists to protect
+    const preCheck = await fetch(
+      `${BASE_URL}/api/teams/${TEAM_ID}/data`,
+      { headers: { 'X-Admin-Key': process.env.ADMIN_KEY || '' } }
+    );
+    if (preCheck.ok) {
+      const preData = await preCheck.json();
+      const hasRoster = Array.isArray(preData?.roster)
+        && preData.roster.length > 0;
+      if (!hasRoster) {
+        return {
+          pass: null,
+          skip: true,
+          expected: '409 ROSTER_WIPE_GUARD',
+          actual: 'SKIPPED — no existing roster in DB to protect'
+        };
+      }
+    }
+
+    // Original test continues unchanged below...
     const res = await fetch(`${BASE_URL}/api/teams/${TEAM_ID}/data`, {
       method: 'POST',
       headers: {

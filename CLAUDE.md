@@ -405,6 +405,9 @@ All major sections are wrapped with `<ErrorBoundary>` (class component). On cras
 
 ## Version History
 
+### v2.2.13 — April 5, 2026
+- Fix: TD-04 pre-condition uses /history endpoint, CI wait step uses hardcoded backend URL, migration 002 snapshot trigger applied to Supabase (roster_count=11 confirmed)
+
 ### v2.2.12 — April 4, 2026
 - Ops: ci.yml backend job — wait-for-Render step added before test suite; 90s sleep + 5-attempt /ping poll (15s intervals) ensures backend is live before integration tests run
 

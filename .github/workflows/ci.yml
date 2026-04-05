@@ -66,7 +66,7 @@ jobs:
           echo "Checking backend health..."
           for i in {1..5}; do
             STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-              ${{ secrets.PROD_BACKEND_URL }}/ping)
+              https://lineup-generator-backend.onrender.com/ping)
             echo "Attempt $i: /ping returned $STATUS"
             if [ "$STATUS" = "200" ]; then
               echo "Backend is ready"

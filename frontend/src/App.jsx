@@ -138,7 +138,7 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.2.12";
+var APP_VERSION = "2.2.13";
 
 var VERSION_HISTORY = [
   {
