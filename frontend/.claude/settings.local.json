@@ -55,7 +55,9 @@
       "Bash(npm ci:*)",
       "Bash(grep:*)",
       "Bash(rm:*)",
-      "Bash(npm audit:*)"
+      "Bash(npm audit:*)",
+      "mcp__plugin_github_github__get_file_contents",
+      "Bash(where gh:*)"
     ]
   }
 }

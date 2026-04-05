@@ -138,9 +138,17 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.2.7";
+var APP_VERSION = "2.2.8";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.2.8',
+    date: '2026-04-04',
+    changes: [
+      'Build: app_version auto-injected from package.json via vite.config.js define (__APP_VERSION__), VITE_APP_VERSION env var removed',
+      'Fix: analytics.js SSR guard (window/navigator) for getDeviceContext and mixpanel.register'
+    ]
+  },
   {
     version: '2.2.7',
     date: '2026-04-04',

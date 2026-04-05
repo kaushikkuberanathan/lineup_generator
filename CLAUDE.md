@@ -279,8 +279,7 @@ All future migrations go in `backend/src/db/migrations/` only.
 - [ ] Run npm test and confirm 204 passed / 1 skipped / 0 failed before pushing
 - [ ] Never use kaushik.kuberanathan@gmail.com in automated test suites
       (Supabase rate limits OTP sends per address — use dedicated test emails)
-- [ ] 8) Bump VITE_APP_VERSION in frontend/.env to match App.jsx version
-- [ ] 9) If .env is gitignored: update VITE_APP_VERSION in Vercel project settings → Environment Variables
+- Note: app_version in analytics is derived automatically from frontend/package.json at build time via vite.config.js define. No manual env var sync needed — bumping package.json is sufficient.
 
 ## Analytics
 - 27 Mixpanel events + 4 Vercel Analytics events

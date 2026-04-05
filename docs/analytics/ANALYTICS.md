@@ -301,12 +301,9 @@ Segments to compare across any funnel or report:
 
 ## Deployment Checklist — Analytics Steps
 
-Added to the standard deployment checklist:
-
-8. Bump `VITE_APP_VERSION` in `frontend/.env` to match `APP_VERSION` 
-   in `App.jsx`
-9. If `frontend/.env` is gitignored: also update the value in 
-   Vercel project settings → Environment Variables → `VITE_APP_VERSION`
+Note: app_version super property is injected automatically 
+from frontend/package.json at Vite build time. 
+Single source of truth: frontend/package.json version field.
 
 ---
 

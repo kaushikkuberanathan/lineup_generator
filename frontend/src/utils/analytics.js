@@ -43,7 +43,7 @@ if (MIXPANEL_TOKEN !== "") {
     ignore_dnt: false,
     opt_out_tracking_by_default: false
   });
-  var APP_VERSION = import.meta.env.VITE_APP_VERSION || "unknown";
+  var APP_VERSION = __APP_VERSION__ || "unknown";
   // Register device context as super properties on every event
   if (typeof window !== "undefined") {
     mixpanel.register({
