@@ -139,9 +139,29 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.2.14";
+var APP_VERSION = "2.2.15";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.2.15',
+    date: 'April 2026',
+    headline: "App install prompt now always visible on Android and iPhone",
+    userChanges: [
+      "Install prompt is now always visible at the bottom of every screen — no more missing it",
+      "Android: tap Install to add Dugout Lineup to your home screen in one step",
+      "iPhone: follow the on-screen prompt (Share → Add to Home Screen) — visible on every tab",
+    ],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
+      'Feat: persistent PWA install banner — fixed above bottom nav (position:fixed, zIndex:199), visible on all tabs, hidden only in game mode and when already installed (standalone)',
+      'Android: shows Install button when beforeinstallprompt is ready; falls back to Chrome menu instructions if prompt not yet fired',
+      'iOS: shows Share → Add to Home Screen instructions immediately on mount (no visited-once gate, no dismiss)',
+      'Removed: handleDismissInstall, pwa_install_snoozed localStorage key, ios_install_dismissed localStorage key, showIOSInstallBanner state — merged into single showInstallBanner',
+      'Removed: banner-surfacing code in pin-finalize handler and LockFlow onConfirmLock — banner is always on, no need to surface at specific moments',
+      'Scroll body paddingBottom increases to 136px when banner visible (was 80px) to prevent content hiding behind banner',
+      'Fix: overscroll-behavior: none added to html + body in index.css — prevents pull-to-refresh bounce on Android and rubber-band scroll on iOS',
+    ]
+  },
   {
     version: '2.2.14',
     date: 'April 2026',
@@ -156,6 +176,28 @@ var VERSION_HISTORY = [
       'Migrated all 7 LINKS array entries to outboundLinkProps',
       'Added 17-test Vitest suite for trackingUrl utility',
       'vite.config.js updated to include co-located test files under src/**'
+    ]
+  },
+  {
+    version: '2.2.13',
+    date: '2026-04-05',
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
+      'Fix: smoke test DEV_BACKEND_URL hardcoded to Render URL — was pulling from a missing GitHub secret',
+      'Fix: ANTHROPIC_API_KEY used = instead of : in .env.smoke block in ci.yml'
+    ]
+  },
+  {
+    version: '2.2.12',
+    date: '2026-04-04',
+    headline: "Stability and performance update",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
+      'Ops: ci.yml backend job — wait-for-Render step added before integration test suite; 90s sleep + 5-attempt /ping poll (15s intervals) ensures backend is live after Render deploy',
+      'Ops: dual-layer VERSION_HISTORY schema migration — all entries converted from changes[] to internalChanges[]; headline, userChanges, techNote fields added'
     ]
   },
   {
@@ -2648,20 +2690,15 @@ export default function App() {
     if (gameModeActive) vaTrack("game_mode_entered");
   }, [gameModeActive]);
 
-  // PWA install prompt — capture and defer until coach chooses to install
+  // PWA install prompt — capture and show persistent banner immediately (Android/Chrome only)
   useEffect(function() {
     var handler = function(e) {
       e.preventDefault();
       setDeferredPrompt(e);
-      var hasVisitedBefore = localStorage.getItem("pwa_visited");
-      var snoozedUntil = parseInt(localStorage.getItem("pwa_install_snoozed") || "0");
-      var isSnoozed = Date.now() < snoozedUntil;
-      var isInstalled = localStorage.getItem("pwa_installed");
-      if (hasVisitedBefore && !isSnoozed && !isInstalled) {
+      if (!isStandalone) {
         setShowInstallBanner(true);
         track("pwa_install_prompted");
       }
-      localStorage.setItem("pwa_visited", "1");
     };
     window.addEventListener("beforeinstallprompt", handler);
     window.addEventListener("appinstalled", function() {
@@ -2674,21 +2711,13 @@ export default function App() {
     return function() {
       window.removeEventListener("beforeinstallprompt", handler);
     };
-  }, []);
+  }, [isStandalone]);
 
-  // iOS install banner — Safari doesn't fire beforeinstallprompt; show manual instructions instead
+  // iOS install banner — Safari doesn't fire beforeinstallprompt; show immediately if not standalone
   useEffect(function() {
-    if (!isIOS) return;
-    if (isStandalone) return;
-    if (localStorage.getItem("pwa_installed")) return;
-    if (localStorage.getItem("ios_install_dismissed")) return;
-    // Only show after user has visited once (not on very first load)
-    if (!localStorage.getItem("pwa_visited")) {
-      localStorage.setItem("pwa_visited", "1");
-      return;
-    }
-    setShowIOSInstallBanner(true);
-  }, []);
+    if (!isIOS || isStandalone) return;
+    setShowInstallBanner(true);
+  }, [isIOS, isStandalone]);
 
   var _ros = useState(initRoster);
   var roster = _ros[0]; var setRoster = _ros[1];
@@ -2912,8 +2941,6 @@ export default function App() {
   var _deferredPrompt = useState(null);
   var deferredPrompt = _deferredPrompt[0]; var setDeferredPrompt = _deferredPrompt[1];
   var isIOS = typeof window !== "undefined" && /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-  var _showIOSInstallBanner = useState(false);
-  var showIOSInstallBanner = _showIOSInstallBanner[0]; var setShowIOSInstallBanner = _showIOSInstallBanner[1];
 
   var warnings = useMemo(function() { return validateGrid(grid, roster, innings); }, [grid, roster, innings]);
 
@@ -3579,20 +3606,12 @@ export default function App() {
 
   var handleInstallClick = async function() {
     if (!deferredPrompt) return;
-    setShowInstallBanner(false);
     deferredPrompt.prompt();
     var result = await deferredPrompt.userChoice;
     if (result.outcome === "accepted") {
       localStorage.setItem("pwa_installed", "1");
     }
     setDeferredPrompt(null);
-  };
-
-  var handleDismissInstall = function() {
-    setShowInstallBanner(false);
-    // Snooze for 3 days before showing again
-    var snoozeUntil = Date.now() + (3 * 24 * 60 * 60 * 1000);
-    localStorage.setItem("pwa_install_snoozed", String(snoozeUntil));
   };
 
   function generateLineup() {
@@ -4296,69 +4315,6 @@ export default function App() {
                 );
               })()}
 
-              {showInstallBanner ? (
-                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
-                  gap:10, margin:"12px 0", padding:"12px 14px",
-                  background:"#1a2f5e", border:"1px solid rgba(245,200,66,0.3)",
-                  borderRadius:10, boxShadow:"0 2px 8px rgba(0,0,0,0.15)" }}>
-                  <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontSize:13, fontWeight:700, color:"#fff", marginBottom:2 }}>
-                      📲 Install Dugout Lineup
-                    </div>
-                    <div style={{ fontSize:11, color:"rgba(255,255,255,0.65)", lineHeight:1.4 }}>
-                      One tap access on game day — no browser needed
-                    </div>
-                  </div>
-                  <div style={{ display:"flex", gap:6, flexShrink:0 }}>
-                    <button onClick={handleDismissInstall}
-                      style={{ padding:"6px 10px", fontSize:11, background:"transparent",
-                        color:"rgba(255,255,255,0.5)", border:"1px solid rgba(255,255,255,0.2)",
-                        borderRadius:6, cursor:"pointer" }}>
-                      Later
-                    </button>
-                    <button onClick={handleInstallClick}
-                      style={{ padding:"6px 14px", fontSize:12, fontWeight:700,
-                        background:"#f5c842", color:"#0f1f3d", border:"none",
-                        borderRadius:6, cursor:"pointer", whiteSpace:"nowrap" }}>
-                      Install
-                    </button>
-                  </div>
-                </div>
-              ) : null}
-
-              {showIOSInstallBanner ? (
-                <div style={{ margin:"12px 0", padding:"14px", background:"#1a2f5e",
-                  border:"1px solid rgba(245,200,66,0.3)", borderRadius:10,
-                  boxShadow:"0 2px 8px rgba(0,0,0,0.15)" }}>
-                  <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:8 }}>
-                    <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ fontSize:13, fontWeight:700, color:"#fff", marginBottom:6 }}>
-                        📲 Add to Home Screen
-                      </div>
-                      <div style={{ fontSize:12, color:"rgba(255,255,255,0.8)", lineHeight:1.6 }}>
-                        Install this app for one-tap access on game day:
-                      </div>
-                      <div style={{ fontSize:12, color:"rgba(255,255,255,0.7)", lineHeight:1.8, marginTop:4 }}>
-                        1. Tap the <span style={{ fontWeight:700, color:"#f5c842" }}>Share</span> button{" "}
-                        <span style={{ fontSize:15 }}>⎙</span> at the bottom of Safari
-                      </div>
-                      <div style={{ fontSize:12, color:"rgba(255,255,255,0.7)", lineHeight:1.8 }}>
-                        2. Scroll down and tap{" "}
-                        <span style={{ fontWeight:700, color:"#f5c842" }}>"Add to Home Screen"</span>
-                      </div>
-                    </div>
-                    <button onClick={function() {
-                        setShowIOSInstallBanner(false);
-                        localStorage.setItem("ios_install_dismissed", "1");
-                      }}
-                      style={{ padding:"4px 8px", fontSize:18, background:"transparent",
-                        color:"rgba(255,255,255,0.4)", border:"none",
-                        borderRadius:6, cursor:"pointer", lineHeight:1, flexShrink:0 }}>
-                      ×
-                    </button>
-                  </div>
-                </div>
-              ) : null}
 
               <ErrorBoundary fallback="Team List">
               {teams.length > 0 ? (
@@ -8192,11 +8148,6 @@ export default function App() {
       } else if (pinModal === "finalize") {
         if (pinInput !== coachPin) { setPinError("Incorrect PIN."); return; }
         persistLineupLocked(true);
-        // Surface install banner after finalize — high-engagement moment
-        if (deferredPrompt && !localStorage.getItem("pwa_installed")) {
-          var _snoozedPin = parseInt(localStorage.getItem("pwa_install_snoozed") || "0");
-          if (Date.now() >= _snoozedPin) { setShowInstallBanner(true); }
-        }
         setPinModal(null); setPinInput(""); setPinError("");
       } else if (pinModal === "setup") {
         if (!/^\d{4}$/.test(pinInput)) { setPinError("PIN must be exactly 4 digits."); return; }
@@ -9129,7 +9080,7 @@ export default function App() {
         </ErrorBoundary>
       </div>
       {subTabBar}
-      <div id="app-scroll-body" style={S.body}>
+      <div id="app-scroll-body" style={Object.assign({}, S.body, showInstallBanner && !gameModeActive ? { paddingBottom:"136px" } : {})}>
         <div style={{ width:"100%", maxWidth:"480px", marginLeft:"auto", marginRight:"auto", paddingLeft:"16px", paddingRight:"16px", boxSizing:"border-box" }}>
           {(primaryTab === "home" || (!activeTeam && primaryTab !== "more")) ? renderHome() : tabContent}
         </div>
@@ -9150,6 +9101,39 @@ export default function App() {
           />
         ) : null}
       </ErrorBoundary>
+      {showInstallBanner && !gameModeActive ? (
+        <div style={{ position:"fixed", bottom:"calc(56px + env(safe-area-inset-bottom, 0px))", left:0, right:0, zIndex:199,
+          background:"#1a2f5e", borderTop:"1px solid rgba(245,200,66,0.4)",
+          padding:"10px 16px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:12 }}>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontSize:13, fontWeight:700, color:"#fff", marginBottom:2 }}>
+              📲 Install Dugout Lineup
+            </div>
+            {isIOS ? (
+              <div style={{ fontSize:11, color:"rgba(255,255,255,0.75)", lineHeight:1.5 }}>
+                Tap <span style={{ fontWeight:700, color:"#f5c842" }}>⎙ Share</span> then tap{" "}
+                <span style={{ fontWeight:700, color:"#f5c842" }}>"Add to Home Screen"</span>
+              </div>
+            ) : deferredPrompt ? (
+              <div style={{ fontSize:11, color:"rgba(255,255,255,0.65)" }}>
+                One-tap access on game day — no browser needed
+              </div>
+            ) : (
+              <div style={{ fontSize:11, color:"rgba(255,255,255,0.65)" }}>
+                In Chrome, tap ⋮ menu → "Add to Home Screen"
+              </div>
+            )}
+          </div>
+          {!isIOS && deferredPrompt ? (
+            <button onClick={handleInstallClick}
+              style={{ padding:"8px 18px", fontSize:12, fontWeight:700,
+                background:"#f5c842", color:"#0f1f3d", border:"none",
+                borderRadius:6, cursor:"pointer", whiteSpace:"nowrap", flexShrink:0 }}>
+              Install
+            </button>
+          ) : null}
+        </div>
+      ) : null}
       {!gameModeActive ? renderBottomNav() : null}
       {renderExitSheet()}
       {gameModeActive ? (
@@ -9242,10 +9226,6 @@ export default function App() {
             hasPin={!!coachPin}
             onConfirmLock={function() {
               persistLineupLocked(true);
-              if (deferredPrompt && !localStorage.getItem("pwa_installed")) {
-                var _snoozed = parseInt(localStorage.getItem("pwa_install_snoozed") || "0");
-                if (Date.now() >= _snoozed) { setShowInstallBanner(true); }
-              }
             }}
             onRequestPin={function() { setPinModal("finalize"); setPinInput(""); setPinError(""); }}
             onClose={function() { setLockFlowOpen(false); }}

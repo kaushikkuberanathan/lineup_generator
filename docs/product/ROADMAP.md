@@ -1,7 +1,13 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: April 5, 2026 (v2.2.14)
+> Last updated: April 5, 2026 (v2.2.15)
 > MVP launched: March 24, 2026
+
+---
+
+## v2.2.15 — 2026-04-05
+- Feat: persistent PWA install banner — fixed above bottom nav on all tabs, Android install button or Chrome instructions, iOS Share → Add to Home Screen, no dismiss/snooze
+- Fix: overscroll-behavior: none on html + body — prevents pull-to-refresh bounce (Android) and rubber-band scroll (iOS)
 
 ---
 
