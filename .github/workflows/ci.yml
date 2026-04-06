@@ -82,6 +82,7 @@ jobs:
         working-directory: backend
         env:
           SUPABASE_URL:              ${{ secrets.SUPABASE_URL }}
+          ANTHROPIC_API_KEY:         ${{ secrets.ANTHROPIC_API_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           SUPABASE_ANON_KEY:         ${{ secrets.SUPABASE_ANON_KEY }}
           BACKEND_URL:               https://lineup-generator-backend.onrender.com
@@ -108,7 +109,8 @@ jobs:
       - name: Write .env.smoke
         run: |
           cat > .env.smoke << EOF
-          DEV_BACKEND_URL=${{ secrets.DEV_BACKEND_URL }}
+          DEV_BACKEND_URL=https://lineup-generator-backend.onrender.com
+          ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}
           PROD_BACKEND_URL=${{ secrets.PROD_BACKEND_URL }}
           DEV_FRONTEND_URL=${{ secrets.DEV_FRONTEND_URL }}
           PROD_FRONTEND_URL=${{ secrets.PROD_FRONTEND_URL }}
