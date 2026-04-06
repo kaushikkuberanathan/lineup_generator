@@ -405,6 +405,9 @@ All major sections are wrapped with `<ErrorBoundary>` (class component). On cras
 
 ## Version History
 
+### v2.2.17 — April 6, 2026
+- Docs: legal content refresh — removed stale phone OTP references, updated auth description to email magic link + Google sign-in, fixed phantom About page email reference, updated all legal doc dates to April 2026
+
 ### v2.2.16 — April 5, 2026
 - Analytics: full PWA install funnel — pwa_banner_shown (platform, prompt_ready, browser), pwa_install_clicked, pwa_install_accepted, pwa_install_declined, pwa_installed with platform property
 

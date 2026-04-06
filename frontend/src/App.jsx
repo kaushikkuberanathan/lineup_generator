@@ -139,9 +139,25 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.2.16";
+var APP_VERSION = "2.2.17";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.2.17',
+    date: 'April 2026',
+    headline: "Legal policies updated",
+    userChanges: [
+      "Privacy policy, terms, and account info updated to reflect current sign-in method (email + Google)",
+    ],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
+      'Legal content refresh: removed stale phone OTP references from Privacy Policy and Access & Accounts',
+      'Access & Accounts: "invite-only beta" → "available to approved coaches"; auth description updated to email magic link + Google sign-in',
+      'Report a Problem: removed phantom "email on the About page" reference — trimmed to Feedback tab only',
+      'All 6 legal doc lastUpdated fields: March 2026 → April 2026',
+      'LegalSection.jsx footer date: March 2026 → April 2026',
+    ]
+  },
   {
     version: '2.2.16',
     date: 'April 2026',

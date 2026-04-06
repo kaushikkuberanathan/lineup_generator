@@ -1,7 +1,12 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: April 5, 2026 (v2.2.16)
+> Last updated: April 6, 2026 (v2.2.17)
 > MVP launched: March 24, 2026
+
+---
+
+## v2.2.17 — 2026-04-06
+- Docs: legal content refresh — removed stale phone OTP references, updated auth to email magic link + Google sign-in, fixed phantom email reference, updated all legal doc dates to April 2026
 
 ---
 

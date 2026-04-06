@@ -54,7 +54,7 @@ export function LegalSection({ C, S }) {
         );
       })}
       <div style={{ padding: "16px", fontSize: "11px", color: C.textMuted, textAlign: "center", lineHeight: "1.6" }}>
-        Last updated March 2026 &middot; Questions? Use the Feedback tab.
+        Last updated April 2026 &middot; Questions? Use the Feedback tab.
       </div>
     </div>
   );

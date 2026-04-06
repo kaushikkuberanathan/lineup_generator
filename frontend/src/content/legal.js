@@ -11,7 +11,7 @@ export var LEGAL_DOCS = [
     title: "Privacy Policy",
     emoji: "🔒",
     summary: "What data we collect and how it's used",
-    lastUpdated: "March 2026",
+    lastUpdated: "April 2026",
     sections: [
       {
         type: "p",
@@ -23,8 +23,7 @@ export var LEGAL_DOCS = [
         items: [
           "Team and roster data you enter (names, positions, batting stats)",
           "Schedule and game result data you enter",
-          "App usage analytics (Mixpanel) — anonymous, no personally identifiable information",
-          "Phone number (if you opt into the beta access program)"
+          "App usage analytics (Mixpanel) — anonymous, no personally identifiable information"
         ]
       },
       { type: "h3", text: "Where It's Stored" },
@@ -54,7 +53,7 @@ export var LEGAL_DOCS = [
     title: "Terms of Use",
     emoji: "📋",
     summary: "Your rights and responsibilities when using the app",
-    lastUpdated: "March 2026",
+    lastUpdated: "April 2026",
     sections: [
       {
         type: "p",
@@ -95,7 +94,7 @@ export var LEGAL_DOCS = [
     title: "Child Safety",
     emoji: "🛡️",
     summary: "How we protect minors who appear in the app",
-    lastUpdated: "March 2026",
+    lastUpdated: "April 2026",
     sections: [
       {
         type: "p",
@@ -128,7 +127,7 @@ export var LEGAL_DOCS = [
     title: "Content Standards",
     emoji: "📝",
     summary: "Guidelines for content entered into the app",
-    lastUpdated: "March 2026",
+    lastUpdated: "April 2026",
     sections: [
       {
         type: "p",
@@ -165,11 +164,11 @@ export var LEGAL_DOCS = [
     title: "Access & Accounts",
     emoji: "🔑",
     summary: "How coach accounts and access requests work",
-    lastUpdated: "March 2026",
+    lastUpdated: "April 2026",
     sections: [
       {
         type: "p",
-        text: "Dugout Lineup currently operates in an invite-only beta. Here's how access works."
+        text: "Dugout Lineup is currently available to approved coaches. Here's how access works."
       },
       { type: "h3", text: "No Account Required (Offline Mode)" },
       {
@@ -179,12 +178,12 @@ export var LEGAL_DOCS = [
       { type: "h3", text: "Cloud Sync (Beta)" },
       {
         type: "p",
-        text: "To sync data across devices or restore from the cloud, you'll need an approved account. Accounts use phone number verification — no passwords. Request access using the Feedback form."
+        text: "To sync data across devices or restore from the cloud, you'll need an approved account. Accounts use email magic link or Google sign-in — no passwords required. Request access using the Feedback form."
       },
       { type: "h3", text: "Account Approval" },
       {
         type: "p",
-        text: "Access requests are reviewed manually. Approved coaches receive a text message with a one-time code to verify their phone number. Once verified, cloud sync is enabled."
+        text: "Access requests are reviewed manually. Approved coaches receive an email with a magic link to sign in, or can use Google sign-in. Once approved, cloud sync is enabled."
       },
       { type: "h3", text: "Account Removal" },
       {
@@ -198,7 +197,7 @@ export var LEGAL_DOCS = [
     title: "Report a Problem",
     emoji: "🚩",
     summary: "How to flag issues, bugs, or safety concerns",
-    lastUpdated: "March 2026",
+    lastUpdated: "April 2026",
     sections: [
       {
         type: "p",
@@ -222,7 +221,7 @@ export var LEGAL_DOCS = [
       { type: "h3", text: "Account or Privacy Requests" },
       {
         type: "p",
-        text: "To request account deletion, data export, or have a privacy question answered, use the Feedback tab or contact us directly at the email on the About page."
+        text: "To request account deletion, data export, or have a privacy question answered, use the Feedback tab."
       },
       { type: "h3", text: "Response Time" },
       {
