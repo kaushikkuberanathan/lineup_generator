@@ -273,7 +273,7 @@ All future migrations go in `backend/src/db/migrations/` only.
 - **Backend**: Render auto-deploys from `main` (root dir: `backend/`)
 
 ## Pre-deploy checklist additions (Phase 4B)
-- [ ] Reset loginLimiter max from 50 back to 5 in backend/src/routes/auth.js
+- [ ] loginLimiter: 15min window, max 5, applied to POST /magic-link in backend/src/routes/auth.js (already set — verify before prod auth launch)
 - [ ] Confirm RESEND_DOMAIN_VERIFIED=true in Render env vars
       (only after custom domain is verified — enables emails to all recipients)
 - [ ] Run npm test and confirm 204 passed / 1 skipped / 0 failed before pushing
@@ -324,7 +324,7 @@ All future migrations go in `backend/src/db/migrations/` only.
 - Super properties (auto on every event): os, device_type, platform, is_pwa, screen_width, screen_height, app_version
 - Mixpanel identity: established in loadTeam() via mixpanel.identify()
 - Auth events wired but gated — activate with auth gate in App.jsx
-- loginLimiter max MUST be reset to 5 before next prod auth deploy
+- loginLimiter: 15min window, max 5 — applied to POST /magic-link (v2.2.18)
 
 ## Test Suite
 
@@ -404,6 +404,12 @@ All major sections are wrapped with `<ErrorBoundary>` (class component). On cras
 ---
 
 ## Version History
+
+### v2.2.18 — April 6, 2026
+- Fix: MERGE_FIELDS extracted to single shared const (was duplicated at boot hydration and loadTeam hydration)
+- Fix: division migration block now saves mergeLocalScheduleFields result instead of raw seed — gameBall/snackDuty/scoreReported no longer overwritten on migration run
+- Fix: boot hydration now merges DB + local schedules instead of preferring local blindly — new Supabase games no longer silently dropped
+- Feat: loginLimiter (15min window, max 5) created and applied to POST /magic-link — express-rate-limit was imported but never instantiated
 
 ### v2.2.17 — April 6, 2026
 - Docs: legal content refresh — removed stale phone OTP references, updated auth description to email magic link + Google sign-in, fixed phantom About page email reference, updated all legal doc dates to April 2026

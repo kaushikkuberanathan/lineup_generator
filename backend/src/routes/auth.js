@@ -34,6 +34,14 @@ const router = express.Router();
 
 // ─── Rate Limiters ────────────────────────────────────────────────────────────
 
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: { error: 'TOO_MANY_ATTEMPTS', message: 'Too many login attempts. Please try again in 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 /**
@@ -194,6 +202,7 @@ router.post(
 
 router.post(
   '/magic-link',
+  loginLimiter,
   [
     body('email').isEmail().normalizeEmail(),
     body('teamId').notEmpty().trim(),

@@ -139,9 +139,24 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.2.17";
+var APP_VERSION = "2.2.18";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.2.18',
+    date: 'April 2026',
+    headline: "Schedule data reliability improvements",
+    userChanges: [
+      "Game ball, snack duty, and score reported fields now survive app restarts and team switches more reliably",
+    ],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
+      "MERGE_FIELDS extracted to single shared const (was duplicated at boot hydration and loadTeam hydration)",
+      "Division migration block (App.jsx): saveJSON now saves mergeLocalScheduleFields result instead of raw seed — prevents gameBall/snackDuty/scoreReported being overwritten on migration run",
+      "Boot hydration (App.jsx): replaced local-wins preference with mergeLocalScheduleFields merge — new Supabase games no longer silently dropped when local schedule is non-empty",
+      "backend/src/routes/auth.js: loginLimiter created (15min window, max 5) and applied to POST /magic-link — express-rate-limit was imported but never instantiated",
+    ],
+  },
   {
     version: '2.2.17',
     date: 'April 2026',
@@ -2316,6 +2331,8 @@ export default function App() {
   var initInnings  = initActiveId ? (loadJSON("team:" + initActiveId + ":innings", 6) || 6) : 6;
   var initGrid_    = initActiveId ? migrateGrid(loadJSON("team:" + initActiveId + ":grid", null), initRoster, initInnings) : null;
 
+  var MERGE_FIELDS = ['scoreReported', 'snackDuty', 'snackNote', 'gameBall'];
+
   if (!window._lineupDbBooted && isSupabaseEnabled) {
     window._lineupDbBooted = true;
     dbLoadTeams().then(function(dbTeams) {
@@ -2359,10 +2376,12 @@ export default function App() {
           }
           // React state: prefer localStorage (may have offline changes) over Supabase
           setRoster(migrateRoster(localRoster));
-          var schedToUse = (localSched && localSched.length > 0)
-            ? localSched
-            : (Array.isArray(dbData.schedule) ? dbData.schedule : []);
-          setSchedule(migrateSchedule(schedToUse));
+          var _dbSchedBoot = migrateSchedule(Array.isArray(dbData.schedule) ? dbData.schedule : []);
+          var _localSchedArr = Array.isArray(localSched) && localSched.length > 0 ? localSched : [];
+          var _bootSched = _localSchedArr.length > 0
+            ? mergeLocalScheduleFields(_dbSchedBoot, _localSchedArr, MERGE_FIELDS)
+            : _dbSchedBoot;
+          setSchedule(_bootSched);
           var bootTeam = merged.find ? merged.find(function(t) { return t.id === bootActiveId; }) : null;
           if (bootTeam) { dbSnapshotRoster(bootActiveId, bootTeam.name, dbData.roster, 'app_load'); }
         }).catch(function(err) {
@@ -2387,7 +2406,6 @@ export default function App() {
               saveJSON("team:" + t.id + ":roster", dbData.roster);
               var localSched = loadJSON("team:" + t.id + ":schedule", []);
               var migratedDbSched = migrateSchedule(Array.isArray(dbData.schedule) ? dbData.schedule : []);
-              var MERGE_FIELDS = ['scoreReported', 'snackDuty', 'snackNote', 'gameBall'];
               var safeSched = mergeLocalScheduleFields(migratedDbSched, localSched, MERGE_FIELDS);
               saveJSON("team:" + t.id + ":schedule", safeSched);
               saveJSON("team:" + t.id + ":grid",     dbData.grid);
@@ -2465,7 +2483,9 @@ export default function App() {
                   innings:      existing && existing.innings       ? existing.innings       : 6,
                   locked:       existing                           ? existing.locked        : false
                 });
-                saveJSON("team:" + captured.id + ":schedule", captured.schedule);
+                var _localSched2 = loadJSON("team:" + captured.id + ":schedule", []);
+                var _mergedSeed = mergeLocalScheduleFields(captured.schedule, _localSched2, MERGE_FIELDS);
+                saveJSON("team:" + captured.id + ":schedule", _mergedSeed);
                 saveJSON("migration:" + captured.id + ":version", MIGRATION_VERSION);
               }).catch(function() {
                 saveJSON("migration:" + captured.id + ":version", MIGRATION_VERSION);
@@ -3429,7 +3449,6 @@ export default function App() {
         if (dbData.roster && dbData.roster.length > 0) { dbSnapshotRoster(team.id, team.name, dbData.roster, 'app_load'); }
         var migratedDbSchedule = migrateBattingPerf(migrateSchedule(Array.isArray(dbData.schedule) ? dbData.schedule : []), migrateRoster(dbData.roster));
         // Merge locally-set fields that Supabase may not have (set during hydration window)
-        var MERGE_FIELDS = ['scoreReported', 'snackDuty', 'snackNote', 'gameBall'];
         var mergedSchedule = mergeLocalScheduleFields(migratedDbSchedule, localSchedBeforeHydrate, MERGE_FIELDS);
         saveJSON("team:" + team.id + ":schedule", mergedSchedule);
         setSchedule(mergedSchedule);

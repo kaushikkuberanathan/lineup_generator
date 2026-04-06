@@ -1,7 +1,15 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: April 6, 2026 (v2.2.17)
+> Last updated: April 6, 2026 (v2.2.18)
 > MVP launched: March 24, 2026
+
+---
+
+## v2.2.18 — 2026-04-06
+- Fix: MERGE_FIELDS extracted to single shared const (was duplicated at boot hydration and loadTeam hydration)
+- Fix: division migration block now saves mergeLocalScheduleFields result instead of raw seed — gameBall/snackDuty/scoreReported no longer overwritten on migration run
+- Fix: boot hydration now merges DB + local schedules instead of preferring local blindly — new Supabase games no longer silently dropped
+- Feat: loginLimiter (15min window, max 5) created and applied to POST /magic-link — express-rate-limit was imported but never instantiated
 
 ---
 
