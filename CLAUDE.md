@@ -405,6 +405,11 @@ All major sections are wrapped with `<ErrorBoundary>` (class component). On cras
 
 ## Version History
 
+### v2.2.14 — April 5, 2026
+- UTM tracking framework: trackingUrl.js — outboundLinkProps, CAMPAIGNS, CONTENT registries, pwa/web medium auto-detection
+- All 7 LINKS array outbound links migrated to outboundLinkProps (utm_source=dugoutlineup)
+- 17-test Vitest suite; vite.config.js include widened to src/**/*.test.js
+
 ### v2.2.13 — April 5, 2026
 - Fix: TD-04 pre-condition uses /history endpoint, CI wait step uses hardcoded backend URL, migration 002 snapshot trigger applied to Supabase (roster_count=11 confirmed)
 

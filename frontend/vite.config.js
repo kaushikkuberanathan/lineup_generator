@@ -16,7 +16,7 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     pool: 'threads',
-    include: ['src/tests/**/*.test.js'],
+    include: ['src/**/*.test.js'],
   },
   plugins: [
     react(),

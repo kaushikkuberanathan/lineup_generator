@@ -1,7 +1,16 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: April 4, 2026 (v2.2.6)
+> Last updated: April 5, 2026 (v2.2.14)
 > MVP launched: March 24, 2026
+
+---
+
+## v2.2.14 — 2026-04-05
+- UTM tracking framework (trackingUrl.js) — auto-detects pwa vs web for utm_medium; CAMPAIGNS + CONTENT registries
+- Migrated all 7 LINKS array outbound links to outboundLinkProps (utm_source=dugoutlineup on every click)
+- Click-side outbound_click event captured before navigation — attribution decoupled from destination redirect behavior
+- 17-test Vitest suite for trackingUrl utility (co-located in src/utils/)
+- vite.config.js include widened to src/**/*.test.js for co-located test files
 
 ---
 

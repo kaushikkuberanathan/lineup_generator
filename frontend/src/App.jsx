@@ -10,6 +10,7 @@ import { inject, track as vaTrack } from '@vercel/analytics';
 import { FEATURE_FLAGS } from '@/config/featureFlags';
 import { generateLineupV2 } from '@/utils/lineupEngineV2';
 import { normalizeBattingHand } from '@/utils/playerUtils';
+import { outboundLinkProps, CAMPAIGNS, CONTENT } from './utils/trackingUrl';
 import { migrateRoster, migrateSchedule, migrateBattingPerf, mergeLocalScheduleFields } from '@/utils/migrations';
 import { fmtAvg, fmtStat } from '@/utils/formatters';
 import { useBackendHealth } from '@/hooks/useBackendHealth';
@@ -138,9 +139,25 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.2.13";
+var APP_VERSION = "2.2.14";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.2.14',
+    date: 'April 2026',
+    headline: 'Under-the-hood improvements',
+    userChanges: [],
+    techNote: 'Internal improvements to keep the app running smoothly.',
+    internalChanges: [
+      'Implemented UTM tracking framework (trackingUrl.js) for all outbound links',
+      'Auto-detects PWA vs web context via display-mode for utm_medium',
+      'CAMPAIGNS + CONTENT registries for consistent attribution across surfaces',
+      'Click-side outbound_click event captured before navigation — attribution not dependent on destination redirect behavior',
+      'Migrated all 7 LINKS array entries to outboundLinkProps',
+      'Added 17-test Vitest suite for trackingUrl utility',
+      'vite.config.js updated to include co-located test files under src/**'
+    ]
+  },
   {
     version: '2.2.11',
     date: '2026-04-05',
@@ -7900,19 +7917,25 @@ export default function App() {
             label: "County Official Game Schedule",
             desc: "Forsyth County 2026 Youth Baseball & Softball — full season schedule",
             url: COUNTY_SCHEDULE_URL,
-            emoji: "📅"
+            emoji: "📅",
+            campaign: CAMPAIGNS.COUNTY_LEAGUE,
+            content: CONTENT.SCHEDULE_TAB
           },
           {
             label: "Report Game Score",
             desc: "Submit the final score after a completed game — must be done within 24 hours",
             url: "https://forms.office.com/pages/responsepage.aspx?id=vf3EubbvekefszJiSiLNcOoWxPqaa4FBtgle0rAQ6bBURVExSDNDNEFTTkRaMVlRR0lNUDVGOUtFVy4u&route=shorturl",
-            emoji: "📝"
+            emoji: "📝",
+            campaign: CAMPAIGNS.COUNTY_LEAGUE,
+            content: CONTENT.GAME_INFO_CARD
           },
           {
             label: "Field & Cage Request",
             desc: "Request field or batting cage time from Forsyth County Parks",
             url: "https://docs.google.com/forms/d/e/1FAIpQLSeCIvqZlGsxonkWpFJ52q_6PWrOl3mmOTjTdiPGcz3ZQGzJDQ/viewform",
-            emoji: "⚾"
+            emoji: "⚾",
+            campaign: CAMPAIGNS.COUNTY_LEAGUE,
+            content: CONTENT.GAME_INFO_CARD
           }
         ]
       },
@@ -7923,7 +7946,9 @@ export default function App() {
             label: "Sharon Springs Athletics",
             desc: "Sharon Springs community athletics — league info, teams, and events",
             url: "https://sharonspringsathletics.org/",
-            emoji: "🏆"
+            emoji: "🏆",
+            campaign: CAMPAIGNS.SHARON_SPRINGS,
+            content: CONTENT.STANDINGS_LINK
           }
         ]
       },
@@ -7934,13 +7959,17 @@ export default function App() {
             label: "Inclement Weather Updates",
             desc: "Forsyth County Parks — field closures and weather delays",
             url: "https://parks.forsythco.com/Athletic-Leagues/Inclement-Weather-Information",
-            emoji: "⛈️"
+            emoji: "⛈️",
+            campaign: CAMPAIGNS.GENERAL,
+            content: CONTENT.SCHEDULE_TAB
           },
           {
             label: "Status Me Auto Alerts",
             desc: "Sign up for automatic game status notifications",
             url: "https://statusme.com/",
-            emoji: "🔔"
+            emoji: "🔔",
+            campaign: CAMPAIGNS.GENERAL,
+            content: CONTENT.SCHEDULE_TAB
           }
         ]
       }
@@ -7961,7 +7990,7 @@ export default function App() {
                       <div style={{ fontSize:"13px", fontWeight:"700", color:C.navy, marginBottom:"3px" }}>{link.label}</div>
                       <div style={{ fontSize:"11px", color:C.textMuted, lineHeight:"1.5", marginBottom:"5px" }}>{link.desc}</div>
                       <div style={{ fontSize:"12px" }}>
-                        <a href={link.url} target="_blank" rel="noopener noreferrer" style={{ color:"#2563eb", textDecoration:"none" }}>🔗 Click here</a>
+                        <a {...outboundLinkProps(link.url, { campaign: link.campaign, content: link.content })} style={{ color:"#2563eb", textDecoration:"none" }}>🔗 Click here</a>
                       </div>
                     </div>
                   </div>
