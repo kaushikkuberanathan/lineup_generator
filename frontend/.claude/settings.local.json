@@ -59,7 +59,8 @@
       "mcp__plugin_github_github__get_file_contents",
       "Bash(where gh:*)",
       "Bash(echo \"EXIT:$?\")",
-      "Bash(echo \"BUILD_EXIT:$?\")"
+      "Bash(echo \"BUILD_EXIT:$?\")",
+      "Bash(echo \"TEST_EXIT:$?\")"
     ]
   }
 }

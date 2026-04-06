@@ -1,7 +1,12 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: April 5, 2026 (v2.2.15)
+> Last updated: April 5, 2026 (v2.2.16)
 > MVP launched: March 24, 2026
+
+---
+
+## v2.2.16 — 2026-04-05
+- Analytics: full PWA install funnel — pwa_banner_shown (platform, prompt_ready, browser), pwa_install_clicked, pwa_install_accepted, pwa_install_declined, pwa_installed with platform property
 
 ---
 

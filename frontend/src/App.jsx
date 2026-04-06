@@ -139,9 +139,23 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.2.15";
+var APP_VERSION = "2.2.16";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.2.16',
+    date: 'April 2026',
+    headline: "Install prompt now fully tracked — see how coaches are installing the app",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
+      'Analytics: pwa_banner_shown event — fires on mount for Android (prompt_ready:true, browser from userAgentData) and iOS (prompt_ready:false, browser:"safari")',
+      'Analytics: pwa_install_clicked — fires on Install button tap before native prompt is shown',
+      'Analytics: pwa_install_accepted / pwa_install_declined — fires after userChoice resolves',
+      'Analytics: pwa_installed — now includes platform:"ios"|"android" property',
+      'Replaced old pwa_install_prompted event with pwa_banner_shown across all platforms',
+    ]
+  },
   {
     version: '2.2.15',
     date: 'April 2026',
@@ -2697,7 +2711,7 @@ export default function App() {
       setDeferredPrompt(e);
       if (!isStandalone) {
         setShowInstallBanner(true);
-        track("pwa_install_prompted");
+        track("pwa_banner_shown", { platform: "android", prompt_ready: true, browser: navigator.userAgentData?.brands?.[0]?.brand || "chrome" });
       }
     };
     window.addEventListener("beforeinstallprompt", handler);
@@ -2705,7 +2719,7 @@ export default function App() {
       setShowInstallBanner(false);
       setDeferredPrompt(null);
       localStorage.setItem("pwa_installed", "1");
-      track("pwa_installed");
+      track("pwa_installed", { platform: isIOS ? "ios" : "android" });
       mixpanel.register({ is_pwa: true, platform: "pwa_" + deviceContext.device_os });
     });
     return function() {
@@ -2717,6 +2731,7 @@ export default function App() {
   useEffect(function() {
     if (!isIOS || isStandalone) return;
     setShowInstallBanner(true);
+    track("pwa_banner_shown", { platform: "ios", prompt_ready: false, browser: "safari" });
   }, [isIOS, isStandalone]);
 
   var _ros = useState(initRoster);
@@ -3606,10 +3621,14 @@ export default function App() {
 
   var handleInstallClick = async function() {
     if (!deferredPrompt) return;
+    track("pwa_install_clicked", { platform: "android", prompt_ready: !!deferredPrompt });
     deferredPrompt.prompt();
     var result = await deferredPrompt.userChoice;
     if (result.outcome === "accepted") {
       localStorage.setItem("pwa_installed", "1");
+      track("pwa_install_accepted", { platform: "android" });
+    } else {
+      track("pwa_install_declined", { platform: "android" });
     }
     setDeferredPrompt(null);
   };

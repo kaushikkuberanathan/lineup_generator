@@ -405,6 +405,9 @@ All major sections are wrapped with `<ErrorBoundary>` (class component). On cras
 
 ## Version History
 
+### v2.2.16 — April 5, 2026
+- Analytics: full PWA install funnel — pwa_banner_shown (platform, prompt_ready, browser), pwa_install_clicked, pwa_install_accepted, pwa_install_declined, pwa_installed with platform property
+
 ### v2.2.15 — April 5, 2026
 - Feat: persistent PWA install banner fixed above bottom nav on all tabs — Android shows Install button or Chrome menu instructions; iOS shows Share → Add to Home Screen; no dismiss/snooze; hidden in standalone + game mode
 - Fix: overscroll-behavior: none on html + body (index.css) — prevents pull-to-refresh bounce on Android and rubber-band scroll on iOS
