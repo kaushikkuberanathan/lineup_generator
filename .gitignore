@@ -1,6 +1,9 @@
 .env
 .env.local
 .env.smoke
+.env.development
+.env.production
+supabase/.temp/
 
 # Claude Code local settings
 **/.claude/settings.local.json

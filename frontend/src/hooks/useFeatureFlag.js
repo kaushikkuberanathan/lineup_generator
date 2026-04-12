@@ -37,7 +37,7 @@ export function useFeatureFlag(flagName, teamId) {
         if (data && data.length > 0) {
           if (teamId) {
             // Prefer team-scoped row; fall back to global
-            var teamRow   = data.find(function(r) { return r.team_id === String(teamId); });
+            var teamRow   = data.find(function(r) { return String(r.team_id) === String(teamId); });
             var globalRow = data.find(function(r) { return r.team_id === null; });
             var best = teamRow || globalRow;
             resolved = best ? !!best.enabled : false;

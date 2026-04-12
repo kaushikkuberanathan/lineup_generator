@@ -36,6 +36,8 @@ import { useAuth } from './hooks/useAuth';
 import { LoginScreen } from './components/Auth/LoginScreen';
 import { RequestAccessScreen } from './components/Auth/RequestAccessScreen';
 import { PendingApprovalScreen } from './components/Auth/PendingApprovalScreen';
+import { useFeatureFlag } from '@/hooks/useFeatureFlag';
+import ScoringMode from './components/ScoringMode/index.jsx';
 
 // ============================================================
 // HELPERS
@@ -2602,6 +2604,8 @@ export default function App() {
   var teams = _teams[0]; var setTeams = _teams[1];
   var _atid = useState(initActiveId);
   var activeTeamId = _atid[0]; var setActiveTeamId = _atid[1];
+  var _liveScoring = useFeatureFlag('live_scoring', activeTeamId);
+  var liveScoringEnabled = _liveScoring.enabled;
   var _primaryTab = useState("home");
   var primaryTab = _primaryTab[0]; var setPrimaryTab = _primaryTab[1];
   var _rosterTab = useState("players");
@@ -8692,8 +8696,9 @@ export default function App() {
     { key:"home",    label:"Home",     icon:"🏠" },
     { key:"team",    label:"Team",     icon:"👥" },
     { key:"gameday", label:"Game Day", icon:"🏟" },
+    liveScoringEnabled ? { key:"scoring", label:"Scoring", icon:"\u26BE" } : null,
     { key:"more",    label:"Support",  icon:"⚙️" },
-  ];
+  ].filter(Boolean);
   var ROSTER_SUBTABS = [
     { key:"players", label:"Players" },
     { key:"songs",   label:"Songs"   },
@@ -8891,6 +8896,17 @@ export default function App() {
       {primaryTab === "more" && moreTab === "updates"  ? renderUpdates()  : null}
       {primaryTab === "more" && moreTab === "legal"    ? <LegalSection C={C} S={S} /> : null}
       {primaryTab === "more" && moreTab === "faq"      ? <FAQSection C={C} S={S} />   : null}
+      {primaryTab === "scoring" && liveScoringEnabled ? (
+        <ScoringMode
+          activeTeam={activeTeam}
+          activeTeamId={activeTeamId}
+          user={user}
+          schedule={schedule}
+          roster={roster}
+          battingOrder={battingOrder}
+          onClose={function() { setPrimaryTab("gameday"); }}
+        />
+      ) : null}
     </div>
   );
 
