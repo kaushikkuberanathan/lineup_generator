@@ -67,6 +67,7 @@ export function dbSaveTeamData(teamId, data) {
     locked:        data.locked        || false
   };
   if (data.coachPin !== undefined) { upsertObj.coach_pin = data.coachPin; }
+  if (data.attendanceOverrides !== undefined) { upsertObj.attendance_overrides = data.attendanceOverrides; }
   return supabase.from('team_data').upsert(upsertObj, { onConflict: 'team_id' })
   .then(function(r) {
     if (r.error) { console.warn('[DB] saveTeamData error:', r.error.message); }
@@ -93,7 +94,8 @@ export function dbLoadTeamData(teamId) {
         grid:         row.grid          || {},
         innings:      row.innings       || 6,
         locked:       row.locked        || false,
-        coachPin:     row.coach_pin     || ''
+        coachPin:             row.coach_pin             || '',
+        attendanceOverrides:  row.attendance_overrides  || {}
       };
     });
 }
