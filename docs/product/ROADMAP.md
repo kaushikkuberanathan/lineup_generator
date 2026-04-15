@@ -1,7 +1,20 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: April 6, 2026 (v2.2.18)
+> Last updated: April 15, 2026 (v2.2.22)
 > MVP launched: March 24, 2026
+
+---
+
+## v2.2.22 — 2026-04-15 (HOTFIX)
+- Hotfix: auth gate re-commented out — was inadvertently blocking all unauthenticated users in prod
+- useAuth hook, LoginScreen, RequestAccessScreen, PendingApprovalScreen imports preserved for Phase 4C cutover
+
+## v2.2.21 — 2026-04-15
+- Feat: activeBattingOrder — absent players filtered from batting, PDF, share links, print, songs, game mode, Now Batting strip
+- SharedView: player filter pills exclude absent names; absent note in batting footer
+- Feat (v2.2.19): Game Day Attendance panel — mark players out before lineup gen, persisted to Supabase attendance_overrides column
+- Fix: PendingApprovalScreen "Try logging in" now correctly transitions auth state
+- Fix: supabase.js attendance_overrides support in dbSaveTeamData/dbLoadTeamData
 
 ---
 

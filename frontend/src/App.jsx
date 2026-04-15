@@ -139,9 +139,20 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.2.21";
+var APP_VERSION = "2.2.22";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.2.22',
+    date: 'April 2026',
+    headline: "Hotfix — auth gate removed from prod, app accessible to all users",
+    userChanges: [],
+    techNote: "Auth gate re-commented out — was inadvertently active in prod blocking all unauthenticated users. useAuth hook and all auth components remain in place for Phase 4C cutover.",
+    internalChanges: [
+      "Auth gate block (if !_authBypassed + all three authState branches) wrapped in /* */ block comment",
+      "useAuth(), LoginScreen, RequestAccessScreen, PendingApprovalScreen imports untouched — preserved for Phase 4C",
+    ],
+  },
   {
     version: '2.2.21',
     date: 'April 2026',
@@ -8895,6 +8906,9 @@ export default function App() {
     );
   }
 
+  // AUTH GATE — parked. Not active in prod until Phase 4C cutover is confirmed.
+  // Do NOT uncomment without explicit Phase 4C sign-off.
+  /*
   // AUTH GATE
   // Dev-only bypass: in browser console run `localStorage.setItem('auth_bypass','1')`
   // then reload. `import.meta.env.DEV` is false in production builds — Vite removes this.
@@ -8935,6 +8949,7 @@ export default function App() {
       );
     }
   }
+  */
 
   try {
     var urlParams = new URLSearchParams(window.location.search);
