@@ -139,9 +139,54 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.2.18";
+var APP_VERSION = "2.2.21";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.2.21',
+    date: 'April 2026',
+    headline: "Absent players filtered out of batting order, PDF, share links, print, and songs view",
+    userChanges: [
+      "Absent players are automatically removed from the batting order on share links, PDF, and print",
+      "Songs Game Day view only shows tonight\u2019s active players in batting order",
+      "Shared lineups show a \u201cNot playing tonight\u201d note at the bottom",
+    ],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
+      "activeBattingOrder derived from battingOrder filtered by absentTonight — single source of truth",
+      "shareCurrentLineup + shareViewerLink: batting \u2192 activeBattingOrder, roster filtered to exclude absent, absentNames field added to payload",
+      "SharedView: player filter pills exclude payload.absentNames; absent note rendered in batting section footer",
+      "renderSongs edit view: absent player cards grayed out (opacity 0.45, pointer-events none) with (Out Tonight) label",
+      "renderSongs game day view: iterates activeBattingOrder for sequential numbering from active players only",
+      "generatePDF: batting section uses activeBattingOrder; absent footnote appended if any absent",
+      "renderPrint: batting grid uses activeBattingOrder; absent note rendered below grid",
+      "NowBattingBar: receives activeBattingOrder; advance/back modulo against activeBattingOrder.length",
+      "GameModeScreen: receives activeBattingOrder; batter advance/back modulo updated",
+    ],
+  },
+  {
+    version: '2.2.19',
+    date: 'April 2026',
+    headline: "Game Day Attendance — mark players out before generating your lineup",
+    userChanges: [
+      "Mark multiple players out before generating lineup",
+      "Attendance syncs across all devices via cloud",
+      "Auto-clears the next game day",
+      "Sync button to pull latest from other devices",
+    ],
+    techNote: "attendanceOverrides stored in Supabase team_data JSON; dual-write localStorage + Supabase mirrors persistRoster pattern; Supabase write non-fatal",
+    internalChanges: [
+      "attendanceOverrides state: global localStorage key 'attendanceOverrides', per-team Supabase sync via team_data.attendance_overrides JSONB column (requires DB migration before Supabase sync activates)",
+      "persistAttendance(): prunes entries older than 3 days, dual-writes localStorage + Supabase via dbSync/dbSaveTeamData — mirrors persistRoster pattern exactly",
+      "toggleAbsentTonight(playerName): adds/removes player name in absentTonight array for today's ISO date key",
+      "generateLineup(): builds rosterForGen with absentTonight players tagged 'absent' before passing to V1/V2 engine — does NOT modify player.tags",
+      "autoFix() in renderGrid: same rosterForGen pattern applied",
+      "useEffect: when absentTonight changes and grid exists, marks absent-tonight players 'Out' in all innings without full re-auto-assign",
+      "Attendance panel in renderGrid: collapsible (auto-open if any absent), above auto-assign buttons; 2-col player grid with ✅ Playing / ❌ Out Tonight toggles; Sync button re-fetches from Supabase",
+      "Guard: disable auto-assign + red banner when (roster.length - absentTonight.length) < 9",
+      "supabase.js: attendance_overrides conditionally added to dbSaveTeamData upsert; returned in dbLoadTeamData",
+    ],
+  },
   {
     version: '2.2.18',
     date: 'April 2026',
@@ -2111,7 +2156,7 @@ function SharedView({ payload, renderFieldSVG }) {
         {rosterNames.length > 0 ? (
           <div style={{ marginBottom:"12px" }}>
             <PlayerFilterToggle
-              players={rosterNames}
+              players={payload.absentNames && payload.absentNames.length > 0 ? rosterNames.filter(function(n) { return payload.absentNames.indexOf(n) < 0; }) : rosterNames}
               selected={svPlayer}
               onSelect={setSvPlayer}
             />
@@ -2276,6 +2321,11 @@ function SharedView({ payload, renderFieldSVG }) {
                 );
               })}
             </div>
+            {payload.absentNames && payload.absentNames.length > 0 ? (
+              <div style={{ marginTop:"10px", paddingTop:"10px", borderTop:"1px solid rgba(15,31,61,0.08)", fontSize:"11px", color:"#94a3b8", fontStyle:"italic" }}>
+                Not playing tonight: {payload.absentNames.map(function(n) { return n.split(" ")[0]; }).join(", ")}
+              </div>
+            ) : null}
           </div>
         ) : null}
 
@@ -2382,6 +2432,10 @@ export default function App() {
             ? mergeLocalScheduleFields(_dbSchedBoot, _localSchedArr, MERGE_FIELDS)
             : _dbSchedBoot;
           setSchedule(_bootSched);
+          if (dbData.attendanceOverrides && Object.keys(dbData.attendanceOverrides).length > 0) {
+            setAttendanceOverrides(dbData.attendanceOverrides);
+            localStorage.setItem('attendanceOverrides', JSON.stringify(dbData.attendanceOverrides));
+          }
           var bootTeam = merged.find ? merged.find(function(t) { return t.id === bootActiveId; }) : null;
           if (bootTeam) { dbSnapshotRoster(bootActiveId, bootTeam.name, dbData.roster, 'app_load'); }
         }).catch(function(err) {
@@ -2642,7 +2696,7 @@ export default function App() {
   var shareLoading = _shareLoading[0]; var setShareLoading = _shareLoading[1];
 
   const {
-    authState,
+    authState, setAuthState,
     session,
     user,
     membership,
@@ -2888,6 +2942,24 @@ export default function App() {
   var _pinError = useState(""); var pinError = _pinError[0]; var setPinError = _pinError[1];
   var _pinConfirm = useState(""); var pinConfirm = _pinConfirm[0]; var setPinConfirm = _pinConfirm[1];
 
+  // ── Attendance overrides — keyed by ISO date ──────────────────────────────
+  var _attendanceOverrides = useState(function() {
+    try { return JSON.parse(localStorage.getItem('attendanceOverrides') || '{}'); } catch(e) { return {}; }
+  });
+  var attendanceOverrides = _attendanceOverrides[0]; var setAttendanceOverrides = _attendanceOverrides[1];
+  var _attendancePanelOpen = useState(null); // null = auto (open when any absent)
+  var attendancePanelOpen = _attendancePanelOpen[0]; var setAttendancePanelOpen = _attendancePanelOpen[1];
+  var _attendanceSyncing = useState(false);
+  var attendanceSyncing = _attendanceSyncing[0]; var setAttendanceSyncing = _attendanceSyncing[1];
+  var _attendanceSyncMsg = useState('');
+  var attendanceSyncMsg = _attendanceSyncMsg[0]; var setAttendanceSyncMsg = _attendanceSyncMsg[1];
+  // Derived: today's absent list (auto-clears each calendar day since key is YYYY-MM-DD)
+  var todayDate = new Date().toISOString().slice(0, 10);
+  var absentTonight = attendanceOverrides[todayDate] || [];
+  var activeBattingOrder = battingOrder.filter(function(name) {
+    return absentTonight.indexOf(name) < 0;
+  });
+
   useRegisterSW({
     onRegistered(r) {
       if (r) {
@@ -3078,6 +3150,54 @@ export default function App() {
     });
   }
 
+  function persistAttendance(overrides) {
+    window._lastLocalWrite = Date.now();
+    // Prune entries older than 3 days
+    var cutoff = new Date(Date.now() - 3 * 86400000).toISOString().slice(0, 10);
+    var pruned = {};
+    var keys = Object.keys(overrides);
+    for (var _ai = 0; _ai < keys.length; _ai++) {
+      if (keys[_ai] >= cutoff) { pruned[keys[_ai]] = overrides[keys[_ai]]; }
+    }
+    setAttendanceOverrides(pruned);
+    localStorage.setItem('attendanceOverrides', JSON.stringify(pruned));
+    if (activeTeamId) {
+      var _pruned = pruned;
+      dbSync(function() { return dbSaveTeamData(activeTeamId, {
+        roster: roster, schedule: schedule, practices: practices,
+        battingOrder: battingOrder, grid: grid, innings: innings, locked: lineupLocked,
+        attendanceOverrides: _pruned
+      }); });
+    }
+  }
+
+  function toggleAbsentTonight(playerName) {
+    var updated = absentTonight.indexOf(playerName) >= 0
+      ? absentTonight.filter(function(n) { return n !== playerName; })
+      : absentTonight.concat([playerName]);
+    var newOverrides = Object.assign({}, attendanceOverrides);
+    newOverrides[todayDate] = updated;
+    persistAttendance(newOverrides);
+  }
+
+  async function syncAttendance() {
+    if (!activeTeamId || !isSupabaseEnabled) return;
+    setAttendanceSyncing(true);
+    try {
+      var dbData = await dbLoadTeamData(activeTeamId);
+      if (dbData && dbData.attendanceOverrides && Object.keys(dbData.attendanceOverrides).length > 0) {
+        setAttendanceOverrides(dbData.attendanceOverrides);
+        localStorage.setItem('attendanceOverrides', JSON.stringify(dbData.attendanceOverrides));
+      }
+      setAttendanceSyncMsg('✓ Synced');
+      setTimeout(function() { setAttendanceSyncMsg(''); }, 1500);
+    } catch(e) {
+      setAttendanceSyncMsg('Sync failed');
+      setTimeout(function() { setAttendanceSyncMsg(''); }, 1500);
+    }
+    setAttendanceSyncing(false);
+  }
+
   function persistSchedule(next) {
     window._lastLocalWrite = Date.now();
     setSchedule(next);
@@ -3232,8 +3352,9 @@ export default function App() {
       team:    activeTeam ? activeTeam.name + (activeTeam.ageGroup ? " " + activeTeam.ageGroup : "") : "Lineup",
       game:    null,
       grid:    grid,
-      batting: battingOrder,
-      roster:  roster.map(function(r) { return r.name; }),
+      batting: activeBattingOrder,
+      roster:  roster.filter(function(r) { return absentTonight.indexOf(r.name) < 0; }).map(function(r) { return r.name; }),
+      absentNames: absentTonight.length > 0 ? absentTonight.slice() : undefined,
       songs:   (function() {
         var s = {};
         roster.forEach(function(p) {
@@ -3269,8 +3390,9 @@ export default function App() {
       team:    activeTeam ? activeTeam.name + (activeTeam.ageGroup ? " " + activeTeam.ageGroup : "") : "Lineup",
       game:    null,
       grid:    grid,
-      batting: battingOrder,
-      roster:  roster.map(function(r) { return r.name; }),
+      batting: activeBattingOrder,
+      roster:  roster.filter(function(r) { return absentTonight.indexOf(r.name) < 0; }).map(function(r) { return r.name; }),
+      absentNames: absentTonight.length > 0 ? absentTonight.slice() : undefined,
       songs:   {}
     };
     var base = window.location.href.split("?")[0];
@@ -3398,6 +3520,9 @@ export default function App() {
     setLineupDirty(false);
     setLineupLocked(savedLocked);
     setCoachPin(savedPin);
+    var _savedAttendance = {};
+    try { _savedAttendance = JSON.parse(localStorage.getItem('attendanceOverrides') || '{}'); } catch(e) {}
+    setAttendanceOverrides(_savedAttendance);
     setPinSessionUnlocked(false);
     setCurrentBatterIndex(savedBatterIndex);
     setGameModeInning(savedGameModeInning);
@@ -3472,10 +3597,32 @@ export default function App() {
         setInnings(dbData.innings);
         setLineupLocked(dbData.locked);
         setCoachPin(dbData.coachPin || "");
+        if (dbData.attendanceOverrides && Object.keys(dbData.attendanceOverrides).length > 0) {
+          setAttendanceOverrides(dbData.attendanceOverrides);
+          localStorage.setItem('attendanceOverrides', JSON.stringify(dbData.attendanceOverrides));
+        }
         setIsHydrating(false);
       }).catch(function() { setIsHydrating(false); });
     }
   }
+
+  // When absentTonight changes and a grid exists, mark absent players "Out"
+  // in every inning immediately — without requiring a full re-auto-assign.
+  useEffect(function() {
+    if (!activeTeamId || absentTonight.length === 0) return;
+    if (!grid || Object.keys(grid).length === 0) return;
+    var changed = false;
+    var newGrid = {};
+    for (var _gk in grid) { newGrid[_gk] = grid[_gk].slice(); }
+    for (var _abi = 0; _abi < absentTonight.length; _abi++) {
+      var _nm = absentTonight[_abi];
+      if (!newGrid[_nm]) continue;
+      for (var _ii = 0; _ii < innings; _ii++) {
+        if (newGrid[_nm][_ii] !== 'Out') { newGrid[_nm][_ii] = 'Out'; changed = true; }
+      }
+    }
+    if (changed) { persistGrid(newGrid); }
+  }, [absentTonight.join(','), activeTeamId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function createTeam() {
     if (!newTeam.name.trim()) { return; }
@@ -3669,22 +3816,31 @@ export default function App() {
   };
 
   function generateLineup() {
+    // Build a temporary roster with absent-tonight players tagged.
+    // Does NOT modify player.tags — the original roster state is unchanged.
+    var rosterForGen = absentTonight.length === 0 ? roster : roster.map(function(p) {
+      if (absentTonight.indexOf(p.name) < 0) { return p; }
+      var tags = p.tags || [];
+      if (tags.indexOf('absent') >= 0) { return p; }
+      return Object.assign({}, p, { tags: tags.concat(['absent']) });
+    });
+
     let result;
 
     try {
       if (FEATURE_FLAGS.USE_NEW_LINEUP_ENGINE) {
         console.log("[Lineup Engine] Using V2");
-        result = generateLineupV2(roster, innings);
+        result = generateLineupV2(rosterForGen, innings);
         if (result.battingOrder && result.battingOrder.length > 0) {
           persistBatting(result.battingOrder);
         }
       } else {
         console.log("[Lineup Engine] Using V1");
-        result = autoAssignWithRetryFallback(roster, innings);
+        result = autoAssignWithRetryFallback(rosterForGen, innings);
       }
     } catch (e) {
       console.error("[Lineup Engine] V2 failed — fallback to V1", e);
-      result = autoAssignWithRetryFallback(roster, innings);
+      result = autoAssignWithRetryFallback(rosterForGen, innings);
     }
 
     console.log("GRID STRUCTURE:", result.grid);
@@ -5470,7 +5626,13 @@ export default function App() {
     }
 
     function autoFix() {
-      var result = autoAssignWithRetryFallback(roster, innings);
+      var rosterForFix = absentTonight.length === 0 ? roster : roster.map(function(p) {
+        if (absentTonight.indexOf(p.name) < 0) { return p; }
+        var tags = p.tags || [];
+        if (tags.indexOf('absent') >= 0) { return p; }
+        return Object.assign({}, p, { tags: tags.concat(['absent']) });
+      });
+      var result = autoAssignWithRetryFallback(rosterForFix, innings);
       persistGrid(result.grid);
       setLineupDirty(false);
       track("auto_assign", {
@@ -5546,6 +5708,10 @@ export default function App() {
     var _bannerReady = _bannerIssues.length === 0;
     // ──────────────────────────────────────────────────────────────────
 
+    // Attendance panel helpers
+    var _panelOpen = attendancePanelOpen !== null ? attendancePanelOpen : absentTonight.length > 0;
+    var _availableCount = roster.length - absentTonight.length;
+
     return (
       <div>
         {/* ── Lineup Validation Banner ──────────────────────────────── */}
@@ -5557,12 +5723,84 @@ export default function App() {
           {lineupLocked ? <FairnessCheck roster={roster} grid={grid} C={C} /> : null}
         </ErrorBoundary>
 
+        {/* ── Tonight's Attendance Panel ───────────────────────────── */}
+        {roster.length > 0 && !lineupLocked ? (
+          <div style={{ marginBottom:"14px", borderRadius:"10px", border:"1px solid rgba(15,31,61,0.12)", overflow:"hidden" }}>
+            {/* Header */}
+            <div
+              onClick={function() { setAttendancePanelOpen(_panelOpen ? false : true); }}
+              style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 14px",
+                background:"rgba(15,31,61,0.04)", cursor:"pointer", userSelect:"none" }}
+            >
+              <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
+                <span style={{ fontWeight:700, fontSize:"14px", color:C.navy }}>🏟 Tonight's Attendance</span>
+                {absentTonight.length > 0 ? (
+                  <span style={{ background:"#fee2e2", color:"#dc2626", fontSize:"11px", fontWeight:700, padding:"2px 7px", borderRadius:"10px" }}>
+                    {absentTonight.length} out
+                  </span>
+                ) : null}
+              </div>
+              <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
+                {isSupabaseEnabled ? (
+                  <button
+                    onClick={function(e) { e.stopPropagation(); syncAttendance(); }}
+                    disabled={attendanceSyncing}
+                    title="Pull latest attendance from cloud"
+                    style={{ background:"transparent", border:"none", cursor:attendanceSyncing ? "default" : "pointer",
+                      fontSize:"12px", color:attendanceSyncMsg ? "#27ae60" : C.textMuted, padding:"2px 6px", fontFamily:"inherit" }}
+                  >
+                    {attendanceSyncing ? "⟳…" : attendanceSyncMsg || "⟳ Sync"}
+                  </button>
+                ) : null}
+                <span style={{ fontSize:"12px", color:C.textMuted }}>{_panelOpen ? "▲" : "▼"}</span>
+              </div>
+            </div>
+            {/* Body */}
+            {_panelOpen ? (
+              <div style={{ padding:"10px 12px", display:"flex", flexWrap:"wrap", gap:"6px" }}>
+                {roster.map(function(p) {
+                  var isAbsent = absentTonight.indexOf(p.name) >= 0;
+                  var fn = p.firstName || (p.name ? p.name.split(' ')[0] : p.name);
+                  return (
+                    <div key={p.name} style={{ display:"flex", alignItems:"center", gap:"6px",
+                      width:"calc(50% - 3px)", minWidth:"130px" }}>
+                      <span style={{ fontWeight: isAbsent ? 700 : 400, fontSize:"14px",
+                        color: isAbsent ? "#dc2626" : C.navy,
+                        flex:1, minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                        {fn}
+                      </span>
+                      <button
+                        onClick={function(name) { return function() { toggleAbsentTonight(name); }; }(p.name)}
+                        style={{ fontSize:"11px", fontWeight:600, padding:"4px 8px", borderRadius:"6px",
+                          border:"none", cursor:"pointer", whiteSpace:"nowrap", flexShrink:0,
+                          background: isAbsent ? "#fee2e2" : "rgba(39,174,96,0.1)",
+                          color: isAbsent ? "#dc2626" : "#27ae60" }}
+                      >
+                        {isAbsent ? "❌ Out Tonight" : "✅ Playing"}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
+        {/* ── Low-roster warning ──────────────────────────────────── */}
+        {absentTonight.length > 0 && _availableCount < 9 ? (
+          <div style={{ background:"#fee2e2", border:"1px solid #fca5a5", borderRadius:"8px",
+            padding:"10px 14px", marginBottom:"10px", color:"#dc2626", fontWeight:600, fontSize:"13px" }}>
+            ⚠ Only {_availableCount} player{_availableCount === 1 ? "" : "s"} available tonight — need at least 9 to field.
+          </div>
+        ) : null}
+
         {/* ── Finalized badge ───────────────────────────────── */}
 
         <div style={{ display:"flex", gap:"8px", marginBottom:"14px", flexWrap:"wrap", alignItems:"center" }}>
           {!lineupLocked ? (
-            <button style={S.btn("gold")} onClick={generateLineup} disabled={isHydrating}>
-              {isHydrating ? "Loading roster..." : "Auto-Assign"}
+            <button style={S.btn("gold")} onClick={generateLineup}
+              disabled={isHydrating || _availableCount < 9}>
+              {isHydrating ? "Loading roster..." : absentTonight.length > 0 ? "Auto-Assign (" + absentTonight.length + " absent)" : "Auto-Assign"}
             </button>
           ) : null}
           {!lineupLocked ? (
@@ -5626,7 +5864,10 @@ export default function App() {
           <div style={{ background:"rgba(245,200,66,0.12)", border:"1px solid rgba(245,200,66,0.4)", borderRadius:"8px", padding:"10px 14px", marginBottom:"10px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:"10px", flexWrap:"wrap" }}>
             <div style={{ fontSize:"12px", color:"#92620a", fontWeight:"600", flex:1 }}>⚡ Roster changed — your lineup may be out of date</div>
             <div style={{ display:"flex", gap:"8px", flexShrink:0 }}>
-              <button style={{ ...S.btn("gold"), fontSize:"11px", padding:"5px 12px" }} onClick={generateLineup} disabled={isHydrating}>Regenerate Lineup</button>
+              <button style={{ ...S.btn("gold"), fontSize:"11px", padding:"5px 12px" }} onClick={generateLineup}
+                disabled={isHydrating || _availableCount < 9}>
+                {absentTonight.length > 0 ? "Regenerate (" + absentTonight.length + " absent)" : "Regenerate Lineup"}
+              </button>
               <button style={{ background:"transparent", border:"none", color:"#94a3b8", fontSize:"18px", cursor:"pointer", padding:"0 4px", lineHeight:1 }} onClick={function() { setLineupDirty(false); }}>×</button>
             </div>
           </div>
@@ -6433,10 +6674,11 @@ export default function App() {
             {battingOrder.map(function(name, idx) {
               var player = roster.find(function(r) { return r.name === name; });
               if (!player) return null;
+              var _isAbsentEdit = absentTonight.indexOf(name) >= 0;
               return (
-                <div key={name} style={{ ...S.card, marginBottom:"8px" }}>
+                <div key={name} style={{ ...S.card, marginBottom:"8px", opacity: _isAbsentEdit ? 0.45 : 1, pointerEvents: _isAbsentEdit ? "none" : "auto" }}>
                   <div style={{ fontWeight:"bold", fontSize:"13px", color:C.navy, marginBottom:"10px" }}>
-                    #{idx + 1} &nbsp; {firstName(name)}
+                    #{idx + 1} &nbsp; {firstName(name)}{_isAbsentEdit ? <span style={{ fontSize:"11px", color:C.red, marginLeft:"8px", fontWeight:"normal" }}>(Out Tonight)</span> : null}
                   </div>
                   <div style={{ display:"grid", gap:"6px" }}>
                     <input
@@ -6497,7 +6739,7 @@ export default function App() {
               ⚡ Order matches current batting lineup. If you update the batting order, tap Edit then return here to re-sync.
             </div>
 
-            {battingOrder.map(function(name, idx) {
+            {activeBattingOrder.map(function(name, idx) {
               var player = roster.find(function(r) { return r.name === name; });
               if (!player) return null;
               var hasSong = player.walkUpSong || player.walkUpArtist || player.walkUpStart || player.walkUpNotes || player.walkUpLink;
@@ -7766,13 +8008,13 @@ export default function App() {
           var batColW = contentW / batCols;
 
           // Pre-compute per-player row heights (taller if song data exists)
-          var batRowHeights = battingOrder.map(function(bn) {
+          var batRowHeights = activeBattingOrder.map(function(bn) {
             var sp = roster.find(function(r) { return r.name === bn; });
             return (sp && (sp.walkUpSong || sp.walkUpArtist)) ? 14 : 9;
           });
 
           // Compute y offsets per logical row (rows are pairs of players)
-          var batRowCount = Math.ceil(battingOrder.length / batCols);
+          var batRowCount = Math.ceil(activeBattingOrder.length / batCols);
           var batRowYOffsets = [0];
           for (var bri = 0; bri < batRowCount - 1; bri++) {
             var leftH  = batRowHeights[bri * batCols]     || 9;
@@ -7780,8 +8022,8 @@ export default function App() {
             batRowYOffsets.push(batRowYOffsets[bri] + Math.max(leftH, rightH));
           }
 
-          for (var bi = 0; bi < battingOrder.length; bi++) {
-            var bname = battingOrder[bi];
+          for (var bi = 0; bi < activeBattingOrder.length; bi++) {
+            var bname = activeBattingOrder[bi];
             var col = bi % batCols;
             var row = Math.floor(bi / batCols);
             var bx = margin + col * batColW;
@@ -7847,6 +8089,16 @@ export default function App() {
           }
           var totalBatH = batRowYOffsets[batRowCount - 1] + (Math.max(batRowHeights[(batRowCount-1)*batCols] || 9, batRowHeights[(batRowCount-1)*batCols+1] || 9));
           y += totalBatH + 4;
+          if (absentTonight.length > 0) {
+            doc.setFontSize(6.5);
+            doc.setFont("helvetica", "italic");
+            doc.setTextColor(150, 150, 150);
+            var _absentNote = "* Not in tonight\u2019s lineup: " + absentTonight.map(function(n) { return n.split(" ")[0]; }).join(", ");
+            doc.text(_absentNote, margin, y);
+            y += 4;
+            doc.setTextColor(0, 0, 0);
+            doc.setFont("helvetica", "normal");
+          }
         }
 
         // ── Footer ──────────────────────────────────────────────
@@ -8540,7 +8792,7 @@ export default function App() {
                 Players are listed in batting order. To change the order, update the Batting tab first.
               </div>
               <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))", gap:"6px" }}>
-                {battingOrder.map(function(name, idx) {
+                {activeBattingOrder.map(function(name, idx) {
                   var info = null;
                   for (var ri = 0; ri < roster.length; ri++) { if (roster[ri].name === name) { info = roster[ri]; break; } }
                   var fieldPos = [];
@@ -8580,6 +8832,11 @@ export default function App() {
                   );
                 })}
               </div>
+              {absentTonight.length > 0 ? (
+                <div style={{ marginTop:"10px", paddingTop:"8px", borderTop:"1px solid rgba(15,31,61,0.08)", fontSize:"10px", color:"#94a3b8", fontStyle:"italic" }}>
+                  Not playing tonight: {absentTonight.map(function(n) { return n.split(" ")[0]; }).join(", ")}
+                </div>
+              ) : null}
             </div>
           ) : null}
         </div>
@@ -8638,44 +8895,46 @@ export default function App() {
     );
   }
 
-  /* AUTH GATE — commented out for local dev (no Supabase session required)
-  if (authState === 'loading') {
-    return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center',
-                    justifyContent: 'center', backgroundColor: '#f8fafc' }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '32px', marginBottom: '12px' }}>⚾</div>
-          <p style={{ color: '#64748b', fontSize: '14px' }}>Loading…</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (authState === 'unauthenticated') {
-    if (authScreen === 'request') {
+  // AUTH GATE
+  // Dev-only bypass: in browser console run `localStorage.setItem('auth_bypass','1')`
+  // then reload. `import.meta.env.DEV` is false in production builds — Vite removes this.
+  var _authBypassed = import.meta.env.DEV && localStorage.getItem('auth_bypass') === '1';
+  if (!_authBypassed) {
+    if (authState === 'loading') {
       return (
-        <RequestAccessScreen
-          onBack={() => setAuthScreen('login')}
-          requestAccess={requestAccess}
+        <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center',
+                      justifyContent: 'center', backgroundColor: '#f8fafc' }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '32px', marginBottom: '12px' }}>⚾</div>
+            <p style={{ color: '#64748b', fontSize: '14px' }}>Loading…</p>
+          </div>
+        </div>
+      );
+    }
+    if (authState === 'unauthenticated') {
+      if (authScreen === 'request') {
+        return (
+          <RequestAccessScreen
+            onBack={() => setAuthScreen('login')}
+            requestAccess={requestAccess}
+          />
+        );
+      }
+      return (
+        <LoginScreen
+          onRequestAccess={() => setAuthScreen('request')}
+          sendMagicLink={sendMagicLink}
         />
       );
     }
-    return (
-      <LoginScreen
-        onRequestAccess={() => setAuthScreen('request')}
-        sendMagicLink={sendMagicLink}
-      />
-    );
+    if (authState === 'pending_approval') {
+      return (
+        <PendingApprovalScreen
+          onTryLogin={() => setAuthState('unauthenticated')}
+        />
+      );
+    }
   }
-
-  if (authState === 'pending_approval') {
-    return (
-      <PendingApprovalScreen
-        onTryLogin={() => setAuthScreen('login')}
-      />
-    );
-  }
-  */
 
   try {
     var urlParams = new URLSearchParams(window.location.search);
@@ -9140,17 +9399,17 @@ export default function App() {
         </div>
       </div>
       <ErrorBoundary fallback="Now Batting">
-        {!gameModeActive && primaryTab === "gameday" && battingOrder && battingOrder.length > 0 ? (
+        {!gameModeActive && primaryTab === "gameday" && activeBattingOrder && activeBattingOrder.length > 0 ? (
           <NowBattingBar
-            battingOrder={battingOrder}
+            battingOrder={activeBattingOrder}
             currentIndex={currentBatterIndex}
             activeInning={diamondInning !== null ? diamondInning + 1 : null}
             roster={roster}
             onAdvance={function() {
-              persistCurrentBatterIndex((currentBatterIndex + 1) % battingOrder.length);
+              persistCurrentBatterIndex((currentBatterIndex + 1) % activeBattingOrder.length);
             }}
             onBack={function() {
-              persistCurrentBatterIndex((currentBatterIndex - 1 + battingOrder.length) % battingOrder.length);
+              persistCurrentBatterIndex((currentBatterIndex - 1 + activeBattingOrder.length) % activeBattingOrder.length);
             }}
           />
         ) : null}
@@ -9195,17 +9454,17 @@ export default function App() {
           teamId={activeTeamId}
           roster={roster}
           grid={grid}
-          battingOrder={battingOrder}
+          battingOrder={activeBattingOrder}
           innings={innings}
           sport={activeTeam ? activeTeam.sport : "baseball"}
           currentBatterIndex={currentBatterIndex}
           initialInning={gameModeInning}
           onSwap={gameModeSwap}
           onBatterAdvance={function() {
-            persistCurrentBatterIndex((currentBatterIndex + 1) % battingOrder.length);
+            persistCurrentBatterIndex((currentBatterIndex + 1) % activeBattingOrder.length);
           }}
           onBatterBack={function() {
-            persistCurrentBatterIndex((currentBatterIndex - 1 + battingOrder.length) % battingOrder.length);
+            persistCurrentBatterIndex((currentBatterIndex - 1 + activeBattingOrder.length) % activeBattingOrder.length);
           }}
           onInningChange={persistGameModeInning}
           onBatterReset={function() {

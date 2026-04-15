@@ -240,7 +240,7 @@ export function useAuth() {
   }, [session, teamId]);
 
   return {
-    authState,
+    authState, setAuthState,
     session,
     user,
     membership,
