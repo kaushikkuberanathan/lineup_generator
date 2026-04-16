@@ -141,9 +141,25 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.2.25";
+var APP_VERSION = "2.2.26";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.2.26',
+    date: 'April 2026',
+    headline: "V1→V2 skill bridge + game ball edit modal",
+    userChanges: [
+      "Player skills now influence auto-assign lineup generation",
+      "Game Ball selection moved into Edit screen with player search",
+      "Game Ball displays as read-only on schedule card",
+    ],
+    techNote: "playerMapper.js shims V1 skills/batSkills arrays to V2 enum fields; gameBall edit removed from inline card, added to newGame modal with search filter and multiselect",
+    internalChanges: [
+      "playerMapper.js: V1→V2 shim — skills[] → reliability/reaction/armStrength/speed; batSkills[] → contact/power/swingDiscipline",
+      "Schedule card gameBall pill block replaced with display-only span (🏆 Game Ball label + joined names or —)",
+      "Edit modal: gameBall search input + multiselect pills added after Snack Duty; gameBallSearch:'' added to all 3 newGame resets (initialiser, saveGame, Add Game button)",
+    ],
+  },
   {
     version: '2.2.25',
     date: 'April 2026',
@@ -3067,7 +3083,7 @@ export default function App() {
   var printNotes = _printNotes[0]; var setPrintNotes = _printNotes[1];
   var _songsView = useState("display");
   var songsView = _songsView[0]; var setSongsView = _songsView[1];
-  var _newGame = useState({ date:"", time:"", location:"", opponent:"", result:"", ourScore:"", theirScore:"", battingPerf:{}, snackDuty:"", gameBall:[], scoreReported:false });
+  var _newGame = useState({ date:"", time:"", location:"", opponent:"", result:"", ourScore:"", theirScore:"", battingPerf:{}, snackDuty:"", gameBall:[], gameBallSearch:"", scoreReported:false });
   var newGame = _newGame[0]; var setNewGame = _newGame[1];
   var _editGame = useState(null);
   var editingGame = _editGame[0]; var setEditingGame = _editGame[1];
@@ -3978,7 +3994,7 @@ export default function App() {
     if (game.result) {
       track("game_result_logged", { team_id: activeTeamId, result: game.result });
     }
-    setNewGame({ date:"", time:"", location:"", opponent:"", result:"", ourScore:"", theirScore:"", battingPerf:{}, snackDuty:"", gameBall:[], scoreReported:false });
+    setNewGame({ date:"", time:"", location:"", opponent:"", result:"", ourScore:"", theirScore:"", battingPerf:{}, snackDuty:"", gameBall:[], gameBallSearch:"", scoreReported:false });
     setShowGameForm(false);
     setEditingGame(null);
   }
@@ -7100,7 +7116,7 @@ export default function App() {
 
         <div style={{ display:"flex", gap:"8px", marginBottom:"14px", flexWrap:"wrap" }}>
           <button style={S.btn("primary")} onClick={function() {
-            setNewGame({ date:"", time:"", location:"", opponent:"", result:"", ourScore:"", theirScore:"", battingPerf:{}, snackDuty:"", gameBall:[], scoreReported:false });
+            setNewGame({ date:"", time:"", location:"", opponent:"", result:"", ourScore:"", theirScore:"", battingPerf:{}, snackDuty:"", gameBall:[], gameBallSearch:"", scoreReported:false });
             setEditingGame(null);
             setShowGameForm(true);
             setImportMode(null);
@@ -7323,6 +7339,51 @@ export default function App() {
                 onChange={function(e) { var g={}; for(var k in newGame){g[k]=newGame[k];} g.snackDuty=e.target.value; setNewGame(g); }}
                 style={S.input} />
             </div>
+            {roster.length > 0 ? (
+              <div style={{ marginBottom:"10px" }}>
+                <div style={{ fontSize:"10px", color:C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:"6px" }}>Game Ball</div>
+                <input type="text" value={newGame.gameBallSearch || ""} placeholder="Search players..."
+                  maxLength={40}
+                  onChange={function(e) { var g={}; for(var k in newGame){g[k]=newGame[k];} g.gameBallSearch=e.target.value; setNewGame(g); }}
+                  style={{ ...S.input, marginBottom:"6px" }} />
+                <div style={{ display:"flex", flexWrap:"wrap", gap:"6px" }}>
+                  {roster
+                    .slice()
+                    .sort(function(a,b){ return (a.firstName||a.name||'').toLowerCase().localeCompare((b.firstName||b.name||'').toLowerCase()); })
+                    .filter(function(p) {
+                      var q = (newGame.gameBallSearch || "").toLowerCase();
+                      return !q || (p.firstName||p.name||'').toLowerCase().includes(q);
+                    })
+                    .map(function(p) {
+                      var pname = p.firstName || p.name || '';
+                      var sel = Array.isArray(newGame.gameBall) && newGame.gameBall.includes(pname);
+                      return (
+                        <button key={pname}
+                          onClick={function(n) { return function() {
+                            var g={}; for(var k in newGame){g[k]=newGame[k];}
+                            var current = Array.isArray(g.gameBall) ? g.gameBall : [];
+                            var isSelected = current.includes(n);
+                            g.gameBall = isSelected ? current.filter(function(x){ return x !== n; }) : current.concat(n);
+                            setNewGame(g);
+                          }; }(pname)}
+                          style={{ padding:"4px 10px", borderRadius:"16px",
+                            border: sel ? "2px solid #1B2A4A" : "1.5px solid #ccc",
+                            background: sel ? "#1B2A4A" : "#fff",
+                            color: sel ? "#fff" : "#333",
+                            fontSize:"13px", cursor:"pointer", fontWeight: sel ? 600 : 400 }}>
+                          {pname}
+                        </button>
+                      );
+                    })
+                  }
+                </div>
+                {Array.isArray(newGame.gameBall) && newGame.gameBall.length > 0 && (
+                  <div style={{ fontSize:"12px", color:"#1B2A4A", marginTop:"4px" }}>
+                    🏆 {newGame.gameBall.join(', ')}
+                  </div>
+                )}
+              </div>
+            ) : null}
             <div style={{ marginBottom:"10px" }}>
               <div style={{ fontSize:"10px", color:C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:"6px" }}>Result</div>
               <div style={{ display:"flex", gap:"6px" }}>
@@ -7643,45 +7704,13 @@ export default function App() {
                               <button onClick={function(gid) { return function() { clearSnackAssignment(gid); }; }(game.id)}
                                 style={{ background:"none", border:"none", cursor:"pointer", fontSize:"12px", color:C.textMuted, padding:"1px 3px", lineHeight:1 }} title="Clear">✕</button>
                             )}
-                            <div style={{marginTop:'4px'}}>
-                              <div style={{fontSize:'12px',color:'#666',marginBottom:'4px',fontWeight:500}}>Game Ball</div>
-                              <div style={{display:'flex',flexWrap:'wrap',gap:'6px'}}>
-                                {roster
-                                  .slice()
-                                  .sort(function(a,b){ return (a.firstName||a.name||'').localeCompare(b.firstName||b.name||''); })
-                                  .map(function(p) {
-                                    var pname = p.firstName || p.name || '';
-                                    var selected = Array.isArray(game.gameBall) ? game.gameBall.includes(pname) : game.gameBall === pname;
-                                    return (
-                                      <button
-                                        key={pname}
-                                        onClick={function() {
-                                          var current = Array.isArray(game.gameBall) ? game.gameBall : (game.gameBall ? [game.gameBall] : []);
-                                          var next = selected ? current.filter(function(n){ return n !== pname; }) : current.concat(pname);
-                                          updateSnackField(game.id, 'gameBall', next);
-                                        }}
-                                        style={{
-                                          padding:'4px 10px',
-                                          borderRadius:'16px',
-                                          border: selected ? '2px solid #1B2A4A' : '1.5px solid #ccc',
-                                          background: selected ? '#1B2A4A' : '#fff',
-                                          color: selected ? '#fff' : '#333',
-                                          fontSize:'13px',
-                                          cursor:'pointer',
-                                          fontWeight: selected ? 600 : 400,
-                                        }}
-                                      >
-                                        {pname}
-                                      </button>
-                                    );
-                                  })
-                                }
-                              </div>
-                              {Array.isArray(game.gameBall) && game.gameBall.length > 0 && (
-                                <div style={{fontSize:'12px',color:'#1B2A4A',marginTop:'4px'}}>
-                                  🏆 {game.gameBall.join(', ')}
-                                </div>
-                              )}
+                            <div style={{marginTop:'6px'}}>
+                              <span style={{fontSize:'12px',color:'#666',fontWeight:500}}>🏆 Game Ball: </span>
+                              <span style={{fontSize:'13px',color:'#1B2A4A',fontWeight: Array.isArray(game.gameBall) && game.gameBall.length > 0 ? 600 : 400}}>
+                                {Array.isArray(game.gameBall) && game.gameBall.length > 0
+                                  ? game.gameBall.join(', ')
+                                  : <span style={{color:'#aaa'}}>—</span>}
+                              </span>
                             </div>
                           </div>
                         </div>

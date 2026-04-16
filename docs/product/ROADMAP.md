@@ -1,9 +1,14 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: April 16, 2026 (v2.2.25)
+> Last updated: April 16, 2026 (v2.2.26)
 > MVP launched: March 24, 2026
 
 ---
+
+## v2.2.26 — 2026-04-16
+- Feat: playerMapper.js V1→V2 skill shim — skills[]/batSkills[] arrays now inferred as V2 enum fields (reliability, reaction, armStrength, speed, contact, power, swingDiscipline)
+- UX: gameBall edit removed from inline schedule card; moved into game Edit modal with search filter + multiselect pills
+- UX: gameBall displays as read-only 🏆 label on schedule card
 
 ## v2.2.25 — 2026-04-16
 - Feat: Game Ball award supports multiple players — gameBall migrated from string to array; normalizeGameBall() coerces legacy data on read

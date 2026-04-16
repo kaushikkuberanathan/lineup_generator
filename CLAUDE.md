@@ -308,4 +308,4 @@ All major sections wrapped with `<ErrorBoundary>` (`src/components/Shared/ErrorB
 ---
 
 ## Current Version
-**v2.2.25** — April 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/App.jsx`.
+**v2.2.26** — April 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/App.jsx`.
