@@ -369,4 +369,4 @@ three shims are removed and auth is confirmed working end-to-end.
 ---
 
 ## Current Version
-**v2.2.29** — April 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/App.jsx`.
+**v2.2.30** — April 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/App.jsx`.

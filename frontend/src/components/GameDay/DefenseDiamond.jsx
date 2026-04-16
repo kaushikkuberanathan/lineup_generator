@@ -75,8 +75,10 @@ export function DefenseDiamond({ roster, grid, innings, selectedInning, onSelect
     // For Bench box in single-inning mode, grow height to fit all bench players
     var benchNames = (isSingle && innFilter !== null && innFilter !== undefined)
       ? getGridPlayersFn("Bench", innFilter) : [];
+    var outNames = (isSingle && innFilter !== null && innFilter !== undefined)
+      ? getGridPlayersFn("Out", innFilter) : [];
     var BENCH_BOX_H = isSingle
-      ? Math.max(BOX_H, 24 + Math.max(1, benchNames.length) * 16)
+      ? Math.max(BOX_H, 24 + Math.max(1, benchNames.length + outNames.length) * 16)
       : BOX_H;
     var VB_H = isSingle
       ? Math.max(640, 490 + BENCH_BOX_H + 12)
@@ -146,12 +148,13 @@ export function DefenseDiamond({ roster, grid, innings, selectedInning, onSelect
                 </text>
                 {isSingle ? (
                   slot.pos === "Bench" ? (
-                    benchNames.length === 0 ? (
-                      <text x={cx} y={slot.y + 38} textAnchor="middle"
-                        fontSize="13" fontWeight="700" fill="white"
-                        fontFamily="system-ui,sans-serif">-</text>
-                    ) : (
-                      benchNames.map(function(n, idx) {
+                    <g>
+                      {benchNames.length === 0 && outNames.length === 0 ? (
+                        <text x={cx} y={slot.y + 38} textAnchor="middle"
+                          fontSize="13" fontWeight="700" fill="white"
+                          fontFamily="system-ui,sans-serif">-</text>
+                      ) : null}
+                      {benchNames.map(function(n, idx) {
                         return (
                           <text key={n} x={cx} y={slot.y + 34 + (idx * 16)} textAnchor="middle"
                             fontSize="12" fontWeight="700" fill="white"
@@ -159,8 +162,17 @@ export function DefenseDiamond({ roster, grid, innings, selectedInning, onSelect
                             {firstName(n)}
                           </text>
                         );
-                      })
-                    )
+                      })}
+                      {outNames.map(function(n, idx) {
+                        return (
+                          <text key={"out-" + n} x={cx} y={slot.y + 34 + ((benchNames.length + idx) * 16)} textAnchor="middle"
+                            fontSize="11" fontWeight="700" fill="#dc2626"
+                            fontFamily="system-ui,sans-serif">
+                            {"OUT " + firstName(n)}
+                          </text>
+                        );
+                      })}
+                    </g>
                   ) : (
                     <text x={cx} y={slot.y + 40} textAnchor="middle"
                       fontSize="14" fontWeight="700" fill="white"
@@ -194,8 +206,14 @@ export function DefenseDiamond({ roster, grid, innings, selectedInning, onSelect
       .filter(function(r) { return (grid[r.name] || [])[b] === "Bench"; })
       .map(function(r) { return r.name; });
   });
+  var outByInning = innArr.map(function(b) {
+    return roster
+      .filter(function(r) { return (grid[r.name] || [])[b] === "Out"; })
+      .map(function(r) { return r.name; });
+  });
 
   var benchDisplay   = diamondInning !== null ? [benchByInning[diamondInning] || []] : benchByInning;
+  var outDisplay     = diamondInning !== null ? [outByInning[diamondInning] || []]   : outByInning;
   var benchInnLabels = diamondInning !== null ? [diamondInning] : innArr;
 
   return (
@@ -256,6 +274,10 @@ export function DefenseDiamond({ roster, grid, innings, selectedInning, onSelect
                 for (var j = 0; j < benchDisplay.length; j++) {
                   if (benchDisplay[j].length > maxBench) maxBench = benchDisplay[j].length;
                 }
+                var maxOut = 0;
+                for (var oj = 0; oj < outDisplay.length; oj++) {
+                  if (outDisplay[oj].length > maxOut) maxOut = outDisplay[oj].length;
+                }
                 var rows = [];
                 for (var r = 0; r < maxBench; r++) {
                   rows.push(
@@ -272,6 +294,41 @@ export function DefenseDiamond({ roster, grid, innings, selectedInning, onSelect
                       })}
                     </tr>
                   );
+                }
+                if (maxOut > 0) {
+                  rows.push(
+                    <tr key="out-hdr">
+                      {benchInnLabels.map(function(i) {
+                        return (
+                          <td key={i} style={{ padding:"3px 10px", textAlign:"center",
+                            borderTop:"2px solid rgba(220,38,38,0.3)",
+                            background:"rgba(220,38,38,0.05)",
+                            fontSize:"9px", fontWeight:"bold", color:"#dc2626",
+                            letterSpacing:"0.08em", textTransform:"uppercase" }}>
+                            Out
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  );
+                  for (var or = 0; or < maxOut; or++) {
+                    rows.push(
+                      <tr key={"out-" + or}>
+                        {benchInnLabels.map(function(i, ci) {
+                          var pname = outDisplay[ci][or] || "";
+                          return (
+                            <td key={i} style={{ padding:"4px 10px", textAlign:"center",
+                              borderBottom:"1px solid rgba(220,38,38,0.08)",
+                              fontWeight:"bold",
+                              color: pname ? "#dc2626" : "#ccc",
+                              background:"rgba(220,38,38,0.04)" }}>
+                              {pname ? firstName(pname) : "-"}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  }
                 }
                 return rows;
               })()}
