@@ -1,7 +1,32 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: April 6, 2026 (v2.2.18)
+> Last updated: April 16, 2026 (v2.2.25)
 > MVP launched: March 24, 2026
+
+---
+
+## v2.2.25 — 2026-04-16
+- Feat: Game Ball award supports multiple players — gameBall migrated from string to array; normalizeGameBall() coerces legacy data on read
+- UX: Team tab renamed to My Team in bottom nav
+
+## v2.2.24 — 2026-04-16
+- UX: Game Day restructured — Lineups tab is now the default view with Tonight's Attendance above Defense/Batting sub-tabs
+- Fix: QuickSwap in Game Mode now excludes absent players from swap candidate list; absentTonight threaded App.jsx → GameModeScreen → QuickSwap
+
+## v2.2.23 — 2026-04-16
+- Fix: validateGrid skips "Out" slots — no false warnings for absent players
+- Fix: todayDate switched from UTC to local calendar date to fix attendance key mismatch during evening games
+
+## v2.2.22 — 2026-04-15 (HOTFIX)
+- Hotfix: auth gate re-commented out — was inadvertently blocking all unauthenticated users in prod
+- useAuth hook, LoginScreen, RequestAccessScreen, PendingApprovalScreen imports preserved for Phase 4C cutover
+
+## v2.2.21 — 2026-04-15
+- Feat: activeBattingOrder — absent players filtered from batting order across PDF, share links, print, songs, game mode, Now Batting strip
+- SharedView: player filter pills exclude absent names; absent note in batting footer
+- Feat (v2.2.19): Game Day Attendance panel — mark players out before lineup gen, persisted to Supabase attendance_overrides column
+- Fix: PendingApprovalScreen "Try logging in" now correctly transitions auth state
+- Fix: supabase.js attendance_overrides support in dbSaveTeamData/dbLoadTeamData
 
 ---
 

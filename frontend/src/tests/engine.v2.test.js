@@ -91,6 +91,8 @@ describe('Group 1 — Position assignment correctness', () => {
 // ---------------------------------------------------------------------------
 // GROUP 2 — Bench slot correctness
 // ---------------------------------------------------------------------------
+// Note: the following bench assertions assume full attendance (no absent tags).
+// Absent-player bench math is covered in lineupEngineV2-unit.test.js Group X.
 
 describe('Group 2 — Bench slot correctness', () => {
   test('2.1: 10-player roster — total BENCH entries = innings × computed bench count (0)', () => {
@@ -239,5 +241,39 @@ describe('Group 5 — Output shape stability', () => {
     expect(result1.grid).toEqual(result2.grid);
     expect(result1.battingOrder).toEqual(result2.battingOrder);
     expect(result1.warnings).toEqual(result2.warnings);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// GROUP 6 — Absent player bench exclusion
+// ---------------------------------------------------------------------------
+
+describe('Group 6 — Absent player bench exclusion', () => {
+  it('absent-tagged player does not consume a bench slot in the engine', () => {
+    // Note: autoAssignWithRetryFallback (the V1 engine) lives inside App.jsx and
+    // is not exported as a module — it cannot be imported in tests. This test
+    // exercises the same absent-tag behavior through generateLineupV2, which
+    // applies the same tags: ['absent'] → outThisGame filtering via playerMapper.
+    //
+    // 12 players total, 1 absent → 11 active → bench = max(11-10, 0) = 1 per inning
+    // If bench were calculated from total: max(12-10, 0) = 2 — that would be wrong.
+    // outThisGame: undefined lets playerMapper.js:52 fall through to tags.includes('absent').
+    // The mockRoster12 fixture sets outThisGame: false explicitly, so we clear it here.
+    const absentName = mockRoster12[0].name;
+    const rosterWithAbsent = [
+      { ...mockRoster12[0], outThisGame: undefined, tags: ['absent'] },
+      ...mockRoster12.slice(1),
+    ];
+    const result = generateLineupV2(rosterWithAbsent, mockConfig12.innings);
+
+    // Absent player has no grid entry — effectively "Out" every inning
+    expect(result.grid[absentName]).toBeUndefined();
+
+    // Bench = 1 per inning (active 11 - 10 field positions), not 2 (total 12 - 10)
+    for (let inning = 0; inning < mockConfig12.innings; inning++) {
+      const benchCount = Object.values(result.grid)
+        .filter(positions => positions[inning] === 'BENCH').length;
+      expect(benchCount).toBe(1);
+    }
   });
 });

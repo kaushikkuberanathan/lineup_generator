@@ -38,7 +38,7 @@ function firstName(name) {
   return name.split(" ")[0];
 }
 
-export function QuickSwap({ position, inning, roster, grid, onSwap, onClose }) {
+export function QuickSwap({ position, inning, roster, grid, onSwap, onClose, absentTonight = [] }) {
   function handleClose() {
     track("quick_swap_cancelled", { position: position, inning: inning });
     onClose();
@@ -98,7 +98,9 @@ export function QuickSwap({ position, inning, roster, grid, onSwap, onClose }) {
 
         {/* Player list — sorted by baseball scorecard position order */}
         <div style={{ overflowY:"auto", flex:1, padding:"10px 0" }}>
-          {roster.slice().sort(function(a, b) {
+          {roster
+            .filter(function(p) { return absentTonight.indexOf(p.name) < 0; })
+            .slice().sort(function(a, b) {
             var pa = (grid[a.name] || [])[inning] || "";
             var pb = (grid[b.name] || [])[inning] || "";
             var oa = POS_ORDER[pa] !== undefined ? POS_ORDER[pa] : 99;

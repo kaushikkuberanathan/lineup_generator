@@ -141,9 +141,64 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.2.21";
+var APP_VERSION = "2.2.25";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.2.25',
+    date: 'April 2026',
+    headline: "Multi-player game ball + My Team tab",
+    userChanges: [
+      "Game Ball award can now be given to multiple players",
+      "Team tab renamed to My Team",
+    ],
+    techNote: "gameBall migrated from string to array; normalizeGameBall() coerces legacy data on read",
+    internalChanges: [
+      "gameBall migrated from string to array; normalizeGameBall() coerces legacy data on read",
+      "PRIMARY_TABS: label:'Team' → label:'My Team' at line 9092",
+    ],
+  },
+  {
+    version: '2.2.24',
+    date: 'April 2026',
+    headline: "Game Day restructured — Lineups tab with shared attendance, Defense/Batting as sub-tabs",
+    userChanges: [
+      "Game Day now opens on Lineups tab by default",
+      "Tonight's Attendance sits above both Defense and Batting — one place to manage who's playing",
+      "Defense and Batting are sub-tabs inside Lineups",
+      "Cleaner Game Day nav: Lineups · Songs · Game Mode all visible on portrait",
+    ],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
+      "renderLineups() wrapper extracts attendance panel from renderGrid(); lineupsSubTab state added; GAMEDAY_SUBTABS collapsed from 5 to 3 entries; all setGameDayTab('defense') deep links updated to 'lineups'",
+      "absentTonight prop threaded App.jsx → GameModeScreen → QuickSwap; QuickSwap candidate list filters absent names before sort",
+    ],
+  },
+  {
+    version: '2.2.23',
+    date: 'April 2026',
+    headline: "Defense tab inning checks restored — absent players no longer cause false warnings",
+    userChanges: [
+      "Inning checkmarks now show correctly when absent players are marked Out Tonight",
+      "Auto-assign no longer includes Out Tonight players (fixed for evening games)",
+    ],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
+      "validateGrid: skip 'Out' slots entirely — no missing/conflict/bench warnings for absent players",
+      "todayDate: switched from UTC (toISOString) to local calendar date to fix attendance key mismatch during evening games in ET and other UTC- timezones",
+    ],
+  },
+  {
+    version: '2.2.22',
+    date: 'April 2026',
+    headline: "Hotfix — auth gate removed from prod, app accessible to all users",
+    userChanges: [],
+    techNote: "Auth gate re-commented out — was inadvertently active in prod blocking all unauthenticated users. useAuth hook and all auth components remain in place for Phase 4C cutover.",
+    internalChanges: [
+      "Auth gate block (if !_authBypassed + all three authState branches) wrapped in /* */ block comment",
+      "useAuth(), LoginScreen, RequestAccessScreen, PendingApprovalScreen imports untouched — preserved for Phase 4C",
+    ],
+  },
   {
     version: '2.2.21',
     date: 'April 2026',
@@ -1849,11 +1904,13 @@ function validateGrid(grid, roster, innings) {
     var benchCount = 0;
     for (var pi = 0; pi < players.length; pi++) {
       var p = players[pi];
-      var pos = grid[p] ? grid[p][i] : "";
+      var pos = (grid[p] || [])[i] || "";
       if (!pos) {
         warnings.push({ type:"missing", msg: p + " unassigned in inning " + (i + 1) });
         continue;
       }
+      // absent-tonight players are marked "Out" — skip all validation for them
+      if (pos === "Out") { continue; }
       if (pos === "Bench") {
         benchCount++;
         if (i > 0 && grid[p][i - 1] === "Bench") {
@@ -2385,6 +2442,12 @@ export default function App() {
 
   var MERGE_FIELDS = ['scoreReported', 'snackDuty', 'snackNote', 'gameBall'];
 
+  function normalizeGameBall(val) {
+    if (!val || val === "") return [];
+    if (Array.isArray(val)) return val;
+    return [val];
+  }
+
   if (!window._lineupDbBooted && isSupabaseEnabled) {
     window._lineupDbBooted = true;
     dbLoadTeams().then(function(dbTeams) {
@@ -2526,7 +2589,7 @@ export default function App() {
                         theirScore:    prev.theirScore    || seed.theirScore,
                         snackDuty:     prev.snackDuty     || seed.snackDuty   || "",
                         snackNote:     prev.snackNote     || seed.snackNote   || "",
-                        gameBall:      prev.gameBall      || seed.gameBall    || "",
+                        gameBall:      normalizeGameBall(prev.gameBall !== undefined && prev.gameBall !== "" ? prev.gameBall : seed.gameBall),
                         scoreReported: prev.scoreReported || seed.scoreReported || false,
                         battingPerf: getLocalBattingPerf(seed.id) || (prev.battingPerf && Object.keys(prev.battingPerf).length > 0
                                      ? prev.battingPerf : (seed.battingPerf || {}))
@@ -2630,7 +2693,7 @@ export default function App() {
                   theirScore:    prev.theirScore     !== undefined ? prev.theirScore    : og.theirScore,
                   battingPerf:   prev.battingPerf    && Object.keys(prev.battingPerf).length > 0 ? prev.battingPerf : og.battingPerf,
                   snackDuty:     prev.snackDuty      !== undefined ? prev.snackDuty     : (og.snackDuty     || ""),
-                  gameBall:      prev.gameBall       !== undefined ? prev.gameBall      : (og.gameBall      || ""),
+                  gameBall:      normalizeGameBall(prev.gameBall !== undefined && prev.gameBall !== "" && !(Array.isArray(prev.gameBall) && prev.gameBall.length === 0) ? prev.gameBall : og.gameBall),
                   scoreReported: prev.scoreReported  !== undefined ? prev.scoreReported : (og.scoreReported || false)
                 });
               });
@@ -2664,8 +2727,11 @@ export default function App() {
   var primaryTab = _primaryTab[0]; var setPrimaryTab = _primaryTab[1];
   var _rosterTab = useState("players");
   var rosterTab = _rosterTab[0]; var setRosterTab = _rosterTab[1];
-  var _gameDayTab = useState("defense");
+  var _gameDayTab = useState("lineups");
   var gameDayTab = _gameDayTab[0]; var setGameDayTab = _gameDayTab[1];
+  var _lineupsSubTab = useState("defense");
+  var lineupsSubTab = _lineupsSubTab[0];
+  var setLineupsSubTab = _lineupsSubTab[1];
   var _seasonTab = useState("schedule");
   var seasonTab = _seasonTab[0]; var setSeasonTab = _seasonTab[1];
   var _teamSubTab = useState("roster");
@@ -2958,7 +3024,10 @@ export default function App() {
   var _attendanceSyncMsg = useState('');
   var attendanceSyncMsg = _attendanceSyncMsg[0]; var setAttendanceSyncMsg = _attendanceSyncMsg[1];
   // Derived: today's absent list (auto-clears each calendar day since key is YYYY-MM-DD)
-  var todayDate = new Date().toISOString().slice(0, 10);
+  var _td = new Date();
+  var todayDate = _td.getFullYear() + '-'
+    + String(_td.getMonth() + 1).padStart(2, '0') + '-'
+    + String(_td.getDate()).padStart(2, '0');
   var absentTonight = attendanceOverrides[todayDate] || [];
   var activeBattingOrder = battingOrder.filter(function(name) {
     return absentTonight.indexOf(name) < 0;
@@ -2998,7 +3067,7 @@ export default function App() {
   var printNotes = _printNotes[0]; var setPrintNotes = _printNotes[1];
   var _songsView = useState("display");
   var songsView = _songsView[0]; var setSongsView = _songsView[1];
-  var _newGame = useState({ date:"", time:"", location:"", opponent:"", result:"", ourScore:"", theirScore:"", battingPerf:{}, snackDuty:"", gameBall:"", scoreReported:false });
+  var _newGame = useState({ date:"", time:"", location:"", opponent:"", result:"", ourScore:"", theirScore:"", battingPerf:{}, snackDuty:"", gameBall:[], scoreReported:false });
   var newGame = _newGame[0]; var setNewGame = _newGame[1];
   var _editGame = useState(null);
   var editingGame = _editGame[0]; var setEditingGame = _editGame[1];
@@ -3683,7 +3752,7 @@ export default function App() {
     });
 
     var demoSchedule = [
-      { id:"demo_g_1", date:fmtDate(addDays(-7)),  time:"10:00", location:"Riverside Park", opponent:"Tigers", result:"W", ourScore:"8", theirScore:"3", home:true,  snackDuty:"",           snackNote:"", gameBall:"Jake Martinez", battingPerf:{} },
+      { id:"demo_g_1", date:fmtDate(addDays(-7)),  time:"10:00", location:"Riverside Park", opponent:"Tigers", result:"W", ourScore:"8", theirScore:"3", home:true,  snackDuty:"",           snackNote:"", gameBall:["Jake Martinez"], battingPerf:{} },
       { id:"demo_g_2", date:fmtDate(addDays(5)),   time:"10:00", location:"Memorial Field", opponent:"Sharks", result:"",  ourScore:"",  theirScore:"",  home:false, snackDuty:"Mia Chen",   snackNote:"", gameBall:"", battingPerf:{} },
       { id:"demo_g_3", date:fmtDate(addDays(19)),  time:"14:00", location:"Riverside Park", opponent:"Eagles", result:"",  ourScore:"",  theirScore:"",  home:true,  snackDuty:"",           snackNote:"", gameBall:"", battingPerf:{} },
     ];
@@ -3854,7 +3923,7 @@ export default function App() {
     setLastAutoGrid(result.grid);
     setLineupDirty(false);
     setPrimaryTab("gameday");
-    setGameDayTab("defense");
+    setGameDayTab("lineups");
     persistCurrentBatterIndex(0);
     persistGameModeInning(0);
 
@@ -3909,7 +3978,7 @@ export default function App() {
     if (game.result) {
       track("game_result_logged", { team_id: activeTeamId, result: game.result });
     }
-    setNewGame({ date:"", time:"", location:"", opponent:"", result:"", ourScore:"", theirScore:"", battingPerf:{}, snackDuty:"", gameBall:"", scoreReported:false });
+    setNewGame({ date:"", time:"", location:"", opponent:"", result:"", ourScore:"", theirScore:"", battingPerf:{}, snackDuty:"", gameBall:[], scoreReported:false });
     setShowGameForm(false);
     setEditingGame(null);
   }
@@ -4486,7 +4555,7 @@ export default function App() {
                             <button
                               onClick={function(ngt) { return function() {
                                 loadTeam(ngt);
-                                setTimeout(function() { setPrimaryTab("gameday"); setGameDayTab("defense"); }, 300);
+                                setTimeout(function() { setPrimaryTab("gameday"); setGameDayTab("lineups"); }, 300);
                               }; }(nextGameTeam)}
                               style={{ background:"linear-gradient(135deg,#f5c842,#e6a817)", color:"#0f1f3d", border:"none", borderRadius:"10px", padding:"14px 20px", fontSize:"15px", fontWeight:"bold", cursor:"pointer", width:"100%", fontFamily:"Georgia,serif", letterSpacing:"0.02em", boxShadow:"0 3px 12px rgba(245,200,66,0.35)" }}>
                               ✓ View Lineup
@@ -4507,7 +4576,7 @@ export default function App() {
                           <button
                             onClick={function(ngt, ngg) { return function() {
                               loadTeam(ngt);
-                              setTimeout(function() { setPrimaryTab("gameday"); setGameDayTab("defense"); setTimeout(generateLineup, 100); }, 300);
+                              setTimeout(function() { setPrimaryTab("gameday"); setGameDayTab("lineups"); setTimeout(generateLineup, 100); }, 300);
                             }; }(nextGameTeam, nextGameGlobal)}
                             style={{ background:"linear-gradient(135deg,#f5c842,#e6a817)", color:"#0f1f3d", border:"none", borderRadius:"10px", padding:"14px 20px", fontSize:"15px", fontWeight:"bold", cursor:"pointer", width:"100%", fontFamily:"Georgia,serif", letterSpacing:"0.02em", boxShadow:"0 3px 12px rgba(245,200,66,0.35)" }}>
                             ⚡ Generate Lineup
@@ -4754,7 +4823,7 @@ export default function App() {
           <div style={{ background:"rgba(245,200,66,0.12)", border:"1px solid rgba(245,200,66,0.4)", borderRadius:"8px", padding:"10px 14px", marginBottom:"10px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:"10px", flexWrap:"wrap" }}>
             <div style={{ fontSize:"12px", color:"#92620a", fontWeight:"600", flex:1 }}>⚡ Player profiles updated — regenerate lineup when ready</div>
             <div style={{ display:"flex", gap:"8px", alignItems:"center", flexShrink:0 }}>
-              <button style={{ ...S.btn("gold"), fontSize:"11px", padding:"5px 12px" }} onClick={function() { setPrimaryTab("gameday"); setGameDayTab("defense"); setTimeout(generateLineup, 50); }}>Go & Regenerate</button>
+              <button style={{ ...S.btn("gold"), fontSize:"11px", padding:"5px 12px" }} onClick={function() { setPrimaryTab("gameday"); setGameDayTab("lineups"); setTimeout(generateLineup, 50); }}>Go & Regenerate</button>
               <button style={{ background:"transparent", border:"none", color:"#94a3b8", fontSize:"18px", cursor:"pointer", padding:"0 4px", lineHeight:1 }} onClick={function() { setLineupDirty(false); }}>×</button>
             </div>
           </div>
@@ -5593,6 +5662,128 @@ export default function App() {
     );
   }
 
+  // ============================================================
+  // LINEUPS WRAPPER TAB
+  // ============================================================
+  function renderLineups() {
+    var _panelOpen = attendancePanelOpen !== null
+      ? attendancePanelOpen
+      : absentTonight.length > 0;
+    var _availableCount = roster.length - absentTonight.length;
+
+    return (
+      <div>
+        {/* ── Tonight's Attendance Panel ─── */}
+        {roster.length > 0 && !lineupLocked ? (
+          <div style={{ marginBottom:"14px", borderRadius:"10px", border:"1px solid rgba(15,31,61,0.12)", overflow:"hidden" }}>
+            {/* Header */}
+            <div
+              onClick={function() { setAttendancePanelOpen(_panelOpen ? false : true); }}
+              style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 14px",
+                background:"rgba(15,31,61,0.04)", cursor:"pointer", userSelect:"none" }}
+            >
+              <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
+                <span style={{ fontWeight:700, fontSize:"14px", color:C.navy }}>🏟 Tonight's Attendance</span>
+                {absentTonight.length > 0 ? (
+                  <span style={{ background:"#fee2e2", color:"#dc2626", fontSize:"11px", fontWeight:700, padding:"2px 7px", borderRadius:"10px" }}>
+                    {absentTonight.length} out
+                  </span>
+                ) : null}
+              </div>
+              <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
+                {isSupabaseEnabled ? (
+                  <button
+                    onClick={function(e) { e.stopPropagation(); syncAttendance(); }}
+                    disabled={attendanceSyncing}
+                    title="Pull latest attendance from cloud"
+                    style={{ background:"transparent", border:"none", cursor:attendanceSyncing ? "default" : "pointer",
+                      fontSize:"12px", color:attendanceSyncMsg ? "#27ae60" : C.textMuted, padding:"2px 6px", fontFamily:"inherit" }}
+                  >
+                    {attendanceSyncing ? "⟳…" : attendanceSyncMsg || "⟳ Sync"}
+                  </button>
+                ) : null}
+                <span style={{ fontSize:"12px", color:C.textMuted }}>{_panelOpen ? "▲" : "▼"}</span>
+              </div>
+            </div>
+            {/* Body */}
+            {_panelOpen ? (
+              <div style={{ padding:"10px 12px", display:"flex", flexWrap:"wrap", gap:"6px" }}>
+                {roster.map(function(p) {
+                  var isAbsent = absentTonight.indexOf(p.name) >= 0;
+                  var fn = p.firstName || (p.name ? p.name.split(' ')[0] : p.name);
+                  return (
+                    <div key={p.name} style={{ display:"flex", alignItems:"center", gap:"6px",
+                      width:"calc(50% - 3px)", minWidth:"130px" }}>
+                      <span style={{ fontWeight: isAbsent ? 700 : 400, fontSize:"14px",
+                        color: isAbsent ? "#dc2626" : C.navy,
+                        flex:1, minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                        {fn}
+                      </span>
+                      <button
+                        onClick={function(name) { return function() { toggleAbsentTonight(name); }; }(p.name)}
+                        style={{ fontSize:"11px", fontWeight:600, padding:"4px 8px", borderRadius:"6px",
+                          border:"none", cursor:"pointer", whiteSpace:"nowrap", flexShrink:0,
+                          background: isAbsent ? "#fee2e2" : "rgba(39,174,96,0.1)",
+                          color: isAbsent ? "#dc2626" : "#27ae60" }}
+                      >
+                        {isAbsent ? "❌ Out Tonight" : "✅ Playing"}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
+        {/* ── Low-roster warning ─── */}
+        {absentTonight.length > 0 && _availableCount < 9 ? (
+          <div style={{ background:"#fee2e2", border:"1px solid #fca5a5", borderRadius:"8px",
+            padding:"10px 14px", marginBottom:"10px", color:"#dc2626", fontWeight:600, fontSize:"13px" }}>
+            ⚠ Only {_availableCount} player{_availableCount === 1 ? "" : "s"} available tonight — need at least 9 to field.
+          </div>
+        ) : null}
+
+        {/* ── Defense / Batting sub-sub-tab bar ─── */}
+        <div style={{
+          display:"flex", gap:"6px", marginBottom:"14px",
+          borderBottom:"1px solid rgba(15,31,61,0.1)",
+          paddingBottom:"10px"
+        }}>
+          {[
+            { key:"defense", label:"\u26BE Defense" },
+            { key:"batting", label:"\u2694\uFE0F Batting" }
+          ].map(function(t) {
+            var active = lineupsSubTab === t.key;
+            return (
+              <button
+                key={t.key}
+                onClick={function(k) {
+                  return function() { setLineupsSubTab(k); };
+                }(t.key)}
+                style={{
+                  flex:"0 0 auto", padding:"7px 18px",
+                  borderRadius:"20px", fontSize:"13px",
+                  fontWeight: active ? 700 : 500,
+                  background: active ? "#0f1f3d" : "rgba(15,31,61,0.06)",
+                  color: active ? "#fff" : "#0f1f3d",
+                  border: active ? "none" : "1px solid rgba(15,31,61,0.15)",
+                  cursor:"pointer", transition:"all 0.15s"
+                }}
+              >
+                {t.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* ── Content ─── */}
+        {lineupsSubTab === "defense" ? renderGrid() : null}
+        {lineupsSubTab === "batting" ? renderBatting() : null}
+      </div>
+    );
+  }
+
     // ============================================================
   // FIELD GRID TAB
   // ============================================================
@@ -5712,8 +5903,6 @@ export default function App() {
     var _bannerReady = _bannerIssues.length === 0;
     // ──────────────────────────────────────────────────────────────────
 
-    // Attendance panel helpers
-    var _panelOpen = attendancePanelOpen !== null ? attendancePanelOpen : absentTonight.length > 0;
     var _availableCount = roster.length - absentTonight.length;
 
     return (
@@ -5726,77 +5915,6 @@ export default function App() {
         <ErrorBoundary fallback="Fairness Check">
           {lineupLocked ? <FairnessCheck roster={roster} grid={grid} C={C} /> : null}
         </ErrorBoundary>
-
-        {/* ── Tonight's Attendance Panel ───────────────────────────── */}
-        {roster.length > 0 && !lineupLocked ? (
-          <div style={{ marginBottom:"14px", borderRadius:"10px", border:"1px solid rgba(15,31,61,0.12)", overflow:"hidden" }}>
-            {/* Header */}
-            <div
-              onClick={function() { setAttendancePanelOpen(_panelOpen ? false : true); }}
-              style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 14px",
-                background:"rgba(15,31,61,0.04)", cursor:"pointer", userSelect:"none" }}
-            >
-              <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
-                <span style={{ fontWeight:700, fontSize:"14px", color:C.navy }}>🏟 Tonight's Attendance</span>
-                {absentTonight.length > 0 ? (
-                  <span style={{ background:"#fee2e2", color:"#dc2626", fontSize:"11px", fontWeight:700, padding:"2px 7px", borderRadius:"10px" }}>
-                    {absentTonight.length} out
-                  </span>
-                ) : null}
-              </div>
-              <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
-                {isSupabaseEnabled ? (
-                  <button
-                    onClick={function(e) { e.stopPropagation(); syncAttendance(); }}
-                    disabled={attendanceSyncing}
-                    title="Pull latest attendance from cloud"
-                    style={{ background:"transparent", border:"none", cursor:attendanceSyncing ? "default" : "pointer",
-                      fontSize:"12px", color:attendanceSyncMsg ? "#27ae60" : C.textMuted, padding:"2px 6px", fontFamily:"inherit" }}
-                  >
-                    {attendanceSyncing ? "⟳…" : attendanceSyncMsg || "⟳ Sync"}
-                  </button>
-                ) : null}
-                <span style={{ fontSize:"12px", color:C.textMuted }}>{_panelOpen ? "▲" : "▼"}</span>
-              </div>
-            </div>
-            {/* Body */}
-            {_panelOpen ? (
-              <div style={{ padding:"10px 12px", display:"flex", flexWrap:"wrap", gap:"6px" }}>
-                {roster.map(function(p) {
-                  var isAbsent = absentTonight.indexOf(p.name) >= 0;
-                  var fn = p.firstName || (p.name ? p.name.split(' ')[0] : p.name);
-                  return (
-                    <div key={p.name} style={{ display:"flex", alignItems:"center", gap:"6px",
-                      width:"calc(50% - 3px)", minWidth:"130px" }}>
-                      <span style={{ fontWeight: isAbsent ? 700 : 400, fontSize:"14px",
-                        color: isAbsent ? "#dc2626" : C.navy,
-                        flex:1, minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-                        {fn}
-                      </span>
-                      <button
-                        onClick={function(name) { return function() { toggleAbsentTonight(name); }; }(p.name)}
-                        style={{ fontSize:"11px", fontWeight:600, padding:"4px 8px", borderRadius:"6px",
-                          border:"none", cursor:"pointer", whiteSpace:"nowrap", flexShrink:0,
-                          background: isAbsent ? "#fee2e2" : "rgba(39,174,96,0.1)",
-                          color: isAbsent ? "#dc2626" : "#27ae60" }}
-                      >
-                        {isAbsent ? "❌ Out Tonight" : "✅ Playing"}
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : null}
-          </div>
-        ) : null}
-
-        {/* ── Low-roster warning ──────────────────────────────────── */}
-        {absentTonight.length > 0 && _availableCount < 9 ? (
-          <div style={{ background:"#fee2e2", border:"1px solid #fca5a5", borderRadius:"8px",
-            padding:"10px 14px", marginBottom:"10px", color:"#dc2626", fontWeight:600, fontSize:"13px" }}>
-            ⚠ Only {_availableCount} player{_availableCount === 1 ? "" : "s"} available tonight — need at least 9 to field.
-          </div>
-        ) : null}
 
         {/* ── Finalized badge ───────────────────────────────── */}
 
@@ -6982,7 +7100,7 @@ export default function App() {
 
         <div style={{ display:"flex", gap:"8px", marginBottom:"14px", flexWrap:"wrap" }}>
           <button style={S.btn("primary")} onClick={function() {
-            setNewGame({ date:"", time:"", location:"", opponent:"", result:"", ourScore:"", theirScore:"", battingPerf:{}, snackDuty:"", gameBall:"", scoreReported:false });
+            setNewGame({ date:"", time:"", location:"", opponent:"", result:"", ourScore:"", theirScore:"", battingPerf:{}, snackDuty:"", gameBall:[], scoreReported:false });
             setEditingGame(null);
             setShowGameForm(true);
             setImportMode(null);
@@ -7525,18 +7643,46 @@ export default function App() {
                               <button onClick={function(gid) { return function() { clearSnackAssignment(gid); }; }(game.id)}
                                 style={{ background:"none", border:"none", cursor:"pointer", fontSize:"12px", color:C.textMuted, padding:"1px 3px", lineHeight:1 }} title="Clear">✕</button>
                             )}
-                            <span style={{ fontSize:"11px", color:C.textMuted, flexShrink:0 }}>{(activeTeam && (activeTeam.sport || "baseball").toLowerCase() === "softball") ? "🥎" : "⚾"} Game Ball</span>
-                            <select
-                              value={game.gameBall || ""}
-                              onChange={function(gid) { return function(e) {
-                                updateSnackField(gid, "gameBall", e.target.value);
-                              }; }(game.id)}
-                              style={{ flex:"1 1 110px", minWidth:"100px", padding:"3px 6px", borderRadius:"5px", border:"1px solid rgba(15,31,61,0.15)", fontSize:"12px", fontFamily:"inherit", background:C.cardBg, color: game.gameBall ? C.text : C.textMuted }}>
-                              <option value="">— select player —</option>
-                              {roster.slice().sort(function(a,b){ return (a.firstName||a.name||'').toLowerCase().localeCompare((b.firstName||b.name||'').toLowerCase()); }).map(function(p) {
-                                return <option key={p.name} value={p.firstName || p.name}>{p.firstName || p.name}</option>;
-                              })}
-                            </select>
+                            <div style={{marginTop:'4px'}}>
+                              <div style={{fontSize:'12px',color:'#666',marginBottom:'4px',fontWeight:500}}>Game Ball</div>
+                              <div style={{display:'flex',flexWrap:'wrap',gap:'6px'}}>
+                                {roster
+                                  .slice()
+                                  .sort(function(a,b){ return (a.firstName||a.name||'').localeCompare(b.firstName||b.name||''); })
+                                  .map(function(p) {
+                                    var pname = p.firstName || p.name || '';
+                                    var selected = Array.isArray(game.gameBall) ? game.gameBall.includes(pname) : game.gameBall === pname;
+                                    return (
+                                      <button
+                                        key={pname}
+                                        onClick={function() {
+                                          var current = Array.isArray(game.gameBall) ? game.gameBall : (game.gameBall ? [game.gameBall] : []);
+                                          var next = selected ? current.filter(function(n){ return n !== pname; }) : current.concat(pname);
+                                          updateSnackField(game.id, 'gameBall', next);
+                                        }}
+                                        style={{
+                                          padding:'4px 10px',
+                                          borderRadius:'16px',
+                                          border: selected ? '2px solid #1B2A4A' : '1.5px solid #ccc',
+                                          background: selected ? '#1B2A4A' : '#fff',
+                                          color: selected ? '#fff' : '#333',
+                                          fontSize:'13px',
+                                          cursor:'pointer',
+                                          fontWeight: selected ? 600 : 400,
+                                        }}
+                                      >
+                                        {pname}
+                                      </button>
+                                    );
+                                  })
+                                }
+                              </div>
+                              {Array.isArray(game.gameBall) && game.gameBall.length > 0 && (
+                                <div style={{fontSize:'12px',color:'#1B2A4A',marginTop:'4px'}}>
+                                  🏆 {game.gameBall.join(', ')}
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
                       );
@@ -8570,9 +8716,9 @@ export default function App() {
               onClick={function() { setShowShareSheet(true); }}>
               <span>📤</span> Share Lineup
             </button>
-            {/* Edit Lineup — jumps to Defense tab */}
+            {/* Edit Lineup — jumps to Lineups tab */}
             <button style={{ ...S.btn("gold"), display:"flex", alignItems:"center", gap:"6px" }}
-              onClick={function() { setGameDayTab("defense"); }}>
+              onClick={function() { setGameDayTab("lineups"); }}>
               <span>✏️</span> Edit Lineup
             </button>
             {/* Finalize — only when unlocked */}
@@ -8899,6 +9045,9 @@ export default function App() {
     );
   }
 
+  // AUTH GATE — parked. Not active in prod until Phase 4C cutover is confirmed.
+  // Do NOT uncomment without explicit Phase 4C sign-off.
+  /*
   // AUTH GATE
   // Dev-only bypass: in browser console run `localStorage.setItem('auth_bypass','1')`
   // then reload. `import.meta.env.DEV` is false in production builds — Vite removes this.
@@ -8939,6 +9088,7 @@ export default function App() {
       );
     }
   }
+  */
 
   try {
     var urlParams = new URLSearchParams(window.location.search);
@@ -8953,7 +9103,7 @@ export default function App() {
 
   var PRIMARY_TABS = [
     { key:"home",    label:"Home",     icon:"🏠" },
-    { key:"team",    label:"Team",     icon:"👥" },
+    { key:"team",    label:"My Team",  icon:"👥" },
     { key:"gameday", label:"Game Day", icon:"🏟" },
     liveScoringEnabled ? { key:"scoring", label:"Scoring", icon:"\u26BE" } : null,
     { key:"more",    label:"Support",  icon:"⚙️" },
@@ -8963,10 +9113,8 @@ export default function App() {
     { key:"songs",   label:"Songs"   },
   ];
   var GAMEDAY_SUBTABS = [
-    { key:"defense",  label:"Defense" },
-    { key:"batting",  label:"Batting" },
-    { key:"lineups",  label:"Lineups" },
-    { key:"songs",    label:"Songs"   },
+    { key:"lineups",  label:"Lineups"             },
+    { key:"songs",    label:"Songs"               },
     { key:"gamemode", label:"GAME MODE", launcher:true },
   ];
   var SEASON_SUBTABS = [
@@ -9144,9 +9292,7 @@ export default function App() {
             />
           ) : null}
         </ErrorBoundary>
-        {primaryTab === "gameday" && !parentViewActive && gameDayTab === "defense" ? renderGrid()    : null}
-        {primaryTab === "gameday" && !parentViewActive && gameDayTab === "batting" ? renderBatting() : null}
-        {primaryTab === "gameday" && !parentViewActive && gameDayTab === "lineups" ? renderPrint()   : null}
+        {primaryTab === "gameday" && !parentViewActive && gameDayTab === "lineups" ? renderLineups() : null}
         {primaryTab === "gameday" && !parentViewActive && gameDayTab === "songs"   ? renderSongs()   : null}
       </ErrorBoundary>
       {primaryTab === "more" && moreTab === "feedback" ? renderFeedback() : null}
@@ -9473,6 +9619,7 @@ export default function App() {
           battingOrder={activeBattingOrder}
           innings={innings}
           sport={activeTeam ? activeTeam.sport : "baseball"}
+          absentTonight={absentTonight}
           currentBatterIndex={currentBatterIndex}
           initialInning={gameModeInning}
           onSwap={gameModeSwap}

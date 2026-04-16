@@ -152,7 +152,7 @@ Three guards in place:
 7. `git add -A && commit && push`
 8. [x] loginLimiter: 15min window, max 5 — applied to POST /magic-link ✓
 9. [ ] Confirm `RESEND_DOMAIN_VERIFIED=true` in Render env vars (only after domain verified)
-10. [ ] Run `npm test` — confirm 204 passed / 1 skipped / 0 failed
+10. [ ] Run `npm test` — confirm 257 passed / 1 skipped / 0 failed
 
 ### VERSION_HISTORY Schema (dual-layer — both required)
 ```js
@@ -212,14 +212,15 @@ Target: resolved within 10 min of detection.
 Tests: `frontend/src/tests/` (frontend), `backend/scripts/tests/` (backend integration).
 
 - **Framework**: Vitest (frontend), custom test-runner.js (backend)
-- **Total**: ~255 tests. CI target: 204 passed / 1 skipped / 0 failed (frontend)
+- **Total**: ~265 tests. CI target: 257 passed / 1 skipped / 0 failed (frontend)
 - Known failing: **engine.v2 test 2.3** (7-player roster produces no warning — fix in separate session)
 
 ### Frontend test files
 | File | Covers |
 |------|--------|
-| `engine.v2.test.js` | V2 lineup engine: assignment, bench, batting order, fallback, output shape |
-| `lineupEngineV2-unit.test.js` | 30 tests — shape, assignment, bench, batting order, edge cases |
+| `engine.v2.test.js` | V2 lineup engine: assignment, bench, batting order, fallback, output shape; Group 6 — absent player bench exclusion |
+| `lineupEngineV2-unit.test.js` | 35 tests — shape, assignment, bench, batting order, edge cases; Group X — absent player exclusion (tags pathway) |
+| `bench-equity.test.js` | Bench count correctness, exclusivity, rotation fairness; absent-player equity (reduced roster) |
 | `scoring.test.js` | 28 parameterized scoring function tests |
 | `accessibility.v1.test.js` | POSITION_LABELS, FEATURE_FLAGS registry, isFlagEnabled defaults + overrides |
 | `migrations.test.js` | Schedule migration, roster normalization, field backfill |
@@ -307,4 +308,4 @@ All major sections wrapped with `<ErrorBoundary>` (`src/components/Shared/ErrorB
 ---
 
 ## Current Version
-**v2.2.21** — April 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/App.jsx`.
+**v2.2.25** — April 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/App.jsx`.
