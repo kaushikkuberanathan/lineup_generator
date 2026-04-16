@@ -241,7 +241,7 @@ Target: resolved within 10 min of detection.
 Tests: `frontend/src/tests/` (frontend), `backend/scripts/tests/` (backend integration).
 
 - **Framework**: Vitest (frontend), custom test-runner.js (backend)
-- **Total**: ~265 tests. CI target: 257 passed / 1 skipped / 0 failed (frontend)
+- **Total**: ~310 tests. CI target: 306 passed / 1 skipped / 0 failed (frontend)
 - Known failing: **engine.v2 test 2.3** (7-player roster produces no warning — fix in separate session)
 
 ### Frontend test files
@@ -297,6 +297,22 @@ Use `?disable_flag=<name>` to revert. Full guide: `docs/features/feature-flags.m
 All major sections wrapped with `<ErrorBoundary>` (`src/components/Shared/ErrorBoundary.jsx`). On crash: renders inline amber fallback card instead of white-screening.
 
 **Rule**: Wrap new components at the call site in App.jsx — NOT inside the component definition. Do NOT wrap nav bar, tab bar, or top-level app shell.
+
+---
+
+## Git Staging Discipline
+
+**Always stage specific files by path. Never `git add -A` or `git add .`.**
+
+Blanket staging picks up unintended files silently — Claude Code hooks and other tooling can add files to the working tree mid-session that should not ship.
+
+Correct pattern:
+```bash
+git add frontend/src/App.jsx frontend/package.json backend/package.json
+git add docs/product/ROADMAP.md CLAUDE.md
+```
+
+If you over-stage, use `git restore --staged <file>` to unstage before committing.
 
 ---
 
@@ -394,6 +410,8 @@ Before shipping any non-exempt release, answer these four questions:
 
 If any answer is "no" — **stop**. Document the debt, then decide whether to proceed.
 
+**Minor version gate (x.Y.0 bumps only):** Before bumping minor version, run `debt-p0` from repo root (bash: `source scripts/debt-helpers.sh && debt-p0`; PowerShell: `. .\scripts\debt-helpers.ps1; debt-p0`). Must return "P0 gate clear" before proceeding.
+
 **Exempt release types** (no Ship Gate required):
 - **Meta-governance** — docs-only, zero app code changes. Use `techNote: "Meta-governance release."` in VERSION_HISTORY.
 - **Hotfix** — must include `[hotfix-exception]` in the commit message body with one sentence explaining why the gate is bypassed.
@@ -435,12 +453,11 @@ This audit takes 5 minutes and saves hours of confusion at the next session star
 ---
 
 ## Current Version
-**v2.2.35** — April 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/App.jsx`.
+**v2.2.36** — April 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/App.jsx`.
 
+- v2.2.36 (2026-04-17): Meta-governance — enhanced DOC_TEST_DEBT.md (new format, 20 items), debt-helpers scripts, CLAUDE.md Git Staging Discipline + debt-p0 gate, .gitignore hardening.
 - v2.2.35 (2026-04-16): Test suite — attendance.test.js Group 9 (share payload, 10 tests) + Group 10 (Out detection, 7 tests). Total: 306/1/0.
 - v2.2.34 (2026-04-16): Scoring session fix — scoringUserId falls back to session.user.id; null guards on all 4 useLiveScoring Supabase write sites.
 - v2.2.33 (2026-04-16): Meta-governance — Feature Map (18 features), Debt Ledger (21 gaps), Ship Gate ritual, 8-step Session Start Command, settings.local.json untracked.
-- v2.2.31 (2026-04-16): Docs-only — FAQ repaired (Attendance, Game Ball, Scorekeeper category, Spotify deep-link, install banner, Google sign-in). PERSONAS.md rewritten to 8 personas. SOLUTION_DESIGN.md Auth Architecture section rewritten (Phase 2, Twilio tags removed). Full version history in `VERSION_HISTORY` constant in `frontend/src/App.jsx`.
-
 - v2.2.31 (2026-04-16): Docs-only — FAQ repaired (Attendance, Game Ball, Scorekeeper category, Spotify deep-link, install banner, Google sign-in). PERSONAS.md rewritten to 8 personas. SOLUTION_DESIGN.md Auth Architecture section rewritten (Phase 2, Twilio tags removed).
 - v2.2.30 (2026-04-16): Out Tonight players visible in red across all 11 lineup surfaces — diamond SVG, defense grid, Game Mode strip, share link, PDF.

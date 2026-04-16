@@ -1,192 +1,275 @@
-# Dugout Lineup — Documentation & Test Debt Ledger
+# Dugout Lineup — Doc & Test Debt Ledger
 
-> Running ledger of known gaps in documentation accuracy and test coverage.
-> P0 items block the next code release touching that feature.
-> Owner: KK | Last updated: April 2026 (v2.2.33)
-
----
-
-## How to Use This Ledger
-
-- **P0** — Must resolve before next code change to that feature. No exceptions.
-- **P1** — Target: resolve within 2 sprints (next 4 sessions).
-- **P2** — Nice to have. Resolve opportunistically.
-
-Resolved items: add `✅ Resolved vX.X.X — [what fixed it]` before removing from this file.
-
-Log format:
-```
-### D000 — [Feature] — [Gap Type]
-**Priority:** P0 / P1 / P2
-**Gap:** What is missing or wrong.
-**Fix:** What needs to happen to close this.
-**Effort:** S / M / L
-**Opened:** vX.X.X (Month YYYY)
-```
+> **Purpose:** Running ledger of known documentation and test coverage gaps. The debt backlog — not the backlog of features, but the backlog of things that *should* be documented or tested and aren't.
+> **Rule:** Items over 30 days old must be addressed or explicitly deferred (with a reason) before the next minor version bump (x.Y.0).
+> **Cadence:** Scanned every Friday (~5 min) during the weekly audit. Grown from FEATURE_MAP.md gaps and from session retros.
+> **Owner:** KK (solo).
 
 ---
 
-## P0 — Block Next Code Release for This Feature
+## How to Use This File
 
-### D001 — Live Scoring — No Test Coverage
-**Priority:** P0
-**Gap:** The entire live scoring feature (scorer lock, inning-by-inning run entry, Supabase Realtime sync, claim/release flow, audit trail) has zero automated test coverage. A regression in any of these paths is invisible until a coach reports it mid-game.
-**Fix:** Add Vitest tests for `useLiveScoring.js` hook — at minimum: claim lock succeeds, duplicate claim is rejected, inning entry writes correctly, release clears state. Use a mock Supabase client.
-**Effort:** L
-**Opened:** v2.2.33 (April 2026)
+1. **When a gap is identified** (during a feature session, an audit, or a retro) — add a row here with priority, age, and target version.
+2. **When a gap is resolved** — move the row to the Resolved section at the bottom with the resolution version and date.
+3. **At every weekly audit** — bump age, re-prioritize, and escalate anything over 30 days old.
+4. **At every minor version bump** — any P0 items must be resolved or explicitly deferred with justification.
 
-### D002 — engine.v2 test 2.3 — Known Skipped Test
-**Priority:** P0
-**Gap:** `engine.v2.test.js` test 2.3 "7-player roster produces a warning" is known-failing (7-player roster produces no warning). This test is skipped in CI. The underlying behavior (fewer than 9 players should surface a warning) is not enforced.
-**Fix:** Fix the lineup engine to surface a warning when roster < 9, then unskip the test. Or document a deliberate decision to not warn at 7 players and remove the test.
-**Effort:** M
-**Opened:** Before v2.2.33 (known at v2.2.31)
+**Priority definitions:**
+- **P0** — blocks confidence in a North Star capability (share link, Game Mode, onboarding). Cannot ship a minor version with P0 debt open.
+- **P1** — material gap in a shipped feature that could regress silently; resolve within 60 days.
+- **P2** — nice-to-have coverage; resolve opportunistically, no hard deadline.
 
 ---
 
-## P1 — Fix Within 2 Sprints
+## Open — Test Gaps
 
-### D003 — Auth System — No Automated Tests
-**Priority:** P1
-**Gap:** `backend/src/routes/auth.js` — the magic link request, callback, and `/me` endpoints have no automated test in the backend integration suite. The login limiter (15-min window, max 5) is also untested.
-**Fix:** Add backend integration tests for `POST /api/v1/auth/request-magic-link` (rate-limit enforcement) and `GET /api/v1/auth/me` (valid token returns profile, invalid token returns 401). Can run in CI_SAFE mode using a test account.
-**Effort:** M
-**Opened:** v2.2.33 (April 2026)
+### 🔴 P0 — Share Link Payload Integrity
 
-### D004 — Walk-up Songs — No Test Coverage
-**Priority:** P1
-**Gap:** The Songs sub-tab (Out Tonight filtering, batting order ordering, Play button behavior) has no automated test. Deep-link behavior (Spotify/Apple Music/YouTube intercept) is OS-mediated and cannot be unit-tested, but the filtering logic can be.
-**Fix:** Add Vitest tests for the Songs tab data derivation — given a roster with Out Tonight players, confirm they're excluded from the Songs list; confirm ordering matches batting order.
-**Effort:** S
-**Opened:** v2.2.33 (April 2026)
+| | |
+|---|---|
+| **Description** | No automated test validates that a share link generated from a locked lineup renders correctly in Viewer mode with (a) full defensive grid, (b) full batting order, (c) absent players filtered, (d) walk-up song links. |
+| **Risk if unfixed** | Silent regression breaks the #1 Strategic North Star ("share link bulletproof"). A future refactor of `shareCurrentLineup` or `SharedView.jsx` could ship with the link returning stale or incomplete data and we would not catch it pre-deploy. |
+| **Proposed test** | `frontend/src/tests/shareLink.test.js` — build a lineup fixture, call `shareCurrentLineup`, parse the `share_links.payload` JSONB, assert every expected field is present and correctly filtered. Also a DOM test that `SharedView` renders all sections without errors given the payload. |
+| **Opened** | 2026-04-17 |
+| **Age** | 0 days |
+| **Target** | v2.2.35 |
 
-### D005 — Share Links — No Automated End-to-End Test
-**Priority:** P1
-**Gap:** No automated test confirms that share links render correctly for unauthenticated users. The health-check.yml cron is the only coverage, and it doesn't validate link content.
-**Fix:** Add a health-check test that fetches `?s=<known-test-link>` and confirms: HTTP 200, no redirect to login, defense grid content present in response.
-**Effort:** M
-**Opened:** v2.2.33 (April 2026)
+### 🔴 P0 — Game Mode Rendering + State
 
-### D006 — Game Mode — No Automated Tests
-**Priority:** P1
-**Gap:** Game Mode (full-screen view, inning advance, batting strip, Quick Swap) has zero automated coverage. All validation is manual via the game-day validation checklist.
-**Fix:** Add Vitest component tests for `GameModeScreen.jsx` — at minimum: renders for given lineup data, inning advance increments correctly, Out Tonight players appear in the strip.
-**Effort:** M
-**Opened:** v2.2.33 (April 2026)
+| | |
+|---|---|
+| **Description** | No tests cover GameModeScreen rendering, inning advance, batter advance, or QuickSwap candidate filtering. The QuickSwap `onClick` regression in March 2026 (DefenseDiamond missing handlers) would not have been caught by tests. |
+| **Risk if unfixed** | Silent regression breaks the #2 Strategic North Star ("Game Mode dugout-ready under pressure"). |
+| **Proposed test** | `frontend/src/tests/gameMode.test.js` — render GameModeScreen with fixture lineup, simulate inning advance, simulate QuickSwap tap, assert state transitions and candidate filtering (including absent-player exclusion). |
+| **Opened** | 2026-04-17 |
+| **Age** | 0 days |
+| **Target** | v2.2.35 |
 
-### D007 — Admin UI (admin.html) — No Automated Tests
-**Priority:** P1
-**Gap:** `frontend/public/admin.html` is a standalone HTML/JS page with no test coverage. Approval routing, member management, and feedback tabs are all manually validated only.
-**Fix:** Add backend integration tests for the admin routes (`/admin/requests`, `/admin/approve`, `/admin/reject`, `/admin/members`) covering the happy path and auth guard (requireAdmin).
-**Effort:** M
-**Opened:** v2.2.33 (April 2026)
+### 🟠 P1 — Live Scoring Scorer-Lock Regression
 
-### D008 — Out Tonight Attendance — No Dedicated Test File
-**Priority:** P1
-**Gap:** Out Tonight is covered indirectly by engine bench tests (absent player exclusion) but there is no test for the UI-layer behavior: attendance toggle, localStorage persistence, auto-clear on next game day, or Supabase sync.
-**Fix:** Add a dedicated `attendance.test.js` or extend `engine.v2.test.js` with an explicit Out Tonight section covering: toggle persists to localStorage, auto-clear logic runs on next game day date, absent players excluded from all 11 surfaces.
-**Effort:** M
-**Opened:** v2.2.33 (April 2026)
+| | |
+|---|---|
+| **Description** | The v2.2.29 bug — `claimScorerLock` passing raw `userId` (null under shim) and violating NOT NULL constraint — has no regression test. If the shim is removed or modified, this class of silent failure can recur. |
+| **Risk if unfixed** | Scoring users silently unable to claim the role with no surfaced error — exactly what v2.2.29 had to fix in prod. |
+| **Proposed test** | Add to `frontend/src/tests/scoring.test.js` — assert `claimScorerLock` rejects null `scorer_user_id` before issuing the upsert, OR asserts that the shim fallback produces a non-null value in all code paths. |
+| **Opened** | 2026-04-17 |
+| **Age** | 0 days |
+| **Target** | v2.2.35 |
 
-### D009 — CLAUDE.md `Frontend Structure` — App.jsx Line Count Stale
-**Priority:** P1
-**Gap:** `CLAUDE.md` § Frontend Structure still reads "All UI and business logic lives in `frontend/src/App.jsx` (~5,000 lines)." Actual line count is ~9,834. The Key sections block also references tabs (Defense, Batting) that have been restructured.
-**Fix:** Update CLAUDE.md Frontend Structure to reflect current line count (~9,834) and current tab structure (Lineups, Songs, Game Mode).
-**Effort:** S
-**Opened:** v2.2.33 (April 2026)
+### 🟠 P1 — Auth Flow End-to-End (Magic Link + Google OAuth)
 
-### D010 — MASTER_DEV_REFERENCE.md — Vitest CI Target Stale
-**Priority:** P1
-**Gap:** `MASTER_DEV_REFERENCE.md` doesn't mention the Vitest test count. `CLAUDE.md` Test Suite section says "CI target: 257 passed / 1 skipped / 0 failed" but actual result is 261 passed / 1 skipped / 0 failed (as of v2.2.31).
-**Fix:** Update `CLAUDE.md` Test Suite section CI target to "261 passed / 1 skipped / 0 failed".
-**Effort:** S
-**Opened:** v2.2.33 (April 2026)
+| | |
+|---|---|
+| **Description** | No tests cover the magic link request → callback handling → team membership hydration flow. Same for Google OAuth. |
+| **Risk if unfixed** | Phase 2 auth cutover (planned) cannot ship safely without regression coverage. An auth-gate re-activation that silently blocks unauthenticated viewers would reproduce the v2.2.22 hotfix scenario. |
+| **Proposed test** | `frontend/src/tests/auth.test.js` — mock Supabase client, simulate magic link flow, assert `useAuth` state transitions correctly through `pending → authenticated`. Also test: share link renders when `authState === unauthenticated`. |
+| **Opened** | 2026-04-17 |
+| **Age** | 0 days |
+| **Target** | Before Phase 2 auth cutover (not version-pinned) |
 
----
+### 🟠 P1 — Roster-Wipe Guard + Recovery Endpoint
 
-## P2 — Fix Opportunistically
+| | |
+|---|---|
+| **Description** | The backend `POST /api/teams/:teamId/data` has a wipe-guard (409 on empty roster over existing). The `GET /api/teams/:teamId/history` has `X-Admin-Key` auth. Neither path is tested. |
+| **Risk if unfixed** | Two roster-wipe incidents already happened (Jan, Feb 2026). The guard is the primary prevention; if it silently stops working, we're back to paper recovery. |
+| **Proposed test** | `backend/src/tests/teamData.test.js` — test the guard returns 409, test force-override returns 200, test history endpoint rejects without ADMIN_KEY, test history endpoint returns snapshots with ADMIN_KEY. |
+| **Opened** | 2026-04-17 |
+| **Age** | 0 days |
+| **Target** | v2.2.37 |
 
-### D011 — PDF Export — No Automated Tests
-**Priority:** P2
-**Gap:** PDF generation (lineup card, batting order, diamond) has no automated test. jsPDF is loaded on demand and the output is binary — hard to unit test. At minimum, the data preparation before `jsPDF()` could be tested.
-**Fix:** Extract PDF data-prep functions from App.jsx into a testable module; add unit tests for data shape (player count, inning count, position labels).
-**Effort:** L
-**Opened:** v2.2.33 (April 2026)
+### 🟡 P2 — Walk-Up Song Navigation
 
-### D012 — Fairness Check — No UI-Layer Test
-**Priority:** P2
-**Gap:** The Fairness Check violation warnings (catcher twice, back-to-back position, benched more than once) are surfaced in the UI but there is no test that the warning display logic fires correctly given a lineup with known violations.
-**Fix:** Add a test that generates a lineup with known violations and asserts `warnings.length > 0` with the right violation types.
-**Effort:** S
-**Opened:** v2.2.33 (April 2026)
+| | |
+|---|---|
+| **Description** | No test that Songs tab filters to active players only, or that Play button invokes navigation with correct URL. Deep-link to native apps is OS-mediated (untestable at unit level) but the call site is testable. |
+| **Risk if unfixed** | A future refactor of `activeBattingOrder` filtering could silently unfilter Songs view — would go unnoticed until a DJ parent complains about absent kids in the playlist. |
+| **Proposed test** | Add to existing test or new `frontend/src/tests/songs.test.js` — assert Songs renders only `activeBattingOrder` players, assert Play button's href matches `player.walkUpSong.url`. |
+| **Opened** | 2026-04-17 |
+| **Age** | 0 days |
+| **Target** | v2.2.37+ (opportunistic) |
 
-### D013 — Roster Backup/Restore — No Automated Tests
-**Priority:** P2
-**Gap:** The in-app backup (download file) and restore (from file) flows have no automated test. The `team_data_history` snapshot trigger and recovery endpoint are covered by the backend integration suite, but the frontend restore UI is not.
-**Fix:** Add a Vitest test that mocks a backup file, calls the restore handler, and confirms roster state matches the backup payload.
-**Effort:** M
-**Opened:** v2.2.33 (April 2026)
+### 🟡 P2 — PWA Install Prompt Logic
 
-### D014 — Multi-Team Support — Limited Test Coverage
-**Priority:** P2
-**Gap:** Team switching, team creation, and team deletion flows have no dedicated test. `migrations.test.js` covers data migration but not the team management UI logic.
-**Fix:** Add Vitest tests for team CRUD state transitions — create team → loadTeam → delete team confirms state resets.
-**Effort:** M
-**Opened:** v2.2.33 (April 2026)
+| | |
+|---|---|
+| **Description** | Install banner has platform branches (Android `beforeinstallprompt` vs iOS `standalone` detection vs already-installed) that are untested. |
+| **Risk if unfixed** | Platform-specific install UX regressions; user confusion on a non-critical path. |
+| **Proposed test** | `frontend/src/tests/pwaInstall.test.js` — mock `window.navigator.standalone`, `window.matchMedia("(display-mode: standalone)")`, and `beforeinstallprompt` event, assert correct banner variant renders. |
+| **Opened** | 2026-04-17 |
+| **Age** | 0 days |
+| **Target** | v2.2.37+ (opportunistic) |
 
-### D015 — Schedule AI Import — No Automated Tests
-**Priority:** P2
-**Gap:** The AI import flow (`POST /api/ai` → parse response → merge into schedule) has no automated test. The Claude API call is proxied through the backend and the parsing logic lives in App.jsx.
-**Fix:** Extract the schedule-parse response handler into a testable utility; add Vitest tests with fixture responses (valid schedule, malformed response, empty response).
-**Effort:** M
-**Opened:** v2.2.33 (April 2026)
+### 🟡 P2 — Analytics track() Wrapper + SSR Guards
 
-### D016 — Batting Stats Calculations — No Dedicated Tests
-**Priority:** P2
-**Gap:** AVG, AB, H, R, RBI calculations and `fmtAvg` / `fmtStat` helpers are tested in `formatters.test.js` but the batting order sort logic and stat aggregation across games is not separately tested.
-**Fix:** Add Vitest tests for batting order stat derivation — given game results, confirm computed AVG/AB/H/R/RBI are correct; confirm sort order is deterministic.
-**Effort:** S
-**Opened:** v2.2.33 (April 2026)
+| | |
+|---|---|
+| **Description** | `analytics.js` has SSR guards (window/navigator) added in v2.2.7/v2.2.8 but no tests cover the guard branches. |
+| **Risk if unfixed** | A future refactor could remove the guard and break CI if any test environment lacks window/navigator. |
+| **Proposed test** | Add to existing fixtures — assert `track()` is a no-op when window is undefined, assert `getDeviceContext()` returns safe defaults in SSR-like env. |
+| **Opened** | 2026-04-17 |
+| **Age** | 0 days |
+| **Target** | v2.2.38+ (opportunistic) |
 
-### D017 — Coach PIN — No Automated Tests
-**Priority:** P2
-**Gap:** The Coach PIN lock/unlock flow (finalize lineup, PIN prompt, locked state enforcement) has no automated test coverage.
-**Fix:** Add Vitest tests for the PIN state machine — set PIN → lineup locked → wrong PIN rejected → correct PIN unlocks.
-**Effort:** S
-**Opened:** v2.2.33 (April 2026)
+### 🟡 P2 — AI Photo Import End-to-End
 
-### D018 — Feature Flags — Supabase Table Integration Untested
-**Priority:** P2
-**Gap:** `flagBootstrap.test.js` covers localStorage and URL param bootstrap but not Supabase `feature_flags` table queries. If the table query fails silently, flags default to the compile-time value with no warning.
-**Fix:** Add a test (mock Supabase client) that confirms flag values from the Supabase table override the compile-time default, and that a table query failure falls back gracefully to the compile-time value.
-**Effort:** S
-**Opened:** v2.2.33 (April 2026)
-
-### D019 — SOLUTION_DESIGN.md — `snack_duty` Deprecation Note is Outstanding
-**Priority:** P2
-**Gap:** `SOLUTION_DESIGN.md` notes `snack_duty jsonb — deprecated as of v1.4.0`. The drop-column action (`ALTER TABLE team_data DROP COLUMN snack_duty`) is listed in `MASTER_DEV_REFERENCE.md` Outstanding Manual Actions but has not been executed.
-**Fix:** Execute the column drop in Supabase SQL Editor, remove the deprecation note from SOLUTION_DESIGN.md, and remove the action from MASTER_DEV_REFERENCE.md Outstanding Actions.
-**Effort:** S
-**Opened:** v2.2.33 (April 2026)
-
-### D020 — PERSONAS.md Cadence Note Stale in MASTER_DEV_REFERENCE.md
-**Priority:** P2
-**Gap:** `MASTER_DEV_REFERENCE.md` § Document Governance table shows `PERSONAS.md` with cadence note "Refresh pending v2.2.32". The refresh happened in v2.2.31.
-**Fix:** Update the PERSONAS.md cadence note to remove "Refresh pending" language.
-**Effort:** S
-**Opened:** v2.2.33 (April 2026)
-
-### D021 — Analytics — No Event-by-Event Test Coverage
-**Priority:** P2
-**Gap:** `trackingUrl.test.js` covers `outboundLinkProps` and CAMPAIGNS registry but there is no test that each of the 32+ Mixpanel events actually fires in the correct context with the expected properties.
-**Fix:** Add a Vitest test with a mocked `mixpanel.track` spy; trigger each tracked user action and assert `track` was called with the right event name and properties. Start with the 5 highest-value events: `lineup_generated`, `share_link_opened`, `game_mode_opened`, `player_marked_out`, `song_play_tapped`.
-**Effort:** L
-**Opened:** v2.2.33 (April 2026)
+| | |
+|---|---|
+| **Description** | The Claude API proxy path (schedule import, score card parse) has no integration test covering request body size limit (10mb), client-side canvas resize, or error handling. |
+| **Risk if unfixed** | The v2.2.4 bug (large phone photos exceeding 5MB after base64) was a real prod incident; no regression test was added with the fix. |
+| **Proposed test** | `backend/src/tests/aiProxy.test.js` — mock Anthropic API, test POST /api/ai with oversize payload returns 413, test valid payload returns parsed structure. |
+| **Opened** | 2026-04-17 |
+| **Age** | 0 days |
+| **Target** | v2.2.37+ |
 
 ---
 
-## Resolved Items
+## Open — Doc Gaps
 
-*None yet. First entry goes here when a debt item is closed.*
+### 🟠 P1 — SOLUTION_DESIGN.md §Scoring Framework
 
-Format: `✅ D000 — Resolved v2.2.XX — [what fixed it]`
+| | |
+|---|---|
+| **Description** | Three-tier scoring framework (designed March 2026) is not documented in SOLUTION_DESIGN.md. Tier-1 ships in Live Scoring (v2.2.28+) but readers of the solution design can't find it. |
+| **Proposed action** | Add a new section after §Scoring Engine (V2): "§Live Scoring Framework" covering Tier 1 (game results), Tier 2 (inning-by-inning, backlog), Tier 3 (at-bat outcomes, backlog + feature-flagged). |
+| **Opened** | 2026-04-17 |
+| **Target** | v2.2.37 (bundled with drift repair) |
+
+### 🟠 P1 — SOLUTION_DESIGN.md §CI/CD Pipeline
+
+| | |
+|---|---|
+| **Description** | Full CI/CD setup (ci.yml, health.yml, smoke-test.js, branch strategy, Dev environment) is operational but undocumented in SOLUTION_DESIGN.md. It's referenced in MASTER_DEV_REFERENCE.md but not explained architecturally. |
+| **Proposed action** | Add a section under §Deployment & Infrastructure summarizing: branch strategy, CI jobs, smoke test scope, Dev environment URLs, and the wait-for-Render race fix. |
+| **Opened** | 2026-04-17 |
+| **Target** | v2.2.37 |
+
+### 🟠 P1 — SOLUTION_DESIGN.md §Analytics Event Inventory
+
+| | |
+|---|---|
+| **Description** | 32+ Mixpanel events exist but are cataloged only in `docs/analytics/ANALYTICS.md`. SOLUTION_DESIGN.md should at minimum reference ANALYTICS.md with a short pointer and the identity model. |
+| **Proposed action** | Add a "§Analytics Architecture" subsection that describes the identity model (`mixpanel.identify()` on team load), super properties, and points readers to ANALYTICS.md for the full event list. |
+| **Opened** | 2026-04-17 |
+| **Target** | v2.2.37 |
+
+### 🟡 P2 — SOLUTION_DESIGN.md `feature_flags` Table Schema
+
+| | |
+|---|---|
+| **Description** | §Feature Flag System describes evaluation logic but doesn't include the `feature_flags` table schema that backs it (with `flag_name`, `enabled`, `team_id`, `description` columns + RLS posture). |
+| **Proposed action** | Add the SQL schema block to §Feature Flag System. |
+| **Opened** | 2026-04-17 |
+| **Target** | v2.2.37+ |
+
+### 🟡 P2 — SOLUTION_DESIGN.md §Test Suite Inventory
+
+| | |
+|---|---|
+| **Description** | 306 tests exist across frontend and backend but there's no doc-side map of what they cover. |
+| **Proposed action** | Add a §Test Suite Inventory section listing test files and what each covers; cross-reference FEATURE_MAP.md. |
+| **Opened** | 2026-04-17 |
+| **Target** | v2.2.37+ |
+
+### 🟡 P2 — ROADMAP.md Feature Summary Header
+
+| | |
+|---|---|
+| **Description** | ROADMAP.md is a version-by-version log; it's hard for a new reader to understand what shipped as coherent initiatives (Attendance, Live Scoring, PWA install funnel). |
+| **Proposed action** | Add a "Feature Summary" section at the top of ROADMAP.md grouping v2.2.x ranges into coherent initiatives, with links to the individual version entries. |
+| **Opened** | 2026-04-17 |
+| **Target** | v2.2.37 |
+
+### 🟡 P2 — ONE_PAGER.md Data Source Check
+
+| | |
+|---|---|
+| **Description** | Success metrics on the 1-pager ("share link open rate >60%", etc.) are placeholder targets, not measured baselines. |
+| **Proposed action** | Pull actual Mixpanel baselines for the five metrics; replace placeholder targets with evidence-based targets + 20% stretch. |
+| **Opened** | 2026-04-17 |
+| **Target** | v2.2.37+ |
+
+### 🟡 P2 — Legal Content Regulatory Posture
+
+| | |
+|---|---|
+| **Description** | CHARTER.md §9 mentions minimal PII and no payment data but doesn't explicitly address COPPA / child data minimization considerations given 8U audience. |
+| **Proposed action** | Review legal.js content against COPPA posture; document findings in CHARTER.md governance section. If material gap found, spawn a P1 item. |
+| **Opened** | 2026-04-17 |
+| **Target** | v2.2.37 |
+
+---
+
+## Open — Tooling / Process Gaps
+
+### 🟠 P1 — Auto-Staging Git Hook
+
+| | |
+|---|---|
+| **Description** | During v2.2.31 session, a git hook silently staged files that were intentionally unstaged. The scope-creep was caught at the gate but would have shipped otherwise. |
+| **Proposed action** | Investigate `.git/hooks/pre-commit`, husky config, or Claude Code hook config. Remove auto-staging. If a hook is needed, restrict it to the deploy-checklist files only. |
+| **Opened** | 2026-04-17 |
+| **Target** | v2.2.37 (blocks further release sessions) |
+
+### 🟡 P2 — Orphan Stash Cleanup
+
+| | |
+|---|---|
+| **Description** | Stashes accumulate silently across sessions. No convention for reviewing or dropping orphan stashes. |
+| **Proposed action** | Review stash list at every session start. Establish a rule: if a stash is more than 2 sessions old with no active use, drop it. |
+| **Opened** | 2026-04-17 |
+| **Target** | v2.2.37 (opportunistic cleanup) |
+
+### 🟡 P2 — FAQ Linter
+
+| | |
+|---|---|
+| **Description** | No automated check that FAQ categories correspond to real personas and that no persona is missing FAQ coverage. |
+| **Proposed action** | Write a small Vitest fixture that asserts every FAQ category in faqs.js has a matching persona in PERSONAS.md. Low priority because manual audit just happened. |
+| **Opened** | 2026-04-17 |
+| **Target** | v2.2.38+ |
+
+### 🟡 P2 — FEATURE_MAP.md Sync Linter
+
+| | |
+|---|---|
+| **Description** | FEATURE_MAP.md claims test files exist for each feature. No automated check that the referenced test files actually exist or contain tests. |
+| **Proposed action** | Write a lint script that scans FEATURE_MAP.md for test file paths, verifies they exist on disk, and warns on broken references. Run in CI. |
+| **Opened** | 2026-04-17 |
+| **Target** | v2.2.38+ |
+
+---
+
+## Resolved
+
+*(Items move here once shipped. Format: date, version, original description summary, resolution commit.)*
+
+- None yet — ledger opens with v2.2.36 governance activation.
+
+---
+
+## Debt Summary Dashboard
+
+**Current counts (auto-update on every audit):**
+
+| Priority | Test Gaps | Doc Gaps | Process Gaps | Total |
+|---|---|---|---|---|
+| 🔴 P0 | 2 | 0 | 0 | **2** |
+| 🟠 P1 | 3 | 3 | 1 | **7** |
+| 🟡 P2 | 4 | 4 | 3 | **11** |
+| **Total** | **9** | **7** | **4** | **20** |
+
+**Age distribution:**
+- 0–30 days: 20
+- 31–60 days: 0
+- 60+ days: 0
+
+**Ship blockers:**
+- Next minor (v2.3.0) — must resolve all P0 before bump
+
+---
+
+## Revision History
+
+- **v1.0 — April 17, 2026** — Initial ledger authored alongside FEATURE_MAP.md as part of v2.2.33 governance infrastructure release. Seeded with 21 known gaps from the v2.2.29 → v2.2.31 audit.
+- **v2.0 — April 2026 (v2.2.36)** — Ledger replaced with enhanced format: emoji priority markers (🔴/🟠/🟡), table-based item layout, Test/Doc/Process gap categories, Debt Summary Dashboard, Revision History. `.gitignore` and auto-staging items resolved via v2.2.36 governance release.
