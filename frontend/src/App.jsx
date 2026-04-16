@@ -141,9 +141,21 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.2.28";
+var APP_VERSION = "2.2.29";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.2.29',
+    date: 'April 2026',
+    headline: "Scoring enabled for Mud Hens + Demo All-Stars",
+    userChanges: [
+      "Scoring tab now available for Mud Hens and Demo All-Stars",
+    ],
+    techNote: "liveScoringEnabled overridden to true for Mud Hens and Demo All-Stars by team name; all other teams still require live_scoring feature flag",
+    internalChanges: [
+      "App.jsx line ~2768: _isAlwaysScoringTeam check (name === 'Mud Hens' || 'Demo All-Stars') short-circuits liveScoringEnabled before feature flag lookup",
+    ],
+  },
   {
     version: '2.2.28',
     date: 'April 2026',
@@ -2765,7 +2777,8 @@ export default function App() {
   var _atid = useState(initActiveId);
   var activeTeamId = _atid[0]; var setActiveTeamId = _atid[1];
   var _liveScoring = useFeatureFlag('live_scoring', activeTeamId);
-  var liveScoringEnabled = _liveScoring.enabled;
+  var _isAlwaysScoringTeam = (activeTeam && (activeTeam.name === 'Mud Hens' || activeTeam.name === 'Demo All-Stars'));
+  var liveScoringEnabled = _isAlwaysScoringTeam ? true : _liveScoring.enabled;
   var _primaryTab = useState("home");
   var primaryTab = _primaryTab[0]; var setPrimaryTab = _primaryTab[1];
   var _rosterTab = useState("players");

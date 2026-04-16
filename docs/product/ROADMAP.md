@@ -1,9 +1,12 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: April 16, 2026 (v2.2.28)
+> Last updated: April 16, 2026 (v2.2.29)
 > MVP launched: March 24, 2026
 
 ---
+
+## v2.2.29 — 2026-04-16
+- Feat: liveScoringEnabled overridden to true for Mud Hens and Demo All-Stars by team name; all other teams still require live_scoring feature flag
 
 ## v2.2.28 — 2026-04-16
 - Fix: Boot team merge changed from local-wins-entirely to additive — Supabase teams whose ID is not in localStorage are appended; zero impact when no new teams exist
