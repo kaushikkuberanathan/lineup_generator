@@ -20,6 +20,9 @@
 import { generateLineupV2 } from '../utils/lineupEngineV2.js';
 import { mockRoster12 }     from './fixtures/mockRoster.js';
 
+// Equity tests below assume full active roster. Absent-player equity behavior
+// is an accepted gap — bench equity only applies to players in tonight's lineup.
+
 const INNINGS = 6;
 const BENCH_COUNT_PER_INNING = 2; // 12 players - 10 field positions
 
@@ -166,4 +169,39 @@ describe('Group 2 — Bench rotation fairness', function () {
     var allSkip = mockRoster12.map(function (p) { return Object.assign({}, p, { skipBench: true }); });
     expect(function () { generateLineupV2(allSkip, INNINGS); }).toThrow();
   });
+});
+
+// ============================================================================
+// Reduced roster — absent player equity
+// ============================================================================
+
+describe('Reduced roster — absent player equity', function () {
+
+  it('equity distribution recalculates against active players only, not full roster', function () {
+    // 11-player roster (mockRoster12 first 11), 1 tagged absent → 10 active.
+    // bench = max(10 - 10, 0) = 0 — NOT max(11 - 10, 0) = 1 from total count.
+    // All 10 active players play every inning; absent player has no grid entry.
+    // outThisGame: undefined lets playerMapper.js:52 fall through to tags.includes('absent').
+    // The mockRoster12 fixture sets outThisGame: false explicitly, so we clear it here.
+    var roster11 = mockRoster12.slice(0, 11);
+    var absentName = roster11[0].name;
+    var rosterWithAbsent = [
+      Object.assign({}, roster11[0], { outThisGame: undefined, tags: ['absent'] }),
+    ].concat(roster11.slice(1));
+
+    var result = generateLineupV2(rosterWithAbsent, INNINGS);
+
+    // Absent player is not in the grid (excluded before bench math)
+    expect(result.grid[absentName]).toBeUndefined();
+
+    // Active count = 10, bench = 0 — no BENCH entries in any inning
+    var allEntries = Object.values(result.grid).reduce(function (acc, arr) {
+      return acc.concat(arr);
+    }, []);
+    expect(allEntries).not.toContain('BENCH');
+
+    // Grid has exactly 10 entries (the 10 active players)
+    expect(Object.keys(result.grid).length).toBe(10);
+  });
+
 });

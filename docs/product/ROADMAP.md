@@ -1,7 +1,37 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: April 6, 2026 (v2.2.18)
+> Last updated: April 16, 2026 (v2.2.26)
 > MVP launched: March 24, 2026
+
+---
+
+## v2.2.26 — 2026-04-16
+- Feat: playerMapper.js V1→V2 skill shim — skills[]/batSkills[] arrays now inferred as V2 enum fields (reliability, reaction, armStrength, speed, contact, power, swingDiscipline)
+- UX: gameBall edit removed from inline schedule card; moved into game Edit modal with search filter + multiselect pills
+- UX: gameBall displays as read-only 🏆 label on schedule card
+
+## v2.2.25 — 2026-04-16
+- Feat: Game Ball award supports multiple players — gameBall migrated from string to array; normalizeGameBall() coerces legacy data on read
+- UX: Team tab renamed to My Team in bottom nav
+
+## v2.2.24 — 2026-04-16
+- UX: Game Day restructured — Lineups tab is now the default view with Tonight's Attendance above Defense/Batting sub-tabs
+- Fix: QuickSwap in Game Mode now excludes absent players from swap candidate list; absentTonight threaded App.jsx → GameModeScreen → QuickSwap
+
+## v2.2.23 — 2026-04-16
+- Fix: validateGrid skips "Out" slots — no false warnings for absent players
+- Fix: todayDate switched from UTC to local calendar date to fix attendance key mismatch during evening games
+
+## v2.2.22 — 2026-04-15 (HOTFIX)
+- Hotfix: auth gate re-commented out — was inadvertently blocking all unauthenticated users in prod
+- useAuth hook, LoginScreen, RequestAccessScreen, PendingApprovalScreen imports preserved for Phase 4C cutover
+
+## v2.2.21 — 2026-04-15
+- Feat: activeBattingOrder — absent players filtered from batting order across PDF, share links, print, songs, game mode, Now Batting strip
+- SharedView: player filter pills exclude absent names; absent note in batting footer
+- Feat (v2.2.19): Game Day Attendance panel — mark players out before lineup gen, persisted to Supabase attendance_overrides column
+- Fix: PendingApprovalScreen "Try logging in" now correctly transitions auth state
+- Fix: supabase.js attendance_overrides support in dbSaveTeamData/dbLoadTeamData
 
 ---
 
@@ -724,6 +754,76 @@
 - Platform admin sends "Create your team" invite link to new head coach
 - Head coach fills out team details + their own profile
 - Team is created, head coach gets team_admin membership automatically
+
+---
+
+## Backlog
+
+### Automated Score Reporting (County Integration)
+**Status:** Architecture finalized, implementation pending
+**Trigger:** Coach taps "Report Score" on a completed game
+
+**Approach — n8n webhook orchestration (Option C):**
+The county uses Microsoft Forms (anonymous, no login required). Direct URL pre-fill does not work (Microsoft Forms ignores query parameters). Direct backend submission is blocked by a session-bound CSRF token (`__RequestVerificationToken`) tied to a `FormsWebSessionId` cookie.
+
+Solution: n8n workflow that:
+1. GETs the form page fresh to obtain a live session cookie + CSRF token
+2. Extracts `__RequestVerificationToken` from the HTML response
+3. Immediately POSTs the submission to the Microsoft Forms API using the live token + cookie
+4. Returns success/failure to the Dugout Lineup backend
+5. Backend responds to app → app marks `scoreReported: true`
+
+**Why not other approaches:**
+- URL pre-fill: Microsoft Forms ignores query parameters (tested and confirmed)
+- Direct backend POST: Blocked by CSRF token tied to browser session
+- Form scraping: Fragile, against ToS
+- Option deferred: Ask county to set up Power Automate webhook on their tenant (cleanest long-term solution — added as fallback if n8n approach becomes unstable)
+
+**Microsoft Forms endpoint:**
+```
+POST https://forms.office.com/formapi/api/b9c4fdbd-efb6-477a-9fb3-32624a22cd70/users/fac416ea-6b9a-4181-b609-5ed2b010e9b0/forms('vf3EubbvekefszJiSiLNcOoWxPqaa4FBtgle0rAQ6bBURVExSDNDNEFTTkRaMVlRR0lNUDVGOUtFVy4u')/responses
+```
+
+**Field ID map (confirmed from live form API):**
+| Field | ID | Type | Notes |
+|---|---|---|---|
+| Game Date | `rb77e5417b7f24d67a8e51b867cbc7253` | DateTime | Format: `YYYY-MM-DD` |
+| Game Time | `ra3fc47859a864e21bf157e99e63df454` | Choice | Format: `"6:00 pm"` lowercase |
+| Athletic League | `rae553b14cd27469d834903d9c1177096` | Choice | Static: `"Baseball"` |
+| Age Group | `rbe7503c08cfa4e6da8e64582985cfedb` | TextField | Static: `"8U"` |
+| Park Name | `rde02039428f3478a9b23fc134bab08cd` | Choice | Exact form values (see park map) |
+| Field # | `r9eca2d2679a548ffbdbd6f5759d84d16` | Choice | Format: `"Field 1 "` (note trailing space) |
+| Visitor Team | `r2163ab1a2bbd45d3b6a6a0b87b08504d` | TextField | |
+| Visitor Score | `r000f1369832b4a3d89a4a6012f5e37f0` | TextField | |
+| Home Team | `r26ac0e710b5446ac80a1a39c1ff88ff9` | TextField | |
+| Home Team Score | `rc13b3be1dd6f4a23b82d8e9dd7a73e90` | TextField | |
+
+**Home/Away logic:** `game.home === true` → Mud Hens are Home Team, opponent is Visitor. Flip when false.
+
+**Park abbreviation map** (from existing `location` field):
+| Abbreviation | Full Name |
+|---|---|
+| JV | Joint Venture |
+| FP | Fowler Park |
+| SS | Sharon Springs Park |
+| BP | Bennett Park |
+| CP | Central Park |
+| CM | Coal Mountain Park |
+| LP | Lanierland Park |
+| MP | Midway Park |
+| SMP | Sawnee Mountain Park |
+
+**Schema changes needed before implementation:**
+- Add `parkName` and `fieldNumber` as explicit fields on game objects (currently encoded in `location` string e.g. `"JV 2"`)
+- Write migration to backfill from existing location values
+- Update Add/Edit Game form UI to use dropdowns for Park Name (9 options) and Field # (1–9)
+
+**n8n workflow to build:**
+- Webhook trigger → HTTP GET form page → Code node extract token/cookie → HTTP POST submission → Respond to webhook
+- Add webhook URL to smoke test Category 5 reachability check
+- Add error alerting if POST returns non-201
+
+**Risk:** Token extraction pattern could change if Microsoft updates their form page HTML. Mitigate with error alerting and Power Automate (county-side) as fallback.
 
 ---
 

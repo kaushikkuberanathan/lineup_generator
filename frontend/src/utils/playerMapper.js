@@ -9,15 +9,30 @@
  * @returns {{ name: string, outThisGame: boolean, tags: string[], skills: string[] }}
  */
 export function mapPlayerToV2(player) {
+  // V1 → V2 skill bridge (only applies when V2 field not explicitly set)
+  var v1 = player.skills || [];
+  var inferredReliability = v1.includes('goodGlove') ? 'high'
+    : v1.includes('needsWork') ? 'needs_support' : null;
+  var inferredArm = v1.includes('strongArm') ? 'strong'
+    : v1.includes('weakArm') ? 'developing' : null;
+  var inferredSpeed = v1.includes('fast') ? 'fast'
+    : v1.includes('slow') ? 'developing' : null;
+  var inferredReaction = v1.includes('gameAware') ? 'quick' : null;
+  var inferredContact = (player.batSkills || []).includes('goodContact') ? 'high'
+    : (player.batSkills || []).includes('poorContact') ? 'developing' : null;
+  var inferredPower = (player.batSkills || []).includes('power') ? 'high' : null;
+  var inferredDiscipline = (player.batSkills || []).includes('patientHitter')
+    ? 'disciplined' : null;
+
   return {
     ...player,
 
     name: player.name || player.playerName || "Unknown Player",
 
     // Fielding
-    reliability: player.reliability ?? "average",
-    reaction: player.reaction ?? "average",
-    armStrength: player.armStrength ?? "average",
+    reliability: player.reliability ?? inferredReliability ?? "average",
+    reaction: player.reaction ?? inferredReaction ?? "average",
+    armStrength: player.armStrength ?? inferredArm ?? "average",
     ballType: player.ballType ?? "developing",
 
     // Field awareness

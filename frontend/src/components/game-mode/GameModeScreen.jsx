@@ -42,6 +42,7 @@ export function GameModeScreen({
   roster, grid, battingOrder, innings,
   currentBatterIndex, initialInning,
   sport,
+  absentTonight,
   onSwap, onBatterAdvance, onBatterBack,
   onInningChange, onBatterReset,
   onExit
@@ -521,6 +522,7 @@ export function GameModeScreen({
           inning={currentInning}
           roster={roster}
           grid={grid}
+          absentTonight={absentTonight}
           onSwap={handleSwap}
           onClose={function() { setSwapTarget(null); }}
         />

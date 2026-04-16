@@ -293,3 +293,97 @@ describe('Group E — Edge cases and warnings', function () {
   });
 
 });
+
+// ============================================================================
+// Group X — Absent player exclusion (V2 engine)
+// ============================================================================
+// playerMapper.js maps tags: ['absent'] → outThisGame: true via the expression:
+//   outThisGame: player.outThisGame ?? tags.includes('absent')
+// The ?? operator only falls through to the tags check when outThisGame is
+// null or undefined. The mockRoster fixture sets outThisGame: false explicitly,
+// so tests must also set outThisGame: undefined to exercise the tags pathway.
+// ============================================================================
+
+describe('Group X — Absent player exclusion (V2 engine)', function () {
+
+  const INNINGS = 4;
+  const FIELD_POSITIONS_X = new Set(['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'LC', 'RC', 'RF']);
+
+  test('X.1 — absent-tagged player is never assigned a field position', function () {
+    // outThisGame: undefined lets playerMapper fall through to tags.includes('absent')
+    const absentName = mockRoster[0].name;
+    const roster = [
+      { ...mockRoster[0], outThisGame: undefined, tags: ['absent'] },
+      ...mockRoster.slice(1),
+    ];
+    const result = generateLineupV2(roster, INNINGS);
+    expect(result.grid[absentName]).toBeUndefined();
+  });
+
+  test('X.2 — absent-tagged player appears Out in every inning', function () {
+    const absentName = mockRoster[0].name;
+    const roster = [
+      { ...mockRoster[0], outThisGame: undefined, tags: ['absent'] },
+      ...mockRoster.slice(1),
+    ];
+    const result = generateLineupV2(roster, INNINGS);
+    // Absent player has no grid row; their name must not appear in any inning's assignments
+    for (let i = 0; i < INNINGS; i++) {
+      const assignedNames = Object.keys(result.grid);
+      expect(assignedNames).not.toContain(absentName);
+    }
+  });
+
+  test('X.3 — remaining 9 active players each receive a field position every inning', function () {
+    // With 9 active players, bench = max(9-10, 0) = 0 — all 9 play every inning
+    const roster = [
+      { ...mockRoster[0], outThisGame: undefined, tags: ['absent'] },
+      ...mockRoster.slice(1),
+    ];
+    const result = generateLineupV2(roster, INNINGS);
+    const activeNames = mockRoster.slice(1).map(p => p.name);
+    for (let i = 0; i < INNINGS; i++) {
+      activeNames.forEach(function (name) {
+        const pos = result.grid[name][i];
+        expect(FIELD_POSITIONS_X.has(pos)).toBe(true);
+      });
+    }
+  });
+
+  test('X.4 — bench slots calculated against active count, not total roster', function () {
+    // 12 total, 1 absent → 11 active → bench = max(11-10, 0) = 1 per inning
+    // If calculated from total: max(12-10, 0) = 2 per inning (wrong)
+    const absentName = mockRoster12[0].name;
+    const roster = [
+      { ...mockRoster12[0], outThisGame: undefined, tags: ['absent'] },
+      ...mockRoster12.slice(1),
+    ];
+    const result = generateLineupV2(roster, INNINGS);
+    // Absent player not in grid
+    expect(result.grid[absentName]).toBeUndefined();
+    // Bench = 1 per inning (active 11 - 10), not 2 (total 12 - 10)
+    for (let i = 0; i < INNINGS; i++) {
+      const benchThisInning = Object.values(result.grid)
+        .filter(function (positions) { return positions[i] === 'BENCH'; }).length;
+      expect(benchThisInning).toBe(1);
+    }
+  });
+
+  test('X.5 — 2 absent players: 8 active, no bench slots, both Out every inning', function () {
+    const absent1 = mockRoster[0].name;
+    const absent2 = mockRoster[1].name;
+    const roster = [
+      { ...mockRoster[0], outThisGame: undefined, tags: ['absent'] },
+      { ...mockRoster[1], outThisGame: undefined, tags: ['absent'] },
+      ...mockRoster.slice(2),
+    ];
+    const result = generateLineupV2(roster, INNINGS);
+    // Both absent players not in grid
+    expect(result.grid[absent1]).toBeUndefined();
+    expect(result.grid[absent2]).toBeUndefined();
+    // bench = max(8 - 10, 0) = 0 — no bench slots
+    const allEntries = Object.values(result.grid).flat();
+    expect(allEntries).not.toContain('BENCH');
+  });
+
+});

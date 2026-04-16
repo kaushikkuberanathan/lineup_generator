@@ -24,7 +24,7 @@ const NEW_GAME_TEMPLATE = {
   theirScore:  "",
   battingPerf: {},
   snackDuty:   "",
-  gameBall:    "",
+  gameBall:    [],
   scoreReported: false,
 };
 
@@ -49,9 +49,9 @@ describe('Group 1 — newGame template completeness', () => {
     expect(NEW_GAME_TEMPLATE.scoreReported).toBe(false);
   });
 
-  it('1.5 snackDuty and gameBall default to empty string', () => {
+  it('1.5 snackDuty defaults to empty string; gameBall defaults to empty array', () => {
     expect(NEW_GAME_TEMPLATE.snackDuty).toBe("");
-    expect(NEW_GAME_TEMPLATE.gameBall).toBe("");
+    expect(NEW_GAME_TEMPLATE.gameBall).toEqual([]);
   });
 
   it('1.6 battingPerf default is an empty object', () => {

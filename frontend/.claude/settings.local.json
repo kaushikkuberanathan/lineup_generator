@@ -52,6 +52,7 @@
       "Bash(npm init:*)",
       "Bash(npx husky:*)",
       "Bash(bash:*)",
+<<<<<<< Updated upstream
       "Bash(npm ci:*)",
       "Bash(grep:*)",
       "Bash(rm:*)",
@@ -61,6 +62,9 @@
       "Bash(echo \"EXIT:$?\")",
       "Bash(echo \"BUILD_EXIT:$?\")",
       "Bash(echo \"TEST_EXIT:$?\")"
+=======
+      "Bash(npx eslint:*)"
+>>>>>>> Stashed changes
     ]
   }
 }

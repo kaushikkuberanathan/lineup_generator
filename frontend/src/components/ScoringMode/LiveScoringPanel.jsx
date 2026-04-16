@@ -1,0 +1,865 @@
+import { useState } from 'react';
+import { PITCH, OUTCOME } from '../../hooks/useLiveScoring';
+import LiveScoreViewer from './LiveScoreViewer';
+
+var FF = "Georgia,'Times New Roman',serif";
+
+var PITCH_CHIPS = {
+  ball:            { label: 'B',  bg: '#1d4ed8' },
+  strike_called:   { label: '✓', bg: '#dc2626' },
+  strike_swinging: { label: 'K',  bg: '#dc2626' },
+  foul:            { label: 'F',  bg: '#d97706' },
+  contact:         { label: '✕', bg: '#16a34a' },
+};
+
+var LAST_PITCH_LABEL = {
+  ball:            'Ball',
+  strike_called:   'Called strike',
+  strike_swinging: 'Swinging strike',
+  foul:            'Foul ball',
+  contact:         'Contact',
+};
+
+var PITCH_BUTTONS = [
+  { type: PITCH.BALL,            label: 'Ball',       color: '#1d4ed8', flex: 1   },
+  { type: PITCH.STRIKE_CALLED,   label: 'Strike ✓',  color: '#dc2626', flex: 1   },
+  { type: PITCH.STRIKE_SWINGING, label: 'Strike K',  color: '#dc2626', flex: 1   },
+  { type: PITCH.FOUL,            label: 'Foul',       color: '#d97706', flex: 1   },
+  { type: PITCH.CONTACT,         label: '⚾ Contact', color: '#16a34a', flex: 1.5 },
+];
+
+var OUTCOME_ROWS = [
+  [
+    { type: OUTCOME.OUT_AT_FIRST,  label: 'Out @ 1st', color: '#dc2626' },
+    { type: OUTCOME.FLYOUT,        label: 'Flyout',    color: '#dc2626' },
+    { type: OUTCOME.STRIKEOUT,     label: 'Strikeout', color: '#dc2626' },
+  ],
+  [
+    { type: OUTCOME.SINGLE, label: 'Single', color: '#16a34a' },
+    { type: OUTCOME.DOUBLE, label: 'Double', color: '#16a34a' },
+    { type: OUTCOME.TRIPLE, label: 'Triple', color: '#16a34a' },
+  ],
+  [
+    { type: OUTCOME.HOME_RUN, label: 'Home Run', color: '#f5c842' },
+  ],
+  [
+    { type: OUTCOME.WALK,          label: 'Walk',            color: '#7c3aed' },
+    { type: OUTCOME.HBP,           label: 'HBP',             color: '#7c3aed' },
+    { type: OUTCOME.ERROR_REACHED, label: 'Error (reached)', color: '#d97706' },
+  ],
+];
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+function CountPips(props) {
+  var n = props.n; var max = props.max; var color = props.color;
+  var dots = [];
+  for (var i = 0; i < max; i++) {
+    dots.push(
+      <span key={i} style={{
+        display: 'inline-block', verticalAlign: 'middle',
+        width: 8, height: 8, borderRadius: '50%',
+        background: i < n ? color : 'rgba(255,255,255,0.18)',
+        border: '1px solid rgba(255,255,255,0.2)',
+        marginLeft: i > 0 ? 3 : 0,
+      }} />
+    );
+  }
+  return <span style={{ display: 'inline-flex', alignItems: 'center' }}>{dots}</span>;
+}
+
+function DiamondSVG(props) {
+  var runners = props.runners || [];
+  var occupied = {};
+  for (var i = 0; i < runners.length; i++) { occupied[runners[i].base] = true; }
+  var bases = [
+    { base: 2, cx: 50, cy: 12 },
+    { base: 3, cx: 12, cy: 50 },
+    { base: 1, cx: 88, cy: 50 },
+  ];
+  return (
+    <svg width={110} height={110} viewBox="0 0 100 100">
+      <polygon points="50,12 88,50 50,88 12,50"
+        fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth={1.5} />
+      {bases.map(function(b) {
+        var on = !!occupied[b.base];
+        return (
+          <rect key={b.base}
+            x={b.cx - 9} y={b.cy - 9} width={18} height={18}
+            transform={'rotate(45,' + b.cx + ',' + b.cy + ')'}
+            fill={on ? '#f5c842' : 'rgba(255,255,255,0.08)'}
+            stroke={on ? '#f5c842' : 'rgba(255,255,255,0.25)'}
+            strokeWidth={1.5}
+          />
+        );
+      })}
+      <rect x={41} y={79} width={18} height={18}
+        transform="rotate(45,50,88)"
+        fill="rgba(255,255,255,0.12)"
+        stroke="rgba(255,255,255,0.28)"
+        strokeWidth={1}
+      />
+    </svg>
+  );
+}
+
+// ─── Main ─────────────────────────────────────────────────────────────────────
+
+export default function LiveScoringPanel(props) {
+  var gameState                = props.gameState;
+  var currentAtBat             = props.currentAtBat;
+  var isScorer                 = props.isScorer;
+  var scorerName               = props.scorerName;
+  var scorerLockExpired        = props.scorerLockExpired;
+  var suggestedBatter          = props.suggestedBatter;
+  var pendingAdvancement       = props.pendingAdvancement;
+  var battingOrder             = props.battingOrder             || [];
+  var claimScorerLock          = props.claimScorerLock          || function() {};
+  var releaseScorerLock        = props.releaseScorerLock        || function() {};
+  var startAtBat               = props.startAtBat               || function() {};
+  var recordPitch              = props.recordPitch              || function() {};
+  var resolveAtBat             = props.resolveAtBat             || function() {};
+  var undoLastPitch            = props.undoLastPitch            || function() {};
+  var confirmRunnerAdvancement = props.confirmRunnerAdvancement || function() {};
+  var incrementOpponentScore   = props.incrementOpponentScore   || function() {};
+  var selectedGame  = props.selectedGame;
+  var activeTeam    = props.activeTeam;
+  var isPractice    = props.isPractice;
+  var onExit        = props.onExit     || function() {};
+  var onSettings     = props.onSettings;
+  var rules          = props.rules;
+  var pitchUIConfig  = props.pitchUIConfig;
+  var ruleWarnings   = props.ruleWarnings   || [];
+
+  // ── Hooks — all unconditional ──────────────────────────────────────────────
+  var _rp = useState(false);
+  var showRosterPicker = _rp[0]; var setShowRosterPicker = _rp[1];
+
+  var _vo = useState(false);
+  var viewerOnly = _vo[0]; var setViewerOnly = _vo[1];
+
+  // ── Derived ────────────────────────────────────────────────────────────────
+  var gs = gameState || {
+    inning: 1, halfInning: 'top', outs: 0, balls: 0, strikes: 0,
+    myScore: 0, opponentScore: 0, runners: [], currentBatter: null, battingOrderIndex: 0,
+  };
+  var halfArrow    = gs.halfInning === 'top' ? '▲' : '▼';
+  var opponentName = selectedGame ? selectedGame.opponent : 'Opponent';
+  var teamShort    = activeTeam   ? activeTeam.name.split(' ')[0] : 'Us';
+
+  var currentBatter = currentAtBat ? currentAtBat.batter : null;
+  var pitches       = currentAtBat ? currentAtBat.pitches : [];
+  var lastPitch     = pitches.length > 0 ? pitches[pitches.length - 1] : null;
+  var showOutcomes  = !!(lastPitch && lastPitch.type === PITCH.CONTACT);
+
+  // When lock expires hook sets isScorer→false; keep user in scorer view so
+  // they can see state and reclaim without losing context.
+  var inScorerSession = isScorer || scorerLockExpired;
+
+  // ── Viewer mode (after tapping "Join as Viewer" from STATE 1) ─────────────
+  if (viewerOnly) {
+    return (
+      <LiveScoreViewer
+        gameState={gs}
+        scorerName={scorerName}
+        onClaimScorer={function() { setViewerOnly(false); claimScorerLock(); }}
+        onExit={onExit}
+      />
+    );
+  }
+
+  // ── STATE 1: No scorer ─────────────────────────────────────────────────────
+  if (!scorerName && !inScorerSession) {
+    return (
+      <div style={{
+        minHeight: '100vh', background: '#0b1524', color: '#fff',
+        fontFamily: FF, display: 'flex', flexDirection: 'column',
+      }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', padding: '12px 16px',
+          borderBottom: '1px solid rgba(255,255,255,0.08)', flexShrink: 0,
+        }}>
+          <button onClick={onExit} style={{
+            background: 'none', border: 'none', color: '#94a3b8',
+            fontSize: '20px', cursor: 'pointer', padding: '4px 8px 4px 0', lineHeight: 1,
+          }}>←</button>
+          <div style={{ flex: 1, textAlign: 'center' }}>
+            <div style={{ fontSize: '12px', color: '#64748b' }}>
+              {isPractice ? 'Practice Mode' : 'vs ' + opponentName}
+            </div>
+            <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#f5c842' }}>
+              {halfArrow} {gs.inning}
+            </div>
+          </div>
+          <div style={{ width: '36px' }} />
+        </div>
+
+        <div style={{
+          flex: 1, display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+          padding: '32px 24px', textAlign: 'center',
+        }}>
+          <div style={{ fontSize: '40px', marginBottom: '16px' }}>🎙</div>
+          <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '6px' }}>
+            No active scorer
+          </div>
+          <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '32px', maxWidth: '260px' }}>
+            {isPractice
+              ? 'Claim the scorer role to start recording pitches without saving to the scorebook.'
+              : 'Claim the scorer role to start recording live pitches.'}
+          </div>
+          <button
+            onClick={claimScorerLock}
+            style={{
+              width: '100%', maxWidth: '320px', padding: '16px',
+              background: '#1d4ed8', border: 'none', borderRadius: '10px',
+              color: '#fff', fontSize: '16px', fontWeight: 'bold',
+              cursor: 'pointer', fontFamily: FF, marginBottom: '16px',
+            }}>
+            🎙 Claim Scorer Role
+          </button>
+          {!isPractice ? (
+            <button
+              onClick={function() { setViewerOnly(true); }}
+              style={{
+                background: 'none', border: 'none', color: '#60a5fa',
+                fontSize: '14px', cursor: 'pointer', fontFamily: FF, padding: '4px 8px',
+              }}>
+              Join as Viewer →
+            </button>
+          ) : null}
+        </div>
+      </div>
+    );
+  }
+
+  // ── STATE 3: Someone else is scoring ──────────────────────────────────────
+  if (scorerName && !inScorerSession) {
+    return (
+      <div style={{
+        minHeight: '100vh', background: '#0b1524', color: '#fff',
+        fontFamily: FF, display: 'flex', flexDirection: 'column',
+      }}>
+        {/* Header strip */}
+        <div style={{
+          display: 'flex', alignItems: 'center',
+          padding: '10px 14px', gap: '10px',
+          background: '#0a1628',
+          borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0,
+        }}>
+          <button onClick={onExit} style={{
+            background: 'none', border: 'none', color: '#64748b',
+            fontSize: '18px', cursor: 'pointer', padding: 0, lineHeight: 1,
+          }}>←</button>
+          <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#f5c842' }}>
+            {halfArrow} {gs.inning}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '11px' }}>
+            <CountPips n={gs.balls}   max={4} color="#3b82f6" />
+            <span style={{ color: '#374151', margin: '0 1px' }}>B</span>
+            <span style={{ color: '#2d3748', margin: '0 2px' }}>·</span>
+            <CountPips n={gs.strikes} max={3} color="#dc2626" />
+            <span style={{ color: '#374151', margin: '0 1px' }}>S</span>
+            <span style={{ color: '#2d3748', margin: '0 2px' }}>·</span>
+            <CountPips n={gs.outs}    max={3} color="#f5c842" />
+            <span style={{ color: '#374151', margin: '0 1px' }}>O</span>
+          </div>
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+            <span style={{ fontSize: '20px', fontWeight: 'bold', color: '#f5c842' }}>{gs.myScore}</span>
+            <span style={{ color: '#374151' }}>:</span>
+            <span style={{ fontSize: '20px', fontWeight: 'bold' }}>{gs.opponentScore}</span>
+          </div>
+        </div>
+
+        {/* Scorer banner */}
+        <div style={{
+          background: 'rgba(22,163,74,0.12)',
+          border: '1px solid rgba(22,163,74,0.3)',
+          borderRadius: '8px', margin: '12px 16px 4px',
+          padding: '10px 14px',
+          display: 'flex', alignItems: 'center', gap: '8px',
+        }}>
+          <span style={{
+            width: 8, height: 8, borderRadius: '50%',
+            background: '#16a34a', display: 'inline-block', flexShrink: 0,
+          }} />
+          <span style={{ fontSize: '14px', fontWeight: 'bold' }}>
+            {scorerName} is scoring 🟢
+          </span>
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0' }}>
+          <DiamondSVG runners={gs.runners} />
+        </div>
+
+        {currentBatter ? (
+          <div style={{ padding: '0 16px 12px' }}>
+            <div style={{
+              background: 'rgba(245,200,66,0.08)',
+              border: '1px solid rgba(245,200,66,0.2)',
+              borderRadius: '8px', padding: '10px 14px',
+            }}>
+              <div style={{ fontSize: '10px', color: '#f5c842', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '2px' }}>
+                Now Batting
+              </div>
+              <div style={{ fontSize: '17px', fontWeight: 'bold' }}>{currentBatter.name}</div>
+              <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
+                {pitches.length} pitch{pitches.length !== 1 ? 'es' : ''}
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        <div style={{ padding: '8px 16px', marginTop: 'auto' }}>
+          <div style={{ fontSize: '11px', color: '#374151', marginBottom: '8px', textAlign: 'center' }}>
+            Only one scorer at a time
+          </div>
+          <div style={{ display: 'flex', gap: '6px' }}>
+            {PITCH_BUTTONS.map(function(btn) {
+              return (
+                <button key={btn.type} disabled style={{
+                  flex: btn.flex || 1, padding: '13px 4px',
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(255,255,255,0.07)',
+                  borderRadius: '10px', color: '#2d3748',
+                  fontWeight: 'bold', fontSize: '12px',
+                  cursor: 'not-allowed', fontFamily: FF,
+                }}>{btn.label}</button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── STATE 2: I am scorer ───────────────────────────────────────────────────
+
+  function handleEndSession() {
+    if (window.confirm('End scoring session?')) {
+      releaseScorerLock();
+      onExit();
+    }
+  }
+
+  function handleSelectRosterPlayer(player) {
+    startAtBat(player, false);
+    setShowRosterPicker(false);
+  }
+
+  var pitchDisabled = !currentBatter || !isScorer;
+
+  // Roster picker sheet
+  var rosterPickerSheet = showRosterPicker ? (
+    <div style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)',
+      display: 'flex', alignItems: 'flex-end', zIndex: 300,
+    }}>
+      <div style={{
+        background: '#0f1f3d', borderRadius: '16px 16px 0 0',
+        border: '1px solid rgba(255,255,255,0.15)',
+        padding: '16px', width: '100%', maxHeight: '70vh',
+        display: 'flex', flexDirection: 'column', fontFamily: FF,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+          <div style={{ fontSize: '14px', fontWeight: 'bold' }}>Select Batter</div>
+          <button onClick={function() { setShowRosterPicker(false); }} style={{
+            background: 'none', border: 'none', color: '#64748b',
+            fontSize: '18px', cursor: 'pointer', padding: '2px 6px',
+          }}>✕</button>
+        </div>
+        <div style={{ overflowY: 'auto', flex: 1 }}>
+          {battingOrder.map(function(player, idx) {
+            var isCur = currentBatter && currentBatter.id === player.id;
+            return (
+              <button
+                key={player.id}
+                onClick={function() { handleSelectRosterPlayer(player); }}
+                style={{
+                  width: '100%', textAlign: 'left', display: 'block',
+                  background: isCur ? 'rgba(245,200,66,0.12)' : 'rgba(255,255,255,0.04)',
+                  border: isCur ? '1px solid rgba(245,200,66,0.4)' : '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: '8px', padding: '10px 14px', marginBottom: '6px',
+                  cursor: 'pointer', color: '#fff', fontFamily: FF,
+                }}>
+                <span style={{ fontSize: '11px', color: '#64748b', marginRight: '8px' }}>{idx + 1}.</span>
+                <span style={{ fontWeight: isCur ? 'bold' : 'normal' }}>{player.name}</span>
+                {isCur ? <span style={{ fontSize: '10px', color: '#f5c842', marginLeft: '8px' }}>(current)</span> : null}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  ) : null;
+
+  // Outcome sheet (slides up after Contact pitch)
+  var outcomeSheet = showOutcomes ? (
+    <div style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)',
+      display: 'flex', alignItems: 'flex-end', zIndex: 250,
+    }}>
+      <div style={{
+        background: '#0f1f3d', borderRadius: '16px 16px 0 0',
+        border: '1px solid rgba(255,255,255,0.15)',
+        padding: '16px 16px 32px', width: '100%', fontFamily: FF,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+          <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#f5c842' }}>At-bat outcome</div>
+          <button onClick={undoLastPitch} style={{
+            background: 'none', border: '1px solid rgba(255,255,255,0.12)',
+            borderRadius: '6px', color: '#64748b', fontSize: '12px',
+            cursor: 'pointer', fontFamily: FF, padding: '4px 10px',
+          }}>⟲ Undo Contact</button>
+        </div>
+        {OUTCOME_ROWS.map(function(row, ri) {
+          return (
+            <div key={ri} style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
+              {row.map(function(btn) {
+                return (
+                  <button
+                    key={btn.type}
+                    onClick={function() { resolveAtBat(btn.type); }}
+                    style={{
+                      flex: 1, padding: '12px 4px',
+                      background: 'rgba(255,255,255,0.05)',
+                      border: '1px solid ' + btn.color + '55',
+                      borderRadius: '8px', color: btn.color,
+                      fontWeight: 'bold', fontSize: '13px',
+                      cursor: 'pointer', fontFamily: FF,
+                    }}>
+                    {btn.label}
+                  </button>
+                );
+              })}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  ) : null;
+
+  // Runner advancement sheet (runner on 3rd after a single)
+  var runnerSheet = null;
+  if (pendingAdvancement && pendingAdvancement.runners && pendingAdvancement.runners.length > 0) {
+    var pr = pendingAdvancement.runners[0];
+    runnerSheet = (
+      <div style={{
+        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)',
+        display: 'flex', alignItems: 'flex-end', zIndex: 260,
+      }}>
+        <div style={{
+          background: '#0f1f3d', borderRadius: '16px 16px 0 0',
+          border: '1px solid rgba(255,255,255,0.15)',
+          padding: '20px 20px 36px', width: '100%', fontFamily: FF,
+        }}>
+          <div style={{ fontSize: '11px', color: '#f5c842', fontWeight: 'bold', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '6px' }}>
+            Runner on 3rd
+          </div>
+          <div style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '18px' }}>
+            Did the runner score?
+          </div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button onClick={function() { confirmRunnerAdvancement(pr.runnerId, 3, 'held'); }} style={{
+              flex: 1, padding: '13px 6px', background: 'rgba(255,255,255,0.06)',
+              border: '1.5px solid rgba(255,255,255,0.2)', borderRadius: '10px',
+              color: '#94a3b8', fontWeight: 'bold', fontSize: '13px',
+              cursor: 'pointer', fontFamily: FF,
+            }}>Stayed 3rd</button>
+            <button onClick={function() { confirmRunnerAdvancement(pr.runnerId, 4, 'scored'); }} style={{
+              flex: 1, padding: '13px 6px', background: '#16a34a22',
+              border: '1.5px solid #16a34a', borderRadius: '10px',
+              color: '#fff', fontWeight: 'bold', fontSize: '13px',
+              cursor: 'pointer', fontFamily: FF,
+            }}>Scored ✓</button>
+            <button onClick={function() { confirmRunnerAdvancement(pr.runnerId, null, 'out'); }} style={{
+              flex: 1, padding: '13px 6px', background: '#dc262622',
+              border: '1.5px solid #dc2626', borderRadius: '10px',
+              color: '#fff', fontWeight: 'bold', fontSize: '13px',
+              cursor: 'pointer', fontFamily: FF,
+            }}>Out ✗</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{
+      minHeight: '100vh', background: '#0b1524', color: '#fff',
+      fontFamily: FF, display: 'flex', flexDirection: 'column',
+    }}>
+
+      {/* ── Header strip ──────────────────────────────────────────────────────── */}
+      <div style={{
+        display: 'flex', alignItems: 'center',
+        padding: '10px 14px', gap: '8px',
+        background: '#0a1628',
+        borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0,
+      }}>
+        <button onClick={onExit} style={{
+          background: 'none', border: 'none', color: '#64748b',
+          fontSize: '18px', cursor: 'pointer', padding: 0, lineHeight: 1, flexShrink: 0,
+        }}>←</button>
+
+        <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#f5c842', flexShrink: 0 }}>
+          {halfArrow} {gs.inning}
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '11px', flexShrink: 0 }}>
+          <CountPips n={gs.balls}   max={4} color="#3b82f6" />
+          <span style={{ color: '#374151', margin: '0 1px' }}>B</span>
+          <span style={{ color: '#2d3748', margin: '0 2px' }}>·</span>
+          <CountPips n={gs.strikes} max={3} color="#dc2626" />
+          <span style={{ color: '#374151', margin: '0 1px' }}>S</span>
+          <span style={{ color: '#2d3748', margin: '0 2px' }}>·</span>
+          <CountPips n={gs.outs}    max={3} color="#f5c842" />
+          <span style={{ color: '#374151', margin: '0 1px' }}>O</span>
+        </div>
+
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0 }}>
+          <span style={{ fontSize: '20px', fontWeight: 'bold', color: '#f5c842' }}>{gs.myScore}</span>
+          <span style={{ color: '#374151', fontSize: '14px' }}>:</span>
+          <span style={{ fontSize: '20px', fontWeight: 'bold' }}>{gs.opponentScore}</span>
+          <button
+            onClick={incrementOpponentScore}
+            style={{
+              background: 'rgba(255,255,255,0.08)',
+              border: '1px solid rgba(255,255,255,0.15)',
+              borderRadius: '5px', color: '#94a3b8',
+              fontSize: '10px', cursor: 'pointer',
+              fontFamily: FF, padding: '2px 5px', lineHeight: '1.4',
+            }}>+1</button>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+          {onSettings ? (
+            <button onClick={onSettings} style={{
+              background: 'rgba(255,255,255,0.06)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: '6px', padding: '4px 7px',
+              color: '#64748b', cursor: 'pointer',
+              fontSize: '13px', fontFamily: FF,
+            }}>⚙️</button>
+          ) : null}
+          <button onClick={handleEndSession} style={{
+            background: 'none', border: 'none',
+            color: '#374151', fontSize: '11px',
+            cursor: 'pointer', fontFamily: FF, padding: '4px 2px',
+            whiteSpace: 'nowrap',
+          }}>End Session</button>
+        </div>
+      </div>
+
+      {/* ── Lock expired banner ───────────────────────────────────────────────── */}
+      {scorerLockExpired ? (
+        <button
+          onClick={claimScorerLock}
+          style={{
+            width: '100%', background: 'rgba(220,38,38,0.15)',
+            border: 'none', borderBottom: '1px solid rgba(220,38,38,0.35)',
+            color: '#fca5a5', fontSize: '13px', fontWeight: 'bold',
+            cursor: 'pointer', fontFamily: FF, padding: '9px 16px',
+            textAlign: 'center', flexShrink: 0,
+          }}>
+          ⚠️ Session expired — tap to reclaim
+        </button>
+      ) : null}
+
+      {/* ── Batter area ───────────────────────────────────────────────────────── */}
+      <div style={{ padding: '12px 16px', flexShrink: 0 }}>
+        {currentBatter ? (
+          <div style={{
+            background: 'rgba(245,200,66,0.08)',
+            border: '1px solid rgba(245,200,66,0.25)',
+            borderRadius: '8px', padding: '10px 14px',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          }}>
+            <div>
+              <div style={{ fontSize: '10px', color: '#f5c842', fontWeight: 'bold', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '2px' }}>
+                Now Batting
+              </div>
+              <div style={{ fontSize: '17px', fontWeight: 'bold' }}>
+                {currentBatter.number ? '#' + currentBatter.number + ' ' : ''}{currentBatter.name}
+              </div>
+              <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
+                {pitches.length} pitch{pitches.length !== 1 ? 'es' : ''}
+              </div>
+            </div>
+            <button
+              onClick={function() { setShowRosterPicker(true); }}
+              style={{
+                background: 'rgba(255,255,255,0.08)',
+                border: '1px solid rgba(255,255,255,0.15)',
+                borderRadius: '7px', padding: '7px 12px',
+                color: '#94a3b8', fontSize: '12px', fontWeight: 'bold',
+                cursor: 'pointer', fontFamily: FF,
+              }}>
+              SWAP
+            </button>
+          </div>
+        ) : suggestedBatter ? (
+          <div style={{
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            borderRadius: '8px', padding: '12px 14px',
+          }}>
+            <div style={{ fontSize: '10px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>
+              Next Batter
+            </div>
+            <div style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '4px' }}>
+              {suggestedBatter.number ? '#' + suggestedBatter.number + ' ' : ''}{suggestedBatter.name}
+            </div>
+            <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '12px' }}>
+              Batting {suggestedBatter.orderPosition !== undefined ? suggestedBatter.orderPosition + 1 : '?'} of {battingOrder.length} — Is this right?
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                onClick={function() { startAtBat(suggestedBatter, true); }}
+                style={{
+                  flex: 2, padding: '10px 12px',
+                  background: '#1d4ed8', border: 'none', borderRadius: '8px',
+                  color: '#fff', fontSize: '14px', fontWeight: 'bold',
+                  cursor: 'pointer', fontFamily: FF,
+                }}>
+                ✓ Confirm
+              </button>
+              <button
+                onClick={function() { setShowRosterPicker(true); }}
+                style={{
+                  flex: 1, padding: '10px 12px',
+                  background: 'rgba(255,255,255,0.06)',
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  borderRadius: '8px', color: '#94a3b8',
+                  fontSize: '13px', fontWeight: 'bold',
+                  cursor: 'pointer', fontFamily: FF,
+                }}>
+                ↓ Different
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div style={{
+            background: 'rgba(255,255,255,0.03)',
+            border: '1px solid rgba(255,255,255,0.07)',
+            borderRadius: '8px', padding: '10px 14px',
+            color: '#374151', fontSize: '13px',
+          }}>
+            No batting order configured
+          </div>
+        )}
+      </div>
+
+      {/* ── Diamond + pitch log ───────────────────────────────────────────────── */}
+      <div style={{
+        display: 'flex', alignItems: 'center',
+        padding: '0 16px 8px', gap: '16px', flexShrink: 0,
+      }}>
+        <DiamondSVG runners={gs.runners} />
+
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {pitches.length > 0 ? (
+            <div>
+              <div style={{ fontSize: '10px', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>
+                Pitches
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                {pitches.map(function(p, i) {
+                  var chip = PITCH_CHIPS[p.type] || { label: '?', bg: '#475569' };
+                  return (
+                    <span key={i} style={{
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                      width: 26, height: 26, borderRadius: '6px',
+                      background: chip.bg, color: '#fff',
+                      fontSize: '11px', fontWeight: 'bold',
+                    }}>
+                      {chip.label}
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <div style={{ fontSize: '12px', color: '#374151' }}>No pitches yet</div>
+          )}
+          {lastPitch ? (
+            <div style={{ fontSize: '11px', color: '#64748b', marginTop: '8px' }}>
+              Last: {LAST_PITCH_LABEL[lastPitch.type] || lastPitch.type}
+            </div>
+          ) : null}
+        </div>
+      </div>
+
+      {/* ── Pitch buttons — always visible at bottom ──────────────────────────── */}
+      <div style={{ padding: '8px 16px 20px', flexShrink: 0, marginTop: 'auto' }}>
+        {!pitchUIConfig && (
+          <div style={{ color: '#64748b', textAlign: 'center', padding: 16 }}>
+            Loading rules...
+          </div>
+        )}
+
+        {pitchUIConfig && (
+          <>
+            {pitchUIConfig.showCoachOverlay && gs.isCoachPitching && (
+              <div style={{
+                background: 'rgba(245,158,11,0.15)',
+                border: '1px solid rgba(245,158,11,0.4)',
+                borderRadius: 8, padding: '6px 12px',
+                fontSize: 12, color: '#f59e0b', textAlign: 'center',
+                marginBottom: 6,
+              }}>
+                Coach pitching — {gs.coachPitchesRemaining || 0} pitch
+                {(gs.coachPitchesRemaining || 0) !== 1 ? 'es' : ''} remaining
+              </div>
+            )}
+
+            {ruleWarnings.length > 0 && ruleWarnings.map(function(w, i) {
+              return (
+                <div key={i} style={{
+                  background: 'rgba(245,158,11,0.1)',
+                  border: '1px solid rgba(245,158,11,0.3)',
+                  borderRadius: 8, padding: '6px 12px',
+                  fontSize: 12, color: '#f59e0b', marginBottom: 4,
+                }}>
+                  ⚠ {w}
+                </div>
+              );
+            })}
+
+            <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
+              {pitchUIConfig.showAttemptButton && (
+                <button
+                  onClick={function() { if (!pitchDisabled) { recordPitch(PITCH.CONTACT); } }}
+                  disabled={pitchDisabled}
+                  style={{
+                    flex: 1, padding: '13px 4px',
+                    background: pitchDisabled ? 'rgba(255,255,255,0.04)' : '#7c3aed1a',
+                    border: '1.5px solid ' + (pitchDisabled ? 'rgba(255,255,255,0.08)' : '#7c3aed66'),
+                    borderRadius: '10px',
+                    color: pitchDisabled ? '#374151' : '#fff',
+                    fontWeight: 'bold', fontSize: '13px',
+                    cursor: pitchDisabled ? 'default' : 'pointer',
+                    fontFamily: FF, transition: 'background 150ms',
+                  }}>
+                  <div>Att</div>
+                  <div style={{ fontSize: '10px', fontWeight: 'normal', marginTop: '1px' }}>{pitchUIConfig.attemptLabel}</div>
+                </button>
+              )}
+              {pitchUIConfig.showBallButton && (
+                <button
+                  onClick={function() { if (!pitchDisabled) { recordPitch(PITCH.BALL); } }}
+                  disabled={pitchDisabled}
+                  style={{
+                    flex: 1, padding: '13px 4px',
+                    background: pitchDisabled ? 'rgba(255,255,255,0.04)' : '#1d4ed81a',
+                    border: '1.5px solid ' + (pitchDisabled ? 'rgba(255,255,255,0.08)' : '#1d4ed866'),
+                    borderRadius: '10px',
+                    color: pitchDisabled ? '#374151' : '#fff',
+                    fontWeight: 'bold', fontSize: '13px',
+                    cursor: pitchDisabled ? 'default' : 'pointer',
+                    fontFamily: FF, transition: 'background 150ms',
+                  }}>
+                  <div>B</div>
+                  <div style={{ fontSize: '10px', fontWeight: 'normal', marginTop: '1px' }}>Ball</div>
+                </button>
+              )}
+              {pitchUIConfig.showCalledStrike && (
+                <button
+                  onClick={function() { if (!pitchDisabled) { recordPitch(PITCH.STRIKE_CALLED); } }}
+                  disabled={pitchDisabled}
+                  style={{
+                    flex: 1, padding: '13px 4px',
+                    background: pitchDisabled ? 'rgba(255,255,255,0.04)' : '#dc26261a',
+                    border: '1.5px solid ' + (pitchDisabled ? 'rgba(255,255,255,0.08)' : '#dc262666'),
+                    borderRadius: '10px',
+                    color: pitchDisabled ? '#374151' : '#fff',
+                    fontWeight: 'bold', fontSize: '13px',
+                    cursor: pitchDisabled ? 'default' : 'pointer',
+                    fontFamily: FF, transition: 'background 150ms',
+                  }}>
+                  <div>K̄</div>
+                  <div style={{ fontSize: '10px', fontWeight: 'normal', marginTop: '1px' }}>Called K</div>
+                </button>
+              )}
+              {pitchUIConfig.showSwingMiss && (
+                <button
+                  onClick={function() { if (!pitchDisabled) { recordPitch(PITCH.STRIKE_SWINGING); } }}
+                  disabled={pitchDisabled}
+                  style={{
+                    flex: 1, padding: '13px 4px',
+                    background: pitchDisabled ? 'rgba(255,255,255,0.04)' : '#dc26261a',
+                    border: '1.5px solid ' + (pitchDisabled ? 'rgba(255,255,255,0.08)' : '#dc262666'),
+                    borderRadius: '10px',
+                    color: pitchDisabled ? '#374151' : '#fff',
+                    fontWeight: 'bold', fontSize: '13px',
+                    cursor: pitchDisabled ? 'default' : 'pointer',
+                    fontFamily: FF, transition: 'background 150ms',
+                  }}>
+                  <div>K</div>
+                  <div style={{ fontSize: '10px', fontWeight: 'normal', marginTop: '1px' }}>Swing K</div>
+                </button>
+              )}
+              {pitchUIConfig.showFoul && (
+                <button
+                  onClick={function() { if (!pitchDisabled) { recordPitch(PITCH.FOUL); } }}
+                  disabled={pitchDisabled}
+                  style={{
+                    flex: 1, padding: '13px 4px',
+                    background: pitchDisabled ? 'rgba(255,255,255,0.04)' : '#d977061a',
+                    border: '1.5px solid ' + (pitchDisabled ? 'rgba(255,255,255,0.08)' : '#d9770666'),
+                    borderRadius: '10px',
+                    color: pitchDisabled ? '#374151' : '#fff',
+                    fontWeight: 'bold', fontSize: '13px',
+                    cursor: pitchDisabled ? 'default' : 'pointer',
+                    fontFamily: FF, transition: 'background 150ms',
+                  }}>
+                  <div>F</div>
+                  <div style={{ fontSize: '10px', fontWeight: 'normal', marginTop: '1px' }}>Foul</div>
+                </button>
+              )}
+              {pitchUIConfig.showContact && (
+                <button
+                  onClick={function() { if (!pitchDisabled) { recordPitch(PITCH.CONTACT); } }}
+                  disabled={pitchDisabled}
+                  style={{
+                    flex: 1.5, padding: '13px 4px',
+                    background: pitchDisabled ? 'rgba(255,255,255,0.04)' : '#16a34a1a',
+                    border: '1.5px solid ' + (pitchDisabled ? 'rgba(255,255,255,0.08)' : '#16a34a66'),
+                    borderRadius: '10px',
+                    color: pitchDisabled ? '#374151' : '#fff',
+                    fontWeight: 'bold', fontSize: '13px',
+                    cursor: pitchDisabled ? 'default' : 'pointer',
+                    fontFamily: FF, transition: 'background 150ms',
+                  }}>
+                  <div>⚾</div>
+                  <div style={{ fontSize: '10px', fontWeight: 'normal', marginTop: '1px' }}>Contact</div>
+                </button>
+              )}
+            </div>
+          </>
+        )}
+
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
+          <button
+            onClick={undoLastPitch}
+            disabled={pitches.length === 0}
+            style={{
+              background: 'none',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: '7px',
+              color: pitches.length > 0 ? '#64748b' : '#2d3748',
+              fontSize: '12px',
+              cursor: pitches.length > 0 ? 'pointer' : 'default',
+              fontFamily: FF, padding: '7px 12px',
+            }}>
+            ⟲ Undo
+          </button>
+        </div>
+      </div>
+
+      {rosterPickerSheet}
+      {outcomeSheet}
+      {runnerSheet}
+    </div>
+  );
+}

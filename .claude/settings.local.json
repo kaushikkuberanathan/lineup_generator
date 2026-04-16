@@ -20,7 +20,11 @@
       "Bash(cp \"$SRC/index.html\" frontend/)",
       "Bash(cp \"$SRC/vite.config.js\" frontend/)",
       "Bash(npm run:*)",
-      "mcp__plugin_github_github__create_or_update_file"
+      "mcp__plugin_github_github__create_or_update_file",
+      "Bash(dir frontend\\\\.env* /b)",
+      "Bash(ls frontend/.env*)",
+      "Bash(jobs -l)",
+      "Bash(export PATH=\"/c/Program Files/nodejs:$PATH\")"
     ]
   }
 }

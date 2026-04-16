@@ -36,6 +36,8 @@ import { useAuth } from './hooks/useAuth';
 import { LoginScreen } from './components/Auth/LoginScreen';
 import { RequestAccessScreen } from './components/Auth/RequestAccessScreen';
 import { PendingApprovalScreen } from './components/Auth/PendingApprovalScreen';
+import { useFeatureFlag } from '@/hooks/useFeatureFlag';
+import ScoringMode from './components/ScoringMode/index.jsx';
 
 // ============================================================
 // HELPERS
@@ -139,9 +141,125 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.2.18";
+var APP_VERSION = "2.2.26";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.2.26',
+    date: 'April 2026',
+    headline: "V1→V2 skill bridge + game ball edit modal",
+    userChanges: [
+      "Player skills now influence auto-assign lineup generation",
+      "Game Ball selection moved into Edit screen with player search",
+      "Game Ball displays as read-only on schedule card",
+    ],
+    techNote: "playerMapper.js shims V1 skills/batSkills arrays to V2 enum fields; gameBall edit removed from inline card, added to newGame modal with search filter and multiselect",
+    internalChanges: [
+      "playerMapper.js: V1→V2 shim — skills[] → reliability/reaction/armStrength/speed; batSkills[] → contact/power/swingDiscipline",
+      "Schedule card gameBall pill block replaced with display-only span (🏆 Game Ball label + joined names or —)",
+      "Edit modal: gameBall search input + multiselect pills added after Snack Duty; gameBallSearch:'' added to all 3 newGame resets (initialiser, saveGame, Add Game button)",
+    ],
+  },
+  {
+    version: '2.2.25',
+    date: 'April 2026',
+    headline: "Multi-player game ball + My Team tab",
+    userChanges: [
+      "Game Ball award can now be given to multiple players",
+      "Team tab renamed to My Team",
+    ],
+    techNote: "gameBall migrated from string to array; normalizeGameBall() coerces legacy data on read",
+    internalChanges: [
+      "gameBall migrated from string to array; normalizeGameBall() coerces legacy data on read",
+      "PRIMARY_TABS: label:'Team' → label:'My Team' at line 9092",
+    ],
+  },
+  {
+    version: '2.2.24',
+    date: 'April 2026',
+    headline: "Game Day restructured — Lineups tab with shared attendance, Defense/Batting as sub-tabs",
+    userChanges: [
+      "Game Day now opens on Lineups tab by default",
+      "Tonight's Attendance sits above both Defense and Batting — one place to manage who's playing",
+      "Defense and Batting are sub-tabs inside Lineups",
+      "Cleaner Game Day nav: Lineups · Songs · Game Mode all visible on portrait",
+    ],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
+      "renderLineups() wrapper extracts attendance panel from renderGrid(); lineupsSubTab state added; GAMEDAY_SUBTABS collapsed from 5 to 3 entries; all setGameDayTab('defense') deep links updated to 'lineups'",
+      "absentTonight prop threaded App.jsx → GameModeScreen → QuickSwap; QuickSwap candidate list filters absent names before sort",
+    ],
+  },
+  {
+    version: '2.2.23',
+    date: 'April 2026',
+    headline: "Defense tab inning checks restored — absent players no longer cause false warnings",
+    userChanges: [
+      "Inning checkmarks now show correctly when absent players are marked Out Tonight",
+      "Auto-assign no longer includes Out Tonight players (fixed for evening games)",
+    ],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
+      "validateGrid: skip 'Out' slots entirely — no missing/conflict/bench warnings for absent players",
+      "todayDate: switched from UTC (toISOString) to local calendar date to fix attendance key mismatch during evening games in ET and other UTC- timezones",
+    ],
+  },
+  {
+    version: '2.2.22',
+    date: 'April 2026',
+    headline: "Hotfix — auth gate removed from prod, app accessible to all users",
+    userChanges: [],
+    techNote: "Auth gate re-commented out — was inadvertently active in prod blocking all unauthenticated users. useAuth hook and all auth components remain in place for Phase 4C cutover.",
+    internalChanges: [
+      "Auth gate block (if !_authBypassed + all three authState branches) wrapped in /* */ block comment",
+      "useAuth(), LoginScreen, RequestAccessScreen, PendingApprovalScreen imports untouched — preserved for Phase 4C",
+    ],
+  },
+  {
+    version: '2.2.21',
+    date: 'April 2026',
+    headline: "Absent players filtered out of batting order, PDF, share links, print, and songs view",
+    userChanges: [
+      "Absent players are automatically removed from the batting order on share links, PDF, and print",
+      "Songs Game Day view only shows tonight\u2019s active players in batting order",
+      "Shared lineups show a \u201cNot playing tonight\u201d note at the bottom",
+    ],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
+      "activeBattingOrder derived from battingOrder filtered by absentTonight — single source of truth",
+      "shareCurrentLineup + shareViewerLink: batting \u2192 activeBattingOrder, roster filtered to exclude absent, absentNames field added to payload",
+      "SharedView: player filter pills exclude payload.absentNames; absent note rendered in batting section footer",
+      "renderSongs edit view: absent player cards grayed out (opacity 0.45, pointer-events none) with (Out Tonight) label",
+      "renderSongs game day view: iterates activeBattingOrder for sequential numbering from active players only",
+      "generatePDF: batting section uses activeBattingOrder; absent footnote appended if any absent",
+      "renderPrint: batting grid uses activeBattingOrder; absent note rendered below grid",
+      "NowBattingBar: receives activeBattingOrder; advance/back modulo against activeBattingOrder.length",
+      "GameModeScreen: receives activeBattingOrder; batter advance/back modulo updated",
+    ],
+  },
+  {
+    version: '2.2.19',
+    date: 'April 2026',
+    headline: "Game Day Attendance — mark players out before generating your lineup",
+    userChanges: [
+      "Mark multiple players out before generating lineup",
+      "Attendance syncs across all devices via cloud",
+      "Auto-clears the next game day",
+      "Sync button to pull latest from other devices",
+    ],
+    techNote: "attendanceOverrides stored in Supabase team_data JSON; dual-write localStorage + Supabase mirrors persistRoster pattern; Supabase write non-fatal",
+    internalChanges: [
+      "attendanceOverrides state: global localStorage key 'attendanceOverrides', per-team Supabase sync via team_data.attendance_overrides JSONB column (requires DB migration before Supabase sync activates)",
+      "persistAttendance(): prunes entries older than 3 days, dual-writes localStorage + Supabase via dbSync/dbSaveTeamData — mirrors persistRoster pattern exactly",
+      "toggleAbsentTonight(playerName): adds/removes player name in absentTonight array for today's ISO date key",
+      "generateLineup(): builds rosterForGen with absentTonight players tagged 'absent' before passing to V1/V2 engine — does NOT modify player.tags",
+      "autoFix() in renderGrid: same rosterForGen pattern applied",
+      "useEffect: when absentTonight changes and grid exists, marks absent-tonight players 'Out' in all innings without full re-auto-assign",
+      "Attendance panel in renderGrid: collapsible (auto-open if any absent), above auto-assign buttons; 2-col player grid with ✅ Playing / ❌ Out Tonight toggles; Sync button re-fetches from Supabase",
+      "Guard: disable auto-assign + red banner when (roster.length - absentTonight.length) < 9",
+      "supabase.js: attendance_overrides conditionally added to dbSaveTeamData upsert; returned in dbLoadTeamData",
+    ],
+  },
   {
     version: '2.2.18',
     date: 'April 2026',
@@ -1802,11 +1920,13 @@ function validateGrid(grid, roster, innings) {
     var benchCount = 0;
     for (var pi = 0; pi < players.length; pi++) {
       var p = players[pi];
-      var pos = grid[p] ? grid[p][i] : "";
+      var pos = (grid[p] || [])[i] || "";
       if (!pos) {
         warnings.push({ type:"missing", msg: p + " unassigned in inning " + (i + 1) });
         continue;
       }
+      // absent-tonight players are marked "Out" — skip all validation for them
+      if (pos === "Out") { continue; }
       if (pos === "Bench") {
         benchCount++;
         if (i > 0 && grid[p][i - 1] === "Bench") {
@@ -2111,7 +2231,7 @@ function SharedView({ payload, renderFieldSVG }) {
         {rosterNames.length > 0 ? (
           <div style={{ marginBottom:"12px" }}>
             <PlayerFilterToggle
-              players={rosterNames}
+              players={payload.absentNames && payload.absentNames.length > 0 ? rosterNames.filter(function(n) { return payload.absentNames.indexOf(n) < 0; }) : rosterNames}
               selected={svPlayer}
               onSelect={setSvPlayer}
             />
@@ -2276,6 +2396,11 @@ function SharedView({ payload, renderFieldSVG }) {
                 );
               })}
             </div>
+            {payload.absentNames && payload.absentNames.length > 0 ? (
+              <div style={{ marginTop:"10px", paddingTop:"10px", borderTop:"1px solid rgba(15,31,61,0.08)", fontSize:"11px", color:"#94a3b8", fontStyle:"italic" }}>
+                Not playing tonight: {payload.absentNames.map(function(n) { return n.split(" ")[0]; }).join(", ")}
+              </div>
+            ) : null}
           </div>
         ) : null}
 
@@ -2333,6 +2458,12 @@ export default function App() {
 
   var MERGE_FIELDS = ['scoreReported', 'snackDuty', 'snackNote', 'gameBall'];
 
+  function normalizeGameBall(val) {
+    if (!val || val === "") return [];
+    if (Array.isArray(val)) return val;
+    return [val];
+  }
+
   if (!window._lineupDbBooted && isSupabaseEnabled) {
     window._lineupDbBooted = true;
     dbLoadTeams().then(function(dbTeams) {
@@ -2382,6 +2513,10 @@ export default function App() {
             ? mergeLocalScheduleFields(_dbSchedBoot, _localSchedArr, MERGE_FIELDS)
             : _dbSchedBoot;
           setSchedule(_bootSched);
+          if (dbData.attendanceOverrides && Object.keys(dbData.attendanceOverrides).length > 0) {
+            setAttendanceOverrides(dbData.attendanceOverrides);
+            localStorage.setItem('attendanceOverrides', JSON.stringify(dbData.attendanceOverrides));
+          }
           var bootTeam = merged.find ? merged.find(function(t) { return t.id === bootActiveId; }) : null;
           if (bootTeam) { dbSnapshotRoster(bootActiveId, bootTeam.name, dbData.roster, 'app_load'); }
         }).catch(function(err) {
@@ -2470,7 +2605,7 @@ export default function App() {
                         theirScore:    prev.theirScore    || seed.theirScore,
                         snackDuty:     prev.snackDuty     || seed.snackDuty   || "",
                         snackNote:     prev.snackNote     || seed.snackNote   || "",
-                        gameBall:      prev.gameBall      || seed.gameBall    || "",
+                        gameBall:      normalizeGameBall(prev.gameBall !== undefined && prev.gameBall !== "" ? prev.gameBall : seed.gameBall),
                         scoreReported: prev.scoreReported || seed.scoreReported || false,
                         battingPerf: getLocalBattingPerf(seed.id) || (prev.battingPerf && Object.keys(prev.battingPerf).length > 0
                                      ? prev.battingPerf : (seed.battingPerf || {}))
@@ -2574,7 +2709,7 @@ export default function App() {
                   theirScore:    prev.theirScore     !== undefined ? prev.theirScore    : og.theirScore,
                   battingPerf:   prev.battingPerf    && Object.keys(prev.battingPerf).length > 0 ? prev.battingPerf : og.battingPerf,
                   snackDuty:     prev.snackDuty      !== undefined ? prev.snackDuty     : (og.snackDuty     || ""),
-                  gameBall:      prev.gameBall       !== undefined ? prev.gameBall      : (og.gameBall      || ""),
+                  gameBall:      normalizeGameBall(prev.gameBall !== undefined && prev.gameBall !== "" && !(Array.isArray(prev.gameBall) && prev.gameBall.length === 0) ? prev.gameBall : og.gameBall),
                   scoreReported: prev.scoreReported  !== undefined ? prev.scoreReported : (og.scoreReported || false)
                 });
               });
@@ -2602,12 +2737,17 @@ export default function App() {
   var teams = _teams[0]; var setTeams = _teams[1];
   var _atid = useState(initActiveId);
   var activeTeamId = _atid[0]; var setActiveTeamId = _atid[1];
+  var _liveScoring = useFeatureFlag('live_scoring', activeTeamId);
+  var liveScoringEnabled = _liveScoring.enabled;
   var _primaryTab = useState("home");
   var primaryTab = _primaryTab[0]; var setPrimaryTab = _primaryTab[1];
   var _rosterTab = useState("players");
   var rosterTab = _rosterTab[0]; var setRosterTab = _rosterTab[1];
-  var _gameDayTab = useState("defense");
+  var _gameDayTab = useState("lineups");
   var gameDayTab = _gameDayTab[0]; var setGameDayTab = _gameDayTab[1];
+  var _lineupsSubTab = useState("defense");
+  var lineupsSubTab = _lineupsSubTab[0];
+  var setLineupsSubTab = _lineupsSubTab[1];
   var _seasonTab = useState("schedule");
   var seasonTab = _seasonTab[0]; var setSeasonTab = _seasonTab[1];
   var _teamSubTab = useState("roster");
@@ -2642,7 +2782,7 @@ export default function App() {
   var shareLoading = _shareLoading[0]; var setShareLoading = _shareLoading[1];
 
   const {
-    authState,
+    authState, setAuthState,
     session,
     user,
     membership,
@@ -2888,6 +3028,27 @@ export default function App() {
   var _pinError = useState(""); var pinError = _pinError[0]; var setPinError = _pinError[1];
   var _pinConfirm = useState(""); var pinConfirm = _pinConfirm[0]; var setPinConfirm = _pinConfirm[1];
 
+  // ── Attendance overrides — keyed by ISO date ──────────────────────────────
+  var _attendanceOverrides = useState(function() {
+    try { return JSON.parse(localStorage.getItem('attendanceOverrides') || '{}'); } catch(e) { return {}; }
+  });
+  var attendanceOverrides = _attendanceOverrides[0]; var setAttendanceOverrides = _attendanceOverrides[1];
+  var _attendancePanelOpen = useState(null); // null = auto (open when any absent)
+  var attendancePanelOpen = _attendancePanelOpen[0]; var setAttendancePanelOpen = _attendancePanelOpen[1];
+  var _attendanceSyncing = useState(false);
+  var attendanceSyncing = _attendanceSyncing[0]; var setAttendanceSyncing = _attendanceSyncing[1];
+  var _attendanceSyncMsg = useState('');
+  var attendanceSyncMsg = _attendanceSyncMsg[0]; var setAttendanceSyncMsg = _attendanceSyncMsg[1];
+  // Derived: today's absent list (auto-clears each calendar day since key is YYYY-MM-DD)
+  var _td = new Date();
+  var todayDate = _td.getFullYear() + '-'
+    + String(_td.getMonth() + 1).padStart(2, '0') + '-'
+    + String(_td.getDate()).padStart(2, '0');
+  var absentTonight = attendanceOverrides[todayDate] || [];
+  var activeBattingOrder = battingOrder.filter(function(name) {
+    return absentTonight.indexOf(name) < 0;
+  });
+
   useRegisterSW({
     onRegistered(r) {
       if (r) {
@@ -2922,7 +3083,7 @@ export default function App() {
   var printNotes = _printNotes[0]; var setPrintNotes = _printNotes[1];
   var _songsView = useState("display");
   var songsView = _songsView[0]; var setSongsView = _songsView[1];
-  var _newGame = useState({ date:"", time:"", location:"", opponent:"", result:"", ourScore:"", theirScore:"", battingPerf:{}, snackDuty:"", gameBall:"", scoreReported:false });
+  var _newGame = useState({ date:"", time:"", location:"", opponent:"", result:"", ourScore:"", theirScore:"", battingPerf:{}, snackDuty:"", gameBall:[], gameBallSearch:"", scoreReported:false });
   var newGame = _newGame[0]; var setNewGame = _newGame[1];
   var _editGame = useState(null);
   var editingGame = _editGame[0]; var setEditingGame = _editGame[1];
@@ -3076,6 +3237,54 @@ export default function App() {
       }
       return next;
     });
+  }
+
+  function persistAttendance(overrides) {
+    window._lastLocalWrite = Date.now();
+    // Prune entries older than 3 days
+    var cutoff = new Date(Date.now() - 3 * 86400000).toISOString().slice(0, 10);
+    var pruned = {};
+    var keys = Object.keys(overrides);
+    for (var _ai = 0; _ai < keys.length; _ai++) {
+      if (keys[_ai] >= cutoff) { pruned[keys[_ai]] = overrides[keys[_ai]]; }
+    }
+    setAttendanceOverrides(pruned);
+    localStorage.setItem('attendanceOverrides', JSON.stringify(pruned));
+    if (activeTeamId) {
+      var _pruned = pruned;
+      dbSync(function() { return dbSaveTeamData(activeTeamId, {
+        roster: roster, schedule: schedule, practices: practices,
+        battingOrder: battingOrder, grid: grid, innings: innings, locked: lineupLocked,
+        attendanceOverrides: _pruned
+      }); });
+    }
+  }
+
+  function toggleAbsentTonight(playerName) {
+    var updated = absentTonight.indexOf(playerName) >= 0
+      ? absentTonight.filter(function(n) { return n !== playerName; })
+      : absentTonight.concat([playerName]);
+    var newOverrides = Object.assign({}, attendanceOverrides);
+    newOverrides[todayDate] = updated;
+    persistAttendance(newOverrides);
+  }
+
+  async function syncAttendance() {
+    if (!activeTeamId || !isSupabaseEnabled) return;
+    setAttendanceSyncing(true);
+    try {
+      var dbData = await dbLoadTeamData(activeTeamId);
+      if (dbData && dbData.attendanceOverrides && Object.keys(dbData.attendanceOverrides).length > 0) {
+        setAttendanceOverrides(dbData.attendanceOverrides);
+        localStorage.setItem('attendanceOverrides', JSON.stringify(dbData.attendanceOverrides));
+      }
+      setAttendanceSyncMsg('✓ Synced');
+      setTimeout(function() { setAttendanceSyncMsg(''); }, 1500);
+    } catch(e) {
+      setAttendanceSyncMsg('Sync failed');
+      setTimeout(function() { setAttendanceSyncMsg(''); }, 1500);
+    }
+    setAttendanceSyncing(false);
   }
 
   function persistSchedule(next) {
@@ -3232,8 +3441,9 @@ export default function App() {
       team:    activeTeam ? activeTeam.name + (activeTeam.ageGroup ? " " + activeTeam.ageGroup : "") : "Lineup",
       game:    null,
       grid:    grid,
-      batting: battingOrder,
-      roster:  roster.map(function(r) { return r.name; }),
+      batting: activeBattingOrder,
+      roster:  roster.filter(function(r) { return absentTonight.indexOf(r.name) < 0; }).map(function(r) { return r.name; }),
+      absentNames: absentTonight.length > 0 ? absentTonight.slice() : undefined,
       songs:   (function() {
         var s = {};
         roster.forEach(function(p) {
@@ -3269,8 +3479,9 @@ export default function App() {
       team:    activeTeam ? activeTeam.name + (activeTeam.ageGroup ? " " + activeTeam.ageGroup : "") : "Lineup",
       game:    null,
       grid:    grid,
-      batting: battingOrder,
-      roster:  roster.map(function(r) { return r.name; }),
+      batting: activeBattingOrder,
+      roster:  roster.filter(function(r) { return absentTonight.indexOf(r.name) < 0; }).map(function(r) { return r.name; }),
+      absentNames: absentTonight.length > 0 ? absentTonight.slice() : undefined,
       songs:   {}
     };
     var base = window.location.href.split("?")[0];
@@ -3398,6 +3609,9 @@ export default function App() {
     setLineupDirty(false);
     setLineupLocked(savedLocked);
     setCoachPin(savedPin);
+    var _savedAttendance = {};
+    try { _savedAttendance = JSON.parse(localStorage.getItem('attendanceOverrides') || '{}'); } catch(e) {}
+    setAttendanceOverrides(_savedAttendance);
     setPinSessionUnlocked(false);
     setCurrentBatterIndex(savedBatterIndex);
     setGameModeInning(savedGameModeInning);
@@ -3472,10 +3686,32 @@ export default function App() {
         setInnings(dbData.innings);
         setLineupLocked(dbData.locked);
         setCoachPin(dbData.coachPin || "");
+        if (dbData.attendanceOverrides && Object.keys(dbData.attendanceOverrides).length > 0) {
+          setAttendanceOverrides(dbData.attendanceOverrides);
+          localStorage.setItem('attendanceOverrides', JSON.stringify(dbData.attendanceOverrides));
+        }
         setIsHydrating(false);
       }).catch(function() { setIsHydrating(false); });
     }
   }
+
+  // When absentTonight changes and a grid exists, mark absent players "Out"
+  // in every inning immediately — without requiring a full re-auto-assign.
+  useEffect(function() {
+    if (!activeTeamId || absentTonight.length === 0) return;
+    if (!grid || Object.keys(grid).length === 0) return;
+    var changed = false;
+    var newGrid = {};
+    for (var _gk in grid) { newGrid[_gk] = grid[_gk].slice(); }
+    for (var _abi = 0; _abi < absentTonight.length; _abi++) {
+      var _nm = absentTonight[_abi];
+      if (!newGrid[_nm]) continue;
+      for (var _ii = 0; _ii < innings; _ii++) {
+        if (newGrid[_nm][_ii] !== 'Out') { newGrid[_nm][_ii] = 'Out'; changed = true; }
+      }
+    }
+    if (changed) { persistGrid(newGrid); }
+  }, [absentTonight.join(','), activeTeamId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function createTeam() {
     if (!newTeam.name.trim()) { return; }
@@ -3532,7 +3768,7 @@ export default function App() {
     });
 
     var demoSchedule = [
-      { id:"demo_g_1", date:fmtDate(addDays(-7)),  time:"10:00", location:"Riverside Park", opponent:"Tigers", result:"W", ourScore:"8", theirScore:"3", home:true,  snackDuty:"",           snackNote:"", gameBall:"Jake Martinez", battingPerf:{} },
+      { id:"demo_g_1", date:fmtDate(addDays(-7)),  time:"10:00", location:"Riverside Park", opponent:"Tigers", result:"W", ourScore:"8", theirScore:"3", home:true,  snackDuty:"",           snackNote:"", gameBall:["Jake Martinez"], battingPerf:{} },
       { id:"demo_g_2", date:fmtDate(addDays(5)),   time:"10:00", location:"Memorial Field", opponent:"Sharks", result:"",  ourScore:"",  theirScore:"",  home:false, snackDuty:"Mia Chen",   snackNote:"", gameBall:"", battingPerf:{} },
       { id:"demo_g_3", date:fmtDate(addDays(19)),  time:"14:00", location:"Riverside Park", opponent:"Eagles", result:"",  ourScore:"",  theirScore:"",  home:true,  snackDuty:"",           snackNote:"", gameBall:"", battingPerf:{} },
     ];
@@ -3669,22 +3905,31 @@ export default function App() {
   };
 
   function generateLineup() {
+    // Build a temporary roster with absent-tonight players tagged.
+    // Does NOT modify player.tags — the original roster state is unchanged.
+    var rosterForGen = absentTonight.length === 0 ? roster : roster.map(function(p) {
+      if (absentTonight.indexOf(p.name) < 0) { return p; }
+      var tags = p.tags || [];
+      if (tags.indexOf('absent') >= 0) { return p; }
+      return Object.assign({}, p, { tags: tags.concat(['absent']) });
+    });
+
     let result;
 
     try {
       if (FEATURE_FLAGS.USE_NEW_LINEUP_ENGINE) {
         console.log("[Lineup Engine] Using V2");
-        result = generateLineupV2(roster, innings);
+        result = generateLineupV2(rosterForGen, innings);
         if (result.battingOrder && result.battingOrder.length > 0) {
           persistBatting(result.battingOrder);
         }
       } else {
         console.log("[Lineup Engine] Using V1");
-        result = autoAssignWithRetryFallback(roster, innings);
+        result = autoAssignWithRetryFallback(rosterForGen, innings);
       }
     } catch (e) {
       console.error("[Lineup Engine] V2 failed — fallback to V1", e);
-      result = autoAssignWithRetryFallback(roster, innings);
+      result = autoAssignWithRetryFallback(rosterForGen, innings);
     }
 
     console.log("GRID STRUCTURE:", result.grid);
@@ -3694,7 +3939,7 @@ export default function App() {
     setLastAutoGrid(result.grid);
     setLineupDirty(false);
     setPrimaryTab("gameday");
-    setGameDayTab("defense");
+    setGameDayTab("lineups");
     persistCurrentBatterIndex(0);
     persistGameModeInning(0);
 
@@ -3749,7 +3994,7 @@ export default function App() {
     if (game.result) {
       track("game_result_logged", { team_id: activeTeamId, result: game.result });
     }
-    setNewGame({ date:"", time:"", location:"", opponent:"", result:"", ourScore:"", theirScore:"", battingPerf:{}, snackDuty:"", gameBall:"", scoreReported:false });
+    setNewGame({ date:"", time:"", location:"", opponent:"", result:"", ourScore:"", theirScore:"", battingPerf:{}, snackDuty:"", gameBall:[], gameBallSearch:"", scoreReported:false });
     setShowGameForm(false);
     setEditingGame(null);
   }
@@ -4326,7 +4571,7 @@ export default function App() {
                             <button
                               onClick={function(ngt) { return function() {
                                 loadTeam(ngt);
-                                setTimeout(function() { setPrimaryTab("gameday"); setGameDayTab("defense"); }, 300);
+                                setTimeout(function() { setPrimaryTab("gameday"); setGameDayTab("lineups"); }, 300);
                               }; }(nextGameTeam)}
                               style={{ background:"linear-gradient(135deg,#f5c842,#e6a817)", color:"#0f1f3d", border:"none", borderRadius:"10px", padding:"14px 20px", fontSize:"15px", fontWeight:"bold", cursor:"pointer", width:"100%", fontFamily:"Georgia,serif", letterSpacing:"0.02em", boxShadow:"0 3px 12px rgba(245,200,66,0.35)" }}>
                               ✓ View Lineup
@@ -4347,7 +4592,7 @@ export default function App() {
                           <button
                             onClick={function(ngt, ngg) { return function() {
                               loadTeam(ngt);
-                              setTimeout(function() { setPrimaryTab("gameday"); setGameDayTab("defense"); setTimeout(generateLineup, 100); }, 300);
+                              setTimeout(function() { setPrimaryTab("gameday"); setGameDayTab("lineups"); setTimeout(generateLineup, 100); }, 300);
                             }; }(nextGameTeam, nextGameGlobal)}
                             style={{ background:"linear-gradient(135deg,#f5c842,#e6a817)", color:"#0f1f3d", border:"none", borderRadius:"10px", padding:"14px 20px", fontSize:"15px", fontWeight:"bold", cursor:"pointer", width:"100%", fontFamily:"Georgia,serif", letterSpacing:"0.02em", boxShadow:"0 3px 12px rgba(245,200,66,0.35)" }}>
                             ⚡ Generate Lineup
@@ -4594,7 +4839,7 @@ export default function App() {
           <div style={{ background:"rgba(245,200,66,0.12)", border:"1px solid rgba(245,200,66,0.4)", borderRadius:"8px", padding:"10px 14px", marginBottom:"10px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:"10px", flexWrap:"wrap" }}>
             <div style={{ fontSize:"12px", color:"#92620a", fontWeight:"600", flex:1 }}>⚡ Player profiles updated — regenerate lineup when ready</div>
             <div style={{ display:"flex", gap:"8px", alignItems:"center", flexShrink:0 }}>
-              <button style={{ ...S.btn("gold"), fontSize:"11px", padding:"5px 12px" }} onClick={function() { setPrimaryTab("gameday"); setGameDayTab("defense"); setTimeout(generateLineup, 50); }}>Go & Regenerate</button>
+              <button style={{ ...S.btn("gold"), fontSize:"11px", padding:"5px 12px" }} onClick={function() { setPrimaryTab("gameday"); setGameDayTab("lineups"); setTimeout(generateLineup, 50); }}>Go & Regenerate</button>
               <button style={{ background:"transparent", border:"none", color:"#94a3b8", fontSize:"18px", cursor:"pointer", padding:"0 4px", lineHeight:1 }} onClick={function() { setLineupDirty(false); }}>×</button>
             </div>
           </div>
@@ -5433,6 +5678,128 @@ export default function App() {
     );
   }
 
+  // ============================================================
+  // LINEUPS WRAPPER TAB
+  // ============================================================
+  function renderLineups() {
+    var _panelOpen = attendancePanelOpen !== null
+      ? attendancePanelOpen
+      : absentTonight.length > 0;
+    var _availableCount = roster.length - absentTonight.length;
+
+    return (
+      <div>
+        {/* ── Tonight's Attendance Panel ─── */}
+        {roster.length > 0 && !lineupLocked ? (
+          <div style={{ marginBottom:"14px", borderRadius:"10px", border:"1px solid rgba(15,31,61,0.12)", overflow:"hidden" }}>
+            {/* Header */}
+            <div
+              onClick={function() { setAttendancePanelOpen(_panelOpen ? false : true); }}
+              style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 14px",
+                background:"rgba(15,31,61,0.04)", cursor:"pointer", userSelect:"none" }}
+            >
+              <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
+                <span style={{ fontWeight:700, fontSize:"14px", color:C.navy }}>🏟 Tonight's Attendance</span>
+                {absentTonight.length > 0 ? (
+                  <span style={{ background:"#fee2e2", color:"#dc2626", fontSize:"11px", fontWeight:700, padding:"2px 7px", borderRadius:"10px" }}>
+                    {absentTonight.length} out
+                  </span>
+                ) : null}
+              </div>
+              <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
+                {isSupabaseEnabled ? (
+                  <button
+                    onClick={function(e) { e.stopPropagation(); syncAttendance(); }}
+                    disabled={attendanceSyncing}
+                    title="Pull latest attendance from cloud"
+                    style={{ background:"transparent", border:"none", cursor:attendanceSyncing ? "default" : "pointer",
+                      fontSize:"12px", color:attendanceSyncMsg ? "#27ae60" : C.textMuted, padding:"2px 6px", fontFamily:"inherit" }}
+                  >
+                    {attendanceSyncing ? "⟳…" : attendanceSyncMsg || "⟳ Sync"}
+                  </button>
+                ) : null}
+                <span style={{ fontSize:"12px", color:C.textMuted }}>{_panelOpen ? "▲" : "▼"}</span>
+              </div>
+            </div>
+            {/* Body */}
+            {_panelOpen ? (
+              <div style={{ padding:"10px 12px", display:"flex", flexWrap:"wrap", gap:"6px" }}>
+                {roster.map(function(p) {
+                  var isAbsent = absentTonight.indexOf(p.name) >= 0;
+                  var fn = p.firstName || (p.name ? p.name.split(' ')[0] : p.name);
+                  return (
+                    <div key={p.name} style={{ display:"flex", alignItems:"center", gap:"6px",
+                      width:"calc(50% - 3px)", minWidth:"130px" }}>
+                      <span style={{ fontWeight: isAbsent ? 700 : 400, fontSize:"14px",
+                        color: isAbsent ? "#dc2626" : C.navy,
+                        flex:1, minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                        {fn}
+                      </span>
+                      <button
+                        onClick={function(name) { return function() { toggleAbsentTonight(name); }; }(p.name)}
+                        style={{ fontSize:"11px", fontWeight:600, padding:"4px 8px", borderRadius:"6px",
+                          border:"none", cursor:"pointer", whiteSpace:"nowrap", flexShrink:0,
+                          background: isAbsent ? "#fee2e2" : "rgba(39,174,96,0.1)",
+                          color: isAbsent ? "#dc2626" : "#27ae60" }}
+                      >
+                        {isAbsent ? "❌ Out Tonight" : "✅ Playing"}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
+        {/* ── Low-roster warning ─── */}
+        {absentTonight.length > 0 && _availableCount < 9 ? (
+          <div style={{ background:"#fee2e2", border:"1px solid #fca5a5", borderRadius:"8px",
+            padding:"10px 14px", marginBottom:"10px", color:"#dc2626", fontWeight:600, fontSize:"13px" }}>
+            ⚠ Only {_availableCount} player{_availableCount === 1 ? "" : "s"} available tonight — need at least 9 to field.
+          </div>
+        ) : null}
+
+        {/* ── Defense / Batting sub-sub-tab bar ─── */}
+        <div style={{
+          display:"flex", gap:"6px", marginBottom:"14px",
+          borderBottom:"1px solid rgba(15,31,61,0.1)",
+          paddingBottom:"10px"
+        }}>
+          {[
+            { key:"defense", label:"\u26BE Defense" },
+            { key:"batting", label:"\u2694\uFE0F Batting" }
+          ].map(function(t) {
+            var active = lineupsSubTab === t.key;
+            return (
+              <button
+                key={t.key}
+                onClick={function(k) {
+                  return function() { setLineupsSubTab(k); };
+                }(t.key)}
+                style={{
+                  flex:"0 0 auto", padding:"7px 18px",
+                  borderRadius:"20px", fontSize:"13px",
+                  fontWeight: active ? 700 : 500,
+                  background: active ? "#0f1f3d" : "rgba(15,31,61,0.06)",
+                  color: active ? "#fff" : "#0f1f3d",
+                  border: active ? "none" : "1px solid rgba(15,31,61,0.15)",
+                  cursor:"pointer", transition:"all 0.15s"
+                }}
+              >
+                {t.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* ── Content ─── */}
+        {lineupsSubTab === "defense" ? renderGrid() : null}
+        {lineupsSubTab === "batting" ? renderBatting() : null}
+      </div>
+    );
+  }
+
     // ============================================================
   // FIELD GRID TAB
   // ============================================================
@@ -5470,7 +5837,13 @@ export default function App() {
     }
 
     function autoFix() {
-      var result = autoAssignWithRetryFallback(roster, innings);
+      var rosterForFix = absentTonight.length === 0 ? roster : roster.map(function(p) {
+        if (absentTonight.indexOf(p.name) < 0) { return p; }
+        var tags = p.tags || [];
+        if (tags.indexOf('absent') >= 0) { return p; }
+        return Object.assign({}, p, { tags: tags.concat(['absent']) });
+      });
+      var result = autoAssignWithRetryFallback(rosterForFix, innings);
       persistGrid(result.grid);
       setLineupDirty(false);
       track("auto_assign", {
@@ -5546,6 +5919,8 @@ export default function App() {
     var _bannerReady = _bannerIssues.length === 0;
     // ──────────────────────────────────────────────────────────────────
 
+    var _availableCount = roster.length - absentTonight.length;
+
     return (
       <div>
         {/* ── Lineup Validation Banner ──────────────────────────────── */}
@@ -5561,8 +5936,9 @@ export default function App() {
 
         <div style={{ display:"flex", gap:"8px", marginBottom:"14px", flexWrap:"wrap", alignItems:"center" }}>
           {!lineupLocked ? (
-            <button style={S.btn("gold")} onClick={generateLineup} disabled={isHydrating}>
-              {isHydrating ? "Loading roster..." : "Auto-Assign"}
+            <button style={S.btn("gold")} onClick={generateLineup}
+              disabled={isHydrating || _availableCount < 9}>
+              {isHydrating ? "Loading roster..." : absentTonight.length > 0 ? "Auto-Assign (" + absentTonight.length + " absent)" : "Auto-Assign"}
             </button>
           ) : null}
           {!lineupLocked ? (
@@ -5626,7 +6002,10 @@ export default function App() {
           <div style={{ background:"rgba(245,200,66,0.12)", border:"1px solid rgba(245,200,66,0.4)", borderRadius:"8px", padding:"10px 14px", marginBottom:"10px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:"10px", flexWrap:"wrap" }}>
             <div style={{ fontSize:"12px", color:"#92620a", fontWeight:"600", flex:1 }}>⚡ Roster changed — your lineup may be out of date</div>
             <div style={{ display:"flex", gap:"8px", flexShrink:0 }}>
-              <button style={{ ...S.btn("gold"), fontSize:"11px", padding:"5px 12px" }} onClick={generateLineup} disabled={isHydrating}>Regenerate Lineup</button>
+              <button style={{ ...S.btn("gold"), fontSize:"11px", padding:"5px 12px" }} onClick={generateLineup}
+                disabled={isHydrating || _availableCount < 9}>
+                {absentTonight.length > 0 ? "Regenerate (" + absentTonight.length + " absent)" : "Regenerate Lineup"}
+              </button>
               <button style={{ background:"transparent", border:"none", color:"#94a3b8", fontSize:"18px", cursor:"pointer", padding:"0 4px", lineHeight:1 }} onClick={function() { setLineupDirty(false); }}>×</button>
             </div>
           </div>
@@ -6433,10 +6812,11 @@ export default function App() {
             {battingOrder.map(function(name, idx) {
               var player = roster.find(function(r) { return r.name === name; });
               if (!player) return null;
+              var _isAbsentEdit = absentTonight.indexOf(name) >= 0;
               return (
-                <div key={name} style={{ ...S.card, marginBottom:"8px" }}>
+                <div key={name} style={{ ...S.card, marginBottom:"8px", opacity: _isAbsentEdit ? 0.45 : 1, pointerEvents: _isAbsentEdit ? "none" : "auto" }}>
                   <div style={{ fontWeight:"bold", fontSize:"13px", color:C.navy, marginBottom:"10px" }}>
-                    #{idx + 1} &nbsp; {firstName(name)}
+                    #{idx + 1} &nbsp; {firstName(name)}{_isAbsentEdit ? <span style={{ fontSize:"11px", color:C.red, marginLeft:"8px", fontWeight:"normal" }}>(Out Tonight)</span> : null}
                   </div>
                   <div style={{ display:"grid", gap:"6px" }}>
                     <input
@@ -6497,7 +6877,7 @@ export default function App() {
               ⚡ Order matches current batting lineup. If you update the batting order, tap Edit then return here to re-sync.
             </div>
 
-            {battingOrder.map(function(name, idx) {
+            {activeBattingOrder.map(function(name, idx) {
               var player = roster.find(function(r) { return r.name === name; });
               if (!player) return null;
               var hasSong = player.walkUpSong || player.walkUpArtist || player.walkUpStart || player.walkUpNotes || player.walkUpLink;
@@ -6736,7 +7116,7 @@ export default function App() {
 
         <div style={{ display:"flex", gap:"8px", marginBottom:"14px", flexWrap:"wrap" }}>
           <button style={S.btn("primary")} onClick={function() {
-            setNewGame({ date:"", time:"", location:"", opponent:"", result:"", ourScore:"", theirScore:"", battingPerf:{}, snackDuty:"", gameBall:"", scoreReported:false });
+            setNewGame({ date:"", time:"", location:"", opponent:"", result:"", ourScore:"", theirScore:"", battingPerf:{}, snackDuty:"", gameBall:[], gameBallSearch:"", scoreReported:false });
             setEditingGame(null);
             setShowGameForm(true);
             setImportMode(null);
@@ -6959,6 +7339,51 @@ export default function App() {
                 onChange={function(e) { var g={}; for(var k in newGame){g[k]=newGame[k];} g.snackDuty=e.target.value; setNewGame(g); }}
                 style={S.input} />
             </div>
+            {roster.length > 0 ? (
+              <div style={{ marginBottom:"10px" }}>
+                <div style={{ fontSize:"10px", color:C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:"6px" }}>Game Ball</div>
+                <input type="text" value={newGame.gameBallSearch || ""} placeholder="Search players..."
+                  maxLength={40}
+                  onChange={function(e) { var g={}; for(var k in newGame){g[k]=newGame[k];} g.gameBallSearch=e.target.value; setNewGame(g); }}
+                  style={{ ...S.input, marginBottom:"6px" }} />
+                <div style={{ display:"flex", flexWrap:"wrap", gap:"6px" }}>
+                  {roster
+                    .slice()
+                    .sort(function(a,b){ return (a.firstName||a.name||'').toLowerCase().localeCompare((b.firstName||b.name||'').toLowerCase()); })
+                    .filter(function(p) {
+                      var q = (newGame.gameBallSearch || "").toLowerCase();
+                      return !q || (p.firstName||p.name||'').toLowerCase().includes(q);
+                    })
+                    .map(function(p) {
+                      var pname = p.firstName || p.name || '';
+                      var sel = Array.isArray(newGame.gameBall) && newGame.gameBall.includes(pname);
+                      return (
+                        <button key={pname}
+                          onClick={function(n) { return function() {
+                            var g={}; for(var k in newGame){g[k]=newGame[k];}
+                            var current = Array.isArray(g.gameBall) ? g.gameBall : [];
+                            var isSelected = current.includes(n);
+                            g.gameBall = isSelected ? current.filter(function(x){ return x !== n; }) : current.concat(n);
+                            setNewGame(g);
+                          }; }(pname)}
+                          style={{ padding:"4px 10px", borderRadius:"16px",
+                            border: sel ? "2px solid #1B2A4A" : "1.5px solid #ccc",
+                            background: sel ? "#1B2A4A" : "#fff",
+                            color: sel ? "#fff" : "#333",
+                            fontSize:"13px", cursor:"pointer", fontWeight: sel ? 600 : 400 }}>
+                          {pname}
+                        </button>
+                      );
+                    })
+                  }
+                </div>
+                {Array.isArray(newGame.gameBall) && newGame.gameBall.length > 0 && (
+                  <div style={{ fontSize:"12px", color:"#1B2A4A", marginTop:"4px" }}>
+                    🏆 {newGame.gameBall.join(', ')}
+                  </div>
+                )}
+              </div>
+            ) : null}
             <div style={{ marginBottom:"10px" }}>
               <div style={{ fontSize:"10px", color:C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:"6px" }}>Result</div>
               <div style={{ display:"flex", gap:"6px" }}>
@@ -7279,18 +7704,14 @@ export default function App() {
                               <button onClick={function(gid) { return function() { clearSnackAssignment(gid); }; }(game.id)}
                                 style={{ background:"none", border:"none", cursor:"pointer", fontSize:"12px", color:C.textMuted, padding:"1px 3px", lineHeight:1 }} title="Clear">✕</button>
                             )}
-                            <span style={{ fontSize:"11px", color:C.textMuted, flexShrink:0 }}>{(activeTeam && (activeTeam.sport || "baseball").toLowerCase() === "softball") ? "🥎" : "⚾"} Game Ball</span>
-                            <select
-                              value={game.gameBall || ""}
-                              onChange={function(gid) { return function(e) {
-                                updateSnackField(gid, "gameBall", e.target.value);
-                              }; }(game.id)}
-                              style={{ flex:"1 1 110px", minWidth:"100px", padding:"3px 6px", borderRadius:"5px", border:"1px solid rgba(15,31,61,0.15)", fontSize:"12px", fontFamily:"inherit", background:C.cardBg, color: game.gameBall ? C.text : C.textMuted }}>
-                              <option value="">— select player —</option>
-                              {roster.slice().sort(function(a,b){ return (a.firstName||a.name||'').toLowerCase().localeCompare((b.firstName||b.name||'').toLowerCase()); }).map(function(p) {
-                                return <option key={p.name} value={p.firstName || p.name}>{p.firstName || p.name}</option>;
-                              })}
-                            </select>
+                            <div style={{marginTop:'6px'}}>
+                              <span style={{fontSize:'12px',color:'#666',fontWeight:500}}>🏆 Game Ball: </span>
+                              <span style={{fontSize:'13px',color:'#1B2A4A',fontWeight: Array.isArray(game.gameBall) && game.gameBall.length > 0 ? 600 : 400}}>
+                                {Array.isArray(game.gameBall) && game.gameBall.length > 0
+                                  ? game.gameBall.join(', ')
+                                  : <span style={{color:'#aaa'}}>—</span>}
+                              </span>
+                            </div>
                           </div>
                         </div>
                       );
@@ -7766,13 +8187,13 @@ export default function App() {
           var batColW = contentW / batCols;
 
           // Pre-compute per-player row heights (taller if song data exists)
-          var batRowHeights = battingOrder.map(function(bn) {
+          var batRowHeights = activeBattingOrder.map(function(bn) {
             var sp = roster.find(function(r) { return r.name === bn; });
             return (sp && (sp.walkUpSong || sp.walkUpArtist)) ? 14 : 9;
           });
 
           // Compute y offsets per logical row (rows are pairs of players)
-          var batRowCount = Math.ceil(battingOrder.length / batCols);
+          var batRowCount = Math.ceil(activeBattingOrder.length / batCols);
           var batRowYOffsets = [0];
           for (var bri = 0; bri < batRowCount - 1; bri++) {
             var leftH  = batRowHeights[bri * batCols]     || 9;
@@ -7780,8 +8201,8 @@ export default function App() {
             batRowYOffsets.push(batRowYOffsets[bri] + Math.max(leftH, rightH));
           }
 
-          for (var bi = 0; bi < battingOrder.length; bi++) {
-            var bname = battingOrder[bi];
+          for (var bi = 0; bi < activeBattingOrder.length; bi++) {
+            var bname = activeBattingOrder[bi];
             var col = bi % batCols;
             var row = Math.floor(bi / batCols);
             var bx = margin + col * batColW;
@@ -7847,6 +8268,16 @@ export default function App() {
           }
           var totalBatH = batRowYOffsets[batRowCount - 1] + (Math.max(batRowHeights[(batRowCount-1)*batCols] || 9, batRowHeights[(batRowCount-1)*batCols+1] || 9));
           y += totalBatH + 4;
+          if (absentTonight.length > 0) {
+            doc.setFontSize(6.5);
+            doc.setFont("helvetica", "italic");
+            doc.setTextColor(150, 150, 150);
+            var _absentNote = "* Not in tonight\u2019s lineup: " + absentTonight.map(function(n) { return n.split(" ")[0]; }).join(", ");
+            doc.text(_absentNote, margin, y);
+            y += 4;
+            doc.setTextColor(0, 0, 0);
+            doc.setFont("helvetica", "normal");
+          }
         }
 
         // ── Footer ──────────────────────────────────────────────
@@ -8314,9 +8745,9 @@ export default function App() {
               onClick={function() { setShowShareSheet(true); }}>
               <span>📤</span> Share Lineup
             </button>
-            {/* Edit Lineup — jumps to Defense tab */}
+            {/* Edit Lineup — jumps to Lineups tab */}
             <button style={{ ...S.btn("gold"), display:"flex", alignItems:"center", gap:"6px" }}
-              onClick={function() { setGameDayTab("defense"); }}>
+              onClick={function() { setGameDayTab("lineups"); }}>
               <span>✏️</span> Edit Lineup
             </button>
             {/* Finalize — only when unlocked */}
@@ -8540,7 +8971,7 @@ export default function App() {
                 Players are listed in batting order. To change the order, update the Batting tab first.
               </div>
               <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))", gap:"6px" }}>
-                {battingOrder.map(function(name, idx) {
+                {activeBattingOrder.map(function(name, idx) {
                   var info = null;
                   for (var ri = 0; ri < roster.length; ri++) { if (roster[ri].name === name) { info = roster[ri]; break; } }
                   var fieldPos = [];
@@ -8580,6 +9011,11 @@ export default function App() {
                   );
                 })}
               </div>
+              {absentTonight.length > 0 ? (
+                <div style={{ marginTop:"10px", paddingTop:"8px", borderTop:"1px solid rgba(15,31,61,0.08)", fontSize:"10px", color:"#94a3b8", fontStyle:"italic" }}>
+                  Not playing tonight: {absentTonight.map(function(n) { return n.split(" ")[0]; }).join(", ")}
+                </div>
+              ) : null}
             </div>
           ) : null}
         </div>
@@ -8638,42 +9074,48 @@ export default function App() {
     );
   }
 
-  /* AUTH GATE — commented out for local dev (no Supabase session required)
-  if (authState === 'loading') {
-    return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center',
-                    justifyContent: 'center', backgroundColor: '#f8fafc' }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '32px', marginBottom: '12px' }}>⚾</div>
-          <p style={{ color: '#64748b', fontSize: '14px' }}>Loading…</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (authState === 'unauthenticated') {
-    if (authScreen === 'request') {
+  // AUTH GATE — parked. Not active in prod until Phase 4C cutover is confirmed.
+  // Do NOT uncomment without explicit Phase 4C sign-off.
+  /*
+  // AUTH GATE
+  // Dev-only bypass: in browser console run `localStorage.setItem('auth_bypass','1')`
+  // then reload. `import.meta.env.DEV` is false in production builds — Vite removes this.
+  var _authBypassed = import.meta.env.DEV && localStorage.getItem('auth_bypass') === '1';
+  if (!_authBypassed) {
+    if (authState === 'loading') {
       return (
-        <RequestAccessScreen
-          onBack={() => setAuthScreen('login')}
-          requestAccess={requestAccess}
+        <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center',
+                      justifyContent: 'center', backgroundColor: '#f8fafc' }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '32px', marginBottom: '12px' }}>⚾</div>
+            <p style={{ color: '#64748b', fontSize: '14px' }}>Loading…</p>
+          </div>
+        </div>
+      );
+    }
+    if (authState === 'unauthenticated') {
+      if (authScreen === 'request') {
+        return (
+          <RequestAccessScreen
+            onBack={() => setAuthScreen('login')}
+            requestAccess={requestAccess}
+          />
+        );
+      }
+      return (
+        <LoginScreen
+          onRequestAccess={() => setAuthScreen('request')}
+          sendMagicLink={sendMagicLink}
         />
       );
     }
-    return (
-      <LoginScreen
-        onRequestAccess={() => setAuthScreen('request')}
-        sendMagicLink={sendMagicLink}
-      />
-    );
-  }
-
-  if (authState === 'pending_approval') {
-    return (
-      <PendingApprovalScreen
-        onTryLogin={() => setAuthScreen('login')}
-      />
-    );
+    if (authState === 'pending_approval') {
+      return (
+        <PendingApprovalScreen
+          onTryLogin={() => setAuthState('unauthenticated')}
+        />
+      );
+    }
   }
   */
 
@@ -8690,19 +9132,18 @@ export default function App() {
 
   var PRIMARY_TABS = [
     { key:"home",    label:"Home",     icon:"🏠" },
-    { key:"team",    label:"Team",     icon:"👥" },
+    { key:"team",    label:"My Team",  icon:"👥" },
     { key:"gameday", label:"Game Day", icon:"🏟" },
+    liveScoringEnabled ? { key:"scoring", label:"Scoring", icon:"\u26BE" } : null,
     { key:"more",    label:"Support",  icon:"⚙️" },
-  ];
+  ].filter(Boolean);
   var ROSTER_SUBTABS = [
     { key:"players", label:"Players" },
     { key:"songs",   label:"Songs"   },
   ];
   var GAMEDAY_SUBTABS = [
-    { key:"defense",  label:"Defense" },
-    { key:"batting",  label:"Batting" },
-    { key:"lineups",  label:"Lineups" },
-    { key:"songs",    label:"Songs"   },
+    { key:"lineups",  label:"Lineups"             },
+    { key:"songs",    label:"Songs"               },
     { key:"gamemode", label:"GAME MODE", launcher:true },
   ];
   var SEASON_SUBTABS = [
@@ -8880,9 +9321,7 @@ export default function App() {
             />
           ) : null}
         </ErrorBoundary>
-        {primaryTab === "gameday" && !parentViewActive && gameDayTab === "defense" ? renderGrid()    : null}
-        {primaryTab === "gameday" && !parentViewActive && gameDayTab === "batting" ? renderBatting() : null}
-        {primaryTab === "gameday" && !parentViewActive && gameDayTab === "lineups" ? renderPrint()   : null}
+        {primaryTab === "gameday" && !parentViewActive && gameDayTab === "lineups" ? renderLineups() : null}
         {primaryTab === "gameday" && !parentViewActive && gameDayTab === "songs"   ? renderSongs()   : null}
       </ErrorBoundary>
       {primaryTab === "more" && moreTab === "feedback" ? renderFeedback() : null}
@@ -8891,6 +9330,17 @@ export default function App() {
       {primaryTab === "more" && moreTab === "updates"  ? renderUpdates()  : null}
       {primaryTab === "more" && moreTab === "legal"    ? <LegalSection C={C} S={S} /> : null}
       {primaryTab === "more" && moreTab === "faq"      ? <FAQSection C={C} S={S} />   : null}
+      {primaryTab === "scoring" && liveScoringEnabled ? (
+        <ScoringMode
+          activeTeam={activeTeam}
+          activeTeamId={activeTeamId}
+          user={user}
+          schedule={schedule}
+          roster={roster}
+          battingOrder={battingOrder}
+          onClose={function() { setPrimaryTab("gameday"); }}
+        />
+      ) : null}
     </div>
   );
 
@@ -9140,17 +9590,17 @@ export default function App() {
         </div>
       </div>
       <ErrorBoundary fallback="Now Batting">
-        {!gameModeActive && primaryTab === "gameday" && battingOrder && battingOrder.length > 0 ? (
+        {!gameModeActive && primaryTab === "gameday" && activeBattingOrder && activeBattingOrder.length > 0 ? (
           <NowBattingBar
-            battingOrder={battingOrder}
+            battingOrder={activeBattingOrder}
             currentIndex={currentBatterIndex}
             activeInning={diamondInning !== null ? diamondInning + 1 : null}
             roster={roster}
             onAdvance={function() {
-              persistCurrentBatterIndex((currentBatterIndex + 1) % battingOrder.length);
+              persistCurrentBatterIndex((currentBatterIndex + 1) % activeBattingOrder.length);
             }}
             onBack={function() {
-              persistCurrentBatterIndex((currentBatterIndex - 1 + battingOrder.length) % battingOrder.length);
+              persistCurrentBatterIndex((currentBatterIndex - 1 + activeBattingOrder.length) % activeBattingOrder.length);
             }}
           />
         ) : null}
@@ -9195,17 +9645,18 @@ export default function App() {
           teamId={activeTeamId}
           roster={roster}
           grid={grid}
-          battingOrder={battingOrder}
+          battingOrder={activeBattingOrder}
           innings={innings}
           sport={activeTeam ? activeTeam.sport : "baseball"}
+          absentTonight={absentTonight}
           currentBatterIndex={currentBatterIndex}
           initialInning={gameModeInning}
           onSwap={gameModeSwap}
           onBatterAdvance={function() {
-            persistCurrentBatterIndex((currentBatterIndex + 1) % battingOrder.length);
+            persistCurrentBatterIndex((currentBatterIndex + 1) % activeBattingOrder.length);
           }}
           onBatterBack={function() {
-            persistCurrentBatterIndex((currentBatterIndex - 1 + battingOrder.length) % battingOrder.length);
+            persistCurrentBatterIndex((currentBatterIndex - 1 + activeBattingOrder.length) % activeBattingOrder.length);
           }}
           onInningChange={persistGameModeInning}
           onBatterReset={function() {
