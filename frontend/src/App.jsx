@@ -141,9 +141,25 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.2.31";
+var APP_VERSION = "2.2.33";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.2.33',
+    date: 'April 2026',
+    headline: "Governance infrastructure — Feature Map, Debt Ledger, and Ship Gate ritual added",
+    userChanges: [],
+    techNote: "Meta-governance release. No app code changes.",
+    internalChanges: [
+      "Added docs/product/FEATURE_MAP.md — authoritative feature-to-doc-to-test mapping (18 feature rows)",
+      "Added docs/product/DOC_TEST_DEBT.md — debt ledger with 21 known gaps (2 P0, 8 P1, 11 P2)",
+      "CLAUDE.md: added Ship Gate four-question ritual, Audit Cadence section, Feature Map Update Rules, updated Session Start Command to 8 steps, added Ship Gate as Deploy Checklist STEP 0, corrected test count to 261/1/0",
+      "MASTER_DEV_REFERENCE.md: updated Session Start Command to 8 steps, added FEATURE_MAP.md and DOC_TEST_DEBT.md to Key File Locations, updated Document Governance table",
+      ".claude/settings.local.json + frontend/.claude/settings.local.json: untracked (already in .gitignore — git rm --cached applied)",
+      "Identified root cause of v2.2.31 scope creep: git add -A picked up pre-existing untracked CHARTER.md and ONE_PAGER.md. Fix: always stage specific files by path in deploy checklist (updated above)",
+      "stash@{0} (ide-settings-noise) dropped — .gitignore already covers settings.local.json",
+    ],
+  },
   {
     version: '2.2.31',
     date: 'April 2026',

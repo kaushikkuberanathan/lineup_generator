@@ -13,11 +13,16 @@
 ## Session Start Command (Run Every Session)
 In the lineup generator project:
 
-Run: git status — show any uncommitted changes
-Run: git log --oneline -5 — show last 5 commits
-Show current APP_VERSION from frontend/src/App.jsx
-Show current version from frontend/package.json
-All four outputs before we start any work.
+1. Run: git status — show any uncommitted changes and untracked files
+2. Run: git log --oneline -5 — show last 5 commits
+3. Run: git stash list — check for WIP stashes that need cleanup before starting
+4. Show: APP_VERSION from frontend/src/App.jsx (line 144)
+5. Show: version from frontend/package.json
+6. Show: open P0 items from docs/product/DOC_TEST_DEBT.md (lines containing "P0" with no "✅ Resolved")
+7. Confirm: neither .claude/settings.local.json nor frontend/.claude/settings.local.json is tracked by git (run: git ls-files .claude/settings.local.json frontend/.claude/settings.local.json — output should be empty)
+8. State: the session goal and whether it is Ship Gate exempt (meta-governance or [hotfix-exception])
+
+All eight outputs before starting any work.
 
 
 ---
@@ -260,7 +265,9 @@ docs/product/ROADMAP.md                 — roadmap + version log
 docs/product/MASTER_DEV_REFERENCE.md   — this file
 docs/product/CHARTER.md                 — product charter (vision, scope, personas, metrics, principles, risks, governance)
 docs/product/ONE_PAGER.md              — single-page scannable product summary
-CLAUDE.md                               — project rules + version history
+docs/product/FEATURE_MAP.md             — authoritative feature-to-doc-to-test mapping (18 features)
+docs/product/DOC_TEST_DEBT.md           — documentation and test debt ledger (P0/P1/P2 items)
+CLAUDE.md                               — project rules + Ship Gate + version history
 
 ---
 
@@ -274,7 +281,9 @@ Product documents are versioned alongside the app. Both CHARTER.md and ONE_PAGER
 | `ONE_PAGER.md` | Monthly | Phase status changes, non-goal updates |
 | `ROADMAP.md` | Every release | Required in deploy checklist |
 | `CLAUDE.md` | Every release + rule changes | Required in deploy checklist |
-| `PERSONAS.md` | On phase transitions | Refresh pending v2.2.32 |
+| `PERSONAS.md` | On phase transitions | Last refreshed v2.2.31 (8-persona rewrite) |
+| `FEATURE_MAP.md` | Every release + feature change | See CLAUDE.md § Feature Map Update Rules |
+| `DOC_TEST_DEBT.md` | Every other session (Audit Cadence) | See CLAUDE.md § Audit Cadence |
 
 **Version bump rule:** On any phase change, update CHARTER.md version header, ONE_PAGER.md version header, and the Phase Status table in ONE_PAGER.md before the release commit.
 

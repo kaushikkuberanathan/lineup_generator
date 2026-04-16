@@ -1,9 +1,16 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: April 16, 2026 (v2.2.31)
+> Last updated: April 16, 2026 (v2.2.33)
 > MVP launched: March 24, 2026
 
 ---
+
+## v2.2.33 — 2026-04-16 — Meta-governance: Feature Map, Debt Ledger, Ship Gate
+- Added `docs/product/FEATURE_MAP.md` — authoritative feature-to-doc-to-test mapping (18 feature rows)
+- Added `docs/product/DOC_TEST_DEBT.md` — debt ledger with 21 known gaps (2 P0, 8 P1, 11 P2)
+- CLAUDE.md: Ship Gate four-question ritual, Audit Cadence, Feature Map Update Rules, 8-step Session Start Command, STEP 0 Ship Gate in Deploy Checklist
+- MASTER_DEV_REFERENCE.md: 8-step Session Start Command, updated Document Governance table
+- `.claude/settings.local.json` files untracked (already in .gitignore); v2.2.31 scope creep root cause documented
 
 ## v2.2.31 — 2026-04-16 — Docs-only: FAQ, Personas, Solution Design drift repaired
 - FAQ: added Attendance and multi-player Game Ball answers (Head Coach category)

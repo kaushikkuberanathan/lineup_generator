@@ -157,16 +157,31 @@ Three guards in place:
 - **DEV**: `dev.dugoutlineup.com` → `lineup-generator-backend-dev.onrender.com`
 
 ### Pre-deploy Checklist (all required)
+
+**STEP 0 — Ship Gate (answer before anything else):**
+Is this release exempt from Ship Gate?
+  - Exempt types: meta-governance (docs-only, no app code changes) · hotfix (`[hotfix-exception]` in commit message)
+  - Not exempt: answer the four Ship Gate questions below before proceeding
+
+Four questions (non-exempt releases only):
+1. Does every feature touched in this release have a golden-path test?
+2. Does every touched feature have documentation reflecting current behavior?
+3. Does `docs/product/FEATURE_MAP.md` have a current row for every touched feature?
+4. Are all P0 items in `docs/product/DOC_TEST_DEBT.md` resolved or explicitly unblocked for this change?
+
+If any answer is "no": stop. Document the gap in DOC_TEST_DEBT.md, then decide whether to proceed.
+
+**Remaining steps:**
 1. Bump `APP_VERSION` in `frontend/src/App.jsx`
 2. Prepend to `VERSION_HISTORY` (dual-layer schema — see below)
 3. Bump version in `frontend/package.json` AND `backend/package.json`
 4. Update `docs/product/ROADMAP.md`
 5. Update `CLAUDE.md` version entry
 6. Run `cd frontend && npm run build` — must be clean
-7. `git add -A && commit && push`
+7. Stage **specific files by path** — never `git add -A` (risks picking up unrelated untracked files)
 8. [x] loginLimiter: 15min window, max 5 — applied to POST /magic-link ✓
 9. [ ] Confirm `RESEND_DOMAIN_VERIFIED=true` in Render env vars (only after domain verified)
-10. [ ] Run `npm test` — confirm 257 passed / 1 skipped / 0 failed
+10. [ ] Run `npm test` — confirm 261 passed / 1 skipped / 0 failed
 
 ### VERSION_HISTORY Schema (dual-layer — both required)
 ```js
@@ -368,8 +383,62 @@ three shims are removed and auth is confirmed working end-to-end.
 
 ---
 
+## Ship Gate
+
+Before shipping any non-exempt release, answer these four questions:
+
+1. Does every feature touched in this release have a test covering the golden path?
+2. Does every touched feature have documentation reflecting current behavior?
+3. Does `docs/product/FEATURE_MAP.md` have a current row for every touched feature?
+4. Are all P0 items in `docs/product/DOC_TEST_DEBT.md` resolved or explicitly unblocked?
+
+If any answer is "no" — **stop**. Document the debt, then decide whether to proceed.
+
+**Exempt release types** (no Ship Gate required):
+- **Meta-governance** — docs-only, zero app code changes. Use `techNote: "Meta-governance release."` in VERSION_HISTORY.
+- **Hotfix** — must include `[hotfix-exception]` in the commit message body with one sentence explaining why the gate is bypassed.
+
+The Ship Gate exists because we've shipped broken features before. Treat it as a ritual, not bureaucracy.
+
+---
+
+## Audit Cadence
+
+Run this checklist every other session (minimum once per week):
+
+1. Open `docs/product/DOC_TEST_DEBT.md`
+2. Are any P0 items still open? → Block next code release for that feature until resolved
+3. Are any P1 items now resolved? → Add `✅ Resolved vX.X.X — [what fixed it]` and move to Resolved section
+4. Did this session introduce any new documentation or test gaps? → Add debt items now, not later
+5. Did this session change any feature's behavior? → Update `docs/product/FEATURE_MAP.md` row for that feature
+
+This audit takes 5 minutes and saves hours of confusion at the next session start.
+
+---
+
+## Feature Map Update Rules
+
+`docs/product/FEATURE_MAP.md` is the authoritative feature-to-doc-to-test registry.
+
+**Update it whenever:**
+- A new feature ships → add a row with honest Doc/Test status
+- A feature's behavior changes → set Doc Status to `⚠ Stale` until docs are repaired
+- Documentation for a feature is repaired → flip Doc Status to `✅ Current`
+- Tests for a feature are added or changed → flip Test Status to `✅ Yes` or `⚠ Partial`
+- A debt item is created → add the ID to the Debt column
+- A debt item is resolved → remove the ID and update Test/Doc status
+
+**Column meanings:**
+- **Doc Status**: `✅ Current` = docs match current behavior · `⚠ Stale` = docs lag behind code · `❌ Missing` = no docs exist
+- **Test Status**: `✅ Yes` = golden path covered · `⚠ Partial` = some paths covered · `❌ None` = no automated tests
+
+---
+
 ## Current Version
-**v2.2.31** — April 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/App.jsx`.
+**v2.2.33** — April 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/App.jsx`.
+
+- v2.2.33 (2026-04-16): Meta-governance — Feature Map (18 features), Debt Ledger (21 gaps), Ship Gate ritual, 8-step Session Start Command, settings.local.json untracked.
+- v2.2.31 (2026-04-16): Docs-only — FAQ repaired (Attendance, Game Ball, Scorekeeper category, Spotify deep-link, install banner, Google sign-in). PERSONAS.md rewritten to 8 personas. SOLUTION_DESIGN.md Auth Architecture section rewritten (Phase 2, Twilio tags removed). Full version history in `VERSION_HISTORY` constant in `frontend/src/App.jsx`.
 
 - v2.2.31 (2026-04-16): Docs-only — FAQ repaired (Attendance, Game Ball, Scorekeeper category, Spotify deep-link, install banner, Google sign-in). PERSONAS.md rewritten to 8 personas. SOLUTION_DESIGN.md Auth Architecture section rewritten (Phase 2, Twilio tags removed).
 - v2.2.30 (2026-04-16): Out Tonight players visible in red across all 11 lineup surfaces — diamond SVG, defense grid, Game Mode strip, share link, PDF.
