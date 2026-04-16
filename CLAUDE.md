@@ -97,6 +97,20 @@ Viewing lineup and share links must **never** require login. Auth must never blo
 ### Phase 4 Cutover (parked)
 Full checklist: `docs/ops/PHASE4_PRECHECK.md`. Do NOT run `backend/migrations/004_rls_fixes.sql` until cutover — will break anon writes coaches rely on today.
 
+### Phase 4C Auth Cutover — Live Scoring cleanup (do at cutover, not before)
+Three shims to remove when real auth goes live:
+
+1. **`frontend/src/hooks/useLiveScoring.js`** — remove `_effectiveUserId`/`_effectiveUserName` fallback block (marked `AUTH TESTING SHIM`). After removal, `userId`/`userName` from params flow directly into all Supabase writes.
+
+2. **`frontend/src/components/ScoringMode/index.jsx`** — remove `scoringUserId`/`scoringUserName` fallback block + `isAdminTestMode` (marked `AUTH TESTING SHIM`). Replace with `var scoringUserId = user.id` and `var scoringUserName = user.profile.first_name`. Also remove `|| true` from `var isEnabled = liveScoringEnabled || true` — flag must be the sole gate.
+
+3. **Supabase SQL** — swap anon RLS policies on live scoring tables for proper `auth.uid()` policies:
+   ```sql
+   DROP POLICY "scorer_lock_anon_test" ON game_scoring_sessions;
+   -- repeat for live_game_state, scoring_audit_log, and any other live scoring tables
+   -- Re-add policies scoped to auth.uid() matching scorer_user_id/team membership
+   ```
+
 ---
 
 ## Zero-Downtime Constraint (CRITICAL)
@@ -308,4 +322,4 @@ All major sections wrapped with `<ErrorBoundary>` (`src/components/Shared/ErrorB
 ---
 
 ## Current Version
-**v2.2.26** — April 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/App.jsx`.
+**v2.2.28** — April 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/App.jsx`.
