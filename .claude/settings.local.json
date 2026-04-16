@@ -24,7 +24,9 @@
       "Bash(dir frontend\\\\.env* /b)",
       "Bash(ls frontend/.env*)",
       "Bash(jobs -l)",
-      "Bash(export PATH=\"/c/Program Files/nodejs:$PATH\")"
+      "Bash(export PATH=\"/c/Program Files/nodejs:$PATH\")",
+      "Bash(git log:*)",
+      "Bash(npm test *)"
     ]
   }
 }

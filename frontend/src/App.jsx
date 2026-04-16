@@ -141,9 +141,30 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.2.29";
+var APP_VERSION = "2.2.30";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.2.30',
+    date: 'April 2026',
+    headline: "Absent players now clearly visible across all lineup views",
+    userChanges: [
+      "Players marked out tonight now show in the bench section with a red indicator on the diamond, defense grid, shared link, and PDF",
+    ],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
+      "renderFieldSVG (App.jsx): outPlayers computed from grid; SVG text rendered in red below bench slot",
+      "DefenseDiamond.jsx: outNames computed alongside benchNames in SVG bench box; outByInning/outDisplay alongside benchByInning/benchDisplay; red Out rows added to bench strip table",
+      "GameModeScreen.jsx: Out Tonight red strip inserted between diamond and batting footer",
+      "renderGrid (App.jsx): Bench cell now renders Out players as red pills below bench pills",
+      "SharedView table view (App.jsx): Out pill rendered as red #fee2e2/#dc2626 instead of grey position pill",
+      "SharedView batting card (App.jsx): Out inning renders as 'OUT' in red in per-player position string",
+      "SharedView bench table (App.jsx): outByInning/outDisplay computed; red Out rows added after bench rows",
+      "PDF bench strip (App.jsx): Out Tonight header row + Out player rows added in red below bench",
+      "PDF grid table (App.jsx): Out cell rendered as light-red pill with 'OUT' in red",
+      "PDF batting card (App.jsx): Out inning shown as 'OUT'; positions row turns red/bold when any inning is Out",
+    ],
+  },
   {
     version: '2.2.29',
     date: 'April 2026',
@@ -2213,7 +2234,11 @@ function SharedView({ payload, renderFieldSVG }) {
   var benchByInning = innArr.map(function(ii) {
     return rosterNames.filter(function(n) { return (payload.grid[n] || [])[ii] === "Bench"; });
   });
+  var outByInning = innArr.map(function(ii) {
+    return rosterNames.filter(function(n) { return (payload.grid[n] || [])[ii] === "Out"; });
+  });
   var benchDisplay   = svInn !== null ? [benchByInning[svInn] || []] : benchByInning;
+  var outDisplay     = svInn !== null ? [outByInning[svInn] || []]   : outByInning;
   var benchLabels    = svInn !== null ? [svInn] : innArr;
   function getSharedPlayerFn(pos, inn) {
     for (var pi = 0; pi < rosterNames.length; pi++) {
@@ -2327,6 +2352,8 @@ function SharedView({ payload, renderFieldSVG }) {
                     {(function() {
                       var maxB = 0;
                       for (var di = 0; di < benchDisplay.length; di++) { if (benchDisplay[di].length > maxB) maxB = benchDisplay[di].length; }
+                      var maxOut = 0;
+                      for (var doi = 0; doi < outDisplay.length; doi++) { if (outDisplay[doi].length > maxOut) maxOut = outDisplay[doi].length; }
                       var rows = [];
                       for (var r = 0; r < maxB; r++) {
                         rows.push(
@@ -2337,6 +2364,33 @@ function SharedView({ payload, renderFieldSVG }) {
                             })}
                           </tr>
                         );
+                      }
+                      if (maxOut > 0) {
+                        rows.push(
+                          <tr key="out-hdr">
+                            {benchLabels.map(function(lbl) {
+                              return (
+                                <td key={lbl} style={{ padding:"3px 10px", textAlign:"center",
+                                  borderTop:"2px solid rgba(220,38,38,0.3)",
+                                  background:"rgba(220,38,38,0.05)",
+                                  fontSize:"9px", fontWeight:"bold", color:"#dc2626",
+                                  letterSpacing:"0.08em", textTransform:"uppercase" }}>
+                                  Out
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        );
+                        for (var or = 0; or < maxOut; or++) {
+                          rows.push(
+                            <tr key={"out-" + or}>
+                              {benchLabels.map(function(lbl, ci) {
+                                var pn = outDisplay[ci][or] || "";
+                                return <td key={lbl} style={{ padding:"4px 10px", textAlign:"center", borderBottom:"1px solid rgba(220,38,38,0.08)", fontWeight:"bold", color: pn ? "#dc2626" : "#ccc", background:"rgba(220,38,38,0.04)" }}>{pn ? firstName(pn) : "-"}</td>;
+                              })}
+                            </tr>
+                          );
+                        }
                       }
                       return rows;
                     })()}
@@ -2369,7 +2423,13 @@ function SharedView({ payload, renderFieldSVG }) {
                           var pos = (payload.grid[name] || [])[i] || "";
                           return (
                             <td key={i} style={{ padding:"4px 6px", textAlign:"center", borderBottom:"1px solid rgba(15,31,61,0.04)" }}>
-                              {pos ? <span style={{ display:"inline-block", padding:"2px 5px", borderRadius:"4px", fontWeight:"bold", fontSize:"11px", background:(POS_COLORS[pos]||"#555")+"cc", color:"#fff" }}>{pos}</span> : <span style={{ color:"#ccc" }}>-</span>}
+                              {pos === "Out" ? (
+                                <span style={{ display:"inline-block", padding:"2px 5px", borderRadius:"4px", fontWeight:"bold", fontSize:"11px", background:"#fee2e2", color:"#dc2626" }}>OUT</span>
+                              ) : pos ? (
+                                <span style={{ display:"inline-block", padding:"2px 5px", borderRadius:"4px", fontWeight:"bold", fontSize:"11px", background:(POS_COLORS[pos]||"#555")+"cc", color:"#fff" }}>{pos}</span>
+                              ) : (
+                                <span style={{ color:"#ccc" }}>-</span>
+                              )}
                             </td>
                           );
                         })}
@@ -2396,6 +2456,8 @@ function SharedView({ payload, renderFieldSVG }) {
                     fieldPos.push("-");
                   } else if (pos === "Bench") {
                     fieldPos.push("–");
+                  } else if (pos === "Out") {
+                    fieldPos.push("OUT");
                   } else {
                     fieldPos.push(pos);
                   }
@@ -2412,7 +2474,17 @@ function SharedView({ payload, renderFieldSVG }) {
                     <div style={{ minWidth:0 }}>
                       <div style={{ fontWeight:"bold", fontSize:"12px", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",
                         color: isSelectedBatter ? "#b45309" : undefined }}>{firstName(name)}</div>
-                      {fieldPos.length > 0 ? <div style={{ fontSize:"9px", color:C.textMuted }}>{fieldPos.join(", ")}</div> : null}
+                      {fieldPos.length > 0 ? (
+                        <div style={{ fontSize:"9px", color:C.textMuted }}>
+                          {fieldPos.map(function(fp, fpi) {
+                            return (
+                              <span key={fpi} style={{ color: fp === "OUT" ? "#dc2626" : "inherit", fontWeight: fp === "OUT" ? "bold" : "inherit" }}>
+                                {fpi > 0 ? ", " : ""}{fp}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      ) : null}
                       {(function() {
                         var songData = payload.songs && payload.songs[name];
                         if (!songData || (!songData.song && !songData.artist)) return null;
@@ -3952,6 +4024,7 @@ export default function App() {
   function generateLineup() {
     // Build a temporary roster with absent-tonight players tagged.
     // Does NOT modify player.tags — the original roster state is unchanged.
+    console.log('[DEBUG] absentTonight at generate time:', JSON.stringify(absentTonight), 'todayDate:', todayDate, 'attendanceOverrides:', JSON.stringify(attendanceOverrides));
     var rosterForGen = absentTonight.length === 0 ? roster : roster.map(function(p) {
       if (absentTonight.indexOf(p.name) < 0) { return p; }
       var tags = p.tags || [];
@@ -5623,7 +5696,16 @@ export default function App() {
       "C":"#14406e"
     };
     var BOX_H = isSingle ? 54 : (30 + (localInnArr.length * 11) + 4);
-    var VB_H  = isSingle ? 640 : (555 + BOX_H + 30);
+    var outPlayers = isSingle ? (function() {
+      var out = [];
+      var _rn = roster || [];
+      for (var _oi = 0; _oi < _rn.length; _oi++) {
+        var _pg = grid[_rn[_oi].name] || [];
+        if (_pg[selectedInning] === "Out") { out.push(_rn[_oi].name); }
+      }
+      return out;
+    })() : [];
+    var VB_H  = isSingle ? Math.max(640, 600 + outPlayers.length * 14) : (555 + BOX_H + 30);
     var SVG_POSITIONS = isSingle ? [
       { pos:"LF", x:42,  y:175, w:112, h:BOX_H },
       { pos:"LC", x:170, y:138, w:112, h:BOX_H },
@@ -5718,6 +5800,15 @@ export default function App() {
               </text>
             </g>
           )}
+          {isSingle && outPlayers.length > 0 && outPlayers.map(function(oname, oi) {
+            return (
+              <text key={oname} x="495" y={598 + oi * 14} textAnchor="middle"
+                fontSize="10" fontWeight="700" fill="#dc2626"
+                fontFamily="system-ui,sans-serif">
+                {"🚫 " + firstName(oname) + " OUT"}
+              </text>
+            );
+          })}
         </svg>
       </div>
     );
@@ -6286,11 +6377,27 @@ export default function App() {
                             background: isEmpty ? "rgba(200,16,46,0.04)" : rowBg }}>
                             {pos === "Bench" ? (
                               <div>
-                                {benchedPlayers.length > 0 ? benchedPlayers.map(function(bp) {
-                                  return (
-                                    <div key={bp} style={{ fontSize:"11px", color:C.navy, fontWeight:"bold", padding:"2px 6px", borderRadius:"4px", background:"rgba(15,31,61,0.1)", marginBottom:"2px", textAlign:"center" }}>{firstName(bp)}</div>
-                                  );
-                                }) : <span style={{ fontSize:"11px", color:"rgba(15,31,61,0.2)" }}>-</span>}
+                                {(function() {
+                                  var outP = [];
+                                  for (var opi = 0; opi < players.length; opi++) {
+                                    if ((grid[players[opi]] || [])[i] === "Out") { outP.push(players[opi]); }
+                                  }
+                                  return [
+                                    benchedPlayers.length === 0 && outP.length === 0 ? (
+                                      <span key="empty" style={{ fontSize:"11px", color:"rgba(15,31,61,0.2)" }}>-</span>
+                                    ) : null,
+                                    benchedPlayers.map(function(bp) {
+                                      return (
+                                        <div key={bp} style={{ fontSize:"11px", color:C.navy, fontWeight:"bold", padding:"2px 6px", borderRadius:"4px", background:"rgba(15,31,61,0.1)", marginBottom:"2px", textAlign:"center" }}>{firstName(bp)}</div>
+                                      );
+                                    }),
+                                    outP.map(function(op) {
+                                      return (
+                                        <div key={"out-" + op} style={{ fontSize:"11px", color:"#dc2626", fontWeight:"bold", padding:"2px 6px", borderRadius:"4px", background:"rgba(220,38,38,0.12)", marginBottom:"2px", textAlign:"center" }}>{"OUT " + firstName(op)}</div>
+                                      );
+                                    }),
+                                  ];
+                                })()}
                               </div>
                             ) : assignedPlayer ? (
                               <div style={{ fontSize:"12px", fontWeight:"bold", color:C.navy }}>{firstName(assignedPlayer)}</div>
@@ -8142,6 +8249,44 @@ export default function App() {
               }
               y += pBRowH;
             }
+            // Out Tonight strip in PDF
+            var pMaxOut = 0;
+            for (var pobi = 0; pobi < innings; pobi++) {
+              var pOutCnt = roster.filter(function(r){return (grid[r.name]||[])[pobi]==="Out";}).length;
+              if (pOutCnt > pMaxOut) pMaxOut = pOutCnt;
+            }
+            if (pMaxOut > 0) {
+              for (var pobi2 = 0; pobi2 < innings; pobi2++) {
+                doc.setFillColor(254,226,226);
+                doc.rect(margin + pobi2*pBColW, y, pBColW, pBRowH, "F");
+                doc.setDrawColor(220,38,38);
+                doc.setLineWidth(0.2);
+                doc.rect(margin + pobi2*pBColW, y, pBColW, pBRowH);
+                doc.setTextColor(220,38,38);
+                doc.setFontSize(5.5);
+                doc.setFont("helvetica","bold");
+                doc.text("OUT TONIGHT", margin + pobi2*pBColW + pBColW/2, y + 4, {align:"center"});
+              }
+              y += pBRowH;
+              for (var por = 0; por < pMaxOut; por++) {
+                for (var pobi3 = 0; pobi3 < innings; pobi3++) {
+                  var pOutRoster = roster.filter(function(r){return (grid[r.name]||[])[pobi3]==="Out";});
+                  var pOutName = pOutRoster[por] ? pOutRoster[por].name : "";
+                  doc.setFillColor(254,226,226);
+                  doc.rect(margin + pobi3*pBColW, y, pBColW, pBRowH, "F");
+                  doc.setDrawColor(220,38,38);
+                  doc.setLineWidth(0.2);
+                  doc.rect(margin + pobi3*pBColW, y, pBColW, pBRowH);
+                  if (pOutName) {
+                    doc.setTextColor(220,38,38);
+                    doc.setFont("helvetica","bold");
+                    doc.setFontSize(6.5);
+                    doc.text(firstName(pOutName), margin + pobi3*pBColW + pBColW/2, y + 4, {align:"center"});
+                  }
+                }
+                y += pBRowH;
+              }
+            }
             y += (printOpt === "both" ? 8 : 0);
 
           } else {
@@ -8188,7 +8333,14 @@ export default function App() {
             for (var ci = 0; ci < innArr2.length; ci++) {
               var pos2 = (grid[info2.name] || [])[ci] || "";
               var cx = margin + nameColW + ci * innColW + innColW / 2;
-              if (pos2 && pos2 !== "") {
+              if (pos2 === "Out") {
+                doc.setFillColor(254,226,226);
+                doc.roundedRect(cx - innColW/2 + 2, y + 1.5, innColW - 4, rowH - 3, 1.5, 1.5, "F");
+                doc.setTextColor(220,38,38);
+                doc.setFontSize(7);
+                doc.setFont("helvetica","bold");
+                doc.text("OUT", cx, y + 5.4, { align:"center" });
+              } else if (pos2 && pos2 !== "") {
                 // Color pill per position
                 var pc = POS_COLORS[pos2] || "#555";
                 var pcsafe = pc.length === 4 ? "#" + pc[1]+pc[1]+pc[2]+pc[2]+pc[3]+pc[3] : pc;
@@ -8293,21 +8445,31 @@ export default function App() {
 
             // Field positions
             var fpos = [];
+            var hasOut = false;
             for (var fii = 0; fii < innings; fii++) {
               var fp = (grid[bname] || [])[fii];
               if (!fp || fp === "") {
                 fpos.push("-");
               } else if (fp === "Bench") {
                 fpos.push("–");
+              } else if (fp === "Out") {
+                fpos.push("OUT");
+                hasOut = true;
               } else {
                 fpos.push(fp);
               }
             }
             if (fpos.length > 0) {
-              doc.setTextColor(120, 130, 150);
-              doc.setFontSize(6.5);
-              doc.setFont("helvetica","normal");
               var fposY = (songPlayer && (songPlayer.walkUpSong || songPlayer.walkUpArtist)) ? by + 12 : by + 7.5;
+              if (hasOut) {
+                doc.setTextColor(220,38,38);
+                doc.setFontSize(6.5);
+                doc.setFont("helvetica","bold");
+              } else {
+                doc.setTextColor(120, 130, 150);
+                doc.setFontSize(6.5);
+                doc.setFont("helvetica","normal");
+              }
               doc.text(fpos.join(" "), bx + 11, fposY);
             }
           }

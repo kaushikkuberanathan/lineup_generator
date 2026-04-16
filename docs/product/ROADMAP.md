@@ -1,9 +1,12 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: April 16, 2026 (v2.2.29)
+> Last updated: April 16, 2026 (v2.2.30)
 > MVP launched: March 24, 2026
 
 ---
+
+## v2.2.30 — 2026-04-16
+- Fix: Out-tonight players now visible with red indicator across all 11 surfaces — diamond SVG, defense grid, Game Mode strip, share link diamond/table/batting, PDF bench/grid/batting card
 
 ## v2.2.29 — 2026-04-16
 - Feat: liveScoringEnabled overridden to true for Mud Hens and Demo All-Stars by team name; all other teams still require live_scoring feature flag

@@ -463,6 +463,34 @@ export function GameModeScreen({
         ) : null}
       </div>
 
+      {/* ── Out Tonight strip ───────────────────────────────── */}
+      {(function() {
+        var outTonight = roster.filter(function(r) {
+          return (grid[r.name] || [])[currentInning] === "Out";
+        });
+        if (outTonight.length === 0) return null;
+        return (
+          <div style={{
+            flexShrink:0, background:"#dc2626",
+            padding:"4px 16px",
+            display:"flex", alignItems:"center", gap:"6px", flexWrap:"wrap",
+          }}>
+            <span style={{ fontSize:"10px", fontWeight:"bold", color:"#fff",
+              textTransform:"uppercase", letterSpacing:"0.1em", flexShrink:0 }}>
+              Out Tonight
+            </span>
+            {outTonight.map(function(r) {
+              return (
+                <span key={r.name} style={{ fontSize:"11px", fontWeight:"bold", color:"#fff",
+                  background:"rgba(0,0,0,0.25)", borderRadius:"4px", padding:"1px 6px" }}>
+                  {firstName(r.name)}
+                </span>
+              );
+            })}
+          </div>
+        );
+      })()}
+
       {/* ── Batting footer ──────────────────────────────────── */}
       <div style={{
         opacity: halfInning === "batting" ? 1 : 0.4,
