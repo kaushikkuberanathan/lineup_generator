@@ -321,5 +321,52 @@ All major sections wrapped with `<ErrorBoundary>` (`src/components/Shared/ErrorB
 
 ---
 
+## Date Keys in localStorage
+Any date used as a localStorage lookup key (e.g. attendanceOverrides)
+MUST use local calendar date, NOT toISOString() which returns UTC.
+Evening games in ET are after midnight UTC — toISOString() returns
+tomorrow's date, breaking key lookups.
+
+Correct pattern:
+```js
+var _td = new Date();
+var todayDate = _td.getFullYear() + '-'
+  + String(_td.getMonth() + 1).padStart(2, '0') + '-'
+  + String(_td.getDate()).padStart(2, '0');
+```
+
+toISOString() is acceptable ONLY for cleanup thresholds and
+filename timestamps where 1-day drift is irrelevant.
+
+---
+
+## Phase 4C Auth Cutover — Scoring Shim Removal Checklist
+When auth goes live, remove these three shims IN ORDER:
+
+1. `frontend/src/hooks/useLiveScoring.js`
+   Search: `"AUTH TESTING SHIM"`
+   Remove: `_effectiveUserId` and `_effectiveUserName` fallback block
+   Restore: all `userId`/`userName` references back to direct param use
+
+2. `frontend/src/components/ScoringMode/index.jsx`
+   Search: `"AUTH TESTING SHIM"`
+   Remove: `scoringUserId`/`scoringUserName` fallback
+   Change: `isEnabled = liveScoringEnabled || true`
+       to: `isEnabled = liveScoringEnabled`
+
+3. **Supabase SQL Editor** — replace anon RLS on 4 scoring tables:
+   ```sql
+   DROP POLICY "scorer_lock_anon_test"  ON game_scoring_sessions;
+   DROP POLICY "game_state_anon_test"   ON live_game_state;
+   DROP POLICY "at_bats_anon_test"      ON at_bats;
+   DROP POLICY "audit_log_anon_test"    ON scoring_audit_log;
+   ```
+   Then re-add `auth.uid() = scorer_user_id` policies per original design.
+
+Do not remove the admin badge (⚠ Admin Test Mode) until all
+three shims are removed and auth is confirmed working end-to-end.
+
+---
+
 ## Current Version
 **v2.2.28** — April 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/App.jsx`.
