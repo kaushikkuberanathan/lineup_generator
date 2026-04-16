@@ -6,7 +6,7 @@ import { useLiveScoring } from '../../hooks/useLiveScoring';
 import { useFeatureFlag } from '../../hooks/useFeatureFlag';
 
 export default function ScoringMode({
-  activeTeam, activeTeamId, user,
+  activeTeam, activeTeamId, user, session,
   schedule, roster, battingOrder,
   onClose,
 }) {
@@ -47,11 +47,15 @@ export default function ScoringMode({
   });
 
   // AUTH TESTING SHIM — remove at Phase 4C
-  var scoringUserId   = user && user.id ? user.id : 'admin-coach-mud-hens';
+  var scoringUserId = (user && user.id)
+    ? user.id
+    : (session && session.user && session.user.id)
+    ? session.user.id
+    : null;
   var scoringUserName = user && user.profile && user.profile.first_name
     ? user.profile.first_name
     : 'Coach';
-  var isAdminTestMode = scoringUserId === 'admin-coach-mud-hens';
+  var isAdminTestMode = !scoringUserId;
   var gameId   = selectedGame ? selectedGame.id : null;
 
   var scoring = useLiveScoring({
