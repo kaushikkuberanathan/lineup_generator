@@ -141,9 +141,25 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.2.26";
+var APP_VERSION = "2.2.28";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.2.28',
+    date: 'April 2026',
+    headline: "Live scoring auth shim + Supabase team boot merge",
+    userChanges: [
+      "Teams added directly to the database now appear automatically on all devices",
+      "Live scoring works without login during pre-auth testing phase",
+    ],
+    techNote: "Boot merge changed from local-wins-entirely to additive: Supabase teams whose ID is not in localStorage are appended and persisted. Live scoring: admin fallback identity in useLiveScoring + ScoringMode when user is null; amber badge in scorer header flags test mode.",
+    internalChanges: [
+      "Boot block (~line 2467): replaced local-wins merge with additive merge — localTeams kept as base, newFromDb appended only for IDs not already in localIds map; String() cast handles bigint/string ID comparison",
+      "useLiveScoring.js: _effectiveUserId/_effectiveUserName shim — falls back to 'admin-coach-mud-hens'/'Coach (Admin)' when userId/userName null (Phase 4C cleanup documented in CLAUDE.md)",
+      "ScoringMode/index.jsx: scoringUserId/scoringUserName fallback + isAdminTestMode; useFeatureFlag('live_scoring') + isEnabled = liveScoringEnabled || true testing override",
+      "LiveScoringPanel.jsx: amber '⚠ Admin Test Mode — no auth' badge in scorer header when isAdminTestMode",
+    ],
+  },
   {
     version: '2.2.26',
     date: 'April 2026',
@@ -2467,21 +2483,32 @@ export default function App() {
   if (!window._lineupDbBooted && isSupabaseEnabled) {
     window._lineupDbBooted = true;
     dbLoadTeams().then(function(dbTeams) {
-      var localTeams = loadJSON("app:teams", []) || [];
-      var dbList = dbTeams || [];
-      var merged;
-      if (localTeams.length === 0 && dbList.length > 0) {
-        // Local is empty (new install / cleared storage) — seed from Supabase.
-        merged = dbList.slice();
-      } else {
-        // Local teams exist — localStorage is authoritative.
-        // Never add Supabase-only teams back: a team in Supabase but not in local
-        // was deleted locally and the async Supabase delete just hasn't landed yet.
-        merged = localTeams.slice();
-      }
-      if (merged.length > 0) {
-        saveJSON("app:teams", merged);
-        setTeams(merged);
+      var localTeams = loadJSON('app:teams', []);
+      var merged = localTeams; // default: local is source of truth
+
+      if (dbTeams) {
+        // Additive merge: keep all local teams, add any Supabase teams
+        // whose ID is not already known locally.
+        // String() cast handles bigint vs string ID comparison.
+        var localIds = {};
+        for (var li = 0; li < localTeams.length; li++) {
+          localIds[String(localTeams[li].id)] = true;
+        }
+
+        var newFromDb = [];
+        for (var di = 0; di < dbTeams.length; di++) {
+          if (!localIds[String(dbTeams[di].id)]) {
+            newFromDb.push(dbTeams[di]);
+          }
+        }
+
+        if (newFromDb.length > 0) {
+          merged = localTeams.concat(newFromDb);
+          saveJSON('app:teams', merged);
+          setTeams(merged);
+          console.log('[Boot] Added ' + newFromDb.length +
+            ' team(s) from Supabase:', newFromDb.map(function(t) { return t.name; }));
+        }
       }
 
       // If a team was already active (e.g. returning user on fresh browser),

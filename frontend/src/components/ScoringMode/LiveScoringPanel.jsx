@@ -122,10 +122,11 @@ export default function LiveScoringPanel(props) {
   var undoLastPitch            = props.undoLastPitch            || function() {};
   var confirmRunnerAdvancement = props.confirmRunnerAdvancement || function() {};
   var incrementOpponentScore   = props.incrementOpponentScore   || function() {};
-  var selectedGame  = props.selectedGame;
-  var activeTeam    = props.activeTeam;
-  var isPractice    = props.isPractice;
-  var onExit        = props.onExit     || function() {};
+  var selectedGame    = props.selectedGame;
+  var activeTeam      = props.activeTeam;
+  var isPractice      = props.isPractice;
+  var isAdminTestMode = props.isAdminTestMode || false;
+  var onExit          = props.onExit   || function() {};
   var onSettings     = props.onSettings;
   var rules          = props.rules;
   var pitchUIConfig  = props.pitchUIConfig;
@@ -533,6 +534,14 @@ export default function LiveScoringPanel(props) {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+          {isAdminTestMode && (
+            <span style={{
+              background: '#fef3c7', color: '#92400e',
+              fontSize: '10px', fontWeight: 600,
+              padding: '2px 7px', borderRadius: '99px',
+              whiteSpace: 'nowrap', flexShrink: 0,
+            }}>⚠ Admin Test Mode — no auth</span>
+          )}
           {onSettings ? (
             <button onClick={onSettings} style={{
               background: 'rgba(255,255,255,0.06)',

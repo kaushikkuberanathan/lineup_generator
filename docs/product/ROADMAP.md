@@ -1,9 +1,13 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: April 16, 2026 (v2.2.26)
+> Last updated: April 16, 2026 (v2.2.28)
 > MVP launched: March 24, 2026
 
 ---
+
+## v2.2.28 — 2026-04-16
+- Fix: Boot team merge changed from local-wins-entirely to additive — Supabase teams whose ID is not in localStorage are appended; zero impact when no new teams exist
+- Fix: String() cast on team IDs prevents bigint vs string mismatch during boot merge comparison
 
 ## v2.2.26 — 2026-04-16
 - Feat: playerMapper.js V1→V2 skill shim — skills[]/batSkills[] arrays now inferred as V2 enum fields (reliability, reaction, armStrength, speed, contact, power, swingDiscipline)

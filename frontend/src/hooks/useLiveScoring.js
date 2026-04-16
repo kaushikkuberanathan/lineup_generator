@@ -149,6 +149,12 @@ export function useLiveScoring(params) {
   var battingOrder = params.battingOrder || [];
   var team         = params.team || null;
 
+  // AUTH TESTING SHIM — remove when auth goes live (Phase 4C)
+  // When auth gate is commented out, userId/userName are null.
+  // Use hardcoded admin identity so scorer lock writes succeed.
+  var _effectiveUserId   = userId   || 'admin-coach-mud-hens';
+  var _effectiveUserName = userName || 'Coach (Admin)';
+
   // ── State — all unconditional (Rules of Hooks) ────────────────────────────
   var _gs = useState(makeDefaultGs);
   var gameState = _gs[0]; var setGameState = _gs[1];
@@ -238,8 +244,8 @@ export function useLiveScoring(params) {
       .insert({
         game_id:       gameId,
         team_id:       String(teamId),
-        actor_user_id: userId   || null,
-        actor_name:    userName || null,
+        actor_user_id: _effectiveUserId,
+        actor_name:    _effectiveUserName,
         action:        action,
         payload:       payload  || null,
         recorded_at:   new Date().toISOString(),
@@ -264,8 +270,8 @@ export function useLiveScoring(params) {
           {
             game_id:        gameId,
             team_id:        String(teamId),
-            scorer_user_id: userId   || null,
-            scorer_name:    userName || null,
+            scorer_user_id: _effectiveUserId,
+            scorer_name:    _effectiveUserName,
             last_heartbeat: new Date().toISOString(),
           },
           { onConflict: 'game_id,team_id' }
@@ -402,7 +408,7 @@ export function useLiveScoring(params) {
           return;
         }
         setScorer(true);
-        setScorerName(userName || null);
+        setScorerName(_effectiveUserName);
         setScorerLockExpired(false);
         startHeartbeat();
         audit('lock_claimed');
@@ -418,7 +424,7 @@ export function useLiveScoring(params) {
       .delete()
       .eq('game_id', gameId)
       .eq('team_id', String(teamId))
-      .eq('scorer_user_id', userId)
+      .eq('scorer_user_id', _effectiveUserId)
       .then(function() {});
     audit('lock_released');
   }

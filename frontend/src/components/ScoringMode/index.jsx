@@ -3,6 +3,7 @@ import ScoringModeEntry from './ScoringModeEntry';
 import LiveScoringPanel from './LiveScoringPanel';
 import RestoreScoreModal from './RestoreScoreModal';
 import { useLiveScoring } from '../../hooks/useLiveScoring';
+import { useFeatureFlag } from '../../hooks/useFeatureFlag';
 
 export default function ScoringMode({
   activeTeam, activeTeamId, user,
@@ -24,6 +25,12 @@ export default function ScoringMode({
   var _restore  = useState(false);
   var showRestore = _restore[0]; var setShowRestore = _restore[1];
 
+  // Change 3 — feature flag (fails closed; "|| true" is testing override)
+  var _lsFlag = useFeatureFlag('live_scoring', activeTeamId);
+  var liveScoringEnabled = _lsFlag.enabled;
+  // AUTH TESTING SHIM — remove "|| true" when flag is confirmed working in prod
+  var isEnabled = liveScoringEnabled || true;
+
   // Map battingOrder (name strings) + roster → useLiveScoring shape
   var roster_ = roster || [];
   var mappedBattingOrder = (battingOrder || []).map(function(name, idx) {
@@ -39,16 +46,20 @@ export default function ScoringMode({
     };
   });
 
-  var userId   = user ? user.id    : null;
-  var userName = user ? user.email : null;
+  // AUTH TESTING SHIM — remove at Phase 4C
+  var scoringUserId   = user && user.id ? user.id : 'admin-coach-mud-hens';
+  var scoringUserName = user && user.profile && user.profile.first_name
+    ? user.profile.first_name
+    : 'Coach';
+  var isAdminTestMode = scoringUserId === 'admin-coach-mud-hens';
   var gameId   = selectedGame ? selectedGame.id : null;
 
   var scoring = useLiveScoring({
     gameId:       gameId,
     teamId:       activeTeamId,
-    userId:       userId,
-    userName:     userName,
-    isEnabled:    !isPractice && !!gameId,
+    userId:       scoringUserId,
+    userName:     scoringUserName,
+    isEnabled:    isEnabled && !isPractice && !!gameId,
     battingOrder: mappedBattingOrder,
   });
 
@@ -139,6 +150,7 @@ export default function ScoringMode({
           selectedGame={selectedGame}
           activeTeam={activeTeam}
           isPractice={isPractice}
+          isAdminTestMode={isAdminTestMode}
           onExit={handleExitSession}
           onSettings={function() { setShowRestore(true); }}
         />
@@ -147,8 +159,8 @@ export default function ScoringMode({
       <RestoreScoreModal
         gameId={gameId}
         teamId={activeTeamId}
-        userId={userId}
-        userName={userName}
+        userId={scoringUserId}
+        userName={scoringUserName}
         isOpen={showRestore}
         onClose={function() { setShowRestore(false); }}
       />
