@@ -141,9 +141,26 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.2.30";
+var APP_VERSION = "2.2.31";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.2.31',
+    date: 'April 2026',
+    headline: "FAQ, Personas, and Solution Design updated — all role and auth copy is now current",
+    userChanges: [
+      "FAQ: added Attendance and multi-player Game Ball answers for Head Coach",
+      "FAQ: walk-up song and Spotify deep-link FAQs updated with Out Tonight filtering detail",
+      "FAQ: new Scorekeeper category with 3 answers about Live Scoring",
+      "FAQ: install banner and Google sign-in FAQs updated",
+    ],
+    techNote: "Documentation-only release. No code changes.",
+    internalChanges: [
+      "FAQ: added 3 head-coach items (attendance, game ball), 2 dj-parent items (updated walk-up song location, new Spotify deep-link FAQ), new scorekeeper category (3 items), updated install and account FAQs in setup-sharing",
+      "PERSONAS.md: rewritten to 8 personas — added Dugout Parent, DJ Parent, Catcher Parent, Base Coach. Live Scoring and Admin Dashboard flipped to MVP. Auth Required updated to Phase 2.",
+      "SOLUTION_DESIGN.md: rewrote Auth Architecture section end-to-end (Phase 3 → Phase 2, removed all [Twilio removed] inline tags, updated flow diagram, database tables, route inventory). Updated /health example (version 2.2.31, added db/db_latency_ms). Updated App.jsx line count to ~9,834, expanded utils/ and components/ trees, updated navigation table. Added Walk-up Songs Architecture subsection.",
+    ],
+  },
   {
     version: '2.2.30',
     date: 'April 2026',

@@ -15,7 +15,7 @@
 5. [Scoring Engine (V2)](#scoring-engine-v2)
 6. [Field Layout — Diamond View](#field-layout--diamond-view)
 7. [API Design](#api-design)
-8. [Auth Architecture (Phase 3)](#auth-architecture-phase-3)
+8. [Auth Architecture (Phase 2)](#auth-architecture-phase-2)
 9. [Frontend Architecture](#frontend-architecture)
 10. [PWA Setup](#pwa-setup)
 11. [Deployment & Infrastructure](#deployment--infrastructure)
@@ -265,21 +265,23 @@ Returns server version and uptime. Used for deploy verification.
 ```json
 {
   "status": "healthy",
-  "version": "1.4.0",
-  "uptime": 3820
+  "version": "2.2.31",
+  "uptime": 3820,
+  "db": "ok",
+  "db_latency_ms": 12
 }
 ```
 
 ---
 
-## Auth Architecture (Phase 3)
+## Auth Architecture (Phase 2)
 
-The auth system is **deployed but not yet gated** — backend infrastructure is live on Render, frontend cutover pending. [Twilio removed — using Supabase email magic-link + Google OAuth]
+The auth system is **deployed but not yet gated** — backend infrastructure is live on Render, frontend cutover pending.
 
 ### Strategy
 
-- **Phone OTP via Supabase Auth** — no passwords; coaches receive a one-time SMS code
-- Phone numbers stored and validated in **E.164 format** (`libphonenumber-js`)
+- **Supabase email magic link + Google OAuth** — no passwords, no SMS
+- Twilio / phone OTP permanently removed — no phone or SMS dependency anywhere in the stack
 - **Supabase service role key** lives only in the backend — never sent to the client
 - Frontend continues using the anon key for all existing data operations
 
@@ -288,17 +290,26 @@ The auth system is **deployed but not yet gated** — backend infrastructure is 
 ```
 Coach visits app
     ↓
-POST /api/v1/auth/request-access  ← name + phone → creates access_request row
+POST /api/v1/auth/request-access  ← name + email → creates access_request row
     ↓
 Admin reviews at /admin.html       ← approves or rejects request
     ↓
 POST /api/v1/admin/approve         ← creates team_memberships row, activates profile
     ↓
-Coach receives SMS OTP
-    ↓
-POST /api/v1/auth/login            ← sends OTP via Supabase phone auth (rate-limited)
-    ↓
-POST /api/v1/auth/verify           ← verifies OTP, returns access_token + refresh_token
+Coach signs in:
+  ┌─────────────────────────────────────────────┐
+  │  Option A: Email magic link                  │
+  │  POST /api/v1/auth/request-magic-link        │
+  │  → Supabase sends magic link email           │
+  │  → Coach clicks link                         │
+  │  → GET /api/v1/auth/callback                 │
+  └─────────────────────────────────────────────┘
+  ┌─────────────────────────────────────────────┐
+  │  Option B: Google OAuth                      │
+  │  → Supabase OAuth redirect → Google          │
+  │  → Callback with access_token                │
+  │  → GET /api/v1/auth/callback                 │
+  └─────────────────────────────────────────────┘
     ↓
 GET  /api/v1/auth/me               ← returns user profile + team memberships
 ```
@@ -309,7 +320,7 @@ GET  /api/v1/auth/me               ← returns user profile + team memberships
 access_requests (
   id          uuid PRIMARY KEY,
   name        text,
-  phone       text,           -- E.164 format
+  email       text,           -- used for magic link delivery
   status      text,           -- 'pending' | 'approved' | 'rejected'
   team_id     text,
   created_at  timestamptz
@@ -317,8 +328,8 @@ access_requests (
 
 profiles (
   id          uuid PRIMARY KEY REFERENCES auth.users(id),
-  name        text,
-  phone       text,
+  first_name  text,
+  last_name   text,
   created_at  timestamptz
 )
 
@@ -344,9 +355,9 @@ feedback (
 
 | Method | Path | Auth Required | Purpose |
 |--------|------|--------------|---------|
-| POST | `/api/v1/auth/request-access` | No | Submit access request |
-| POST | `/api/v1/auth/login` | No | Send OTP (rate-limited) |
-| POST | `/api/v1/auth/verify` | No | Verify OTP, return tokens |
+| POST | `/api/v1/auth/request-access` | No | Submit access request (email) |
+| POST | `/api/v1/auth/request-magic-link` | No | Send magic link email (rate-limited) |
+| GET | `/api/v1/auth/callback` | No | Handle Supabase auth callback |
 | GET | `/api/v1/auth/me` | Yes | Current user + memberships |
 | GET | `/api/v1/admin/requests` | Admin | List pending access requests |
 | POST | `/api/v1/admin/approve` | Admin | Approve request, activate membership |
@@ -362,9 +373,9 @@ feedback (
 
 `frontend/public/admin.html` — deployed as a static page at `/admin.html` on Vercel.
 
-4-tab admin interface: Pending Requests | Members | Feedback | Settings.
+Six-tab admin interface: Pending Requests | Members | Feedback | Teams | Settings | Audit.
 
-Login via phone OTP. Checks `/me` for `memberships[0].role === 'admin'`.
+Login via Google OAuth or email magic link. Checks `/me` for `memberships[0].role === 'admin'`.
 
 ### RLS Policy Map (Phase 4 target state)
 
@@ -398,12 +409,11 @@ Pre-cutover checklist: `docs/ops/PHASE4_PRECHECK.md`
 
 | Blocker | Status |
 |---------|--------|
-| [Twilio removed — using Supabase email magic-link + Google OAuth] | — |
-| Phase 4 cutover (add `requireAuth` to existing routes) | Pending 2–3 coach pilot users |
+| Phase 2 auth cutover (add `requireAuth` to existing routes) | Pending 2–3 coach pilot users |
 
-### Workaround (Dev/Test)
+### Workaround (Prod — Pre-Cutover)
 
-[Twilio removed — using Supabase email magic-link + Google OAuth]
+Auth gate is currently bypassed in production (v2.2.22 hotfix) pending Phase 2 cutover. Editing works unauthenticated for now using the `_effectiveUserId` shim in `useLiveScoring.js` and `ScoringMode/index.jsx`. These shims are marked `AUTH TESTING SHIM` and must be removed at cutover — see removal checklist in `CLAUDE.md`.
 
 ---
 
@@ -424,27 +434,45 @@ Pre-cutover checklist: `docs/ops/PHASE4_PRECHECK.md`
 
 ```
 frontend/src/
-├── App.jsx              ← Main application (~6,600+ lines — file split is P3 backlog)
+├── App.jsx              ← Main application (~9,834 lines — file split is P3 backlog)
 ├── supabase.js          ← DB client + read/write helpers
 ├── main.jsx             ← React entry point
 ├── config/
-│   └── featureFlags.js  ← USE_NEW_LINEUP_ENGINE toggle
-└── utils/
-    ├── lineupEngineV2.js
-    ├── scoringEngine.js
-    └── playerMapper.js
+│   └── featureFlags.js  ← Feature flag registry + evaluation
+├── content/
+│   └── faqs.js          ← FAQ content (categories + items)
+├── utils/
+│   ├── lineupEngineV2.js
+│   ├── scoringEngine.js
+│   ├── playerMapper.js
+│   ├── analytics.js
+│   ├── trackingUrl.js
+│   ├── migrations.js
+│   ├── formatters.js
+│   ├── deviceContext.js
+│   ├── flagBootstrap.js
+│   └── leagueRules.js
+└── components/
+    ├── Auth/
+    ├── GameDay/
+    ├── ScoringMode/
+    ├── game-mode/
+    ├── Shared/
+    ├── Support/
+    └── Viewer/
 ```
 
-### Navigation Structure (v1.4.0+)
+### Navigation Structure (v2.2.24+)
 
-4 primary tabs in a fixed bottom nav bar (portrait) / sidebar (landscape):
+5 primary tabs in a fixed bottom nav bar (portrait) / sidebar (landscape):
 
 | Primary Tab | Sub-tabs | Responsibility |
 |---|---|---|
-| **Roster** | Players / Songs | Player cards with V2 attribute editing, add/remove, constraints; Walk-up song management per player |
-| **Game Day** | Defense / Batting / Lineups | Defensive assignment matrix + auto-assign; Batting order (drag) + season stats; PDF export, diamond view, share link |
+| **My Team** | Players / Songs | Player cards with V2 attribute editing, add/remove, constraints; Walk-up song management per player |
+| **Game Day** | Lineups / Songs / Game Mode | Lineups as default (v2.2.24 restructure); Songs sub-tab filtered to tonight's active batting order; Full-screen Game Mode dugout view |
 | **Season** | Schedule / Snacks | Game list, AI import, result logging, batting stat entry; Per-game snack duty assignment |
-| **More** | About / Updates / Links / Feedback | App description + info; Version history; External resources; Coach feedback + bug reports |
+| **Scoring** | — | Live scoring tab (pilot teams: Mud Hens, Demo All-Stars); Claim Scorer Role, inning-by-inning run entry |
+| **More** | About / Updates / Links / Feedback / Support | App description + info; Version history; External resources; Coach feedback + bug reports; FAQ |
 
 ### State Management
 
@@ -453,6 +481,19 @@ All state lives in `App.jsx` via `useState` / `useReducer`. No external state li
 ### Version Display
 
 `APP_VERSION` constant in `App.jsx` (~line 131) drives the "Current" badge in the About tab. The constant must match a `VERSION_HISTORY` entry to display correctly.
+
+### Walk-up Songs Architecture
+
+Per-player song data (title, artist, url, startTime) is stored in the player object inside the roster JSONB. The Play button navigates via `window.location` to the stored URL.
+
+Native app deep-link behavior is OS-mediated — there is no client-side detection of which apps are installed:
+
+- **Spotify:** The Spotify app intercepts `open.spotify.com` links when installed and signed in on both iOS and Android. On Android, the user may need to set Spotify as the default handler for Spotify links (Settings → Apps → Spotify → Open by default).
+- **Apple Music:** Same behavior — the Music app intercepts `music.apple.com` links when installed.
+- **YouTube:** Same behavior — the YouTube app intercepts `youtube.com` links when installed.
+- **Browser fallback:** Any URL scheme not handled by an installed app opens in the mobile browser, where web players are available for Spotify, Apple Music, and YouTube.
+
+The Songs sub-tab in Game Day → Batting filters to tonight's active batting order only — players marked Out Tonight are excluded.
 
 ---
 
@@ -608,8 +649,8 @@ Full recovery workflow: `backend/migrations/README.md`
 
 | Decision | Current Rationale | When to Revisit |
 |---|---|---|
-| All logic in `App.jsx` (~6,600 lines) | Single-file build simplified early iteration | Before Phase 3 auth ships — file split is P3 backlog, will reduce feature velocity by ~40% if not done first |
-| No auth in MVP | Single-coach, single-device scope; share link is read-only | Phase 3 — Supabase email magic-link + Google OAuth [Twilio removed — using Supabase email magic-link + Google OAuth] |
+| All logic in `App.jsx` (~9,834 lines) | Single-file build simplified early iteration | Before Phase 3 auth ships — file split is P3 backlog, will reduce feature velocity by ~40% if not done first |
+| No auth in MVP | Single-coach, single-device scope; share link is read-only | Phase 2 auth cutover — Supabase email magic-link + Google OAuth, pending 2–3 pilot users |
 | Render free tier | Zero cost for personal tool | Upgrade if cold-start latency becomes user-facing despite UptimeRobot |
 | JSONB for all team data | Mirrors localStorage, zero transformation overhead | Normalize if query patterns require filtering inside game/player arrays |
 | Backtracking solver in frontend | Fast enough at 11-player / 6-inning scale | Move server-side if multi-game batch generation or 20+ player rosters are added |

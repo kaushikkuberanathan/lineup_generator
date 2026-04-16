@@ -369,4 +369,7 @@ three shims are removed and auth is confirmed working end-to-end.
 ---
 
 ## Current Version
-**v2.2.30** — April 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/App.jsx`.
+**v2.2.31** — April 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/App.jsx`.
+
+- v2.2.31 (2026-04-16): Docs-only — FAQ repaired (Attendance, Game Ball, Scorekeeper category, Spotify deep-link, install banner, Google sign-in). PERSONAS.md rewritten to 8 personas. SOLUTION_DESIGN.md Auth Architecture section rewritten (Phase 2, Twilio tags removed).
+- v2.2.30 (2026-04-16): Out Tonight players visible in red across all 11 lineup surfaces — diamond SVG, defense grid, Game Mode strip, share link, PDF.

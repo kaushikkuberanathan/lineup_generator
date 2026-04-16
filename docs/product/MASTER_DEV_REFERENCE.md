@@ -258,7 +258,25 @@ frontend/package.json                   — frontend version
 backend/package.json                    — backend version
 docs/product/ROADMAP.md                 — roadmap + version log
 docs/product/MASTER_DEV_REFERENCE.md   — this file
+docs/product/CHARTER.md                 — product charter (vision, scope, personas, metrics, principles, risks, governance)
+docs/product/ONE_PAGER.md              — single-page scannable product summary
 CLAUDE.md                               — project rules + version history
+
+---
+
+## Document Governance
+
+Product documents are versioned alongside the app. Both CHARTER.md and ONE_PAGER.md increment their internal version number on any phase transition or structural scope change.
+
+| Document | Review Cadence | Trigger |
+|----------|----------------|---------|
+| `CHARTER.md` | Quarterly + on phase transitions | Phase gate, scope change, major persona shift |
+| `ONE_PAGER.md` | Monthly | Phase status changes, non-goal updates |
+| `ROADMAP.md` | Every release | Required in deploy checklist |
+| `CLAUDE.md` | Every release + rule changes | Required in deploy checklist |
+| `PERSONAS.md` | On phase transitions | Refresh pending v2.2.32 |
+
+**Version bump rule:** On any phase change, update CHARTER.md version header, ONE_PAGER.md version header, and the Phase Status table in ONE_PAGER.md before the release commit.
 
 ---
 

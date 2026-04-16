@@ -1,9 +1,17 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: April 16, 2026 (v2.2.30)
+> Last updated: April 16, 2026 (v2.2.31)
 > MVP launched: March 24, 2026
 
 ---
+
+## v2.2.31 — 2026-04-16 — Docs-only: FAQ, Personas, Solution Design drift repaired
+- FAQ: added Attendance and multi-player Game Ball answers (Head Coach category)
+- FAQ: updated walk-up song location FAQ; added Spotify deep-link FAQ (DJ Parent category)
+- FAQ: new Scorekeeper category (3 FAQs — Live Scoring, scorer role lock, inning correction)
+- FAQ: updated install banner FAQ and Google sign-in FAQ (Setup & Sharing category)
+- PERSONAS.md: rewritten to 8 personas — added Dugout Parent, DJ Parent, Catcher Parent, Base Coach; Live Scoring and Admin Dashboard flipped to MVP; Auth Required updated to Phase 2
+- SOLUTION_DESIGN.md: Auth Architecture section rewritten (Phase 3 → Phase 2, all [Twilio removed] tags cleaned); /health example updated (v2.2.31, db fields added); App.jsx line count updated to ~9,834; utils/ and components/ trees expanded; navigation table updated; Walk-up Songs Architecture subsection added
 
 ## v2.2.30 — 2026-04-16
 - Fix: Out-tonight players now visible with red indicator across all 11 surfaces — diamond SVG, defense grid, Game Mode strip, share link diamond/table/batting, PDF bench/grid/batting card
