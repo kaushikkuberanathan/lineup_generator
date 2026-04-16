@@ -8,5 +8,9 @@ supabase/.temp/
 # Claude Code local settings
 **/.claude/settings.local.json
 
+# IDE local config
+.vscode/
+.idea/
+
 # Node modules (root-level, for husky and other root devDependencies)
 node_modules/

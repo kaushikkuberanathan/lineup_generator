@@ -141,9 +141,23 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.2.35";
+var APP_VERSION = "2.2.36";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.2.36',
+    date: 'April 2026',
+    headline: "Governance infrastructure activated",
+    userChanges: [],
+    techNote: "Meta-governance release.",
+    internalChanges: [
+      "docs/product/DOC_TEST_DEBT.md: replaced with enhanced format (emoji priority markers 🔴/🟠/🟡, table layout, 20 items across Test/Doc/Process gap categories, Debt Summary Dashboard, Revision History)",
+      "scripts/debt-helpers.sh: added — debt, debt-all, debt-p0, debt-target, debt-next, debt-dashboard, debt-help shell helpers",
+      "scripts/debt-helpers.ps1: added — same helpers for PowerShell (Windows)",
+      "CLAUDE.md: Git Staging Discipline section added; debt-p0 minor-bump gate note added to Ship Gate; CI target updated to 306/1/0",
+      ".gitignore: .vscode/ and .idea/ added",
+    ],
+  },
   {
     version: '2.2.35',
     date: 'April 2026',
