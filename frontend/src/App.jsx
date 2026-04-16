@@ -147,13 +147,18 @@ var VERSION_HISTORY = [
   {
     version: '2.2.29',
     date: 'April 2026',
-    headline: "Scoring enabled for Mud Hens + Demo All-Stars",
+    headline: "Fix: Claim Scorer now works — auth shim ID applied to scorer lock write",
     userChanges: [
       "Scoring tab now available for Mud Hens and Demo All-Stars",
     ],
-    techNote: "liveScoringEnabled overridden to true for Mud Hens and Demo All-Stars by team name; all other teams still require live_scoring feature flag",
+    techNote: "claimScorerLock upsert was using raw userId (null) instead of _effectiveUserId ('admin-coach-mud-hens') — violated NOT NULL constraint, silently swallowed. Fixed to use shim identity. Added claimError state to surface non-RLS write failures to UI. Both fixes scoped to testing shim path — will be superseded by Phase 4C auth cutover.",
     internalChanges: [
-      "App.jsx line ~2768: _isAlwaysScoringTeam check (name === 'Mud Hens' || 'Demo All-Stars') short-circuits liveScoringEnabled before feature flag lookup",
+      "App.jsx line ~2780: _isAlwaysScoringTeam check (name === 'Mud Hens' || 'Demo All-Stars') short-circuits liveScoringEnabled before feature flag lookup",
+      "useLiveScoring.js claimScorerLock: scorer_user_id/scorer_name changed from raw userId/userName (null when auth gate down) to _effectiveUserId/_effectiveUserName — fixes silent NOT NULL constraint violation",
+      "useLiveScoring.js claimScorerLock: non-RLS errors now surface via claimError state (console.error + setClaimError) instead of being silently swallowed",
+      "useLiveScoring.js: claimError state added; exposed in hook return + disabled-shell stub",
+      "ScoringMode/index.jsx: claimError={scoring.claimError} threaded to LiveScoringPanel",
+      "LiveScoringPanel.jsx: claimError red banner rendered below Claim Scorer Role button in STATE 1 (no active scorer)",
     ],
   },
   {

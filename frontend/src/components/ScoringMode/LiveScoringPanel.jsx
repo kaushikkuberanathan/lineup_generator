@@ -115,6 +115,7 @@ export default function LiveScoringPanel(props) {
   var pendingAdvancement       = props.pendingAdvancement;
   var battingOrder             = props.battingOrder             || [];
   var claimScorerLock          = props.claimScorerLock          || function() {};
+  var claimError               = props.claimError               || '';
   var releaseScorerLock        = props.releaseScorerLock        || function() {};
   var startAtBat               = props.startAtBat               || function() {};
   var recordPitch              = props.recordPitch              || function() {};
@@ -215,10 +216,21 @@ export default function LiveScoringPanel(props) {
               width: '100%', maxWidth: '320px', padding: '16px',
               background: '#1d4ed8', border: 'none', borderRadius: '10px',
               color: '#fff', fontSize: '16px', fontWeight: 'bold',
-              cursor: 'pointer', fontFamily: FF, marginBottom: '16px',
+              cursor: 'pointer', fontFamily: FF, marginBottom: claimError ? '10px' : '16px',
             }}>
             🎙 Claim Scorer Role
           </button>
+          {claimError ? (
+            <div style={{
+              width: '100%', maxWidth: '320px',
+              background: '#fee2e2', color: '#dc2626',
+              borderRadius: '8px', padding: '10px 14px',
+              fontSize: '13px', fontWeight: 600,
+              marginBottom: '16px', textAlign: 'center',
+            }}>
+              ⚠ {claimError}
+            </div>
+          ) : null}
           {!isPractice ? (
             <button
               onClick={function() { setViewerOnly(true); }}

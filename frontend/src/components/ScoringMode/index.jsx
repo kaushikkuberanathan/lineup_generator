@@ -137,6 +137,7 @@ export default function ScoringMode({
           pendingAdvancement={scoring.pendingAdvancement}
           battingOrder={mappedBattingOrder}
           claimScorerLock={scoring.claimScorerLock}
+          claimError={scoring.claimError}
           releaseScorerLock={scoring.releaseScorerLock}
           startAtBat={scoring.startAtBat}
           recordPitch={scoring.recordPitch}
