@@ -177,6 +177,9 @@ export function useLiveScoring(params) {
   var _warn = useState([]);
   var ruleWarnings = _warn[0]; var setRuleWarnings = _warn[1];
 
+  var _claimError = useState('');
+  var claimError = _claimError[0]; var setClaimError = _claimError[1];
+
   // ── Refs (safe in interval / async callbacks) ─────────────────────────────
   var gsRef       = useRef(makeDefaultGs());
   var atBatRef    = useRef(null);
@@ -390,26 +393,34 @@ export function useLiveScoring(params) {
 
   function claimScorerLock() {
     if (!isEnabled || !supabase || !gameId || !teamId) return;
+    setClaimError('');
     supabase
       .from('game_scoring_sessions')
       .upsert(
         {
           game_id:        gameId,
           team_id:        String(teamId),
-          scorer_user_id: userId   || null,
-          scorer_name:    userName || null,
+          scorer_user_id: _effectiveUserId,
+          scorer_name:    _effectiveUserName,
           last_heartbeat: new Date().toISOString(),
         },
         { onConflict: 'game_id,team_id' }
       )
       .then(function(r) {
         if (r.error) {
-          if (isRlsError(r.error)) { setScorerLockExpired(true); }
+          if (isRlsError(r.error)) {
+            setScorerLockExpired(true);
+          } else {
+            // Non-RLS error (constraint, network, 500) — surface to UI
+            console.error('[Scoring] claimScorerLock failed:', r.error);
+            setClaimError(r.error.message || 'Failed to claim scorer role');
+          }
           return;
         }
         setScorer(true);
         setScorerName(_effectiveUserName);
         setScorerLockExpired(false);
+        setClaimError('');
         startHeartbeat();
         audit('lock_claimed');
       });
@@ -690,6 +701,7 @@ export function useLiveScoring(params) {
       undoLastPitch:            function() {},
       confirmRunnerAdvancement: function() {},
       incrementOpponentScore:   function() {},
+      claimError:               '',
     };
   }
 
@@ -712,5 +724,6 @@ export function useLiveScoring(params) {
     rules:                    rules,
     pitchUIConfig:            pitchUIConfig,
     ruleWarnings:             ruleWarnings,
+    claimError:               claimError,
   };
 }
