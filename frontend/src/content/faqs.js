@@ -42,6 +42,14 @@ export var FAQ_CATEGORIES = [
       {
         q: "We added a player mid-season. Will it break my existing lineups?",
         a: "No. Add the player in Team → Roster and they'll appear as an option from the next Auto-Assign onward. Previous saved lineups are untouched. Set their Preferred Positions and skill tags right away so the engine knows how to place them."
+      },
+      {
+        q: "How do I mark players out for tonight's game before generating the lineup?",
+        a: "Open Game Day. At the top of the Lineups tab you'll see Tonight's Attendance. Tap any player to toggle them Out Tonight. Absent players are automatically excluded from auto-assign, batting order, PDF export, share links, print view, and the Songs tab. Attendance syncs across your devices and auto-clears the next game day."
+      },
+      {
+        q: "How do I award the Game Ball — can I pick more than one player?",
+        a: "Yes. Go to Team → Schedule, tap the game card, tap Edit. Scroll to Game Ball and use the search to find players. Tap as many as you want — Game Ball now supports multiple recipients. The awards show as a read-only 🏆 label on the schedule card after saving."
       }
     ]
   },
@@ -83,7 +91,7 @@ export var FAQ_CATEGORIES = [
     items: [
       {
         q: "I'm running walk-up songs. Where do I find each kid's song during the game?",
-        a: "Game Day → Batting → Songs sub-tab. Players are listed in batting order with their song title, artist, and a Play button. When the previous at-bat ends, scroll to the next batter and tap Play — it opens their link directly."
+        a: "Game Day → Batting → Songs sub-tab. Players are listed in tonight's batting order only — players marked Out Tonight are automatically filtered out, so what you see is exactly who will walk up. Tap Play on the current batter to open their song — if they have a Spotify link and the Spotify app is installed, it opens straight in Spotify; same for Apple Music and YouTube. If no app is installed, it falls back to the mobile browser."
       },
       {
         q: "How do I add or update a player's walk-up song?",
@@ -100,6 +108,10 @@ export var FAQ_CATEGORIES = [
       {
         q: "The song link isn't opening. What should I check?",
         a: "Make sure the URL starts with https:// and is a direct link, not a share sheet preview. Spotify links require the Spotify app installed on the device. YouTube links work best in a mobile browser. If the link opens but the song starts at the wrong point, double-check the start time field in the player card."
+      },
+      {
+        q: "The song is a Spotify link but it's opening in my browser instead of the Spotify app. What's going on?",
+        a: "The link behavior depends on whether the Spotify app is installed on the device and signed in. On iPhone, the Spotify app intercepts the link automatically when installed. On Android, you may need to set Spotify as the default handler for Spotify links (Settings → Apps → Spotify → Open by default). YouTube and Apple Music behave the same way. If nothing is installed, everything falls back to the browser and plays in a web player."
       }
     ]
   },
@@ -162,17 +174,36 @@ export var FAQ_CATEGORIES = [
     ]
   },
   {
+    id: "scorekeeper",
+    label: "Scorekeeper",
+    emoji: "📊",
+    items: [
+      {
+        q: "How do I record the score during the game?",
+        a: "If Live Scoring is enabled for your team, you'll see a Scoring tab on the bottom nav. Tap it, then tap Claim Scorer Role — this locks the scorer seat to your device so two people don't overwrite each other. Enter runs inning by inning as they happen. The coach can see the score update in real time on their device via share link."
+      },
+      {
+        q: "Someone else already claimed the scorer role. What do I do?",
+        a: "Only one person can be the active scorer at a time. If you need to take over, ask them to release the role from their device, or wait for the session to time out. This prevents accidental overwrites mid-game."
+      },
+      {
+        q: "I made a mistake in an earlier inning. Can I fix it?",
+        a: "Yes. Open the inning editor and tap the run count you need to correct. Changes are logged with timestamp so there's an audit trail. For full score restore, tap Restore Score — it rolls back to the last saved snapshot."
+      }
+    ]
+  },
+  {
     id: "setup-sharing",
     label: "Setup & Sharing",
     emoji: "📲",
     items: [
       {
         q: "Do I need an account to use the app?",
-        a: "No. The app works fully offline without any account. Teams, roster, schedule, and lineups are all saved on your device. An account is only needed if you want to sync data across multiple devices."
+        a: "Not for viewing. Anyone can open a share link without an account — parents, base coaches, scorekeepers — full read-only access. Coaches editing the team can sign in with a Google account or an email magic link to sync their data across devices. Accounts are required only for editing."
       },
       {
         q: "How do I install this on my phone so it works at the field without Wi-Fi?",
-        a: "On iPhone: open the app in Safari, tap the Share button (box with arrow), then tap 'Add to Home Screen.' On Android: open it in Chrome, tap the ⋮ menu, then tap 'Add to Home Screen' or 'Install App.' Once installed it works offline — no signal needed at the field."
+        a: "Dugout Lineup prompts you automatically. Look for the Install banner at the bottom of every tab (above the nav). On Android: tap Install to add it to your home screen in one step. On iPhone: the banner shows Share → Add to Home Screen instructions — follow them in Safari. Once installed, the app works offline — no signal needed at the field."
       },
       {
         q: "How do I share the lineup with parents before the game?",

@@ -152,8 +152,8 @@ export function useLiveScoring(params) {
   // AUTH TESTING SHIM — remove when auth goes live (Phase 4C)
   // When auth gate is commented out, userId/userName are null.
   // Use hardcoded admin identity so scorer lock writes succeed.
-  var _effectiveUserId   = userId   || 'admin-coach-mud-hens';
-  var _effectiveUserName = userName || 'Coach (Admin)';
+  var _effectiveUserId   = userId   || null;
+  var _effectiveUserName = userName || 'Coach';
 
   // ── State — all unconditional (Rules of Hooks) ────────────────────────────
   var _gs = useState(makeDefaultGs);
@@ -242,6 +242,7 @@ export function useLiveScoring(params) {
 
   function audit(action, payload) {
     if (!supabase || !gameId || !teamId) return;
+    if (!_effectiveUserId) { console.warn('[scoring] no userId — skipping Supabase write'); return; }
     supabase
       .from('scoring_audit_log')
       .insert({
@@ -265,6 +266,7 @@ export function useLiveScoring(params) {
 
   function startHeartbeat() {
     stopHeartbeat();
+    if (!_effectiveUserId) { console.warn('[scoring] no userId — skipping Supabase write'); return; }
     hbRef.current = setInterval(function() {
       if (!isScorerRef.current || !supabase) return;
       supabase
@@ -393,6 +395,7 @@ export function useLiveScoring(params) {
 
   function claimScorerLock() {
     if (!isEnabled || !supabase || !gameId || !teamId) return;
+    if (!_effectiveUserId) { console.warn('[scoring] no userId — skipping Supabase write'); return; }
     setClaimError('');
     supabase
       .from('game_scoring_sessions')
@@ -428,6 +431,7 @@ export function useLiveScoring(params) {
 
   function releaseScorerLock() {
     if (!isEnabled || !supabase || !gameId || !teamId) return;
+    if (!_effectiveUserId) { console.warn('[scoring] no userId — skipping Supabase write'); return; }
     stopHeartbeat();
     setScorer(false);
     supabase

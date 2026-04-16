@@ -174,6 +174,18 @@ For architecture, data models, scoring engine logic, API design, database schema
 
 ---
 
+## Product Documentation
+
+| Document | Description |
+|----------|-------------|
+| [docs/product/CHARTER.md](./docs/product/CHARTER.md) | Full product charter — vision, scope, personas, metrics, principles, architecture, roadmap, risks, governance |
+| [docs/product/ONE_PAGER.md](./docs/product/ONE_PAGER.md) | Single-page scannable product summary |
+| [docs/product/ROADMAP.md](./docs/product/ROADMAP.md) | Release history and prioritized backlog |
+| [docs/product/PERSONAS.md](./docs/product/PERSONAS.md) | User personas — 5 roles defined (refresh in progress for v2.2.32, expanding to 8 personas) |
+| [docs/SOLUTION_DESIGN.md](./docs/SOLUTION_DESIGN.md) | Technical architecture — scoring engine, data model, deployment, schema |
+
+---
+
 ## Documentation
 
 - 📋 [Product Roadmap](./docs/product/ROADMAP.md)

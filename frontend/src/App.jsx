@@ -141,9 +141,68 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.2.30";
+var APP_VERSION = "2.2.35";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.2.35',
+    date: 'April 2026',
+    headline: "Test suite — share payload and Out detection coverage added",
+    userChanges: [],
+    techNote: "attendance.test.js: Group 9 (share payload construction, 10 tests) and Group 10 (out-per-inning grid detection, 7 tests). Total suite: 306/1/0.",
+    internalChanges: [
+      "attendance.test.js: Group 9 — buildSharePayload helper + 10 tests covering batting/roster/absentNames shape across no-absent, 1-absent, all-absent, out-of-roster-absent, and copy-safety scenarios",
+      "attendance.test.js: Group 10 — computeOutByInning helper + 7 tests covering no-Out, single-inning Out, every-inning Out, multi-player Out, Bench-not-Out, missing-grid-entry, and innings-count-respected",
+    ],
+  },
+  {
+    version: '2.2.34',
+    date: 'April 2026',
+    headline: "Scoring session fix — real user ID from session",
+    userChanges: [
+      "Scoring now works without requiring full login",
+    ],
+    techNote: "scoringUserId now falls back to session.user.id instead of hardcoded admin-coach-mud-hens string; null guards added to all 4 Supabase write sites in useLiveScoring.js",
+    internalChanges: [
+      "App.jsx: session={session} prop added to <ScoringMode> render",
+      "ScoringMode/index.jsx: scoringUserId falls back to session.user.id then null; isAdminTestMode = !scoringUserId",
+      "useLiveScoring.js: _effectiveUserId = userId || null; _effectiveUserName = userName || 'Coach'",
+      "useLiveScoring.js: !_effectiveUserId null guard added to audit(), startHeartbeat(), claimScorerLock(), releaseScorerLock()",
+    ],
+  },
+  {
+    version: '2.2.33',
+    date: 'April 2026',
+    headline: "Governance infrastructure — Feature Map, Debt Ledger, and Ship Gate ritual added",
+    userChanges: [],
+    techNote: "Meta-governance release. No app code changes.",
+    internalChanges: [
+      "Added docs/product/FEATURE_MAP.md — authoritative feature-to-doc-to-test mapping (18 feature rows)",
+      "Added docs/product/DOC_TEST_DEBT.md — debt ledger with 21 known gaps (2 P0, 8 P1, 11 P2)",
+      "CLAUDE.md: added Ship Gate four-question ritual, Audit Cadence section, Feature Map Update Rules, updated Session Start Command to 8 steps, added Ship Gate as Deploy Checklist STEP 0, corrected test count to 261/1/0",
+      "MASTER_DEV_REFERENCE.md: updated Session Start Command to 8 steps, added FEATURE_MAP.md and DOC_TEST_DEBT.md to Key File Locations, updated Document Governance table",
+      ".claude/settings.local.json + frontend/.claude/settings.local.json: untracked (already in .gitignore — git rm --cached applied)",
+      "Identified root cause of v2.2.31 scope creep: git add -A picked up pre-existing untracked CHARTER.md and ONE_PAGER.md. Fix: always stage specific files by path in deploy checklist (updated above)",
+      "stash@{0} (ide-settings-noise) dropped — .gitignore already covers settings.local.json",
+    ],
+  },
+  {
+    version: '2.2.31',
+    date: 'April 2026',
+    headline: "FAQ, Personas, and Solution Design updated — all role and auth copy is now current",
+    userChanges: [
+      "FAQ: added Attendance and multi-player Game Ball answers for Head Coach",
+      "FAQ: walk-up song and Spotify deep-link FAQs updated with Out Tonight filtering detail",
+      "FAQ: new Scorekeeper category with 3 answers about Live Scoring",
+      "FAQ: install banner and Google sign-in FAQs updated",
+    ],
+    techNote: "Documentation-only release. No code changes.",
+    internalChanges: [
+      "FAQ: added 3 head-coach items (attendance, game ball), 2 dj-parent items (updated walk-up song location, new Spotify deep-link FAQ), new scorekeeper category (3 items), updated install and account FAQs in setup-sharing",
+      "PERSONAS.md: rewritten to 8 personas — added Dugout Parent, DJ Parent, Catcher Parent, Base Coach. Live Scoring and Admin Dashboard flipped to MVP. Auth Required updated to Phase 2.",
+      "SOLUTION_DESIGN.md: rewrote Auth Architecture section end-to-end (Phase 3 → Phase 2, removed all [Twilio removed] inline tags, updated flow diagram, database tables, route inventory). Updated /health example (version 2.2.31, added db/db_latency_ms). Updated App.jsx line count to ~9,834, expanded utils/ and components/ trees, updated navigation table. Added Walk-up Songs Architecture subsection.",
+    ],
+  },
   {
     version: '2.2.30',
     date: 'April 2026',
@@ -9542,6 +9601,7 @@ export default function App() {
           activeTeam={activeTeam}
           activeTeamId={activeTeamId}
           user={user}
+          session={session}
           schedule={schedule}
           roster={roster}
           battingOrder={battingOrder}

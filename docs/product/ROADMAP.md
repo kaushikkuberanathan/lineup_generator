@@ -1,9 +1,33 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: April 16, 2026 (v2.2.30)
+> Last updated: April 16, 2026 (v2.2.35)
 > MVP launched: March 24, 2026
 
 ---
+
+## v2.2.35 — 2026-04-16 — Test suite: Groups 9-10 share payload + Out detection
+- Test: attendance.test.js Group 9 — buildSharePayload (10 tests) — batting/roster/absentNames shape, copy-safety
+- Test: attendance.test.js Group 10 — computeOutByInning (7 tests) — per-inning Out detection, Bench-not-Out, missing grid entry
+- Total suite: 306 passed / 1 skipped / 0 failed
+
+## v2.2.34 — 2026-04-16
+- Fix: scoringUserId now falls back to session.user.id instead of hardcoded admin-coach-mud-hens string
+- Fix: null guards added to all 4 Supabase write sites in useLiveScoring.js (audit, startHeartbeat, claimScorerLock, releaseScorerLock)
+
+## v2.2.33 — 2026-04-16 — Meta-governance: Feature Map, Debt Ledger, Ship Gate
+- Added `docs/product/FEATURE_MAP.md` — authoritative feature-to-doc-to-test mapping (18 feature rows)
+- Added `docs/product/DOC_TEST_DEBT.md` — debt ledger with 21 known gaps (2 P0, 8 P1, 11 P2)
+- CLAUDE.md: Ship Gate four-question ritual, Audit Cadence, Feature Map Update Rules, 8-step Session Start Command, STEP 0 Ship Gate in Deploy Checklist
+- MASTER_DEV_REFERENCE.md: 8-step Session Start Command, updated Document Governance table
+- `.claude/settings.local.json` files untracked (already in .gitignore); v2.2.31 scope creep root cause documented
+
+## v2.2.31 — 2026-04-16 — Docs-only: FAQ, Personas, Solution Design drift repaired
+- FAQ: added Attendance and multi-player Game Ball answers (Head Coach category)
+- FAQ: updated walk-up song location FAQ; added Spotify deep-link FAQ (DJ Parent category)
+- FAQ: new Scorekeeper category (3 FAQs — Live Scoring, scorer role lock, inning correction)
+- FAQ: updated install banner FAQ and Google sign-in FAQ (Setup & Sharing category)
+- PERSONAS.md: rewritten to 8 personas — added Dugout Parent, DJ Parent, Catcher Parent, Base Coach; Live Scoring and Admin Dashboard flipped to MVP; Auth Required updated to Phase 2
+- SOLUTION_DESIGN.md: Auth Architecture section rewritten (Phase 3 → Phase 2, all [Twilio removed] tags cleaned); /health example updated (v2.2.31, db fields added); App.jsx line count updated to ~9,834; utils/ and components/ trees expanded; navigation table updated; Walk-up Songs Architecture subsection added
 
 ## v2.2.30 — 2026-04-16
 - Fix: Out-tonight players now visible with red indicator across all 11 surfaces — diamond SVG, defense grid, Game Mode strip, share link diamond/table/batting, PDF bench/grid/batting card
