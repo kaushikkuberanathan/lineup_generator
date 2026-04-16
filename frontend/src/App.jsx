@@ -141,9 +141,35 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.2.33";
+var APP_VERSION = "2.2.35";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.2.35',
+    date: 'April 2026',
+    headline: "Test suite — share payload and Out detection coverage added",
+    userChanges: [],
+    techNote: "attendance.test.js: Group 9 (share payload construction, 10 tests) and Group 10 (out-per-inning grid detection, 7 tests). Total suite: 306/1/0.",
+    internalChanges: [
+      "attendance.test.js: Group 9 — buildSharePayload helper + 10 tests covering batting/roster/absentNames shape across no-absent, 1-absent, all-absent, out-of-roster-absent, and copy-safety scenarios",
+      "attendance.test.js: Group 10 — computeOutByInning helper + 7 tests covering no-Out, single-inning Out, every-inning Out, multi-player Out, Bench-not-Out, missing-grid-entry, and innings-count-respected",
+    ],
+  },
+  {
+    version: '2.2.34',
+    date: 'April 2026',
+    headline: "Scoring session fix — real user ID from session",
+    userChanges: [
+      "Scoring now works without requiring full login",
+    ],
+    techNote: "scoringUserId now falls back to session.user.id instead of hardcoded admin-coach-mud-hens string; null guards added to all 4 Supabase write sites in useLiveScoring.js",
+    internalChanges: [
+      "App.jsx: session={session} prop added to <ScoringMode> render",
+      "ScoringMode/index.jsx: scoringUserId falls back to session.user.id then null; isAdminTestMode = !scoringUserId",
+      "useLiveScoring.js: _effectiveUserId = userId || null; _effectiveUserName = userName || 'Coach'",
+      "useLiveScoring.js: !_effectiveUserId null guard added to audit(), startHeartbeat(), claimScorerLock(), releaseScorerLock()",
+    ],
+  },
   {
     version: '2.2.33',
     date: 'April 2026',
@@ -9575,6 +9601,7 @@ export default function App() {
           activeTeam={activeTeam}
           activeTeamId={activeTeamId}
           user={user}
+          session={session}
           schedule={schedule}
           roster={roster}
           battingOrder={battingOrder}

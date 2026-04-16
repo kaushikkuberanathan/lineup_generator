@@ -435,8 +435,10 @@ This audit takes 5 minutes and saves hours of confusion at the next session star
 ---
 
 ## Current Version
-**v2.2.33** — April 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/App.jsx`.
+**v2.2.35** — April 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/App.jsx`.
 
+- v2.2.35 (2026-04-16): Test suite — attendance.test.js Group 9 (share payload, 10 tests) + Group 10 (Out detection, 7 tests). Total: 306/1/0.
+- v2.2.34 (2026-04-16): Scoring session fix — scoringUserId falls back to session.user.id; null guards on all 4 useLiveScoring Supabase write sites.
 - v2.2.33 (2026-04-16): Meta-governance — Feature Map (18 features), Debt Ledger (21 gaps), Ship Gate ritual, 8-step Session Start Command, settings.local.json untracked.
 - v2.2.31 (2026-04-16): Docs-only — FAQ repaired (Attendance, Game Ball, Scorekeeper category, Spotify deep-link, install banner, Google sign-in). PERSONAS.md rewritten to 8 personas. SOLUTION_DESIGN.md Auth Architecture section rewritten (Phase 2, Twilio tags removed). Full version history in `VERSION_HISTORY` constant in `frontend/src/App.jsx`.
 

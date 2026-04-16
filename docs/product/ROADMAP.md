@@ -1,9 +1,18 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: April 16, 2026 (v2.2.33)
+> Last updated: April 16, 2026 (v2.2.35)
 > MVP launched: March 24, 2026
 
 ---
+
+## v2.2.35 — 2026-04-16 — Test suite: Groups 9-10 share payload + Out detection
+- Test: attendance.test.js Group 9 — buildSharePayload (10 tests) — batting/roster/absentNames shape, copy-safety
+- Test: attendance.test.js Group 10 — computeOutByInning (7 tests) — per-inning Out detection, Bench-not-Out, missing grid entry
+- Total suite: 306 passed / 1 skipped / 0 failed
+
+## v2.2.34 — 2026-04-16
+- Fix: scoringUserId now falls back to session.user.id instead of hardcoded admin-coach-mud-hens string
+- Fix: null guards added to all 4 Supabase write sites in useLiveScoring.js (audit, startHeartbeat, claimScorerLock, releaseScorerLock)
 
 ## v2.2.33 — 2026-04-16 — Meta-governance: Feature Map, Debt Ledger, Ship Gate
 - Added `docs/product/FEATURE_MAP.md` — authoritative feature-to-doc-to-test mapping (18 feature rows)
