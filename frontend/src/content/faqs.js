@@ -50,6 +50,14 @@ export var FAQ_CATEGORIES = [
       {
         q: "How do I award the Game Ball — can I pick more than one player?",
         a: "Yes. Go to Team → Schedule, tap the game card, tap Edit. Scroll to Game Ball and use the search to find players. Tap as many as you want — Game Ball now supports multiple recipients. The awards show as a read-only 🏆 label on the schedule card after saving."
+      },
+      {
+        q: "Why can't I take screenshots on Android?",
+        a: "This is a known Android limitation for installed PWA apps — Android treats standalone PWAs like native apps and applies its secure window policy, which blocks screenshots on some devices and OS versions. This is not something we can override in the app. On iOS, screenshots work normally. On Android, use the Share Link feature instead — tap Share Lineup from the Game Day tab to send a live link that anyone can view and screenshot from their browser."
+      },
+      {
+        q: "The share link works but I can't screenshot the lineup on Android — what should I do?",
+        a: "Open the share link in Chrome browser (not the installed app) and screenshot from there. The link works on any device without login and always shows the current lineup."
       }
     ]
   },

@@ -1,9 +1,12 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: April 2026 (v2.2.38)
+> Last updated: April 2026 (v2.2.39)
 > MVP launched: March 24, 2026
 
 ---
+
+## v2.2.39 — 2026-04-17
+- Debt: logged FEATURE_MAP.md structural and content gaps for v2.2.40 repair (prerequisite for Backlog Adjacency System)
 
 ## v2.2.38 — 2026-04-17 — Drift repair: FAQs, PERSONAS, SOLUTION_DESIGN, debt ledger
 - Docs: FAQs — Scorekeeper category added (3 items); head-coach Out Tonight + Game Ball answers added; dj-parent Spotify deep-link FAQ added; install banner + account answers updated
@@ -653,6 +656,12 @@
 | # | Item | Notes |
 |---|------|-------|
 | 1 | **Auth Phase 4 cutover** | Add requireAuth middleware to existing routes. Auth: email magic-link + Google OAuth (Twilio removed). |
+
+---
+
+## ✅ Resolved / Won't Fix
+
+- **Android PWA screenshot restriction** — OS-level security policy on standalone PWA windows. Not fixable in web code without breaking Game Mode UX. Workaround: Share Link. iOS unaffected. Closed April 2026.
 
 ---
 

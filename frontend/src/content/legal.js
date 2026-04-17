@@ -86,6 +86,11 @@ export var LEGAL_DOCS = [
       {
         type: "p",
         text: "We may update these terms as the app evolves. Continued use of the app after updates constitutes acceptance of the revised terms."
+      },
+      { type: "h3", text: "Known Platform Limitations" },
+      {
+        type: "p",
+        text: "Android Screenshot Restriction — When Dugout Lineup is installed as a Progressive Web App (PWA) on Android devices, the operating system may prevent screenshots. This is an Android OS-level security policy applied to standalone PWA windows and is not controlled by Dugout Lineup. Screenshots work normally on iOS. Android users can use the Share Link feature to share lineup views."
       }
     ]
   },
