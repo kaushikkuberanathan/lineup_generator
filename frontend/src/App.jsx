@@ -141,9 +141,25 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.2.37";
+var APP_VERSION = "2.2.38";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.2.38',
+    date: 'April 2026',
+    headline: "Documentation brought current — FAQs, personas, and architecture docs refreshed",
+    userChanges: [
+      "FAQ answers updated: Scorekeeper section added, Out Tonight and walk-up song answers clarified",
+    ],
+    techNote: "Meta-governance release.",
+    internalChanges: [
+      "SOLUTION_DESIGN.md: Live Scoring Framework, CI/CD Pipeline, Analytics Architecture sections added; feature_flags table schema added; /health version bumped; Known Tradeoffs CI row corrected",
+      "DOC_TEST_DEBT.md: Area field added to all 17 open items; 4 resolved doc gaps moved to Resolved section; dashboard corrected to 17 open (P0:2, P1:4, P2:11)",
+      "FEATURE_MAP.md: Governance row (#19) added; D018 cleared from Feature Flag System row; Coverage Summary updated to 19 features",
+      "PERSONAS.md: rewritten to 8 personas (Head Coach, Assistant Coach, Parent, Scorer, DJ Parent, Admin, Viewer, Child Player)",
+      "faqs.js: Scorekeeper category added; head-coach Out Tonight and game-ball answers added; dj-parent Spotify deep-link FAQ added",
+    ],
+  },
   {
     version: '2.2.37',
     date: 'April 2026',

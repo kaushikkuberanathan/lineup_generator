@@ -453,8 +453,9 @@ This audit takes 5 minutes and saves hours of confusion at the next session star
 ---
 
 ## Current Version
-**v2.2.37** — April 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/App.jsx`.
+**v2.2.38** — April 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/App.jsx`.
 
+- v2.2.38 (2026-04-17): Drift repair — FAQs (Scorekeeper category, Out Tonight, Spotify deep-link), PERSONAS.md 8 personas, SOLUTION_DESIGN.md sections (Live Scoring, CI/CD, Analytics, feature_flags schema), DOC_TEST_DEBT.md Area fields + 4 resolved, FEATURE_MAP.md Governance row.
 - v2.2.37 (2026-04-17): Scoring session — stable local scorer ID fallback; isAdminTestMode=false; 4 null guards removed from useLiveScoring.js.
 - v2.2.36 (2026-04-17): Meta-governance — enhanced DOC_TEST_DEBT.md (new format, 20 items), debt-helpers scripts, CLAUDE.md Git Staging Discipline + debt-p0 gate, .gitignore hardening.
 - v2.2.35 (2026-04-16): Test suite — attendance.test.js Group 9 (share payload, 10 tests) + Group 10 (Out detection, 7 tests). Total: 306/1/0.

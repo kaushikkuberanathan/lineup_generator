@@ -265,7 +265,7 @@ Returns server version and uptime. Used for deploy verification.
 ```json
 {
   "status": "healthy",
-  "version": "2.2.31",
+  "version": "2.2.38",
   "uptime": 3820,
   "db": "ok",
   "db_latency_ms": 12
@@ -579,6 +579,25 @@ localStorage.getItem("flag:<name>") === "1"  (per-user, runtime)
 
 Full How-To: `docs/features/feature-flags.md`
 
+### Database Schema (`feature_flags` table)
+
+```sql
+feature_flags (
+  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  flag_name   text NOT NULL,
+  enabled     boolean NOT NULL DEFAULT false,
+  team_id     text,                    -- NULL = global flag; non-null = team-scoped override
+  description text,
+  created_at  timestamptz DEFAULT now(),
+  updated_at  timestamptz DEFAULT now(),
+  UNIQUE(flag_name, team_id)
+);
+-- RLS: anon role has SELECT only; no public INSERT/UPDATE/DELETE
+-- Team-scoped flag (team_id NOT NULL) overrides global (team_id IS NULL) for that team
+```
+
+Evaluation priority: compile-time default → localStorage per-user override → Supabase table per-team override (highest).
+
 ---
 
 ## Version Management
@@ -645,6 +664,123 @@ Full recovery workflow: `backend/migrations/README.md`
 
 ---
 
+## Live Scoring Framework
+
+The live scoring system operates on a three-tier model. Tier 1 is deployed and in pilot. Tiers 2 and 3 are on the roadmap.
+
+### Tier 1 — Game-Level Results (Deployed, Pilot)
+
+- Inning-by-inning run totals for home and away team
+- Scorer lock: one device holds the active scorer role at a time (`game_scoring_sessions` table — `scorer_user_id` is NOT NULL)
+- Real-time state sync via Supabase Realtime subscriptions on `live_game_state`
+- Restore modal: rolls back to last saved snapshot from `live_game_state`
+- Audit trail: every run entry written to `scoring_audit_log` with timestamp and scorer ID
+- Currently enabled for Mud Hens and Demo All-Stars by team name; full rollout gates on `LIVE_SCORING` feature flag
+
+### Tier 2 — Full Inning-by-Inning Run Tracking (Backlog)
+
+- Inning timestamps, half-inning breakdown, pitch count (optional)
+- Requires schema extension to `live_game_state`
+
+### Tier 3 — At-Bat Outcome Tracking (Backlog, Feature-Flagged)
+
+- Per-plate-appearance outcomes: H, BB, K, etc.
+- Cross-game stat aggregation for batting AVG, OBP
+- Gates on a future `AT_BAT_TRACKING` feature flag
+
+### Design Rationale
+
+Recreational 8U baseball use case — fairness and simplicity over statistical depth. The scorer lock pattern was chosen over optimistic concurrency because mid-game conflicts (two scorekeepers simultaneously entering runs) are disruptive in a time-pressured dugout environment.
+
+### Non-Goals
+
+- Pitch-by-pitch tracking
+- Advanced statistical splits (BABIP, exit velocity, launch angle)
+- Real-time opponent scouting or score reporting to external systems
+
+---
+
+## CI/CD Pipeline
+
+### Branch Strategy
+
+| Branch | Purpose |
+|---|---|
+| `main` | Production. Auto-deploys to Vercel (frontend) and Render (backend). Branch-protected. |
+| `develop` | Integration branch. Merges to `main` per release. |
+| `feature/*` | Feature work. PR to `develop`. |
+| `fix/*` | Bug fixes. PR to `develop` or `main`. |
+| `hotfix/*` | Emergency prod fix. PR direct to `main` with `[hotfix-exception]` in commit message. |
+
+### GitHub Actions
+
+| Workflow | Trigger | Jobs |
+|---|---|---|
+| `ci.yml` | Push to `develop`, PR to `main` | Frontend build, Vitest suite (306 pass / 1 skip target), ESLint |
+| `health.yml` | Daily cron (03:00 UTC) | HTTP GET to `/health`, validate `status: "healthy"` and `db: "ok"` |
+
+### Pre-push Hook (Husky)
+
+`.husky/pre-push` runs `cd frontend && npm test` on every `git push`. Blocks push if tests fail.  
+Pool: `forks`, global environment: `jsdom` (eliminates per-file worker spawn that caused Windows timeouts in the threads pool — fixed v2.2.36).
+
+### Smoke Test (`scripts/smoke-test.js`)
+
+Validates reachability and schema health:
+- `/health` returns HTTP 200 with `db: "ok"`
+- `/ping` returns HTTP 200
+- Supabase `team_data` and `teams` tables are reachable
+- Key schema columns present in both tables
+
+### Dev Environment
+
+- Frontend: `dev.dugoutlineup.com` → Vercel preview deploy
+- Backend: `lineup-generator-backend-dev.onrender.com` (Render free tier)
+- Wait-for-Render race fix: 90s sleep + `/ping` polling before smoke tests run (added v2.2.12 — Render free-tier cold-start takes up to 60s)
+
+### Deployment Gate
+
+1. `npm test` must pass (Vitest, all 306+)
+2. `npm run build` must complete clean (no errors)
+3. Ship Gate four-question checklist answered (CLAUDE.md § Ship Gate)
+4. Explicit push phrase: "confirmed — push to main"
+
+---
+
+## Analytics Architecture
+
+### Identity Model
+
+- `mixpanel.identify(teamId)` called on every `loadTeam()` invocation
+- Before identify: events tracked anonymously (install, first launch)
+- After identify: all events associate to the numeric Supabase team ID
+- No PII in Mixpanel — team ID is a numeric ID, not a coach name or email
+
+### Super Properties (Auto-Injected on Every Event)
+
+| Property | Source |
+|---|---|
+| `os` | `window.navigator.userAgent` parsing |
+| `device_type` | `mobile` / `tablet` / `desktop` |
+| `platform` | `pwa` / `browser` |
+| `is_pwa` | `window.matchMedia("(display-mode: standalone)")` |
+| `screen_width` / `screen_height` | `window.screen` |
+| `app_version` | `__APP_VERSION__` — injected at build time via `vite.config.js` define; no manual env var sync needed |
+
+### Event Naming Convention
+
+Present-tense past-event naming: `lineup_generated`, `share_link_opened`, `game_mode_opened`, `player_marked_out`, `song_play_tapped`. Properties always include `team_id` and relevant entity context.
+
+### SSR / Offline Guards
+
+`analytics.js` wraps all `mixpanel.track()` calls with `typeof window !== "undefined"` guards. This prevents crashes in SSR-like environments and in the PWA service worker context (which runs in a headless worker without `window`).
+
+### Full Event Inventory
+
+See `docs/analytics/ANALYTICS.md` for the complete list of 32+ Mixpanel events and 4 Vercel Analytics events, including full property schemas per event and the UTM campaign registry.
+
+---
+
 ## Known Tradeoffs & Future Considerations
 
 | Decision | Current Rationale | When to Revisit |
@@ -655,5 +791,5 @@ Full recovery workflow: `backend/migrations/README.md`
 | JSONB for all team data | Mirrors localStorage, zero transformation overhead | Normalize if query patterns require filtering inside game/player arrays |
 | Backtracking solver in frontend | Fast enough at 11-player / 6-inning scale | Move server-side if multi-game batch generation or 20+ player rosters are added |
 | No TypeScript | Moved fast in MVP phase | Increasing tech debt — migration is a Phase 4 quality item |
-| No CI/CD pipeline | Manual deploy checklist covers it today | GitHub Actions CI is next sprint — block Vercel auto-deploy on failing engine tests |
+| GitHub Actions CI on develop + Husky pre-push | Full Vitest suite runs before every push; health check cron daily | Add branch protection requiring CI green before main merge |
 | Roster snapshots (last 10 per team) | Recovery net for migration wipes and accidental deletes | Scale snapshot retention if teams request longer history |
