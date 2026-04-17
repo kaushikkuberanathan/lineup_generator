@@ -14,7 +14,7 @@ export default defineConfig({
   },
   test: {
     globals: true,
-    environment: 'node',
+    environment: 'jsdom',
     pool: 'forks',
     include: ['src/**/*.test.js'],
   },
