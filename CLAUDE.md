@@ -411,6 +411,18 @@ When auth goes live, remove these three shims IN ORDER:
 Do not remove the admin badge (⚠ Admin Test Mode) until all
 three shims are removed and auth is confirmed working end-to-end.
 
+4. **Supabase SQL** — restore uuid types on scorer user ID columns
+   (currently text for testing — drop shim data first):
+
+   Tables affected:
+   - `game_scoring_sessions.scorer_user_id` (text → uuid + FK to auth.users)
+   - `scoring_audit_log.actor_user_id` (text → uuid + FK to auth.users)
+   - `at_bats.recorded_by_id` (text → uuid + FK to auth.users)
+
+   Steps: clear test rows with `actor='admin-coach-mud-hens'`,
+   then `ALTER TYPE` back to uuid, then `ADD CONSTRAINT` FK.
+   Full SQL in session history April 2026.
+
 ---
 
 ## Ship Gate
