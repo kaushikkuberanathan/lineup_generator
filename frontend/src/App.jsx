@@ -141,9 +141,23 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.2.36";
+var APP_VERSION = "2.2.37";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.2.37',
+    date: 'April 2026',
+    headline: "Scoring session — stable local scorer ID",
+    userChanges: [
+      "Claim Scorer now works without requiring login",
+    ],
+    techNote: "scoringUserId falls back to a stable localStorage-persisted local ID (local-XXXX) when no auth session exists; never null; isAdminTestMode permanently false; 4 null guards removed from useLiveScoring.js",
+    internalChanges: [
+      "ScoringMode/index.jsx: _storedLocalId IIFE generates/retrieves scorer_local_id from localStorage; scoringUserId chain: user.id → session.user.id → _storedLocalId",
+      "ScoringMode/index.jsx: isAdminTestMode = false (amber badge permanently removed)",
+      "useLiveScoring.js: removed !_effectiveUserId null guards from audit(), startHeartbeat(), claimScorerLock(), releaseScorerLock()",
+    ],
+  },
   {
     version: '2.2.36',
     date: 'April 2026',

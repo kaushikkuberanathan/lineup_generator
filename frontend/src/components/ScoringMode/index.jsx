@@ -47,15 +47,27 @@ export default function ScoringMode({
   });
 
   // AUTH TESTING SHIM — remove at Phase 4C
+  // Get or generate a stable local scorer ID as final fallback
+  var _storedLocalId = (function() {
+    try {
+      var k = 'scorer_local_id';
+      var existing = localStorage.getItem(k);
+      if (existing) return existing;
+      var generated = 'local-' + Math.random().toString(36).slice(2, 10)
+        + '-' + Date.now().toString(36);
+      localStorage.setItem(k, generated);
+      return generated;
+    } catch(e) { return 'local-scorer'; }
+  })();
   var scoringUserId = (user && user.id)
     ? user.id
     : (session && session.user && session.user.id)
     ? session.user.id
-    : null;
+    : _storedLocalId;
   var scoringUserName = user && user.profile && user.profile.first_name
     ? user.profile.first_name
     : 'Coach';
-  var isAdminTestMode = !scoringUserId;
+  var isAdminTestMode = false;
   var gameId   = selectedGame ? selectedGame.id : null;
 
   var scoring = useLiveScoring({

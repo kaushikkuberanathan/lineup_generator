@@ -1,9 +1,14 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: April 2026 (v2.2.36)
+> Last updated: April 2026 (v2.2.37)
 > MVP launched: March 24, 2026
 
 ---
+
+## v2.2.37 — 2026-04-17
+- Fix: Claim Scorer now works without login — scoringUserId falls back to stable localStorage-persisted local ID; never null
+- Fix: isAdminTestMode permanently false; amber badge removed
+- Fix: removed 4 null guards from useLiveScoring.js write sites
 
 ## v2.2.36 — 2026-04-17 — Governance activation: enhanced debt ledger, staging discipline, shell helpers
 - Governance: `docs/product/DOC_TEST_DEBT.md` replaced with enhanced format — emoji priority markers (🔴/🟠/🟡), table-based items, Test/Doc/Process gap categories, Debt Summary Dashboard (20 items: 2 P0, 7 P1, 11 P2)

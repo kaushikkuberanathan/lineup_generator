@@ -242,7 +242,6 @@ export function useLiveScoring(params) {
 
   function audit(action, payload) {
     if (!supabase || !gameId || !teamId) return;
-    if (!_effectiveUserId) { console.warn('[scoring] no userId — skipping Supabase write'); return; }
     supabase
       .from('scoring_audit_log')
       .insert({
@@ -266,7 +265,6 @@ export function useLiveScoring(params) {
 
   function startHeartbeat() {
     stopHeartbeat();
-    if (!_effectiveUserId) { console.warn('[scoring] no userId — skipping Supabase write'); return; }
     hbRef.current = setInterval(function() {
       if (!isScorerRef.current || !supabase) return;
       supabase
@@ -395,7 +393,6 @@ export function useLiveScoring(params) {
 
   function claimScorerLock() {
     if (!isEnabled || !supabase || !gameId || !teamId) return;
-    if (!_effectiveUserId) { console.warn('[scoring] no userId — skipping Supabase write'); return; }
     setClaimError('');
     supabase
       .from('game_scoring_sessions')
@@ -431,7 +428,6 @@ export function useLiveScoring(params) {
 
   function releaseScorerLock() {
     if (!isEnabled || !supabase || !gameId || !teamId) return;
-    if (!_effectiveUserId) { console.warn('[scoring] no userId — skipping Supabase write'); return; }
     stopHeartbeat();
     setScorer(false);
     supabase
