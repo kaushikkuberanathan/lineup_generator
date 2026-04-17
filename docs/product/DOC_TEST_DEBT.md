@@ -135,6 +135,28 @@
 
 ## Open — Doc Gaps
 
+### 🟠 P1 — FEATURE_MAP.md Structural Restructure for Adjacency Support
+
+| | |
+|---|---|
+| **Area** | Governance |
+| **Status** | Open |
+| **Type** | Refactor |
+| **Opened** | 2026-04-17 |
+| **Target** | v2.2.40 |
+| **Summary** | FEATURE_MAP.md currently uses a flat numbered table (`\| 1 \| **Feature Name** \| MVP \|`). Adjacency tooling and AI cross-referencing require per-feature sections with structured fields: Code Surfaces, Doc Surfaces, FAQ Categories, Personas, Test Surfaces. Restructure adds `### <Feature Title>` sections below the existing summary table; table becomes TOC, sections become data. Same information, parseable by scripts. Required prerequisite for v2.2.41 Backlog Adjacency System. |
+
+### 🟠 P1 — FEATURE_MAP.md Missing Feature Rows (Analytics, PWA, Governance)
+
+| | |
+|---|---|
+| **Area** | Governance |
+| **Status** | Open |
+| **Type** | Doc gap |
+| **Opened** | 2026-04-17 |
+| **Target** | v2.2.40 |
+| **Summary** | Three Area values in DOC_TEST_DEBT.md have no matching row in FEATURE_MAP.md: "Analytics (Mixpanel + Vercel Analytics + UTM)", "PWA Setup", and "Governance" (exists as "Governance infrastructure" — not exact match, breaks mechanical lookup). Add dedicated rows for each during the v2.2.40 restructure. Each row must include full Code Surfaces, Doc Surfaces, FAQ Categories, Personas, Test Surfaces fields so adjacency tooling works mechanically. |
+
 ### 🟡 P2 — SOLUTION_DESIGN.md §Test Suite Inventory
 
 | | |
@@ -239,9 +261,9 @@
 | Priority | Test Gaps | Doc Gaps | Process Gaps | Total |
 |---|---|---|---|---|
 | 🔴 P0 | 2 | 0 | 0 | **2** |
-| 🟠 P1 | 3 | 0 | 1 | **4** |
+| 🟠 P1 | 3 | 2 | 1 | **6** |
 | 🟡 P2 | 4 | 4 | 3 | **11** |
-| **Total** | **9** | **4** | **4** | **17** |
+| **Total** | **9** | **6** | **4** | **19** |
 
 **Age distribution:**
 - 0–30 days: 17

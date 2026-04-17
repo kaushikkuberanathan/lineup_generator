@@ -141,9 +141,21 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.2.38";
+var APP_VERSION = "2.2.39";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.2.39',
+    date: 'April 2026',
+    headline: "Debt: FEATURE_MAP structural gaps logged for v2.2.40 repair",
+    userChanges: [],
+    techNote: "Ledger-only release. No app code or runtime changes. Prerequisite for v2.2.40 FEATURE_MAP.md restructure and v2.2.41 Backlog Adjacency System.",
+    internalChanges: [
+      "DOC_TEST_DEBT.md: +2 P1 items — FEATURE_MAP structural restructure + missing feature rows (Analytics, PWA, Governance)",
+      "Context: attempted v2.2.39 Backlog Adjacency System discovered FEATURE_MAP.md uses flat table format with no Code Surfaces column, blocking mechanical file→feature lookup",
+      "Dashboard: P1 count +2 (4→6), total open +2 (17→19)",
+    ],
+  },
   {
     version: '2.2.38',
     date: 'April 2026',
