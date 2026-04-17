@@ -219,6 +219,9 @@ If backend unavailable:
 - No blocking screen for viewing lineup
 - Share links must degrade gracefully — clear error, never blank screen
 
+**Android PWA Screenshot Policy**
+Android OS blocks screenshots in standalone PWA mode — this is expected behavior, not a bug. Do not investigate. Share Link is the intended workaround. iOS unaffected.
+
 ---
 
 ## Incident Response
