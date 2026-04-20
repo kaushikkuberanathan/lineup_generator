@@ -411,6 +411,18 @@ When auth goes live, remove these three shims IN ORDER:
 Do not remove the admin badge (⚠ Admin Test Mode) until all
 three shims are removed and auth is confirmed working end-to-end.
 
+4. **Supabase SQL** — restore uuid types on scorer user ID columns
+   (currently text for testing — drop shim data first):
+
+   Tables affected:
+   - `game_scoring_sessions.scorer_user_id` (text → uuid + FK to auth.users)
+   - `scoring_audit_log.actor_user_id` (text → uuid + FK to auth.users)
+   - `at_bats.recorded_by_id` (text → uuid + FK to auth.users)
+
+   Steps: clear test rows with `actor='admin-coach-mud-hens'`,
+   then `ALTER TYPE` back to uuid, then `ADD CONSTRAINT` FK.
+   Full SQL in session history April 2026.
+
 ---
 
 ## Ship Gate
@@ -467,8 +479,9 @@ This audit takes 5 minutes and saves hours of confusion at the next session star
 ---
 
 ## Current Version
-**v2.2.39** — April 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/App.jsx`.
+**v2.2.40** — April 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/App.jsx`.
 
+- v2.2.40 (2026-04-20): Fix — `team: activeTeam` added to useLiveScoring() call in ScoringMode/index.jsx; resolves permanent "Loading rules..." hang in Live Scoring pitch UI.
 - v2.2.39 (2026-04-17): Debt ledger — FEATURE_MAP.md structural + missing-row gaps logged as two P1 items (P1: 4→6, total open: 17→19). Prerequisite for v2.2.40 restructure and v2.2.41 Backlog Adjacency System.
 - v2.2.38 (2026-04-17): Drift repair — FAQs (Scorekeeper category, Out Tonight, Spotify deep-link), PERSONAS.md 8 personas, SOLUTION_DESIGN.md sections (Live Scoring, CI/CD, Analytics, feature_flags schema), DOC_TEST_DEBT.md Area fields + 4 resolved, FEATURE_MAP.md Governance row.
 - v2.2.37 (2026-04-17): Scoring session — stable local scorer ID fallback; isAdminTestMode=false; 4 null guards removed from useLiveScoring.js.
