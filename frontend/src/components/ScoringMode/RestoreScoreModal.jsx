@@ -57,7 +57,7 @@ export default function RestoreScoreModal(props) {
       .rpc('restore_game_state', {
         p_game_id:    gameId,
         p_team_id:    String(teamId),
-        p_actor_id:   userId   || null,
+        p_actor_id:   (userId && !userId.startsWith('local-')) ? userId : null,
         p_actor_name: userName || null,
       })
       .then(function(r) {

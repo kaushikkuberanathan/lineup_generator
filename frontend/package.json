@@ -1,6 +1,6 @@
 {
   "name": "lineup-generator",
-  "version": "2.2.42",
+  "version": "2.2.43",
   "private": true,
   "scripts": {
     "dev": "vite",

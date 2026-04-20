@@ -660,13 +660,14 @@ export default function LiveScoringPanel(props) {
             </div>
           </div>
         ) : (
-          <div style={{
-            background: 'rgba(255,255,255,0.03)',
-            border: '1px solid rgba(255,255,255,0.07)',
-            borderRadius: '8px', padding: '10px 14px',
-            color: '#374151', fontSize: '13px',
-          }}>
-            No batting order configured
+          <div style={{padding:'10px 14px', background:'rgba(255,255,255,0.05)',
+            borderRadius:'10px', textAlign:'center'}}>
+            <div style={{color:'#aaa', fontSize:'14px', marginBottom:'4px'}}>
+              No batting order set
+            </div>
+            <div style={{color:'#666', fontSize:'12px'}}>
+              Set a batting order in Game Day → Lineups tab first
+            </div>
           </div>
         )}
       </div>
@@ -712,8 +713,10 @@ export default function LiveScoringPanel(props) {
         </div>
       </div>
 
+      <div style={{flex:'1 1 0'}} />
+
       {/* ── Pitch buttons — always visible at bottom ──────────────────────────── */}
-      <div style={{ marginTop: 'auto', flexShrink: 0, padding: '4px 16px', paddingBottom: '80px' }}>
+      <div style={{ flexShrink: 0, padding: '4px 16px', paddingBottom: '80px' }}>
         {!pitchUIConfig && (
           <div style={{ color: '#64748b', textAlign: 'center', padding: 16 }}>
             Loading rules...

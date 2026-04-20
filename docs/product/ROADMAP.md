@@ -1,9 +1,14 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: April 2026 (v2.2.42)
+> Last updated: April 2026 (v2.2.43)
 > MVP launched: March 24, 2026
 
 ---
+
+## v2.2.43 — 2026-04-20
+- Fix: Scoring screen layout — explicit flex spacer replaces marginTop:auto; dead space eliminated
+- Fix: Empty batting order state — clearer two-line message directing coach to Game Day → Lineups
+- Fix: Restore Scorebook UUID error — `p_actor_id` now passes null for local-xxx IDs to satisfy Postgres uuid type on `restore_game_state` RPC
 
 ## v2.2.42 — 2026-04-20
 - Fix: Scoring screen dead space removed — diamond section reverted to flexShrink:0; pitch buttons marginTop:auto pins to bottom

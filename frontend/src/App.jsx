@@ -141,9 +141,25 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.2.42";
+var APP_VERSION = "2.2.43";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.2.43',
+    date: 'April 2026',
+    headline: "Scoring fixes — layout, empty state, restore UUID",
+    userChanges: [
+      "Scoring screen layout improved — no more dead space",
+      "Clearer message when no batting order is set",
+      "Restore Scorebook no longer errors",
+    ],
+    techNote: "Explicit flex spacer between diamond and pitch buttons replaces marginTop:auto; RestoreScoreModal passes null for local-xxx IDs to satisfy Postgres uuid type; improved no-batting-order empty state",
+    internalChanges: [
+      "LiveScoringPanel.jsx: marginTop:auto removed from pitch buttons container; explicit <div style={{flex:'1 1 0'}} /> spacer inserted between diamond section and pitch buttons",
+      "LiveScoringPanel.jsx: 'No batting order configured' empty state replaced with two-line instructional message",
+      "RestoreScoreModal.jsx: p_actor_id now passes null for local-xxx IDs — prevents Postgres uuid type error on restore_game_state RPC",
+    ],
+  },
   {
     version: '2.2.42',
     date: 'April 2026',
