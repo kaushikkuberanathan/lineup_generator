@@ -141,9 +141,21 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.2.39";
+var APP_VERSION = "2.2.40";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.2.40',
+    date: 'April 2026',
+    headline: "Fix: Live scoring rules load correctly — team prop wired to useLiveScoring",
+    userChanges: [],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
+      "ScoringMode/index.jsx: added team: activeTeam to useLiveScoring() call",
+      "Root cause: getRulesForTeam(team) received null because team prop was never passed; pitchUIConfig stayed null; UI hung on 'Loading rules...' permanently",
+      "Fix: activeTeam flows App.jsx → ScoringMode (already wired) → useLiveScoring (now wired); rules and pitchUIConfig resolve on first render",
+    ],
+  },
   {
     version: '2.2.39',
     date: 'April 2026',

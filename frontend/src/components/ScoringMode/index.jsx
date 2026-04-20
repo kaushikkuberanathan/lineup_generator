@@ -77,6 +77,7 @@ export default function ScoringMode({
     userName:     scoringUserName,
     isEnabled:    isEnabled && !isPractice && !!gameId,
     battingOrder: mappedBattingOrder,
+    team:         activeTeam,
   });
 
   // Claim scorer lock once the hook is live after scorerClaimed → true

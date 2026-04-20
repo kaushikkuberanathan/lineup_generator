@@ -1,9 +1,12 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: April 2026 (v2.2.39)
+> Last updated: April 2026 (v2.2.40)
 > MVP launched: March 24, 2026
 
 ---
+
+## v2.2.40 — 2026-04-20
+- Fix: Live scoring "Loading rules..." hang — `team` prop now wired from ScoringMode → useLiveScoring so `getRulesForTeam()` receives the team object and resolves pitchUIConfig on first render
 
 ## v2.2.39 — 2026-04-17
 - Debt: logged FEATURE_MAP.md structural and content gaps for v2.2.40 repair (prerequisite for Backlog Adjacency System)
