@@ -499,7 +499,7 @@ export default function LiveScoringPanel(props) {
 
   return (
     <div style={{
-      minHeight: '100vh', background: '#0b1524', color: '#fff',
+      height: '100vh', overflow: 'hidden', background: '#0b1524', color: '#fff',
       fontFamily: FF, display: 'flex', flexDirection: 'column',
     }}>
 
@@ -674,7 +674,8 @@ export default function LiveScoringPanel(props) {
       {/* ── Diamond + pitch log ───────────────────────────────────────────────── */}
       <div style={{
         display: 'flex', alignItems: 'center',
-        padding: '0 16px 8px', gap: '16px', flexShrink: 0,
+        padding: '0 16px 8px', gap: '16px',
+        flex: '1 1 0', overflow: 'hidden', minHeight: 0,
       }}>
         <DiamondSVG runners={gs.runners} />
 
@@ -712,7 +713,7 @@ export default function LiveScoringPanel(props) {
       </div>
 
       {/* ── Pitch buttons — always visible at bottom ──────────────────────────── */}
-      <div style={{ padding: '8px 16px 20px', flexShrink: 0, marginTop: 'auto' }}>
+      <div style={{ padding: '8px 16px 20px', paddingBottom: '72px', flexShrink: 0 }}>
         {!pitchUIConfig && (
           <div style={{ color: '#64748b', textAlign: 'center', padding: 16 }}>
             Loading rules...
