@@ -1,9 +1,13 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: April 2026 (v2.2.41)
+> Last updated: April 2026 (v2.2.42)
 > MVP launched: March 24, 2026
 
 ---
+
+## v2.2.42 — 2026-04-20
+- Fix: Scoring screen dead space removed — diamond section reverted to flexShrink:0; pitch buttons marginTop:auto pins to bottom
+- Fix: Absent players excluded from batting order in scoring — ScoringMode now receives `activeBattingOrder` instead of `battingOrder`
 
 ## v2.2.41 — 2026-04-20
 - Fix: Live scoring pitch buttons (Ball/Strike/K/Foul/Contact) now always visible without scrolling — outer container locked to `height:100vh + overflow:hidden`; diamond section absorbs slack via `flex:1`; pitch bar pinned at bottom with 72px nav clearance

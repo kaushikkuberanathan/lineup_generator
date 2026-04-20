@@ -141,9 +141,24 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.2.41";
+var APP_VERSION = "2.2.42";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.2.42',
+    date: 'April 2026',
+    headline: "Scoring layout fix + batting order from active roster",
+    userChanges: [
+      "Scoring screen no longer shows empty space",
+      "Absent players excluded from batting order in scoring",
+    ],
+    techNote: "ScoringMode now receives activeBattingOrder instead of battingOrder; diamond section flexShrink:0 removes dead space; pitch buttons marginTop:auto pins to bottom",
+    internalChanges: [
+      "App.jsx:9689: battingOrder={battingOrder} → battingOrder={activeBattingOrder} on <ScoringMode> render",
+      "LiveScoringPanel.jsx: diamond+pitch-log section flex:'1 1 0' reverted to flexShrink:0",
+      "LiveScoringPanel.jsx: pitch buttons div — marginTop:auto restored, padding tightened to 4px 16px, paddingBottom:80px",
+    ],
+  },
   {
     version: '2.2.41',
     date: 'April 2026',
@@ -9686,7 +9701,7 @@ export default function App() {
           session={session}
           schedule={schedule}
           roster={roster}
-          battingOrder={battingOrder}
+          battingOrder={activeBattingOrder}
           onClose={function() { setPrimaryTab("gameday"); }}
         />
       ) : null}

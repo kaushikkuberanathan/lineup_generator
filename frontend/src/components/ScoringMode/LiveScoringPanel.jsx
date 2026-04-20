@@ -675,7 +675,7 @@ export default function LiveScoringPanel(props) {
       <div style={{
         display: 'flex', alignItems: 'center',
         padding: '0 16px 8px', gap: '16px',
-        flex: '1 1 0', overflow: 'hidden', minHeight: 0,
+        flexShrink: 0,
       }}>
         <DiamondSVG runners={gs.runners} />
 
@@ -713,7 +713,7 @@ export default function LiveScoringPanel(props) {
       </div>
 
       {/* ── Pitch buttons — always visible at bottom ──────────────────────────── */}
-      <div style={{ padding: '8px 16px 20px', paddingBottom: '72px', flexShrink: 0 }}>
+      <div style={{ marginTop: 'auto', flexShrink: 0, padding: '4px 16px', paddingBottom: '80px' }}>
         {!pitchUIConfig && (
           <div style={{ color: '#64748b', textAlign: 'center', padding: 16 }}>
             Loading rules...
