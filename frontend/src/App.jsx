@@ -141,9 +141,23 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.2.43";
+var APP_VERSION = "2.2.44";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.2.44',
+    date: 'April 2026',
+    headline: "Scoring pitch buttons pinned — always visible",
+    userChanges: [
+      "Ball/Strike/K/Foul/Contact buttons now always visible at bottom of screen",
+    ],
+    techNote: "Pitch buttons changed to position:fixed bottom:60px; outer container paddingBottom:160px prevents content overlap; flex spacer removed",
+    internalChanges: [
+      "LiveScoringPanel.jsx: pitch buttons container changed to position:fixed, bottom:60px, left:0, right:0, zIndex:50",
+      "LiveScoringPanel.jsx: outer container changed from height:100vh+overflow:hidden to minHeight:100vh+overflow:visible+paddingBottom:160px",
+      "LiveScoringPanel.jsx: flex:1 1 0 spacer div removed",
+    ],
+  },
   {
     version: '2.2.43',
     date: 'April 2026',

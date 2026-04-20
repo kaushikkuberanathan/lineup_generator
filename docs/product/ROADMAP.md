@@ -1,9 +1,12 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: April 2026 (v2.2.43)
+> Last updated: April 2026 (v2.2.44)
 > MVP launched: March 24, 2026
 
 ---
+
+## v2.2.44 — 2026-04-20
+- Fix: Scoring pitch buttons (Ball/Strike/K/Foul/Contact) now position:fixed at bottom:60px — always visible regardless of content height; paddingBottom:160px on outer container prevents overlap
 
 ## v2.2.43 — 2026-04-20
 - Fix: Scoring screen layout — explicit flex spacer replaces marginTop:auto; dead space eliminated

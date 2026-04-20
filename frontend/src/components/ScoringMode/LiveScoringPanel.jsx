@@ -499,7 +499,8 @@ export default function LiveScoringPanel(props) {
 
   return (
     <div style={{
-      height: '100vh', overflow: 'hidden', background: '#0b1524', color: '#fff',
+      minHeight: '100vh', overflow: 'visible', paddingBottom: '160px',
+      background: '#0b1524', color: '#fff',
       fontFamily: FF, display: 'flex', flexDirection: 'column',
     }}>
 
@@ -713,10 +714,11 @@ export default function LiveScoringPanel(props) {
         </div>
       </div>
 
-      <div style={{flex:'1 1 0'}} />
-
       {/* ── Pitch buttons — always visible at bottom ──────────────────────────── */}
-      <div style={{ flexShrink: 0, padding: '4px 16px', paddingBottom: '80px' }}>
+      <div style={{
+        position: 'fixed', bottom: '60px', left: 0, right: 0,
+        background: '#0b1524', padding: '8px 16px 12px', zIndex: 50,
+      }}>
         {!pitchUIConfig && (
           <div style={{ color: '#64748b', textAlign: 'center', padding: 16 }}>
             Loading rules...

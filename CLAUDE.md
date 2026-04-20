@@ -479,8 +479,9 @@ This audit takes 5 minutes and saves hours of confusion at the next session star
 ---
 
 ## Current Version
-**v2.2.43** — April 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/App.jsx`.
+**v2.2.44** — April 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/App.jsx`.
 
+- v2.2.44 (2026-04-20): Fix — scoring pitch buttons position:fixed bottom:60px; always visible; outer container paddingBottom:160px; flex spacer removed.
 - v2.2.43 (2026-04-20): Fix — scoring layout (flex spacer), empty batting order message, RestoreScoreModal UUID guard (null for local-xxx IDs).
 - v2.2.42 (2026-04-20): Fix — scoring screen dead space removed; absent players excluded from scoring batting order (activeBattingOrder); diamond flexShrink:0; pitch buttons marginTop:auto.
 - v2.2.41 (2026-04-20): Fix — LiveScoringPanel pitch buttons always visible; outer container height:100vh+overflow:hidden; diamond section flex:1; pitch bar 72px bottom clearance.
