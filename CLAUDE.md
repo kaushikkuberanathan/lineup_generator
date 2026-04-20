@@ -479,8 +479,9 @@ This audit takes 5 minutes and saves hours of confusion at the next session star
 ---
 
 ## Current Version
-**v2.2.40** — April 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/App.jsx`.
+**v2.2.41** — April 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/App.jsx`.
 
+- v2.2.41 (2026-04-20): Fix — LiveScoringPanel pitch buttons always visible; outer container height:100vh+overflow:hidden; diamond section flex:1; pitch bar 72px bottom clearance.
 - v2.2.40 (2026-04-20): Fix — `team: activeTeam` added to useLiveScoring() call in ScoringMode/index.jsx; resolves permanent "Loading rules..." hang in Live Scoring pitch UI.
 - v2.2.39 (2026-04-17): Debt ledger — FEATURE_MAP.md structural + missing-row gaps logged as two P1 items (P1: 4→6, total open: 17→19). Prerequisite for v2.2.40 restructure and v2.2.41 Backlog Adjacency System.
 - v2.2.38 (2026-04-17): Drift repair — FAQs (Scorekeeper category, Out Tonight, Spotify deep-link), PERSONAS.md 8 personas, SOLUTION_DESIGN.md sections (Live Scoring, CI/CD, Analytics, feature_flags schema), DOC_TEST_DEBT.md Area fields + 4 resolved, FEATURE_MAP.md Governance row.

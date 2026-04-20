@@ -141,9 +141,23 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.2.40";
+var APP_VERSION = "2.2.41";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.2.41',
+    date: 'April 2026',
+    headline: "Scoring screen — pitch buttons always visible",
+    userChanges: [
+      "Ball/Strike/K/Foul/Contact buttons now always visible without scrolling",
+    ],
+    techNote: "LiveScoringPanel outer container changed to height:100vh + overflow:hidden; diamond section set to flex:1 to absorb slack; pitch button bar pinned at bottom with 72px nav clearance",
+    internalChanges: [
+      "LiveScoringPanel.jsx: outer container minHeight:100vh → height:100vh + overflow:hidden",
+      "LiveScoringPanel.jsx: diamond+pitch-log section flexShrink:0 → flex:'1 1 0' + overflow:hidden + minHeight:0",
+      "LiveScoringPanel.jsx: pitch buttons container marginTop:auto removed; paddingBottom:72px added for fixed nav clearance",
+    ],
+  },
   {
     version: '2.2.40',
     date: 'April 2026',
