@@ -598,7 +598,7 @@ export default function LiveScoringPanel(props) {
 
   return (
     <div style={{
-      minHeight: '100vh', overflow: 'visible', paddingBottom: '160px',
+      minHeight: '100vh', overflow: 'visible', paddingBottom: '200px',
       background: '#0b1524', color: '#fff',
       fontFamily: FF, display: 'flex', flexDirection: 'column',
     }}>
@@ -1070,10 +1070,17 @@ export default function LiveScoringPanel(props) {
           background:'#0b1524', borderTop:'1px solid rgba(255,255,255,0.08)',
           padding:'8px 16px', zIndex:50,
         }}>
+          {/* 5a: Current opponent batter */}
+          <div style={{
+            textAlign:'center', marginBottom:'4px',
+            fontSize:'14px', fontWeight:600, color:'#94a3b8',
+          }}>
+            Player #{gs.oppCurrentBatterNumber || 1}
+          </div>
           {/* Opponent B/S/O count display */}
           <div style={{
             display:'flex', justifyContent:'center', gap:'24px',
-            marginBottom:'8px'
+            marginBottom:'4px'
           }}>
             {[
               {label:'B', val: gs.oppBalls || 0, max:4, color:'#60a5fa'},
@@ -1104,14 +1111,22 @@ export default function LiveScoringPanel(props) {
               );
             })}
           </div>
-          {/* Opponent pitch buttons */}
+          {/* 5b: Pitch count totals */}
+          <div style={{
+            textAlign:'center', marginBottom:'8px',
+            fontSize:'11px', color:'#64748b',
+            fontVariantNumeric:'tabular-nums',
+          }}>
+            Pitches — Batter: {gs.oppCurrentBatterPitches || 0} &nbsp;·&nbsp; Inn: {gs.oppInningPitches || 0} &nbsp;·&nbsp; Gm: {gs.oppGamePitches || 0}
+          </div>
+          {/* Opponent pitch buttons — 5c: per-button color (Foul = amber) */}
           <div style={{display:'flex',gap:'6px',marginBottom:'8px'}}>
             {[
-              {label:'B\nBall', type:'ball'},
-              {label:'K\nStrike', type:'strike'},
-              {label:'F\nFoul', type:'foul'},
-              {label:'Out', type:'out'},
-              {label:'⚾\nContact', type:'contact'},
+              {label:'B\nBall',    type:'ball',    color:'#3b82f6'},
+              {label:'K\nStrike',  type:'strike',  color:'#ef4444'},
+              {label:'F\nFoul',    type:'foul',    color:'#f59e0b'},
+              {label:'Out',        type:'out',     color:'#94a3b8'},
+              {label:'⚾\nContact', type:'contact', color:'#22c55e'},
             ].map(function(btn) {
               return (
                 <button
@@ -1119,9 +1134,9 @@ export default function LiveScoringPanel(props) {
                   onClick={function(){ scoring.recordOppPitch(btn.type); }}
                   style={{
                     flex:1, padding:'8px 4px', borderRadius:'8px',
-                    border:'1px solid rgba(255,255,255,0.15)',
-                    background:'rgba(255,255,255,0.05)',
-                    color:'#fff', fontSize:'11px', fontWeight:600,
+                    border:'1px solid ' + btn.color + '55',
+                    background: btn.color + '1a',
+                    color: btn.color, fontSize:'11px', fontWeight:600,
                     cursor:'pointer', whiteSpace:'pre-line',
                     textAlign:'center', lineHeight:1.2,
                   }}>

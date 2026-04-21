@@ -141,9 +141,28 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.3.1";
+var APP_VERSION = "2.3.2";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.3.2',
+    date: '2026-04-21',
+    headline: 'Opposing pitcher pitch counts',
+    userChanges: [
+      'Track opposing pitcher pitch counts in Game Mode — per batter, per inning, and per game.',
+      'Opponent batter number (#1–#11) now visible during their at-bat.',
+      'New Foul button for the opponent half (counts as a pitch, not a strike).',
+    ],
+    techNote: 'Six new persisted columns on live_game_state with DEV migration applied; prod migration pending deploy.',
+    internalChanges: [
+      'Schema migration: added opp_balls, opp_strikes, opp_current_batter_number, opp_current_batter_pitches, opp_inning_pitches, opp_game_pitches to live_game_state (smallint, NOT NULL, with defaults).',
+      'recordOppPitch() branches: ball/foul increment counts only; strike/out/contact advance batter on at-bat end; inning total resets on half-flip, game total preserves.',
+      'EXPECTED_LGS_KEYS full-row invariant expanded from 15 to 21 keys — locks in persist() payload shape.',
+      'MERGE contract test file (liveStateMerge.test.js) grew +6 tests; total suite: 377 passing.',
+      'Pitch totals label pattern: unit-on-left ("Pitches — Batter: X · Inn: X · Gm: X") to avoid per-value suffix ambiguity.',
+      'Opp pitch buttons now color-coded: Ball blue, Strike red, Foul amber, Out grey, Contact green.',
+    ],
+  },
   {
     version: '2.3.1',
     date: 'April 2026',
