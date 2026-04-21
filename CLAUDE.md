@@ -12,6 +12,47 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Youth baseball/softball lineup generator — a mobile-first PWA for coaches to manage rosters, auto-assign field positions, track batting order, and manage schedules. Stack: React 18 + Vite (frontend on Vercel), Express (backend on Render), Supabase (Postgres + JSONB).
 
+## Branch Strategy
+
+- **main** — Production. Auto-deploys to Vercel (frontend) and Render
+  (backend) on push. Gate phrase required before any push:
+  "confirmed — push to main". Pre-push hook runs the full test
+  suite; any failure blocks the push.
+
+- **develop** — Integration branch. Kept in sync with main periodically.
+  Feature branches cut from here merge back via PR when ready.
+
+- **scoring-updates** — Long-lived exploratory branch for scoring
+  subsystem work (scorer-lock hardening, Gap B/C/D/E/F/G test
+  coverage, scoring feature experiments). Does NOT merge to
+  develop or main until specific deliverables are explicitly
+  approved for integration. Squash-merge when a coherent piece
+  of work is ready.
+
+- **feature/\<topic\>** — Short-lived, cut from develop, back to develop
+  via PR.
+
+- **fix/\<topic\>** — Short-lived bugfix, same lifecycle as feature/.
+
+- **hotfix/\<topic\>** — Production hotfix, cut from main, merged to both
+  main and develop.
+
+Default base for new work: develop.
+Exception: all scoring subsystem work goes on scoring-updates.
+
+### Infrastructure notes
+
+- Vitest v4 syntax: fork options live at top level
+  (`pool: 'forks'`, `forks: { singleFork: true }`), NOT inside
+  `poolOptions` (which was deprecated in v4).
+- Windows test environment requires singleFork for scoring tests
+  to avoid OOM cascade. If OOM returns, check test weight before
+  excluding.
+- Pre-push hook must NOT use `|| npm test` retry — it hides real
+  failures. Hook is currently: `cd frontend && npm test` only.
+
+---
+
 ## Commands
 
 ### Frontend (`frontend/`)
