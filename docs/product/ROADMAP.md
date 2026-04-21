@@ -867,6 +867,29 @@
 
 ---
 
+## scoring-updates — next session
+
+### Bug: Opponent B/S display clobbered by Realtime echo
+- Two B/S/O counters (header + pitch button row). Outs persist correctly.
+- When opponent is batting, Balls and Strikes dots highlight on first
+  pitch then disappear on subsequent pitches.
+- Root cause hypothesis: oppBalls/oppStrikes are ephemeral (not
+  persisted), reset on every Realtime echo. Matches April Gap A audit.
+- Fix approach: persist opp_balls / opp_strikes to live_game_state
+  (requires schema migration, MERGE contract test update).
+
+### Feature: Opponent "Now Batting" strip + inning pitch totals
+- Parity with US "Now Batting" component for opponent half.
+- Display: current batter (numbered or generic), pitches this at-bat,
+  inning total for both US and OPP.
+- Questions to answer before build:
+  1. What's the "5 count" — clarify rule
+  2. Display location for inning total
+  3. Opponent batter identity — generic or numbered
+  4. Persistence required? (likely yes — survives refresh)
+
+---
+
 ## Backlog
 
 ### Automated Score Reporting (County Integration)
