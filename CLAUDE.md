@@ -51,6 +51,24 @@ Exception: all scoring subsystem work goes on scoring-updates.
 - Pre-push hook must NOT use `|| npm test` retry — it hides real
   failures. Hook is currently: `cd frontend && npm test` only.
 
+### Known issue: Windows Vitest cold-start OOM
+
+On Windows with <4GB free RAM, Vitest's single-fork pool may
+cascade-OOM 10+ files during cold-start. Symptoms: "FetchStream
+closed early" or worker timeouts across many files.
+
+Workaround:
+1. Close other memory-hungry apps
+2. Run `cd frontend && npm test` directly once to warm module cache
+3. Re-attempt git push
+
+This is environmental. Do NOT add retry logic to the pre-push hook
+(`|| npm test`). Retries hide real failures because the second attempt
+runs a subset of files after OOM, producing false-positive exit 0.
+
+If this becomes frequent, investigate splitting the suite: a
+lightweight pre-push subset + full GitHub Actions CI run on push.
+
 ---
 
 ## Commands
@@ -445,6 +463,7 @@ filename timestamps where 1-day drift is irrelevant.
 | 4 | **Phase 4C deferred** | Auth gate activation (`requireAuth` middleware on existing routes), RLS enforcement on scoring tables (`auth.uid()` policies), HMAC-signed approve/deny links in admin emails — all parked until Phase 4 auth cutover. |
 | 5 | **MERGE_FIELDS test-file copies** | Three test files (`migration.test.js:267`, `scheduleIntegrity.test.js:113`, `scheduleIntegrity.test.js:181`) each define their own local MERGE_FIELDS copy. These are kept in sync manually. Future: extract to a shared test fixture and import. |
 | 6 | **pending_sync not re-attempted** | `finalizeSchedule.js` writes `pending_sync:<teamId>:finalize` to localStorage on Supabase failure but no retry mechanism exists yet. Coach must re-open the app while online for the next write to succeed. |
+| 7 | **Windows Vitest cold-start OOM cascade** | Environmental — not a code issue. See Branch Strategy → Infrastructure notes → "Known issue: Windows Vitest cold-start OOM" for workaround. |
 
 ---
 
