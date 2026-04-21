@@ -1,3 +1,10 @@
+export function computeNextGames(upcoming, todayGame) {
+  // Assumes `upcoming` is pre-sorted ascending by date (enforced upstream)
+  var futurePool  = todayGame ? upcoming.slice(1) : upcoming;
+  var soonestDate = futurePool.length > 0 ? futurePool[0].game.date : null;
+  return soonestDate ? futurePool.filter(function(item) { return item.game.date === soonestDate; }) : [];
+}
+
 export default function ScoringModeEntry({
   activeTeam, schedule, selectedGame,
   onSelectGame, onClaimScorer, onJoinViewer,
@@ -18,7 +25,7 @@ export default function ScoringModeEntry({
   upcoming.sort(function(a, b) { return a.d - b.d; });
 
   var todayGame  = upcoming.length > 0 && upcoming[0].days === 0 ? upcoming[0].game : null;
-  var nextGames  = todayGame ? upcoming.slice(1, 3) : upcoming.slice(0, 2);
+  var nextGames  = computeNextGames(upcoming, todayGame);
   var activeGame = selectedGame || todayGame;
 
   function fmtDate(dateStr) {

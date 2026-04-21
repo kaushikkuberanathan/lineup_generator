@@ -69,7 +69,8 @@ function CountPips(props) {
 }
 
 function DiamondSVG(props) {
-  var runners = props.runners || [];
+  var runners      = props.runners      || [];
+  var battingOrder = props.battingOrder || [];
   var occupied = {};
   for (var i = 0; i < runners.length; i++) { occupied[runners[i].base] = true; }
   var bases = [
@@ -77,29 +78,60 @@ function DiamondSVG(props) {
     { base: 3, cx: 12, cy: 50 },
     { base: 1, cx: 88, cy: 50 },
   ];
+  var runnerNames = [];
+  for (var j = 0; j < runners.length; j++) {
+    var r = runners[j];
+    var player = null;
+    for (var k = 0; k < battingOrder.length; k++) {
+      if (battingOrder[k].id === r.runnerId) { player = battingOrder[k]; break; }
+    }
+    var firstName = player ? player.name.split(' ')[0] : '?';
+    var label = r.base === 1 ? '1B' : r.base === 2 ? '2B' : '3B';
+    runnerNames.push({ base: r.base, label: label, name: firstName });
+  }
+  runnerNames.sort(function(a, b) { return a.base - b.base; });
   return (
-    <svg width={110} height={110} viewBox="0 0 100 100">
-      <polygon points="50,12 88,50 50,88 12,50"
-        fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth={1.5} />
-      {bases.map(function(b) {
-        var on = !!occupied[b.base];
-        return (
-          <rect key={b.base}
-            x={b.cx - 9} y={b.cy - 9} width={18} height={18}
-            transform={'rotate(45,' + b.cx + ',' + b.cy + ')'}
-            fill={on ? '#f5c842' : 'rgba(255,255,255,0.08)'}
-            stroke={on ? '#f5c842' : 'rgba(255,255,255,0.25)'}
-            strokeWidth={1.5}
-          />
-        );
-      })}
-      <rect x={41} y={79} width={18} height={18}
-        transform="rotate(45,50,88)"
-        fill="rgba(255,255,255,0.12)"
-        stroke="rgba(255,255,255,0.28)"
-        strokeWidth={1}
-      />
-    </svg>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+      <svg width={110} height={110} viewBox="0 0 100 100">
+        <polygon points="50,12 88,50 50,88 12,50"
+          fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth={1.5} />
+        {bases.map(function(b) {
+          var on = !!occupied[b.base];
+          return (
+            <rect key={b.base}
+              x={b.cx - 9} y={b.cy - 9} width={18} height={18}
+              transform={'rotate(45,' + b.cx + ',' + b.cy + ')'}
+              fill={on ? '#f5c842' : 'rgba(255,255,255,0.08)'}
+              stroke={on ? '#f5c842' : 'rgba(255,255,255,0.25)'}
+              strokeWidth={1.5}
+            />
+          );
+        })}
+        <rect x={41} y={79} width={18} height={18}
+          transform="rotate(45,50,88)"
+          fill="rgba(255,255,255,0.12)"
+          stroke="rgba(255,255,255,0.28)"
+          strokeWidth={1}
+        />
+      </svg>
+      {runnerNames.length > 0 && (
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
+          {runnerNames.map(function(rn) {
+            return (
+              <span key={rn.base} style={{
+                fontSize: '11px', fontWeight: 'bold',
+                background: 'rgba(245,200,66,0.15)',
+                border: '1px solid rgba(245,200,66,0.35)',
+                borderRadius: '4px', padding: '2px 6px',
+                color: '#f5c842',
+              }}>
+                {rn.label} {rn.name}
+              </span>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -123,6 +155,9 @@ export default function LiveScoringPanel(props) {
   var undoLastPitch            = props.undoLastPitch            || function() {};
   var confirmRunnerAdvancement = props.confirmRunnerAdvancement || function() {};
   var incrementOpponentScore   = props.incrementOpponentScore   || function() {};
+  var addManualRun             = props.addManualRun             || function() {};
+  var endHalfInning            = props.endHalfInning            || function() {};
+  var endGame                  = props.endGame                  || function() {};
   var selectedGame    = props.selectedGame;
   var activeTeam      = props.activeTeam;
   var isPractice      = props.isPractice;
@@ -132,6 +167,7 @@ export default function LiveScoringPanel(props) {
   var rules          = props.rules;
   var pitchUIConfig  = props.pitchUIConfig;
   var ruleWarnings   = props.ruleWarnings   || [];
+  var runsThisHalf   = props.runsThisHalf   || 0;
 
   // ── Hooks — all unconditional ──────────────────────────────────────────────
   var _rp = useState(false);
@@ -139,6 +175,9 @@ export default function LiveScoringPanel(props) {
 
   var _vo = useState(false);
   var viewerOnly = _vo[0]; var setViewerOnly = _vo[1];
+
+  var _manualRun = useState(false);
+  var showManualRunPrompt = _manualRun[0]; var setShowManualRunPrompt = _manualRun[1];
 
   // ── Derived ────────────────────────────────────────────────────────────────
   var gs = gameState || {
@@ -189,8 +228,13 @@ export default function LiveScoringPanel(props) {
             <div style={{ fontSize: '12px', color: '#64748b' }}>
               {isPractice ? 'Practice Mode' : 'vs ' + opponentName}
             </div>
-            <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#f5c842' }}>
-              {halfArrow} {gs.inning}
+            <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
+              <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>
+                {gs.halfInning === 'top' ? 'TOP' : 'BOT'}
+              </span>
+              <span style={{fontSize:'22px',fontWeight:'800',color:'#f5c842',letterSpacing:'1px'}}>
+                {gs.inning}
+              </span>
             </div>
           </div>
           <div style={{ width: '36px' }} />
@@ -264,23 +308,40 @@ export default function LiveScoringPanel(props) {
             background: 'none', border: 'none', color: '#64748b',
             fontSize: '18px', cursor: 'pointer', padding: 0, lineHeight: 1,
           }}>←</button>
-          <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#f5c842' }}>
-            {halfArrow} {gs.inning}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
+              <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>
+                {gs.halfInning === 'top' ? 'TOP' : 'BOT'}
+              </span>
+              <span style={{fontSize:'22px',fontWeight:'800',color:'#f5c842',letterSpacing:'1px'}}>
+                {gs.inning}
+              </span>
+            </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '11px' }}>
-            <CountPips n={gs.balls}   max={4} color="#3b82f6" />
-            <span style={{ color: '#374151', margin: '0 1px' }}>B</span>
-            <span style={{ color: '#2d3748', margin: '0 2px' }}>·</span>
-            <CountPips n={gs.strikes} max={3} color="#dc2626" />
-            <span style={{ color: '#374151', margin: '0 1px' }}>S</span>
-            <span style={{ color: '#2d3748', margin: '0 2px' }}>·</span>
-            <CountPips n={gs.outs}    max={3} color="#f5c842" />
-            <span style={{ color: '#374151', margin: '0 1px' }}>O</span>
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: '6px' }}>
+            <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
+              <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>B</span>
+              <div><CountPips n={gs.balls}   max={4} color="#3b82f6" /></div>
+            </div>
+            <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
+              <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>S</span>
+              <div><CountPips n={gs.strikes} max={3} color="#dc2626" /></div>
+            </div>
+            <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
+              <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>O</span>
+              <div><CountPips n={gs.outs}    max={3} color="#f5c842" /></div>
+            </div>
           </div>
-          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'baseline', gap: '6px' }}>
-            <span style={{ fontSize: '20px', fontWeight: 'bold', color: '#f5c842' }}>{gs.myScore}</span>
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
+              <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>US</span>
+              <span style={{fontSize:'20px',fontWeight:'800',color:'#fff'}}>{gs.myScore}</span>
+            </div>
             <span style={{ color: '#374151' }}>:</span>
-            <span style={{ fontSize: '20px', fontWeight: 'bold' }}>{gs.opponentScore}</span>
+            <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
+              <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>OPP</span>
+              <span style={{fontSize:'20px',fontWeight:'800',color:'#fff'}}>{gs.opponentScore}</span>
+            </div>
           </div>
         </div>
 
@@ -302,7 +363,7 @@ export default function LiveScoringPanel(props) {
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0' }}>
-          <DiamondSVG runners={gs.runners} />
+          <DiamondSVG runners={gs.runners} battingOrder={battingOrder} />
         </div>
 
         {currentBatter ? (
@@ -520,23 +581,34 @@ export default function LiveScoringPanel(props) {
           {halfArrow} {gs.inning}
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '11px', flexShrink: 0 }}>
-          <CountPips n={gs.balls}   max={4} color="#3b82f6" />
-          <span style={{ color: '#374151', margin: '0 1px' }}>B</span>
-          <span style={{ color: '#2d3748', margin: '0 2px' }}>·</span>
-          <CountPips n={gs.strikes} max={3} color="#dc2626" />
-          <span style={{ color: '#374151', margin: '0 1px' }}>S</span>
-          <span style={{ color: '#2d3748', margin: '0 2px' }}>·</span>
-          <CountPips n={gs.outs}    max={3} color="#f5c842" />
-          <span style={{ color: '#374151', margin: '0 1px' }}>O</span>
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: '6px', flexShrink: 0 }}>
+          <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
+            <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>B</span>
+            <div><CountPips n={gs.balls}   max={4} color="#3b82f6" /></div>
+          </div>
+          <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
+            <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>S</span>
+            <div><CountPips n={gs.strikes} max={3} color="#dc2626" /></div>
+          </div>
+          <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
+            <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>O</span>
+            <div><CountPips n={gs.outs}    max={3} color="#f5c842" /></div>
+          </div>
         </div>
 
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0 }}>
-          <span style={{ fontSize: '20px', fontWeight: 'bold', color: '#f5c842' }}>{gs.myScore}</span>
+          <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
+            <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>US</span>
+            <span style={{fontSize:'20px',fontWeight:'800',color:'#fff'}}>{gs.myScore}</span>
+          </div>
           <span style={{ color: '#374151', fontSize: '14px' }}>:</span>
-          <span style={{ fontSize: '20px', fontWeight: 'bold' }}>{gs.opponentScore}</span>
+          <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
+            <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>OPP</span>
+            <span style={{fontSize:'20px',fontWeight:'800',color:'#fff'}}>{gs.opponentScore}</span>
+          </div>
           <button
-            onClick={incrementOpponentScore}
+            title="Add run manually"
+            onClick={function() { setShowManualRunPrompt(true); }}
             style={{
               background: 'rgba(255,255,255,0.08)',
               border: '1px solid rgba(255,255,255,0.15)',
@@ -565,13 +637,52 @@ export default function LiveScoringPanel(props) {
             }}>⚙️</button>
           ) : null}
           <button onClick={handleEndSession} style={{
-            background: 'none', border: 'none',
-            color: '#374151', fontSize: '11px',
-            cursor: 'pointer', fontFamily: FF, padding: '4px 2px',
+            background: '#7f1d1d',
+            border: '1px solid #ef4444',
+            color: '#fca5a5',
+            fontSize: '11px',
+            cursor: 'pointer',
+            fontFamily: FF,
+            padding: '4px 8px',
+            borderRadius: '6px',
             whiteSpace: 'nowrap',
+            fontWeight: 600,
           }}>End Session</button>
         </div>
       </div>
+
+      {/* ── Mercy run banner ─────────────────────────────────────────────────── */}
+      {runsThisHalf >= 5 && (
+        <div style={{
+          background: '#7c2d12', color: '#fca5a5',
+          fontSize: '13px', fontWeight: 700,
+          padding: '8px 16px',
+          borderBottom: '1px solid #ef4444',
+          flexShrink: 0,
+          display: 'flex', alignItems: 'center',
+          justifyContent: 'space-between', gap: '8px',
+        }}>
+          <span>⚠️ {runsThisHalf} runs — end half?</span>
+          <div style={{display:'flex', gap:'8px'}}>
+            <button
+              onClick={function() { endHalfInning(); }}
+              style={{
+                background:'#ef4444', border:'none', color:'#fff',
+                fontSize:'12px', fontWeight:700, padding:'4px 10px',
+                borderRadius:'6px', cursor:'pointer'
+              }}
+            >End Inning</button>
+            <button
+              onClick={function() { endGame(); }}
+              style={{
+                background:'#7f1d1d', border:'1px solid #ef4444', color:'#fca5a5',
+                fontSize:'12px', fontWeight:700, padding:'4px 10px',
+                borderRadius:'6px', cursor:'pointer'
+              }}
+            >End Game</button>
+          </div>
+        </div>
+      )}
 
       {/* ── Lock expired banner ───────────────────────────────────────────────── */}
       {scorerLockExpired ? (
@@ -679,7 +790,7 @@ export default function LiveScoringPanel(props) {
         padding: '0 16px 8px', gap: '16px',
         flexShrink: 0,
       }}>
-        <DiamondSVG runners={gs.runners} />
+        <DiamondSVG runners={gs.runners} battingOrder={battingOrder} />
 
         <div style={{ flex: 1, minWidth: 0 }}>
           {pitches.length > 0 ? (
@@ -887,6 +998,50 @@ export default function LiveScoringPanel(props) {
       {rosterPickerSheet}
       {outcomeSheet}
       {runnerSheet}
+
+      {showManualRunPrompt && (
+        <div style={{
+          position:'fixed', top:0, left:0, right:0, bottom:0,
+          background:'rgba(0,0,0,0.7)', zIndex:200,
+          display:'flex', alignItems:'center', justifyContent:'center',
+        }}>
+          <div style={{
+            background:'#1a2a3a', borderRadius:'12px',
+            padding:'24px', width:'280px', textAlign:'center',
+          }}>
+            <div style={{color:'#fff',fontSize:'16px',fontWeight:700,marginBottom:'16px'}}>
+              Add run for which team?
+            </div>
+            <div style={{display:'flex',gap:'12px',justifyContent:'center'}}>
+              <button
+                onClick={function() { addManualRun('us'); setShowManualRunPrompt(false); }}
+                style={{
+                  flex:1, padding:'12px', borderRadius:'8px',
+                  background:'#1B2A4A', color:'#fff',
+                  border:'none', fontSize:'15px', fontWeight:700,
+                  cursor:'pointer', fontFamily:FF,
+                }}
+              >Us</button>
+              <button
+                onClick={function() { addManualRun('opp'); setShowManualRunPrompt(false); }}
+                style={{
+                  flex:1, padding:'12px', borderRadius:'8px',
+                  background:'#4a1a1a', color:'#fff',
+                  border:'none', fontSize:'15px', fontWeight:700,
+                  cursor:'pointer', fontFamily:FF,
+                }}
+              >Opp</button>
+            </div>
+            <button
+              onClick={function() { setShowManualRunPrompt(false); }}
+              style={{
+                marginTop:'12px', background:'none', border:'none',
+                color:'#888', fontSize:'13px', cursor:'pointer', fontFamily:FF,
+              }}
+            >Cancel</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

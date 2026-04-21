@@ -69,11 +69,12 @@ function makeDefaultGs() {
     runners:           [],  // [{ runnerId, base }]  base: 1|2|3
     currentBatter:     null,
     battingOrderIndex: 0,
+    runsThisHalf:      0,
   };
 }
 
 // Re-derive balls/strikes from pitch history (used by undoLastPitch).
-function countFromPitches(pitches) {
+export function countFromPitches(pitches) {
   var balls   = 0;
   var strikes = 0;
   for (var i = 0; i < pitches.length; i++) {
@@ -227,6 +228,7 @@ export function useLiveScoring(params) {
           runners:             gs.runners,
           current_batter:      gs.currentBatter,
           batting_order_index: gs.battingOrderIndex,
+          runs_this_half:      gs.runsThisHalf      || 0,
           updated_at:          new Date().toISOString(),
         },
         { onConflict: 'game_id,team_id' }
@@ -314,6 +316,7 @@ export function useLiveScoring(params) {
             runners:           row.runners             || [],
             currentBatter:     row.current_batter      || null,
             battingOrderIndex: row.batting_order_index || 0,
+            runsThisHalf:      row.runs_this_half      || 0,
           });
         }
       });
@@ -358,6 +361,7 @@ export function useLiveScoring(params) {
             runners:           row.runners             || [],
             currentBatter:     row.current_batter      || null,
             battingOrderIndex: row.batting_order_index || 0,
+            runsThisHalf:      row.runs_this_half      || 0,
           });
         }
       )
@@ -423,6 +427,26 @@ export function useLiveScoring(params) {
         setClaimError('');
         startHeartbeat();
         audit('lock_claimed');
+        // Seed live_game_state if no row exists yet
+        supabase
+          .from('live_game_state')
+          .upsert({
+            game_id:             gameId,
+            team_id:             String(teamId),
+            inning:              gameState.inning             || 1,
+            half_inning:         gameState.halfInning         || 'top',
+            outs:                gameState.outs               || 0,
+            balls:               gameState.balls              || 0,
+            strikes:             gameState.strikes            || 0,
+            my_score:            gameState.myScore            || 0,
+            opponent_score:      gameState.opponentScore      || 0,
+            batting_order_index: gameState.battingOrderIndex  || 0,
+            runners:             JSON.stringify(gameState.runners || []),
+            runs_this_half:      gameState.runsThisHalf       || 0,
+          }, { onConflict: 'game_id,team_id' })
+          .then(function(r) {
+            if (r.error) console.warn('[scoring] seed live_game_state failed:', r.error);
+          });
       });
   }
 
@@ -528,8 +552,9 @@ export function useLiveScoring(params) {
       }
     }
 
-    var nextIndex  = gs.battingOrderIndex + 1;
-    var newMyScore = gs.myScore + runsScored;
+    var nextIndex       = gs.battingOrderIndex + 1;
+    var newMyScore      = gs.myScore + runsScored;
+    var newRunsThisHalf = (gs.runsThisHalf || 0) + runsScored;
     var newGs;
 
     if (newOuts >= 3) {
@@ -546,6 +571,7 @@ export function useLiveScoring(params) {
         myScore:           newMyScore,
         currentBatter:     null,
         battingOrderIndex: nextIndex,
+        runsThisHalf:      0,
       });
     } else {
       newGs = Object.assign({}, gs, {
@@ -556,6 +582,7 @@ export function useLiveScoring(params) {
         myScore:           newMyScore,
         currentBatter:     null,
         battingOrderIndex: nextIndex,
+        runsThisHalf:      newRunsThisHalf,
       });
     }
 
@@ -677,12 +704,59 @@ export function useLiveScoring(params) {
     audit('score_corrected', { opponentScore: newGs.opponentScore });
   }
 
-  // ── Derived state ─────────────────────────────────────────────────────────
-  var suggestedBatter = null;
-  if (isEnabled && gameState.currentBatter === null && battingOrder.length > 0) {
-    suggestedBatter = battingOrder[gameState.battingOrderIndex % battingOrder.length] || null;
+  function addManualRun(team) {
+    if (!isEnabled || !isScorerRef.current) return;
+    var newGs = team === 'us'
+      ? Object.assign({}, gsRef.current, {
+          myScore: gsRef.current.myScore + 1,
+          runsThisHalf: (gsRef.current.runsThisHalf || 0) + 1
+        })
+      : Object.assign({}, gsRef.current, {
+          opponentScore: gsRef.current.opponentScore + 1
+        });
+    console.log('[MANUAL RUN] team:', team,
+      'runsThisHalf before:', gsRef.current.runsThisHalf,
+      'runsThisHalf after:', newGs.runsThisHalf,
+      'myScore:', newGs.myScore);
+    setGs(newGs);
+    persist(newGs);
+    audit('score_corrected', { team: team, myScore: newGs.myScore, opponentScore: newGs.opponentScore });
   }
 
+  function endHalfInning() {
+    if (!isEnabled || !isScorerRef.current) return;
+    var gs = gsRef.current;
+    var nextHalf = gs.halfInning === 'top' ? 'bottom' : 'top';
+    var nextInning = gs.halfInning === 'bottom' ? gs.inning + 1 : gs.inning;
+    var nextIndex = gs.battingOrderIndex;
+    var newGs = Object.assign({}, gs, {
+      inning: nextInning,
+      halfInning: nextHalf,
+      outs: 0, balls: 0, strikes: 0,
+      runners: [],
+      currentBatter: null,
+      battingOrderIndex: nextIndex,
+      runsThisHalf: 0,
+    });
+    setGs(newGs);
+    persist(newGs);
+    audit('half_inning_ended', { inning: gs.inning, halfInning: gs.halfInning, runsScored: gs.runsThisHalf });
+  }
+
+  function endGame() {
+    if (!isEnabled || !isScorerRef.current) return;
+    var gs = gsRef.current;
+    audit('game_ended', { finalMyScore: gs.myScore, finalOpponentScore: gs.opponentScore });
+    releaseScorerLock();
+  }
+
+  // ── Derived state ─────────────────────────────────────────────────────────
+  // Computed regardless of isEnabled so practice mode (no gameId) still shows
+  // the batting order — isEnabled gates Supabase writes, not the batter display.
+  var suggestedBatter = null;
+  if (gameState.currentBatter === null && battingOrder.length > 0) {
+    suggestedBatter = battingOrder[gameState.battingOrderIndex % battingOrder.length] || null;
+  }
   // ── Return empty shell when disabled (hooks already called above) ─────────
   if (!isEnabled) {
     return {
@@ -691,7 +765,7 @@ export function useLiveScoring(params) {
       isScorer:                 false,
       scorerName:               null,
       scorerLockExpired:        false,
-      suggestedBatter:          null,
+      suggestedBatter:          suggestedBatter,
       pendingAdvancement:       null,
       claimScorerLock:          function() {},
       releaseScorerLock:        function() {},
@@ -701,10 +775,14 @@ export function useLiveScoring(params) {
       undoLastPitch:            function() {},
       confirmRunnerAdvancement: function() {},
       incrementOpponentScore:   function() {},
+      addManualRun:             function() {},
+      endHalfInning:            function() {},
+      endGame:                  function() {},
       claimError:               '',
     };
   }
 
+  console.log('[RETURN] runsThisHalf from gameState:', gameState.runsThisHalf, 'from gsRef:', gsRef.current.runsThisHalf);
   return {
     gameState:                gameState,
     currentAtBat:             currentAtBat,
@@ -713,6 +791,7 @@ export function useLiveScoring(params) {
     scorerLockExpired:        scorerLockExpired,
     suggestedBatter:          suggestedBatter,
     pendingAdvancement:       pendingAdvancement,
+    runsThisHalf:             gsRef.current.runsThisHalf || 0,
     claimScorerLock:          claimScorerLock,
     releaseScorerLock:        releaseScorerLock,
     startAtBat:               startAtBat,
@@ -721,6 +800,9 @@ export function useLiveScoring(params) {
     undoLastPitch:            undoLastPitch,
     confirmRunnerAdvancement: confirmRunnerAdvancement,
     incrementOpponentScore:   incrementOpponentScore,
+    addManualRun:             addManualRun,
+    endHalfInning:            endHalfInning,
+    endGame:                  endGame,
     rules:                    rules,
     pitchUIConfig:            pitchUIConfig,
     ruleWarnings:             ruleWarnings,

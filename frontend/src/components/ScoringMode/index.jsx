@@ -45,7 +45,6 @@ export default function ScoringMode({
       orderPosition: idx,
     };
   });
-
   // AUTH TESTING SHIM — remove at Phase 4C
   // Get or generate a stable local scorer ID as final fallback
   var _storedLocalId = (function() {
@@ -53,11 +52,17 @@ export default function ScoringMode({
       var k = 'scorer_local_id';
       var existing = localStorage.getItem(k);
       if (existing) return existing;
-      var generated = 'local-' + Math.random().toString(36).slice(2, 10)
-        + '-' + Date.now().toString(36);
+      // Generate a valid UUID v4 format
+      var generated = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = Math.random() * 16 | 0;
+        var v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
       localStorage.setItem(k, generated);
       return generated;
-    } catch(e) { return 'local-scorer'; }
+    } catch(e) {
+      return '00000000-0000-4000-8000-000000000000';
+    }
   })();
   var scoringUserId = (user && user.id)
     ? user.id
@@ -123,6 +128,7 @@ export default function ScoringMode({
 
   var showEntry = !scorerClaimed && !viewerMode;
 
+  console.log('[INDEX] scoring.runsThisHalf:', scoring.runsThisHalf);
   return (
     <div style={{
       position: 'relative',
@@ -162,6 +168,10 @@ export default function ScoringMode({
           undoLastPitch={scoring.undoLastPitch}
           confirmRunnerAdvancement={scoring.confirmRunnerAdvancement}
           incrementOpponentScore={scoring.incrementOpponentScore}
+          addManualRun={scoring.addManualRun}
+          endHalfInning={scoring.endHalfInning}
+          endGame={scoring.endGame}
+          runsThisHalf={scoring.runsThisHalf}
           rules={scoring.rules}
           pitchUIConfig={scoring.pitchUIConfig}
           ruleWarnings={scoring.ruleWarnings}
