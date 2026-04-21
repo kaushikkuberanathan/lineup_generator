@@ -1,1 +1,1 @@
-cd frontend && npm test || npm test
+cd frontend && npm test
