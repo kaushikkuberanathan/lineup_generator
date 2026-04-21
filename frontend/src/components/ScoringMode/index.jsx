@@ -25,6 +25,9 @@ export default function ScoringMode({
   var _restore  = useState(false);
   var showRestore = _restore[0]; var setShowRestore = _restore[1];
 
+  var _mth = useState('top');
+  var myTeamHalf = _mth[0]; var setMyTeamHalf = _mth[1];
+
   // Change 3 — feature flag (fails closed; "|| true" is testing override)
   var _lsFlag = useFeatureFlag('live_scoring', activeTeamId);
   var liveScoringEnabled = _lsFlag.enabled;
@@ -96,8 +99,9 @@ export default function ScoringMode({
     setSelectedGame(game);
   }
 
-  function handleClaimScorer(game) {
+  function handleClaimScorer(game, half) {
     setSelectedGame(game);
+    setMyTeamHalf(half || 'top');
     setScorerClaimed(true);
     setViewerMode(false);
   }
@@ -128,7 +132,6 @@ export default function ScoringMode({
 
   var showEntry = !scorerClaimed && !viewerMode;
 
-  console.log('[INDEX] scoring.runsThisHalf:', scoring.runsThisHalf);
   return (
     <div style={{
       position: 'relative',
@@ -178,7 +181,9 @@ export default function ScoringMode({
           selectedGame={selectedGame}
           activeTeam={activeTeam}
           isPractice={isPractice}
+          myTeamHalf={myTeamHalf}
           isAdminTestMode={isAdminTestMode}
+          scoring={scoring}
           onExit={handleExitSession}
           onSettings={function() { setShowRestore(true); }}
         />

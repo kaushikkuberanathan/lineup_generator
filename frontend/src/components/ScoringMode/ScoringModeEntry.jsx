@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 export function computeNextGames(upcoming, todayGame) {
   // Assumes `upcoming` is pre-sorted ascending by date (enforced upstream)
   var futurePool  = todayGame ? upcoming.slice(1) : upcoming;
@@ -10,6 +12,9 @@ export default function ScoringModeEntry({
   onSelectGame, onClaimScorer, onJoinViewer,
   onPractice, onClose,
 }) {
+  var _half = useState('top');
+  var myTeamHalf = _half[0]; var setMyTeamHalf = _half[1];
+
   // Partition schedule into today + next 2 upcoming
   var today = new Date(); today.setHours(0, 0, 0, 0);
   var upcoming = [];
@@ -160,9 +165,36 @@ export default function ScoringModeEntry({
           )}
         </div>
 
+        {/* ── Which half does our team bat? ─────────────────────── */}
+        <div style={{display:'flex',gap:'8px',marginBottom:'12px',
+                     justifyContent:'center'}}>
+          <div style={{fontSize:'12px',color:'#888',
+                       alignSelf:'center',marginRight:'4px'}}>
+            We bat:
+          </div>
+          <button
+            onClick={function(){setMyTeamHalf('top');}}
+            style={{
+              padding:'6px 16px', borderRadius:'20px', border:'none',
+              background: myTeamHalf==='top' ? '#1B2A4A' : 'rgba(255,255,255,0.08)',
+              color: myTeamHalf==='top' ? '#fff' : '#888',
+              fontWeight: myTeamHalf==='top' ? 700 : 400,
+              fontSize:'13px', cursor:'pointer'
+            }}>▲ Top</button>
+          <button
+            onClick={function(){setMyTeamHalf('bottom');}}
+            style={{
+              padding:'6px 16px', borderRadius:'20px', border:'none',
+              background: myTeamHalf==='bottom' ? '#1B2A4A' : 'rgba(255,255,255,0.08)',
+              color: myTeamHalf==='bottom' ? '#fff' : '#888',
+              fontWeight: myTeamHalf==='bottom' ? 700 : 400,
+              fontSize:'13px', cursor:'pointer'
+            }}>▼ Bottom</button>
+        </div>
+
         {/* ── Claim Scorer ──────────────────────────────────────── */}
         <button
-          onClick={function() { if (activeGame) { onClaimScorer(activeGame); } }}
+          onClick={function() { if (activeGame) { onClaimScorer(activeGame, myTeamHalf); } }}
           disabled={!activeGame}
           style={{
             width: '100%', padding: '16px', borderRadius: '10px', border: 'none',

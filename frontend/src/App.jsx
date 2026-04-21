@@ -141,9 +141,33 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.2.44";
+var APP_VERSION = "2.2.45";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.2.45',
+    date: 'April 2026',
+    headline: "Live scoring — full game tracking with opponent half",
+    userChanges: [
+      "Track opponent B/S/O count during their half",
+      "5-run mercy banner for both teams",
+      "End Inning and End Game buttons",
+      "Select which half your team bats at game start",
+      "Runner names shown on bases",
+      "TOP/BOT and US/OPP labels in header",
+      "Pitch buttons always visible",
+      "Manual run prompts Us or Opp",
+    ],
+    techNote: "oppRunsThisHalf and oppBalls/oppStrikes added to gameState; recordOppPitch handles B/S/O/out/contact for opponent half; pitch bar gated on myTeamHalf vs gs.halfInning; mercy banner for both halves; runs_this_half column added to live_game_state in DEV Supabase; FK constraints dropped on game_scoring_sessions and scoring_audit_log",
+    internalChanges: [
+      "useLiveScoring.js: makeDefaultGs() + oppRunsThisHalf, oppBalls, oppStrikes; recordOppPitch function with 3-out auto-flip; persist() + opp_runs_this_half; hydration + realtime handler read opp_runs_this_half",
+      "useLiveScoring.js: addManualRun opp branch increments oppRunsThisHalf; endHalfInning and 3-out resolveAtBat reset oppRunsThisHalf/oppBalls/oppStrikes",
+      "LiveScoringPanel.jsx: opponent half bar replaced with B/S/O pip display + 5 pitch buttons + run tracking + opponent mercy banner; scoring prop added",
+      "ScoringMode/index.jsx: myTeamHalf state + setMyTeamHalf; handleClaimScorer(game, half); scoring={scoring} passed to LiveScoringPanel",
+      "ScoringModeEntry.jsx: 'We bat: Top/Bottom' pill toggle; passes myTeamHalf to onClaimScorer",
+      "All debug logs removed: [MANUAL RUN], [RETURN], [INDEX]",
+    ],
+  },
   {
     version: '2.2.44',
     date: 'April 2026',

@@ -1,9 +1,12 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: April 2026 (v2.2.44)
+> Last updated: April 2026 (v2.2.45)
 > MVP launched: March 24, 2026
 
 ---
+
+## v2.2.45 — 2026-04-21
+- Feature: Live scoring — full game tracking with opponent half; track opponent B/S/O count; 5-run mercy banner for both teams; End Inning / End Game buttons; "We bat: Top/Bottom" toggle at game start; runner names on diamond; debug logs removed
 
 ## v2.2.44 — 2026-04-20
 - Fix: Scoring pitch buttons (Ball/Strike/K/Foul/Contact) now position:fixed at bottom:60px — always visible regardless of content height; paddingBottom:160px on outer container prevents overlap
