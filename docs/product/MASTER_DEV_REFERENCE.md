@@ -322,6 +322,61 @@ Revoke bypass: https://dugoutlineup.com/?clear_bypass=1
 
 ---
 
+## Supabase Schema — Live Scoring Tables
+
+Three tables support the Live Scoring feature. All use `(game_id, team_id)` as the natural key.
+
+### `live_game_state`
+One row per active game+team. Upserted on every pitch, run, or outcome.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `game_id` | text | |
+| `team_id` | text | |
+| `inning` | int | 1-based |
+| `half_inning` | text | `'top'` or `'bottom'` |
+| `outs` | int | 0–3 (resets at 3) |
+| `balls` | int | current batter balls |
+| `strikes` | int | current batter strikes |
+| `my_score` | int | our team total runs |
+| `opponent_score` | int | opponent total runs |
+| `batting_order_index` | int | wraps around batting order |
+| `runners` | jsonb | `[{ runnerId, base }]` base 1|2|3 |
+| `current_batter` | jsonb | `{ id, name, number, orderPosition }` or null |
+| `runs_this_half` | int | our runs in current half (mercy rule gate) |
+| `opp_runs_this_half` | int | opponent runs in current half |
+| `updated_at` | timestamptz | |
+
+> `opp_balls` and `opp_strikes` are tracked in local React state only (transient, reset per batter — no Supabase column needed).
+
+### `game_scoring_sessions`
+One row per active game+team. Upserted when scorer claims; deleted on release.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `game_id` | text | |
+| `team_id` | text | |
+| `scorer_user_id` | text | UUID v4 from localStorage (`scorer_local_id`). **FK to auth.users dropped** — restore at Phase 4C. |
+| `scorer_name` | text | first name or 'Coach' |
+| `last_heartbeat` | timestamptz | updated every 20 s by the scorer's device |
+
+### `scoring_audit_log`
+Append-only. One row per action (pitch, run, lock claim/release, etc.).
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `game_id` | text | |
+| `team_id` | text | |
+| `actor_user_id` | text | **FK to auth.users dropped** — restore at Phase 4C. |
+| `action` | text | e.g. `'pitch_recorded'`, `'at_bat_resolved'`, `'lock_claimed'` |
+| `payload` | jsonb | action-specific data |
+| `recorded_at` | timestamptz | |
+
+### RLS Policies (Current — Pre-Auth)
+All three tables have an open `allow_scorer_writes` policy (anon role can write). Phase 4C: drop these and re-add `auth.uid() = scorer_user_id` scoped policies.
+
+---
+
 ## Outstanding Manual Actions
 
 - [ ] Migrations 002 and 003 status — confirm if roster_history and original feature_flags tables were ever executed

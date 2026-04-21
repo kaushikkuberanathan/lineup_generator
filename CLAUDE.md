@@ -65,8 +65,31 @@ Two-phase auto-assign algorithm:
 ```sql
 teams      (id, name, age_group, year, sport, owner_id, created_at)
 team_data  (team_id, roster, schedule, practices, batting_order, grid, innings, locked)
+
+-- Live Scoring tables
+live_game_state       (game_id, team_id, inning, half_inning, outs, balls, strikes,
+                       my_score, opponent_score, batting_order_index, runners jsonb,
+                       current_batter jsonb, runs_this_half, opp_runs_this_half,
+                       updated_at)
+game_scoring_sessions (game_id, team_id, scorer_user_id text, scorer_name,
+                       last_heartbeat timestamptz)
+scoring_audit_log     (game_id, team_id, actor_user_id text, action, payload jsonb,
+                       recorded_at)
 ```
 All `team_data` columns are JSONB — structure matches localStorage exactly, no transformation layer.
+
+`scorer_user_id` (game_scoring_sessions) and `actor_user_id` (scoring_audit_log) are `text` type — FK to `auth.users` dropped for pre-auth testing. Restore at Phase 4C cutover. RLS policy `allow_scorer_writes` on all three scoring tables is open (anon write); replace with `auth.uid()` scoped policies at Phase 4C.
+
+### Live Scoring Architecture
+- **Feature gate**: `live_scoring` flag from Supabase `feature_flags` table. Overridden to `true` by team name match for "Mud Hens" and "Demo All-Stars" regardless of flag state (see v2.2.29).
+- **Tables**: `live_game_state` (one row per game+team, upserted on every event), `game_scoring_sessions` (scorer lock + heartbeat), `scoring_audit_log` (append-only action trail).
+- **Scorer identity**: `scorer_local_id` stored in localStorage as UUID v4; generated once per device. Used as `scorer_user_id` until real auth is active. Phase 4C: replaced by `user.id` from auth session.
+- **Session lock**: scorer claims lock via `game_scoring_sessions` upsert; heartbeat every 20 s. Realtime subscription on `game_scoring_sessions` lets viewers see who is scoring. Lock expires if heartbeat stops.
+- **State persistence**: `useLiveScoring` hook upserts `live_game_state` on every pitch/run/outcome (fire-and-forget). Hydrated from Supabase on mount. Realtime pushes changes to all connected subscribers.
+- **myTeamHalf**: `'top'` or `'bottom'` — selected at entry screen, stored in `ScoringMode` component state. Gates batter area and pitch bar: pitch buttons shown during our half; opponent B/S/O pip tracker + 5 pitch buttons shown during their half.
+- **Opponent tracking**: `oppBalls`, `oppStrikes`, `oppRunsThisHalf` in gameState; `recordOppPitch()` in `useLiveScoring`. Auto-flips half-inning at 3 outs. `opp_runs_this_half` persisted to Supabase.
+- **Mercy rule**: banner at `runsThisHalf >= 5` (our half) or `oppRunsThisHalf >= 5` (their half); shows End Inning + End Game buttons.
+- **Hook location**: `frontend/src/hooks/useLiveScoring.js`. UI: `frontend/src/components/ScoringMode/`.
 
 ### Backend (`backend/`)
 Existing routes in `index.js`:
@@ -368,6 +391,17 @@ var todayDate = _td.getFullYear() + '-'
 
 toISOString() is acceptable ONLY for cleanup thresholds and
 filename timestamps where 1-day drift is irrelevant.
+
+---
+
+## Known Open Bugs / Deferred Work
+
+| # | Bug / Item | Notes |
+|---|------------|-------|
+| 1 | **Absent player auto-assign** | Out Tonight players (e.g. Aiden) occasionally still assigned to a field position when auto-assign runs. `activeBattingOrder` filters the batting order correctly; gap likely in lineup engine's absent exclusion path. |
+| 2 | **Game Ball "—" display bug** | Schedule card shows "—" dash instead of recipient names after multi-player game ball selection. Read path may not be normalizing the `gameBall` array correctly at render. |
+| 3 | **OOM contract test** | `frontend/src/tests/useLiveScore.contract.test.js` (untracked on main, committed on develop) causes pre-push hook OOM in one vitest worker on Windows. All 340 real tests pass. Needs investigation — fix worker allocation or add to vitest `exclude` list. |
+| 4 | **Phase 4C deferred** | Auth gate activation (`requireAuth` middleware on existing routes), RLS enforcement on scoring tables (`auth.uid()` policies), HMAC-signed approve/deny links in admin emails — all parked until Phase 4 auth cutover. |
 
 ---
 

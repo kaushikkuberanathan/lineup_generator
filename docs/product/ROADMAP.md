@@ -643,6 +643,8 @@
 | 3 | **`Confident` vs `goodCoachability` weight parity** | Both tags have identical scoring mods — `Confident` should boost high-pressure positions (P, SS, C) more aggressively; `goodCoachability` should distribute more evenly |
 | 4 | ✅ **Player absent flag (per game)** | Resolved in v1.3.0 — Out This Game flag in Lineup Constraints card |
 | 5 | **Mud Hens g2 batting stats** | SQL restore in Supabase pending — two-query fix identified, not yet applied |
+| 6 | **Absent player auto-assign** | Out Tonight players (e.g. Aiden) occasionally still assigned to a field position when auto-assign runs — `activeBattingOrder` filters batting order correctly but engine absent exclusion may have a gap |
+| 7 | **Game Ball "—" display bug** | Schedule card shows "—" dash instead of recipient names after multi-player game ball selection — read path may not be normalizing the `gameBall` array at render |
 
 ---
 
@@ -669,6 +671,7 @@
 | 4 | **File split — renderSchedule and large render functions** | `renderSchedule` is ~593 lines doing the work of 4–5 components; blocking future feature velocity |
 | 5 | **TypeScript migration** | Still `.jsx`, no types — lower priority but growing tech debt |
 | 6 | **ESLint config** | No linting enforcement in the repo |
+| 7 | **OOM contract test** | `useLiveScore.contract.test.js` (untracked on main, committed on develop) causes pre-push hook worker OOM on Windows — fix vitest worker allocation or add to exclude list |
 
 ---
 
@@ -677,6 +680,9 @@
 | # | Item | Notes |
 |---|------|-------|
 | 1 | **Auth Phase 4 cutover** | Add requireAuth middleware to existing routes. Auth: email magic-link + Google OAuth (Twilio removed). |
+| 2 | **Scoring: Phase 4C cleanup** | Remove AUTH TESTING SHIM from `useLiveScoring.js` and `index.jsx`; enforce RLS with `auth.uid()` policies on all three scoring tables; restore `scorer_user_id` and `actor_user_id` to uuid + FK. |
+| 3 | **Scoring: persist myTeamHalf** | `myTeamHalf` (top/bottom) currently lives only in ScoringMode React state — lost on page reload. Persist to `live_game_state` and hydrate on mount. |
+| 4 | **Scoring: real-time multi-device sync** | Realtime subscription is wired but only viewers see state changes passively. Scorer and viewer full sync validation needed before broader rollout. |
 
 ---
 
@@ -784,15 +790,27 @@
 
 ## 🗓 Recommended Next Sprint (Sequenced)
 
+### Current Sprint (v2.2.46+)
+1. **Absent player auto-assign bug** (P1) — investigate lineup engine absent exclusion path; confirm Out Tonight players are never field-assigned
+2. **Game Ball "—" display bug** (P1) — fix gameBall array read/normalize on schedule card render
+3. **OOM contract test** (P3) — fix or exclude `useLiveScore.contract.test.js` from vitest so pre-push hook is clean on main
+4. **Scoring: persist myTeamHalf** — write `myTeamHalf` to `live_game_state` and hydrate on mount
+5. **Phase 4C auth cutover** (Blocked) — auth gate, RLS enforcement on scoring tables, HMAC-signed approve/deny links
+
+### Historical (Completed)
 0. ✅ **v1.2.0 shipped** — diamond view redesign, responsive position boxes, first-name enforcement, analytics
 1. ✅ **Verify 10-player auto-assign on live roster** — open Mud Hens, run Auto-Assign across 6 innings, confirm 1 bench/inning and no CF
-2. **Player absent flag** — ~2–3 hrs, high game-day utility
-3. **Mobile batting reorder arrow fallback** — ~1–2 hrs, biggest UX gap at the field
-4. **Print card metadata** (team name, date, opponent) — ~1 hr
-5. **`Confident` vs `goodCoachability` weight fix** — ~30 min, correctness issue
-6. **"Revert to Generated" button** — ~1–2 hrs
-7. ✅ **Verify onboarding modal on live app** — open app in a fresh browser session (or clear localStorage), create a new team, confirm 5-step modal appears; complete it and confirm it does not reappear on reload; confirm "Getting Started" button reopens it on demand
-8. **Set up GitHub Actions CI** — block Vercel auto-deploy unless build + engine tests pass; 2-hour setup, eliminates broken deploys
+2. ✅ **Player absent flag** — Out Tonight panel, activeBattingOrder, engine exclusion (v2.2.21+)
+3. ✅ **Multi-player game ball** — gameBall migrated to array, edit modal with search + multiselect (v2.2.25–v2.2.26)
+4. ✅ **My Team tab rename** (v2.2.25)
+5. ✅ **V1→V2 skill bridge** — playerMapper.js shim (v2.2.26)
+6. ✅ **Live scoring** — pitch tracking, B/S/O counts, runner names, opponent half tracking, mercy rule, team batting half selection (v2.2.37–v2.2.45)
+7. **Mobile batting reorder arrow fallback** — ~1–2 hrs, biggest UX gap at the field
+8. **Print card metadata** (team name, date, opponent) — ~1 hr
+9. **`Confident` vs `goodCoachability` weight fix** — ~30 min, correctness issue
+10. **"Revert to Generated" button** — ~1–2 hrs
+11. ✅ **Verify onboarding modal on live app** — confirmed working
+12. **Set up GitHub Actions CI** — block Vercel auto-deploy unless build + engine tests pass; 2-hour setup, eliminates broken deploys
 
 > **Note:** File split (P3 code quality) should happen in parallel with or just before Phase 3 auth work. It will reduce new feature implementation time by ~40%.
 
