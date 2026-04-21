@@ -1,9 +1,12 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: April 2026 (v2.3.1)
+> Last updated: April 2026 (v2.3.2)
 > MVP launched: March 24, 2026
 
 ---
+
+## v2.3.2 — 2026-04-21
+- Feature: Opposing pitcher pitch counts — per-batter, per-inning, per-game counters in opponent half; opponent batter number (#1–#11); color-coded pitch buttons (Ball blue, Strike red, Foul amber, Out grey, Contact green); Foul counts as pitch not strike; inning totals reset on half-flip, game total persists across innings. Schema: 6 new columns on live_game_state (opp_balls, opp_strikes, opp_current_batter_number, opp_current_batter_pitches, opp_inning_pitches, opp_game_pitches). EXPECTED_LGS_KEYS expanded 15→21; 6 new contract tests; suite: 377 passing.
 
 ## v2.3.1 — 2026-04-21
 - Fix: Runner duplication — `advanceRunners()` helper uses base-map (back-to-front 3B→1B) guaranteeing no player ID occupies two bases after any hit
@@ -867,26 +870,33 @@
 
 ---
 
-## scoring-updates — next session
+## scoring-updates — completed in v2.3.2
 
-### Bug: Opponent B/S display clobbered by Realtime echo
-- Two B/S/O counters (header + pitch button row). Outs persist correctly.
-- When opponent is batting, Balls and Strikes dots highlight on first
-  pitch then disappear on subsequent pitches.
-- Root cause hypothesis: oppBalls/oppStrikes are ephemeral (not
-  persisted), reset on every Realtime echo. Matches April Gap A audit.
-- Fix approach: persist opp_balls / opp_strikes to live_game_state
-  (requires schema migration, MERGE contract test update).
+### ✅ Bug: Opponent B/S display clobbered by Realtime echo (shipped v2.3.2)
+- Root cause confirmed: oppBalls/oppStrikes were ephemeral — not persisted,
+  reset on every Realtime echo.
+- Fix: added opp_balls + opp_strikes to live_game_state (schema migration
+  20260421_add_opponent_pitch_tracking.sql); both now included in every
+  persist() upsert payload. EXPECTED_LGS_KEYS expanded 15→21 to lock
+  full-row invariant in contract tests.
 
-### Feature: Opponent "Now Batting" strip + inning pitch totals
-- Parity with US "Now Batting" component for opponent half.
-- Display: current batter (numbered or generic), pitches this at-bat,
-  inning total for both US and OPP.
-- Questions to answer before build:
-  1. What's the "5 count" — clarify rule
-  2. Display location for inning total
-  3. Opponent batter identity — generic or numbered
-  4. Persistence required? (likely yes — survives refresh)
+### ✅ Feature: Opponent pitch counts + batter identity (shipped v2.3.2)
+- Opponent batter number (#1–#11) displayed above B/S/O pips.
+- Pitch count totals: per-batter, per-inning, per-game ("Pitches — Batter: X · Inn: X · Gm: X").
+- Batter advances (number increments, per-batter count resets) on: out, contact/hit; K triggers an out.
+- Inning totals reset on half-flip; game total persists across all innings.
+- 4 new columns: opp_current_batter_number, opp_current_batter_pitches, opp_inning_pitches, opp_game_pitches.
+
+---
+
+## scoring-updates — v2.4.x candidates
+
+### Feature: Opponent runners on base
+- Diamond UI parity with home-team runner display during opponent half.
+- Schema: opp_runners jsonb column on live_game_state.
+- Handler: hit/walk advancement in recordOppPitch() (single/double/triple/HR/walk branches).
+- Bundle with 10U+ walk/strikeout rule logic for opponent half.
+- Surfaced from v2.3.2 dev-test coach feedback (KK, April 2026).
 
 ---
 

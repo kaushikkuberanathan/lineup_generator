@@ -163,7 +163,7 @@ describe('live_game_state MERGE contract', function() {
   });
 
   // ── Case 1: persist() full-row invariant ───────────────────────────────────
-  it('1: persist() full-row invariant — recordPitch upserts exactly 15 expected column keys', async function() {
+  it('1: persist() full-row invariant — recordPitch upserts exactly 21 expected column keys', async function() {
     var h = await mountClaimAndOpen();
     mocks.lgsUpsert.mockClear();
 
@@ -325,7 +325,7 @@ describe('live_game_state MERGE contract', function() {
   });
 
   // ── Case 8: Ephemeral state not persisted ──────────────────────────────────
-  it('8: ephemeral state — oppBalls/oppStrikes never appear in live_game_state upsert payload', async function() {
+  it('8: key-casing invariant — camelCase oppBalls/oppStrikes never leak into persist payload; snake_case versions do', async function() {
     var h = await mountAndClaim();
     mocks.lgsUpsert.mockClear();
 
@@ -335,12 +335,12 @@ describe('live_game_state MERGE contract', function() {
 
     expect(mocks.lgsUpsert).toHaveBeenCalledTimes(1);
     var payload = mocks.lgsUpsert.mock.calls[0][0];
-    // Ephemeral fields — intentionally NOT written to DB
+    // camelCase keys must never appear — would be a Supabase column-name mismatch
     expect(payload).not.toHaveProperty('oppBalls');
     expect(payload).not.toHaveProperty('oppStrikes');
-    expect(payload).not.toHaveProperty('opp_balls');
-    expect(payload).not.toHaveProperty('opp_strikes');
-    // opp_runs_this_half IS a DB column — must remain present
+    // snake_case versions ARE DB columns — must be present
+    expect(payload).toHaveProperty('opp_balls');
+    expect(payload).toHaveProperty('opp_strikes');
     expect(payload).toHaveProperty('opp_runs_this_half');
 
     await h.unmount();

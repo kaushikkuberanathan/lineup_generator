@@ -238,6 +238,12 @@ Three guards in place:
 - **Backend**: Render auto-deploys from `main` (root dir: `backend/`)
 - **DEV**: `dev.dugoutlineup.com` → `lineup-generator-backend-dev.onrender.com`
 
+**v2.3.2 deploy note — REQUIRED before frontend goes live:**
+DEV Supabase migration applied 2026-04-21 (`supabase/migrations/20260421_add_opponent_pitch_tracking.sql`).
+Prod migration is pending. MUST be applied in the Supabase SQL editor on the prod project during the v2.3.2
+deploy window — before the Vercel frontend deploy completes. If the frontend deploys first, it will attempt to
+write to the six new `opp_*` columns which do not yet exist in prod and will fail silently on every opponent pitch.
+
 ### Pre-deploy Checklist (all required)
 
 **STEP 0 — Ship Gate (answer before anything else):**
@@ -263,7 +269,7 @@ If any answer is "no": stop. Document the gap in DOC_TEST_DEBT.md, then decide w
 7. Stage **specific files by path** — never `git add -A` (risks picking up unrelated untracked files)
 8. [x] loginLimiter: 15min window, max 5 — applied to POST /magic-link ✓
 9. [ ] Confirm `RESEND_DOMAIN_VERIFIED=true` in Render env vars (only after domain verified)
-10. [ ] Run `npm test` — confirm 354 passed / 1 skipped / 0 failed
+10. [ ] Run `npm test` — confirm 377 passed / 1 skipped / 0 failed
 
 ### VERSION_HISTORY Schema (dual-layer — both required)
 ```js
@@ -323,7 +329,7 @@ Target: resolved within 10 min of detection.
 Tests: `frontend/src/tests/` (frontend), `backend/scripts/tests/` (backend integration).
 
 - **Framework**: Vitest (frontend), custom test-runner.js (backend)
-- **Total**: ~355 tests. CI target: 354 passed / 1 skipped / 0 failed (frontend)
+- **Total**: ~378 tests. CI target: 377 passed / 1 skipped / 0 failed (frontend)
 - Known failing: **engine.v2 test 2.3** (7-player roster produces no warning — fix in separate session)
 
 ### Frontend test files
@@ -589,8 +595,9 @@ This audit takes 5 minutes and saves hours of confusion at the next session star
 ---
 
 ## Current Version
-**v2.3.1** — April 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/App.jsx`.
+**v2.3.2** — April 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/App.jsx`.
 
+- v2.3.2 (2026-04-21): Feature — opposing pitcher pitch counts: per-batter/inning/game; opponent batter number (#1–#11); Foul button (amber); 6 new live_game_state columns (opp_balls, opp_strikes, opp_current_batter_number, opp_current_batter_pitches, opp_inning_pitches, opp_game_pitches); EXPECTED_LGS_KEYS 15→21; +6 contract tests; suite: 377/1/0. DEV migration applied 2026-04-21 — prod migration MUST be applied during v2.3.2 deploy window (see deployment note below).
 - v2.3.1 (2026-04-21): Fix/Feature — runner conflict prompt (RunnerConflictModal: Score / Hold / Cancel play); detectRunnerConflict + applyConflictResolution pure helpers; preResolveSnapshot for CANCEL_PLAY; Exit Scoring in gear menu; header ← pauses; matchMedia jsdom stub (vite.config.js setupFiles); 10 tests (runnerAdvancement.test.js).
 - v2.3.0 (2026-04-21): Feature — Game Mode action clarity + schedule finalization: X (pause), gear menu (Hand off / Finish Game), FinishGameModal, endGame() writes final score to team_data.schedule, undoHalfInning + 10s toast, MERGE_FIELDS extended with 4 finalization fields, 13 new tests.
 - v2.2.45 (2026-04-21): Feature — live scoring opponent half: B/S/O pip tracker, 5-pitch buttons, 3-out auto-flip, mercy banner; myTeamHalf toggle at entry; scoring prop wired to LiveScoringPanel; all debug logs removed.
