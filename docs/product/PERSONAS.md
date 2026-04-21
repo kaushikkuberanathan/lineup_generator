@@ -260,6 +260,29 @@ Volunteer responsible for tracking game progress and stats. Needs the batting or
 
 > **Pilot note:** Live Scoring is enabled for Mud Hens and Demo All-Stars by team name. All other teams require the `LIVE_SCORING` feature flag.
 
+### Scoring Workflow (Pilot — Mud Hens / Demo All-Stars)
+
+1. Opens the app and navigates to the Scoring tab in the bottom nav
+2. Selects today's game from the entry screen (auto-populated when a game is scheduled for today)
+3. Declares which half their team bats — **Top ▲ / Bottom ▼ toggle** — determines which half shows pitch buttons vs. opponent tracker
+4. Taps **🎙 Claim Scorer** — generates a stable local UUID (`scorer_local_id`) if not logged in; upserts to `game_scoring_sessions` with heartbeat
+5. **Our batting half** (when `gs.halfInning === myTeamHalf`):
+   - Confirms or swaps the suggested next batter (auto-suggested by batting order index)
+   - Taps pitch buttons: Ball · Called K · Swing K · Foul · Contact per pitch
+   - On Contact, an outcome sheet slides up: Single / Double / Triple / Home Run / Walk / HBP / Error / Out outcomes
+   - Runner advancement (e.g. runner on 3rd after a single) prompts a "Scored / Stayed / Out" confirm sheet
+   - At 3 outs, the half-inning flips automatically; `runsThisHalf` resets to 0
+   - At 5+ runs, a mercy banner appears with End Inning and End Game buttons
+6. **Opponent batting half** (when `gs.halfInning !== myTeamHalf`):
+   - Tracks opponent pitcher via B / K / Foul / Out / Contact buttons (B/S/O pip display updates)
+   - At 3 outs (via K or Out button), half-inning flips automatically
+   - Taps **+1 OPP Run** for each opponent run scored; **+1 US** for errors that score a run
+   - At 5+ opponent runs, an opponent mercy banner appears with End Inning button
+7. Runner names appear on base diamond indicators for quick reference
+8. Can swap batters mid at-bat via SWAP button
+9. All state syncs to Supabase `live_game_state` in real time; viewers see updates via Realtime subscription
+10. Works offline — local state maintained; Supabase sync resumes when connected
+
 ---
 
 ## Persona 7: Parent Viewer (Passive — Clarity Focused)
