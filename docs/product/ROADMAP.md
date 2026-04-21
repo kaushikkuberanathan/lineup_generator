@@ -1,9 +1,24 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: April 2026 (v2.2.41)
+> Last updated: April 2026 (v2.2.45)
 > MVP launched: March 24, 2026
 
 ---
+
+## v2.2.45 — 2026-04-21
+- Feature: Live scoring — full game tracking with opponent half; track opponent B/S/O count; 5-run mercy banner for both teams; End Inning / End Game buttons; "We bat: Top/Bottom" toggle at game start; runner names on diamond; debug logs removed
+
+## v2.2.44 — 2026-04-20
+- Fix: Scoring pitch buttons (Ball/Strike/K/Foul/Contact) now position:fixed at bottom:60px — always visible regardless of content height; paddingBottom:160px on outer container prevents overlap
+
+## v2.2.43 — 2026-04-20
+- Fix: Scoring screen layout — explicit flex spacer replaces marginTop:auto; dead space eliminated
+- Fix: Empty batting order state — clearer two-line message directing coach to Game Day → Lineups
+- Fix: Restore Scorebook UUID error — `p_actor_id` now passes null for local-xxx IDs to satisfy Postgres uuid type on `restore_game_state` RPC
+
+## v2.2.42 — 2026-04-20
+- Fix: Scoring screen dead space removed — diamond section reverted to flexShrink:0; pitch buttons marginTop:auto pins to bottom
+- Fix: Absent players excluded from batting order in scoring — ScoringMode now receives `activeBattingOrder` instead of `battingOrder`
 
 ## v2.2.41 — 2026-04-20
 - Fix: Live scoring pitch buttons (Ball/Strike/K/Foul/Contact) now always visible without scrolling — outer container locked to `height:100vh + overflow:hidden`; diamond section absorbs slack via `flex:1`; pitch bar pinned at bottom with 72px nav clearance

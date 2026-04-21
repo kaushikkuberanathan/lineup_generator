@@ -479,8 +479,12 @@ This audit takes 5 minutes and saves hours of confusion at the next session star
 ---
 
 ## Current Version
-**v2.2.41** — April 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/App.jsx`.
+**v2.2.45** — April 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/App.jsx`.
 
+- v2.2.45 (2026-04-21): Feature — live scoring opponent half: B/S/O pip tracker, 5-pitch buttons, 3-out auto-flip, mercy banner; myTeamHalf toggle at entry; scoring prop wired to LiveScoringPanel; all debug logs removed.
+- v2.2.44 (2026-04-20): Fix — scoring pitch buttons position:fixed bottom:60px; always visible; outer container paddingBottom:160px; flex spacer removed.
+- v2.2.43 (2026-04-20): Fix — scoring layout (flex spacer), empty batting order message, RestoreScoreModal UUID guard (null for local-xxx IDs).
+- v2.2.42 (2026-04-20): Fix — scoring screen dead space removed; absent players excluded from scoring batting order (activeBattingOrder); diamond flexShrink:0; pitch buttons marginTop:auto.
 - v2.2.41 (2026-04-20): Fix — LiveScoringPanel pitch buttons always visible; outer container height:100vh+overflow:hidden; diamond section flex:1; pitch bar 72px bottom clearance.
 - v2.2.40 (2026-04-20): Fix — `team: activeTeam` added to useLiveScoring() call in ScoringMode/index.jsx; resolves permanent "Loading rules..." hang in Live Scoring pitch UI.
 - v2.2.39 (2026-04-17): Debt ledger — FEATURE_MAP.md structural + missing-row gaps logged as two P1 items (P1: 4→6, total open: 17→19). Prerequisite for v2.2.40 restructure and v2.2.41 Backlog Adjacency System.

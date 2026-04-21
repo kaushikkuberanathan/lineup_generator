@@ -69,11 +69,16 @@ function makeDefaultGs() {
     runners:           [],  // [{ runnerId, base }]  base: 1|2|3
     currentBatter:     null,
     battingOrderIndex: 0,
+    runsThisHalf:      0,
+    oppRunsThisHalf:   0,
+    oppBalls:          0,
+    oppStrikes:        0,
+    myTeamHalf:        'top',
   };
 }
 
 // Re-derive balls/strikes from pitch history (used by undoLastPitch).
-function countFromPitches(pitches) {
+export function countFromPitches(pitches) {
   var balls   = 0;
   var strikes = 0;
   for (var i = 0; i < pitches.length; i++) {
@@ -148,6 +153,7 @@ export function useLiveScoring(params) {
   var isEnabled    = params.isEnabled;
   var battingOrder = params.battingOrder || [];
   var team         = params.team || null;
+  var myTeamHalf   = params.myTeamHalf  || 'top';
 
   // AUTH TESTING SHIM — remove when auth goes live (Phase 4C)
   // When auth gate is commented out, userId/userName are null.
@@ -227,6 +233,8 @@ export function useLiveScoring(params) {
           runners:             gs.runners,
           current_batter:      gs.currentBatter,
           batting_order_index: gs.battingOrderIndex,
+          runs_this_half:      gs.runsThisHalf      || 0,
+          opp_runs_this_half:  gs.oppRunsThisHalf   || 0,
           updated_at:          new Date().toISOString(),
         },
         { onConflict: 'game_id,team_id' }
@@ -314,6 +322,8 @@ export function useLiveScoring(params) {
             runners:           row.runners             || [],
             currentBatter:     row.current_batter      || null,
             battingOrderIndex: row.batting_order_index || 0,
+            runsThisHalf:      row.runs_this_half      || 0,
+            oppRunsThisHalf:   row.opp_runs_this_half  || 0,
           });
         }
       });
@@ -358,6 +368,8 @@ export function useLiveScoring(params) {
             runners:           row.runners             || [],
             currentBatter:     row.current_batter      || null,
             battingOrderIndex: row.batting_order_index || 0,
+            runsThisHalf:      row.runs_this_half      || 0,
+            oppRunsThisHalf:   row.opp_runs_this_half  || 0,
           });
         }
       )
@@ -423,6 +435,26 @@ export function useLiveScoring(params) {
         setClaimError('');
         startHeartbeat();
         audit('lock_claimed');
+        // Seed live_game_state if no row exists yet
+        supabase
+          .from('live_game_state')
+          .upsert({
+            game_id:             gameId,
+            team_id:             String(teamId),
+            inning:              gameState.inning             || 1,
+            half_inning:         gameState.halfInning         || 'top',
+            outs:                gameState.outs               || 0,
+            balls:               gameState.balls              || 0,
+            strikes:             gameState.strikes            || 0,
+            my_score:            gameState.myScore            || 0,
+            opponent_score:      gameState.opponentScore      || 0,
+            batting_order_index: gameState.battingOrderIndex  || 0,
+            runners:             JSON.stringify(gameState.runners || []),
+            runs_this_half:      gameState.runsThisHalf       || 0,
+          }, { onConflict: 'game_id,team_id' })
+          .then(function(r) {
+            if (r.error) console.warn('[scoring] seed live_game_state failed:', r.error);
+          });
       });
   }
 
@@ -528,8 +560,9 @@ export function useLiveScoring(params) {
       }
     }
 
-    var nextIndex  = gs.battingOrderIndex + 1;
-    var newMyScore = gs.myScore + runsScored;
+    var nextIndex       = gs.battingOrderIndex + 1;
+    var newMyScore      = gs.myScore + runsScored;
+    var newRunsThisHalf = (gs.runsThisHalf || 0) + runsScored;
     var newGs;
 
     if (newOuts >= 3) {
@@ -546,6 +579,8 @@ export function useLiveScoring(params) {
         myScore:           newMyScore,
         currentBatter:     null,
         battingOrderIndex: nextIndex,
+        runsThisHalf:      0,
+        oppRunsThisHalf:   0,
       });
     } else {
       newGs = Object.assign({}, gs, {
@@ -556,6 +591,7 @@ export function useLiveScoring(params) {
         myScore:           newMyScore,
         currentBatter:     null,
         battingOrderIndex: nextIndex,
+        runsThisHalf:      newRunsThisHalf,
       });
     }
 
@@ -677,12 +713,124 @@ export function useLiveScoring(params) {
     audit('score_corrected', { opponentScore: newGs.opponentScore });
   }
 
-  // ── Derived state ─────────────────────────────────────────────────────────
-  var suggestedBatter = null;
-  if (isEnabled && gameState.currentBatter === null && battingOrder.length > 0) {
-    suggestedBatter = battingOrder[gameState.battingOrderIndex % battingOrder.length] || null;
+  function addManualRun(team) {
+    if (!isEnabled || !isScorerRef.current) return;
+    var newGs = team === 'us'
+      ? Object.assign({}, gsRef.current, {
+          myScore: gsRef.current.myScore + 1,
+          runsThisHalf: (gsRef.current.runsThisHalf || 0) + 1
+        })
+      : Object.assign({}, gsRef.current, {
+          opponentScore: gsRef.current.opponentScore + 1,
+          oppRunsThisHalf: (gsRef.current.oppRunsThisHalf || 0) + 1
+        });
+    setGs(newGs);
+    persist(newGs);
+    audit('score_corrected', { team: team, myScore: newGs.myScore, opponentScore: newGs.opponentScore });
   }
 
+  function endHalfInning() {
+    if (!isEnabled || !isScorerRef.current) return;
+    var gs = gsRef.current;
+    var nextHalf = gs.halfInning === 'top' ? 'bottom' : 'top';
+    var nextInning = gs.halfInning === 'bottom' ? gs.inning + 1 : gs.inning;
+    var nextIndex = gs.battingOrderIndex;
+    var newGs = Object.assign({}, gs, {
+      inning: nextInning,
+      halfInning: nextHalf,
+      outs: 0, balls: 0, strikes: 0,
+      runners: [],
+      currentBatter: null,
+      battingOrderIndex: nextIndex,
+      runsThisHalf: 0,
+      oppRunsThisHalf: 0,
+      oppBalls: 0,
+      oppStrikes: 0,
+    });
+    setGs(newGs);
+    persist(newGs);
+    audit('half_inning_ended', { inning: gs.inning, halfInning: gs.halfInning, runsScored: gs.runsThisHalf });
+  }
+
+  function endGame() {
+    if (!isEnabled || !isScorerRef.current) return;
+    var gs = gsRef.current;
+    audit('game_ended', { finalMyScore: gs.myScore, finalOpponentScore: gs.opponentScore });
+    releaseScorerLock();
+  }
+
+  function recordOppPitch(type) {
+    if (!isEnabled || !isScorerRef.current) return;
+    var gs = gsRef.current;
+    var newOppBalls = gs.oppBalls || 0;
+    var newOppStrikes = gs.oppStrikes || 0;
+    var newOuts = gs.outs;
+    var newGs;
+
+    if (type === 'ball') {
+      newOppBalls = newOppBalls + 1;
+      if (newOppBalls >= 4) {
+        newOppBalls = 0; newOppStrikes = 0;
+      }
+      newGs = Object.assign({}, gs, { oppBalls: newOppBalls, oppStrikes: newOppStrikes });
+    } else if (type === 'strike') {
+      newOppStrikes = newOppStrikes + 1;
+      if (newOppStrikes >= 3) {
+        newOuts = newOuts + 1;
+        newOppBalls = 0; newOppStrikes = 0;
+        if (newOuts >= 3) {
+          var nextHalfK = gs.halfInning === 'top' ? 'bottom' : 'top';
+          var nextInningK = gs.halfInning === 'bottom' ? gs.inning + 1 : gs.inning;
+          newGs = Object.assign({}, gs, {
+            inning: nextInningK, halfInning: nextHalfK,
+            outs: 0, balls: 0, strikes: 0,
+            oppBalls: 0, oppStrikes: 0,
+            runners: [], currentBatter: null,
+            runsThisHalf: 0, oppRunsThisHalf: 0,
+          });
+          setGs(newGs); persist(newGs);
+          audit('half_inning_ended_opp', { inning: gs.inning });
+          return;
+        }
+        newGs = Object.assign({}, gs, { outs: newOuts, oppBalls: 0, oppStrikes: 0 });
+      } else {
+        newGs = Object.assign({}, gs, { oppBalls: newOppBalls, oppStrikes: newOppStrikes });
+      }
+    } else if (type === 'foul') {
+      if (newOppStrikes < 2) { newOppStrikes = newOppStrikes + 1; }
+      newGs = Object.assign({}, gs, { oppBalls: newOppBalls, oppStrikes: newOppStrikes });
+    } else if (type === 'out') {
+      newOuts = newOuts + 1;
+      newOppBalls = 0; newOppStrikes = 0;
+      if (newOuts >= 3) {
+        var nextHalfO = gs.halfInning === 'top' ? 'bottom' : 'top';
+        var nextInningO = gs.halfInning === 'bottom' ? gs.inning + 1 : gs.inning;
+        newGs = Object.assign({}, gs, {
+          inning: nextInningO, halfInning: nextHalfO,
+          outs: 0, balls: 0, strikes: 0,
+          oppBalls: 0, oppStrikes: 0,
+          runners: [], currentBatter: null,
+          runsThisHalf: 0, oppRunsThisHalf: 0,
+        });
+        setGs(newGs); persist(newGs);
+        audit('half_inning_ended_opp', { inning: gs.inning });
+        return;
+      }
+      newGs = Object.assign({}, gs, { outs: newOuts, oppBalls: 0, oppStrikes: 0 });
+    } else {
+      newGs = Object.assign({}, gs, { oppBalls: 0, oppStrikes: 0 });
+    }
+    setGs(newGs); persist(newGs);
+    audit('opp_pitch', { type: type });
+  }
+
+  // ── Derived state ─────────────────────────────────────────────────────────
+  // Computed regardless of isEnabled so practice mode (no gameId) still shows
+  // the batting order — isEnabled gates Supabase writes, not the batter display.
+  var suggestedBatter = null;
+  if (gameState.currentBatter === null && battingOrder.length > 0) {
+    suggestedBatter = battingOrder[gameState.battingOrderIndex % battingOrder.length] || null;
+  }
   // ── Return empty shell when disabled (hooks already called above) ─────────
   if (!isEnabled) {
     return {
@@ -691,7 +839,7 @@ export function useLiveScoring(params) {
       isScorer:                 false,
       scorerName:               null,
       scorerLockExpired:        false,
-      suggestedBatter:          null,
+      suggestedBatter:          suggestedBatter,
       pendingAdvancement:       null,
       claimScorerLock:          function() {},
       releaseScorerLock:        function() {},
@@ -701,6 +849,14 @@ export function useLiveScoring(params) {
       undoLastPitch:            function() {},
       confirmRunnerAdvancement: function() {},
       incrementOpponentScore:   function() {},
+      addManualRun:             function() {},
+      endHalfInning:            function() {},
+      endGame:                  function() {},
+      recordOppPitch:           function() {},
+      myTeamHalf:               myTeamHalf,
+      oppRunsThisHalf:          0,
+      oppBalls:                 0,
+      oppStrikes:               0,
       claimError:               '',
     };
   }
@@ -713,6 +869,7 @@ export function useLiveScoring(params) {
     scorerLockExpired:        scorerLockExpired,
     suggestedBatter:          suggestedBatter,
     pendingAdvancement:       pendingAdvancement,
+    runsThisHalf:             gsRef.current.runsThisHalf || 0,
     claimScorerLock:          claimScorerLock,
     releaseScorerLock:        releaseScorerLock,
     startAtBat:               startAtBat,
@@ -721,6 +878,14 @@ export function useLiveScoring(params) {
     undoLastPitch:            undoLastPitch,
     confirmRunnerAdvancement: confirmRunnerAdvancement,
     incrementOpponentScore:   incrementOpponentScore,
+    addManualRun:             addManualRun,
+    endHalfInning:            endHalfInning,
+    endGame:                  endGame,
+    recordOppPitch:           recordOppPitch,
+    oppRunsThisHalf:          gameState.oppRunsThisHalf || 0,
+    oppBalls:                 gameState.oppBalls        || 0,
+    oppStrikes:               gameState.oppStrikes      || 0,
+    myTeamHalf:               myTeamHalf,
     rules:                    rules,
     pitchUIConfig:            pitchUIConfig,
     ruleWarnings:             ruleWarnings,

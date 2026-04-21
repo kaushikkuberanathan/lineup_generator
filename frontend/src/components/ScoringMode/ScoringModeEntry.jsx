@@ -1,8 +1,20 @@
+import { useState } from 'react';
+
+export function computeNextGames(upcoming, todayGame) {
+  // Assumes `upcoming` is pre-sorted ascending by date (enforced upstream)
+  var futurePool  = todayGame ? upcoming.slice(1) : upcoming;
+  var soonestDate = futurePool.length > 0 ? futurePool[0].game.date : null;
+  return soonestDate ? futurePool.filter(function(item) { return item.game.date === soonestDate; }) : [];
+}
+
 export default function ScoringModeEntry({
   activeTeam, schedule, selectedGame,
   onSelectGame, onClaimScorer, onJoinViewer,
   onPractice, onClose,
 }) {
+  var _half = useState('top');
+  var myTeamHalf = _half[0]; var setMyTeamHalf = _half[1];
+
   // Partition schedule into today + next 2 upcoming
   var today = new Date(); today.setHours(0, 0, 0, 0);
   var upcoming = [];
@@ -18,7 +30,7 @@ export default function ScoringModeEntry({
   upcoming.sort(function(a, b) { return a.d - b.d; });
 
   var todayGame  = upcoming.length > 0 && upcoming[0].days === 0 ? upcoming[0].game : null;
-  var nextGames  = todayGame ? upcoming.slice(1, 3) : upcoming.slice(0, 2);
+  var nextGames  = computeNextGames(upcoming, todayGame);
   var activeGame = selectedGame || todayGame;
 
   function fmtDate(dateStr) {
@@ -153,9 +165,36 @@ export default function ScoringModeEntry({
           )}
         </div>
 
+        {/* ── Which half does our team bat? ─────────────────────── */}
+        <div style={{display:'flex',gap:'8px',marginBottom:'12px',
+                     justifyContent:'center'}}>
+          <div style={{fontSize:'12px',color:'#888',
+                       alignSelf:'center',marginRight:'4px'}}>
+            We bat:
+          </div>
+          <button
+            onClick={function(){setMyTeamHalf('top');}}
+            style={{
+              padding:'6px 16px', borderRadius:'20px', border:'none',
+              background: myTeamHalf==='top' ? '#1B2A4A' : 'rgba(255,255,255,0.08)',
+              color: myTeamHalf==='top' ? '#fff' : '#888',
+              fontWeight: myTeamHalf==='top' ? 700 : 400,
+              fontSize:'13px', cursor:'pointer'
+            }}>▲ Top</button>
+          <button
+            onClick={function(){setMyTeamHalf('bottom');}}
+            style={{
+              padding:'6px 16px', borderRadius:'20px', border:'none',
+              background: myTeamHalf==='bottom' ? '#1B2A4A' : 'rgba(255,255,255,0.08)',
+              color: myTeamHalf==='bottom' ? '#fff' : '#888',
+              fontWeight: myTeamHalf==='bottom' ? 700 : 400,
+              fontSize:'13px', cursor:'pointer'
+            }}>▼ Bottom</button>
+        </div>
+
         {/* ── Claim Scorer ──────────────────────────────────────── */}
         <button
-          onClick={function() { if (activeGame) { onClaimScorer(activeGame); } }}
+          onClick={function() { if (activeGame) { onClaimScorer(activeGame, myTeamHalf); } }}
           disabled={!activeGame}
           style={{
             width: '100%', padding: '16px', borderRadius: '10px', border: 'none',

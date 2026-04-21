@@ -69,7 +69,8 @@ function CountPips(props) {
 }
 
 function DiamondSVG(props) {
-  var runners = props.runners || [];
+  var runners      = props.runners      || [];
+  var battingOrder = props.battingOrder || [];
   var occupied = {};
   for (var i = 0; i < runners.length; i++) { occupied[runners[i].base] = true; }
   var bases = [
@@ -77,29 +78,60 @@ function DiamondSVG(props) {
     { base: 3, cx: 12, cy: 50 },
     { base: 1, cx: 88, cy: 50 },
   ];
+  var runnerNames = [];
+  for (var j = 0; j < runners.length; j++) {
+    var r = runners[j];
+    var player = null;
+    for (var k = 0; k < battingOrder.length; k++) {
+      if (battingOrder[k].id === r.runnerId) { player = battingOrder[k]; break; }
+    }
+    var firstName = player ? player.name.split(' ')[0] : '?';
+    var label = r.base === 1 ? '1B' : r.base === 2 ? '2B' : '3B';
+    runnerNames.push({ base: r.base, label: label, name: firstName });
+  }
+  runnerNames.sort(function(a, b) { return a.base - b.base; });
   return (
-    <svg width={110} height={110} viewBox="0 0 100 100">
-      <polygon points="50,12 88,50 50,88 12,50"
-        fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth={1.5} />
-      {bases.map(function(b) {
-        var on = !!occupied[b.base];
-        return (
-          <rect key={b.base}
-            x={b.cx - 9} y={b.cy - 9} width={18} height={18}
-            transform={'rotate(45,' + b.cx + ',' + b.cy + ')'}
-            fill={on ? '#f5c842' : 'rgba(255,255,255,0.08)'}
-            stroke={on ? '#f5c842' : 'rgba(255,255,255,0.25)'}
-            strokeWidth={1.5}
-          />
-        );
-      })}
-      <rect x={41} y={79} width={18} height={18}
-        transform="rotate(45,50,88)"
-        fill="rgba(255,255,255,0.12)"
-        stroke="rgba(255,255,255,0.28)"
-        strokeWidth={1}
-      />
-    </svg>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+      <svg width={110} height={110} viewBox="0 0 100 100">
+        <polygon points="50,12 88,50 50,88 12,50"
+          fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth={1.5} />
+        {bases.map(function(b) {
+          var on = !!occupied[b.base];
+          return (
+            <rect key={b.base}
+              x={b.cx - 9} y={b.cy - 9} width={18} height={18}
+              transform={'rotate(45,' + b.cx + ',' + b.cy + ')'}
+              fill={on ? '#f5c842' : 'rgba(255,255,255,0.08)'}
+              stroke={on ? '#f5c842' : 'rgba(255,255,255,0.25)'}
+              strokeWidth={1.5}
+            />
+          );
+        })}
+        <rect x={41} y={79} width={18} height={18}
+          transform="rotate(45,50,88)"
+          fill="rgba(255,255,255,0.12)"
+          stroke="rgba(255,255,255,0.28)"
+          strokeWidth={1}
+        />
+      </svg>
+      {runnerNames.length > 0 && (
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
+          {runnerNames.map(function(rn) {
+            return (
+              <span key={rn.base} style={{
+                fontSize: '11px', fontWeight: 'bold',
+                background: 'rgba(245,200,66,0.15)',
+                border: '1px solid rgba(245,200,66,0.35)',
+                borderRadius: '4px', padding: '2px 6px',
+                color: '#f5c842',
+              }}>
+                {rn.label} {rn.name}
+              </span>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -123,6 +155,9 @@ export default function LiveScoringPanel(props) {
   var undoLastPitch            = props.undoLastPitch            || function() {};
   var confirmRunnerAdvancement = props.confirmRunnerAdvancement || function() {};
   var incrementOpponentScore   = props.incrementOpponentScore   || function() {};
+  var addManualRun             = props.addManualRun             || function() {};
+  var endHalfInning            = props.endHalfInning            || function() {};
+  var endGame                  = props.endGame                  || function() {};
   var selectedGame    = props.selectedGame;
   var activeTeam      = props.activeTeam;
   var isPractice      = props.isPractice;
@@ -132,6 +167,9 @@ export default function LiveScoringPanel(props) {
   var rules          = props.rules;
   var pitchUIConfig  = props.pitchUIConfig;
   var ruleWarnings   = props.ruleWarnings   || [];
+  var runsThisHalf   = props.runsThisHalf   || 0;
+  var myTeamHalf     = props.myTeamHalf     || 'top';
+  var scoring        = props.scoring        || {};
 
   // ── Hooks — all unconditional ──────────────────────────────────────────────
   var _rp = useState(false);
@@ -139,6 +177,9 @@ export default function LiveScoringPanel(props) {
 
   var _vo = useState(false);
   var viewerOnly = _vo[0]; var setViewerOnly = _vo[1];
+
+  var _manualRun = useState(false);
+  var showManualRunPrompt = _manualRun[0]; var setShowManualRunPrompt = _manualRun[1];
 
   // ── Derived ────────────────────────────────────────────────────────────────
   var gs = gameState || {
@@ -189,8 +230,13 @@ export default function LiveScoringPanel(props) {
             <div style={{ fontSize: '12px', color: '#64748b' }}>
               {isPractice ? 'Practice Mode' : 'vs ' + opponentName}
             </div>
-            <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#f5c842' }}>
-              {halfArrow} {gs.inning}
+            <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
+              <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>
+                {gs.halfInning === 'top' ? 'TOP' : 'BOT'}
+              </span>
+              <span style={{fontSize:'22px',fontWeight:'800',color:'#f5c842',letterSpacing:'1px'}}>
+                {gs.inning}
+              </span>
             </div>
           </div>
           <div style={{ width: '36px' }} />
@@ -264,23 +310,40 @@ export default function LiveScoringPanel(props) {
             background: 'none', border: 'none', color: '#64748b',
             fontSize: '18px', cursor: 'pointer', padding: 0, lineHeight: 1,
           }}>←</button>
-          <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#f5c842' }}>
-            {halfArrow} {gs.inning}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
+              <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>
+                {gs.halfInning === 'top' ? 'TOP' : 'BOT'}
+              </span>
+              <span style={{fontSize:'22px',fontWeight:'800',color:'#f5c842',letterSpacing:'1px'}}>
+                {gs.inning}
+              </span>
+            </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '11px' }}>
-            <CountPips n={gs.balls}   max={4} color="#3b82f6" />
-            <span style={{ color: '#374151', margin: '0 1px' }}>B</span>
-            <span style={{ color: '#2d3748', margin: '0 2px' }}>·</span>
-            <CountPips n={gs.strikes} max={3} color="#dc2626" />
-            <span style={{ color: '#374151', margin: '0 1px' }}>S</span>
-            <span style={{ color: '#2d3748', margin: '0 2px' }}>·</span>
-            <CountPips n={gs.outs}    max={3} color="#f5c842" />
-            <span style={{ color: '#374151', margin: '0 1px' }}>O</span>
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: '6px' }}>
+            <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
+              <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>B</span>
+              <div><CountPips n={gs.balls}   max={4} color="#3b82f6" /></div>
+            </div>
+            <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
+              <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>S</span>
+              <div><CountPips n={gs.strikes} max={3} color="#dc2626" /></div>
+            </div>
+            <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
+              <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>O</span>
+              <div><CountPips n={gs.outs}    max={3} color="#f5c842" /></div>
+            </div>
           </div>
-          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'baseline', gap: '6px' }}>
-            <span style={{ fontSize: '20px', fontWeight: 'bold', color: '#f5c842' }}>{gs.myScore}</span>
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
+              <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>US</span>
+              <span style={{fontSize:'20px',fontWeight:'800',color:'#fff'}}>{gs.myScore}</span>
+            </div>
             <span style={{ color: '#374151' }}>:</span>
-            <span style={{ fontSize: '20px', fontWeight: 'bold' }}>{gs.opponentScore}</span>
+            <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
+              <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>OPP</span>
+              <span style={{fontSize:'20px',fontWeight:'800',color:'#fff'}}>{gs.opponentScore}</span>
+            </div>
           </div>
         </div>
 
@@ -302,7 +365,7 @@ export default function LiveScoringPanel(props) {
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0' }}>
-          <DiamondSVG runners={gs.runners} />
+          <DiamondSVG runners={gs.runners} battingOrder={battingOrder} />
         </div>
 
         {currentBatter ? (
@@ -499,7 +562,8 @@ export default function LiveScoringPanel(props) {
 
   return (
     <div style={{
-      height: '100vh', overflow: 'hidden', background: '#0b1524', color: '#fff',
+      minHeight: '100vh', overflow: 'visible', paddingBottom: '160px',
+      background: '#0b1524', color: '#fff',
       fontFamily: FF, display: 'flex', flexDirection: 'column',
     }}>
 
@@ -519,23 +583,34 @@ export default function LiveScoringPanel(props) {
           {halfArrow} {gs.inning}
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '11px', flexShrink: 0 }}>
-          <CountPips n={gs.balls}   max={4} color="#3b82f6" />
-          <span style={{ color: '#374151', margin: '0 1px' }}>B</span>
-          <span style={{ color: '#2d3748', margin: '0 2px' }}>·</span>
-          <CountPips n={gs.strikes} max={3} color="#dc2626" />
-          <span style={{ color: '#374151', margin: '0 1px' }}>S</span>
-          <span style={{ color: '#2d3748', margin: '0 2px' }}>·</span>
-          <CountPips n={gs.outs}    max={3} color="#f5c842" />
-          <span style={{ color: '#374151', margin: '0 1px' }}>O</span>
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: '6px', flexShrink: 0 }}>
+          <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
+            <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>B</span>
+            <div><CountPips n={gs.balls}   max={4} color="#3b82f6" /></div>
+          </div>
+          <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
+            <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>S</span>
+            <div><CountPips n={gs.strikes} max={3} color="#dc2626" /></div>
+          </div>
+          <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
+            <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>O</span>
+            <div><CountPips n={gs.outs}    max={3} color="#f5c842" /></div>
+          </div>
         </div>
 
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0 }}>
-          <span style={{ fontSize: '20px', fontWeight: 'bold', color: '#f5c842' }}>{gs.myScore}</span>
+          <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
+            <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>US</span>
+            <span style={{fontSize:'20px',fontWeight:'800',color:'#fff'}}>{gs.myScore}</span>
+          </div>
           <span style={{ color: '#374151', fontSize: '14px' }}>:</span>
-          <span style={{ fontSize: '20px', fontWeight: 'bold' }}>{gs.opponentScore}</span>
+          <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
+            <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>OPP</span>
+            <span style={{fontSize:'20px',fontWeight:'800',color:'#fff'}}>{gs.opponentScore}</span>
+          </div>
           <button
-            onClick={incrementOpponentScore}
+            title="Add run manually"
+            onClick={function() { setShowManualRunPrompt(true); }}
             style={{
               background: 'rgba(255,255,255,0.08)',
               border: '1px solid rgba(255,255,255,0.15)',
@@ -564,13 +639,52 @@ export default function LiveScoringPanel(props) {
             }}>⚙️</button>
           ) : null}
           <button onClick={handleEndSession} style={{
-            background: 'none', border: 'none',
-            color: '#374151', fontSize: '11px',
-            cursor: 'pointer', fontFamily: FF, padding: '4px 2px',
+            background: '#7f1d1d',
+            border: '1px solid #ef4444',
+            color: '#fca5a5',
+            fontSize: '11px',
+            cursor: 'pointer',
+            fontFamily: FF,
+            padding: '4px 8px',
+            borderRadius: '6px',
             whiteSpace: 'nowrap',
+            fontWeight: 600,
           }}>End Session</button>
         </div>
       </div>
+
+      {/* ── Mercy run banner ─────────────────────────────────────────────────── */}
+      {runsThisHalf >= 5 && (
+        <div style={{
+          background: '#7c2d12', color: '#fca5a5',
+          fontSize: '13px', fontWeight: 700,
+          padding: '8px 16px',
+          borderBottom: '1px solid #ef4444',
+          flexShrink: 0,
+          display: 'flex', alignItems: 'center',
+          justifyContent: 'space-between', gap: '8px',
+        }}>
+          <span>⚠️ {runsThisHalf} runs — end half?</span>
+          <div style={{display:'flex', gap:'8px'}}>
+            <button
+              onClick={function() { endHalfInning(); }}
+              style={{
+                background:'#ef4444', border:'none', color:'#fff',
+                fontSize:'12px', fontWeight:700, padding:'4px 10px',
+                borderRadius:'6px', cursor:'pointer'
+              }}
+            >End Inning</button>
+            <button
+              onClick={function() { endGame(); }}
+              style={{
+                background:'#7f1d1d', border:'1px solid #ef4444', color:'#fca5a5',
+                fontSize:'12px', fontWeight:700, padding:'4px 10px',
+                borderRadius:'6px', cursor:'pointer'
+              }}
+            >End Game</button>
+          </div>
+        </div>
+      )}
 
       {/* ── Lock expired banner ───────────────────────────────────────────────── */}
       {scorerLockExpired ? (
@@ -589,7 +703,7 @@ export default function LiveScoringPanel(props) {
 
       {/* ── Batter area ───────────────────────────────────────────────────────── */}
       <div style={{ padding: '12px 16px', flexShrink: 0 }}>
-        {currentBatter ? (
+        {gs.halfInning === myTeamHalf ? (currentBatter ? (
           <div style={{
             background: 'rgba(245,200,66,0.08)',
             border: '1px solid rgba(245,200,66,0.25)',
@@ -660,13 +774,29 @@ export default function LiveScoringPanel(props) {
             </div>
           </div>
         ) : (
-          <div style={{
-            background: 'rgba(255,255,255,0.03)',
-            border: '1px solid rgba(255,255,255,0.07)',
-            borderRadius: '8px', padding: '10px 14px',
-            color: '#374151', fontSize: '13px',
-          }}>
-            No batting order configured
+          <div style={{padding:'10px 14px', background:'rgba(255,255,255,0.05)',
+            borderRadius:'10px', textAlign:'center'}}>
+            <div style={{color:'#aaa', fontSize:'14px', marginBottom:'4px'}}>
+              No batting order set
+            </div>
+            <div style={{color:'#666', fontSize:'12px'}}>
+              Set a batting order in Game Day → Lineups tab first
+            </div>
+          </div>
+        )) : (
+          <div style={{padding:'12px 16px'}}>
+            <div style={{
+              background:'rgba(255,255,255,0.05)', borderRadius:'10px',
+              padding:'12px 14px', textAlign:'center'
+            }}>
+              <div style={{color:'#f5c842',fontSize:'14px',fontWeight:700,
+                           marginBottom:'4px'}}>
+                Opponent Batting
+              </div>
+              <div style={{color:'#888',fontSize:'12px'}}>
+                Use +1 OPP to track their runs
+              </div>
+            </div>
           </div>
         )}
       </div>
@@ -675,9 +805,9 @@ export default function LiveScoringPanel(props) {
       <div style={{
         display: 'flex', alignItems: 'center',
         padding: '0 16px 8px', gap: '16px',
-        flex: '1 1 0', overflow: 'hidden', minHeight: 0,
+        flexShrink: 0,
       }}>
-        <DiamondSVG runners={gs.runners} />
+        <DiamondSVG runners={gs.runners} battingOrder={battingOrder} />
 
         <div style={{ flex: 1, minWidth: 0 }}>
           {pitches.length > 0 ? (
@@ -712,176 +842,329 @@ export default function LiveScoringPanel(props) {
         </div>
       </div>
 
-      {/* ── Pitch buttons — always visible at bottom ──────────────────────────── */}
-      <div style={{ padding: '8px 16px 20px', paddingBottom: '72px', flexShrink: 0 }}>
-        {!pitchUIConfig && (
-          <div style={{ color: '#64748b', textAlign: 'center', padding: 16 }}>
-            Loading rules...
-          </div>
-        )}
+      {/* ── Pitch buttons / Opponent run counter ─────────────────────────────── */}
+      {gs.halfInning === myTeamHalf ? (
+        <div style={{
+          position: 'fixed', bottom: '60px', left: 0, right: 0,
+          background: '#0b1524', padding: '8px 16px 12px', zIndex: 50,
+        }}>
+          {!pitchUIConfig && (
+            <div style={{ color: '#64748b', textAlign: 'center', padding: 16 }}>
+              Loading rules...
+            </div>
+          )}
 
-        {pitchUIConfig && (
-          <>
-            {pitchUIConfig.showCoachOverlay && gs.isCoachPitching && (
-              <div style={{
-                background: 'rgba(245,158,11,0.15)',
-                border: '1px solid rgba(245,158,11,0.4)',
-                borderRadius: 8, padding: '6px 12px',
-                fontSize: 12, color: '#f59e0b', textAlign: 'center',
-                marginBottom: 6,
-              }}>
-                Coach pitching — {gs.coachPitchesRemaining || 0} pitch
-                {(gs.coachPitchesRemaining || 0) !== 1 ? 'es' : ''} remaining
-              </div>
-            )}
-
-            {ruleWarnings.length > 0 && ruleWarnings.map(function(w, i) {
-              return (
-                <div key={i} style={{
-                  background: 'rgba(245,158,11,0.1)',
-                  border: '1px solid rgba(245,158,11,0.3)',
+          {pitchUIConfig && (
+            <>
+              {pitchUIConfig.showCoachOverlay && gs.isCoachPitching && (
+                <div style={{
+                  background: 'rgba(245,158,11,0.15)',
+                  border: '1px solid rgba(245,158,11,0.4)',
                   borderRadius: 8, padding: '6px 12px',
-                  fontSize: 12, color: '#f59e0b', marginBottom: 4,
+                  fontSize: 12, color: '#f59e0b', textAlign: 'center',
+                  marginBottom: 6,
                 }}>
-                  ⚠ {w}
+                  Coach pitching — {gs.coachPitchesRemaining || 0} pitch
+                  {(gs.coachPitchesRemaining || 0) !== 1 ? 'es' : ''} remaining
+                </div>
+              )}
+
+              {ruleWarnings.length > 0 && ruleWarnings.map(function(w, i) {
+                return (
+                  <div key={i} style={{
+                    background: 'rgba(245,158,11,0.1)',
+                    border: '1px solid rgba(245,158,11,0.3)',
+                    borderRadius: 8, padding: '6px 12px',
+                    fontSize: 12, color: '#f59e0b', marginBottom: 4,
+                  }}>
+                    ⚠ {w}
+                  </div>
+                );
+              })}
+
+              <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
+                {pitchUIConfig.showAttemptButton && (
+                  <button
+                    onClick={function() { if (!pitchDisabled) { recordPitch(PITCH.CONTACT); } }}
+                    disabled={pitchDisabled}
+                    style={{
+                      flex: 1, padding: '13px 4px',
+                      background: pitchDisabled ? 'rgba(255,255,255,0.04)' : '#7c3aed1a',
+                      border: '1.5px solid ' + (pitchDisabled ? 'rgba(255,255,255,0.08)' : '#7c3aed66'),
+                      borderRadius: '10px',
+                      color: pitchDisabled ? '#374151' : '#fff',
+                      fontWeight: 'bold', fontSize: '13px',
+                      cursor: pitchDisabled ? 'default' : 'pointer',
+                      fontFamily: FF, transition: 'background 150ms',
+                    }}>
+                    <div>Att</div>
+                    <div style={{ fontSize: '10px', fontWeight: 'normal', marginTop: '1px' }}>{pitchUIConfig.attemptLabel}</div>
+                  </button>
+                )}
+                {pitchUIConfig.showBallButton && (
+                  <button
+                    onClick={function() { if (!pitchDisabled) { recordPitch(PITCH.BALL); } }}
+                    disabled={pitchDisabled}
+                    style={{
+                      flex: 1, padding: '13px 4px',
+                      background: pitchDisabled ? 'rgba(255,255,255,0.04)' : '#1d4ed81a',
+                      border: '1.5px solid ' + (pitchDisabled ? 'rgba(255,255,255,0.08)' : '#1d4ed866'),
+                      borderRadius: '10px',
+                      color: pitchDisabled ? '#374151' : '#fff',
+                      fontWeight: 'bold', fontSize: '13px',
+                      cursor: pitchDisabled ? 'default' : 'pointer',
+                      fontFamily: FF, transition: 'background 150ms',
+                    }}>
+                    <div>B</div>
+                    <div style={{ fontSize: '10px', fontWeight: 'normal', marginTop: '1px' }}>Ball</div>
+                  </button>
+                )}
+                {pitchUIConfig.showCalledStrike && (
+                  <button
+                    onClick={function() { if (!pitchDisabled) { recordPitch(PITCH.STRIKE_CALLED); } }}
+                    disabled={pitchDisabled}
+                    style={{
+                      flex: 1, padding: '13px 4px',
+                      background: pitchDisabled ? 'rgba(255,255,255,0.04)' : '#dc26261a',
+                      border: '1.5px solid ' + (pitchDisabled ? 'rgba(255,255,255,0.08)' : '#dc262666'),
+                      borderRadius: '10px',
+                      color: pitchDisabled ? '#374151' : '#fff',
+                      fontWeight: 'bold', fontSize: '13px',
+                      cursor: pitchDisabled ? 'default' : 'pointer',
+                      fontFamily: FF, transition: 'background 150ms',
+                    }}>
+                    <div>K̄</div>
+                    <div style={{ fontSize: '10px', fontWeight: 'normal', marginTop: '1px' }}>Called K</div>
+                  </button>
+                )}
+                {pitchUIConfig.showSwingMiss && (
+                  <button
+                    onClick={function() { if (!pitchDisabled) { recordPitch(PITCH.STRIKE_SWINGING); } }}
+                    disabled={pitchDisabled}
+                    style={{
+                      flex: 1, padding: '13px 4px',
+                      background: pitchDisabled ? 'rgba(255,255,255,0.04)' : '#dc26261a',
+                      border: '1.5px solid ' + (pitchDisabled ? 'rgba(255,255,255,0.08)' : '#dc262666'),
+                      borderRadius: '10px',
+                      color: pitchDisabled ? '#374151' : '#fff',
+                      fontWeight: 'bold', fontSize: '13px',
+                      cursor: pitchDisabled ? 'default' : 'pointer',
+                      fontFamily: FF, transition: 'background 150ms',
+                    }}>
+                    <div>K</div>
+                    <div style={{ fontSize: '10px', fontWeight: 'normal', marginTop: '1px' }}>Swing K</div>
+                  </button>
+                )}
+                {pitchUIConfig.showFoul && (
+                  <button
+                    onClick={function() { if (!pitchDisabled) { recordPitch(PITCH.FOUL); } }}
+                    disabled={pitchDisabled}
+                    style={{
+                      flex: 1, padding: '13px 4px',
+                      background: pitchDisabled ? 'rgba(255,255,255,0.04)' : '#d977061a',
+                      border: '1.5px solid ' + (pitchDisabled ? 'rgba(255,255,255,0.08)' : '#d9770666'),
+                      borderRadius: '10px',
+                      color: pitchDisabled ? '#374151' : '#fff',
+                      fontWeight: 'bold', fontSize: '13px',
+                      cursor: pitchDisabled ? 'default' : 'pointer',
+                      fontFamily: FF, transition: 'background 150ms',
+                    }}>
+                    <div>F</div>
+                    <div style={{ fontSize: '10px', fontWeight: 'normal', marginTop: '1px' }}>Foul</div>
+                  </button>
+                )}
+                {pitchUIConfig.showContact && (
+                  <button
+                    onClick={function() { if (!pitchDisabled) { recordPitch(PITCH.CONTACT); } }}
+                    disabled={pitchDisabled}
+                    style={{
+                      flex: 1.5, padding: '13px 4px',
+                      background: pitchDisabled ? 'rgba(255,255,255,0.04)' : '#16a34a1a',
+                      border: '1.5px solid ' + (pitchDisabled ? 'rgba(255,255,255,0.08)' : '#16a34a66'),
+                      borderRadius: '10px',
+                      color: pitchDisabled ? '#374151' : '#fff',
+                      fontWeight: 'bold', fontSize: '13px',
+                      cursor: pitchDisabled ? 'default' : 'pointer',
+                      fontFamily: FF, transition: 'background 150ms',
+                    }}>
+                    <div>⚾</div>
+                    <div style={{ fontSize: '10px', fontWeight: 'normal', marginTop: '1px' }}>Contact</div>
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
+            <button
+              onClick={undoLastPitch}
+              disabled={pitches.length === 0}
+              style={{
+                background: 'none',
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: '7px',
+                color: pitches.length > 0 ? '#64748b' : '#2d3748',
+                fontSize: '12px',
+                cursor: pitches.length > 0 ? 'pointer' : 'default',
+                fontFamily: FF, padding: '7px 12px',
+              }}>
+              ⟲ Undo
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div style={{
+          position:'fixed', bottom:'60px', left:0, right:0,
+          background:'#0b1524', borderTop:'1px solid rgba(255,255,255,0.08)',
+          padding:'8px 16px', zIndex:50,
+        }}>
+          {/* Opponent B/S/O count display */}
+          <div style={{
+            display:'flex', justifyContent:'center', gap:'24px',
+            marginBottom:'8px'
+          }}>
+            {[
+              {label:'B', val: gs.oppBalls || 0, max:4, color:'#60a5fa'},
+              {label:'S', val: gs.oppStrikes || 0, max:3, color:'#f87171'},
+              {label:'O', val: gs.outs, max:3, color:'#fbbf24'},
+            ].map(function(item) {
+              return (
+                <div key={item.label} style={{
+                  display:'flex', flexDirection:'column',
+                  alignItems:'center', gap:'2px'
+                }}>
+                  <span style={{fontSize:'9px',color:'#888',fontWeight:600}}>
+                    {item.label}
+                  </span>
+                  <div style={{display:'flex',gap:'3px'}}>
+                    {Array.from({length:item.max}).map(function(_,i) {
+                      return (
+                        <div key={i} style={{
+                          width:'8px', height:'8px', borderRadius:'50%',
+                          background: i < item.val
+                            ? item.color
+                            : 'rgba(255,255,255,0.12)',
+                        }} />
+                      );
+                    })}
+                  </div>
                 </div>
               );
             })}
-
-            <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
-              {pitchUIConfig.showAttemptButton && (
+          </div>
+          {/* Opponent pitch buttons */}
+          <div style={{display:'flex',gap:'6px',marginBottom:'8px'}}>
+            {[
+              {label:'B\nBall', type:'ball'},
+              {label:'K\nStrike', type:'strike'},
+              {label:'F\nFoul', type:'foul'},
+              {label:'Out', type:'out'},
+              {label:'⚾\nContact', type:'contact'},
+            ].map(function(btn) {
+              return (
                 <button
-                  onClick={function() { if (!pitchDisabled) { recordPitch(PITCH.CONTACT); } }}
-                  disabled={pitchDisabled}
+                  key={btn.type}
+                  onClick={function(){ scoring.recordOppPitch(btn.type); }}
                   style={{
-                    flex: 1, padding: '13px 4px',
-                    background: pitchDisabled ? 'rgba(255,255,255,0.04)' : '#7c3aed1a',
-                    border: '1.5px solid ' + (pitchDisabled ? 'rgba(255,255,255,0.08)' : '#7c3aed66'),
-                    borderRadius: '10px',
-                    color: pitchDisabled ? '#374151' : '#fff',
-                    fontWeight: 'bold', fontSize: '13px',
-                    cursor: pitchDisabled ? 'default' : 'pointer',
-                    fontFamily: FF, transition: 'background 150ms',
+                    flex:1, padding:'8px 4px', borderRadius:'8px',
+                    border:'1px solid rgba(255,255,255,0.15)',
+                    background:'rgba(255,255,255,0.05)',
+                    color:'#fff', fontSize:'11px', fontWeight:600,
+                    cursor:'pointer', whiteSpace:'pre-line',
+                    textAlign:'center', lineHeight:1.2,
                   }}>
-                  <div>Att</div>
-                  <div style={{ fontSize: '10px', fontWeight: 'normal', marginTop: '1px' }}>{pitchUIConfig.attemptLabel}</div>
+                  {btn.label}
                 </button>
-              )}
-              {pitchUIConfig.showBallButton && (
-                <button
-                  onClick={function() { if (!pitchDisabled) { recordPitch(PITCH.BALL); } }}
-                  disabled={pitchDisabled}
-                  style={{
-                    flex: 1, padding: '13px 4px',
-                    background: pitchDisabled ? 'rgba(255,255,255,0.04)' : '#1d4ed81a',
-                    border: '1.5px solid ' + (pitchDisabled ? 'rgba(255,255,255,0.08)' : '#1d4ed866'),
-                    borderRadius: '10px',
-                    color: pitchDisabled ? '#374151' : '#fff',
-                    fontWeight: 'bold', fontSize: '13px',
-                    cursor: pitchDisabled ? 'default' : 'pointer',
-                    fontFamily: FF, transition: 'background 150ms',
-                  }}>
-                  <div>B</div>
-                  <div style={{ fontSize: '10px', fontWeight: 'normal', marginTop: '1px' }}>Ball</div>
-                </button>
-              )}
-              {pitchUIConfig.showCalledStrike && (
-                <button
-                  onClick={function() { if (!pitchDisabled) { recordPitch(PITCH.STRIKE_CALLED); } }}
-                  disabled={pitchDisabled}
-                  style={{
-                    flex: 1, padding: '13px 4px',
-                    background: pitchDisabled ? 'rgba(255,255,255,0.04)' : '#dc26261a',
-                    border: '1.5px solid ' + (pitchDisabled ? 'rgba(255,255,255,0.08)' : '#dc262666'),
-                    borderRadius: '10px',
-                    color: pitchDisabled ? '#374151' : '#fff',
-                    fontWeight: 'bold', fontSize: '13px',
-                    cursor: pitchDisabled ? 'default' : 'pointer',
-                    fontFamily: FF, transition: 'background 150ms',
-                  }}>
-                  <div>K̄</div>
-                  <div style={{ fontSize: '10px', fontWeight: 'normal', marginTop: '1px' }}>Called K</div>
-                </button>
-              )}
-              {pitchUIConfig.showSwingMiss && (
-                <button
-                  onClick={function() { if (!pitchDisabled) { recordPitch(PITCH.STRIKE_SWINGING); } }}
-                  disabled={pitchDisabled}
-                  style={{
-                    flex: 1, padding: '13px 4px',
-                    background: pitchDisabled ? 'rgba(255,255,255,0.04)' : '#dc26261a',
-                    border: '1.5px solid ' + (pitchDisabled ? 'rgba(255,255,255,0.08)' : '#dc262666'),
-                    borderRadius: '10px',
-                    color: pitchDisabled ? '#374151' : '#fff',
-                    fontWeight: 'bold', fontSize: '13px',
-                    cursor: pitchDisabled ? 'default' : 'pointer',
-                    fontFamily: FF, transition: 'background 150ms',
-                  }}>
-                  <div>K</div>
-                  <div style={{ fontSize: '10px', fontWeight: 'normal', marginTop: '1px' }}>Swing K</div>
-                </button>
-              )}
-              {pitchUIConfig.showFoul && (
-                <button
-                  onClick={function() { if (!pitchDisabled) { recordPitch(PITCH.FOUL); } }}
-                  disabled={pitchDisabled}
-                  style={{
-                    flex: 1, padding: '13px 4px',
-                    background: pitchDisabled ? 'rgba(255,255,255,0.04)' : '#d977061a',
-                    border: '1.5px solid ' + (pitchDisabled ? 'rgba(255,255,255,0.08)' : '#d9770666'),
-                    borderRadius: '10px',
-                    color: pitchDisabled ? '#374151' : '#fff',
-                    fontWeight: 'bold', fontSize: '13px',
-                    cursor: pitchDisabled ? 'default' : 'pointer',
-                    fontFamily: FF, transition: 'background 150ms',
-                  }}>
-                  <div>F</div>
-                  <div style={{ fontSize: '10px', fontWeight: 'normal', marginTop: '1px' }}>Foul</div>
-                </button>
-              )}
-              {pitchUIConfig.showContact && (
-                <button
-                  onClick={function() { if (!pitchDisabled) { recordPitch(PITCH.CONTACT); } }}
-                  disabled={pitchDisabled}
-                  style={{
-                    flex: 1.5, padding: '13px 4px',
-                    background: pitchDisabled ? 'rgba(255,255,255,0.04)' : '#16a34a1a',
-                    border: '1.5px solid ' + (pitchDisabled ? 'rgba(255,255,255,0.08)' : '#16a34a66'),
-                    borderRadius: '10px',
-                    color: pitchDisabled ? '#374151' : '#fff',
-                    fontWeight: 'bold', fontSize: '13px',
-                    cursor: pitchDisabled ? 'default' : 'pointer',
-                    fontFamily: FF, transition: 'background 150ms',
-                  }}>
-                  <div>⚾</div>
-                  <div style={{ fontSize: '10px', fontWeight: 'normal', marginTop: '1px' }}>Contact</div>
-                </button>
-              )}
-            </div>
-          </>
-        )}
-
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
-          <button
-            onClick={undoLastPitch}
-            disabled={pitches.length === 0}
-            style={{
-              background: 'none',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '7px',
-              color: pitches.length > 0 ? '#64748b' : '#2d3748',
-              fontSize: '12px',
-              cursor: pitches.length > 0 ? 'pointer' : 'default',
-              fontFamily: FF, padding: '7px 12px',
+              );
+            })}
+          </div>
+          {/* Run tracking */}
+          <div style={{display:'flex',gap:'8px'}}>
+            <button
+              onClick={function(){ scoring.addManualRun('opp'); }}
+              style={{
+                flex:2, padding:'10px', borderRadius:'8px',
+                border:'none', background:'#7f1d1d',
+                color:'#fca5a5', fontSize:'14px', fontWeight:700,
+                cursor:'pointer'
+              }}>+1 OPP Run</button>
+            <button
+              onClick={function(){ scoring.addManualRun('us'); }}
+              style={{
+                flex:1, padding:'10px', borderRadius:'8px',
+                border:'1px solid #374151', background:'transparent',
+                color:'#555', fontSize:'12px', cursor:'pointer'
+              }}>+1 US</button>
+          </div>
+          {/* Opponent mercy banner */}
+          {(scoring.oppRunsThisHalf || 0) >= 5 && (
+            <div style={{
+              marginTop:'8px', background:'#7c2d12', color:'#fca5a5',
+              fontSize:'12px', fontWeight:700, padding:'6px 10px',
+              borderRadius:'6px', textAlign:'center',
+              display:'flex', gap:'8px', justifyContent:'center',
+              alignItems:'center',
             }}>
-            ⟲ Undo
-          </button>
+              <span>⚠️ {scoring.oppRunsThisHalf} opp runs — end inning?</span>
+              <button
+                onClick={function(){ scoring.endHalfInning(); }}
+                style={{
+                  background:'#ef4444', border:'none', color:'#fff',
+                  fontSize:'11px', fontWeight:700, padding:'3px 8px',
+                  borderRadius:'5px', cursor:'pointer'
+                }}>End Inning</button>
+            </div>
+          )}
         </div>
-      </div>
+      )}
 
       {rosterPickerSheet}
       {outcomeSheet}
       {runnerSheet}
+
+      {showManualRunPrompt && (
+        <div style={{
+          position:'fixed', top:0, left:0, right:0, bottom:0,
+          background:'rgba(0,0,0,0.7)', zIndex:200,
+          display:'flex', alignItems:'center', justifyContent:'center',
+        }}>
+          <div style={{
+            background:'#1a2a3a', borderRadius:'12px',
+            padding:'24px', width:'280px', textAlign:'center',
+          }}>
+            <div style={{color:'#fff',fontSize:'16px',fontWeight:700,marginBottom:'16px'}}>
+              Add run for which team?
+            </div>
+            <div style={{display:'flex',gap:'12px',justifyContent:'center'}}>
+              <button
+                onClick={function() { addManualRun('us'); setShowManualRunPrompt(false); }}
+                style={{
+                  flex:1, padding:'12px', borderRadius:'8px',
+                  background:'#1B2A4A', color:'#fff',
+                  border:'none', fontSize:'15px', fontWeight:700,
+                  cursor:'pointer', fontFamily:FF,
+                }}
+              >Us</button>
+              <button
+                onClick={function() { addManualRun('opp'); setShowManualRunPrompt(false); }}
+                style={{
+                  flex:1, padding:'12px', borderRadius:'8px',
+                  background:'#4a1a1a', color:'#fff',
+                  border:'none', fontSize:'15px', fontWeight:700,
+                  cursor:'pointer', fontFamily:FF,
+                }}
+              >Opp</button>
+            </div>
+            <button
+              onClick={function() { setShowManualRunPrompt(false); }}
+              style={{
+                marginTop:'12px', background:'none', border:'none',
+                color:'#888', fontSize:'13px', cursor:'pointer', fontFamily:FF,
+              }}
+            >Cancel</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

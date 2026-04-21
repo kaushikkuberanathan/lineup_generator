@@ -25,6 +25,9 @@ export default function ScoringMode({
   var _restore  = useState(false);
   var showRestore = _restore[0]; var setShowRestore = _restore[1];
 
+  var _mth = useState('top');
+  var myTeamHalf = _mth[0]; var setMyTeamHalf = _mth[1];
+
   // Change 3 — feature flag (fails closed; "|| true" is testing override)
   var _lsFlag = useFeatureFlag('live_scoring', activeTeamId);
   var liveScoringEnabled = _lsFlag.enabled;
@@ -45,7 +48,6 @@ export default function ScoringMode({
       orderPosition: idx,
     };
   });
-
   // AUTH TESTING SHIM — remove at Phase 4C
   // Get or generate a stable local scorer ID as final fallback
   var _storedLocalId = (function() {
@@ -53,11 +55,17 @@ export default function ScoringMode({
       var k = 'scorer_local_id';
       var existing = localStorage.getItem(k);
       if (existing) return existing;
-      var generated = 'local-' + Math.random().toString(36).slice(2, 10)
-        + '-' + Date.now().toString(36);
+      // Generate a valid UUID v4 format
+      var generated = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = Math.random() * 16 | 0;
+        var v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
       localStorage.setItem(k, generated);
       return generated;
-    } catch(e) { return 'local-scorer'; }
+    } catch(e) {
+      return '00000000-0000-4000-8000-000000000000';
+    }
   })();
   var scoringUserId = (user && user.id)
     ? user.id
@@ -91,8 +99,9 @@ export default function ScoringMode({
     setSelectedGame(game);
   }
 
-  function handleClaimScorer(game) {
+  function handleClaimScorer(game, half) {
     setSelectedGame(game);
+    setMyTeamHalf(half || 'top');
     setScorerClaimed(true);
     setViewerMode(false);
   }
@@ -162,13 +171,19 @@ export default function ScoringMode({
           undoLastPitch={scoring.undoLastPitch}
           confirmRunnerAdvancement={scoring.confirmRunnerAdvancement}
           incrementOpponentScore={scoring.incrementOpponentScore}
+          addManualRun={scoring.addManualRun}
+          endHalfInning={scoring.endHalfInning}
+          endGame={scoring.endGame}
+          runsThisHalf={scoring.runsThisHalf}
           rules={scoring.rules}
           pitchUIConfig={scoring.pitchUIConfig}
           ruleWarnings={scoring.ruleWarnings}
           selectedGame={selectedGame}
           activeTeam={activeTeam}
           isPractice={isPractice}
+          myTeamHalf={myTeamHalf}
           isAdminTestMode={isAdminTestMode}
+          scoring={scoring}
           onExit={handleExitSession}
           onSettings={function() { setShowRestore(true); }}
         />

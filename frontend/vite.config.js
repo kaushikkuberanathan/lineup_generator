@@ -16,10 +16,8 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     pool: 'forks',
-    poolOptions: {
-      forks: {
-        singleFork: true
-      }
+    forks: {
+      singleFork: true
     },
     include: ['src/**/*.test.js'],
   },
