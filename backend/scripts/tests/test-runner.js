@@ -33,21 +33,39 @@ let passed = 0;
 let failed = 0;
 let skipped = 0;
 
-async function test(id, description, fn) {
+async function test(idOrObj, description, fn) {
+  const isNewApi = typeof idOrObj === 'object' && idOrObj !== null
+    && typeof idOrObj.fn === 'function';
+  const id         = isNewApi ? idOrObj.id          : idOrObj;
+  const desc       = isNewApi ? idOrObj.description  : description;
+  const testFn     = isNewApi ? idOrObj.fn           : fn;
+  const defaultExp = isNewApi ? (idOrObj.expected ?? '') : '';
+  const skipReason = isNewApi ? (idOrObj.skipReason ?? '') : '';
   try {
-    const result = await fn({ BASE_URL, supabaseAdmin });
-    if (result.skip) {
-      results.push({ id, description, expected: result.expected, actual: 'SKIPPED — ' + result.reason, status: 'SKIP' });
+    const raw = await testFn({ BASE_URL, supabaseAdmin });
+    if (raw === 'SKIP') {
+      results.push({ id, description: desc, expected: defaultExp, actual: 'SKIPPED — ' + skipReason, status: 'SKIP' });
       skipped++;
-    } else if (result.pass) {
-      results.push({ id, description, expected: result.expected, actual: result.actual, status: 'PASS' });
+    } else if (raw === true) {
+      results.push({ id, description: desc, expected: defaultExp, actual: 'pass', status: 'PASS' });
       passed++;
-    } else {
-      results.push({ id, description, expected: result.expected, actual: result.actual, status: 'FAIL' });
+    } else if (raw === false) {
+      results.push({ id, description: desc, expected: defaultExp, actual: 'fail', status: 'FAIL' });
       failed++;
+    } else if (raw && typeof raw === 'object') {
+      if (raw.skip) {
+        results.push({ id, description: desc, expected: raw.expected, actual: 'SKIPPED — ' + raw.reason, status: 'SKIP' });
+        skipped++;
+      } else if (raw.pass) {
+        results.push({ id, description: desc, expected: raw.expected, actual: raw.actual, status: 'PASS' });
+        passed++;
+      } else {
+        results.push({ id, description: desc, expected: raw.expected, actual: raw.actual, status: 'FAIL' });
+        failed++;
+      }
     }
   } catch (err) {
-    results.push({ id, description, expected: 'No error', actual: `THREW: ${err.message}`, status: 'FAIL' });
+    results.push({ id, description: desc, expected: defaultExp || 'No error', actual: `THREW: ${err.message}`, status: 'FAIL' });
     failed++;
   }
 }
@@ -77,6 +95,9 @@ const suiteTeamData        = require('./suite-team-data');
 const suiteFeedback        = require('./suite-feedback');
 const suiteContracts       = require('./suite-contracts');
 const suiteAuthMiddleware  = require('./suite-auth-middleware');
+// Phase B additions
+const suiteAuthMagicLink     = require('./suite-auth-magic-link');
+const suiteRlsTeamMembership = require('./suite-rls-team-membership');
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -85,6 +106,7 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 async function run() {
   // Unique suffix prevents email collisions between test runs
   state.runId = Date.now().toString().slice(-6);
+  state.supabaseAdmin = supabaseAdmin;
 
   console.log('\n🧪 Lineup Generator — Backend Test Suite');
   console.log(`   Target: ${BASE_URL}`);
@@ -103,17 +125,19 @@ async function run() {
   await suiteFeedback.run(test, BASE_URL, state);
   await suiteContracts.run(test, BASE_URL, supabaseAdmin, state);
   await suiteAuthMiddleware.run(test, BASE_URL, state);
-  await suiteRateLimits.run(test, BASE_URL, state); // must run last — exhausts rate limits
+  await suiteRateLimits.run(test, BASE_URL, state); // must run before auth-magic-link — RATE-01a needs a clean hit count
+  await suiteAuthMagicLink.run(test, BASE_URL, state); // after rate-limits: AUTH-ML-07 inherits exhausted limiter intentionally
 
   // ── Write-heavy suites (skipped in CI_SAFE mode) ──────────────────────────
   // WRITE-HEAVY: these suites create rows in access_requests, team_memberships,
-  // and auth_events. Do not run against prod without cleanup being available.
+  // auth_events, and auth.users. Do not run against prod without cleanup being available.
   if (!CI_SAFE) {
     await suiteAuthFlow.run(test, BASE_URL, state);
     await suiteIdempotency.run(test, BASE_URL, state);
     await suiteDeviceContext.run(test, BASE_URL, supabaseAdmin, state);
     await suiteAuditTrail.run(test, BASE_URL, supabaseAdmin, state);
     await suiteDataIntegrity.run(test, BASE_URL, supabaseAdmin, state);
+    await suiteRlsTeamMembership.run(test, BASE_URL, supabaseAdmin, state);
   }
 
   // ─── Cleanup ────────────────────────────────────────────────────────────────

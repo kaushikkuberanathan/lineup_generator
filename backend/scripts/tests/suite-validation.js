@@ -92,6 +92,7 @@ async function run(test, BASE_URL, state) {
     const res = await post(BASE_URL, '/api/v1/auth/magic-link', {
       email: 'val08@test.com', deviceContext: DEVICE,
     });
+    if (res.status === 429) return { skip: true, expected: '400', reason: 'loginLimiter exhausted from prior run — restart server or wait 15 min' };
     return { pass: res.status === 400, expected: '400', actual: String(res.status) };
   });
 
@@ -99,6 +100,7 @@ async function run(test, BASE_URL, state) {
     const res = await post(BASE_URL, '/api/v1/auth/magic-link', {
       teamId: TEAM_ID, deviceContext: DEVICE,
     });
+    if (res.status === 429) return { skip: true, expected: '400', reason: 'loginLimiter exhausted from prior run — restart server or wait 15 min' };
     return { pass: res.status === 400, expected: '400', actual: String(res.status) };
   });
 

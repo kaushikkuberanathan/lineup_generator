@@ -31,6 +31,7 @@ async function run(test, BASE_URL, state) {
       email: TEST_EMAIL, teamId: TEAM_ID, deviceContext: DEVICE,
     });
     const body = await res.json().catch(() => ({}));
+    if (res.status === 429) return { skip: true, expected: '403 NOT_AUTHORIZED', reason: 'loginLimiter exhausted from prior run — restart server or wait 15 min' };
     return {
       pass: res.status === 403 && body.error === 'NOT_AUTHORIZED',
       expected: '403 NOT_AUTHORIZED',
