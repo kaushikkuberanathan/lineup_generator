@@ -322,6 +322,47 @@ Revoke bypass: https://dugoutlineup.com/?clear_bypass=1
 
 ---
 
+## team_data.schedule — Game Object Shape
+
+Each element in `team_data.schedule` (JSONB array) follows this shape. All fields are optional at write time; missing fields default to the values shown.
+
+| Field | Type | Default | Notes |
+|-------|------|---------|-------|
+| `id` | string | `Date.now().toString()` | Unique game ID (timestamp string) |
+| `date` | string | `""` | ISO date string or empty |
+| `time` | string | `""` | Display time string |
+| `location` | string | `""` | Park/field name |
+| `opponent` | string | `""` | Opponent team name |
+| `result` | string | `""` | `'W'` · `'L'` · `'T'` · `''` |
+| `ourScore` | string | `""` | Legacy display score (manual entry) |
+| `theirScore` | string | `""` | Legacy display score (manual entry) |
+| `battingPerf` | object | `{}` | Per-player batting stats keyed by player name |
+| `snackDuty` | string | `""` | Parent name for snack duty |
+| `snackNote` | string | `""` | Extra snack note |
+| `gameBall` | array | `[]` | Player name strings who received game ball |
+| `gameBallSearch` | string | `""` | Transient UI search string (not persisted to DB) |
+| `scoreReported` | boolean | `false` | Whether score was submitted to league |
+| `usScore` | number\|null | `null` | Final score — our team (set by `finalizeSchedule()`) |
+| `oppScore` | number\|null | `null` | Final score — opponent (set by `finalizeSchedule()`) |
+| `gameStatus` | string | `'scheduled'` | `'scheduled'` · `'final'` |
+| `finalizedAt` | string\|null | `null` | ISO timestamp when game was finalized |
+| `finalizedBy` | string\|null | `null` | `scorer_user_id` who finalized (local UUID or auth UID) |
+
+**MERGE_FIELDS** (fields rescued from localStorage over DB on hydration):
+```js
+['scoreReported', 'snackDuty', 'snackNote', 'gameBall',
+ 'usScore', 'oppScore', 'gameStatus', 'finalizedAt']
+```
+These fields are written locally (by coaches on-device) and must not be overwritten by a DB hydration that lags behind.
+
+**Finalization path** (`finalizeSchedule.js`):
+- Called by `endGame()` in `useLiveScoring.js`
+- Writes `usScore`, `oppScore`, `gameStatus='final'`, `finalizedAt`, `finalizedBy` to localStorage then Supabase
+- Idempotent — re-calling on a `'final'` game is a no-op
+- On Supabase failure: writes `pending_sync:<teamId>:finalize` to localStorage and returns `{ ok: false, error: 'sync_failed' }`; does NOT release scorer lock
+
+---
+
 ## Supabase Schema — Live Scoring Tables
 
 Three tables support the Live Scoring feature. All use `(game_id, team_id)` as the natural key.

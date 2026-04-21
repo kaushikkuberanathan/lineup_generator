@@ -110,7 +110,7 @@ describe('Group 2 — migrateSchedule field preservation', () => {
 // Group 3 — mergeLocalScheduleFields local-wins semantics
 // ---------------------------------------------------------------------------
 describe('Group 3 — mergeLocalScheduleFields local-wins semantics', () => {
-  const MERGE_FIELDS = ['scoreReported', 'snackDuty', 'snackNote', 'gameBall'];
+  const MERGE_FIELDS = ['scoreReported', 'snackDuty', 'snackNote', 'gameBall', 'usScore', 'oppScore', 'gameStatus', 'finalizedAt'];
 
   it('3.1 local truthy scoreReported wins over db falsy (undefined)', () => {
     const db    = [{ id: 'g1', date: '2026-05-01', scoreReported: undefined }];
@@ -178,7 +178,7 @@ describe('Group 4 — non-active team hydration simulation', () => {
    *   3. mergeLocalScheduleFields rescues locally-set flags
    *   4. Result is what gets saved to localStorage
    */
-  const MERGE_FIELDS = ['scoreReported', 'snackDuty', 'snackNote', 'gameBall'];
+  const MERGE_FIELDS = ['scoreReported', 'snackDuty', 'snackNote', 'gameBall', 'usScore', 'oppScore', 'gameStatus', 'finalizedAt'];
 
   it('4.1 scoreReported:true survives full hydration sequence', () => {
     const dbData   = { schedule: [{ id: 'g1', date: '2026-05-01', opponent: 'Tigers' }] };

@@ -1,6 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { PITCH, OUTCOME } from '../../hooks/useLiveScoring';
 import LiveScoreViewer from './LiveScoreViewer';
+import GameModeGearMenu from './GameModeGearMenu';
+import FinishGameModal from './FinishGameModal';
+import RunnerConflictModal from './RunnerConflictModal';
+import { track } from '../../utils/analytics';
 
 var FF = "Georgia,'Times New Roman',serif";
 
@@ -154,22 +158,26 @@ export default function LiveScoringPanel(props) {
   var resolveAtBat             = props.resolveAtBat             || function() {};
   var undoLastPitch            = props.undoLastPitch            || function() {};
   var confirmRunnerAdvancement = props.confirmRunnerAdvancement || function() {};
+  var resolveRunnerConflict    = props.resolveRunnerConflict    || function() {};
+  var runnerConflict           = props.runnerConflict           || null;
   var incrementOpponentScore   = props.incrementOpponentScore   || function() {};
   var addManualRun             = props.addManualRun             || function() {};
   var endHalfInning            = props.endHalfInning            || function() {};
-  var endGame                  = props.endGame                  || function() {};
+  var undoHalfInning           = props.undoHalfInning           || function() {};
+  var endGame                  = props.endGame                  || function() { return Promise.resolve({ ok: true }); };
   var selectedGame    = props.selectedGame;
   var activeTeam      = props.activeTeam;
   var isPractice      = props.isPractice;
   var isAdminTestMode = props.isAdminTestMode || false;
-  var onExit          = props.onExit   || function() {};
-  var onSettings     = props.onSettings;
-  var rules          = props.rules;
-  var pitchUIConfig  = props.pitchUIConfig;
-  var ruleWarnings   = props.ruleWarnings   || [];
-  var runsThisHalf   = props.runsThisHalf   || 0;
-  var myTeamHalf     = props.myTeamHalf     || 'top';
-  var scoring        = props.scoring        || {};
+  var onExit          = props.onExit    || function() {};
+  var onPause         = props.onPause   || function() {};
+  var onSettings      = props.onSettings;
+  var rules           = props.rules;
+  var pitchUIConfig   = props.pitchUIConfig;
+  var ruleWarnings    = props.ruleWarnings   || [];
+  var runsThisHalf    = props.runsThisHalf   || 0;
+  var myTeamHalf      = props.myTeamHalf     || 'top';
+  var scoring         = props.scoring        || {};
 
   // ── Hooks — all unconditional ──────────────────────────────────────────────
   var _rp = useState(false);
@@ -180,6 +188,25 @@ export default function LiveScoringPanel(props) {
 
   var _manualRun = useState(false);
   var showManualRunPrompt = _manualRun[0]; var setShowManualRunPrompt = _manualRun[1];
+
+  var _gear = useState(false);
+  var showGearMenu = _gear[0]; var setShowGearMenu = _gear[1];
+
+  var _finish = useState(false);
+  var showFinishModal = _finish[0]; var setShowFinishModal = _finish[1];
+
+  var _handoff = useState(false);
+  var showHandoffConfirm = _handoff[0]; var setShowHandoffConfirm = _handoff[1];
+
+  var _undoToast = useState(false);
+  var showUndoToast = _undoToast[0]; var setShowUndoToast = _undoToast[1];
+
+  // Dismiss undo toast after 10s
+  useEffect(function() {
+    if (!showUndoToast) return;
+    var t = setTimeout(function() { setShowUndoToast(false); }, 10000);
+    return function() { clearTimeout(t); };
+  }, [showUndoToast]);
 
   // ── Derived ────────────────────────────────────────────────────────────────
   var gs = gameState || {
@@ -411,11 +438,20 @@ export default function LiveScoringPanel(props) {
 
   // ── STATE 2: I am scorer ───────────────────────────────────────────────────
 
-  function handleEndSession() {
-    if (window.confirm('End scoring session?')) {
-      releaseScorerLock();
-      onExit();
-    }
+  function handlePause() {
+    track('scoring_paused');
+    onPause();
+  }
+
+  function handleHandoff() {
+    setShowHandoffConfirm(true);
+  }
+
+  function handleHandoffConfirm() {
+    setShowHandoffConfirm(false);
+    track('scoring_handed_off');
+    releaseScorerLock();
+    onExit();
   }
 
   function handleSelectRosterPlayer(player) {
@@ -515,9 +551,9 @@ export default function LiveScoringPanel(props) {
     </div>
   ) : null;
 
-  // Runner advancement sheet (runner on 3rd after a single)
+  // Runner advancement sheet (runner on 3rd after a single) — hidden when conflict modal is up
   var runnerSheet = null;
-  if (pendingAdvancement && pendingAdvancement.runners && pendingAdvancement.runners.length > 0) {
+  if (!runnerConflict && pendingAdvancement && pendingAdvancement.runners && pendingAdvancement.runners.length > 0) {
     var pr = pendingAdvancement.runners[0];
     runnerSheet = (
       <div style={{
@@ -574,7 +610,7 @@ export default function LiveScoringPanel(props) {
         background: '#0a1628',
         borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0,
       }}>
-        <button onClick={onExit} style={{
+        <button onClick={handlePause} style={{
           background: 'none', border: 'none', color: '#64748b',
           fontSize: '18px', cursor: 'pointer', padding: 0, lineHeight: 1, flexShrink: 0,
         }}>←</button>
@@ -627,29 +663,27 @@ export default function LiveScoringPanel(props) {
               fontSize: '10px', fontWeight: 600,
               padding: '2px 7px', borderRadius: '99px',
               whiteSpace: 'nowrap', flexShrink: 0,
-            }}>⚠ Admin Test Mode — no auth</span>
+            }}>⚠ Admin</span>
           )}
-          {onSettings ? (
-            <button onClick={onSettings} style={{
+          <button
+            onClick={function() { setShowGearMenu(function(v) { return !v; }); }}
+            style={{
               background: 'rgba(255,255,255,0.06)',
               border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '6px', padding: '4px 7px',
-              color: '#64748b', cursor: 'pointer',
-              fontSize: '13px', fontFamily: FF,
-            }}>⚙️</button>
-          ) : null}
-          <button onClick={handleEndSession} style={{
-            background: '#7f1d1d',
-            border: '1px solid #ef4444',
-            color: '#fca5a5',
-            fontSize: '11px',
-            cursor: 'pointer',
-            fontFamily: FF,
-            padding: '4px 8px',
-            borderRadius: '6px',
-            whiteSpace: 'nowrap',
-            fontWeight: 600,
-          }}>End Session</button>
+              borderRadius: '6px', padding: '5px 8px',
+              color: '#94a3b8', cursor: 'pointer',
+              fontSize: '14px', fontFamily: FF, lineHeight: 1,
+            }}>⚙</button>
+          <button
+            onClick={handlePause}
+            style={{
+              background: 'rgba(255,255,255,0.06)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: '6px', padding: '5px 8px',
+              color: '#94a3b8', cursor: 'pointer',
+              fontSize: '16px', fontFamily: FF, lineHeight: 1,
+              fontWeight: 300,
+            }}>✕</button>
         </div>
       </div>
 
@@ -664,25 +698,43 @@ export default function LiveScoringPanel(props) {
           display: 'flex', alignItems: 'center',
           justifyContent: 'space-between', gap: '8px',
         }}>
-          <span>⚠️ {runsThisHalf} runs — end half?</span>
-          <div style={{display:'flex', gap:'8px'}}>
-            <button
-              onClick={function() { endHalfInning(); }}
-              style={{
-                background:'#ef4444', border:'none', color:'#fff',
-                fontSize:'12px', fontWeight:700, padding:'4px 10px',
-                borderRadius:'6px', cursor:'pointer'
-              }}
-            >End Inning</button>
-            <button
-              onClick={function() { endGame(); }}
-              style={{
-                background:'#7f1d1d', border:'1px solid #ef4444', color:'#fca5a5',
-                fontSize:'12px', fontWeight:700, padding:'4px 10px',
-                borderRadius:'6px', cursor:'pointer'
-              }}
-            >End Game</button>
-          </div>
+          <span>⚠️ {runsThisHalf} runs this half</span>
+          <button
+            onClick={function() {
+              endHalfInning();
+              setShowUndoToast(true);
+              track('inning_ended', { trigger: 'mercy', half: gs.halfInning, runs: runsThisHalf });
+            }}
+            style={{
+              background:'#ef4444', border:'none', color:'#fff',
+              fontSize:'12px', fontWeight:700, padding:'4px 10px',
+              borderRadius:'6px', cursor:'pointer'
+            }}
+          >End Half</button>
+        </div>
+      )}
+
+      {/* ── End inning undo toast ─────────────────────────────────────────────── */}
+      {showUndoToast && (
+        <div style={{
+          position: 'fixed', bottom: '70px', left: '16px', right: '16px',
+          background: '#1e3a5f', border: '1px solid rgba(96,165,250,0.4)',
+          borderRadius: '10px', padding: '10px 14px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          zIndex: 100, fontFamily: FF,
+        }}>
+          <span style={{ fontSize: '13px', color: '#e2e8f0' }}>Half inning ended</span>
+          <button
+            onClick={function() {
+              undoHalfInning();
+              setShowUndoToast(false);
+              track('inning_undo_tapped');
+            }}
+            style={{
+              background: '#1d4ed8', border: 'none', borderRadius: '6px',
+              color: '#fff', fontSize: '12px', fontWeight: 700,
+              padding: '5px 12px', cursor: 'pointer', fontFamily: FF,
+            }}>Undo</button>
         </div>
       )}
 
@@ -1105,14 +1157,18 @@ export default function LiveScoringPanel(props) {
               display:'flex', gap:'8px', justifyContent:'center',
               alignItems:'center',
             }}>
-              <span>⚠️ {scoring.oppRunsThisHalf} opp runs — end inning?</span>
+              <span>⚠️ {scoring.oppRunsThisHalf} opp runs this half</span>
               <button
-                onClick={function(){ scoring.endHalfInning(); }}
+                onClick={function(){
+                  scoring.endHalfInning();
+                  setShowUndoToast(true);
+                  track('inning_ended', { trigger: 'opp_mercy', half: gs.halfInning, runs: scoring.oppRunsThisHalf });
+                }}
                 style={{
                   background:'#ef4444', border:'none', color:'#fff',
                   fontSize:'11px', fontWeight:700, padding:'3px 8px',
                   borderRadius:'5px', cursor:'pointer'
-                }}>End Inning</button>
+                }}>End Half</button>
             </div>
           )}
         </div>
@@ -1121,6 +1177,39 @@ export default function LiveScoringPanel(props) {
       {rosterPickerSheet}
       {outcomeSheet}
       {runnerSheet}
+      <RunnerConflictModal
+        conflict={runnerConflict}
+        onResolve={resolveRunnerConflict}
+        battingOrder={battingOrder}
+      />
+
+      <GameModeGearMenu
+        isOpen={showGearMenu}
+        isScorer={isScorer}
+        onClose={function() { setShowGearMenu(false); }}
+        onExitScoring={onExit}
+        onHandoff={handleHandoff}
+        onFinishGame={function() { setShowFinishModal(true); }}
+        confirmHandoff={showHandoffConfirm}
+        onConfirmHandoff={handleHandoffConfirm}
+        onCancelHandoff={function() { setShowHandoffConfirm(false); }}
+      />
+
+      <FinishGameModal
+        isOpen={showFinishModal}
+        myScore={gs.myScore}
+        oppScore={gs.opponentScore}
+        inning={gs.inning}
+        halfInning={gs.halfInning}
+        opponentName={opponentName}
+        teamShort={teamShort}
+        endGame={endGame}
+        onSuccess={function() {
+          setShowFinishModal(false);
+          onExit();
+        }}
+        onCancel={function() { setShowFinishModal(false); }}
+      />
 
       {showManualRunPrompt && (
         <div style={{
