@@ -1,9 +1,12 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: April 2026 (v2.3.1)
+> Last updated: April 2026 (v2.3.2)
 > MVP launched: March 24, 2026
 
 ---
+
+## v2.3.2 — 2026-04-21
+- Feature: Opposing pitcher pitch counts — per-batter, per-inning, per-game counters in opponent half; opponent batter number (#1–#11); color-coded pitch buttons (Ball blue, Strike red, Foul amber, Out grey, Contact green); Foul counts as pitch not strike; inning totals reset on half-flip, game total persists across innings. Schema: 6 new columns on live_game_state (opp_balls, opp_strikes, opp_current_batter_number, opp_current_batter_pitches, opp_inning_pitches, opp_game_pitches). EXPECTED_LGS_KEYS expanded 15→21; 6 new contract tests; suite: 377 passing.
 
 ## v2.3.1 — 2026-04-21
 - Fix: Runner duplication — `advanceRunners()` helper uses base-map (back-to-front 3B→1B) guaranteeing no player ID occupies two bases after any hit
@@ -864,6 +867,36 @@
 - Platform admin sends "Create your team" invite link to new head coach
 - Head coach fills out team details + their own profile
 - Team is created, head coach gets team_admin membership automatically
+
+---
+
+## scoring-updates — completed in v2.3.2
+
+### ✅ Bug: Opponent B/S display clobbered by Realtime echo (shipped v2.3.2)
+- Root cause confirmed: oppBalls/oppStrikes were ephemeral — not persisted,
+  reset on every Realtime echo.
+- Fix: added opp_balls + opp_strikes to live_game_state (schema migration
+  20260421_add_opponent_pitch_tracking.sql); both now included in every
+  persist() upsert payload. EXPECTED_LGS_KEYS expanded 15→21 to lock
+  full-row invariant in contract tests.
+
+### ✅ Feature: Opponent pitch counts + batter identity (shipped v2.3.2)
+- Opponent batter number (#1–#11) displayed above B/S/O pips.
+- Pitch count totals: per-batter, per-inning, per-game ("Pitches — Batter: X · Inn: X · Gm: X").
+- Batter advances (number increments, per-batter count resets) on: out, contact/hit; K triggers an out.
+- Inning totals reset on half-flip; game total persists across all innings.
+- 4 new columns: opp_current_batter_number, opp_current_batter_pitches, opp_inning_pitches, opp_game_pitches.
+
+---
+
+## scoring-updates — v2.4.x candidates
+
+### Feature: Opponent runners on base
+- Diamond UI parity with home-team runner display during opponent half.
+- Schema: opp_runners jsonb column on live_game_state.
+- Handler: hit/walk advancement in recordOppPitch() (single/double/triple/HR/walk branches).
+- Bundle with 10U+ walk/strikeout rule logic for opponent half.
+- Surfaced from v2.3.2 dev-test coach feedback (KK, April 2026).
 
 ---
 
