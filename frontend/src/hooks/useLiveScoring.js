@@ -449,8 +449,9 @@ export function useLiveScoring(params) {
             my_score:            gameState.myScore            || 0,
             opponent_score:      gameState.opponentScore      || 0,
             batting_order_index: gameState.battingOrderIndex  || 0,
-            runners:             JSON.stringify(gameState.runners || []),
-            runs_this_half:      gameState.runsThisHalf       || 0,
+            runners:             gameState.runners             || [],
+            runs_this_half:      gameState.runsThisHalf        || 0,
+            opp_runs_this_half:  gameState.oppRunsThisHalf     || 0,
           }, { onConflict: 'game_id,team_id' })
           .then(function(r) {
             if (r.error) console.warn('[scoring] seed live_game_state failed:', r.error);
