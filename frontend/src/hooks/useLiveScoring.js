@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabase';
+import { finalizeSchedule } from '../utils/finalizeSchedule';
+import { track } from '../utils/analytics';
 import {
   getRulesForTeam,
   processPitch,
@@ -110,6 +112,105 @@ function advanceAll(runners, bases) {
   return { remaining: remaining, runsScored: runsScored };
 }
 
+// Advance runners for a hit. Back-to-front (3B→2B→1B) prevents any base collision.
+// Returns { runners, runsScored, pendingRunners }.
+// pendingRunners: runner on 3rd for a single — needs manual scored/held confirmation.
+export function advanceRunners(runners, hitBases, batterId) {
+  if (hitBases >= 4) {
+    return {
+      runners:        [],
+      runsScored:     runners.length + (batterId ? 1 : 0),
+      pendingRunners: [],
+    };
+  }
+  // Normalise to base-map — eliminates any pre-existing duplicates
+  var baseMap = { 1: null, 2: null, 3: null };
+  for (var i = 0; i < runners.length; i++) {
+    var rb = runners[i].base;
+    if (rb >= 1 && rb <= 3) { baseMap[rb] = runners[i].runnerId; }
+  }
+  var destMap        = { 1: null, 2: null, 3: null };
+  var runsScored     = 0;
+  var pendingRunners = [];
+  // Back-to-front: 3B first so higher bases don't overwrite lower ones
+  for (var src = 3; src >= 1; src--) {
+    var rid = baseMap[src];
+    if (!rid) continue;
+    if (hitBases === 1 && src === 3) {
+      // Single: 3B runner needs manual confirmation (scored vs. held)
+      pendingRunners.push({ runnerId: rid, base: 3 });
+      continue;
+    }
+    var dest = src + hitBases;
+    if (dest >= 4) {
+      runsScored++;
+    } else {
+      destMap[dest] = rid;
+    }
+  }
+  if (batterId) { destMap[hitBases] = batterId; }
+  var result = [];
+  for (var b = 1; b <= 3; b++) {
+    if (destMap[b]) { result.push({ runnerId: destMap[b], base: b }); }
+  }
+  return { runners: result, runsScored: runsScored, pendingRunners: pendingRunners };
+}
+
+// Detect base collision when a pending runner tries to advance to an occupied base.
+// Returns a conflict descriptor or null (no collision).
+export function detectRunnerConflict(currentRunners, runnerId, toBase, incomingFromBase, baseReached) {
+  var blocker = null;
+  for (var i = 0; i < currentRunners.length; i++) {
+    if (currentRunners[i].base === toBase) { blocker = currentRunners[i]; break; }
+  }
+  if (!blocker) return null;
+  return {
+    incomingRunnerId: runnerId,
+    incomingFromBase: incomingFromBase,
+    targetBase:       toBase,
+    blockingRunnerId: blocker.runnerId,
+    blockingFromBase: (typeof baseReached === 'number') ? toBase - baseReached : null,
+  };
+}
+
+// Apply a coach's conflict resolution decision. Pure — no side effects.
+// trackFn: optional fn(event, props) — pass vi.fn() in tests, track() in the hook.
+export function applyConflictResolution(gs, conflict, decision, preResolveSnapshot, trackFn) {
+  if (typeof trackFn === 'function') {
+    trackFn('scoring_runner_conflict_prompted', {
+      targetBase:      conflict.targetBase,
+      incomingFromBase: conflict.incomingFromBase,
+      decision:        decision,
+    });
+  }
+  if (decision === 'SCORE_BLOCKING') {
+    var scoredRunners = gs.runners
+      .filter(function(r) { return r.runnerId !== conflict.blockingRunnerId; })
+      .concat([{ runnerId: conflict.incomingRunnerId, base: conflict.targetBase }]);
+    return Object.assign({}, gs, {
+      runners:      scoredRunners,
+      myScore:      gs.myScore + 1,
+      runsThisHalf: (gs.runsThisHalf || 0) + 1,
+    });
+  }
+  if (decision === 'HOLD_INCOMING') {
+    var heldRunners = gs.runners.map(function(r) {
+      if (r.runnerId !== conflict.blockingRunnerId) return r;
+      return { runnerId: r.runnerId, base: conflict.blockingFromBase };
+    });
+    heldRunners = heldRunners.concat([{
+      runnerId: conflict.incomingRunnerId,
+      base:     conflict.incomingFromBase,
+    }]);
+    return Object.assign({}, gs, { runners: heldRunners });
+  }
+  if (decision === 'CANCEL_PLAY') {
+    if (!preResolveSnapshot) return gs;
+    return Object.assign({}, gs, preResolveSnapshot);
+  }
+  return gs;
+}
+
 // Walk/HBP: batter to 1st, cascade runners only along consecutive occupied bases.
 function forceAdvance(runners, batterId) {
   var occupied = {};
@@ -180,6 +281,9 @@ export function useLiveScoring(params) {
   var _pend = useState(null);
   var pendingAdvancement = _pend[0]; var setPendingAdvancement = _pend[1];
 
+  var _rc = useState(null);
+  var runnerConflict = _rc[0]; var setRunnerConflict = _rc[1];
+
   var _warn = useState([]);
   var ruleWarnings = _warn[0]; var setRuleWarnings = _warn[1];
 
@@ -192,6 +296,9 @@ export function useLiveScoring(params) {
   var isScorerRef = useRef(false);
   var hbRef       = useRef(null);   // heartbeat interval id
   var chanRef     = useRef(null);   // realtime channel
+  var undoSnapRef      = useRef(null);   // snapshot for endHalfInning undo
+  var preResolveSnapRef = useRef(null);  // snapshot for CANCEL_PLAY path
+  var pendingAdvRef    = useRef(null);   // ref-copy of pendingAdvancement (stale-closure safe)
 
   var rules         = team ? getRulesForTeam(team) : null;
   var pitchUIConfig = rules ? getPitchUIConfig(rules) : null;
@@ -501,6 +608,19 @@ export function useLiveScoring(params) {
     if (!isEnabled || !isScorerRef.current) return;
 
     var gs      = gsRef.current;
+
+    // Capture pre-play snapshot for CANCEL_PLAY path
+    preResolveSnapRef.current = {
+      runners:           gs.runners.slice(),
+      myScore:           gs.myScore,
+      outs:              gs.outs,
+      balls:             gs.balls,
+      strikes:           gs.strikes,
+      currentBatter:     gs.currentBatter,
+      battingOrderIndex: gs.battingOrderIndex,
+      runsThisHalf:      gs.runsThisHalf || 0,
+    };
+
     var batter  = gs.currentBatter;
     var runners = gs.runners.slice();
 
@@ -515,37 +635,28 @@ export function useLiveScoring(params) {
       // Balls-in-play, walks, and base-reaching outcomes
 
       if (outcomeType === OUTCOME.HOME_RUN) {
-        runsScored = runners.length + 1; // all runners + batter
-        newRunners = [];
+        var hr = advanceRunners(runners, 4, batter ? batter.id : null);
+        runsScored = hr.runsScored;
+        newRunners = hr.runners;
 
       } else if (outcomeType === OUTCOME.TRIPLE) {
-        var t = advanceAll(runners, 3);
-        runsScored = t.runsScored;
-        newRunners = t.remaining;
-        if (batter) { newRunners.push({ runnerId: batter.id, base: 3 }); }
+        var tri = advanceRunners(runners, 3, batter ? batter.id : null);
+        runsScored = tri.runsScored;
+        newRunners = tri.runners;
 
       } else if (outcomeType === OUTCOME.DOUBLE) {
-        var d = advanceAll(runners, 2);
-        runsScored = d.runsScored;
-        newRunners = d.remaining;
-        if (batter) { newRunners.push({ runnerId: batter.id, base: 2 }); }
+        var dbl = advanceRunners(runners, 2, batter ? batter.id : null);
+        runsScored = dbl.runsScored;
+        newRunners = dbl.runners;
 
       } else if (outcomeType === OUTCOME.SINGLE) {
-        // Runner on 3rd: manual confirm. Runners on 1st/2nd: auto +1.
-        var autoed  = [];
-        var pending = [];
-        for (var i = 0; i < runners.length; i++) {
-          var r = runners[i];
-          if (r.base === 3) {
-            pending.push(r);
-          } else {
-            autoed.push({ runnerId: r.runnerId, base: r.base + 1 });
-          }
-        }
-        if (batter) { autoed.push({ runnerId: batter.id, base: 1 }); }
-        newRunners = autoed;
-        if (pending.length > 0) {
-          setPendingAdvancement({ runners: pending, baseReached: 1 });
+        var sgl = advanceRunners(runners, 1, batter ? batter.id : null);
+        runsScored = sgl.runsScored;
+        newRunners = sgl.runners;
+        if (sgl.pendingRunners.length > 0) {
+          var pendInfo = { runners: sgl.pendingRunners, baseReached: 1 };
+          pendingAdvRef.current = pendInfo;
+          setPendingAdvancement(pendInfo);
         }
 
       } else if (outcomeType === OUTCOME.WALK || outcomeType === OUTCOME.HBP) {
@@ -690,11 +801,25 @@ export function useLiveScoring(params) {
     } else if (result === 'out') {
       newRunners = newRunners.filter(function(r) { return r.runnerId !== runnerId; });
     } else if (toBase) {
+      var foundInList = false;
       newRunners = newRunners.map(function(r) {
-        return r.runnerId === runnerId
-          ? { runnerId: r.runnerId, base: toBase }
-          : r;
+        if (r.runnerId === runnerId) { foundInList = true; return { runnerId: runnerId, base: toBase }; }
+        return r;
       });
+      if (!foundInList) {
+        // Runner was pending (not in active list) — add back only if base is free.
+        // If occupied, surface a conflict prompt instead of silently scoring the held runner.
+        var pInfo        = pendingAdvRef.current;
+        var pEntry       = pInfo ? pInfo.runners.find(function(r) { return r.runnerId === runnerId; }) : null;
+        var fromBase     = pEntry ? pEntry.base : null;
+        var hitBases_    = pInfo ? pInfo.baseReached : null;
+        var conflict     = detectRunnerConflict(newRunners, runnerId, toBase, fromBase, hitBases_);
+        if (conflict) {
+          setRunnerConflict(conflict);
+          return; // state unchanged until resolveRunnerConflict() is called
+        }
+        newRunners = newRunners.concat([{ runnerId: runnerId, base: toBase }]);
+      }
     }
 
     var newGs = Object.assign({}, gs, { runners: newRunners, myScore: newScore });
@@ -733,6 +858,7 @@ export function useLiveScoring(params) {
   function endHalfInning() {
     if (!isEnabled || !isScorerRef.current) return;
     var gs = gsRef.current;
+    undoSnapRef.current = Object.assign({}, gs); // save for undo
     var nextHalf = gs.halfInning === 'top' ? 'bottom' : 'top';
     var nextInning = gs.halfInning === 'bottom' ? gs.inning + 1 : gs.inning;
     var nextIndex = gs.battingOrderIndex;
@@ -753,11 +879,48 @@ export function useLiveScoring(params) {
     audit('half_inning_ended', { inning: gs.inning, halfInning: gs.halfInning, runsScored: gs.runsThisHalf });
   }
 
-  function endGame() {
-    if (!isEnabled || !isScorerRef.current) return;
+  function undoHalfInning() {
+    if (!isEnabled || !isScorerRef.current || !undoSnapRef.current) return;
+    var snap = undoSnapRef.current;
+    undoSnapRef.current = null;
+    setGs(snap);
+    persist(snap);
+    audit('half_inning_undone', { inning: snap.inning, halfInning: snap.halfInning });
+  }
+
+  function resolveRunnerConflict(decision) {
+    if (!isEnabled || !isScorerRef.current || !runnerConflict) return;
+    var conflict = runnerConflict;
+    var snap     = preResolveSnapRef.current ? preResolveSnapRef.current : null;
+    var newGs    = applyConflictResolution(gsRef.current, conflict, decision, snap, track);
+
+    setRunnerConflict(null);
+    pendingAdvRef.current = null;
+    setPendingAdvancement(null);
+    if (decision === 'CANCEL_PLAY' && snap) {
+      setAb(null); // batter goes back to suggested; currentBatter restored via snapshot
+    }
+    setGs(newGs);
+    persist(newGs);
+    audit('runner_conflict_resolved', { decision: decision, targetBase: conflict.targetBase });
+  }
+
+  async function endGame() {
+    if (!isEnabled || !isScorerRef.current) return { ok: false, error: 'not_scorer' };
     var gs = gsRef.current;
+    var result = await finalizeSchedule({
+      gameId:    gameId,
+      teamId:    teamId,
+      usScore:   gs.myScore,
+      oppScore:  gs.opponentScore,
+      userId:    _effectiveUserId,
+    });
+    if (!result.ok) {
+      return { ok: false, error: result.error };
+    }
     audit('game_ended', { finalMyScore: gs.myScore, finalOpponentScore: gs.opponentScore });
     releaseScorerLock();
+    return { ok: true };
   }
 
   function recordOppPitch(type) {
@@ -849,11 +1012,14 @@ export function useLiveScoring(params) {
       resolveAtBat:             function() {},
       undoLastPitch:            function() {},
       confirmRunnerAdvancement: function() {},
+      resolveRunnerConflict:    function() {},
       incrementOpponentScore:   function() {},
       addManualRun:             function() {},
       endHalfInning:            function() {},
+      undoHalfInning:           function() {},
       endGame:                  function() {},
       recordOppPitch:           function() {},
+      runnerConflict:           null,
       myTeamHalf:               myTeamHalf,
       oppRunsThisHalf:          0,
       oppBalls:                 0,
@@ -878,9 +1044,12 @@ export function useLiveScoring(params) {
     resolveAtBat:             resolveAtBat,
     undoLastPitch:            undoLastPitch,
     confirmRunnerAdvancement: confirmRunnerAdvancement,
+    resolveRunnerConflict:    resolveRunnerConflict,
+    runnerConflict:           runnerConflict,
     incrementOpponentScore:   incrementOpponentScore,
     addManualRun:             addManualRun,
     endHalfInning:            endHalfInning,
+    undoHalfInning:           undoHalfInning,
     endGame:                  endGame,
     recordOppPitch:           recordOppPitch,
     oppRunsThisHalf:          gameState.oppRunsThisHalf || 0,

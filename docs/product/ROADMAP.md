@@ -1,9 +1,19 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: April 2026 (v2.2.45)
+> Last updated: April 2026 (v2.3.1)
 > MVP launched: March 24, 2026
 
 ---
+
+## v2.3.1 — 2026-04-21
+- Fix: Runner duplication — `advanceRunners()` helper uses base-map (back-to-front 3B→1B) guaranteeing no player ID occupies two bases after any hit
+- Feature: Runner conflict prompt — when two runners would land on the same base, `RunnerConflictModal` presents three choices: Score blocking runner / Hold incoming runner / Cancel play (restores pre-play state via snapshot)
+- Fix: `confirmRunnerAdvancement()` detects base collision and surfaces `runnerConflict` state instead of silently auto-scoring the pending runner
+- Fix: Exit Scoring moved from header ← into gear menu (neutral styling); header ← now pauses (lock retained)
+- Tests: 10 tests in `runnerAdvancement.test.js` — advanceRunners (1-5), conflict detection (6), SCORE_BLOCKING (7), HOLD_INCOMING (8), CANCEL_PLAY (9), analytics spy (10); jsdom `matchMedia` stub added via `setupFiles`
+
+## v2.3.0 — 2026-04-21
+- Feature: Game Mode action clarity + schedule finalization — X (pause) keeps scorer lock; gear menu with Hand off / Finish Game; FinishGameModal with score preview; endGame() writes final score to team_data.schedule before releasing lock; undoHalfInning + 10s undo toast; MERGE_FIELDS extended (usScore, oppScore, gameStatus, finalizedAt); 13 new tests (finalizeSchedule, undoHalfInning, newGameTemplate regression guard)
 
 ## v2.2.45 — 2026-04-21
 - Feature: Live scoring — full game tracking with opponent half; track opponent B/S/O count; 5-run mercy banner for both teams; End Inning / End Game buttons; "We bat: Top/Bottom" toggle at game start; runner names on diamond; debug logs removed

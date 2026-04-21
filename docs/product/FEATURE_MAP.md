@@ -2,7 +2,7 @@
 
 > Authoritative mapping of every shipped feature to its documentation and test coverage.
 > Update this file whenever a feature ships, changes behavior, or gains new tests.
-> Owner: KK | Last updated: April 2026 (v2.2.38)
+> Owner: KK | Last updated: April 2026 (v2.3.0)
 
 ---
 
@@ -31,7 +31,7 @@
 | 8 | **Game Mode (full-screen dugout view)** | MVP | `SOLUTION_DESIGN.md` § Navigation Structure | ✅ Current | None | ❌ None | D006 |
 | 9 | **Share links (8-char Supabase-backed)** | MVP | `SOLUTION_DESIGN.md` § RLS Policy Map; `CLAUDE.md` Auth Principle | ✅ Current | None | ❌ None | D005 |
 | 10 | **PDF export + print view** | MVP | `ROADMAP.md` § v1.x | ⚠ Stale | None | ❌ None | D011 |
-| 11 | **Live scoring (scorer lock, inning entry)** | Pilot | `ROADMAP.md` § v2.2.29; `PERSONAS.md` § Scorekeeper | ✅ Current | None | ❌ None | D001 |
+| 11 | **Live scoring (scorer lock, inning entry, game finalization)** | Pilot | `ROADMAP.md` § v2.2.29–v2.3.0; `PERSONAS.md` § Scorekeeper; `MASTER_DEV_REFERENCE.md` § Game Object Shape | ✅ Current | `finalizeSchedule.test.js`, `undoHalfInning.test.js`, `newGameTemplate.test.js` | ⚠ Partial | D001 |
 | 12 | **Feature flag system** | MVP | `CLAUDE.md` § Feature Flags; `SOLUTION_DESIGN.md` § Feature Flag System | ✅ Current | `flagBootstrap.test.js`, `accessibility.v1.test.js` | ⚠ Partial | — |
 | 13 | **Auth system (magic link + Google OAuth)** | Phase 2 | `SOLUTION_DESIGN.md` § Auth Architecture; `CLAUDE.md` § Auth Strategy | ✅ Current | None | ❌ None | D003 |
 | 14 | **Admin UI (admin.html)** | MVP | `SOLUTION_DESIGN.md` § Admin UI; `PERSONAS.md` § Administrator | ✅ Current | None | ❌ None | D007 |
@@ -51,8 +51,8 @@
 | ⚠ Doc Stale | 4 / 19 |
 | ❌ Doc Missing | 0 / 19 |
 | ✅ Tests Exist | 2 / 19 |
-| ⚠ Tests Partial | 6 / 19 |
-| ❌ No Tests | 11 / 19 |
+| ⚠ Tests Partial | 7 / 19 |
+| ❌ No Tests | 10 / 19 |
 
 > The test gap is large but expected — the engine is the highest-risk surface and is well-covered. Features with no test are all UI-layer or integration paths with no engine logic.
 

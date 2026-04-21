@@ -125,6 +125,13 @@ export default function ScoringMode({
     setSelectedGame(null);
   }
 
+  // Pause — hides the panel but keeps the scorer lock + heartbeat alive.
+  // Lock survives because ScoringMode stays mounted and releaseScorerLock is NOT called.
+  function handlePauseSession() {
+    setScorerClaimed(false);
+    setViewerMode(false);
+  }
+
   function handleClose() {
     if (scoring.isScorer) { scoring.releaseScorerLock(); }
     if (onClose) { onClose(); }
@@ -170,9 +177,12 @@ export default function ScoringMode({
           resolveAtBat={scoring.resolveAtBat}
           undoLastPitch={scoring.undoLastPitch}
           confirmRunnerAdvancement={scoring.confirmRunnerAdvancement}
+          resolveRunnerConflict={scoring.resolveRunnerConflict}
+          runnerConflict={scoring.runnerConflict}
           incrementOpponentScore={scoring.incrementOpponentScore}
           addManualRun={scoring.addManualRun}
           endHalfInning={scoring.endHalfInning}
+          undoHalfInning={scoring.undoHalfInning}
           endGame={scoring.endGame}
           runsThisHalf={scoring.runsThisHalf}
           rules={scoring.rules}
@@ -185,6 +195,7 @@ export default function ScoringMode({
           isAdminTestMode={isAdminTestMode}
           scoring={scoring}
           onExit={handleExitSession}
+          onPause={handlePauseSession}
           onSettings={function() { setShowRestore(true); }}
         />
       )}

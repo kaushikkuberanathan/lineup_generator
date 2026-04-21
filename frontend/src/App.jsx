@@ -141,9 +141,57 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.2.45";
+var APP_VERSION = "2.3.1";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.3.1',
+    date: 'April 2026',
+    headline: "Scoring — runner accuracy and clearer controls",
+    userChanges: [
+      "Fixed: a runner could appear on two bases at once",
+      "When two runners would land on the same base, you now pick what happens",
+      "Back arrow in scoring now pauses (you stay as scorer) — use Exit Scoring in the gear menu to fully release the role",
+      "Moved Exit Scoring into the gear menu",
+    ],
+    techNote: "Bug fixes and performance improvements",
+    internalChanges: [
+      "useLiveScoring.js: advanceRunners() exported — base-map (back-to-front) guarantees no player ID on two bases after any hit",
+      "useLiveScoring.js: detectRunnerConflict() + applyConflictResolution() exported pure helpers — testable without hook",
+      "useLiveScoring.js: confirmRunnerAdvancement() now detects base collisions and sets runnerConflict state instead of auto-scoring",
+      "useLiveScoring.js: resolveRunnerConflict(decision) added — SCORE_BLOCKING / HOLD_INCOMING / CANCEL_PLAY; fires scoring_runner_conflict_prompted Mixpanel event",
+      "useLiveScoring.js: preResolveSnapRef captures pre-play state at top of resolveAtBat() — powers CANCEL_PLAY restore",
+      "ScoringMode/RunnerConflictModal.jsx: new modal — 3-button conflict resolution, aria-live=assertive, min 44px touch targets",
+      "LiveScoringPanel.jsx: RunnerConflictModal wired; runnerSheet hidden while conflict is active",
+      "GameModeGearMenu.jsx: Exit Scoring added as top item (neutral styling); header ← pauses (lock held)",
+      "vite.config.js: setupFiles added (src/tests/setup.js) — matchMedia stub for jsdom",
+      "src/__tests__/scoring/runnerAdvancement.test.js: tests 6-10 — conflict detection, SCORE_BLOCKING, HOLD_INCOMING, CANCEL_PLAY, analytics spy",
+    ],
+  },
+  {
+    version: '2.3.0',
+    date: 'April 2026',
+    headline: "Game Mode now saves your final score automatically when you finish a game",
+    userChanges: [
+      "Game Mode now saves your final score to your schedule automatically when you finish a game",
+      "New X button to pause scoring and come back — your lock is held",
+      "Game ending actions moved to the gear menu with clearer labels",
+      "Undo the last End Half within 10 seconds",
+      "New 'Finish Game' confirmation screen with score preview before committing",
+    ],
+    techNote: "endGame() now writes usScore, oppScore, gameStatus='final', finalizedAt to team_data.schedule via MERGE_FIELDS-protected sync before releasing scorer lock. Finalization is idempotent and retries on network failure without releasing the lock.",
+    internalChanges: [
+      "Phase 1: game object shape — usScore, oppScore, gameStatus, finalizedAt added to all 3 newGame template sites",
+      "Phase 2: MERGE_FIELDS extended with 4 new fields; all 3 test-file copies updated",
+      "Phase 3: finalizeSchedule.js — pure utility reads localStorage, mutates game, syncs to Supabase team_data",
+      "Phase 4: endGame() in useLiveScoring.js made async; calls finalizeSchedule before releaseScorerLock; returns { ok, error? }",
+      "Phase 5: X (pause) and gear icons replace End Session button; GameModeGearMenu.jsx and FinishGameModal.jsx created; End Game removed from mercy banner",
+      "Phase 6: undoHalfInning() added with undoSnapRef snapshot; 10s undo toast in LiveScoringPanel",
+      "Phase 7: analytics events wired (scoring_paused, scoring_handed_off, inning_ended, inning_undo_tapped, game_finish_modal_opened, game_finish_confirmed, game_finish_cancelled, schedule_finalization_failed)",
+      "Phase 8: finalizeSchedule.test.js (5 tests), undoHalfInning.test.js (3 tests), newGameTemplate.test.js (5 regression guard tests)",
+      "Phase 9: version 2.3.0, all docs updated",
+    ],
+  },
   {
     version: '2.2.45',
     date: 'April 2026',
@@ -2771,7 +2819,7 @@ export default function App() {
   var initInnings  = initActiveId ? (loadJSON("team:" + initActiveId + ":innings", 6) || 6) : 6;
   var initGrid_    = initActiveId ? migrateGrid(loadJSON("team:" + initActiveId + ":grid", null), initRoster, initInnings) : null;
 
-  var MERGE_FIELDS = ['scoreReported', 'snackDuty', 'snackNote', 'gameBall'];
+  var MERGE_FIELDS = ['scoreReported', 'snackDuty', 'snackNote', 'gameBall', 'usScore', 'oppScore', 'gameStatus', 'finalizedAt'];
 
   function normalizeGameBall(val) {
     if (!val || val === "") return [];
@@ -3410,7 +3458,7 @@ export default function App() {
   var printNotes = _printNotes[0]; var setPrintNotes = _printNotes[1];
   var _songsView = useState("display");
   var songsView = _songsView[0]; var setSongsView = _songsView[1];
-  var _newGame = useState({ date:"", time:"", location:"", opponent:"", result:"", ourScore:"", theirScore:"", battingPerf:{}, snackDuty:"", gameBall:[], gameBallSearch:"", scoreReported:false });
+  var _newGame = useState({ date:"", time:"", location:"", opponent:"", result:"", ourScore:"", theirScore:"", battingPerf:{}, snackDuty:"", gameBall:[], gameBallSearch:"", scoreReported:false, usScore:null, oppScore:null, gameStatus:'scheduled', finalizedAt:null });
   var newGame = _newGame[0]; var setNewGame = _newGame[1];
   var _editGame = useState(null);
   var editingGame = _editGame[0]; var setEditingGame = _editGame[1];
@@ -4322,7 +4370,7 @@ export default function App() {
     if (game.result) {
       track("game_result_logged", { team_id: activeTeamId, result: game.result });
     }
-    setNewGame({ date:"", time:"", location:"", opponent:"", result:"", ourScore:"", theirScore:"", battingPerf:{}, snackDuty:"", gameBall:[], gameBallSearch:"", scoreReported:false });
+    setNewGame({ date:"", time:"", location:"", opponent:"", result:"", ourScore:"", theirScore:"", battingPerf:{}, snackDuty:"", gameBall:[], gameBallSearch:"", scoreReported:false, usScore:null, oppScore:null, gameStatus:'scheduled', finalizedAt:null });
     setShowGameForm(false);
     setEditingGame(null);
   }
@@ -7478,7 +7526,7 @@ export default function App() {
 
         <div style={{ display:"flex", gap:"8px", marginBottom:"14px", flexWrap:"wrap" }}>
           <button style={S.btn("primary")} onClick={function() {
-            setNewGame({ date:"", time:"", location:"", opponent:"", result:"", ourScore:"", theirScore:"", battingPerf:{}, snackDuty:"", gameBall:[], gameBallSearch:"", scoreReported:false });
+            setNewGame({ date:"", time:"", location:"", opponent:"", result:"", ourScore:"", theirScore:"", battingPerf:{}, snackDuty:"", gameBall:[], gameBallSearch:"", scoreReported:false, usScore:null, oppScore:null, gameStatus:'scheduled', finalizedAt:null });
             setEditingGame(null);
             setShowGameForm(true);
             setImportMode(null);

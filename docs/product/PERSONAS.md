@@ -272,16 +272,36 @@ Volunteer responsible for tracking game progress and stats. Needs the batting or
    - On Contact, an outcome sheet slides up: Single / Double / Triple / Home Run / Walk / HBP / Error / Out outcomes
    - Runner advancement (e.g. runner on 3rd after a single) prompts a "Scored / Stayed / Out" confirm sheet
    - At 3 outs, the half-inning flips automatically; `runsThisHalf` resets to 0
-   - At 5+ runs, a mercy banner appears with End Inning and End Game buttons
+   - At 5+ runs, a mercy banner appears with **End Half** button only (no End Game on mercy banner)
 6. **Opponent batting half** (when `gs.halfInning !== myTeamHalf`):
    - Tracks opponent pitcher via B / K / Foul / Out / Contact buttons (B/S/O pip display updates)
    - At 3 outs (via K or Out button), half-inning flips automatically
    - Taps **+1 OPP Run** for each opponent run scored; **+1 US** for errors that score a run
-   - At 5+ opponent runs, an opponent mercy banner appears with End Inning button
+   - At 5+ opponent runs, an opponent mercy banner appears with **End Half** button
 7. Runner names appear on base diamond indicators for quick reference
 8. Can swap batters mid at-bat via SWAP button
-9. All state syncs to Supabase `live_game_state` in real time; viewers see updates via Realtime subscription
-10. Works offline — local state maintained; Supabase sync resumes when connected
+9. After any End Half, a **10-second undo toast** appears — tapping Undo restores the previous inning/half state
+10. **Header controls (top-right)**:
+    - **✕ (Pause)** — exits the scoring panel but holds the scorer lock; heartbeat continues; scorer can return and resume
+    - **⚙ (Gear)** — opens the action menu:
+      - *Hand off scoring* — releases the lock with a confirm modal; score is saved; another scorer can claim
+      - *Finish Game…* — opens the FinishGameModal
+11. **Finish Game flow** (FinishGameModal):
+    - Displays score preview (US vs Opponent) and current inning context
+    - Copy: "This saves the final score to your schedule and releases scoring. It can't be undone."
+    - Confirm: writes `usScore`, `oppScore`, `gameStatus='final'`, `finalizedAt` to `team_data.schedule` via `finalizeSchedule()`, then releases scorer lock
+    - Cancel: returns to scoring with lock held
+    - If Supabase sync fails: inline error + Retry — lock not released, state intact
+12. All state syncs to Supabase `live_game_state` in real time; viewers see updates via Realtime subscription
+13. Works offline — local state maintained; Supabase sync resumes when connected
+
+### Game Session Action Tiers
+
+| Intent | Control | Lock behavior |
+|--------|---------|---------------|
+| **Pause** | ✕ icon (top-right) | Lock held, heartbeat continues, resume anytime |
+| **Hand off** | Gear → Hand off scoring | Lock released (after confirm modal), score saved |
+| **Finish** | Gear → Finish Game… | Score saved to schedule, lock released, idempotent |
 
 ---
 
