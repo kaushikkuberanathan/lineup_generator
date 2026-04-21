@@ -25,6 +25,9 @@ var EXPECTED_LGS_KEYS = [
   'balls', 'strikes', 'my_score', 'opponent_score',
   'runners', 'current_batter', 'batting_order_index',
   'runs_this_half', 'opp_runs_this_half', 'updated_at',
+  'opp_balls', 'opp_strikes',
+  'opp_current_batter_number', 'opp_current_batter_pitches',
+  'opp_inning_pitches', 'opp_game_pitches',
 ].sort();
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
