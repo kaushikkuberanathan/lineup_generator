@@ -21,8 +21,10 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { act } from 'react';
+import { act, createElement } from 'react';
+import { createRoot } from 'react-dom/client';
 import { renderHook } from './helpers/renderHook.js';
+import { DiamondSVG } from '../components/ScoringMode/LiveScoringPanel.jsx';
 
 var MOCK_RANVIR = { id: 'Ranvir', name: 'Ranvir', number: '', orderPosition: 0 };
 
@@ -318,6 +320,90 @@ describe('Runner placement — resolveAtBat batter-id contract', function() {
     expect(h.result.current.gameState.balls).toBe(0);
     expect(h.result.current.gameState.strikes).toBe(0);
     expect(h.result.current.gameState.runsThisHalf).toBe(0);
+
+    await h.unmount();
+  });
+
+});
+
+// ── DiamondSVG layout contract ─────────────────────────────────────────────────
+
+async function renderDiamond(runners, battingOrder) {
+  var container = document.createElement('div');
+  document.body.appendChild(container);
+  var root = createRoot(container);
+  await act(async function() {
+    root.render(createElement(DiamondSVG, { runners: runners, battingOrder: battingOrder }));
+  });
+  return {
+    container: container,
+    unmount: async function() {
+      await act(async function() { root.unmount(); });
+      if (container.parentNode) { container.parentNode.removeChild(container); }
+    },
+  };
+}
+
+describe('DiamondSVG — overlay layout contract', function() {
+
+  // ── Test 6 ───────────────────────────────────────────────────────────────
+
+  it('6: runner on 1B — pill has data-base="1", shows "1B Ranvir", no flex-row-container', async function() {
+    var runners      = [{ runnerId: 'Ranvir', base: 1 }];
+    var battingOrder = [{ id: 'Ranvir', name: 'Ranvir X' }];
+    var h = await renderDiamond(runners, battingOrder);
+
+    // FAILS RED: current code has no data-base attribute on pills
+    var pill = h.container.querySelector('[data-base="1"]');
+    expect(pill).not.toBeNull();
+    expect(pill.textContent).toContain('Ranvir');
+
+    // FAILS RED: old flex-row-container still exists in current code
+    expect(h.container.querySelector('[data-testid="runner-pills-row"]')).toBeNull();
+
+    await h.unmount();
+  });
+
+  // ── Test 7 ───────────────────────────────────────────────────────────────
+
+  it('7: only 1B occupied — no pills for 2B or 3B', async function() {
+    var runners      = [{ runnerId: 'Ranvir', base: 1 }];
+    var battingOrder = [{ id: 'Ranvir', name: 'Ranvir X' }];
+    var h = await renderDiamond(runners, battingOrder);
+
+    // FAILS RED: data-base="1" pill does not exist in current code
+    expect(h.container.querySelector('[data-base="1"]')).not.toBeNull();
+    expect(h.container.querySelector('[data-base="2"]')).toBeNull();
+    expect(h.container.querySelector('[data-base="3"]')).toBeNull();
+
+    await h.unmount();
+  });
+
+  // ── Test 8 ───────────────────────────────────────────────────────────────
+
+  it('8: all three bases occupied — three pills with correct data-base and names', async function() {
+    var runners = [
+      { runnerId: 'Ranvir',  base: 1 },
+      { runnerId: 'Eshaan',  base: 2 },
+      { runnerId: 'Jackson', base: 3 },
+    ];
+    var battingOrder = [
+      { id: 'Ranvir',  name: 'Ranvir X' },
+      { id: 'Eshaan',  name: 'Eshaan Y' },
+      { id: 'Jackson', name: 'Jackson Z' },
+    ];
+    var h = await renderDiamond(runners, battingOrder);
+
+    // FAILS RED: no data-base attributes on pills in current code
+    var p1 = h.container.querySelector('[data-base="1"]');
+    var p2 = h.container.querySelector('[data-base="2"]');
+    var p3 = h.container.querySelector('[data-base="3"]');
+    expect(p1).not.toBeNull();
+    expect(p2).not.toBeNull();
+    expect(p3).not.toBeNull();
+    expect(p1.textContent).toContain('Ranvir');
+    expect(p2.textContent).toContain('Eshaan');
+    expect(p3.textContent).toContain('Jackson');
 
     await h.unmount();
   });

@@ -94,8 +94,23 @@ function DiamondSVG(props) {
     runnerNames.push({ base: r.base, label: label, name: firstName });
   }
   runnerNames.sort(function(a, b) { return a.base - b.base; });
+  var pillStyle = {
+    position: 'absolute',
+    fontSize: '11px', fontWeight: 'bold',
+    background: 'rgba(245,200,66,0.15)',
+    border: '1px solid rgba(245,200,66,0.35)',
+    borderRadius: '4px', padding: '2px 6px',
+    color: '#f5c842',
+    whiteSpace: 'nowrap',
+    pointerEvents: 'none',
+  };
+  var pillPositions = {
+    2: { top: '-24px', left: '50%',    transform: 'translateX(-50%)' },
+    3: { top: '50%',   left: '-72px',  transform: 'translateY(-50%)' },
+    1: { top: '50%',   right: '-72px', transform: 'translateY(-50%)' },
+  };
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+    <div style={{ position: 'relative', width: '110px', height: '110px', overflow: 'visible' }}>
       <svg width={110} height={110} viewBox="0 0 100 100">
         <polygon points="50,12 88,50 50,88 12,50"
           fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth={1.5} />
@@ -118,26 +133,19 @@ function DiamondSVG(props) {
           strokeWidth={1}
         />
       </svg>
-      {runnerNames.length > 0 && (
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
-          {runnerNames.map(function(rn) {
-            return (
-              <span key={rn.base} style={{
-                fontSize: '11px', fontWeight: 'bold',
-                background: 'rgba(245,200,66,0.15)',
-                border: '1px solid rgba(245,200,66,0.35)',
-                borderRadius: '4px', padding: '2px 6px',
-                color: '#f5c842',
-              }}>
-                {rn.label} {rn.name}
-              </span>
-            );
-          })}
-        </div>
-      )}
+      {runnerNames.map(function(rn) {
+        var pos = pillPositions[rn.base] || {};
+        return (
+          <span key={rn.base} data-base={rn.base} style={Object.assign({}, pillStyle, pos)}>
+            {rn.name}
+          </span>
+        );
+      })}
     </div>
   );
 }
+
+export { DiamondSVG };
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
@@ -855,13 +863,16 @@ export default function LiveScoringPanel(props) {
 
       {/* ── Diamond + pitch log ───────────────────────────────────────────────── */}
       <div style={{
-        display: 'flex', alignItems: 'center',
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        justifyContent: 'center',
         padding: '0 16px 8px', gap: '16px',
-        flexShrink: 0,
+        flex: 1,
       }}>
-        <DiamondSVG runners={gs.runners} battingOrder={battingOrder} />
+        <div style={{ display: 'flex', justifyContent: 'center', flexShrink: 0 }}>
+          <DiamondSVG runners={gs.runners} battingOrder={battingOrder} />
+        </div>
 
-        <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ width: '100%', textAlign: 'center' }}>
           {pitches.length > 0 ? (
             <div>
               <div style={{ fontSize: '10px', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>
