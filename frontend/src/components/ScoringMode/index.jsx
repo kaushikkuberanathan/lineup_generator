@@ -42,7 +42,7 @@ export default function ScoringMode({
       if (roster_[i].name === name) { player = roster_[i]; break; }
     }
     return {
-      id:            player ? player.id : name,
+      id:            player ? (player.id || name) : name,
       name:          name,
       number:        '',
       orderPosition: idx,
