@@ -100,10 +100,12 @@ import { useLiveScoring } from '../hooks/useLiveScoring.js';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-// Reflects ScoringMode/index.jsx line 86 when isPractice=true.
+// Reflects ScoringMode/index.jsx when isPractice=true after Phase 2 fix:
+//   isEnabled = liveScoringEnabled && (isPractice || !!gameId) = true
+//   isPractice = true, gameId = null (no game selected)
 function practiceParams(overrides) {
   return Object.assign(
-    { isEnabled: false, gameId: null, teamId: '1774297491626', team: MOCK_TEAM },
+    { isEnabled: true, isPractice: true, gameId: null, teamId: '1774297491626', team: MOCK_TEAM },
     overrides || {}
   );
 }

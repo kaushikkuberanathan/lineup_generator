@@ -259,6 +259,7 @@ export function useLiveScoring(params) {
   var battingOrder = params.battingOrder || [];
   var team         = params.team || null;
   var myTeamHalf   = params.myTeamHalf  || 'top';
+  var isPractice   = params.isPractice  || false;
 
   // AUTH TESTING SHIM — remove when auth goes live (Phase 4C)
   // When auth gate is commented out, userId/userName are null.
@@ -327,7 +328,7 @@ export function useLiveScoring(params) {
   // ── Internal utilities ────────────────────────────────────────────────────
 
   function persist(gs) {
-    if (!supabase || !gameId || !teamId) return;
+    if (isPractice || !supabase || !gameId || !teamId) return;
     supabase
       .from('live_game_state')
       .upsert(
@@ -366,7 +367,7 @@ export function useLiveScoring(params) {
   }
 
   function audit(action, payload) {
-    if (!supabase || !gameId || !teamId) return;
+    if (isPractice || !supabase || !gameId || !teamId) return;
     supabase
       .from('scoring_audit_log')
       .insert({
@@ -389,6 +390,7 @@ export function useLiveScoring(params) {
   }
 
   function startHeartbeat() {
+    if (isPractice) return;
     stopHeartbeat();
     hbRef.current = setInterval(function() {
       if (!isScorerRef.current || !supabase) return;
@@ -416,7 +418,7 @@ export function useLiveScoring(params) {
 
   // ── Mount: hydrate + subscribe to realtime ────────────────────────────────
   useEffect(function() {
-    if (!isEnabled || !supabase || !gameId || !teamId) return;
+    if (!isEnabled || isPractice || !supabase || !gameId || !teamId) return;
 
     // Hydrate existing game state
     supabase
@@ -528,11 +530,19 @@ export function useLiveScoring(params) {
       }
       stopHeartbeat();
     };
-  }, [isEnabled, gameId, teamId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isEnabled, isPractice, gameId, teamId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Public functions ───────────────────────────────────────────────────────
 
   function claimScorerLock() {
+    // Practice mode — local-only claim, no network effects.
+    if (isPractice) {
+      setScorer(true);
+      setScorerName(_effectiveUserName);
+      setScorerLockExpired(false);
+      setClaimError('');
+      return;
+    }
     if (!isEnabled || !supabase || !gameId || !teamId) return;
     setClaimError('');
     supabase
@@ -595,6 +605,11 @@ export function useLiveScoring(params) {
   }
 
   function releaseScorerLock() {
+    // Practice mode — local-only release.
+    if (isPractice) {
+      setScorer(false);
+      return;
+    }
     if (!isEnabled || !supabase || !gameId || !teamId) return;
     stopHeartbeat();
     setScorer(false);

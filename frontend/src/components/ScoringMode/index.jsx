@@ -83,17 +83,19 @@ export default function ScoringMode({
     teamId:       activeTeamId,
     userId:       scoringUserId,
     userName:     scoringUserName,
-    isEnabled:    isEnabled && !isPractice && !!gameId,
+    isEnabled:    isEnabled && (isPractice || !!gameId),
     battingOrder: mappedBattingOrder,
     team:         activeTeam,
+    isPractice:   isPractice,
   });
 
-  // Claim scorer lock once the hook is live after scorerClaimed → true
+  // Claim scorer lock once the hook is live after scorerClaimed → true.
+  // Practice mode uses the local-only path inside claimScorerLock.
   useEffect(function() {
-    if (scorerClaimed && !isPractice && scoring.claimScorerLock) {
+    if (scorerClaimed && scoring.claimScorerLock) {
       scoring.claimScorerLock();
     }
-  }, [scorerClaimed, isPractice]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [scorerClaimed]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleSelectGame(game) {
     setSelectedGame(game);
