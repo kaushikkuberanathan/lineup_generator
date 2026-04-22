@@ -843,6 +843,46 @@ export function useLiveScoring(params) {
       newScore++;
     } else if (result === 'out') {
       newRunners = newRunners.filter(function(r) { return r.runnerId !== runnerId; });
+      var newOuts = gs.outs + 1;
+
+      if (newOuts >= 3) {
+        var nextHalf2 = gs.halfInning === 'top' ? 'bottom' : 'top';
+        var nextInning2 = gs.halfInning === 'bottom' ? gs.inning + 1 : gs.inning;
+        var flipGs = Object.assign({}, gs, {
+          inning:          nextInning2,
+          halfInning:      nextHalf2,
+          outs:            0,
+          balls:           0,
+          strikes:         0,
+          oppBalls:        0,
+          oppStrikes:      0,
+          runners:         [],
+          currentBatter:   null,
+          runsThisHalf:    0,
+          oppRunsThisHalf: 0,
+        });
+        setPendingAdvancement(null);
+        setGs(flipGs);
+        persist(flipGs);
+        audit('runner_out', { runnerId: runnerId });
+        audit('half_inning_ended', {
+          inning:     gs.inning,
+          halfInning: gs.halfInning,
+          cause:      'runner_out',
+        });
+        return;
+      }
+
+      var outGs = Object.assign({}, gs, {
+        runners: newRunners,
+        myScore: newScore,
+        outs:    newOuts,
+      });
+      setPendingAdvancement(null);
+      setGs(outGs);
+      persist(outGs);
+      audit('runner_advanced', { runnerId: runnerId, toBase: null, result: 'out' });
+      return;
     } else if (toBase) {
       var foundInList = false;
       newRunners = newRunners.map(function(r) {

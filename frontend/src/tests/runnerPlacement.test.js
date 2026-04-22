@@ -235,4 +235,91 @@ describe('Runner placement — resolveAtBat batter-id contract', function() {
     await h.unmount();
   });
 
+  // ── Test 4 ───────────────────────────────────────────────────────────────
+
+  it('4: confirmRunnerAdvancement out — outs increments (non-3-out case)', async function() {
+    var h = await mountAndClaim();
+
+    // Seed: Ezra on 3B via triple.
+    await act(async function() {
+      h.result.current.startAtBat(MOCK_EZRA, false);
+    });
+    await act(async function() {
+      h.result.current.resolveAtBat('triple');
+    });
+    // Sanity: Ezra on 3B, outs still 0.
+    expect(
+      h.result.current.gameState.runners.some(function(r) {
+        return r.runnerId === 'Ezra' && r.base === 3;
+      })
+    ).toBe(true);
+    expect(h.result.current.gameState.outs).toBe(0);
+
+    // Ezra is thrown out at home.
+    await act(async function() {
+      h.result.current.confirmRunnerAdvancement('Ezra', null, 'out');
+    });
+
+    // FAILS RED: confirmRunnerAdvancement 'out' branch removes runner but
+    //   never increments outs — newGs write omits outs entirely.
+    expect(h.result.current.gameState.outs).toBe(1);
+    expect(h.result.current.gameState.runners).toHaveLength(0);
+    // Half-inning should NOT have flipped (only 1 out).
+    expect(h.result.current.gameState.inning).toBe(1);
+    expect(h.result.current.gameState.halfInning).toBe('top');
+
+    await h.unmount();
+  });
+
+  // ── Test 5 ───────────────────────────────────────────────────────────────
+
+  it('5: confirmRunnerAdvancement out at 3 outs — triggers half-inning flip', async function() {
+    var h = await mountAndClaim();
+
+    // Reach 2 outs via flyouts.
+    await act(async function() {
+      h.result.current.startAtBat(MOCK_RANVIR, false);
+    });
+    await act(async function() {
+      h.result.current.resolveAtBat('flyout');
+    });
+    await act(async function() {
+      h.result.current.startAtBat(MOCK_RANVIR, false);
+    });
+    await act(async function() {
+      h.result.current.resolveAtBat('flyout');
+    });
+    expect(h.result.current.gameState.outs).toBe(2);
+
+    // Seed: Ezra on 3B via triple (outs stays 2).
+    await act(async function() {
+      h.result.current.startAtBat(MOCK_EZRA, false);
+    });
+    await act(async function() {
+      h.result.current.resolveAtBat('triple');
+    });
+    expect(
+      h.result.current.gameState.runners.some(function(r) {
+        return r.runnerId === 'Ezra' && r.base === 3;
+      })
+    ).toBe(true);
+    expect(h.result.current.gameState.outs).toBe(2);
+
+    // 3rd out — should flip half-inning.
+    await act(async function() {
+      h.result.current.confirmRunnerAdvancement('Ezra', null, 'out');
+    });
+
+    // FAILS RED: outs stays at 2, no half-flip happens.
+    expect(h.result.current.gameState.outs).toBe(0);
+    expect(h.result.current.gameState.halfInning).toBe('bottom');
+    expect(h.result.current.gameState.inning).toBe(1);
+    expect(h.result.current.gameState.runners).toHaveLength(0);
+    expect(h.result.current.gameState.balls).toBe(0);
+    expect(h.result.current.gameState.strikes).toBe(0);
+    expect(h.result.current.gameState.runsThisHalf).toBe(0);
+
+    await h.unmount();
+  });
+
 });
