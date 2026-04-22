@@ -25,9 +25,6 @@ var EXPECTED_LGS_KEYS = [
   'balls', 'strikes', 'my_score', 'opponent_score',
   'runners', 'current_batter', 'batting_order_index',
   'runs_this_half', 'opp_runs_this_half', 'updated_at',
-  'opp_balls', 'opp_strikes',
-  'opp_current_batter_number', 'opp_current_batter_pitches',
-  'opp_inning_pitches', 'opp_game_pitches',
 ].sort();
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
@@ -163,7 +160,7 @@ describe('live_game_state MERGE contract', function() {
   });
 
   // ── Case 1: persist() full-row invariant ───────────────────────────────────
-  it('1: persist() full-row invariant — recordPitch upserts exactly 21 expected column keys', async function() {
+  it('1: persist() full-row invariant — recordPitch upserts exactly 15 expected column keys', async function() {
     var h = await mountClaimAndOpen();
     mocks.lgsUpsert.mockClear();
 
@@ -325,7 +322,7 @@ describe('live_game_state MERGE contract', function() {
   });
 
   // ── Case 8: Ephemeral state not persisted ──────────────────────────────────
-  it('8: key-casing invariant — camelCase oppBalls/oppStrikes never leak into persist payload; snake_case versions do', async function() {
+  it('8: ephemeral state — oppBalls/oppStrikes never appear in live_game_state upsert payload', async function() {
     var h = await mountAndClaim();
     mocks.lgsUpsert.mockClear();
 
@@ -335,110 +332,13 @@ describe('live_game_state MERGE contract', function() {
 
     expect(mocks.lgsUpsert).toHaveBeenCalledTimes(1);
     var payload = mocks.lgsUpsert.mock.calls[0][0];
-    // camelCase keys must never appear — would be a Supabase column-name mismatch
+    // Ephemeral fields — intentionally NOT written to DB
     expect(payload).not.toHaveProperty('oppBalls');
     expect(payload).not.toHaveProperty('oppStrikes');
-    // snake_case versions ARE DB columns — must be present
-    expect(payload).toHaveProperty('opp_balls');
-    expect(payload).toHaveProperty('opp_strikes');
+    expect(payload).not.toHaveProperty('opp_balls');
+    expect(payload).not.toHaveProperty('opp_strikes');
+    // opp_runs_this_half IS a DB column — must remain present
     expect(payload).toHaveProperty('opp_runs_this_half');
-
-    await h.unmount();
-  });
-
-  // ── Cases 9–14: Opponent pitch tracking columns (RED — fail until Step 4b) ─
-  // These six tests lock in the new live_game_state columns for opponent pitch
-  // tracking. They assert the columns appear in every persist() call so they are
-  // never silently dropped by a partial write (the April 2026 regression pattern).
-  // NOTE: Tests 9–10 contradict test 8 by design. Test 8 will be updated when
-  // persist() is changed in Step 4b to confirm the direction change.
-
-  it('9: opp_balls — persist() writes opp_balls column (not ephemeral)', async function() {
-    var h = await mountAndClaim();
-    mocks.lgsUpsert.mockClear();
-
-    await act(async function() {
-      h.result.current.recordOppPitch('ball');
-    });
-
-    expect(mocks.lgsUpsert).toHaveBeenCalledTimes(1);
-    var payload = mocks.lgsUpsert.mock.calls[0][0];
-    expect(payload).toHaveProperty('opp_balls');
-
-    await h.unmount();
-  });
-
-  it('10: opp_strikes — persist() writes opp_strikes column (not ephemeral)', async function() {
-    var h = await mountAndClaim();
-    mocks.lgsUpsert.mockClear();
-
-    await act(async function() {
-      h.result.current.recordOppPitch('strike');
-    });
-
-    expect(mocks.lgsUpsert).toHaveBeenCalledTimes(1);
-    var payload = mocks.lgsUpsert.mock.calls[0][0];
-    expect(payload).toHaveProperty('opp_strikes');
-
-    await h.unmount();
-  });
-
-  it('11: opp_current_batter_number — not clobbered by home-team recordPitch', async function() {
-    var h = await mountClaimAndOpen();
-    mocks.lgsUpsert.mockClear();
-
-    await act(async function() {
-      h.result.current.recordPitch('ball');
-    });
-
-    expect(mocks.lgsUpsert).toHaveBeenCalledTimes(1);
-    var payload = mocks.lgsUpsert.mock.calls[0][0];
-    expect(payload).toHaveProperty('opp_current_batter_number');
-
-    await h.unmount();
-  });
-
-  it('12: opp_current_batter_pitches — not clobbered by home-team recordPitch', async function() {
-    var h = await mountClaimAndOpen();
-    mocks.lgsUpsert.mockClear();
-
-    await act(async function() {
-      h.result.current.recordPitch('ball');
-    });
-
-    expect(mocks.lgsUpsert).toHaveBeenCalledTimes(1);
-    var payload = mocks.lgsUpsert.mock.calls[0][0];
-    expect(payload).toHaveProperty('opp_current_batter_pitches');
-
-    await h.unmount();
-  });
-
-  it('13: opp_inning_pitches — not clobbered by addManualRun()', async function() {
-    var h = await mountAndClaim();
-    mocks.lgsUpsert.mockClear();
-
-    await act(async function() {
-      h.result.current.addManualRun('us');
-    });
-
-    expect(mocks.lgsUpsert).toHaveBeenCalledTimes(1);
-    var payload = mocks.lgsUpsert.mock.calls[0][0];
-    expect(payload).toHaveProperty('opp_inning_pitches');
-
-    await h.unmount();
-  });
-
-  it('14: opp_game_pitches — not clobbered by addManualRun()', async function() {
-    var h = await mountAndClaim();
-    mocks.lgsUpsert.mockClear();
-
-    await act(async function() {
-      h.result.current.addManualRun('us');
-    });
-
-    expect(mocks.lgsUpsert).toHaveBeenCalledTimes(1);
-    var payload = mocks.lgsUpsert.mock.calls[0][0];
-    expect(payload).toHaveProperty('opp_game_pitches');
 
     await h.unmount();
   });
