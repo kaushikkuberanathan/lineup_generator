@@ -844,18 +844,19 @@ export default function LiveScoringPanel(props) {
             </div>
           </div>
         )) : (
-          <div style={{padding:'12px 16px'}}>
-            <div style={{
-              background:'rgba(255,255,255,0.05)', borderRadius:'10px',
-              padding:'12px 14px', textAlign:'center'
-            }}>
-              <div style={{color:'#f5c842',fontSize:'14px',fontWeight:700,
-                           marginBottom:'4px'}}>
-                Opponent Batting
-              </div>
-              <div style={{color:'#888',fontSize:'12px'}}>
-                Use +1 OPP to track their runs
-              </div>
+          <div style={{
+            background: 'rgba(245,200,66,0.08)',
+            border: '1px solid rgba(245,200,66,0.25)',
+            borderRadius: '8px', padding: '10px 14px',
+          }}>
+            <div style={{ fontSize: '10px', color: '#f5c842', fontWeight: 'bold', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '2px' }}>
+              Opponent Batter
+            </div>
+            <div style={{ fontSize: '17px', fontWeight: 'bold' }}>
+              Player #{((gs.oppCurrentBatterNumber || 1) - 1) % 11 + 1}
+            </div>
+            <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
+              Pitches: {gs.opp_current_batter_pitches || 0} of 5
             </div>
           </div>
         )}
@@ -1081,13 +1082,6 @@ export default function LiveScoringPanel(props) {
           background:'#0b1524', borderTop:'1px solid rgba(255,255,255,0.08)',
           padding:'8px 16px', zIndex:50,
         }}>
-          {/* 5a: Current opponent batter */}
-          <div style={{
-            textAlign:'center', marginBottom:'4px',
-            fontSize:'14px', fontWeight:600, color:'#94a3b8',
-          }}>
-            Player #{gs.oppCurrentBatterNumber || 1}
-          </div>
           {/* Opponent B/S/O count display */}
           <div style={{
             display:'flex', justifyContent:'center', gap:'24px',
