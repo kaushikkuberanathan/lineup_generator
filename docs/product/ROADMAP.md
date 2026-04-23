@@ -1,9 +1,19 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: April 2026 (v2.3.2)
+> Last updated: April 2026 (v2.3.3)
 > MVP launched: March 24, 2026
 
 ---
+
+## v2.3.3 — 2026-04-23
+- Fix: Runner placement broken since v2.3.2 — roster entries have no .id field; player ID now falls back to name throughout scoring state, resolving runner placement, run scoring, and diamond display
+- Fix: Runner-on-3rd marked Out now increments outs counter and triggers half-inning flip correctly
+- Fix: Runner pills anchored to base coordinates on DiamondSVG (absolute positioning); no longer rendered as a floating row below the diamond
+- Fix: Diamond centered horizontally and vertically; Section 6 layout uses flex:1 + flex-column to eliminate dead space and 2B label collision with pitch info
+- Feature: Practice mode — full scoring session with no Supabase writes; claimScorerLock sets isScorer locally; heartbeat suppressed; Realtime subscription skipped
+- Fix: Realtime race condition — lastAppliedAtRef + updated_at timestamp guard rejects stale and echo events (<=); stamped async-after-success in persist() and claimScorerLock() seed upsert
+- Fix: Opponent batter card unified with home-team card (gold border, OPPONENT BATTER header, Player #N primary, Pitches: X of 5); duplicate label removed from fixed pitch bar
+- Tests: 354 → 395 passing (3 new files: realtimeRaceGuard.test.js, practiceModeIsolation.test.js, liveStateMerge additions)
 
 ## v2.3.2 — 2026-04-21
 - Feature: Opposing pitcher pitch counts — per-batter, per-inning, per-game counters in opponent half; opponent batter number (#1–#11); color-coded pitch buttons (Ball blue, Strike red, Foul amber, Out grey, Contact green); Foul counts as pitch not strike; inning totals reset on half-flip, game total persists across innings. Schema: 6 new columns on live_game_state (opp_balls, opp_strikes, opp_current_batter_number, opp_current_batter_pitches, opp_inning_pitches, opp_game_pitches). EXPECTED_LGS_KEYS expanded 15→21; 6 new contract tests; suite: 377 passing.
@@ -889,6 +899,36 @@
 
 ---
 
+## scoring-updates — completed in v2.3.3
+
+### ✅ Story 1: Runner placement (shipped v2.3.3)
+- Root cause: roster entries have no .id field; scoring code used player.id which produced undefined for every entry.
+- Fix: player ? (player.id || name) : name fallback throughout advanceRunners(), runner state, and scoring math.
+
+### ✅ Issue 1: Runner-out increments outs (shipped v2.3.3)
+- confirmRunnerAdvancement() out-branch now increments outs and calls endHalfInning() correctly.
+
+### ✅ Issue 2: Runner pill positioning (shipped v2.3.3)
+- DiamondSVG renders runner pills via absolute positioning at base coordinates; floating row below diamond removed.
+
+### ✅ Story 9: Layout polish — diamond centering + dead space (shipped v2.3.3)
+- Section 6 layout: flex:1 + flex-column; diamond centered horizontally and vertically; pitch info below diamond without 2B collision.
+
+### ✅ Story 11: Practice mode — local-only scoring path (shipped v2.3.3)
+- isPractice=true bypasses all Supabase writes; claimScorerLock sets isScorer locally; heartbeat suppressed; Realtime subscription skipped.
+- 7 tests in practiceModeIsolation.test.js verify Supabase isolation contract.
+
+### ✅ Story 13: Realtime race condition guard (shipped v2.3.3)
+- lastAppliedAtRef + updated_at timestamp guard (<= comparison) rejects stale and echo Realtime events.
+- persist() and claimScorerLock() seed upsert stamp ref in .then() success branch (async-after-success).
+- 3 tests in realtimeRaceGuard.test.js.
+
+### ✅ Story 14: Opponent batter card placement (shipped v2.3.3)
+- Opponent batter card unified with home-team card style (gold border, OPPONENT BATTER header, Player #N, Pitches: X of 5); moved above diamond.
+- Duplicate Player #N label removed from fixed pitch bar.
+
+---
+
 ## scoring-updates — v2.4.x candidates
 
 ### Feature: Opponent runners on base
@@ -901,6 +941,45 @@
 ---
 
 ## Backlog
+
+### Story 15 (P1): RLS policy blocking saveTeamData calls in real-game mode
+**Surfaced:** April 23, 2026 (real-game smoke test)
+- Supabase RLS policy on team_data table rejecting writes from scoring session (anon key, pre-auth).
+- Affects roster/schedule sync to Supabase. Does not block in-session scoring (three-layer pattern protects local state).
+- Investigation: is RLS policy `allow_scorer_writes` correct? Is anon key auth state set on the Supabase client at write time?
+
+### Story 16 (P1): "No batting order set" in real-game mode despite localStorage data
+**Surfaced:** April 23, 2026
+- "No batting order set" UI message appears in real-game mode even though localStorage has full roster and batting order.
+- Likely cause: team_data Supabase READ also failing (per Story 15 RLS), so React state stays empty on mount; localStorage hydration not reached.
+- Fix Story 15 first, then re-test. If READ and WRITE both fail under same policy, a single RLS fix resolves both.
+
+### Story 19 (P2 / Phase 2+): Opponent runners on bases
+- Diamond UI parity during opponent batting half — full runner advancement tracking.
+- Schema: opp_runners jsonb column on live_game_state.
+- Handler: hit/walk advancement branches in recordOppPitch().
+- Currently only outs and runs tracked for opponent half; no runner visibility for coach.
+
+### Story 20 (P2): Half-flip helper extraction
+- 4 code sites independently reset half-inning state: resolveAtBat 3-out, endHalfInning, recordOppPitch 3-out, confirmRunnerAdvancement 3-out.
+- Extract to flipHalfInning(gs, cause) shared helper to prevent state drift across these paths.
+
+### Story 21 (P2): "No pitches yet" stale copy
+- Minor UX bug — stale copy shown in pitch area when pitches have already occurred.
+
+### Story 22 (P3): GitHub Actions CI queue delays
+- CI runs occasionally queue for 30+ min. Investigate: runner availability, billing limits, workflow configuration.
+- Document whether intermittent or reproducible; add to Known Issues if environmental.
+
+### Story 23 (P3): feature_flags table missing migration file
+- feature_flags table exists in Supabase but has no migration in supabase/migrations/.
+- Capture DDL in supabase/migrations/ for proper schema versioning and reproducibility.
+
+### Story 24 (P3): Orphan backend test files
+- backend/scripts/tests/ contains test-runner.js, suite-rate-limits.js, suite-validation.js.
+- Cleanup decision needed: keep (document purpose) or delete (reduce confusion with CI_SAFE suite).
+
+---
 
 ### Automated Score Reporting (County Integration)
 **Status:** Architecture finalized, implementation pending
