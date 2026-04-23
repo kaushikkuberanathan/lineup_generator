@@ -304,6 +304,7 @@ export function useLiveScoring(params) {
   var undoSnapRef      = useRef(null);   // snapshot for endHalfInning undo
   var preResolveSnapRef = useRef(null);  // snapshot for CANCEL_PLAY path
   var pendingAdvRef    = useRef(null);   // ref-copy of pendingAdvancement (stale-closure safe)
+  var lastAppliedAtRef = useRef('');     // updated_at of the last Realtime event we applied
 
   var rules         = team ? getRulesForTeam(team) : null;
   var pitchUIConfig = rules ? getPitchUIConfig(rules) : null;
@@ -329,6 +330,7 @@ export function useLiveScoring(params) {
 
   function persist(gs) {
     if (isPractice || !supabase || !gameId || !teamId) return;
+    var persistedAt = new Date().toISOString();
     supabase
       .from('live_game_state')
       .upsert(
@@ -353,7 +355,7 @@ export function useLiveScoring(params) {
           opp_current_batter_pitches: gs.oppCurrentBatterPitches  || 0,
           opp_inning_pitches:         gs.oppInningPitches         || 0,
           opp_game_pitches:           gs.oppGamePitches           || 0,
-          updated_at:                 new Date().toISOString(),
+          updated_at:                 persistedAt,
         },
         { onConflict: 'game_id,team_id' }
       )
@@ -362,6 +364,8 @@ export function useLiveScoring(params) {
           setScorer(false);
           setScorerLockExpired(true);
           stopHeartbeat();
+        } else if (!r.error) {
+          lastAppliedAtRef.current = persistedAt;
         }
       });
   }
@@ -482,6 +486,12 @@ export function useLiveScoring(params) {
           var row = payload.new;
           // Verify team (filter supports only one column in v2)
           if (String(row.team_id) !== String(teamId)) return;
+          // Reject stale and echo events: skip if this row is not newer than
+          // the last timestamp we persisted (guards against out-of-order Realtime delivery)
+          if (row.updated_at && lastAppliedAtRef.current &&
+              row.updated_at <= lastAppliedAtRef.current) {
+            return;
+          }
           setGs({
             inning:            row.inning             || 1,
             halfInning:        row.half_inning         || 'top',
@@ -502,6 +512,9 @@ export function useLiveScoring(params) {
             oppInningPitches:        row.opp_inning_pitches         || 0,
             oppGamePitches:          row.opp_game_pitches           || 0,
           });
+          if (row.updated_at) {
+            lastAppliedAtRef.current = row.updated_at;
+          }
         }
       )
       .on(
@@ -574,7 +587,8 @@ export function useLiveScoring(params) {
         setClaimError('');
         startHeartbeat();
         audit('lock_claimed');
-        // Seed live_game_state if no row exists yet
+        // Seed live_game_state if no row exists yet.
+        var seedAt = new Date().toISOString();
         supabase
           .from('live_game_state')
           .upsert({
@@ -597,9 +611,14 @@ export function useLiveScoring(params) {
             opp_current_batter_pitches: 0,
             opp_inning_pitches:         0,
             opp_game_pitches:           0,
+            updated_at:                 seedAt,
           }, { onConflict: 'game_id,team_id' })
           .then(function(r) {
-            if (r.error) console.warn('[scoring] seed live_game_state failed:', r.error);
+            if (r.error) {
+              console.warn('[scoring] seed live_game_state failed:', r.error);
+            } else {
+              lastAppliedAtRef.current = seedAt;
+            }
           });
       });
   }
