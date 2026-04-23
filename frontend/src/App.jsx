@@ -141,9 +141,36 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.3.2";
+var APP_VERSION = "2.3.3";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.3.3',
+    date: '2026-04-23',
+    headline: 'Live scoring accuracy and visual consistency improvements',
+    userChanges: [
+      'Practice mode: score a full game without saving — sandbox for pre-game walkthrough or rule testing.',
+      'Runners now appear on bases correctly after Contact and Single (was silently broken in v2.3.2).',
+      'Runner marked Out from 3rd base now increments the outs counter and triggers inning flip correctly.',
+      'Runner names anchored to their correct bases on the diamond (no longer floating below the diamond).',
+      'Diamond centered horizontally and vertically on screen.',
+      'Pitch info no longer collides with the 2nd base runner name.',
+      'Opponent batter card moved above the diamond to match home-team card position.',
+      'Opponent pitch bar shows "Pitches: X of 5" countdown for the 8U five-and-out rule.',
+      'Home-team runners no longer appear on the diamond during the opponent batting half.',
+    ],
+    techNote: 'Bug fixes and performance improvements',
+    internalChanges: [
+      'useLiveScoring.js: player ID fallback — roster entries have no .id field; player ? (player.id || name) : name used throughout scoring and runner state; resolves runner placement, run scoring, and diamond display broken in v2.3.2.',
+      'useLiveScoring.js: lastAppliedAtRef (useRef) + updated_at timestamp guard in Realtime handler rejects stale and echo events (<= comparison); persist() and claimScorerLock() seed upsert both stamp ref in .then() success branch (async-after-success semantics).',
+      'useLiveScoring.js: confirmRunnerAdvancement() out-branch increments outs and triggers endHalfInning().',
+      'useLiveScoring.js: practice mode local-only path — isPractice=true bypasses all Supabase writes; claimScorerLock sets isScorer locally; heartbeat suppressed; Realtime subscription skipped.',
+      'DiamondSVG: runner pills rendered via absolute positioning at base coordinates; floating row below diamond removed.',
+      'LiveScoringPanel.jsx: Section 6 layout — flex:1 + flex-column resolves dead space and horizontal 2B label collision with pitch info.',
+      'LiveScoringPanel.jsx: opponent batter card unified with home-team card (gold border, OPPONENT BATTER header, Player #N primary, Pitches: X of 5); duplicate Player #N label removed from fixed pitch bar.',
+      'Test suite: 354 → 395 passing across 3 new test files — realtimeRaceGuard.test.js (3), practiceModeIsolation.test.js (7), liveStateMerge.test.js additions.',
+    ],
+  },
   {
     version: '2.3.2',
     date: '2026-04-21',
