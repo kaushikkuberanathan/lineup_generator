@@ -579,6 +579,56 @@ The Ship Gate exists because we've shipped broken features before. Treat it as a
 
 ---
 
+## Pre-release Docs Checklist
+
+Before opening a `develop → main` PR, walk through these items. For each, answer: "Is this relevant to what this release touches, and is it current?"
+
+### Version and changelog
+
+1. `APP_VERSION` bumped in `frontend/src/App.jsx`
+2. `version` bumped in `frontend/package.json` and `backend/package.json`
+3. `VERSION_HISTORY` entry prepended in `frontend/src/App.jsx` with `userChanges` (coach-readable), `internalChanges` (file-level specificity), and `techNote` (one-line summary)
+4. `CLAUDE.md` "Current Version" line updated + changelog bullet added
+
+### Backlog and roadmap
+
+5. `docs/product/ROADMAP.md` — release entry at top, completed stories moved to shipped section, new backlog items logged
+6. `docs/product/FEATURE_MAP.md` — row for every touched feature, test file lists current, coverage summary recounted
+7. `docs/product/DOC_TEST_DEBT.md` — ages updated, targets corrected, new test files recognized, resolved items moved to Resolved
+
+### Architecture and convention
+
+8. `docs/SOLUTION_DESIGN.md` updated if architecture changed (new hooks, state fields, guards, schema columns, conventions)
+9. `CLAUDE.md` updated with new architectural conventions, pitfalls, or "trust this pattern" notes
+
+### User-facing
+
+10. `frontend/src/content/faqs.js` — new FAQs for any feature coaches interact with; existing FAQs updated if their answers are no longer accurate
+11. `README.md` updated if install/deploy/usage changed
+
+### Test hygiene
+
+12. New test files listed in `docs/product/DOC_TEST_DEBT.md` test inventory
+13. Test count in `CLAUDE.md` matches actual suite total
+14. Pre-push hook runs `npm test` and passes on the release branch before PR opens
+
+### Final gate
+
+15. Vercel preview deployed and phone-smoke-tested on a real device and network (DevTools simulation does not replace this)
+16. Branch protection on `main` enforces CI checks + preview deployment green — no bypass
+
+If any relevant item is "no" — **stop**. Open a docs patch first. This patch was introduced because v2.3.3 shipped without docs updates, requiring a catch-up hygiene patch (commit `2652ed7`, April 24 2026).
+
+**Scope judgment:** Not every item applies to every PR. A scoring feature PR typically needs items 1–11 and 13–16. A typo-fix PR needs items 1–4 and 15–16 only. Use judgment. The rule: if an item is relevant and the answer is no, block the merge.
+
+**Exempt release types** (same as Ship Gate):
+- **Meta-governance** — docs-only, zero app code changes. Items 1–4 can be skipped (no version bump for pure doc touchups).
+- **Hotfix** — must include `[hotfix-exception]` in the commit message body. May skip items 10–11 if no user-facing behavior changed.
+
+The Pre-release Docs Checklist exists because we've shipped features without matching documentation updates. It's a parallel gate to Ship Gate — Ship Gate asks "is this release ready?", this checklist asks "did you actually update the doc files?"
+
+---
+
 ## Audit Cadence
 
 Run this checklist every other session (minimum once per week):
