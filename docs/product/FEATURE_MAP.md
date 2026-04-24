@@ -2,7 +2,7 @@
 
 > Authoritative mapping of every shipped feature to its documentation and test coverage.
 > Update this file whenever a feature ships, changes behavior, or gains new tests.
-> Owner: KK | Last updated: April 2026 (v2.3.0)
+> Owner: KK | Last updated: April 2026 (v2.3.3)
 
 ---
 
@@ -17,7 +17,7 @@
 
 ---
 
-## Feature Registry (19 features)
+## Feature Registry (22 features)
 
 | # | Feature | Status | Primary Doc | Doc Status | Test File(s) | Test Status | Debt |
 |---|---------|--------|-------------|------------|--------------|-------------|------|
@@ -31,15 +31,18 @@
 | 8 | **Game Mode (full-screen dugout view)** | MVP | `SOLUTION_DESIGN.md` § Navigation Structure | ✅ Current | None | ❌ None | D006 |
 | 9 | **Share links (8-char Supabase-backed)** | MVP | `SOLUTION_DESIGN.md` § RLS Policy Map; `CLAUDE.md` Auth Principle | ✅ Current | None | ❌ None | D005 |
 | 10 | **PDF export + print view** | MVP | `ROADMAP.md` § v1.x | ⚠ Stale | None | ❌ None | D011 |
-| 11 | **Live scoring (scorer lock, inning entry, game finalization)** | Pilot | `ROADMAP.md` § v2.2.29–v2.3.0; `PERSONAS.md` § Scorekeeper; `MASTER_DEV_REFERENCE.md` § Game Object Shape | ✅ Current | `finalizeSchedule.test.js`, `undoHalfInning.test.js`, `newGameTemplate.test.js` | ⚠ Partial | D001 |
-| 12 | **Feature flag system** | MVP | `CLAUDE.md` § Feature Flags; `SOLUTION_DESIGN.md` § Feature Flag System | ✅ Current | `flagBootstrap.test.js`, `accessibility.v1.test.js` | ⚠ Partial | — |
-| 13 | **Auth system (magic link + Google OAuth)** | Phase 2 | `SOLUTION_DESIGN.md` § Auth Architecture; `CLAUDE.md` § Auth Strategy | ✅ Current | None | ❌ None | D003 |
-| 14 | **Admin UI (admin.html)** | MVP | `SOLUTION_DESIGN.md` § Admin UI; `PERSONAS.md` § Administrator | ✅ Current | None | ❌ None | D007 |
-| 15 | **Roster backup/restore** | MVP | `SOLUTION_DESIGN.md` § Data Protection | ✅ Current | None | ❌ None | D013 |
-| 16 | **Multi-team support** | MVP | `CLAUDE.md` § Architecture | ✅ Current | `migrations.test.js` (partial — migration only) | ⚠ Partial | D014 |
-| 17 | **Fairness Check + violation warnings** | MVP | `SOLUTION_DESIGN.md` § Scoring Engine | ✅ Current | `engine.v2.test.js` (violations surfaced) | ⚠ Partial | D012 |
-| 18 | **Player profiles (V2 attributes)** | MVP | `SOLUTION_DESIGN.md` § Player Attributes; `PERSONAS.md` § Head Coach | ✅ Current | `scoring.test.js`, `lineupEngineV2-unit.test.js` | ✅ Yes | — |
-| 19 | **Governance infrastructure** | MVP | `CHARTER.md`, `ONE_PAGER.md`, `ROADMAP.md`, `PERSONAS.md`, `faqs.js`, `FEATURE_MAP.md`, `MASTER_DEV_REFERENCE.md`, `CLAUDE.md` | ✅ Current | — | ❌ None | — |
+| 11 | **Live scoring (scorer lock, inning entry, game finalization)** | Pilot | `ROADMAP.md` § v2.2.29–v2.3.3; `PERSONAS.md` § Scorekeeper; `MASTER_DEV_REFERENCE.md` § Game Object Shape | ✅ Current | `finalizeSchedule.test.js`, `undoHalfInning.test.js`, `newGameTemplate.test.js`, `practiceModeIsolation.test.js`, `realtimeRaceGuard.test.js`, `runnerPlacement.test.js` | ⚠ Partial | D001 |
+| 12 | **Practice Mode** | Pilot | `CLAUDE.md` § Live Scoring Architecture; `ROADMAP.md` § v2.3.3 | ✅ Current | `practiceModeIsolation.test.js` | ✅ Yes | — |
+| 13 | **Runner Placement on Diamond** | Pilot | `CLAUDE.md` § Roster identity; `ROADMAP.md` § v2.3.3 | ✅ Current | `runnerPlacement.test.js` | ✅ Yes | — |
+| 14 | **Opponent Half Tracking** | Pilot | `CLAUDE.md` § Live Scoring Architecture; `ROADMAP.md` § v2.3.2–v2.3.3 | ✅ Current | `liveStateMerge.test.js` (opp integration) | ⚠ Partial | — |
+| 15 | **Feature flag system** | MVP | `CLAUDE.md` § Feature Flags; `SOLUTION_DESIGN.md` § Feature Flag System | ✅ Current | `flagBootstrap.test.js`, `accessibility.v1.test.js` | ⚠ Partial | — |
+| 16 | **Auth system (magic link + Google OAuth)** | Phase 2 | `SOLUTION_DESIGN.md` § Auth Architecture; `CLAUDE.md` § Auth Strategy | ✅ Current | None | ❌ None | D003 |
+| 17 | **Admin UI (admin.html)** | MVP | `SOLUTION_DESIGN.md` § Admin UI; `PERSONAS.md` § Administrator | ✅ Current | None | ❌ None | D007 |
+| 18 | **Roster backup/restore** | MVP | `SOLUTION_DESIGN.md` § Data Protection | ✅ Current | None | ❌ None | D013 |
+| 19 | **Multi-team support** | MVP | `CLAUDE.md` § Architecture | ✅ Current | `migrations.test.js` (partial — migration only) | ⚠ Partial | D014 |
+| 20 | **Fairness Check + violation warnings** | MVP | `SOLUTION_DESIGN.md` § Scoring Engine | ✅ Current | `engine.v2.test.js` (violations surfaced) | ⚠ Partial | D012 |
+| 21 | **Player profiles (V2 attributes)** | MVP | `SOLUTION_DESIGN.md` § Player Attributes; `PERSONAS.md` § Head Coach | ✅ Current | `scoring.test.js`, `lineupEngineV2-unit.test.js` | ✅ Yes | — |
+| 22 | **Governance infrastructure** | MVP | `CHARTER.md`, `ONE_PAGER.md`, `ROADMAP.md`, `PERSONAS.md`, `faqs.js`, `FEATURE_MAP.md`, `MASTER_DEV_REFERENCE.md`, `CLAUDE.md` | ✅ Current | — | ❌ None | — |
 
 ---
 
@@ -47,12 +50,12 @@
 
 | Status | Count |
 |--------|-------|
-| ✅ Doc Current | 15 / 19 |
-| ⚠ Doc Stale | 4 / 19 |
-| ❌ Doc Missing | 0 / 19 |
-| ✅ Tests Exist | 2 / 19 |
-| ⚠ Tests Partial | 7 / 19 |
-| ❌ No Tests | 10 / 19 |
+| ✅ Doc Current | 18 / 22 |
+| ⚠ Doc Stale | 4 / 22 |
+| ❌ Doc Missing | 0 / 22 |
+| ✅ Tests Exist | 4 / 22 |
+| ⚠ Tests Partial | 7 / 22 |
+| ❌ No Tests | 11 / 22 |
 
 > The test gap is large but expected — the engine is the highest-risk surface and is well-covered. Features with no test are all UI-layer or integration paths with no engine logic.
 

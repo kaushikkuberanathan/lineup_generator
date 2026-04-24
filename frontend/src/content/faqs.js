@@ -188,7 +188,7 @@ export var FAQ_CATEGORIES = [
     items: [
       {
         q: "How do I record the score during the game?",
-        a: "If Live Scoring is enabled for your team, you'll see a Scoring tab on the bottom nav. Tap it, then tap Claim Scorer Role — this locks the scorer seat to your device so two people don't overwrite each other. Enter runs inning by inning as they happen. The coach can see the score update in real time on their device via share link."
+        a: "Tap the Scoring tab on the bottom nav, then tap Claim Scorer Role — this locks the scorer seat to your device so two people don't overwrite each other. Enter runs inning by inning as they happen. The coach can see the score update in real time on their device via share link."
       },
       {
         q: "Someone else already claimed the scorer role. What do I do?",
@@ -197,6 +197,22 @@ export var FAQ_CATEGORIES = [
       {
         q: "I made a mistake in an earlier inning. Can I fix it?",
         a: "Yes. Open the inning editor and tap the run count you need to correct. Changes are logged with timestamp so there's an audit trail. For full score restore, tap Restore Score — it rolls back to the last saved snapshot."
+      },
+      {
+        q: "I want to try the scoring features without messing up a real game. Is there a way to practice?",
+        a: "Yes — Practice Mode is built for exactly this. From Game Day, open any game and tap the Practice Mode toggle (🏋) before claiming the scorer role. Everything works the same — pitches, runs, outs, runners on bases, half-inning flips — but nothing saves to the cloud. Nobody else sees your practice session and the real game data is untouched. Great for walking through scoring with an assistant coach before your first game, or testing scenarios like how a runner-out-at-3rd affects the count."
+      },
+      {
+        q: "How do I track the opposing team's pitches during their at-bat?",
+        a: "When the inning flips to opponent batting, the scoring screen switches automatically — you'll see the Opponent Batter card above the diamond showing Player #1 and a pitch counter. For each pitch, tap Ball, Strike, or Foul. The counter shows 'Pitches: X of 5' — at 5 pitches the batter is automatically out (8U five-and-out rule). If the opponent scores a run, tap +1 OPP. Their batter number cycles from Player #1 through Player #11 and wraps back to #1 — you don't need to know the opposing roster."
+      },
+      {
+        q: "How does the app know when to switch from our at-bat to the opponent's?",
+        a: "The app flips the inning half automatically when the current team reaches 3 outs. When your team gets 3 outs (from a strikeout, tap-out-at-base, or runner-out), the scoring screen flips to the opponent's half and the batter card changes to OPPONENT BATTER · Player #N. Same thing in reverse — opponent gets 3 outs and it flips back to your team. You'll see the runners clear from the diamond at each flip because it's a new half. The inning number at the top advances when the bottom half ends, not the top."
+      },
+      {
+        q: "Sometimes my phone lags during scoring — will the runners and pitches sync correctly?",
+        a: "Yes. The app writes to the cloud after every action and has a guard that prevents delayed messages from overwriting the current state. If the app feels slow mid-game, trust the screen you're looking at: the displayed state is always the most recent valid state, even if background network is catching up. If you ever see something clearly wrong (a runner you know scored is still on base), tap the gear menu and refresh the scoring view."
       }
     ]
   },
