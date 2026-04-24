@@ -666,37 +666,102 @@ Full recovery workflow: `backend/migrations/README.md`
 
 ## Live Scoring Framework
 
-The live scoring system operates on a three-tier model. Tier 1 is deployed and in pilot. Tiers 2 and 3 are on the roadmap.
+In-game scoring with real-time sync across devices. Designed specifically for 8U youth baseball — focused on what a coach needs to track during a game, not full MLB-style pitch-by-pitch analytics.
 
-### Tier 1 — Game-Level Results (Deployed, Pilot)
+### Tier 1 — Shipped
 
-- Inning-by-inning run totals for home and away team
-- Scorer lock: one device holds the active scorer role at a time (`game_scoring_sessions` table — `scorer_user_id` is NOT NULL)
-- Real-time state sync via Supabase Realtime subscriptions on `live_game_state`
-- Restore modal: rolls back to last saved snapshot from `live_game_state`
-- Audit trail: every run entry written to `scoring_audit_log` with timestamp and scorer ID
-- Currently enabled for Mud Hens and Demo All-Stars by team name; full rollout gates on `LIVE_SCORING` feature flag
+Current production state at v2.3.3. Enabled for Mud Hens and Demo All-Stars by team name; full rollout gates on `LIVE_SCORING` feature flag.
 
-### Tier 2 — Full Inning-by-Inning Run Tracking (Backlog)
+**Game-level state**
+- Score (home runs, opponent runs)
+- Current inning (1-6 for 8U)
+- Half-inning (top/bottom) via `halfInning` field; `myTeamHalf` toggle determines which half is our at-bat
 
-- Inning timestamps, half-inning breakdown, pitch count (optional)
-- Requires schema extension to `live_game_state`
+**Half-inning state**
+- `runsThisHalf` / `oppRunsThisHalf`
+- `outs` (0-2; at 3, auto-flip)
+- Mercy rule banner when `runsThisHalf >= 5` (5-run cap per half)
 
-### Tier 3 — At-Bat Outcome Tracking (Backlog, Feature-Flagged)
+**Our team at-bat state**
+- `currentBatter` (player object with id, name, orderPosition)
+- `battingOrderIndex` (position in batting order)
+- `runners` array (each: `runnerId` (player name), `base` 1-3)
+- Pitch counters: `balls`, `strikes`, `pitchesThisAtBat`
 
-- Per-plate-appearance outcomes: H, BB, K, etc.
-- Cross-game stat aggregation for batting AVG, OBP
-- Gates on a future `AT_BAT_TRACKING` feature flag
+**Opponent at-bat state (v2.3.2)**
+- `oppCurrentBatterNumber` (1-11, wraps via modulo)
+- `opp_balls`, `opp_strikes` (pitch counters)
+- `opp_current_batter_pitches` (per-batter for 5-and-out rule)
+- `opp_inning_pitches`, `opp_game_pitches` (rollup counters)
+- No individual opponent runner tracking — coach records +1 OPP for runs, Out for outs
+
+**Per-pitch tracking (both halves)**
+- Ball / Strike / Foul buttons
+- Contact button (our half only; triggers outcome sheet)
+- Out button
+- Foul counts as pitch but not as strike
+
+**Half-inning flip triggers**
+- 3 outs auto-flip (four code sites converge on this — Story 20 in backlog to extract to single `flipHalfInning(gs, cause)` helper)
+- Manual flip via gear menu Hand off
+
+**Scorer lock model**
+- Single-scorer-per-game; `claimScorerLock` with heartbeat
+- Other devices see read-only "Someone else is scoring" view
+- Lock expires automatically after heartbeat gap
+- Audit trail: every action written to `scoring_audit_log`
+
+**Practice mode (v2.3.3)**
+- `isPractice` flag branches all write paths
+- Zero Supabase writes: `persist()`, `audit()`, heartbeat, Realtime subscription all skipped
+- Full UI works (runs, outs, runners, flips) but local-only
+- Use case: pre-game walkthrough, assistant coach training, scenario testing
+
+**Realtime race guard (v2.3.3)**
+- `lastAppliedAtRef` tracks the most recent `updated_at` we've persisted or applied from Realtime
+- Handler rejects events where `row.updated_at <= ref`
+- Resolves v2.3.2 regression where stale echoes could re-populate runners after a half-flip
+
+**Runner identity (architectural convention)**
+- Player name is the primary key throughout scoring state (roster entries have no `.id` field in pre-auth app)
+- Pattern: `player ? (player.id || name) : name` everywhere
+- See `CLAUDE.md` "Roster identity" section for full rationale
+
+**Real-time cross-device sync**
+- Supabase Realtime subscription on `live_game_state` `postgres_changes` events
+- Restore modal rolls back to last saved snapshot if state corrupts
+
+**Schema (Supabase table `live_game_state`)**
+- Primary keys: `game_id`, `team_id`
+- 21 columns total including 6 `opp_*` columns added in v2.3.2
+- Write path: upsert with `updated_at` timestamp
+- Read path: select on `game_id + team_id`
+
+**Test coverage (v2.3.3)**
+- `liveStateMerge.test.js` — field merge contract
+- `runnerPlacement.test.js` (8 tests) — runner placement, run scoring, runner-out, half-flip, diamond rendering
+- `practiceModeIsolation.test.js` (7 tests) — zero Supabase writes guarantee
+- `realtimeRaceGuard.test.js` (3 tests) — stale/fresh/echo event handling
+- `finalizeSchedule.test.js`, `undoHalfInning.test.js`, `newGameTemplate.test.js` — supporting coverage
+
+### Tier 2 — Backlog (Feature-Flagged or Future)
+
+- **At-Bat Outcome Tracking:** per-plate-appearance outcomes (H, BB, K, etc.) and cross-game stat aggregation (batting AVG, OBP). Gates on a future `AT_BAT_TRACKING` feature flag.
+- **Opponent runners on bases (Story 19):** diamond parity with home team during opponent half.
+- **`flipHalfInning(gs, cause)` helper extraction (Story 20):** consolidate 4 flip sites to prevent state drift.
+- **"No pitches yet" stale copy (Story 21):** minor UX when pitches exist mid-at-bat.
+- **Per-pitch undo:** currently only half-inning-level `undoHalfInning` exists.
 
 ### Design Rationale
 
-Recreational 8U baseball use case — fairness and simplicity over statistical depth. The scorer lock pattern was chosen over optimistic concurrency because mid-game conflicts (two scorekeepers simultaneously entering runs) are disruptive in a time-pressured dugout environment.
+The three-tier taxonomy separates what coaches must have at launch (Tier 1: outcome-level scoring with runs, outs, batter tracking) from what's a nice addition later (Tier 2: per-pitch stats, advanced aggregation). v2.3.x consolidated most of the per-pitch tracking into Tier 1 because it proved useful enough during early testing to warrant shipping to all users rather than gating behind feature flags. At-bat outcome classification (single/double/triple vs. just "hit") remains Tier 2 because 8U coaches have not needed it during real games.
 
 ### Non-Goals
 
-- Pitch-by-pitch tracking
-- Advanced statistical splits (BABIP, exit velocity, launch angle)
-- Real-time opponent scouting or score reporting to external systems
+- **Per-pitch at-bat outcomes:** we track per-pitch COUNTS (B/S/F tally) but not per-pitch OUTCOMES (type of hit, where it landed). At-bat outcomes are recorded at the at-bat level only, not pitch level.
+- **Advanced statistical splits:** BABIP, exit velocity, launch angle, spin rate. Not relevant for youth rec coaching.
+- **Real-time opponent scouting or external score reporting:** score reporting is manual via the Schedule tab post-game.
+- **Full box score reconstruction:** post-game, coach fills key plays via Schedule tab, not the scoring app.
 
 ---
 
