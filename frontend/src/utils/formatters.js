@@ -28,3 +28,10 @@ export function fmtStat(val) {
   var n = parseInt(val, 10);
   return isNaN(n) ? '0' : String(n);
 }
+
+export function truncateTeamName(name, max) {
+  var cap = max || 12;
+  if (!name || typeof name !== 'string' || name.length === 0) return 'Team';
+  if (name.length <= cap) return name;
+  return name.substring(0, cap - 2) + '..';
+}

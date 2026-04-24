@@ -141,9 +141,26 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.3.3";
+var APP_VERSION = "2.3.4";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.3.4',
+    date: '2026-04-24',
+    headline: 'Opponent team name throughout scoring',
+    userChanges: [
+      'Opponent team name now shows on the scoring screen — "Bananas #1" instead of "Player #1".',
+      'Long team names wrap to 12 characters with ".." (e.g., "Timber Rat..").',
+      '"+1 OPP Run" button now shows "+1 Bananas Run" (or the actual opponent name).',
+      'Scoreboard "OPP" column now shows the opponent team name.',
+    ],
+    techNote: 'UX polish — opponent name replaces generic "Opponent" / "OPP" / "Player #N" wherever they appear in the scoring view.',
+    internalChanges: [
+      'New: frontend/src/utils/formatters.js#truncateTeamName — 10+".." truncation at >12 chars; "Team" fallback.',
+      'LiveScoringPanel.jsx: teamLabel computed from truncateTeamName(opponentName); replaces "OPPONENT BATTER" label (→ "BATTING"), "Player #N" primary (→ "{team} #N"), "+1 OPP Run" button, and "OPP" scoreboard label across STATE 1/2/3.',
+      'Tests: opponentNameLabel.test.js (6) — suite 395 → 401.',
+    ],
+  },
   {
     version: '2.3.3',
     date: '2026-04-23',
