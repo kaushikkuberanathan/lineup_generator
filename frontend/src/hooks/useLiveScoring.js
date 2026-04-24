@@ -73,9 +73,13 @@ function makeDefaultGs() {
     battingOrderIndex: 0,
     runsThisHalf:      0,
     oppRunsThisHalf:   0,
-    oppBalls:          0,
-    oppStrikes:        0,
-    myTeamHalf:        'top',
+    oppBalls:                0,
+    oppStrikes:              0,
+    oppCurrentBatterNumber:  1,
+    oppCurrentBatterPitches: 0,
+    oppInningPitches:        0,
+    oppGamePitches:          0,
+    myTeamHalf:              'top',
   };
 }
 
@@ -255,6 +259,7 @@ export function useLiveScoring(params) {
   var battingOrder = params.battingOrder || [];
   var team         = params.team || null;
   var myTeamHalf   = params.myTeamHalf  || 'top';
+  var isPractice   = params.isPractice  || false;
 
   // AUTH TESTING SHIM — remove when auth goes live (Phase 4C)
   // When auth gate is commented out, userId/userName are null.
@@ -299,6 +304,7 @@ export function useLiveScoring(params) {
   var undoSnapRef      = useRef(null);   // snapshot for endHalfInning undo
   var preResolveSnapRef = useRef(null);  // snapshot for CANCEL_PLAY path
   var pendingAdvRef    = useRef(null);   // ref-copy of pendingAdvancement (stale-closure safe)
+  var lastAppliedAtRef = useRef('');     // updated_at of the last Realtime event we applied
 
   var rules         = team ? getRulesForTeam(team) : null;
   var pitchUIConfig = rules ? getPitchUIConfig(rules) : null;
@@ -323,7 +329,8 @@ export function useLiveScoring(params) {
   // ── Internal utilities ────────────────────────────────────────────────────
 
   function persist(gs) {
-    if (!supabase || !gameId || !teamId) return;
+    if (isPractice || !supabase || !gameId || !teamId) return;
+    var persistedAt = new Date().toISOString();
     supabase
       .from('live_game_state')
       .upsert(
@@ -340,9 +347,15 @@ export function useLiveScoring(params) {
           runners:             gs.runners,
           current_batter:      gs.currentBatter,
           batting_order_index: gs.battingOrderIndex,
-          runs_this_half:      gs.runsThisHalf      || 0,
-          opp_runs_this_half:  gs.oppRunsThisHalf   || 0,
-          updated_at:          new Date().toISOString(),
+          runs_this_half:             gs.runsThisHalf             || 0,
+          opp_runs_this_half:         gs.oppRunsThisHalf          || 0,
+          opp_balls:                  gs.oppBalls                 || 0,
+          opp_strikes:                gs.oppStrikes               || 0,
+          opp_current_batter_number:  gs.oppCurrentBatterNumber   || 1,
+          opp_current_batter_pitches: gs.oppCurrentBatterPitches  || 0,
+          opp_inning_pitches:         gs.oppInningPitches         || 0,
+          opp_game_pitches:           gs.oppGamePitches           || 0,
+          updated_at:                 persistedAt,
         },
         { onConflict: 'game_id,team_id' }
       )
@@ -351,12 +364,14 @@ export function useLiveScoring(params) {
           setScorer(false);
           setScorerLockExpired(true);
           stopHeartbeat();
+        } else if (!r.error) {
+          lastAppliedAtRef.current = persistedAt;
         }
       });
   }
 
   function audit(action, payload) {
-    if (!supabase || !gameId || !teamId) return;
+    if (isPractice || !supabase || !gameId || !teamId) return;
     supabase
       .from('scoring_audit_log')
       .insert({
@@ -379,6 +394,7 @@ export function useLiveScoring(params) {
   }
 
   function startHeartbeat() {
+    if (isPractice) return;
     stopHeartbeat();
     hbRef.current = setInterval(function() {
       if (!isScorerRef.current || !supabase) return;
@@ -406,7 +422,7 @@ export function useLiveScoring(params) {
 
   // ── Mount: hydrate + subscribe to realtime ────────────────────────────────
   useEffect(function() {
-    if (!isEnabled || !supabase || !gameId || !teamId) return;
+    if (!isEnabled || isPractice || !supabase || !gameId || !teamId) return;
 
     // Hydrate existing game state
     supabase
@@ -429,8 +445,14 @@ export function useLiveScoring(params) {
             runners:           row.runners             || [],
             currentBatter:     row.current_batter      || null,
             battingOrderIndex: row.batting_order_index || 0,
-            runsThisHalf:      row.runs_this_half      || 0,
-            oppRunsThisHalf:   row.opp_runs_this_half  || 0,
+            runsThisHalf:            row.runs_this_half             || 0,
+            oppRunsThisHalf:         row.opp_runs_this_half         || 0,
+            oppBalls:                row.opp_balls                  || 0,
+            oppStrikes:              row.opp_strikes                || 0,
+            oppCurrentBatterNumber:  row.opp_current_batter_number  || 1,
+            oppCurrentBatterPitches: row.opp_current_batter_pitches || 0,
+            oppInningPitches:        row.opp_inning_pitches         || 0,
+            oppGamePitches:          row.opp_game_pitches           || 0,
           });
         }
       });
@@ -464,6 +486,12 @@ export function useLiveScoring(params) {
           var row = payload.new;
           // Verify team (filter supports only one column in v2)
           if (String(row.team_id) !== String(teamId)) return;
+          // Reject stale and echo events: skip if this row is not newer than
+          // the last timestamp we persisted (guards against out-of-order Realtime delivery)
+          if (row.updated_at && lastAppliedAtRef.current &&
+              row.updated_at <= lastAppliedAtRef.current) {
+            return;
+          }
           setGs({
             inning:            row.inning             || 1,
             halfInning:        row.half_inning         || 'top',
@@ -475,9 +503,18 @@ export function useLiveScoring(params) {
             runners:           row.runners             || [],
             currentBatter:     row.current_batter      || null,
             battingOrderIndex: row.batting_order_index || 0,
-            runsThisHalf:      row.runs_this_half      || 0,
-            oppRunsThisHalf:   row.opp_runs_this_half  || 0,
+            runsThisHalf:            row.runs_this_half             || 0,
+            oppRunsThisHalf:         row.opp_runs_this_half         || 0,
+            oppBalls:                row.opp_balls                  || 0,
+            oppStrikes:              row.opp_strikes                || 0,
+            oppCurrentBatterNumber:  row.opp_current_batter_number  || 1,
+            oppCurrentBatterPitches: row.opp_current_batter_pitches || 0,
+            oppInningPitches:        row.opp_inning_pitches         || 0,
+            oppGamePitches:          row.opp_game_pitches           || 0,
           });
+          if (row.updated_at) {
+            lastAppliedAtRef.current = row.updated_at;
+          }
         }
       )
       .on(
@@ -506,11 +543,19 @@ export function useLiveScoring(params) {
       }
       stopHeartbeat();
     };
-  }, [isEnabled, gameId, teamId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isEnabled, isPractice, gameId, teamId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Public functions ───────────────────────────────────────────────────────
 
   function claimScorerLock() {
+    // Practice mode — local-only claim, no network effects.
+    if (isPractice) {
+      setScorer(true);
+      setScorerName(_effectiveUserName);
+      setScorerLockExpired(false);
+      setClaimError('');
+      return;
+    }
     if (!isEnabled || !supabase || !gameId || !teamId) return;
     setClaimError('');
     supabase
@@ -542,7 +587,8 @@ export function useLiveScoring(params) {
         setClaimError('');
         startHeartbeat();
         audit('lock_claimed');
-        // Seed live_game_state if no row exists yet
+        // Seed live_game_state if no row exists yet.
+        var seedAt = new Date().toISOString();
         supabase
           .from('live_game_state')
           .upsert({
@@ -557,16 +603,32 @@ export function useLiveScoring(params) {
             opponent_score:      gameState.opponentScore      || 0,
             batting_order_index: gameState.battingOrderIndex  || 0,
             runners:             gameState.runners             || [],
-            runs_this_half:      gameState.runsThisHalf        || 0,
-            opp_runs_this_half:  gameState.oppRunsThisHalf     || 0,
+            runs_this_half:             gameState.runsThisHalf        || 0,
+            opp_runs_this_half:         gameState.oppRunsThisHalf     || 0,
+            opp_balls:                  0,
+            opp_strikes:                0,
+            opp_current_batter_number:  1,
+            opp_current_batter_pitches: 0,
+            opp_inning_pitches:         0,
+            opp_game_pitches:           0,
+            updated_at:                 seedAt,
           }, { onConflict: 'game_id,team_id' })
           .then(function(r) {
-            if (r.error) console.warn('[scoring] seed live_game_state failed:', r.error);
+            if (r.error) {
+              console.warn('[scoring] seed live_game_state failed:', r.error);
+            } else {
+              lastAppliedAtRef.current = seedAt;
+            }
           });
       });
   }
 
   function releaseScorerLock() {
+    // Practice mode — local-only release.
+    if (isPractice) {
+      setScorer(false);
+      return;
+    }
     if (!isEnabled || !supabase || !gameId || !teamId) return;
     stopHeartbeat();
     setScorer(false);
@@ -800,6 +862,46 @@ export function useLiveScoring(params) {
       newScore++;
     } else if (result === 'out') {
       newRunners = newRunners.filter(function(r) { return r.runnerId !== runnerId; });
+      var newOuts = gs.outs + 1;
+
+      if (newOuts >= 3) {
+        var nextHalf2 = gs.halfInning === 'top' ? 'bottom' : 'top';
+        var nextInning2 = gs.halfInning === 'bottom' ? gs.inning + 1 : gs.inning;
+        var flipGs = Object.assign({}, gs, {
+          inning:          nextInning2,
+          halfInning:      nextHalf2,
+          outs:            0,
+          balls:           0,
+          strikes:         0,
+          oppBalls:        0,
+          oppStrikes:      0,
+          runners:         [],
+          currentBatter:   null,
+          runsThisHalf:    0,
+          oppRunsThisHalf: 0,
+        });
+        setPendingAdvancement(null);
+        setGs(flipGs);
+        persist(flipGs);
+        audit('runner_out', { runnerId: runnerId });
+        audit('half_inning_ended', {
+          inning:     gs.inning,
+          halfInning: gs.halfInning,
+          cause:      'runner_out',
+        });
+        return;
+      }
+
+      var outGs = Object.assign({}, gs, {
+        runners: newRunners,
+        myScore: newScore,
+        outs:    newOuts,
+      });
+      setPendingAdvancement(null);
+      setGs(outGs);
+      persist(outGs);
+      audit('runner_advanced', { runnerId: runnerId, toBase: null, result: 'out' });
+      return;
     } else if (toBase) {
       var foundInList = false;
       newRunners = newRunners.map(function(r) {
@@ -873,6 +975,8 @@ export function useLiveScoring(params) {
       oppRunsThisHalf: 0,
       oppBalls: 0,
       oppStrikes: 0,
+      oppCurrentBatterPitches: 0,
+      oppInningPitches:        0,
     });
     setGs(newGs);
     persist(newGs);
@@ -936,7 +1040,12 @@ export function useLiveScoring(params) {
       if (newOppBalls >= 4) {
         newOppBalls = 0; newOppStrikes = 0;
       }
-      newGs = Object.assign({}, gs, { oppBalls: newOppBalls, oppStrikes: newOppStrikes });
+      newGs = Object.assign({}, gs, {
+        oppBalls: newOppBalls, oppStrikes: newOppStrikes,
+        oppCurrentBatterPitches: (gs.oppCurrentBatterPitches || 0) + 1,
+        oppInningPitches:        (gs.oppInningPitches || 0) + 1,
+        oppGamePitches:          (gs.oppGamePitches || 0) + 1,
+      });
     } else if (type === 'strike') {
       newOppStrikes = newOppStrikes + 1;
       if (newOppStrikes >= 3) {
@@ -951,18 +1060,36 @@ export function useLiveScoring(params) {
             oppBalls: 0, oppStrikes: 0,
             runners: [], currentBatter: null,
             runsThisHalf: 0, oppRunsThisHalf: 0,
+            oppCurrentBatterPitches: 0,
+            oppInningPitches:        0,
+            oppGamePitches:          (gs.oppGamePitches || 0) + 1,
           });
           setGs(newGs); persist(newGs);
           audit('half_inning_ended_opp', { inning: gs.inning });
           return;
         }
-        newGs = Object.assign({}, gs, { outs: newOuts, oppBalls: 0, oppStrikes: 0 });
+        newGs = Object.assign({}, gs, {
+          outs: newOuts, oppBalls: 0, oppStrikes: 0,
+          oppCurrentBatterPitches: (gs.oppCurrentBatterPitches || 0) + 1,
+          oppInningPitches:        (gs.oppInningPitches || 0) + 1,
+          oppGamePitches:          (gs.oppGamePitches || 0) + 1,
+        });
       } else {
-        newGs = Object.assign({}, gs, { oppBalls: newOppBalls, oppStrikes: newOppStrikes });
+        newGs = Object.assign({}, gs, {
+          oppBalls: newOppBalls, oppStrikes: newOppStrikes,
+          oppCurrentBatterPitches: (gs.oppCurrentBatterPitches || 0) + 1,
+          oppInningPitches:        (gs.oppInningPitches || 0) + 1,
+          oppGamePitches:          (gs.oppGamePitches || 0) + 1,
+        });
       }
     } else if (type === 'foul') {
       if (newOppStrikes < 2) { newOppStrikes = newOppStrikes + 1; }
-      newGs = Object.assign({}, gs, { oppBalls: newOppBalls, oppStrikes: newOppStrikes });
+      newGs = Object.assign({}, gs, {
+        oppBalls: newOppBalls, oppStrikes: newOppStrikes,
+        oppCurrentBatterPitches: (gs.oppCurrentBatterPitches || 0) + 1,
+        oppInningPitches:        (gs.oppInningPitches || 0) + 1,
+        oppGamePitches:          (gs.oppGamePitches || 0) + 1,
+      });
     } else if (type === 'out') {
       newOuts = newOuts + 1;
       newOppBalls = 0; newOppStrikes = 0;
@@ -975,14 +1102,30 @@ export function useLiveScoring(params) {
           oppBalls: 0, oppStrikes: 0,
           runners: [], currentBatter: null,
           runsThisHalf: 0, oppRunsThisHalf: 0,
+          oppCurrentBatterPitches: 0,
+          oppInningPitches:        0,
+          oppGamePitches:          (gs.oppGamePitches || 0) + 1,
         });
         setGs(newGs); persist(newGs);
         audit('half_inning_ended_opp', { inning: gs.inning });
         return;
       }
-      newGs = Object.assign({}, gs, { outs: newOuts, oppBalls: 0, oppStrikes: 0 });
+      newGs = Object.assign({}, gs, {
+        outs: newOuts, oppBalls: 0, oppStrikes: 0,
+        oppCurrentBatterPitches: 0,
+        oppCurrentBatterNumber:  ((gs.oppCurrentBatterNumber || 1) % 11) + 1,
+        oppInningPitches:        (gs.oppInningPitches || 0) + 1,
+        oppGamePitches:          (gs.oppGamePitches || 0) + 1,
+      });
     } else {
-      newGs = Object.assign({}, gs, { oppBalls: 0, oppStrikes: 0 });
+      // contact/hit — batter advances
+      newGs = Object.assign({}, gs, {
+        oppBalls: 0, oppStrikes: 0,
+        oppCurrentBatterPitches: 0,
+        oppCurrentBatterNumber:  ((gs.oppCurrentBatterNumber || 1) % 11) + 1,
+        oppInningPitches:        (gs.oppInningPitches || 0) + 1,
+        oppGamePitches:          (gs.oppGamePitches || 0) + 1,
+      });
     }
     setGs(newGs); persist(newGs);
     audit('opp_pitch', { type: type });
@@ -1024,6 +1167,10 @@ export function useLiveScoring(params) {
       oppRunsThisHalf:          0,
       oppBalls:                 0,
       oppStrikes:               0,
+      oppCurrentBatterNumber:   1,
+      oppCurrentBatterPitches:  0,
+      oppInningPitches:         0,
+      oppGamePitches:           0,
       claimError:               '',
     };
   }
@@ -1052,9 +1199,13 @@ export function useLiveScoring(params) {
     undoHalfInning:           undoHalfInning,
     endGame:                  endGame,
     recordOppPitch:           recordOppPitch,
-    oppRunsThisHalf:          gameState.oppRunsThisHalf || 0,
-    oppBalls:                 gameState.oppBalls        || 0,
-    oppStrikes:               gameState.oppStrikes      || 0,
+    oppRunsThisHalf:          gameState.oppRunsThisHalf          || 0,
+    oppBalls:                 gameState.oppBalls                 || 0,
+    oppStrikes:               gameState.oppStrikes               || 0,
+    oppCurrentBatterNumber:   gameState.oppCurrentBatterNumber   || 1,
+    oppCurrentBatterPitches:  gameState.oppCurrentBatterPitches  || 0,
+    oppInningPitches:         gameState.oppInningPitches         || 0,
+    oppGamePitches:           gameState.oppGamePitches           || 0,
     myTeamHalf:               myTeamHalf,
     rules:                    rules,
     pitchUIConfig:            pitchUIConfig,
