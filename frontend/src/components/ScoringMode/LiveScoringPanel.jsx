@@ -5,6 +5,7 @@ import GameModeGearMenu from './GameModeGearMenu';
 import FinishGameModal from './FinishGameModal';
 import RunnerConflictModal from './RunnerConflictModal';
 import { track } from '../../utils/analytics';
+import { truncateTeamName } from '../../utils/formatters';
 
 var FF = "Georgia,'Times New Roman',serif";
 
@@ -223,6 +224,7 @@ export default function LiveScoringPanel(props) {
   };
   var halfArrow    = gs.halfInning === 'top' ? '▲' : '▼';
   var opponentName = selectedGame ? selectedGame.opponent : 'Opponent';
+  var teamLabel    = truncateTeamName(opponentName);
   var teamShort    = activeTeam   ? activeTeam.name.split(' ')[0] : 'Us';
 
   var currentBatter = currentAtBat ? currentAtBat.batter : null;
@@ -263,7 +265,7 @@ export default function LiveScoringPanel(props) {
           }}>←</button>
           <div style={{ flex: 1, textAlign: 'center' }}>
             <div style={{ fontSize: '12px', color: '#64748b' }}>
-              {isPractice ? 'Practice Mode' : 'vs ' + opponentName}
+              {isPractice ? 'Practice Mode' : 'vs ' + teamLabel}
             </div>
             <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
               <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>
@@ -376,7 +378,7 @@ export default function LiveScoringPanel(props) {
             </div>
             <span style={{ color: '#374151' }}>:</span>
             <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
-              <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>OPP</span>
+              <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>{teamLabel.toUpperCase()}</span>
               <span style={{fontSize:'20px',fontWeight:'800',color:'#fff'}}>{gs.opponentScore}</span>
             </div>
           </div>
@@ -649,7 +651,7 @@ export default function LiveScoringPanel(props) {
           </div>
           <span style={{ color: '#374151', fontSize: '14px' }}>:</span>
           <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
-            <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>OPP</span>
+            <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>{teamLabel.toUpperCase()}</span>
             <span style={{fontSize:'20px',fontWeight:'800',color:'#fff'}}>{gs.opponentScore}</span>
           </div>
           <button
@@ -850,10 +852,10 @@ export default function LiveScoringPanel(props) {
             borderRadius: '8px', padding: '10px 14px',
           }}>
             <div style={{ fontSize: '10px', color: '#f5c842', fontWeight: 'bold', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '2px' }}>
-              Opponent Batter
+              BATTING
             </div>
             <div style={{ fontSize: '17px', fontWeight: 'bold' }}>
-              Player #{((gs.oppCurrentBatterNumber || 1) - 1) % 11 + 1}
+              {teamLabel} #{((gs.oppCurrentBatterNumber || 1) - 1) % 11 + 1}
             </div>
             <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
               Pitches: {gs.opp_current_batter_pitches || 0} of 5
@@ -1151,7 +1153,7 @@ export default function LiveScoringPanel(props) {
                 border:'none', background:'#7f1d1d',
                 color:'#fca5a5', fontSize:'14px', fontWeight:700,
                 cursor:'pointer'
-              }}>+1 OPP Run</button>
+              }}>+1 {teamLabel} Run</button>
             <button
               onClick={function(){ scoring.addManualRun('us'); }}
               style={{
@@ -1169,7 +1171,7 @@ export default function LiveScoringPanel(props) {
               display:'flex', gap:'8px', justifyContent:'center',
               alignItems:'center',
             }}>
-              <span>⚠️ {scoring.oppRunsThisHalf} opp runs this half</span>
+              <span>⚠️ {scoring.oppRunsThisHalf} {teamLabel} runs this half</span>
               <button
                 onClick={function(){
                   scoring.endHalfInning();
@@ -1254,7 +1256,7 @@ export default function LiveScoringPanel(props) {
                   border:'none', fontSize:'15px', fontWeight:700,
                   cursor:'pointer', fontFamily:FF,
                 }}
-              >Opp</button>
+              >{teamLabel}</button>
             </div>
             <button
               onClick={function() { setShowManualRunPrompt(false); }}

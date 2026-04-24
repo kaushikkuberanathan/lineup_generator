@@ -1,9 +1,17 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: April 2026 (v2.3.3)
+> Last updated: April 2026 (v2.3.4)
 > MVP launched: March 24, 2026
 
 ---
+
+## v2.3.4 — 2026-04-24
+- Feature: Opponent team name shown throughout scoring — BATTING header + team
+  name primary (e.g. "Bananas #1"), "+1 {Team} Run" button, {TEAM} scoreboard
+  label replace generic "Opponent"/"OPP"/"Player #N".
+- Util: truncateTeamName(name, max=12) — 10+".." truncation when >12; "Team"
+  fallback on null/empty/non-string.
+- Tests: opponentNameLabel.test.js (6 tests).
 
 ## v2.3.3 — 2026-04-23
 - Fix: Runner placement broken since v2.3.2 — roster entries have no .id field; player ID now falls back to name throughout scoring state, resolving runner placement, run scoring, and diamond display
@@ -937,6 +945,78 @@
 - Handler: hit/walk advancement in recordOppPitch() (single/double/triple/HR/walk branches).
 - Bundle with 10U+ walk/strikeout rule logic for opponent half.
 - Surfaced from v2.3.2 dev-test coach feedback (KK, April 2026).
+
+### Story 27 (P2) — Home team name replaces "Us" / "US" throughout scoring
+Status: Open
+Discovered: 2026-04-24, during v2.3.4 opponent-name sweep local smoke
+Target: v2.4.x
+Symptom: After v2.3.4, opponent-side labels use the real team name (e.g.,
+  "Bananas #1", "+1 Bananas Run", "BANANAS" scoreboard column). Our-side
+  labels still show generic "US" / "Us" / "+1 US". Asymmetry reads as
+  incomplete.
+Impact: Coach and dugout parents using the scoring view. Minor but
+  visible inconsistency; undermines the v2.3.4 clarity improvement.
+Root cause: known — v2.3.4 scope was limited to opponent labels. The
+  companion "Us → home team name" work was not included.
+Proposed fixes:
+  - Option A: Sweep LiveScoringPanel.jsx for all "US"/"Us" display strings,
+    replace with truncateTeamName(activeTeam.name). Matches v2.3.4 pattern,
+    reuses existing formatter. Known spots: scoreboard "US" label (STATE
+    1/2/3), "+1 US" button, manual run prompt "Us" button, FinishGameModal
+    my-side label. ~5-7 substitutions.
+  - Option B: Consolidate on a single home-side label variable
+    (homeLabel = truncateTeamName(activeTeam.name)) and replace the existing
+    teamShort helper (first-word-only, pre-dates truncateTeamName). More
+    churn (~3 additional touch points) but eliminates dual-format risk
+    long-term.
+Recommendation: Option B. teamShort was a pre-v2.3.4 hack; consolidating
+  on one formatter now keeps the scoring view consistent and means we never
+  revisit this tension. Extra churn is minimal and proportionate.
+Notes: Could bundle with Story 28 (game context header) since both edit
+  LiveScoringPanel.jsx — ~half the PR overhead.
+
+### Story 28 (P2) — Game context header at top of scoring screen
+Status: Open
+Discovered: 2026-04-24, coach observation during v2.3.4 scoring review
+Target: v2.4.x
+Symptom: The scoring view shows team header, batter card, and scoring
+  controls, but no explicit "which game am I scoring" context. A coach
+  returning to the screen after a break, or a second scorer joining, has
+  no quick anchor to confirm the right game is loaded.
+Impact: Scorer (coach + assistant coaches), especially on multi-game
+  weekends. Medium — risk of scoring the wrong game is low because game
+  selection is required at entry, but context loss is real and painful
+  when it happens.
+Root cause: known — game context was de-prioritized in the initial
+  scoring UI to maximize batter/pitch area.
+Proposed fixes:
+  - Option A: Compact single-line header at the very top of
+    LiveScoringPanel (above the team header strip). Format:
+    "Game N · Mud Hens vs Bananas 🏠" for home,
+    "Game N · Mud Hens @ Bananas" for away.
+    12-14px font, muted color so it doesn't compete with active scoring
+    zone. ~32px vertical added.
+  - Option B: Fold into the existing team header strip — single
+    consolidated top row reads "Mud Hens (8U) · Game 4 vs Bananas 🏠 ·
+    Offline Ready". Saves ~32px vertical but crowds the existing strip.
+  - Option C: Show game context only in STATE 1 (entry / no scorer)
+    where space is available; hide in STATE 2 to protect active scoring
+    density.
+Recommendation: Option A. Clean, non-disruptive, gives coach a durable
+  "where am I" anchor without crowding the batter card. Defer Option B
+  to a later layout consolidation — preferably once a future half-aware
+  canvas story lands and the shared game-context concern can be solved
+  across Scoring + Game Mode in one pass.
+Open questions to resolve during implementation:
+  - Game numbering basis: 1-indexed position in full season schedule
+    (stable across the season), or index among unfinalized games (shifts
+    as games are played)? Recommend stable — "Game 4 vs Bananas" stays
+    meaningful all season.
+  - Home/away visual: "vs" / "@" connector + 🏠 emoji (recommend), or a
+    "HOME" / "AWAY" pill, or Option C's color-coded background.
+  - Should the header also appear in Game Mode for parity? Likely yes —
+    covered when a future half-aware canvas story consolidates the two
+    views.
 
 ---
 
