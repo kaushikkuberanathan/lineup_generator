@@ -21,8 +21,7 @@ export default defineConfig({
     },
     setupFiles: ['./src/tests/setup.js'],
     include: ['src/**/*.test.js'],
-    // useLiveScore.contract.test.js causes worker OOM on Windows (bug #3 in CLAUDE.md)
-    exclude: ['**/node_modules/**', 'src/tests/useLiveScore.contract.test.js'],
+    exclude: ['**/node_modules/**'],
   },
   plugins: [
     react(),

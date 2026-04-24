@@ -12,6 +12,65 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Youth baseball/softball lineup generator — a mobile-first PWA for coaches to manage rosters, auto-assign field positions, track batting order, and manage schedules. Stack: React 18 + Vite (frontend on Vercel), Express (backend on Render), Supabase (Postgres + JSONB).
 
+## Branch Strategy
+
+- **main** — Production. Auto-deploys to Vercel (frontend) and Render
+  (backend) on push. Gate phrase required before any push:
+  "confirmed — push to main". Pre-push hook runs the full test
+  suite; any failure blocks the push.
+
+- **develop** — Integration branch. Kept in sync with main periodically.
+  Feature branches cut from here merge back via PR when ready.
+
+- **scoring-updates** — Long-lived exploratory branch for scoring
+  subsystem work (scorer-lock hardening, Gap B/C/D/E/F/G test
+  coverage, scoring feature experiments). Does NOT merge to
+  develop or main until specific deliverables are explicitly
+  approved for integration. Squash-merge when a coherent piece
+  of work is ready.
+
+- **feature/\<topic\>** — Short-lived, cut from develop, back to develop
+  via PR.
+
+- **fix/\<topic\>** — Short-lived bugfix, same lifecycle as feature/.
+
+- **hotfix/\<topic\>** — Production hotfix, cut from main, merged to both
+  main and develop.
+
+Default base for new work: develop.
+Exception: all scoring subsystem work goes on scoring-updates.
+
+### Infrastructure notes
+
+- Vitest v4 syntax: fork options live at top level
+  (`pool: 'forks'`, `forks: { singleFork: true }`), NOT inside
+  `poolOptions` (which was deprecated in v4).
+- Windows test environment requires singleFork for scoring tests
+  to avoid OOM cascade. If OOM returns, check test weight before
+  excluding.
+- Pre-push hook must NOT use `|| npm test` retry — it hides real
+  failures. Hook is currently: `cd frontend && npm test` only.
+
+### Known issue: Windows Vitest cold-start OOM
+
+On Windows with <4GB free RAM, Vitest's single-fork pool may
+cascade-OOM 10+ files during cold-start. Symptoms: "FetchStream
+closed early" or worker timeouts across many files.
+
+Workaround:
+1. Close other memory-hungry apps
+2. Run `cd frontend && npm test` directly once to warm module cache
+3. Re-attempt git push
+
+This is environmental. Do NOT add retry logic to the pre-push hook
+(`|| npm test`). Retries hide real failures because the second attempt
+runs a subset of files after OOM, producing false-positive exit 0.
+
+If this becomes frequent, investigate splitting the suite: a
+lightweight pre-push subset + full GitHub Actions CI run on push.
+
+---
+
 ## Commands
 
 ### Frontend (`frontend/`)
@@ -179,6 +238,12 @@ Three guards in place:
 - **Backend**: Render auto-deploys from `main` (root dir: `backend/`)
 - **DEV**: `dev.dugoutlineup.com` → `lineup-generator-backend-dev.onrender.com`
 
+**v2.3.2 deploy note — REQUIRED before frontend goes live:**
+DEV Supabase migration applied 2026-04-21 (`supabase/migrations/20260421_add_opponent_pitch_tracking.sql`).
+Prod migration is pending. MUST be applied in the Supabase SQL editor on the prod project during the v2.3.2
+deploy window — before the Vercel frontend deploy completes. If the frontend deploys first, it will attempt to
+write to the six new `opp_*` columns which do not yet exist in prod and will fail silently on every opponent pitch.
+
 ### Pre-deploy Checklist (all required)
 
 **STEP 0 — Ship Gate (answer before anything else):**
@@ -204,7 +269,7 @@ If any answer is "no": stop. Document the gap in DOC_TEST_DEBT.md, then decide w
 7. Stage **specific files by path** — never `git add -A` (risks picking up unrelated untracked files)
 8. [x] loginLimiter: 15min window, max 5 — applied to POST /magic-link ✓
 9. [ ] Confirm `RESEND_DOMAIN_VERIFIED=true` in Render env vars (only after domain verified)
-10. [ ] Run `npm test` — confirm 354 passed / 1 skipped / 0 failed
+10. [ ] Run `npm test` — confirm 395 passed / 1 skipped / 0 failed
 
 ### VERSION_HISTORY Schema (dual-layer — both required)
 ```js
@@ -264,7 +329,7 @@ Target: resolved within 10 min of detection.
 Tests: `frontend/src/tests/` (frontend), `backend/scripts/tests/` (backend integration).
 
 - **Framework**: Vitest (frontend), custom test-runner.js (backend)
-- **Total**: ~355 tests. CI target: 354 passed / 1 skipped / 0 failed (frontend)
+- **Total**: ~396 tests. CI target: 395 passed / 1 skipped / 0 failed (frontend)
 - Known failing: **engine.v2 test 2.3** (7-player roster produces no warning — fix in separate session)
 
 ### Frontend test files
@@ -339,6 +404,23 @@ If you over-stage, use `git restore --staged <file>` to unstage before committin
 
 ---
 
+## Roster identity — player name is the primary key
+
+The pre-auth app uses player name as the stable identifier throughout: roster entries, batting order arrays, fielding grid, lineup engine, scoring state. Roster entries do NOT have an `.id` field.
+
+Code that touches scoring or batter state must use:
+```js
+player ? (player.id || name) : name
+```
+
+NOT just `player.id` — that produces `undefined` for every roster entry and silently breaks downstream logic (advanceRunners, runner display, scoring math).
+
+This convention is a pre-auth design choice. Once auth ships and players have stable user IDs, this pattern should be revisited and the entire app refactored to use proper IDs.
+
+Story 1 (April 22, 2026) was the regression that surfaced this — every batter flowed through scoring with `id: undefined`, and runner placement, scoring, and diamond display were all silently broken in v2.3.2 prod. The one-line fallback resolved all four symptoms. Trust this convention.
+
+---
+
 ## Key Conventions
 - Display **first names only** throughout the UI — coaches use this on the sideline
 - `touchDrag` state is a mutable ref (not `useState`) — avoids stale closure issues in touch handlers
@@ -404,6 +486,7 @@ filename timestamps where 1-day drift is irrelevant.
 | 4 | **Phase 4C deferred** | Auth gate activation (`requireAuth` middleware on existing routes), RLS enforcement on scoring tables (`auth.uid()` policies), HMAC-signed approve/deny links in admin emails — all parked until Phase 4 auth cutover. |
 | 5 | **MERGE_FIELDS test-file copies** | Three test files (`migration.test.js:267`, `scheduleIntegrity.test.js:113`, `scheduleIntegrity.test.js:181`) each define their own local MERGE_FIELDS copy. These are kept in sync manually. Future: extract to a shared test fixture and import. |
 | 6 | **pending_sync not re-attempted** | `finalizeSchedule.js` writes `pending_sync:<teamId>:finalize` to localStorage on Supabase failure but no retry mechanism exists yet. Coach must re-open the app while online for the next write to succeed. |
+| 7 | **Windows Vitest cold-start OOM cascade** | Environmental — not a code issue. See Branch Strategy → Infrastructure notes → "Known issue: Windows Vitest cold-start OOM" for workaround. |
 
 ---
 
@@ -529,8 +612,10 @@ This audit takes 5 minutes and saves hours of confusion at the next session star
 ---
 
 ## Current Version
-**v2.3.1** — April 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/App.jsx`.
+**v2.3.3** — April 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/App.jsx`.
 
+- v2.3.3 (2026-04-23): Fix/Feature — live scoring accuracy + visual consistency: runner placement fix (player ID fallback, id||name); Realtime race guard (lastAppliedAtRef + updated_at <=); practice mode local-only path (no Supabase writes); opponent batter card unified with home-team card; runner pills absolute-positioned on diamond; layout dead space + 2B collision resolved; 354→395 tests (realtimeRaceGuard, practiceModeIsolation, liveStateMerge).
+- v2.3.2 (2026-04-21): Feature — opposing pitcher pitch counts: per-batter/inning/game; opponent batter number (#1–#11); Foul button (amber); 6 new live_game_state columns (opp_balls, opp_strikes, opp_current_batter_number, opp_current_batter_pitches, opp_inning_pitches, opp_game_pitches); EXPECTED_LGS_KEYS 15→21; +6 contract tests; suite: 377/1/0. DEV migration applied 2026-04-21 — prod migration MUST be applied during v2.3.2 deploy window (see deployment note below).
 - v2.3.1 (2026-04-21): Fix/Feature — runner conflict prompt (RunnerConflictModal: Score / Hold / Cancel play); detectRunnerConflict + applyConflictResolution pure helpers; preResolveSnapshot for CANCEL_PLAY; Exit Scoring in gear menu; header ← pauses; matchMedia jsdom stub (vite.config.js setupFiles); 10 tests (runnerAdvancement.test.js).
 - v2.3.0 (2026-04-21): Feature — Game Mode action clarity + schedule finalization: X (pause), gear menu (Hand off / Finish Game), FinishGameModal, endGame() writes final score to team_data.schedule, undoHalfInning + 10s toast, MERGE_FIELDS extended with 4 finalization fields, 13 new tests.
 - v2.2.45 (2026-04-21): Feature — live scoring opponent half: B/S/O pip tracker, 5-pitch buttons, 3-out auto-flip, mercy banner; myTeamHalf toggle at entry; scoring prop wired to LiveScoringPanel; all debug logs removed.
