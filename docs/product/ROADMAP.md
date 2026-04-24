@@ -979,6 +979,12 @@
 - backend/scripts/tests/ contains test-runner.js, suite-rate-limits.js, suite-validation.js.
 - Cleanup decision needed: keep (document purpose) or delete (reduce confusion with CI_SAFE suite).
 
+### Story 26 (P2): Backend RATE-01a test flakiness — stateful against prod rate limiter
+- **Surfaced:** April 24, 2026 (PR #17 CI run — admin-bypassed because only CLAUDE.md changed).
+- `backend/scripts/tests/suite-rate-limits.js` RATE-01a expects `403 NOT_AUTHORIZED` but gets `429 TOO_MANY_ATTEMPTS` when prior CI runs have burned through the prod backend's rate-limit cap.
+- Fix candidates: (A) throwaway random email per test run, (B) mock rate limiter at test boundary, (C) use dev backend instead of prod. Recommend (A).
+- Blocks nothing directly but masks real regressions if NOT_AUTHORIZED behavior ever breaks.
+
 ---
 
 ### Automated Score Reporting (County Integration)
