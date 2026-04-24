@@ -141,9 +141,32 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.3.4";
+var APP_VERSION = "2.4.0";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.4.0',
+    date: '2026-04-24',
+    headline: 'Scoring: game context header, your team name, cleaner scoreboard',
+    userChanges: [
+      'New header at the top of scoring: "GAME 4 · MUD HENS VS BANANAS 🏠" — always shows which game you are scoring.',
+      'Home games show "vs" with a 🏠 indicator. Away games show "@" with no indicator.',
+      'Scoreboard moved to its own row — larger, easier to read at a glance.',
+      'Each team now has its own +1 button right next to its score — no more "which team?" popup.',
+      'Your team name now appears throughout scoring in place of "Us" / "US".',
+      'Long team names truncate to 12 characters with ".." (e.g., "Timber Rat..").',
+    ],
+    techNote: 'LiveScoringPanel top section restructured into 3 dedicated rows: GameContextHeader, ScoreboardRow, BSO+inning strip. Manual run prompt modal removed.',
+    internalChanges: [
+      'New: frontend/src/utils/formatters.js#deriveGameHeader — pure function returns { gameNumber, myTeamLabel, opponentLabel, connector, homeIndicator }; null fallback for practice / missing data.',
+      'New: GameContextHeader component in LiveScoringPanel.jsx — renders above existing team strip in STATE 1/2/3; hidden when gameHeader is null.',
+      'New: ScoreboardRow component in LiveScoringPanel.jsx — dedicated score row with per-team +1 buttons directly calling addManualRun("us") / addManualRun("opp"); +1 buttons hidden when isScorer is false.',
+      'LiveScoringPanel.jsx: myTeamLabel = truncateTeamName(activeTeam.name); replaces "US" scoreboard label and all home-team "Us"/"US" display strings.',
+      'REMOVED: showManualRunPrompt state + modal + global +1 button. Replaced by per-team +1 buttons in ScoreboardRow.',
+      'teamShort consolidated onto truncateTeamName; FinishGameModal prop contract unchanged.',
+      'Tests: gameHeader.test.js (10) — suite 401 → 411.',
+    ],
+  },
   {
     version: '2.3.4',
     date: '2026-04-24',

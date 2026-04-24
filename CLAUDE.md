@@ -662,8 +662,9 @@ This audit takes 5 minutes and saves hours of confusion at the next session star
 ---
 
 ## Current Version
-**v2.3.4** — April 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/App.jsx`.
+**v2.4.0** — April 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/App.jsx`.
 
+- v2.4.0 (2026-04-24): Feature — game context header, per-team +1 buttons on dedicated scoreboard row, home team name replaces "Us"/"US" (Stories 27 + 28 bundled + layout restructure). Manual run modal removed. deriveGameHeader util; GameContextHeader + ScoreboardRow components.
 - v2.3.4 (2026-04-24): UX — opponent team name replaces "Opponent"/"OPP"/"Player #N" throughout scoring view; truncateTeamName util (12 cap, 10+"..").
 - v2.3.3 (2026-04-23): Fix/Feature — live scoring accuracy + visual consistency: runner placement fix (player ID fallback, id||name); Realtime race guard (lastAppliedAtRef + updated_at <=); practice mode local-only path (no Supabase writes); opponent batter card unified with home-team card; runner pills absolute-positioned on diamond; layout dead space + 2B collision resolved; 354→395 tests (realtimeRaceGuard, practiceModeIsolation, liveStateMerge).
 - v2.3.2 (2026-04-21): Feature — opposing pitcher pitch counts: per-batter/inning/game; opponent batter number (#1–#11); Foul button (amber); 6 new live_game_state columns (opp_balls, opp_strikes, opp_current_batter_number, opp_current_batter_pitches, opp_inning_pitches, opp_game_pitches); EXPECTED_LGS_KEYS 15→21; +6 contract tests; suite: 377/1/0. DEV migration applied 2026-04-21 — prod migration MUST be applied during v2.3.2 deploy window (see deployment note below).
