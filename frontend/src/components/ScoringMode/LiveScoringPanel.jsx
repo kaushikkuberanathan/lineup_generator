@@ -6,6 +6,7 @@ import FinishGameModal from './FinishGameModal';
 import RunnerConflictModal from './RunnerConflictModal';
 import { track } from '../../utils/analytics';
 import { truncateTeamName, deriveGameHeader } from '../../utils/formatters';
+import { isFlagEnabled } from '../../config/featureFlags';
 
 var FF = "Georgia,'Times New Roman',serif";
 
@@ -33,7 +34,7 @@ var PITCH_BUTTONS = [
   { type: PITCH.CONTACT,         label: '⚾ Contact', color: '#16a34a', flex: 1.5 },
 ];
 
-var OUTCOME_ROWS = [
+export var OUTCOME_ROWS = [
   [
     { type: OUTCOME.OUT_AT_FIRST,  label: 'Out @ 1st', color: '#dc2626' },
     { type: OUTCOME.FLYOUT,        label: 'Flyout',    color: '#dc2626' },
@@ -46,6 +47,26 @@ var OUTCOME_ROWS = [
   ],
   [
     { type: OUTCOME.HOME_RUN, label: 'Home Run', color: '#f5c842' },
+  ],
+  [
+    { type: OUTCOME.WALK,          label: 'Walk',            color: '#7c3aed' },
+    { type: OUTCOME.HBP,           label: 'HBP',             color: '#7c3aed' },
+    { type: OUTCOME.ERROR_REACHED, label: 'Error (reached)', color: '#d97706' },
+  ],
+];
+
+export var OUTCOME_ROWS_V2 = [
+  [
+    { type: OUTCOME.OUT_AT_FIRST, label: 'Out @ 1st', color: '#dc2626' },
+    { type: OUTCOME.FLYOUT,       label: 'Flyout',    color: '#dc2626' },
+  ],
+  [
+    { type: OUTCOME.SINGLE, label: 'Single', color: '#16a34a' },
+    { type: OUTCOME.DOUBLE, label: 'Double', color: '#16a34a' },
+    { type: OUTCOME.TRIPLE, label: 'Triple', color: '#16a34a' },
+  ],
+  [
+    { type: OUTCOME.HOME_RUN, label: 'Home Run', color: '#f5c842', fullWidth: true },
   ],
   [
     { type: OUTCOME.WALK,          label: 'Walk',            color: '#7c3aed' },
@@ -619,6 +640,7 @@ export default function LiveScoringPanel(props) {
   ) : null;
 
   // Outcome sheet (slides up after Contact pitch)
+  var sheetV2Enabled = isFlagEnabled('SCORING_SHEET_V2');
   var outcomeSheet = showOutcomes ? (
     <div style={{
       position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)',
@@ -637,16 +659,61 @@ export default function LiveScoringPanel(props) {
             cursor: 'pointer', fontFamily: FF, padding: '4px 10px',
           }}>⟲ Undo Contact</button>
         </div>
-        {OUTCOME_ROWS.map(function(row, ri) {
+
+        {sheetV2Enabled ? (
+          <div>
+            <div style={{
+              fontSize: '11px', fontWeight: 'bold', color: '#f5c842',
+              letterSpacing: '0.1em', textTransform: 'uppercase',
+              marginBottom: '6px', marginTop: '4px',
+            }}>
+              Pitch Outcome
+            </div>
+            <button
+              onClick={function() {
+                recordPitch('foul');
+              }}
+              aria-label="Foul ball — at-bat continues"
+              style={{
+                width: '100%', padding: '14px',
+                background: 'rgba(245,200,66,0.10)',
+                border: '1px solid rgba(245,200,66,0.4)',
+                borderRadius: '8px', color: '#f5c842',
+                fontWeight: 'bold', fontSize: '14px',
+                cursor: 'pointer', fontFamily: FF,
+                marginBottom: '4px',
+              }}
+            >
+              F  Foul
+            </button>
+            <div style={{
+              fontSize: '11px', color: '#64748b', textAlign: 'center',
+              fontStyle: 'italic', marginBottom: '14px',
+            }}>
+              At-bat continues
+            </div>
+            <div style={{
+              fontSize: '11px', fontWeight: 'bold', color: '#f5c842',
+              letterSpacing: '0.1em', textTransform: 'uppercase',
+              marginBottom: '6px',
+            }}>
+              At-Bat Outcome
+            </div>
+          </div>
+        ) : null}
+
+        {(sheetV2Enabled ? OUTCOME_ROWS_V2 : OUTCOME_ROWS).map(function(row, ri) {
           return (
             <div key={ri} style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
               {row.map(function(btn) {
+                var isFullWidth = btn.fullWidth === true;
                 return (
                   <button
                     key={btn.type}
                     onClick={function() { resolveAtBat(btn.type); }}
                     style={{
-                      flex: 1, padding: '12px 4px',
+                      flex: isFullWidth ? '1 0 100%' : 1,
+                      padding: '12px 4px',
                       background: 'rgba(255,255,255,0.05)',
                       border: '1px solid ' + btn.color + '55',
                       borderRadius: '8px', color: btn.color,
@@ -657,6 +724,9 @@ export default function LiveScoringPanel(props) {
                   </button>
                 );
               })}
+              {sheetV2Enabled && row.length === 2 && !row.some(function(b) { return b.fullWidth; }) ? (
+                <div style={{ flex: 1 }} aria-hidden="true" />
+              ) : null}
             </div>
           );
         })}
@@ -1235,24 +1305,26 @@ export default function LiveScoringPanel(props) {
               );
             })}
           </div>
-          {/* Run tracking */}
-          <div style={{display:'flex',gap:'8px'}}>
-            <button
-              onClick={function(){ scoring.addManualRun('opp'); }}
-              style={{
-                flex:2, padding:'10px', borderRadius:'8px',
-                border:'none', background:'#7f1d1d',
-                color:'#fca5a5', fontSize:'14px', fontWeight:700,
-                cursor:'pointer'
-              }}>+1 {teamLabel} Run</button>
-            <button
-              onClick={function(){ scoring.addManualRun('us'); }}
-              style={{
-                flex:1, padding:'10px', borderRadius:'8px',
-                border:'1px solid #374151', background:'transparent',
-                color:'#555', fontSize:'12px', cursor:'pointer'
-              }}>+1 {myTeamLabel}</button>
-          </div>
+          {/* Run tracking — hidden when SCORING_SHEET_V2 enabled (use scoreboard +1 chips instead) */}
+          {!sheetV2Enabled && (
+            <div style={{display:'flex',gap:'8px'}}>
+              <button
+                onClick={function(){ scoring.addManualRun('opp'); }}
+                style={{
+                  flex:2, padding:'10px', borderRadius:'8px',
+                  border:'none', background:'#7f1d1d',
+                  color:'#fca5a5', fontSize:'14px', fontWeight:700,
+                  cursor:'pointer'
+                }}>+1 {teamLabel} Run</button>
+              <button
+                onClick={function(){ scoring.addManualRun('us'); }}
+                style={{
+                  flex:1, padding:'10px', borderRadius:'8px',
+                  border:'1px solid #374151', background:'transparent',
+                  color:'#555', fontSize:'12px', cursor:'pointer'
+                }}>+1 {myTeamLabel}</button>
+            </div>
+          )}
           {/* Opponent mercy banner */}
           {(scoring.oppRunsThisHalf || 0) >= 5 && (
             <div style={{
