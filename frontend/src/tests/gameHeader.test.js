@@ -36,9 +36,9 @@ describe('deriveGameHeader', function() {
     expect(h.homeIndicator).toBe('');
   });
 
-  it('6: truncates long opponent names to 12 chars with ".."', function() {
+  it('6: abbreviates long opponent names using first initial + remaining words', function() {
     var h = deriveGameHeader({ activeTeam: team, selectedGame: team.schedule[2] });
-    expect(h.opponentLabel).toBe('Timber Rat..');
+    expect(h.opponentLabel).toBe('T. Rattlers');
   });
 
   it('7: undefined home defaults to "vs" connector without indicator', function() {
@@ -59,10 +59,10 @@ describe('deriveGameHeader', function() {
     expect(h.opponentLabel).toBe('Ghost');
   });
 
-  it('9: truncates long my-team name to 12 chars with ".."', function() {
+  it('9: abbreviates long my-team name using first initial + remaining words', function() {
     var longTeam = Object.assign({}, team, { name: 'Timber Rattlers' });
     var h = deriveGameHeader({ activeTeam: longTeam, selectedGame: longTeam.schedule[0] });
-    expect(h.myTeamLabel).toBe('Timber Rat..');
+    expect(h.myTeamLabel).toBe('T. Rattlers');
   });
 
   it('10: schedule with unsorted dates still produces stable game number', function() {

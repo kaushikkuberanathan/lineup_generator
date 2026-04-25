@@ -141,9 +141,31 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.5.0";
+var APP_VERSION = "2.5.1";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.5.1',
+    date: '2026-04-24',
+    headline: 'Game Mode: scoreboard upgraded, home/away chip, cleaner team name abbreviations',
+    userChanges: [
+      'Scoreboard team names are now larger and easier to read at a glance during games.',
+      'Home and away games are now clearly labeled — away games show an amber "@ Away" chip, home games show a "Home" chip next to the game number.',
+      'Long team names abbreviate cleanly by word boundary (e.g. "Timber Rattlers" → "T. Rattlers") instead of cutting off mid-word.',
+    ],
+    techNote: 'Bug fixes and performance improvements',
+    internalChanges: [
+      'truncateTeamName() in formatters.js: word-boundary-aware abbreviation (e.g. "Timber Rattlers" → "T. Rattlers"); default cap 12; unicode "…" ellipsis on overflow; single-word fallback unchanged.',
+      'GameContextHeader component removed; game number relocated as inline Game N chip in all 3 header strips (STATE 1, STATE 3, main scorer); conditional on gameHeader.gameNumber != null — hidden in practice/orphan games.',
+      'New: HomeAwayChip component in LiveScoringPanel.jsx — amber chip (@ Away, #f5c842) for away games, neutral chip (Home, #94a3b8) for home games; guard: selectedGame && typeof selectedGame.home === "boolean"; shown at all 3 render sites immediately after Game N chip.',
+      'STATE 1 splash subtitle: home/away connector now derived from selectedGame.home (was hardcoded "vs"); subtitle fontSize 12px → 14px, color #64748b → #cbd5e1 (contrast 12.21:1).',
+      'deriveGameHeader(): connector and homeIndicator fields marked deprecated in JSDoc — no longer consumed by production code after GameContextHeader removal; kept for test coverage.',
+      'ScoreboardRow.labelStyle: fontSize 10px → 16px, color #aaa → #e2e8f0, fontWeight bold → 700, letterSpacing 0.5px → 0.08em.',
+      'ScoreboardRow container: borderTop 2px solid rgba(245,200,66,0.4) added; minWidth:0 + overflow:hidden backstop.',
+      'ScoreboardRow props: teamLabelSB/myTeamLabelSB derived with cap=10 to prevent label overflow on 375px viewports; all other render sites keep cap=12.',
+      'Tests: opponentNameLabel.test.js and gameHeader.test.js updated; 2 net new tests; suite 419 → 421 / 1 / 0.',
+    ],
+  },
   {
     version: '2.5.0',
     date: '2026-04-24',

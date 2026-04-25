@@ -1,9 +1,20 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: April 2026 (v2.5.0)
+> Last updated: April 2026 (v2.5.1)
 > MVP launched: March 24, 2026
 
 ---
+
+## v2.5.1 — 2026-04-24
+- ACCESSIBILITY_V1 follow-up + UX consolidation + v2.4.0 home/away preservation.
+- `truncateTeamName()` upgraded: word-boundary-aware abbreviation ("Timber Rattlers" → "T. Rattlers"), unicode ellipsis for single-word overflow, default cap 12.
+- `GameContextHeader` component removed; game number relocated as inline `Game N` chip in all 3 scoring header strips (conditional — hidden in practice/orphan games).
+- New: `HomeAwayChip` component — amber `@ Away` chip for away games, neutral `Home` chip for home games; rendered adjacent to `Game N` chip at all 3 render sites. Guard: `typeof selectedGame.home === 'boolean'`.
+- STATE 1 splash subtitle: home/away connector restored (was hardcoded `vs`; now `@ teamName` for away games); contrast: 12px `#64748b` → 14px `#cbd5e1` (12.21:1 ratio, AA+).
+- `ScoreboardRow` typography: team labels 10px → 16px, `#aaa` → `#e2e8f0`, weight 700; gold `borderTop` accent added.
+- `ScoreboardRow` overflow guardrail: cap=10 for label props, `minWidth:0` + `overflow:hidden` on container.
+- `deriveGameHeader()`: `connector` and `homeIndicator` fields marked deprecated in JSDoc — no longer consumed in production after `GameContextHeader` removal.
+- Tests: `opponentNameLabel.test.js` and `gameHeader.test.js` updated to new word-boundary expectations; 2 net new tests; suite 419 → 421.
 
 ## v2.5.0 — 2026-04-24
 - Feature: Scoring outcome sheet semantic cleanup — gated behind SCORING_SHEET_V2 flag (default true).
