@@ -131,6 +131,18 @@
 | **Age** | 7 days |
 | **Target** | v2.4.0 |
 
+### 🟡 P2 — D-S30: isFlagEnabled has no DB-read path (Story 30)
+
+| | |
+|---|---|
+| **Area** | Feature flag system |
+| **Description** | `isFlagEnabled(flagName)` is synchronous: reads `FEATURE_FLAGS[flagName]` from JS bundle default + `localStorage` override only. Does NOT query the Supabase `feature_flags` table at runtime. Flipping a DB row has no effect on active users without a code redeploy. Discovered April 2026 when SCORING_SHEET_V2 DB row was flipped expecting a runtime change. |
+| **Risk if unfixed** | Any ops flag-flip procedure documented as "flip the DB row" is silently ineffective. Risk of mis-communication and delayed rollbacks. |
+| **Proposed fix** | Extend `flagBootstrap.js` to fetch Supabase `feature_flags` table at app boot and merge into a runtime registry. `isFlagEnabled()` stays synchronous at call sites — async fetch happens once in the bootstrap path. Recommend (B) from Story 30 write-up in ROADMAP.md. |
+| **Opened** | 2026-04-24 |
+| **Age** | 0 days |
+| **Target** | v2.6.x |
+
 ---
 
 ## Open — Doc Gaps
@@ -262,16 +274,16 @@
 |---|---|---|---|---|
 | 🔴 P0 | 2 | 0 | 0 | **2** |
 | 🟠 P1 | 3 | 2 | 1 | **6** |
-| 🟡 P2 | 4 | 4 | 3 | **11** |
-| **Total** | **9** | **6** | **4** | **19** |
+| 🟡 P2 | 5 | 4 | 3 | **12** |
+| **Total** | **10** | **6** | **4** | **20** |
 
 **Age distribution:**
-- 0–30 days: 19
+- 0–30 days: 20
 - 31–60 days: 0
 - 60+ days: 0
 
 **Ship blockers:**
-- Next minor (v2.4.0) — must resolve all P0 before bump
+- Next minor (v2.6.0) — must resolve all P0 before bump
 
 ---
 
@@ -281,3 +293,4 @@
 - **v2.0 — April 2026 (v2.2.36)** — Ledger replaced with enhanced format: emoji priority markers (🔴/🟠/🟡), table-based item layout, Test/Doc/Process gap categories, Debt Summary Dashboard.
 - **v2.1 — April 2026 (v2.2.38)** — Area field added to all items (FEATURE_MAP.md row alignment for v2.2.39 adjacency system). Stale Target fields slid to v2.2.40. 4 SOLUTION_DESIGN.md doc gaps resolved and moved to Resolved section. Dashboard corrected: 17 open (P0:2, P1:4, P2:11).
 - **v2.2 — April 2026 (v2.3.3 hygiene patch)** — Age fields updated (0→7 days). All stale v2.2.40/v2.2.39 target fields corrected: P0/P1 items → v2.3.4, P2 items → v2.4.0. Ship blocker updated to v2.4.0. Age distribution corrected to 19 (was 17 — prior undercounting). Scorer-Lock item (D001) annotated: v2.3.3 test additions add live scoring coverage but do not resolve the scorer-lock null check specifically. FEATURE_MAP Missing Rows item updated to note v2.3.3 added 3 new rows; remaining gap is Analytics, PWA, Governance exact-match.
+- **v2.3 — April 2026 (v2.5.0 release)** — Added D-S30 (P2 test gap): isFlagEnabled has no DB-read path. Dashboard updated: P2 test gaps 4→5, total 19→20. Ship blocker updated to v2.6.0.

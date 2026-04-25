@@ -141,9 +141,29 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.4.0";
+var APP_VERSION = "2.5.0";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.5.0',
+    date: '2026-04-24',
+    headline: 'Scoring: cleaner outcome sheet — no strikeout button, Foul in pitch section',
+    userChanges: [
+      'Outcome sheet reorganized: "PITCH OUTCOME" section now has a single Foul button — tapping it mid-at-bat no longer requires the outcome sheet at all.',
+      'Strikeout button removed from the outcome sheet — use the Strike (S) pitch button instead; 3 strikes ends the at-bat automatically.',
+      'Out @ 1st and Flyout now share the top row of the at-bat outcomes, easier to tap.',
+    ],
+    techNote: 'Bug fixes and performance improvements',
+    internalChanges: [
+      'New: OUTCOME_ROWS_V2 export in LiveScoringPanel.jsx — Strikeout removed, Out@1st + Flyout in 2-button top row, Home Run full-width, Foul in PITCH OUTCOME header section.',
+      'New: SCORING_SHEET_V2 feature flag in featureFlags.js (default true) — gates OUTCOME_ROWS_V2, section headers, and opp-half +1 button visibility.',
+      'LiveScoringPanel.jsx: isFlagEnabled("SCORING_SHEET_V2") read at render; flag-off path preserves original OUTCOME_ROWS unchanged.',
+      'Opp-half +1 Run buttons hidden when SCORING_SHEET_V2 enabled (replaced by ScoreboardRow +1 chips from v2.4.0).',
+      'New: frontend/src/tests/scoringSheetV2.test.js (8 tests) — OUTCOME_ROWS_V2 shape: no strikeout, Out@1st+Flyout present, Home Run full-width, top row 2 buttons; foul invariant placeholders.',
+      'Story 30 logged: isFlagEnabled() is synchronous (JS bundle + localStorage only) — DB feature_flags row flip has no runtime effect without a redeploy. Refactor deferred.',
+      'Suite: 411 → 419 / 1 / 0.',
+    ],
+  },
   {
     version: '2.4.0',
     date: '2026-04-24',
