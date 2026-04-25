@@ -2,7 +2,7 @@
 
 > Authoritative mapping of every shipped feature to its documentation and test coverage.
 > Update this file whenever a feature ships, changes behavior, or gains new tests.
-> Owner: KK | Last updated: April 2026 (v2.3.3)
+> Owner: KK | Last updated: April 2026 (v2.5.0)
 
 ---
 
@@ -17,7 +17,7 @@
 
 ---
 
-## Feature Registry (22 features)
+## Feature Registry (23 features)
 
 | # | Feature | Status | Primary Doc | Doc Status | Test File(s) | Test Status | Debt |
 |---|---------|--------|-------------|------------|--------------|-------------|------|
@@ -34,8 +34,9 @@
 | 11 | **Live scoring (scorer lock, inning entry, game finalization)** | Pilot | `ROADMAP.md` § v2.2.29–v2.3.3; `PERSONAS.md` § Scorekeeper; `MASTER_DEV_REFERENCE.md` § Game Object Shape | ✅ Current | `finalizeSchedule.test.js`, `undoHalfInning.test.js`, `newGameTemplate.test.js`, `practiceModeIsolation.test.js`, `realtimeRaceGuard.test.js`, `runnerPlacement.test.js` | ⚠ Partial | D001 |
 | 12 | **Practice Mode** | Pilot | `CLAUDE.md` § Live Scoring Architecture; `ROADMAP.md` § v2.3.3 | ✅ Current | `practiceModeIsolation.test.js` | ✅ Yes | — |
 | 13 | **Runner Placement on Diamond** | Pilot | `CLAUDE.md` § Roster identity; `ROADMAP.md` § v2.3.3 | ✅ Current | `runnerPlacement.test.js` | ✅ Yes | — |
-| 14 | **Opponent Half Tracking** | Pilot | `CLAUDE.md` § Live Scoring Architecture; `ROADMAP.md` § v2.3.2–v2.3.3 | ✅ Current | `liveStateMerge.test.js` (opp integration) | ⚠ Partial | — |
-| 15 | **Feature flag system** | MVP | `CLAUDE.md` § Feature Flags; `SOLUTION_DESIGN.md` § Feature Flag System | ✅ Current | `flagBootstrap.test.js`, `accessibility.v1.test.js` | ⚠ Partial | — |
+| 14 | **Opponent Half Tracking** | Pilot | `CLAUDE.md` § Live Scoring Architecture; `ROADMAP.md` § v2.3.2–v2.5.0 | ✅ Current | `liveStateMerge.test.js` (opp integration) | ⚠ Partial | — |
+| 15 | **Feature flag system** | MVP | `CLAUDE.md` § Feature Flags; `SOLUTION_DESIGN.md` § Feature Flag System | ✅ Current | `flagBootstrap.test.js`, `accessibility.v1.test.js`, `scoringSheetV2.test.js` | ⚠ Partial | D-S30 |
+| 23 | **Scoring outcome sheet (SCORING_SHEET_V2)** | Pilot | `ROADMAP.md` § v2.5.0; `CLAUDE.md` § Current Version | ✅ Current | `scoringSheetV2.test.js` | ⚠ Partial | D-S30 |
 | 16 | **Auth system (magic link + Google OAuth)** | Phase 2 | `SOLUTION_DESIGN.md` § Auth Architecture; `CLAUDE.md` § Auth Strategy | ✅ Current | None | ❌ None | D003 |
 | 17 | **Admin UI (admin.html)** | MVP | `SOLUTION_DESIGN.md` § Admin UI; `PERSONAS.md` § Administrator | ✅ Current | None | ❌ None | D007 |
 | 18 | **Roster backup/restore** | MVP | `SOLUTION_DESIGN.md` § Data Protection | ✅ Current | None | ❌ None | D013 |
@@ -50,12 +51,12 @@
 
 | Status | Count |
 |--------|-------|
-| ✅ Doc Current | 18 / 22 |
-| ⚠ Doc Stale | 4 / 22 |
-| ❌ Doc Missing | 0 / 22 |
-| ✅ Tests Exist | 4 / 22 |
-| ⚠ Tests Partial | 7 / 22 |
-| ❌ No Tests | 11 / 22 |
+| ✅ Doc Current | 19 / 23 |
+| ⚠ Doc Stale | 4 / 23 |
+| ❌ Doc Missing | 0 / 23 |
+| ✅ Tests Exist | 4 / 23 |
+| ⚠ Tests Partial | 8 / 23 |
+| ❌ No Tests | 11 / 23 |
 
 > The test gap is large but expected — the engine is the highest-risk surface and is well-covered. Features with no test are all UI-layer or integration paths with no engine logic.
 
