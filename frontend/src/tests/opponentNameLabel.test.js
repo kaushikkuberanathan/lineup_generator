@@ -14,18 +14,30 @@ describe('truncateTeamName', function() {
     expect(truncateTeamName('')).toBe('Team');
   });
 
+  it('returns "Team" for non-string input', function() {
+    expect(truncateTeamName(42)).toBe('Team');
+  });
+
   it('passes through names of 12 chars or fewer unchanged', function() {
-    expect(truncateTeamName('Bananas')).toBe('Bananas');         // 7 chars
+    expect(truncateTeamName('Bananas')).toBe('Bananas');           // 7 chars
     expect(truncateTeamName('Timber Rattl')).toBe('Timber Rattl'); // exactly 12
+    expect(truncateTeamName('Firefighters')).toBe('Firefighters'); // exactly 12
+    expect(truncateTeamName('Blue Wahoos')).toBe('Blue Wahoos');   // 11 chars
   });
 
-  it('truncates names longer than 12 chars to 10 chars + ".."', function() {
-    expect(truncateTeamName('Timber Rattlers')).toBe('Timber Rat..');  // 15 chars
-    expect(truncateTeamName('Blue Wahoos FC')).toBe('Blue Wahoo..');   // 14 chars
+  it('abbreviates multi-word names over limit using first initial', function() {
+    expect(truncateTeamName('Timber Rattlers')).toBe('T. Rattlers');  // 15 chars → 11
+    expect(truncateTeamName('Blue Wahoos FC')).toBe('B. Wahoos FC');  // 14 chars → 12
+    expect(truncateTeamName('Party Animals')).toBe('P. Animals');     // 13 chars → 10
+    expect(truncateTeamName('Demo All-Stars')).toBe('D. All-Stars');  // 14 chars → 12
   });
 
-  it('respects a custom max parameter and handles non-string input defensively', function() {
-    expect(truncateTeamName('Bananas12', 8)).toBe('Banana..');  // 9 chars, cap=8 → sub(0,6)+'..'
-    expect(truncateTeamName(42)).toBe('Team');                   // non-string → fallback
+  it('truncates candidate with ellipsis when even the abbreviated form is too long', function() {
+    // "S. Springs Academy" = 18 chars, cap=12 → slice(0,11)+'…' = "S. Springs …"
+    expect(truncateTeamName('Sharon Springs Academy')).toBe('S. Springs …');
+  });
+
+  it('truncates single-word names over limit with ellipsis', function() {
+    expect(truncateTeamName('Bananas12', 8)).toBe('Bananas…'); // 9 chars, cap=8 → slice(0,7)+'…'
   });
 });

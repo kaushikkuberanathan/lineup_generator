@@ -29,11 +29,17 @@ export function fmtStat(val) {
   return isNaN(n) ? '0' : String(n);
 }
 
-export function truncateTeamName(name, max) {
-  var cap = max || 12;
+export function truncateTeamName(name, maxChars) {
+  var cap = maxChars || 12;
   if (!name || typeof name !== 'string' || name.length === 0) return 'Team';
   if (name.length <= cap) return name;
-  return name.substring(0, cap - 2) + '..';
+  var parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) {
+    var candidate = parts[0][0] + '. ' + parts.slice(1).join(' ');
+    if (candidate.length <= cap) return candidate;
+    return candidate.slice(0, cap - 1) + '…';
+  }
+  return name.slice(0, cap - 1) + '…';
 }
 
 /**
@@ -41,6 +47,11 @@ export function truncateTeamName(name, max) {
  * Pure helper for the scoring-view game context header.
  * Returns null when data is insufficient (practice mode, missing team).
  * Returns { gameNumber, myTeamLabel, opponentLabel, connector, homeIndicator }.
+ *
+ * NOTE: `connector` and `homeIndicator` are no longer consumed by LiveScoringPanel
+ * (GameContextHeader was removed in v2.5.1). Home/away rendering now uses
+ * `selectedGame.home` directly via HomeAwayChip. These fields are kept for
+ * backward compatibility and test coverage — remove at next major refactor.
  */
 export function deriveGameHeader(input) {
   var activeTeam   = input && input.activeTeam;

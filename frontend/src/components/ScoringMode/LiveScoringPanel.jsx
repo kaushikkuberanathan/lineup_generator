@@ -169,41 +169,30 @@ function DiamondSVG(props) {
 
 export { DiamondSVG };
 
-function GameContextHeader(props) {
-  var header = props.header;
-  if (!header) return null;
-
-  var parts = [];
-  if (header.gameNumber !== null) {
-    parts.push('GAME ' + header.gameNumber);
+function HomeAwayChip(props) {
+  var isHome = props.isHome;
+  if (isHome === undefined || isHome === null) return null;
+  var base = {
+    display: 'inline-flex', alignItems: 'center',
+    padding: '2px 8px', fontSize: '10px', fontWeight: 700,
+    borderRadius: '10px', letterSpacing: '0.05em',
+    textTransform: 'uppercase', flexShrink: 0,
+  };
+  if (isHome) {
+    return (
+      <div style={Object.assign({}, base, {
+        color: '#94a3b8',
+        background: 'rgba(148, 163, 184, 0.12)',
+        border: '1px solid rgba(148, 163, 184, 0.2)',
+      })}>Home</div>
+    );
   }
-  var matchup = (header.myTeamLabel || 'TEAM').toUpperCase()
-              + ' ' + header.connector.toUpperCase()
-              + ' ' + (header.opponentLabel || 'OPP').toUpperCase();
-  if (header.homeIndicator) {
-    matchup += ' ' + header.homeIndicator;
-  }
-  parts.push(matchup);
-
   return (
-    <div style={{
-      background: '#0a1628',
-      color: '#64748b',
-      fontSize: '11px',
-      fontWeight: 600,
-      letterSpacing: '0.1em',
-      textTransform: 'uppercase',
-      textAlign: 'center',
-      padding: '8px 16px',
-      borderBottom: '1px solid rgba(255,255,255,0.05)',
-      fontFamily: "Georgia,'Times New Roman',serif",
-      flexShrink: 0,
-      overflow: 'hidden',
-      whiteSpace: 'nowrap',
-      textOverflow: 'ellipsis',
-    }}>
-      {parts.join(' · ')}
-    </div>
+    <div style={Object.assign({}, base, {
+      color: '#f5c842',
+      background: 'rgba(245, 200, 66, 0.12)',
+      border: '1px solid rgba(245, 200, 66, 0.3)',
+    })}>@ Away</div>
   );
 }
 
@@ -217,8 +206,8 @@ function ScoreboardRow(props) {
   var onAddOppRun = props.onAddOppRun || function() {};
 
   var labelStyle = {
-    fontSize: '10px', fontWeight: 'bold', color: '#aaa',
-    letterSpacing: '0.5px', textTransform: 'uppercase',
+    fontSize: '16px', fontWeight: 700, color: '#e2e8f0',
+    letterSpacing: '0.08em', textTransform: 'uppercase',
   };
   var scoreStyle = {
     fontSize: '22px', fontWeight: '800', color: '#fff',
@@ -238,8 +227,11 @@ function ScoreboardRow(props) {
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       gap: '24px', padding: '8px 16px',
       background: '#0a1628',
+      borderTop: '2px solid rgba(245, 200, 66, 0.4)',
       borderBottom: '1px solid rgba(255,255,255,0.05)',
       flexShrink: 0,
+      minWidth: 0,
+      overflow: 'hidden',
       fontFamily: "Georgia,'Times New Roman',serif",
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -351,6 +343,9 @@ export default function LiveScoringPanel(props) {
   var teamLabel    = truncateTeamName(opponentName);
   var myTeamLabel  = truncateTeamName(activeTeam ? activeTeam.name : '');
   var teamShort    = myTeamLabel;
+  // Tighter cap for ScoreboardRow only — prevents label overflow on 375px viewports
+  var teamLabelSB   = truncateTeamName(opponentName, 10);
+  var myTeamLabelSB = truncateTeamName(activeTeam ? activeTeam.name : '', 10);
   var gameHeader   = deriveGameHeader({ activeTeam: activeTeam, selectedGame: selectedGame });
 
   var currentBatter = currentAtBat ? currentAtBat.batter : null;
@@ -381,8 +376,7 @@ export default function LiveScoringPanel(props) {
         minHeight: '100vh', background: '#0b1524', color: '#fff',
         fontFamily: FF, display: 'flex', flexDirection: 'column',
       }}>
-        <GameContextHeader header={gameHeader} />
-        <div style={{
+          <div style={{
           display: 'flex', alignItems: 'center', padding: '12px 16px',
           borderBottom: '1px solid rgba(255,255,255,0.08)', flexShrink: 0,
         }}>
@@ -391,8 +385,8 @@ export default function LiveScoringPanel(props) {
             fontSize: '20px', cursor: 'pointer', padding: '4px 8px 4px 0', lineHeight: 1,
           }}>←</button>
           <div style={{ flex: 1, textAlign: 'center' }}>
-            <div style={{ fontSize: '12px', color: '#64748b' }}>
-              {isPractice ? 'Practice Mode' : 'vs ' + teamLabel}
+            <div style={{ fontSize: '14px', color: '#cbd5e1' }}>
+              {isPractice ? 'Practice Mode' : (selectedGame && selectedGame.home === false ? '@ ' : 'vs ') + teamLabel}
             </div>
             <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
               <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>
@@ -403,7 +397,14 @@ export default function LiveScoringPanel(props) {
               </span>
             </div>
           </div>
-          <div style={{ width: '36px' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            {gameHeader && gameHeader.gameNumber != null
+              ? <>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', fontSize: '10px', fontWeight: 600, color: '#94a3b8', background: 'rgba(148, 163, 184, 0.1)', borderRadius: '10px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Game {gameHeader.gameNumber}</div>
+                  <HomeAwayChip isHome={selectedGame && selectedGame.home} />
+                </>
+              : <div style={{ width: '36px' }} />}
+          </div>
         </div>
 
         <div style={{
@@ -463,10 +464,9 @@ export default function LiveScoringPanel(props) {
         minHeight: '100vh', background: '#0b1524', color: '#fff',
         fontFamily: FF, display: 'flex', flexDirection: 'column',
       }}>
-        <GameContextHeader header={gameHeader} />
         <ScoreboardRow
-          myTeamLabel={myTeamLabel}
-          oppLabel={teamLabel}
+          myTeamLabel={myTeamLabelSB}
+          oppLabel={teamLabelSB}
           myScore={gs.myScore}
           oppScore={gs.opponentScore}
           isScorer={false}
@@ -482,6 +482,12 @@ export default function LiveScoringPanel(props) {
             background: 'none', border: 'none', color: '#64748b',
             fontSize: '18px', cursor: 'pointer', padding: 0, lineHeight: 1,
           }}>←</button>
+          {gameHeader && gameHeader.gameNumber != null && (
+            <>
+              <div style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', fontSize: '10px', fontWeight: 600, color: '#94a3b8', background: 'rgba(148, 163, 184, 0.1)', borderRadius: '10px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Game {gameHeader.gameNumber}</div>
+              <HomeAwayChip isHome={selectedGame && selectedGame.home} />
+            </>
+          )}
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
               <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>
@@ -785,10 +791,9 @@ export default function LiveScoringPanel(props) {
       background: '#0b1524', color: '#fff',
       fontFamily: FF, display: 'flex', flexDirection: 'column',
     }}>
-      <GameContextHeader header={gameHeader} />
       <ScoreboardRow
-        myTeamLabel={myTeamLabel}
-        oppLabel={teamLabel}
+        myTeamLabel={myTeamLabelSB}
+        oppLabel={teamLabelSB}
         myScore={gs.myScore}
         oppScore={gs.opponentScore}
         isScorer={isScorer}
@@ -807,6 +812,13 @@ export default function LiveScoringPanel(props) {
           background: 'none', border: 'none', color: '#64748b',
           fontSize: '18px', cursor: 'pointer', padding: 0, lineHeight: 1, flexShrink: 0,
         }}>←</button>
+
+        {gameHeader && gameHeader.gameNumber != null && (
+          <>
+            <div style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', fontSize: '10px', fontWeight: 600, color: '#94a3b8', background: 'rgba(148, 163, 184, 0.1)', borderRadius: '10px', letterSpacing: '0.05em', textTransform: 'uppercase', flexShrink: 0 }}>Game {gameHeader.gameNumber}</div>
+            <HomeAwayChip isHome={selectedGame && selectedGame.home} />
+          </>
+        )}
 
         <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#f5c842', flexShrink: 0 }}>
           {halfArrow} {gs.inning}
