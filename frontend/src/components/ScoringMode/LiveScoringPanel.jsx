@@ -5,7 +5,7 @@ import GameModeGearMenu from './GameModeGearMenu';
 import FinishGameModal from './FinishGameModal';
 import RunnerConflictModal from './RunnerConflictModal';
 import { track } from '../../utils/analytics';
-import { truncateTeamName } from '../../utils/formatters';
+import { truncateTeamName, deriveGameHeader } from '../../utils/formatters';
 
 var FF = "Georgia,'Times New Roman',serif";
 
@@ -148,6 +148,112 @@ function DiamondSVG(props) {
 
 export { DiamondSVG };
 
+function GameContextHeader(props) {
+  var header = props.header;
+  if (!header) return null;
+
+  var parts = [];
+  if (header.gameNumber !== null) {
+    parts.push('GAME ' + header.gameNumber);
+  }
+  var matchup = (header.myTeamLabel || 'TEAM').toUpperCase()
+              + ' ' + header.connector.toUpperCase()
+              + ' ' + (header.opponentLabel || 'OPP').toUpperCase();
+  if (header.homeIndicator) {
+    matchup += ' ' + header.homeIndicator;
+  }
+  parts.push(matchup);
+
+  return (
+    <div style={{
+      background: '#0a1628',
+      color: '#64748b',
+      fontSize: '11px',
+      fontWeight: 600,
+      letterSpacing: '0.1em',
+      textTransform: 'uppercase',
+      textAlign: 'center',
+      padding: '8px 16px',
+      borderBottom: '1px solid rgba(255,255,255,0.05)',
+      fontFamily: "Georgia,'Times New Roman',serif",
+      flexShrink: 0,
+      overflow: 'hidden',
+      whiteSpace: 'nowrap',
+      textOverflow: 'ellipsis',
+    }}>
+      {parts.join(' · ')}
+    </div>
+  );
+}
+
+function ScoreboardRow(props) {
+  var myTeamLabel = props.myTeamLabel || 'TEAM';
+  var oppLabel    = props.oppLabel    || 'OPP';
+  var myScore     = props.myScore  || 0;
+  var oppScore    = props.oppScore || 0;
+  var isScorer    = props.isScorer;
+  var onAddMyRun  = props.onAddMyRun  || function() {};
+  var onAddOppRun = props.onAddOppRun || function() {};
+
+  var labelStyle = {
+    fontSize: '10px', fontWeight: 'bold', color: '#aaa',
+    letterSpacing: '0.5px', textTransform: 'uppercase',
+  };
+  var scoreStyle = {
+    fontSize: '22px', fontWeight: '800', color: '#fff',
+  };
+  var plusStyle = {
+    background: 'rgba(255,255,255,0.08)',
+    border: '1px solid rgba(255,255,255,0.15)',
+    borderRadius: '5px', color: '#94a3b8',
+    fontSize: '10px', cursor: 'pointer',
+    fontFamily: "Georgia,'Times New Roman',serif",
+    padding: '2px 6px', lineHeight: '1.4',
+    marginLeft: '6px',
+  };
+
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      gap: '24px', padding: '8px 16px',
+      background: '#0a1628',
+      borderBottom: '1px solid rgba(255,255,255,0.05)',
+      flexShrink: 0,
+      fontFamily: "Georgia,'Times New Roman',serif",
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1 }}>
+          <span style={labelStyle}>{myTeamLabel.toUpperCase()}</span>
+          <span style={scoreStyle}>{myScore}</span>
+        </div>
+        {isScorer ? (
+          <button
+            onClick={onAddMyRun}
+            title={'Add run for ' + myTeamLabel}
+            style={plusStyle}
+          >+1</button>
+        ) : null}
+      </div>
+
+      <span style={{ color: '#374151', fontSize: '20px' }}>:</span>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1 }}>
+          <span style={labelStyle}>{oppLabel.toUpperCase()}</span>
+          <span style={scoreStyle}>{oppScore}</span>
+        </div>
+        {isScorer ? (
+          <button
+            onClick={onAddOppRun}
+            title={'Add run for ' + oppLabel}
+            style={plusStyle}
+          >+1</button>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function LiveScoringPanel(props) {
@@ -195,9 +301,6 @@ export default function LiveScoringPanel(props) {
   var _vo = useState(false);
   var viewerOnly = _vo[0]; var setViewerOnly = _vo[1];
 
-  var _manualRun = useState(false);
-  var showManualRunPrompt = _manualRun[0]; var setShowManualRunPrompt = _manualRun[1];
-
   var _gear = useState(false);
   var showGearMenu = _gear[0]; var setShowGearMenu = _gear[1];
 
@@ -225,7 +328,9 @@ export default function LiveScoringPanel(props) {
   var halfArrow    = gs.halfInning === 'top' ? '▲' : '▼';
   var opponentName = selectedGame ? selectedGame.opponent : 'Opponent';
   var teamLabel    = truncateTeamName(opponentName);
-  var teamShort    = activeTeam   ? activeTeam.name.split(' ')[0] : 'Us';
+  var myTeamLabel  = truncateTeamName(activeTeam ? activeTeam.name : '');
+  var teamShort    = myTeamLabel;
+  var gameHeader   = deriveGameHeader({ activeTeam: activeTeam, selectedGame: selectedGame });
 
   var currentBatter = currentAtBat ? currentAtBat.batter : null;
   var pitches       = currentAtBat ? currentAtBat.pitches : [];
@@ -255,6 +360,7 @@ export default function LiveScoringPanel(props) {
         minHeight: '100vh', background: '#0b1524', color: '#fff',
         fontFamily: FF, display: 'flex', flexDirection: 'column',
       }}>
+        <GameContextHeader header={gameHeader} />
         <div style={{
           display: 'flex', alignItems: 'center', padding: '12px 16px',
           borderBottom: '1px solid rgba(255,255,255,0.08)', flexShrink: 0,
@@ -336,6 +442,14 @@ export default function LiveScoringPanel(props) {
         minHeight: '100vh', background: '#0b1524', color: '#fff',
         fontFamily: FF, display: 'flex', flexDirection: 'column',
       }}>
+        <GameContextHeader header={gameHeader} />
+        <ScoreboardRow
+          myTeamLabel={myTeamLabel}
+          oppLabel={teamLabel}
+          myScore={gs.myScore}
+          oppScore={gs.opponentScore}
+          isScorer={false}
+        />
         {/* Header strip */}
         <div style={{
           display: 'flex', alignItems: 'center',
@@ -369,17 +483,6 @@ export default function LiveScoringPanel(props) {
             <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
               <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>O</span>
               <div><CountPips n={gs.outs}    max={3} color="#f5c842" /></div>
-            </div>
-          </div>
-          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
-              <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>US</span>
-              <span style={{fontSize:'20px',fontWeight:'800',color:'#fff'}}>{gs.myScore}</span>
-            </div>
-            <span style={{ color: '#374151' }}>:</span>
-            <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
-              <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>{teamLabel.toUpperCase()}</span>
-              <span style={{fontSize:'20px',fontWeight:'800',color:'#fff'}}>{gs.opponentScore}</span>
             </div>
           </div>
         </div>
@@ -612,6 +715,16 @@ export default function LiveScoringPanel(props) {
       background: '#0b1524', color: '#fff',
       fontFamily: FF, display: 'flex', flexDirection: 'column',
     }}>
+      <GameContextHeader header={gameHeader} />
+      <ScoreboardRow
+        myTeamLabel={myTeamLabel}
+        oppLabel={teamLabel}
+        myScore={gs.myScore}
+        oppScore={gs.opponentScore}
+        isScorer={isScorer}
+        onAddMyRun={function() { scoring.addManualRun('us'); }}
+        onAddOppRun={function() { scoring.addManualRun('opp'); }}
+      />
 
       {/* ── Header strip ──────────────────────────────────────────────────────── */}
       <div style={{
@@ -644,29 +757,7 @@ export default function LiveScoringPanel(props) {
           </div>
         </div>
 
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0 }}>
-          <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
-            <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>US</span>
-            <span style={{fontSize:'20px',fontWeight:'800',color:'#fff'}}>{gs.myScore}</span>
-          </div>
-          <span style={{ color: '#374151', fontSize: '14px' }}>:</span>
-          <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
-            <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>{teamLabel.toUpperCase()}</span>
-            <span style={{fontSize:'20px',fontWeight:'800',color:'#fff'}}>{gs.opponentScore}</span>
-          </div>
-          <button
-            title="Add run manually"
-            onClick={function() { setShowManualRunPrompt(true); }}
-            style={{
-              background: 'rgba(255,255,255,0.08)',
-              border: '1px solid rgba(255,255,255,0.15)',
-              borderRadius: '5px', color: '#94a3b8',
-              fontSize: '10px', cursor: 'pointer',
-              fontFamily: FF, padding: '2px 5px', lineHeight: '1.4',
-            }}>+1</button>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
           {isAdminTestMode && (
             <span style={{
               background: '#fef3c7', color: '#92400e',
@@ -1160,7 +1251,7 @@ export default function LiveScoringPanel(props) {
                 flex:1, padding:'10px', borderRadius:'8px',
                 border:'1px solid #374151', background:'transparent',
                 color:'#555', fontSize:'12px', cursor:'pointer'
-              }}>+1 US</button>
+              }}>+1 {myTeamLabel}</button>
           </div>
           {/* Opponent mercy banner */}
           {(scoring.oppRunsThisHalf || 0) >= 5 && (
@@ -1225,49 +1316,6 @@ export default function LiveScoringPanel(props) {
         onCancel={function() { setShowFinishModal(false); }}
       />
 
-      {showManualRunPrompt && (
-        <div style={{
-          position:'fixed', top:0, left:0, right:0, bottom:0,
-          background:'rgba(0,0,0,0.7)', zIndex:200,
-          display:'flex', alignItems:'center', justifyContent:'center',
-        }}>
-          <div style={{
-            background:'#1a2a3a', borderRadius:'12px',
-            padding:'24px', width:'280px', textAlign:'center',
-          }}>
-            <div style={{color:'#fff',fontSize:'16px',fontWeight:700,marginBottom:'16px'}}>
-              Add run for which team?
-            </div>
-            <div style={{display:'flex',gap:'12px',justifyContent:'center'}}>
-              <button
-                onClick={function() { addManualRun('us'); setShowManualRunPrompt(false); }}
-                style={{
-                  flex:1, padding:'12px', borderRadius:'8px',
-                  background:'#1B2A4A', color:'#fff',
-                  border:'none', fontSize:'15px', fontWeight:700,
-                  cursor:'pointer', fontFamily:FF,
-                }}
-              >Us</button>
-              <button
-                onClick={function() { addManualRun('opp'); setShowManualRunPrompt(false); }}
-                style={{
-                  flex:1, padding:'12px', borderRadius:'8px',
-                  background:'#4a1a1a', color:'#fff',
-                  border:'none', fontSize:'15px', fontWeight:700,
-                  cursor:'pointer', fontFamily:FF,
-                }}
-              >{teamLabel}</button>
-            </div>
-            <button
-              onClick={function() { setShowManualRunPrompt(false); }}
-              style={{
-                marginTop:'12px', background:'none', border:'none',
-                color:'#888', fontSize:'13px', cursor:'pointer', fontFamily:FF,
-              }}
-            >Cancel</button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

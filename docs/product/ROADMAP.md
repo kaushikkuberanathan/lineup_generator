@@ -1,9 +1,22 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: April 2026 (v2.3.4)
+> Last updated: April 2026 (v2.4.0)
 > MVP launched: March 24, 2026
 
 ---
+
+## v2.4.0 — 2026-04-24
+- Feature: Game context header at top of scoring (STATE 1/2/3) —
+  "GAME N · {MY TEAM} vs/@ {OPP} 🏠" format; home "vs" + 🏠, away "@";
+  hidden in practice; truncates long names (10+"..").
+- Feature: Scoreboard extracted to dedicated ScoreboardRow with per-team +1 buttons
+  (addManualRun calls directly). Global +1 button and "Add run for which
+  team?" modal removed.
+- Feature: Home team name replaces "Us"/"US" throughout scoring;
+  teamShort consolidated onto truncateTeamName.
+- Util: deriveGameHeader(input) — pure function, null fallback.
+- Tests: gameHeader.test.js (10 tests); suite 401 → 411.
+- Stories 27 and 28 resolved.
 
 ## v2.3.4 — 2026-04-24
 - Feature: Opponent team name shown throughout scoring — BATTING header + team
@@ -947,7 +960,7 @@
 - Surfaced from v2.3.2 dev-test coach feedback (KK, April 2026).
 
 ### Story 27 (P2) — Home team name replaces "Us" / "US" throughout scoring
-Status: Open
+Status: Resolved — v2.4.0 (2026-04-24)
 Discovered: 2026-04-24, during v2.3.4 opponent-name sweep local smoke
 Target: v2.4.x
 Symptom: After v2.3.4, opponent-side labels use the real team name (e.g.,
@@ -976,7 +989,7 @@ Notes: Could bundle with Story 28 (game context header) since both edit
   LiveScoringPanel.jsx — ~half the PR overhead.
 
 ### Story 28 (P2) — Game context header at top of scoring screen
-Status: Open
+Status: Resolved — v2.4.0 (2026-04-24)
 Discovered: 2026-04-24, coach observation during v2.3.4 scoring review
 Target: v2.4.x
 Symptom: The scoring view shows team header, batter card, and scoring

@@ -35,3 +35,37 @@ export function truncateTeamName(name, max) {
   if (name.length <= cap) return name;
   return name.substring(0, cap - 2) + '..';
 }
+
+/**
+ * deriveGameHeader
+ * Pure helper for the scoring-view game context header.
+ * Returns null when data is insufficient (practice mode, missing team).
+ * Returns { gameNumber, myTeamLabel, opponentLabel, connector, homeIndicator }.
+ */
+export function deriveGameHeader(input) {
+  var activeTeam   = input && input.activeTeam;
+  var selectedGame = input && input.selectedGame;
+  if (!activeTeam || !selectedGame) return null;
+
+  var schedule = (activeTeam.schedule || []).slice();
+  schedule.sort(function(a, b) {
+    return (a.date || '') < (b.date || '') ? -1 : 1;
+  });
+
+  var idx = -1;
+  for (var i = 0; i < schedule.length; i++) {
+    if (schedule[i].id === selectedGame.id) { idx = i; break; }
+  }
+  var gameNumber = idx >= 0 ? idx + 1 : null;
+
+  var isHome = selectedGame.home === true;
+  var isAway = selectedGame.home === false;
+
+  return {
+    gameNumber:    gameNumber,
+    myTeamLabel:   truncateTeamName(activeTeam.name),
+    opponentLabel: truncateTeamName(selectedGame.opponent),
+    connector:     isAway ? '@' : 'vs',
+    homeIndicator: isHome ? '🏠' : '',
+  };
+}
