@@ -1,9 +1,45 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: April 2026 (v2.3.4)
+> Last updated: April 2026 (v2.5.1)
 > MVP launched: March 24, 2026
 
 ---
+
+## v2.5.1 — 2026-04-24
+- ACCESSIBILITY_V1 follow-up + UX consolidation + v2.4.0 home/away preservation.
+- `truncateTeamName()` upgraded: word-boundary-aware abbreviation ("Timber Rattlers" → "T. Rattlers"), unicode ellipsis for single-word overflow, default cap 12.
+- `GameContextHeader` component removed; game number relocated as inline `Game N` chip in all 3 scoring header strips (conditional — hidden in practice/orphan games).
+- New: `HomeAwayChip` component — amber `@ Away` chip for away games, neutral `Home` chip for home games; rendered adjacent to `Game N` chip at all 3 render sites. Guard: `typeof selectedGame.home === 'boolean'`.
+- STATE 1 splash subtitle: home/away connector restored (was hardcoded `vs`; now `@ teamName` for away games); contrast: 12px `#64748b` → 14px `#cbd5e1` (12.21:1 ratio, AA+).
+- `ScoreboardRow` typography: team labels 10px → 16px, `#aaa` → `#e2e8f0`, weight 700; gold `borderTop` accent added.
+- `ScoreboardRow` overflow guardrail: cap=10 for label props, `minWidth:0` + `overflow:hidden` on container.
+- `deriveGameHeader()`: `connector` and `homeIndicator` fields marked deprecated in JSDoc — no longer consumed in production after `GameContextHeader` removal.
+- Tests: `opponentNameLabel.test.js` and `gameHeader.test.js` updated to new word-boundary expectations; 2 net new tests; suite 419 → 421.
+
+## v2.5.0 — 2026-04-24
+- Feature: Scoring outcome sheet semantic cleanup — gated behind SCORING_SHEET_V2 flag (default true).
+- Strikeout button removed from at-bat outcomes — 3 Strike pitch buttons handle K automatically.
+- Foul moved to dedicated PITCH OUTCOME section in outcome sheet with its own header.
+- Out @ 1st and Flyout promoted to 2-button top row in AT-BAT OUTCOME section.
+- Home Run preserved as full-width row (unchanged).
+- Opp-half +1 Run buttons hidden (replaced by ScoreboardRow +1 chips from v2.4.0).
+- New: SCORING_SHEET_V2 feature flag in featureFlags.js (default true); flag-off path preserves original OUTCOME_ROWS unchanged for rollback.
+- New: OUTCOME_ROWS_V2 exported from LiveScoringPanel.jsx.
+- Tests: scoringSheetV2.test.js (8 tests); suite 411 → 419.
+- Story 29 resolved. Story 30 logged (isFlagEnabled DB-read refactor, deferred).
+
+## v2.4.0 — 2026-04-24
+- Feature: Game context header at top of scoring (STATE 1/2/3) —
+  "GAME N · {MY TEAM} vs/@ {OPP} 🏠" format; home "vs" + 🏠, away "@";
+  hidden in practice; truncates long names (10+"..").
+- Feature: Scoreboard extracted to dedicated ScoreboardRow with per-team +1 buttons
+  (addManualRun calls directly). Global +1 button and "Add run for which
+  team?" modal removed.
+- Feature: Home team name replaces "Us"/"US" throughout scoring;
+  teamShort consolidated onto truncateTeamName.
+- Util: deriveGameHeader(input) — pure function, null fallback.
+- Tests: gameHeader.test.js (10 tests); suite 401 → 411.
+- Stories 27 and 28 resolved.
 
 ## v2.3.4 — 2026-04-24
 - Feature: Opponent team name shown throughout scoring — BATTING header + team
@@ -947,7 +983,7 @@
 - Surfaced from v2.3.2 dev-test coach feedback (KK, April 2026).
 
 ### Story 27 (P2) — Home team name replaces "Us" / "US" throughout scoring
-Status: Open
+Status: Resolved — v2.4.0 (2026-04-24)
 Discovered: 2026-04-24, during v2.3.4 opponent-name sweep local smoke
 Target: v2.4.x
 Symptom: After v2.3.4, opponent-side labels use the real team name (e.g.,
@@ -975,8 +1011,22 @@ Recommendation: Option B. teamShort was a pre-v2.3.4 hack; consolidating
 Notes: Could bundle with Story 28 (game context header) since both edit
   LiveScoringPanel.jsx — ~half the PR overhead.
 
+### Story 29 (P2) — Scoring sheet semantic cleanup (SCORING_SHEET_V2)
+Status: Resolved — v2.5.0 (2026-04-24)
+Discovered: 2026-04-24, post v2.4.0 scoring review
+Target: v2.5.0
+Symptom: Outcome sheet had Strikeout as a tap target alongside genuine contact
+  outcomes, but 3-strike auto-ending made it redundant. Foul was buried in the
+  contact sheet (wrong conceptual section). Out@1st and Flyout shared a 3-button
+  row with Strikeout, making them harder to tap under pressure.
+Resolution: SCORING_SHEET_V2 feature flag (default true). OUTCOME_ROWS_V2
+  removes Strikeout, splits sheet into PITCH OUTCOME (Foul, full-width) and
+  AT-BAT OUTCOME sections (Out@1st + Flyout in 2-button row, Home Run
+  full-width). Opp-half +1 Run buttons hidden (superseded by ScoreboardRow chips).
+  8 tests in scoringSheetV2.test.js.
+
 ### Story 28 (P2) — Game context header at top of scoring screen
-Status: Open
+Status: Resolved — v2.4.0 (2026-04-24)
 Discovered: 2026-04-24, coach observation during v2.3.4 scoring review
 Target: v2.4.x
 Symptom: The scoring view shows team header, batter card, and scoring
@@ -1058,6 +1108,15 @@ Open questions to resolve during implementation:
 ### Story 24 (P3): Orphan backend test files
 - backend/scripts/tests/ contains test-runner.js, suite-rate-limits.js, suite-validation.js.
 - Cleanup decision needed: keep (document purpose) or delete (reduce confusion with CI_SAFE suite).
+
+### Story 30 (P2): isFlagEnabled — no DB-read path; DB flip has no runtime effect without redeploy
+- **Surfaced:** April 24, 2026 (post-v2.5.0 merge; DB row flipped expecting user-facing change)
+- `isFlagEnabled(flagName)` is synchronous: reads `FEATURE_FLAGS[flagName]` from the JS bundle default + `localStorage.getItem('flag_' + flagName)`. It does NOT query the Supabase `feature_flags` table at runtime.
+- Current rollout method: code deploy (change default in featureFlags.js) or localStorage override per device.
+- Desired: DB-driven flag evaluation so ops can flip flags without a redeploy.
+- Fix candidates: (A) async `isFlagEnabled` that reads Supabase `feature_flags` at app boot and caches; (B) `flagBootstrap.js` extended to fetch DB flags and merge into a runtime registry; (C) add a startup fetch in App.jsx hydration path, similar to team data load.
+- Recommend (B) — keeps the evaluation function synchronous at the call site while moving the async fetch to bootstrap. Matches existing `flagBootstrap.js` pattern.
+- Blocks nothing directly; current localStorage override remains available as workaround.
 
 ### Story 26 (P2): Backend RATE-01a test flakiness — stateful against prod rate limiter
 - **Surfaced:** April 24, 2026 (PR #17 CI run — admin-bypassed because only CLAUDE.md changed).

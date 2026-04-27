@@ -366,20 +366,16 @@ describe('Group 7 — todayDate local vs UTC', function () {
     expect(result).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 
-  test('7.2: localTodayDate and toISOString agree for the same moment (daytime run — confirms format only)', function () {
-    // Both are called for the same instant. During daytime in any timezone they
-    // return the same calendar date. This test validates correct format and length;
-    // the UTC-vs-local divergence only occurs after ~8pm ET / ~midnight UTC.
+  test('7.2: localTodayDate matches YYYY-MM-DD format', function () {
+    // Validates that localTodayDate returns a correctly formatted 10-character
+    // date string. Value equality against toISOString() is intentionally omitted —
+    // that comparison diverges after ~8pm ET / ~midnight UTC and is not the
+    // purpose of this test.
     var now = new Date();
     var local = localTodayDate(now);
-    var utc   = now.toISOString().slice(0, 10);
 
     expect(local).toHaveLength(10);
-    expect(utc).toHaveLength(10);
     expect(local).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-
-    // Both resolve to the same date for daytime test runs.
-    expect(local).toBe(utc);
   });
 
 });

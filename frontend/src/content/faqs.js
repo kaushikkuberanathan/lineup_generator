@@ -204,7 +204,7 @@ export var FAQ_CATEGORIES = [
       },
       {
         q: "How do I track the opposing team's pitches during their at-bat?",
-        a: "When the inning flips to opponent batting, the scoring screen switches automatically — you'll see the Opponent Batter card above the diamond showing Player #1 and a pitch counter. For each pitch, tap Ball, Strike, or Foul. The counter shows 'Pitches: X of 5' — at 5 pitches the batter is automatically out (8U five-and-out rule). If the opponent scores a run, tap +1 OPP. Their batter number cycles from Player #1 through Player #11 and wraps back to #1 — you don't need to know the opposing roster."
+        a: "When the inning flips to opponent batting, the scoring screen switches automatically — you'll see the Opponent Batter card above the diamond showing the opponent team name and batter number, plus a pitch counter. For each pitch, tap Ball, Strike, or Foul. The counter shows 'Pitches: X of 5' — at 5 pitches the batter is automatically out (8U five-and-out rule). If the opponent scores a run, tap the +1 button next to their score in the scoreboard row at the top. Their batter number cycles from #1 through #11 and wraps back to #1 — you don't need to know the opposing roster."
       },
       {
         q: "How does the app know when to switch from our at-bat to the opponent's?",

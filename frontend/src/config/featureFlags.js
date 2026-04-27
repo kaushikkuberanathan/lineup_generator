@@ -22,6 +22,11 @@ export const FEATURE_FLAGS = {
   // Enable locally: localStorage.setItem("flag_ACCESSIBILITY_V1", "true")
   // Disable locally: localStorage.setItem("flag_ACCESSIBILITY_V1", "false")
   ACCESSIBILITY_V1: false,
+
+  // Scoring Sheet V2 — outcome sheet semantic cleanup: Foul moved to PITCH OUTCOME
+  // section, Strikeout removed from contact sheet, opp-half +1 buttons hidden.
+  // Roll back: localStorage.setItem("flag_SCORING_SHEET_V2", "false")
+  SCORING_SHEET_V2: true,
 };
 
 /**

@@ -141,9 +141,74 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.3.4";
+var APP_VERSION = "2.5.1";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.5.1',
+    date: '2026-04-24',
+    headline: 'Game Mode: scoreboard upgraded, home/away chip, cleaner team name abbreviations',
+    userChanges: [
+      'Scoreboard team names are now larger and easier to read at a glance during games.',
+      'Home and away games are now clearly labeled — away games show an amber "@ Away" chip, home games show a "Home" chip next to the game number.',
+      'Long team names abbreviate cleanly by word boundary (e.g. "Timber Rattlers" → "T. Rattlers") instead of cutting off mid-word.',
+    ],
+    techNote: 'Bug fixes and performance improvements',
+    internalChanges: [
+      'truncateTeamName() in formatters.js: word-boundary-aware abbreviation (e.g. "Timber Rattlers" → "T. Rattlers"); default cap 12; unicode "…" ellipsis on overflow; single-word fallback unchanged.',
+      'GameContextHeader component removed; game number relocated as inline Game N chip in all 3 header strips (STATE 1, STATE 3, main scorer); conditional on gameHeader.gameNumber != null — hidden in practice/orphan games.',
+      'New: HomeAwayChip component in LiveScoringPanel.jsx — amber chip (@ Away, #f5c842) for away games, neutral chip (Home, #94a3b8) for home games; guard: selectedGame && typeof selectedGame.home === "boolean"; shown at all 3 render sites immediately after Game N chip.',
+      'STATE 1 splash subtitle: home/away connector now derived from selectedGame.home (was hardcoded "vs"); subtitle fontSize 12px → 14px, color #64748b → #cbd5e1 (contrast 12.21:1).',
+      'deriveGameHeader(): connector and homeIndicator fields marked deprecated in JSDoc — no longer consumed by production code after GameContextHeader removal; kept for test coverage.',
+      'ScoreboardRow.labelStyle: fontSize 10px → 16px, color #aaa → #e2e8f0, fontWeight bold → 700, letterSpacing 0.5px → 0.08em.',
+      'ScoreboardRow container: borderTop 2px solid rgba(245,200,66,0.4) added; minWidth:0 + overflow:hidden backstop.',
+      'ScoreboardRow props: teamLabelSB/myTeamLabelSB derived with cap=10 to prevent label overflow on 375px viewports; all other render sites keep cap=12.',
+      'Tests: opponentNameLabel.test.js and gameHeader.test.js updated; 2 net new tests; suite 419 → 421 / 1 / 0.',
+    ],
+  },
+  {
+    version: '2.5.0',
+    date: '2026-04-24',
+    headline: 'Scoring: cleaner outcome sheet — no strikeout button, Foul in pitch section',
+    userChanges: [
+      'Outcome sheet reorganized: "PITCH OUTCOME" section now has a single Foul button — tapping it mid-at-bat no longer requires the outcome sheet at all.',
+      'Strikeout button removed from the outcome sheet — use the Strike (S) pitch button instead; 3 strikes ends the at-bat automatically.',
+      'Out @ 1st and Flyout now share the top row of the at-bat outcomes, easier to tap.',
+    ],
+    techNote: 'Bug fixes and performance improvements',
+    internalChanges: [
+      'New: OUTCOME_ROWS_V2 export in LiveScoringPanel.jsx — Strikeout removed, Out@1st + Flyout in 2-button top row, Home Run full-width, Foul in PITCH OUTCOME header section.',
+      'New: SCORING_SHEET_V2 feature flag in featureFlags.js (default true) — gates OUTCOME_ROWS_V2, section headers, and opp-half +1 button visibility.',
+      'LiveScoringPanel.jsx: isFlagEnabled("SCORING_SHEET_V2") read at render; flag-off path preserves original OUTCOME_ROWS unchanged.',
+      'Opp-half +1 Run buttons hidden when SCORING_SHEET_V2 enabled (replaced by ScoreboardRow +1 chips from v2.4.0).',
+      'New: frontend/src/tests/scoringSheetV2.test.js (8 tests) — OUTCOME_ROWS_V2 shape: no strikeout, Out@1st+Flyout present, Home Run full-width, top row 2 buttons; foul invariant placeholders.',
+      'Story 30 logged: isFlagEnabled() is synchronous (JS bundle + localStorage only) — DB feature_flags row flip has no runtime effect without a redeploy. Refactor deferred.',
+      'Suite: 411 → 419 / 1 / 0.',
+    ],
+  },
+  {
+    version: '2.4.0',
+    date: '2026-04-24',
+    headline: 'Scoring: game context header, your team name, cleaner scoreboard',
+    userChanges: [
+      'New header at the top of scoring: "GAME 4 · MUD HENS VS BANANAS 🏠" — always shows which game you are scoring.',
+      'Home games show "vs" with a 🏠 indicator. Away games show "@" with no indicator.',
+      'Scoreboard moved to its own row — larger, easier to read at a glance.',
+      'Each team now has its own +1 button right next to its score — no more "which team?" popup.',
+      'Your team name now appears throughout scoring in place of "Us" / "US".',
+      'Long team names truncate to 12 characters with ".." (e.g., "Timber Rat..").',
+    ],
+    techNote: 'LiveScoringPanel top section restructured into 3 dedicated rows: GameContextHeader, ScoreboardRow, BSO+inning strip. Manual run prompt modal removed.',
+    internalChanges: [
+      'New: frontend/src/utils/formatters.js#deriveGameHeader — pure function returns { gameNumber, myTeamLabel, opponentLabel, connector, homeIndicator }; null fallback for practice / missing data.',
+      'New: GameContextHeader component in LiveScoringPanel.jsx — renders above existing team strip in STATE 1/2/3; hidden when gameHeader is null.',
+      'New: ScoreboardRow component in LiveScoringPanel.jsx — dedicated score row with per-team +1 buttons directly calling addManualRun("us") / addManualRun("opp"); +1 buttons hidden when isScorer is false.',
+      'LiveScoringPanel.jsx: myTeamLabel = truncateTeamName(activeTeam.name); replaces "US" scoreboard label and all home-team "Us"/"US" display strings.',
+      'REMOVED: showManualRunPrompt state + modal + global +1 button. Replaced by per-team +1 buttons in ScoreboardRow.',
+      'teamShort consolidated onto truncateTeamName; FinishGameModal prop contract unchanged.',
+      'Tests: gameHeader.test.js (10) — suite 401 → 411.',
+    ],
+  },
   {
     version: '2.3.4',
     date: '2026-04-24',

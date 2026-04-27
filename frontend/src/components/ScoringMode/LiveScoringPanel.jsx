@@ -5,7 +5,8 @@ import GameModeGearMenu from './GameModeGearMenu';
 import FinishGameModal from './FinishGameModal';
 import RunnerConflictModal from './RunnerConflictModal';
 import { track } from '../../utils/analytics';
-import { truncateTeamName } from '../../utils/formatters';
+import { truncateTeamName, deriveGameHeader } from '../../utils/formatters';
+import { isFlagEnabled } from '../../config/featureFlags';
 
 var FF = "Georgia,'Times New Roman',serif";
 
@@ -33,7 +34,7 @@ var PITCH_BUTTONS = [
   { type: PITCH.CONTACT,         label: '⚾ Contact', color: '#16a34a', flex: 1.5 },
 ];
 
-var OUTCOME_ROWS = [
+export var OUTCOME_ROWS = [
   [
     { type: OUTCOME.OUT_AT_FIRST,  label: 'Out @ 1st', color: '#dc2626' },
     { type: OUTCOME.FLYOUT,        label: 'Flyout',    color: '#dc2626' },
@@ -46,6 +47,26 @@ var OUTCOME_ROWS = [
   ],
   [
     { type: OUTCOME.HOME_RUN, label: 'Home Run', color: '#f5c842' },
+  ],
+  [
+    { type: OUTCOME.WALK,          label: 'Walk',            color: '#7c3aed' },
+    { type: OUTCOME.HBP,           label: 'HBP',             color: '#7c3aed' },
+    { type: OUTCOME.ERROR_REACHED, label: 'Error (reached)', color: '#d97706' },
+  ],
+];
+
+export var OUTCOME_ROWS_V2 = [
+  [
+    { type: OUTCOME.OUT_AT_FIRST, label: 'Out @ 1st', color: '#dc2626' },
+    { type: OUTCOME.FLYOUT,       label: 'Flyout',    color: '#dc2626' },
+  ],
+  [
+    { type: OUTCOME.SINGLE, label: 'Single', color: '#16a34a' },
+    { type: OUTCOME.DOUBLE, label: 'Double', color: '#16a34a' },
+    { type: OUTCOME.TRIPLE, label: 'Triple', color: '#16a34a' },
+  ],
+  [
+    { type: OUTCOME.HOME_RUN, label: 'Home Run', color: '#f5c842', fullWidth: true },
   ],
   [
     { type: OUTCOME.WALK,          label: 'Walk',            color: '#7c3aed' },
@@ -148,6 +169,104 @@ function DiamondSVG(props) {
 
 export { DiamondSVG };
 
+function HomeAwayChip(props) {
+  var isHome = props.isHome;
+  if (isHome === undefined || isHome === null) return null;
+  var base = {
+    display: 'inline-flex', alignItems: 'center',
+    padding: '2px 8px', fontSize: '10px', fontWeight: 700,
+    borderRadius: '10px', letterSpacing: '0.05em',
+    textTransform: 'uppercase', flexShrink: 0,
+  };
+  if (isHome) {
+    return (
+      <div style={Object.assign({}, base, {
+        color: '#94a3b8',
+        background: 'rgba(148, 163, 184, 0.12)',
+        border: '1px solid rgba(148, 163, 184, 0.2)',
+      })}>Home</div>
+    );
+  }
+  return (
+    <div style={Object.assign({}, base, {
+      color: '#f5c842',
+      background: 'rgba(245, 200, 66, 0.12)',
+      border: '1px solid rgba(245, 200, 66, 0.3)',
+    })}>@ Away</div>
+  );
+}
+
+function ScoreboardRow(props) {
+  var myTeamLabel = props.myTeamLabel || 'TEAM';
+  var oppLabel    = props.oppLabel    || 'OPP';
+  var myScore     = props.myScore  || 0;
+  var oppScore    = props.oppScore || 0;
+  var isScorer    = props.isScorer;
+  var onAddMyRun  = props.onAddMyRun  || function() {};
+  var onAddOppRun = props.onAddOppRun || function() {};
+
+  var labelStyle = {
+    fontSize: '16px', fontWeight: 700, color: '#e2e8f0',
+    letterSpacing: '0.08em', textTransform: 'uppercase',
+  };
+  var scoreStyle = {
+    fontSize: '22px', fontWeight: '800', color: '#fff',
+  };
+  var plusStyle = {
+    background: 'rgba(255,255,255,0.08)',
+    border: '1px solid rgba(255,255,255,0.15)',
+    borderRadius: '5px', color: '#94a3b8',
+    fontSize: '10px', cursor: 'pointer',
+    fontFamily: "Georgia,'Times New Roman',serif",
+    padding: '2px 6px', lineHeight: '1.4',
+    marginLeft: '6px',
+  };
+
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      gap: '24px', padding: '8px 16px',
+      background: '#0a1628',
+      borderTop: '2px solid rgba(245, 200, 66, 0.4)',
+      borderBottom: '1px solid rgba(255,255,255,0.05)',
+      flexShrink: 0,
+      minWidth: 0,
+      overflow: 'hidden',
+      fontFamily: "Georgia,'Times New Roman',serif",
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1 }}>
+          <span style={labelStyle}>{myTeamLabel.toUpperCase()}</span>
+          <span style={scoreStyle}>{myScore}</span>
+        </div>
+        {isScorer ? (
+          <button
+            onClick={onAddMyRun}
+            title={'Add run for ' + myTeamLabel}
+            style={plusStyle}
+          >+1</button>
+        ) : null}
+      </div>
+
+      <span style={{ color: '#374151', fontSize: '20px' }}>:</span>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1 }}>
+          <span style={labelStyle}>{oppLabel.toUpperCase()}</span>
+          <span style={scoreStyle}>{oppScore}</span>
+        </div>
+        {isScorer ? (
+          <button
+            onClick={onAddOppRun}
+            title={'Add run for ' + oppLabel}
+            style={plusStyle}
+          >+1</button>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function LiveScoringPanel(props) {
@@ -195,9 +314,6 @@ export default function LiveScoringPanel(props) {
   var _vo = useState(false);
   var viewerOnly = _vo[0]; var setViewerOnly = _vo[1];
 
-  var _manualRun = useState(false);
-  var showManualRunPrompt = _manualRun[0]; var setShowManualRunPrompt = _manualRun[1];
-
   var _gear = useState(false);
   var showGearMenu = _gear[0]; var setShowGearMenu = _gear[1];
 
@@ -225,7 +341,12 @@ export default function LiveScoringPanel(props) {
   var halfArrow    = gs.halfInning === 'top' ? '▲' : '▼';
   var opponentName = selectedGame ? selectedGame.opponent : 'Opponent';
   var teamLabel    = truncateTeamName(opponentName);
-  var teamShort    = activeTeam   ? activeTeam.name.split(' ')[0] : 'Us';
+  var myTeamLabel  = truncateTeamName(activeTeam ? activeTeam.name : '');
+  var teamShort    = myTeamLabel;
+  // Tighter cap for ScoreboardRow only — prevents label overflow on 375px viewports
+  var teamLabelSB   = truncateTeamName(opponentName, 10);
+  var myTeamLabelSB = truncateTeamName(activeTeam ? activeTeam.name : '', 10);
+  var gameHeader   = deriveGameHeader({ activeTeam: activeTeam, selectedGame: selectedGame });
 
   var currentBatter = currentAtBat ? currentAtBat.batter : null;
   var pitches       = currentAtBat ? currentAtBat.pitches : [];
@@ -255,7 +376,7 @@ export default function LiveScoringPanel(props) {
         minHeight: '100vh', background: '#0b1524', color: '#fff',
         fontFamily: FF, display: 'flex', flexDirection: 'column',
       }}>
-        <div style={{
+          <div style={{
           display: 'flex', alignItems: 'center', padding: '12px 16px',
           borderBottom: '1px solid rgba(255,255,255,0.08)', flexShrink: 0,
         }}>
@@ -264,8 +385,8 @@ export default function LiveScoringPanel(props) {
             fontSize: '20px', cursor: 'pointer', padding: '4px 8px 4px 0', lineHeight: 1,
           }}>←</button>
           <div style={{ flex: 1, textAlign: 'center' }}>
-            <div style={{ fontSize: '12px', color: '#64748b' }}>
-              {isPractice ? 'Practice Mode' : 'vs ' + teamLabel}
+            <div style={{ fontSize: '14px', color: '#cbd5e1' }}>
+              {isPractice ? 'Practice Mode' : (selectedGame && selectedGame.home === false ? '@ ' : 'vs ') + teamLabel}
             </div>
             <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
               <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>
@@ -276,7 +397,14 @@ export default function LiveScoringPanel(props) {
               </span>
             </div>
           </div>
-          <div style={{ width: '36px' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            {gameHeader && gameHeader.gameNumber != null
+              ? <>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', fontSize: '10px', fontWeight: 600, color: '#94a3b8', background: 'rgba(148, 163, 184, 0.1)', borderRadius: '10px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Game {gameHeader.gameNumber}</div>
+                  <HomeAwayChip isHome={selectedGame && selectedGame.home} />
+                </>
+              : <div style={{ width: '36px' }} />}
+          </div>
         </div>
 
         <div style={{
@@ -336,6 +464,13 @@ export default function LiveScoringPanel(props) {
         minHeight: '100vh', background: '#0b1524', color: '#fff',
         fontFamily: FF, display: 'flex', flexDirection: 'column',
       }}>
+        <ScoreboardRow
+          myTeamLabel={myTeamLabelSB}
+          oppLabel={teamLabelSB}
+          myScore={gs.myScore}
+          oppScore={gs.opponentScore}
+          isScorer={false}
+        />
         {/* Header strip */}
         <div style={{
           display: 'flex', alignItems: 'center',
@@ -347,6 +482,12 @@ export default function LiveScoringPanel(props) {
             background: 'none', border: 'none', color: '#64748b',
             fontSize: '18px', cursor: 'pointer', padding: 0, lineHeight: 1,
           }}>←</button>
+          {gameHeader && gameHeader.gameNumber != null && (
+            <>
+              <div style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', fontSize: '10px', fontWeight: 600, color: '#94a3b8', background: 'rgba(148, 163, 184, 0.1)', borderRadius: '10px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Game {gameHeader.gameNumber}</div>
+              <HomeAwayChip isHome={selectedGame && selectedGame.home} />
+            </>
+          )}
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
               <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>
@@ -369,17 +510,6 @@ export default function LiveScoringPanel(props) {
             <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
               <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>O</span>
               <div><CountPips n={gs.outs}    max={3} color="#f5c842" /></div>
-            </div>
-          </div>
-          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
-              <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>US</span>
-              <span style={{fontSize:'20px',fontWeight:'800',color:'#fff'}}>{gs.myScore}</span>
-            </div>
-            <span style={{ color: '#374151' }}>:</span>
-            <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
-              <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>{teamLabel.toUpperCase()}</span>
-              <span style={{fontSize:'20px',fontWeight:'800',color:'#fff'}}>{gs.opponentScore}</span>
             </div>
           </div>
         </div>
@@ -516,6 +646,7 @@ export default function LiveScoringPanel(props) {
   ) : null;
 
   // Outcome sheet (slides up after Contact pitch)
+  var sheetV2Enabled = isFlagEnabled('SCORING_SHEET_V2');
   var outcomeSheet = showOutcomes ? (
     <div style={{
       position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)',
@@ -534,16 +665,61 @@ export default function LiveScoringPanel(props) {
             cursor: 'pointer', fontFamily: FF, padding: '4px 10px',
           }}>⟲ Undo Contact</button>
         </div>
-        {OUTCOME_ROWS.map(function(row, ri) {
+
+        {sheetV2Enabled ? (
+          <div>
+            <div style={{
+              fontSize: '11px', fontWeight: 'bold', color: '#f5c842',
+              letterSpacing: '0.1em', textTransform: 'uppercase',
+              marginBottom: '6px', marginTop: '4px',
+            }}>
+              Pitch Outcome
+            </div>
+            <button
+              onClick={function() {
+                recordPitch('foul');
+              }}
+              aria-label="Foul ball — at-bat continues"
+              style={{
+                width: '100%', padding: '14px',
+                background: 'rgba(245,200,66,0.10)',
+                border: '1px solid rgba(245,200,66,0.4)',
+                borderRadius: '8px', color: '#f5c842',
+                fontWeight: 'bold', fontSize: '14px',
+                cursor: 'pointer', fontFamily: FF,
+                marginBottom: '4px',
+              }}
+            >
+              F  Foul
+            </button>
+            <div style={{
+              fontSize: '11px', color: '#64748b', textAlign: 'center',
+              fontStyle: 'italic', marginBottom: '14px',
+            }}>
+              At-bat continues
+            </div>
+            <div style={{
+              fontSize: '11px', fontWeight: 'bold', color: '#f5c842',
+              letterSpacing: '0.1em', textTransform: 'uppercase',
+              marginBottom: '6px',
+            }}>
+              At-Bat Outcome
+            </div>
+          </div>
+        ) : null}
+
+        {(sheetV2Enabled ? OUTCOME_ROWS_V2 : OUTCOME_ROWS).map(function(row, ri) {
           return (
             <div key={ri} style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
               {row.map(function(btn) {
+                var isFullWidth = btn.fullWidth === true;
                 return (
                   <button
                     key={btn.type}
                     onClick={function() { resolveAtBat(btn.type); }}
                     style={{
-                      flex: 1, padding: '12px 4px',
+                      flex: isFullWidth ? '1 0 100%' : 1,
+                      padding: '12px 4px',
                       background: 'rgba(255,255,255,0.05)',
                       border: '1px solid ' + btn.color + '55',
                       borderRadius: '8px', color: btn.color,
@@ -554,6 +730,9 @@ export default function LiveScoringPanel(props) {
                   </button>
                 );
               })}
+              {sheetV2Enabled && row.length === 2 && !row.some(function(b) { return b.fullWidth; }) ? (
+                <div style={{ flex: 1 }} aria-hidden="true" />
+              ) : null}
             </div>
           );
         })}
@@ -612,6 +791,15 @@ export default function LiveScoringPanel(props) {
       background: '#0b1524', color: '#fff',
       fontFamily: FF, display: 'flex', flexDirection: 'column',
     }}>
+      <ScoreboardRow
+        myTeamLabel={myTeamLabelSB}
+        oppLabel={teamLabelSB}
+        myScore={gs.myScore}
+        oppScore={gs.opponentScore}
+        isScorer={isScorer}
+        onAddMyRun={function() { scoring.addManualRun('us'); }}
+        onAddOppRun={function() { scoring.addManualRun('opp'); }}
+      />
 
       {/* ── Header strip ──────────────────────────────────────────────────────── */}
       <div style={{
@@ -624,6 +812,13 @@ export default function LiveScoringPanel(props) {
           background: 'none', border: 'none', color: '#64748b',
           fontSize: '18px', cursor: 'pointer', padding: 0, lineHeight: 1, flexShrink: 0,
         }}>←</button>
+
+        {gameHeader && gameHeader.gameNumber != null && (
+          <>
+            <div style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', fontSize: '10px', fontWeight: 600, color: '#94a3b8', background: 'rgba(148, 163, 184, 0.1)', borderRadius: '10px', letterSpacing: '0.05em', textTransform: 'uppercase', flexShrink: 0 }}>Game {gameHeader.gameNumber}</div>
+            <HomeAwayChip isHome={selectedGame && selectedGame.home} />
+          </>
+        )}
 
         <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#f5c842', flexShrink: 0 }}>
           {halfArrow} {gs.inning}
@@ -644,29 +839,7 @@ export default function LiveScoringPanel(props) {
           </div>
         </div>
 
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0 }}>
-          <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
-            <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>US</span>
-            <span style={{fontSize:'20px',fontWeight:'800',color:'#fff'}}>{gs.myScore}</span>
-          </div>
-          <span style={{ color: '#374151', fontSize: '14px' }}>:</span>
-          <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
-            <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>{teamLabel.toUpperCase()}</span>
-            <span style={{fontSize:'20px',fontWeight:'800',color:'#fff'}}>{gs.opponentScore}</span>
-          </div>
-          <button
-            title="Add run manually"
-            onClick={function() { setShowManualRunPrompt(true); }}
-            style={{
-              background: 'rgba(255,255,255,0.08)',
-              border: '1px solid rgba(255,255,255,0.15)',
-              borderRadius: '5px', color: '#94a3b8',
-              fontSize: '10px', cursor: 'pointer',
-              fontFamily: FF, padding: '2px 5px', lineHeight: '1.4',
-            }}>+1</button>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
           {isAdminTestMode && (
             <span style={{
               background: '#fef3c7', color: '#92400e',
@@ -1144,24 +1317,26 @@ export default function LiveScoringPanel(props) {
               );
             })}
           </div>
-          {/* Run tracking */}
-          <div style={{display:'flex',gap:'8px'}}>
-            <button
-              onClick={function(){ scoring.addManualRun('opp'); }}
-              style={{
-                flex:2, padding:'10px', borderRadius:'8px',
-                border:'none', background:'#7f1d1d',
-                color:'#fca5a5', fontSize:'14px', fontWeight:700,
-                cursor:'pointer'
-              }}>+1 {teamLabel} Run</button>
-            <button
-              onClick={function(){ scoring.addManualRun('us'); }}
-              style={{
-                flex:1, padding:'10px', borderRadius:'8px',
-                border:'1px solid #374151', background:'transparent',
-                color:'#555', fontSize:'12px', cursor:'pointer'
-              }}>+1 US</button>
-          </div>
+          {/* Run tracking — hidden when SCORING_SHEET_V2 enabled (use scoreboard +1 chips instead) */}
+          {!sheetV2Enabled && (
+            <div style={{display:'flex',gap:'8px'}}>
+              <button
+                onClick={function(){ scoring.addManualRun('opp'); }}
+                style={{
+                  flex:2, padding:'10px', borderRadius:'8px',
+                  border:'none', background:'#7f1d1d',
+                  color:'#fca5a5', fontSize:'14px', fontWeight:700,
+                  cursor:'pointer'
+                }}>+1 {teamLabel} Run</button>
+              <button
+                onClick={function(){ scoring.addManualRun('us'); }}
+                style={{
+                  flex:1, padding:'10px', borderRadius:'8px',
+                  border:'1px solid #374151', background:'transparent',
+                  color:'#555', fontSize:'12px', cursor:'pointer'
+                }}>+1 {myTeamLabel}</button>
+            </div>
+          )}
           {/* Opponent mercy banner */}
           {(scoring.oppRunsThisHalf || 0) >= 5 && (
             <div style={{
@@ -1225,49 +1400,6 @@ export default function LiveScoringPanel(props) {
         onCancel={function() { setShowFinishModal(false); }}
       />
 
-      {showManualRunPrompt && (
-        <div style={{
-          position:'fixed', top:0, left:0, right:0, bottom:0,
-          background:'rgba(0,0,0,0.7)', zIndex:200,
-          display:'flex', alignItems:'center', justifyContent:'center',
-        }}>
-          <div style={{
-            background:'#1a2a3a', borderRadius:'12px',
-            padding:'24px', width:'280px', textAlign:'center',
-          }}>
-            <div style={{color:'#fff',fontSize:'16px',fontWeight:700,marginBottom:'16px'}}>
-              Add run for which team?
-            </div>
-            <div style={{display:'flex',gap:'12px',justifyContent:'center'}}>
-              <button
-                onClick={function() { addManualRun('us'); setShowManualRunPrompt(false); }}
-                style={{
-                  flex:1, padding:'12px', borderRadius:'8px',
-                  background:'#1B2A4A', color:'#fff',
-                  border:'none', fontSize:'15px', fontWeight:700,
-                  cursor:'pointer', fontFamily:FF,
-                }}
-              >Us</button>
-              <button
-                onClick={function() { addManualRun('opp'); setShowManualRunPrompt(false); }}
-                style={{
-                  flex:1, padding:'12px', borderRadius:'8px',
-                  background:'#4a1a1a', color:'#fff',
-                  border:'none', fontSize:'15px', fontWeight:700,
-                  cursor:'pointer', fontFamily:FF,
-                }}
-              >{teamLabel}</button>
-            </div>
-            <button
-              onClick={function() { setShowManualRunPrompt(false); }}
-              style={{
-                marginTop:'12px', background:'none', border:'none',
-                color:'#888', fontSize:'13px', cursor:'pointer', fontFamily:FF,
-              }}
-            >Cancel</button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

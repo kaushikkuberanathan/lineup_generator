@@ -427,6 +427,8 @@ Story 1 (April 22, 2026) was the regression that surfaced this — every batter 
 - `grid` state is a 2D array `[inning][fieldPosition]` mapping to player IDs
 - Supabase helpers: `frontend/src/supabase.js` — use `dbSaveTeamData()` / `dbLoadTeamData()` for all team data persistence
 - `MERGE_FIELDS` is defined once as a shared const — do not duplicate at boot hydration and loadTeam hydration
+- `truncateTeamName()` in `formatters.js` handles all team name display in compact contexts (scoreboard, headers, chips). It is word-boundary aware — never bypass it with raw team names. Default cap is 12 chars; use cap=10 for scoreboard contexts where horizontal space is tight on 375px viewports.
+- Home/away semantic is first-class scoring context. Use `selectedGame.home` directly with a dedicated `HomeAwayChip` component — never bury it as metadata inside another element. Away games render with amber accent (`#f5c842`); home games render neutral (`#94a3b8`). Guard: `selectedGame && typeof selectedGame.home === 'boolean'` (excludes practice mode and legacy orphan games without the field).
 
 ---
 
@@ -662,8 +664,11 @@ This audit takes 5 minutes and saves hours of confusion at the next session star
 ---
 
 ## Current Version
-**v2.3.4** — April 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/App.jsx`.
+**v2.5.1** — April 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/App.jsx`.
 
+- v2.5.1 (2026-04-24): ACCESSIBILITY_V1 follow-up + UX consolidation — Game Mode scoreboard polish: truncateTeamName word-boundary aware (cap 12 default, cap 10 for ScoreboardRow); GameContextHeader removed, game number chip + HomeAwayChip (amber @ Away / neutral Home) inline in all 3 header strips; STATE 1 subtitle home/away connector restored (was hardcoded 'vs'); ScoreboardRow labels 16px/#e2e8f0/700; gold borderTop accent; overflow backstop. Tests: opponentNameLabel.test.js + gameHeader.test.js updated; suite 419→421.
+- v2.5.0 (2026-04-24): Feature — scoring outcome sheet semantic cleanup: Strikeout removed, Foul promoted to PITCH OUTCOME header, Out@1st+Flyout in 2-button top row, Home Run full-width. SCORING_SHEET_V2 flag (default true); opp-half +1 Run buttons hidden. OUTCOME_ROWS_V2 export; 8 tests (scoringSheetV2.test.js); suite 411→419. Story 29 resolved; Story 30 logged (isFlagEnabled DB-read refactor).
+- v2.4.0 (2026-04-24): Feature — game context header, per-team +1 buttons on dedicated scoreboard row, home team name replaces "Us"/"US" (Stories 27 + 28 bundled + layout restructure). Manual run modal removed. deriveGameHeader util; GameContextHeader + ScoreboardRow components.
 - v2.3.4 (2026-04-24): UX — opponent team name replaces "Opponent"/"OPP"/"Player #N" throughout scoring view; truncateTeamName util (12 cap, 10+"..").
 - v2.3.3 (2026-04-23): Fix/Feature — live scoring accuracy + visual consistency: runner placement fix (player ID fallback, id||name); Realtime race guard (lastAppliedAtRef + updated_at <=); practice mode local-only path (no Supabase writes); opponent batter card unified with home-team card; runner pills absolute-positioned on diamond; layout dead space + 2B collision resolved; 354→395 tests (realtimeRaceGuard, practiceModeIsolation, liveStateMerge).
 - v2.3.2 (2026-04-21): Feature — opposing pitcher pitch counts: per-batter/inning/game; opponent batter number (#1–#11); Foul button (amber); 6 new live_game_state columns (opp_balls, opp_strikes, opp_current_batter_number, opp_current_batter_pitches, opp_inning_pitches, opp_game_pitches); EXPECTED_LGS_KEYS 15→21; +6 contract tests; suite: 377/1/0. DEV migration applied 2026-04-21 — prod migration MUST be applied during v2.3.2 deploy window (see deployment note below).
