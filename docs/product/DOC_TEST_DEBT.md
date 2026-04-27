@@ -209,6 +209,14 @@
 | **Opened** | 2026-04-17 |
 | **Target** | v2.4.0 |
 
+### 🟡 P3 — FAQ × Feature Flag coverage audit
+
+- **What:** `frontend/src/content/faqs.js` contains 48 FAQ entries across 7 personas. At least one entry (line 191, scorekeeper category) describes a feature gated by `liveScoringEnabled` flag without acknowledging the gate. Coaches without the flag enabled see referenced UI elements that don't exist for them.
+- **Scope:** Full audit of all 48 entries against current feature flag state. Identify entries describing gated features. Decide on a consistent presentation pattern (caveat language? group flag-gated entries? prefix like "If live scoring is enabled..."?). Apply consistently.
+- **Target:** v2.6.0 P3 (or v2.7.0 if scope creeps)
+- **Source:** Surfaced during v2.6.0 documentation foundation sweep on April 27, 2026.
+- **Why P3:** Not actively misleading — coaches without the flag never reach the relevant FAQ answer expecting it to apply. But represents a content quality gap worth resolving once flag count grows.
+
 ---
 
 ## Open — Tooling / Process Gaps
@@ -253,6 +261,35 @@
 | **Opened** | 2026-04-17 |
 | **Target** | v2.4.0 |
 
+### 🟠 P1 — Diagnose share/print broken in production
+
+- **What:** Share/print functionality confirmed broken on April 24, 2026 (game day) and again April 27, 2026 (post-v2.5.1 prod smoke test). Root cause UNKNOWN.
+- **What it is NOT:** Not the `renderSharedView` hooks violation — that fix shipped in v2.1.6 (commit `46f071a`, `SharedView` component at App.jsx:2560).
+- **Investigation steps:** Reproduce locally → check browser console errors on `?s=` URLs → verify share/print buttons render → determine if share payload generation or share view rendering is failing.
+- **Target:** v2.6.0 P0
+- **Source:** Surfaced during v2.5.1 production smoke test, April 27, 2026.
+
+### 🟠 P1 — Windows Vitest pre-push hook OOM cascade
+
+- **What:** Pre-push hook running full vitest suite OOM-cascades on Windows when module cache is cold (22 worker timeouts, 5/27 files run). Currently mitigated by warm-up workaround in CLAUDE.md.
+- **Real fix paths:** (a) reduce vitest worker count for hook runs, (b) skip pre-push test and rely on CI gate, (c) configure vitest pool to avoid worker-thread cold-start, (d) move hook to pre-commit instead of pre-push (amortize cost across smaller commits).
+- **Target:** v2.6.0 P1
+- **Source:** Surfaced during scoring-updates branch deletion, April 27, 2026.
+
+### 🟡 P2 — CI workflow `BACKEND_URL` audit
+
+- **What:** Both backend integration test job and smoke test job hardcode prod URL in `.github/workflows/ci.yml`. Smoke job has misleading variable named `DEV_BACKEND_URL` that points to prod URL.
+- **Decisions needed:** Should CI hit a dev/preview backend, or is prod read-only correct? If prod read-only is correct, rename variable for clarity.
+- **Target:** v2.6.0 P2
+- **Source:** Audited during v2.5.1 deploy, April 27, 2026.
+
+### 🟡 P2 — `snack_duty` column drop blocked on codebase audit
+
+- **What:** Column verified present in Supabase as jsonb on April 27, 2026 (logged in MASTER_DEV_REFERENCE.md as outstanding manual action).
+- **Prerequisite work:** grep frontend/ and backend/ for any read/write references to `snack_duty`. If clean, run `ALTER TABLE team_data DROP COLUMN snack_duty;` in Supabase SQL Editor. If references exist, remove them first.
+- **Target:** v2.6.0 P2
+- **Source:** Surfaced during MASTER_DEV_REFERENCE.md audit, April 27, 2026.
+
 ---
 
 ## Resolved
@@ -263,6 +300,16 @@
 - **2026-04-17 (v2.2.38)** — **SOLUTION_DESIGN.md §Analytics Architecture: identity model, super properties, SSR guards, and pointer to ANALYTICS.md added.** Previously not documented architecturally.
 - **2026-04-17 (v2.2.38)** — **SOLUTION_DESIGN.md §CI/CD Pipeline: branch strategy, GitHub Actions workflows, Husky pre-push hook, smoke test scope, Dev environment URLs added.** Previously marked "No CI/CD pipeline" in Known Tradeoffs despite infrastructure being live.
 - **2026-04-17 (v2.2.38)** — **SOLUTION_DESIGN.md §Live Scoring Framework: Tier 1/2/3 breakdown, scorer lock rationale, non-goals documented.** Previously undocumented.
+
+### April 27, 2026 — v2.5.1 deploy session
+
+- ✅ **Add ADMIN_KEY to Render production env vars** — verified present in prod Render dashboard during deploy verification.
+- ✅ **`.isUUID()` rejects numeric team ID — silent admin approval bug** — fixed in earlier release. Confirmed by K during v2.6.0 foundation audit.
+- ✅ **`scoring-updates` long-lived exploratory branch** — deleted local + remote on April 27, 2026. No novel work was on the branch beyond a stale sync commit. CLAUDE.md updated.
+- ✅ **`lineup-generator-backend-dev` Render service** — deleted entirely on April 27, 2026. Local dev uses `npm run dev` (per K's existing workflow). Only unique env var (`RESEND_TEST_RECIPIENT`) preserved in local `backend/.env`.
+- ✅ **GitHub branch protection on `main`** — enabled April 27, 2026. Status checks required, admin bypass disabled, force pushes blocked. Prevents the "merge with failing CI" pattern that almost shipped during v2.5.1 deploy.
+- ✅ **UptimeRobot push notification alerting** — added April 27, 2026 after a 2-day production outage went unnoticed on email-only alerts. Mobile app installed, push contact attached to monitor #802733786.
+- ✅ **Render free-tier hosting trap documented** — `CLAUDE.md ## Key Infrastructure` now has a "Free-tier hosting trap (LESSON LEARNED)" subsection. Triggered by April 25-27 outage when UptimeRobot 5-min pings × two free-tier services × 24/7 keep-alive exceeded 750h/month cap.
 
 ---
 

@@ -1,4 +1,5 @@
 # ⚾ Lineup Generator
+> **Last Updated:** April 27, 2026 (v2.5.1 in production)
 
 > **Baseball and softball lineup management for youth coaches — built on the sideline, for the sideline.**
 
@@ -84,7 +85,7 @@ Here's what that looked like in practice:
 | Supabase + localStorage dual-sync architecture | Talked through the data flow, failure modes, and tradeoffs — got working implementation, not just a diagram |
 | PWA setup with Workbox | Resolved service worker edge cases through conversation |
 | Schema versioning + auto-migration | Designed the V1→V2 migration runner to remap fields without data loss |
-| Deployment pipeline + cold-start mitigation | Identified the Render free-tier cold-start problem, designed the UptimeRobot keep-alive pattern |
+| Deployment pipeline + monitoring | Production backend on Render Starter plan ($7/mo, no spin-down). UptimeRobot monitor #802733786 pings every 5 min with email + push notification alerting. See `CLAUDE.md ## Key Infrastructure` for the free-tier hosting trap lesson learned during the April 25-27, 2026 outage. |
 
 ### Why This Matters Beyond This App
 
@@ -124,7 +125,6 @@ This is vibe coding at its best — not generating boilerplate, but genuinely co
 | Short share links (Supabase-backed 8-char ID, mobile share sheet) | ✅ Live |
 | Cloud sync (Supabase) + offline (localStorage) | ✅ Live |
 | PWA — installable on iOS + Android | ✅ Live |
-| Phone OTP login + multi-device sync | 🔵 Phase 3 |
 | Role-based access (Coach / Assistant / Viewer) | 🔵 Phase 3 |
 | Season-long position fairness tracking | 🔵 Phase 3 |
 | Practice session log | 🟡 Backlog |
@@ -133,14 +133,7 @@ This is vibe coding at its best — not generating boilerplate, but genuinely co
 
 ## Roadmap
 
-See [`ROADMAP.md`](./docs/product/ROADMAP.md) for the full prioritized backlog.
-
-**Coming next:**
-- PIN reset flow — recovery path if coach forgets PIN (see Parking Lot in ROADMAP)
-- Print card metadata — team name, date, opponent pulled from game context
-- "Revert to Generated" button after manual grid edits
-- GitHub Actions CI — block deploys on failing engine tests
-- Phase 3: Supabase OTP auth + multi-coach invite flow
+The authoritative roadmap — including v2.5.x release history, current v2.6.0 backlog, and longer-term planning — lives in [docs/product/ROADMAP.md](docs/product/ROADMAP.md). README is intentionally kept minimal here to avoid drift between docs.
 
 ---
 
@@ -181,7 +174,7 @@ For architecture, data models, scoring engine logic, API design, database schema
 | [docs/product/CHARTER.md](./docs/product/CHARTER.md) | Full product charter — vision, scope, personas, metrics, principles, architecture, roadmap, risks, governance |
 | [docs/product/ONE_PAGER.md](./docs/product/ONE_PAGER.md) | Single-page scannable product summary |
 | [docs/product/ROADMAP.md](./docs/product/ROADMAP.md) | Release history and prioritized backlog |
-| [docs/product/PERSONAS.md](./docs/product/PERSONAS.md) | User personas — 5 roles defined (refresh in progress for v2.2.32, expanding to 8 personas) |
+| [docs/product/PERSONAS.md](./docs/product/PERSONAS.md) | User personas — 8 personas current (Head Coach, Dugout Parent, DJ Parent, Catcher Parent, Base Coach, Scorekeeper, Parent Viewer, Administrator). Refresh completed in v2.2.31 (April 2026). |
 | [docs/SOLUTION_DESIGN.md](./docs/SOLUTION_DESIGN.md) | Technical architecture — scoring engine, data model, deployment, schema |
 
 ---

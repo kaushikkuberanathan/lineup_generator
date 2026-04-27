@@ -4,6 +4,7 @@
  * Written from the perspective of real roles at a youth baseball game:
  * head coach, dugout parent, DJ parent, catcher parent, base coaches, and general setup.
  */
+// Last reviewed: April 27, 2026 (v2.5.1) — content audited as current; no stale references found. See DOC_TEST_DEBT.md for known content gaps (FAQ × feature flag coverage).
 
 export var FAQ_CATEGORIES = [
   {

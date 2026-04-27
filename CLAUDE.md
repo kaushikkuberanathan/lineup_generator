@@ -22,12 +22,7 @@ Youth baseball/softball lineup generator — a mobile-first PWA for coaches to m
 - **develop** — Integration branch. Kept in sync with main periodically.
   Feature branches cut from here merge back via PR when ready.
 
-- **scoring-updates** — Long-lived exploratory branch for scoring
-  subsystem work (scorer-lock hardening, Gap B/C/D/E/F/G test
-  coverage, scoring feature experiments). Does NOT merge to
-  develop or main until specific deliverables are explicitly
-  approved for integration. Squash-merge when a coherent piece
-  of work is ready.
+- (long-lived exploratory branches: pattern reserved for future use; none active as of v2.5.1)
 
 - **feature/\<topic\>** — Short-lived, cut from develop, back to develop
   via PR.
@@ -38,7 +33,6 @@ Youth baseball/softball lineup generator — a mobile-first PWA for coaches to m
   main and develop.
 
 Default base for new work: develop.
-Exception: all scoring subsystem work goes on scoring-updates.
 
 ### Infrastructure notes
 
@@ -236,13 +230,9 @@ Three guards in place:
 
 - **Frontend**: Vercel auto-deploys from `main` (config: `frontend/vercel.json`)
 - **Backend**: Render auto-deploys from `main` (root dir: `backend/`)
-- **DEV**: `dev.dugoutlineup.com` → `lineup-generator-backend-dev.onrender.com`
+- **DEV**: `dev.dugoutlineup.com` (Vercel preview branches per PR — backend dev deleted April 27, 2026; local backend via `npm run dev` for testing)
 
-**v2.3.2 deploy note — REQUIRED before frontend goes live:**
-DEV Supabase migration applied 2026-04-21 (`supabase/migrations/20260421_add_opponent_pitch_tracking.sql`).
-Prod migration is pending. MUST be applied in the Supabase SQL editor on the prod project during the v2.3.2
-deploy window — before the Vercel frontend deploy completes. If the frontend deploys first, it will attempt to
-write to the six new `opp_*` columns which do not yet exist in prod and will fail silently on every opponent pitch.
+> Historical (v2.3.2 era — retained for reference): DEV Supabase migration applied 2026-04-21 (`supabase/migrations/20260421_add_opponent_pitch_tracking.sql`). Prod migration was required before v2.3.2 frontend deploy and has been applied. The six `opp_*` columns now exist in prod.
 
 ### Pre-deploy Checklist (all required)
 
@@ -269,7 +259,7 @@ If any answer is "no": stop. Document the gap in DOC_TEST_DEBT.md, then decide w
 7. Stage **specific files by path** — never `git add -A` (risks picking up unrelated untracked files)
 8. [x] loginLimiter: 15min window, max 5 — applied to POST /magic-link ✓
 9. [ ] Confirm `RESEND_DOMAIN_VERIFIED=true` in Render env vars (only after domain verified)
-10. [ ] Run `npm test` — confirm 395 passed / 1 skipped / 0 failed
+10. [ ] Run `npm test` — confirm 421 passed / 1 skipped (as of v2.5.1, April 27, 2026) / 0 failed
 
 ### VERSION_HISTORY Schema (dual-layer — both required)
 ```js
@@ -312,6 +302,75 @@ If any answer is "no": stop. Document the gap in DOC_TEST_DEBT.md, then decide w
 4. Verify `/ping` <2s + site loads + share link works
 Target: resolved within 10 min of detection.
 
+**Rolling back a merge commit (PRs to main):** Use `git revert -m 1 <merge-commit-hash>`. The `-m 1` flag tells git to keep the first parent (main's prior state) and revert the merge. Without `-m 1`, git fails because it doesn't know which parent to keep.
+
+---
+
+## Release Ritual — Develop to Main Promotion
+
+End-to-end ordered sequence for promoting work from develop to production. Follow top-to-bottom; each step has its own gate. Established April 27, 2026.
+
+### Phase 1: Pre-flight (before any commits)
+
+1. **Branch hygiene audit** — Run `git status`, `git fetch --prune`, `git branch -vv`. Confirm clean working tree, identify stale branches.
+2. **Verify local mirrors remote** — Both `main` and `develop` should be in sync with `origin/*`. Pull if behind.
+3. **Confirm starting branch** — Feature branches always cut from `develop`, never from `main`.
+
+### Phase 2: Feature branch workflow
+
+4. **Create feature branch** from `develop`: `git checkout -b feature/<descriptive-name>`
+5. **Rebase if needed** — If develop has moved since branch was conceived, rebase onto current `origin/develop` BEFORE making changes (clean tree required, use `git stash` if needed).
+6. **Make changes, run all local gates** — Tests pass, build clean, manual UI verification per surface area changed.
+7. **Stage with explicit paths** — Never `git add -A` or `git add .`. List specific files. See ## Git Staging Discipline.
+8. **Commit with descriptive message** — Multi-line message describing user impact + technical detail. See VERSION_HISTORY schema for guidance on userChanges vs internalChanges framing.
+9. **Push feature branch** — Pre-push hook runs full test suite. If hook OOM-cascades on Windows, follow workaround in ### Known issue: Windows Vitest cold-start OOM.
+
+### Phase 3: PR to develop
+
+10. **Open PR as DRAFT** — Always draft first. Triggers Vercel preview deployment without merge risk.
+11. **Verify CI checks pass** — All required checks must be green. NEVER bypass via admin override (branch protection enforces this on `main`; same discipline applies to `develop`).
+12. **Validate on Vercel preview** — Real device testing on iPhone SE / iPad / desktop. Run ### Game-Day Validation if deploy touches lineup/game mode/share.
+13. **Mark ready for review** — Only after preview validation passes.
+14. **Squash-merge to develop** — Keeps develop history clean (1 commit per feature). Delete branch when GitHub prompts.
+
+### Phase 4: Develop soak
+
+15. **Sync local develop** — `git checkout develop && git pull origin develop`
+16. **Soak period** — Minimum 24 hours of develop time before promoting to main. Use the app naturally. Game-day testing is the gold standard.
+17. **Watch UptimeRobot** — Confirm prod stays green during soak. (UptimeRobot push notifications must be enabled — see ## Key Infrastructure.)
+
+### Phase 5: PR to main
+
+18. **Repeat pre-flight audit** — `git fetch --prune`, confirm both develop and main in sync with remotes.
+19. **Run ### Pre-deploy Checklist** — Version bumps, VERSION_HISTORY, ROADMAP, CLAUDE.md updates. Test suite passes.
+20. **Run ## Pre-release Docs Checklist** — All doc artifacts current.
+21. **Confirm ## Ship Gate** — All four questions answered.
+22. **Open PR develop → main as DRAFT** — Same draft-first discipline.
+23. **Verify CI green on develop's preview** — Vercel auto-deploys per branch.
+24. **Mark ready, merge** — Squash-merge or merge-commit (squash recommended). Render auto-deploy fires for backend; Vercel auto-deploy fires for frontend.
+
+### Phase 6: Production verification (within 10 min of merge)
+
+25. **Smoke test prod** — `dugoutlineup.com` loads, `/ping` <2s, login works (or auth-not-required path), share link works, Game Mode renders, SCORING_SHEET_V2 (or current scoring sheet) renders correctly.
+26. **Watch UptimeRobot** — Confirm green during the 10-min window.
+27. **If anything fails** — Execute ### Rollback Procedure immediately.
+
+### Phase 7: Post-deploy cleanup
+
+28. **Sync local main** — `git checkout main && git pull origin main`
+29. **Delete merged branches** — Both local and remote: `git branch -D <feature-branch>` and `git push origin --delete <feature-branch>` if not auto-deleted.
+30. **Log v(N+1) backlog items** — Anything surfaced during deploy that didn't get fixed: stale docs, lint warnings, infra paper cuts.
+31. **Update memory/notes** — Record what worked, what was friction, what's next session's first task.
+
+### Anti-patterns (DO NOT)
+
+- ❌ Push directly to `main` (branch protection blocks; admin bypass disabled)
+- ❌ Cut feature branch from `main` (always from `develop`)
+- ❌ Merge a PR with failing CI checks via admin override
+- ❌ Skip the 24-hour develop soak unless it's a hotfix (see ## Ship Gate exempt types)
+- ❌ Use `git add -A` for staging — explicit paths only
+- ❌ Promote multiple unrelated versions in one PR without explicit awareness — discovered April 27, 2026 that develop was 12 commits ahead of main, bundling v2.4.0 + v2.5.0 + v2.5.1 in one promotion. This is acceptable in retrospect but should be a deliberate decision, not a discovery.
+
 ---
 
 ## Analytics
@@ -329,7 +388,7 @@ Target: resolved within 10 min of detection.
 Tests: `frontend/src/tests/` (frontend), `backend/scripts/tests/` (backend integration).
 
 - **Framework**: Vitest (frontend), custom test-runner.js (backend)
-- **Total**: ~396 tests. CI target: 395 passed / 1 skipped / 0 failed (frontend)
+- **Total**: 422 tests. CI target: 421 passed / 1 skipped / 0 failed (frontend, as of v2.5.1 — April 27, 2026)
 - Known failing: **engine.v2 test 2.3** (7-player roster produces no warning — fix in separate session)
 
 ### Frontend test files
@@ -434,12 +493,27 @@ Story 1 (April 22, 2026) was the regression that surfaced this — every batter 
 
 ## Key Infrastructure
 - **Supabase project**: `hzaajccyurlyeweekvma.supabase.co`
-- **Production backend**: `lineup-generator-backend.onrender.com`
-- **DEV backend**: `lineup-generator-backend-dev.onrender.com`
+- **Production backend**: `lineup-generator-backend.onrender.com` (Render Starter plan, $7/mo, no spin-down)
+- **DEV backend**: deleted April 27, 2026 — local dev uses `npm run dev` from backend/
 - **Mud Hens team ID**: `1774297491626`
-- **UptimeRobot**: monitor #802733786 pings `/ping` every 5 minutes
+- **UptimeRobot**: monitor #802733786 pings prod `/ping` every 5 minutes; alerts via email + push notification (mobile app)
 - **Admin UI**: `https://dugoutlineup.com/admin.html`
 - **Master ops doc**: `docs/product/MASTER_DEV_REFERENCE.md`
+
+### Free-tier hosting trap (LESSON LEARNED — April 25-27, 2026)
+
+UptimeRobot pinging a free-tier Render service every 5 min keeps it awake 24/7 ≈ 720h/month. Render free tier caps at 750h/month per workspace. With two services (prod + dev) on free tier, combined usage hits ~1440h — nearly double the cap. Render silently suspends services when the cap is reached.
+
+**Symptoms:** Backend returns 503. Render dashboard shows "Free usage limit reached. Your service is now suspended until the next billing period." CI Backend Integration Tests fail at the health check step.
+
+**Prevention rules:**
+- Production-critical backends MUST run on Starter plan ($7/mo) or higher — never free tier
+- If a deployed dev/staging backend is needed, EITHER upgrade it OR remove UptimeRobot monitoring on it (so it spins down between dev sessions and stays well under the cap)
+- Do not run two free-tier services on the same Render workspace with 24/7 pinging — the math doesn't work
+
+**Recovery:** Upgrade plan in Render dashboard (instant reactivation) OR wait until next billing cycle (auto-reactivates on the 1st of the month).
+
+**Detection:** UptimeRobot alerts MUST go to a channel that physically interrupts (push notification, SMS, or both). Email-only alerts get missed — discovered the hard way during a 2-day prod outage that went unnoticed despite UptimeRobot correctly emailing alerts.
 
 ---
 

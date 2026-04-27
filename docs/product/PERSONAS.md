@@ -1,5 +1,7 @@
 # Dugout Lineup — User Personas
 
+> **Last Updated:** April 27, 2026 (v2.5.1) — Personas content current as of v2.0 (April 2026, v2.2.31 refresh). See `## Revision History` at end of file.
+
 ## Overview
 
 Dugout Lineup is a mobile-first platform designed for recreational baseball and softball teams to simplify lineup creation, scheduling, and communication.

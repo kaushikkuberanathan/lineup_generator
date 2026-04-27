@@ -100,7 +100,7 @@ The lineup engine uses all of these attributes to assign positions and batting o
 
 ## Step 5 — Generate Your First Lineup
 
-1. Tap the **Field Grid tab**
+1. Tap **Game Day** in the bottom nav, then **Defense**
 2. Set the number of innings (4, 5, or 6) using the innings selector
 3. Tap **"Auto-Assign"**
 
@@ -169,6 +169,28 @@ Stats accumulate across the season and feed into the **Suggest Order** engine fo
 
 ---
 
+
+## Step 8.5 — (Optional) Live Scoring
+
+Live scoring is a feature for coaches who want to track full game state — pitches, runs, batter advancement, and inning flow — directly in the app during a game.
+
+### Is live scoring enabled for my team?
+
+Live scoring is currently rolled out to a small set of teams behind a feature flag (`liveScoringEnabled`). If your team has it enabled, you'll see a fifth tab called **Scoring** in the bottom nav. If you don't see the Scoring tab, your team isn't in the rollout.
+
+### What live scoring does
+
+- Track each at-bat as it happens (balls, strikes, outs, runs)
+- Maintain inning-by-inning game state
+- Generate a shareable scorekeeping view for parents and other coaches
+- Capture detailed analytics for post-game review
+
+### Getting access
+
+If you want live scoring enabled for your team, contact KK directly — there's no in-app self-enroll today.
+
+If you've reached this section without the Scoring tab visible, skip ahead to Step 9 — backup is recommended for everyone, scoring or not.
+
 ## Step 9 — Back Up Your Data
 
 Before switching devices or clearing your browser:
@@ -188,17 +210,17 @@ To restore on a new device:
 
 ## Tab Reference
 
-| Tab | What It Does |
-|-----|-------------|
-| **Roster** | Add players, set skills, tags, and position preferences |
-| **Game Day → Defense** | Auto-generate and manually adjust the defensive lineup |
-| **Game Day → Batting** | Set and manage the batting order |
-| **Game Day → Songs** | Walk-up songs per player with Game Day View |
-| **Season → Schedule** | Add games, log results, and share lineups |
-| **Season → Snacks** | Per-game snack duty assignment with notes |
-| **More → Feedback** | Submit feedback or bug reports |
-| **More → Links** | League and field resources |
-| **More → About** | Version history and onboarding guide |
+The app has a 5-tab bottom nav. Tap any tab to switch:
+
+| Tab | Icon | What's there |
+|---|---|---|
+| **Home** | 🏠 | Dashboard. Quick access to the active team and recent activity. |
+| **My Team** | 👥 | Roster, batting hand setup, walk-up song info, attendance, and team settings. |
+| **Game Day** | 🏟 | Field grid (Defense), batting order (Batting), walk-up songs (Songs), and lineup share/print. |
+| **Scoring** | ⚾ | Live scoring mode (gated — only visible if your team has live scoring enabled). |
+| **Support** | ⚙️ | FAQ, feedback, version history, and About. |
+
+> **Note on the Scoring tab:** This tab only appears for teams with the live scoring feature enabled. If you don't see it, that's expected — your team isn't currently in the live scoring rollout. See Step 8.5 below for context.
 
 ---
 
@@ -213,10 +235,10 @@ To restore on a new device:
 ## Getting Help
 
 This app was built for 8U recreational baseball. If something doesn't look right:
-- Use **Auto-Fix All** in the Field Grid tab to resolve assignment warnings
+- Use **Auto-Fix All** under **Game Day → Defense** to resolve assignment warnings
 - Use **Export Backup** before making major roster changes
 - Manual overrides are always available — the engine is a starting point, not a hard constraint
 
 ---
 
-*Last updated: March 2026*
+*Last updated: April 27, 2026 (v2.5.1) — Tab Reference table aligned with current 5-tab nav; Step 8.5 added for Live Scoring*

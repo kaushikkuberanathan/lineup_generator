@@ -1,5 +1,7 @@
 # Lineup Generator — Master Development & Deployment Reference
 
+> **Last Updated:** April 27, 2026 (v2.5.1 — post-deploy infrastructure cleanup)
+
 ## Core Principles (Non-Negotiable)
 - **Local-first always.** Local validation is a gate, not a suggestion. Never push to main without a clean local build confirmed.
 - **Windows/PowerShell only.** Never use Mac/Unix commands.
@@ -251,9 +253,9 @@ Triggers: UptimeRobot alert OR "Server unavailable" pill in prod
 | Service | URL | Purpose |
 |---|---|---|
 | Frontend | dugoutlineup.com | Vercel, auto-deploys from main |
-| Backend | lineup-generator-backend.onrender.com | Express on Render free tier |
+| Backend | lineup-generator-backend.onrender.com | Express on Render Starter plan ($7/mo, no spin-down) |
 | Database | Supabase dashboard | Postgres + RLS |
-| Uptime monitor | uptimerobot.com — monitor #802733786 | Pings /ping every 5 min |
+| Uptime monitor | uptimerobot.com — monitor #802733786 | Pings prod /ping every 5 minutes; alerts via email + push notification (mobile app — see ## Incident Response) |
 | Repo | github.com/kaushikkuberanathan/lineup_generator | monorepo |
 
 > **NOTE:** UptimeRobot only monitors /ping (HTTP 200). Real functional health (DB connectivity, share link rendering, lineup generation) is validated by the GitHub Actions health-check.yml cron — check .github/workflows/health-check.yml for details.
@@ -420,19 +422,35 @@ All three tables have an open `allow_scorer_writes` policy (anon role can write)
 
 ## Outstanding Manual Actions
 
-- [ ] Migrations 002 and 003 status — confirm if roster_history and original feature_flags tables were ever executed
-- [ ] Add `ADMIN_KEY` to Render environment variables
-- [ ] Drop deprecated column: `ALTER TABLE team_data DROP COLUMN snack_duty`
-- [ ] Fix silent admin approval bug — `.isUUID()` rejects numeric team ID `1774297491626`
+### Resolved (April 27, 2026)
+- [x] Migrations 002 and 003 status — confirmed applied via Supabase verification on April 27, 2026: `team_data_history` table active (columns: id, team_id, snapshot, roster_count, written_at, write_source); `profiles` table has 1 row; `team_memberships` table has 10 rows
+- [x] Add `ADMIN_KEY` to Render environment variables — confirmed present in backend/.env and Render
+- [x] Fix silent admin approval bug — `.isUUID()` rejects numeric team ID `1774297491626` — resolved
+
+### Still Pending
+- [ ] Drop deprecated column: `ALTER TABLE team_data DROP COLUMN snack_duty` — column verified as still present in Supabase on April 27, 2026 (jsonb type). BEFORE DROPPING: audit codebase for any remaining read/write references to `snack_duty` (grep frontend/ and backend/). If clean, run the ALTER in Supabase SQL Editor. If references exist, they must be removed first.
 
 ---
 
-## Next Session Priorities
+## v2.6.0 Backlog
 
-1. Extract `renderSharedView` into proper React component (fixes blank screen on bare `?s=` share links)
-2. Remove `VIEWER_MODE` gate from Share Viewer Link button
-3. Game Mode via share link (`?mode=dugout`) for dugout coaches
-4. Make `shareCurrentLineup()` always generate `&view=true` links
+### P0 — Critical bugs (user-impacting, ship first in v2.6.0)
+- [ ] **Diagnose share/print not working in prod** — confirmed broken on April 24, 2026 (game day) and April 27, 2026 (production smoke test post-v2.5.1 deploy). Root cause UNKNOWN. NOT caused by `renderSharedView` hooks violation — that fix shipped in v2.1.6 (commit 46f071a, `SharedView` component at App.jsx:2560). Investigation needed: reproduce locally, check browser console errors on `?s=` URLs, verify share/print buttons render, check whether share payload generation is failing or share view rendering is failing.
+- [ ] **Audit `snack_duty` codebase usage** before dropping the column (see ## Outstanding Manual Actions). This is a prerequisite for that drop, not the drop itself.
+
+### P0 — Infrastructure (complete before next feature sprint)
+- [ ] CI workflow `BACKEND_URL` audit — backend job + smoke job both hardcode prod URL; evaluate whether to point at a dev/preview backend or make tests environment-aware
+- [ ] Verify `RESEND_DOMAIN_VERIFIED=true` is set in Render production environment variables (local `.env` confirmed; Render dashboard not checked this session)
+
+### P1 — Active bugs (Stories 15/16 from v2.3.4 backlog)
+- [ ] Story 15: RLS policy blocking `team_data` writes in some dev scenarios — investigate auth state issue
+- [ ] Story 16: "No batting order set" UI in dev real-game mode — likely sibling of Story 15 (team_data Supabase READ failing); fix 15 first
+
+### P2 — Scoring subsystem retro items
+- [ ] Story 19: Opponent runners on bases — diamond parity with home team during opponent half
+- [ ] Story 20: Half-flip helper extraction (4 sites reset inning state independently; converge on `flipHalfInning(gs, cause)`)
+- [ ] Story 21: "No pitches yet" stale copy when pitches occurred mid-at-bat
+- [ ] Story 30: `isFlagEnabled` DB-read refactor (logged in v2.5.0)
 
 ---
 

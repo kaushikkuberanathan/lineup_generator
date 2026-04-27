@@ -1,6 +1,6 @@
 # Dugout Lineup — Product Charter
 
-> Version 1.0 — April 16, 2026 — App v2.2.30
+> Version 1.1 — April 27, 2026 — App v2.5.1
 > Owner: KK (Product + Engineering)
 
 ---
@@ -218,7 +218,7 @@ Success metric: fix any data problem using admin.html or Supabase SQL Editor wit
 | Layer | Technology | Host |
 |-------|-----------|------|
 | Frontend | React 18 + Vite, mobile-first PWA | Vercel (auto-deploy from main) |
-| Backend | Node.js / Express | Render (free tier + keep-alive) |
+| Backend | Node.js / Express | Render (Starter plan $7/mo, no spin-down) |
 | Database | Supabase (Postgres + JSONB) | Supabase cloud |
 | AI proxy | Claude API (`claude-sonnet-4-6`) | Via backend `/api/ai` route |
 | Analytics | Mixpanel (32+ events) + Vercel Analytics | SaaS |
@@ -299,7 +299,6 @@ Multi-coach invite, role-based access (Coach / Assistant / Viewer), season-long 
 |------|--------|
 | Phone OTP / Twilio | Permanently removed. Auth is email magic link and Google OAuth only |
 | Automated county score submission | Blocked by CSRF — n8n webhook approach documented in ROADMAP.md backlog |
-| `frontend/.claude/settings.local.json` in git | IDE noise — add to `.gitignore` in next release (v2.2.32) |
 
 ---
 
@@ -309,7 +308,7 @@ Multi-coach invite, role-based access (Coach / Assistant / Viewer), season-long 
 |---|------|-----------|--------|-----------|
 | 1 | Roster wipe due to empty write | Low | Critical | Three-layer guard: Postgres trigger + backend 409 + recovery endpoint |
 | 2 | Share link blocked by auth | Medium | High | Auth principle enforced in code: share/Game Mode paths never check session |
-| 3 | Render cold start during game day | Medium | High | UptimeRobot pings `/ping` every 5 min; coach bypass URL for maintenance window |
+| 3 | Backend availability during game day | Low | High | Resolved by Render Starter plan upgrade (April 27, 2026); UptimeRobot pings `/ping` every 5 min with email + push notification alerting; coach bypass URL for maintenance window |
 | 4 | localStorage vs Supabase state drift | Medium | Medium | Additive merge on boot: Supabase teams not in localStorage are appended, never overwrite |
 | 5 | Breaking lineup engine change | Medium | High | Vitest regression suite (engine.v2 + lineupEngineV2-unit + bench-equity groups); must pass before deploy |
 | 6 | Auth shim left in after Phase 4 cutover | Medium | Medium | Shim removal checklist in CLAUDE.md; three files, ordered steps, SQL listed explicitly |
@@ -340,7 +339,7 @@ Multi-coach invite, role-based access (Coach / Assistant / Viewer), season-long 
 | `ROADMAP.md` | KK | Every release |
 | `MASTER_DEV_REFERENCE.md` | KK | On process changes |
 | `CLAUDE.md` | KK | Every release + on rule changes |
-| `PERSONAS.md` | KK | On phase transitions (refresh pending v2.2.32) |
+| `PERSONAS.md` | KK | On phase transitions (last refresh v2.2.31, April 2026 — 8 personas current) |
 | `SOLUTION_DESIGN.md` | KK | On architecture changes |
 | `ANALYTICS.md` | KK | When new events are added |
 
