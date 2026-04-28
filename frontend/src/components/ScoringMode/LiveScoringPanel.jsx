@@ -333,7 +333,8 @@ export default function LiveScoringPanel(props) {
     inning: 1, halfInning: 'top', outs: 0, balls: 0, strikes: 0,
     myScore: 0, opponentScore: 0, runners: [], currentBatter: null, battingOrderIndex: 0,
   };
-  var halfArrow    = gs.halfInning === 'top' ? '▲' : '▼';
+  var halfArrow       = gs.halfInning === 'top' ? '▲' : '▼';
+  const isHomeBatting = gs.halfInning === myTeamHalf;
   var opponentName = selectedGame ? selectedGame.opponent : 'Opponent';
   var teamLabel    = truncateTeamName(opponentName);
   var myTeamLabel  = truncateTeamName(activeTeam ? activeTeam.name : '');
@@ -496,11 +497,11 @@ export default function LiveScoringPanel(props) {
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', background: 'rgba(255,255,255,0.06)', borderRadius: '9999px', padding: '6px 12px' }}>
               <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:'3px'}}>
                 <span style={{fontSize:'10px',color:'#cfd8e3',fontWeight:500,letterSpacing:'0.7px',textTransform:'uppercase'}}>BALLS</span>
-                <div><CountPips n={gs.balls}   max={4} color="#3b82f6" /></div>
+                <div><CountPips n={isHomeBatting ? gs.balls : (gs.oppBalls || 0)}   max={4} color="#3b82f6" /></div>
               </div>
               <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:'3px'}}>
                 <span style={{fontSize:'10px',color:'#cfd8e3',fontWeight:500,letterSpacing:'0.7px',textTransform:'uppercase'}}>STRIKES</span>
-                <div><CountPips n={gs.strikes} max={3} color="#dc2626" /></div>
+                <div><CountPips n={isHomeBatting ? gs.strikes : (gs.oppStrikes || 0)} max={3} color="#dc2626" /></div>
               </div>
             </div>
             {/* Outs pill */}
@@ -829,11 +830,11 @@ export default function LiveScoringPanel(props) {
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', background: 'rgba(255,255,255,0.06)', borderRadius: '9999px', padding: '6px 12px' }}>
             <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:'3px'}}>
               <span style={{fontSize:'10px',color:'#cfd8e3',fontWeight:500,letterSpacing:'0.7px',textTransform:'uppercase'}}>BALLS</span>
-              <div><CountPips n={gs.balls}   max={4} color="#3b82f6" /></div>
+              <div><CountPips n={isHomeBatting ? gs.balls : (gs.oppBalls || 0)}   max={4} color="#3b82f6" /></div>
             </div>
             <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:'3px'}}>
               <span style={{fontSize:'10px',color:'#cfd8e3',fontWeight:500,letterSpacing:'0.7px',textTransform:'uppercase'}}>STRIKES</span>
-              <div><CountPips n={gs.strikes} max={3} color="#dc2626" /></div>
+              <div><CountPips n={isHomeBatting ? gs.strikes : (gs.oppStrikes || 0)} max={3} color="#dc2626" /></div>
             </div>
           </div>
           {/* Outs pill */}
@@ -1283,40 +1284,6 @@ export default function LiveScoringPanel(props) {
           background:'#0b1524', borderTop:'1px solid rgba(255,255,255,0.08)',
           padding:'8px 16px', zIndex:50,
         }}>
-          {/* Opponent B/S/O count display */}
-          <div style={{
-            display:'flex', justifyContent:'center', gap:'24px',
-            marginBottom:'8px'
-          }}>
-            {[
-              {label:'B', val: gs.oppBalls || 0, max:4, color:'#60a5fa'},
-              {label:'S', val: gs.oppStrikes || 0, max:3, color:'#f87171'},
-              {label:'O', val: gs.outs, max:3, color:'#fbbf24'},
-            ].map(function(item) {
-              return (
-                <div key={item.label} style={{
-                  display:'flex', flexDirection:'column',
-                  alignItems:'center', gap:'2px'
-                }}>
-                  <span style={{fontSize:'9px',color:'#888',fontWeight:600}}>
-                    {item.label}
-                  </span>
-                  <div style={{display:'flex',gap:'3px'}}>
-                    {Array.from({length:item.max}).map(function(_,i) {
-                      return (
-                        <div key={i} style={{
-                          width:'8px', height:'8px', borderRadius:'50%',
-                          background: i < item.val
-                            ? item.color
-                            : 'rgba(255,255,255,0.12)',
-                        }} />
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
           {/* Opponent pitch buttons */}
           <div style={{display:'flex',gap:'6px',marginBottom:'8px'}}>
             {[
