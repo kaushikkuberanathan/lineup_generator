@@ -1,19 +1,27 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: April 27, 2026 (v2.5.2 on develop; v2.5.1 shipped to production via PR #27, commit `aadddcd`)
+> Last updated: April 28, 2026 (v2.5.2 staged on develop; v2.5.1 shipped to production via PR #27, commit `aadddcd`)
 > MVP launched: March 24, 2026
 
 ---
 
-## v2.5.2 — 2026-04-27 (develop)
-- Half-inning notification moved from bottom to top with explicit dismiss button. No longer overlaps scoring controls.
-- New reusable Toast primitive at `frontend/src/components/ui/Toast.jsx` — top-anchored below safe-area inset, `role=status` + `aria-live=polite`, auto-dismiss with hover/focus pause, optional action button, tone variants.
-- New `inning_undo_dismissed` Mixpanel event — fires on ✕ dismiss or 10s natural expiry (previously auto-close was silent).
-- Test suite: 421 → 431 / 1 skipped. New: `Toast.test.jsx` (10 tests). Added `@testing-library/react` + `@testing-library/jest-dom` dev deps; jest-dom matchers registered in test setup.
-- Game Mode count strip refactored into two visually distinct pill containers — neutral Count pill (B+S) and warm-tinted Outs pill (rgba(255,140,66,0.12), #FF8C42 active dot). Outs are now scannable at a glance vs blending with the count.
-- Inning indicator stays leftmost outside both pills. 10–12px gap. Display-only refactor — no scoring logic touched.
-- Implements Option 1 from prior design review (session 83e794be).
-- Mercy banner now renders at the top for both home and opponent half-innings (was asymmetric — opponent version was inside the bottom pitch bar). Identical full-width stripe styling for both. Explicit half-inning guards added.
+## v2.5.2 — 2026-04-28 (develop staged; awaiting prod merge)
+
+Game Mode polish release covering three themes:
+
+**Count strip overhaul**
+- Two scope-grouped pills separate count (BALLS / STRIKES) from outs
+- Stacked label-above-value cells: INNING / BALLS / STRIKES / OUTS — full label parity
+- Outs pill uses warm tint (#FF8C42) to signal half-inning advancement
+- Single render surface: top pill binds dynamically to active batter via `isHomeBatting`
+- Removed legacy bottom opponent count strip (eliminated duplicate render surface)
+
+**Toast primitive + half-inning notification**
+- New Toast UI primitive: top-anchored, dismissable, auto-clearing
+- Half-inning notifications migrated to Toast — appear at top, one-tap dismiss
+
+**Mercy banner symmetry**
+- Banner now renders symmetrically for both home and opponent halves
 
 ## v2.5.1 — 2026-04-27 (prod ship; develop merge 2026-04-24)
 - ACCESSIBILITY_V1 follow-up + UX consolidation + v2.4.0 home/away preservation.
