@@ -7,6 +7,7 @@ import RunnerConflictModal from './RunnerConflictModal';
 import { track } from '../../utils/analytics';
 import { truncateTeamName, deriveGameHeader } from '../../utils/formatters';
 import { isFlagEnabled } from '../../config/featureFlags';
+import Toast from '../ui/Toast';
 
 var FF = "Georgia,'Times New Roman',serif";
 
@@ -326,12 +327,6 @@ export default function LiveScoringPanel(props) {
   var _undoToast = useState(false);
   var showUndoToast = _undoToast[0]; var setShowUndoToast = _undoToast[1];
 
-  // Dismiss undo toast after 10s
-  useEffect(function() {
-    if (!showUndoToast) return;
-    var t = setTimeout(function() { setShowUndoToast(false); }, 10000);
-    return function() { clearTimeout(t); };
-  }, [showUndoToast]);
 
   // ── Derived ────────────────────────────────────────────────────────────────
   var gs = gameState || {
@@ -898,28 +893,21 @@ export default function LiveScoringPanel(props) {
       )}
 
       {/* ── End inning undo toast ─────────────────────────────────────────────── */}
-      {showUndoToast && (
-        <div style={{
-          position: 'fixed', bottom: '70px', left: '16px', right: '16px',
-          background: '#1e3a5f', border: '1px solid rgba(96,165,250,0.4)',
-          borderRadius: '10px', padding: '10px 14px',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          zIndex: 100, fontFamily: FF,
-        }}>
-          <span style={{ fontSize: '13px', color: '#e2e8f0' }}>Half inning ended</span>
-          <button
-            onClick={function() {
-              undoHalfInning();
-              setShowUndoToast(false);
-              track('inning_undo_tapped');
-            }}
-            style={{
-              background: '#1d4ed8', border: 'none', borderRadius: '6px',
-              color: '#fff', fontSize: '12px', fontWeight: 700,
-              padding: '5px 12px', cursor: 'pointer', fontFamily: FF,
-            }}>Undo</button>
-        </div>
-      )}
+      <Toast
+        open={showUndoToast}
+        message="Half inning ended"
+        actionLabel="Undo"
+        onAction={function() {
+          undoHalfInning();
+          setShowUndoToast(false);
+          track('inning_undo_tapped');
+        }}
+        onDismiss={function() {
+          setShowUndoToast(false);
+          track('inning_undo_dismissed');
+        }}
+        durationMs={10000}
+      />
 
       {/* ── Lock expired banner ───────────────────────────────────────────────── */}
       {scorerLockExpired ? (
