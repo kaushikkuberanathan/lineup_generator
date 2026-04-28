@@ -7,6 +7,16 @@
 
 ## v2.5.2 — 2026-04-28 (develop staged; awaiting prod merge)
 
+Game Mode polish release + VERSION_HISTORY content governance patch:
+
+**VERSION_HISTORY governance patch (this session)**
+- `VERSION_HISTORY` extracted to `src/data/versionHistory.js` (mirrors `migrations.js`, `formatters.js`, `flagBootstrap.js` pattern)
+- New test: `frontend/src/__tests__/versionHistory.test.js` — enforces all `techNote` strings are one of the four approved values
+- 24 non-approved `techNote` strings corrected across VERSION_HISTORY (v2.4.0, v2.3.4, and 22 older entries that pre-dated the rule)
+- Named `### UPDATES TAB CONTENT RULE` heading added to CLAUDE.md — grep-auditable
+
+**Game Mode polish release covering three themes:**
+
 Game Mode polish release covering three themes:
 
 **Count strip overhaul**
@@ -1313,6 +1323,33 @@ Proposed fixes:
 Recommendation: C as primary (tests should be robust regardless of trigger
   pattern), A as bonus (doesn't hurt to deduplicate). Skip D unless other
   reasons emerge to revive a test backend.
+
+### Story 37 (P2) — Branch strategy enforcement gap
+Status: Open
+Discovered: 2026-04-28, during v2.5.2 retrospective
+Target: Next infra patch
+Symptom: Documented branch strategy requires feature/fix branches → develop →
+  main, but v2.5.2 work bypassed the feature branch layer entirely. Code
+  committed directly to develop, mixing three concurrent work streams (count
+  strip, Toast, mercy banner) before promotion to main. PR #29 diff was noisy;
+  rollback unit was the entire develop diff rather than isolated features.
+Impact: Three concrete costs already paid: noisy PR review, no isolated rollback
+  unit per feature, prior v2.5.2 docs commit was incomplete because work streams
+  committed to develop without changelog coordination. Pattern will repeat under
+  any momentum-heavy session.
+Root cause: Known — discipline-only enforcement of branch strategy. No local or
+  remote guard rejects direct commits to develop.
+Proposed fixes:
+  A) Discipline-only: Claude proposes feature branch as first action of every
+    session. Will fail under high-momentum sessions.
+  B) Local pre-push hook rejecting direct pushes to develop/main without
+    ALLOW_DIRECT_PUSH=1 override. Hard local guard, soft escape hatch for
+    hotfixes. Pairs with Story 32 hook cleanup.
+  C) GitHub branch protection on develop. Strongest enforcement but changes
+    routine workflow significantly.
+Recommendation: B. Hard guard for the failure mode we demonstrated, escape
+  hatch for genuine hotfixes, no remote workflow change. Bundle with Story 32
+  (pre-push hook fix) so we touch the hook once.
 
 ---
 

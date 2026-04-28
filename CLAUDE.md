@@ -34,6 +34,8 @@ Youth baseball/softball lineup generator — a mobile-first PWA for coaches to m
 
 Default base for new work: develop.
 
+**Enforcement: every change starts on a feature/fix/hotfix branch.** Direct commits to develop or main are not permitted except for declared hotfixes that branch off main. The branch strategy applies to docs-only changes too — small commits on develop have caused real release-notes coordination bugs (see PR #29 retrospective). No exceptions because the work feels small.
+
 ### Infrastructure notes
 
 - Vitest v4 syntax: fork options live at top level
@@ -288,6 +290,12 @@ If any answer is "no": stop. Document the gap in DOC_TEST_DEBT.md, then decide w
 }
 ```
 **RULE**: `userChanges` answers "What does the coach experience differently?" — never expose refactors, CI, migrations, or internal tooling there.
+
+### UPDATES TAB CONTENT RULE
+
+The Updates tab is coach-facing. `headline` and `userChanges` must be plain-English coach benefits. Technical detail belongs in `internalChanges`, git commit messages, and ROADMAP.md only. The `techNote` field must be one of the four approved strings listed above. `internalChanges` is never rendered.
+
+Enforced by: `frontend/src/__tests__/versionHistory.test.js`
 
 ### Game-Day Validation (required before deploys touching lineup/game mode/share)
 - Generate lineup <60s
@@ -673,7 +681,7 @@ Before opening a `develop → main` PR, walk through these items. For each, answ
 
 1. `APP_VERSION` bumped in `frontend/src/App.jsx`
 2. `version` bumped in `frontend/package.json` and `backend/package.json`
-3. `VERSION_HISTORY` entry prepended in `frontend/src/App.jsx` with `userChanges` (coach-readable), `internalChanges` (file-level specificity), and `techNote` (one-line summary)
+3. `VERSION_HISTORY` entry prepended in `frontend/src/data/versionHistory.js` with `userChanges` (coach-readable), `internalChanges` (file-level specificity), and `techNote` (one-line summary)
 4. `CLAUDE.md` "Current Version" line updated + changelog bullet added
 
 ### Backlog and roadmap
@@ -748,9 +756,9 @@ This audit takes 5 minutes and saves hours of confusion at the next session star
 ---
 
 ## Current Version
-**v2.5.2** — April 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/App.jsx`.
+**v2.5.2** — April 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/data/versionHistory.js`.
 
-- v2.5.2 (2026-04-28): Game Mode polish — count strip redesigned into two scope-grouped pills (Count + Outs) with stacked label-above-value cells (INNING / BALLS / STRIKES / OUTS). Single render surface: top pill binds dynamically to active batter via `isHomeBatting`; legacy bottom opponent count strip removed. Toast primitive added (top-anchored, dismissable, auto-clearing); half-inning notifications migrated to Toast. Mercy banner symmetric across home and opponent halves. @testing-library/jest-dom added; vitest glob expanded to .jsx; 10 tests (Toast.test.jsx); suite 421→431.
+- v2.5.2 (2026-04-28): Game Mode polish + VERSION_HISTORY governance patch — VERSION_HISTORY extracted to src/data/versionHistory.js; versionHistory.test.js (3 tests) enforces approved techNote strings; 24 historical techNote violations corrected; UPDATES TAB CONTENT RULE named heading added to CLAUDE.md. Game Mode: count strip redesigned into two scope-grouped pills (Count + Outs) with stacked label-above-value cells (INNING / BALLS / STRIKES / OUTS). Single render surface: top pill binds dynamically to active batter via `isHomeBatting`; legacy bottom opponent count strip removed. Toast primitive added (top-anchored, dismissable, auto-clearing); half-inning notifications migrated to Toast. Mercy banner symmetric across home and opponent halves. @testing-library/jest-dom added; vitest glob expanded to .jsx; 10 tests (Toast.test.jsx); suite 421→431.
 - v2.5.1 (2026-04-24): ACCESSIBILITY_V1 follow-up + UX consolidation — Game Mode scoreboard polish: truncateTeamName word-boundary aware (cap 12 default, cap 10 for ScoreboardRow); GameContextHeader removed, game number chip + HomeAwayChip (amber @ Away / neutral Home) inline in all 3 header strips; STATE 1 subtitle home/away connector restored (was hardcoded 'vs'); ScoreboardRow labels 16px/#e2e8f0/700; gold borderTop accent; overflow backstop. Tests: opponentNameLabel.test.js + gameHeader.test.js updated; suite 419→421.
 - v2.5.0 (2026-04-24): Feature — scoring outcome sheet semantic cleanup: Strikeout removed, Foul promoted to PITCH OUTCOME header, Out@1st+Flyout in 2-button top row, Home Run full-width. SCORING_SHEET_V2 flag (default true); opp-half +1 Run buttons hidden. OUTCOME_ROWS_V2 export; 8 tests (scoringSheetV2.test.js); suite 411→419. Story 29 resolved; Story 30 logged (isFlagEnabled DB-read refactor).
 - v2.4.0 (2026-04-24): Feature — game context header, per-team +1 buttons on dedicated scoreboard row, home team name replaces "Us"/"US" (Stories 27 + 28 bundled + layout restructure). Manual run modal removed. deriveGameHeader util; GameContextHeader + ScoreboardRow components.
