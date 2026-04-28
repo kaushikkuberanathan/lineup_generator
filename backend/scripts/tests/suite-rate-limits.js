@@ -38,10 +38,11 @@ async function run(test, BASE_URL, state) {
     };
   });
 
-  // RATE-01b: SKIPPED — Rate limiter removed during auth refactor.
-  // Re-enable when express-rate-limit is re-added to magic-link route.
+  // Rate limiter is active on /magic-link (loginLimiter, 15min/5 req, IP-keyed; commit 91aaf43, v2.2.18).
+  // RATE-01b currently disabled because tests share the CI runner IP pool and pollute each other across runs.
+  // Tracked in ROADMAP Story 26 (test fragility) and Story 36 (CI workflow rate-limit awareness).
   await test('RATE-01b', 'Magic link: 11th rapid attempt → 429 from rate limiter [SKIPPED]', async () => {
-    return { pass: true, expected: 'skipped', actual: 'skipped — rate limiter removed during auth refactor; re-enable when express-rate-limit is re-added to magic-link route' };
+    return { pass: true, expected: 'skipped', actual: 'skipped — Rate limiter is active on /magic-link (loginLimiter, 15min/5 req, IP-keyed). RATE-01b currently disabled because tests share IP pool; track with Story 26 + Story 36.' };
   });
 
 

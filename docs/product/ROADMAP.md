@@ -1,11 +1,35 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: April 28, 2026 (v2.5.2 staged on develop; v2.5.1 shipped to production via PR #27, commit `aadddcd`)
+> Last updated: April 28, 2026 (v2.5.3 staged on develop; v2.5.1 shipped to production via PR #27, commit `aadddcd`)
 > MVP launched: March 24, 2026
 
 ---
 
+## v2.5.3 — 2026-04-28 (develop staged; awaiting prod merge)
+
+Meta-governance patch. No user-facing changes.
+
+- `VERSION_HISTORY` extracted to `frontend/src/data/versionHistory.js` (same pattern as `migrations.js`, `formatters.js`, `flagBootstrap.js`)
+- New test: `frontend/src/__tests__/versionHistory.test.js` — 3 tests, enforces all `techNote` values are in the approved set
+- 24 historical `techNote` strings corrected (v2.1.x–v2.4.0) to use the approved set
+- Named `### UPDATES TAB CONTENT RULE` heading added to `CLAUDE.md` for grep auditability
+- `versionHistory.js` added to extracted-modules list in `CLAUDE.md`; non-approved `'Meta-governance release.'` techNote example in deploy checklist replaced with approved string
+- `.husky/pre-push` updated with branch guard blocking direct push to `develop`/`main`; `ALLOW_DIRECT_PUSH=1` escape for declared hotfixes (Story 37 — Resolved).
+- `.husky/pre-push` retry removed — was duplicated `|| npm test` masking first-run failures (Story 32 — Resolved).
+- `CLAUDE.md` corrected: `/magic-link` rate limiter is active and was never removed in v2.3.3 (Story 35 — Resolved).
+- `backend/scripts/tests/suite-rate-limits.js`: RATE-01b comment corrected to reflect actual code state.
+
 ## v2.5.2 — 2026-04-28 (develop staged; awaiting prod merge)
+
+Game Mode polish release + VERSION_HISTORY content governance patch:
+
+**VERSION_HISTORY governance patch (this session)**
+- `VERSION_HISTORY` extracted to `src/data/versionHistory.js` (mirrors `migrations.js`, `formatters.js`, `flagBootstrap.js` pattern)
+- New test: `frontend/src/__tests__/versionHistory.test.js` — enforces all `techNote` strings are one of the four approved values
+- 24 non-approved `techNote` strings corrected across VERSION_HISTORY (v2.4.0, v2.3.4, and 22 older entries that pre-dated the rule)
+- Named `### UPDATES TAB CONTENT RULE` heading added to CLAUDE.md — grep-auditable
+
+**Game Mode polish release covering three themes:**
 
 Game Mode polish release covering three themes:
 
@@ -1166,7 +1190,9 @@ Open questions to resolve during implementation:
 ### Story 26 (P2): Backend RATE-01a test flakiness — stateful against prod rate limiter
 - **Surfaced:** April 24, 2026 (PR #17 CI run — admin-bypassed because only CLAUDE.md changed).
 - `backend/scripts/tests/suite-rate-limits.js` RATE-01a expects `403 NOT_AUTHORIZED` but gets `429 TOO_MANY_ATTEMPTS` when prior CI runs have burned through the prod backend's rate-limit cap.
-- Fix candidates: (A) throwaway random email per test run, (B) mock rate limiter at test boundary, (C) use dev backend instead of prod. Recommend (A).
+- Update 2026-04-28: VAL-09 (validation, no email) is also affected by this rate limit issue, not just RATE-01a.
+- Fix candidates: (A) throwaway random email per test run, (B) mock rate limiter at test boundary, (C) use dev backend instead of prod. (D) Cleanest structural fix: key loginLimiter by email instead of IP. Eliminates cross-run pollution from CI runner IPs. Side benefit: rate limit becomes meaningful for real abuse patterns (per-account) instead of per-source-IP.
+- Recommendation: (D) addresses root cause; combine with throwaway-email per run from original recommendation as defense in depth.
 - Blocks nothing directly but masks real regressions if NOT_AUTHORIZED behavior ever breaks.
 
 ### Story 31 (P2) — package.json version sync gate
@@ -1195,7 +1221,7 @@ Recommendation: A — test gate runs in CI, blocks PR merge if drifted, doesn't
   change developer workflow. Lowest cost, highest reliability.
 
 ### Story 32 (P3) — Pre-push hook retry hides OOM failures
-Status: Open
+Status: Resolved (v2.5.3, this branch — bundled with Story 37 Husky update)
 Discovered: 2026-04-28 (re-flagged across multiple sessions)
 Target: Next infra patch
 Symptom: .husky/pre-push runs `cd frontend && npm test || npm test`. The retry
@@ -1218,7 +1244,7 @@ Recommendation: B if straightforward to tune; otherwise A. Either way, restore
   the explicit gate. Status quo violates CLAUDE.md.
 
 ### Story 33 (P3) — VERSION_HISTORY techNote validation
-Status: Open
+Status: Resolved (v2.5.3, fd2e069)
 Discovered: 2026-04-28, during v2.5.2 release recon
 Target: Next infra patch
 Symptom: A prior v2.5.2 docs commit used a non-compliant techNote string
@@ -1258,6 +1284,146 @@ Proposed fixes:
   C) Leave as-is, accept the cosmetic debt.
 Recommendation: A in a focused docs cleanup commit — low risk, restores
   consistency. Defer B unless A surfaces deeper structural issues.
+
+### Story 35 (P3) — CLAUDE.md docs drift on rate limiter state
+Status: Resolved (v2.5.3, this branch)
+Discovered: 2026-04-28, during PR #29 diagnostic
+Target: Next infra patch
+Symptom: CLAUDE.md (and the RATE-01b comment in suite-rate-limits.js line 41-44)
+  state the magic-link rate limiter was removed in v2.3.3. Backend code shows the
+  limiter has been live continuously since commit 91aaf43 (April 6, 2026).
+  Documentation was factually incorrect.
+Impact: Misleads future debugging. The PR #29 diagnostic took longer than
+  necessary because operators had to disprove the "limiter was removed" claim
+  before reaching root cause. Doc trust degraded.
+Root cause: Known — claim was made in code comments when the limiter was
+  apparently planned for removal but the removal commit never landed. No
+  subsequent doc correction.
+Proposed fixes:
+  A) Audit CLAUDE.md and any related docs/comments for "rate limiter removed"
+    claims; correct to current state with the loginLimiter spec (5 req per
+    15 min, IP-keyed).
+  B) Add the limiter spec to the "## Auth Strategy" section of CLAUDE.md as a
+    permanent reference.
+  C) Update RATE-01b comment in suite-rate-limits.js to reflect actual code
+    state.
+Recommendation: All three — small focused docs commit. Pair with Story 26 fix
+  for one clean PR.
+
+### Story 36 (P3) — CI backend integration tests don't account for double-trigger request volume
+Status: Open
+Discovered: 2026-04-28, during PR #29 CI failure
+Target: Next infra patch
+Symptom: Commit b92fdb3 (April 22, 2026) added pull_request triggers to backend
+  integration tests without updating the tests for the doubled request volume.
+  Push event hits /magic-link 3x; PR open event re-runs minutes later, totaling
+  6+ requests within the 15-minute rate-limit window. Multi-commit develop
+  branches compound the count further (n commits × 3 = 3n requests).
+Impact: PRs systematically fail CI on the rate-limit tests when develop has had
+  recent activity. False positives erode trust in CI as a real merge gate. PR
+  #29 was merged with red CI on this basis — establishes a precedent that should
+  not become routine.
+Root cause: Known — workflow trigger expansion without corresponding test
+  infrastructure update.
+Proposed fixes:
+  A) Skip backend integration tests on pull_request events when the same commit
+    was already tested on push (deduplication via commit SHA cache).
+  B) Add a wait-for-rate-limit-window step before running magic-link tests on
+    PR events.
+  C) Fix at the test layer per Story 26 — make tests rate-limit-aware so the
+    trigger volume doesn't matter.
+  D) Run integration tests against a separate test backend with a higher rate
+    limit (was deleted April 27 per memory — would require standing it back up).
+Recommendation: C as primary (tests should be robust regardless of trigger
+  pattern), A as bonus (doesn't hurt to deduplicate). Skip D unless other
+  reasons emerge to revive a test backend.
+
+### Story 37 (P2) — Branch strategy enforcement gap
+Status: Resolved (v2.5.3, this branch)
+Discovered: 2026-04-28, during v2.5.2 retrospective
+Target: Next infra patch
+Symptom: Documented branch strategy requires feature/fix branches → develop →
+  main, but v2.5.2 work bypassed the feature branch layer entirely. Code
+  committed directly to develop, mixing three concurrent work streams (count
+  strip, Toast, mercy banner) before promotion to main. PR #29 diff was noisy;
+  rollback unit was the entire develop diff rather than isolated features.
+Impact: Three concrete costs already paid: noisy PR review, no isolated rollback
+  unit per feature, prior v2.5.2 docs commit was incomplete because work streams
+  committed to develop without changelog coordination. Pattern will repeat under
+  any momentum-heavy session.
+Root cause: Known — discipline-only enforcement of branch strategy. No local or
+  remote guard rejects direct commits to develop.
+Proposed fixes:
+  A) Discipline-only: Claude proposes feature branch as first action of every
+    session. Will fail under high-momentum sessions.
+  B) Local pre-push hook rejecting direct pushes to develop/main without
+    ALLOW_DIRECT_PUSH=1 override. Hard local guard, soft escape hatch for
+    hotfixes. Pairs with Story 32 hook cleanup.
+  C) GitHub branch protection on develop. Strongest enforcement but changes
+    routine workflow significantly.
+Recommendation: B. Hard guard for the failure mode we demonstrated, escape
+  hatch for genuine hotfixes, no remote workflow change. Bundle with Story 32
+  (pre-push hook fix) so we touch the hook once.
+
+---
+
+### Story 38 (P2) — userChanges token scanner
+Status: Open
+Discovered: April 2026 — v2.5.3 techNote guard release closed the techNote
+  leak vector but left userChanges freeform prose with only documentation as
+  guard
+Target: v2.6.x
+Symptom: Technical jargon, component names, internal tooling references can
+  land in coach-facing userChanges bullets with no automated catch. v2.4.0
+  surfaced "LiveScoringPanel", "ScoreboardRow", "GameContextHeader" before
+  techNote-side mitigation; userChanges has the same exposure.
+Impact: Coaches see jarring developer language. Product polish degrades. Trust
+  erodes over time as a fixed-pool techNote sits next to a leaky userChanges
+  layer.
+Root cause: Known. CLAUDE.md UPDATES TAB CONTENT RULE is
+  documentation-as-fence. No automated enforcement on userChanges authoring.
+Proposed fixes:
+  A. Token denylist scan — Vitest assertion against banned substrings:
+     refactor, middleware, hook, RPC, migration, CI, *Panel, *Row, *Header,
+     /component$/, /^Add(ed)? \w+$/. Per-entry override allowed via inline
+     comment for legitimate edge cases. Low complexity, fits existing Vitest
+     pattern. Risk: false positives on legit copy ("refactored to one-tap
+     workflow").
+  B. Allowlist of coach-language patterns — too restrictive, brittle, will
+     reject legitimate copy.
+  C. LLM-grade review at build time — overkill, slow, introduces external
+     dependency on every CI run.
+Recommendation: A. Ship a tight banned-token list (≤10 patterns), per-entry
+  escape hatch via // override comment, mutation-test the guard before merge.
+
+---
+
+### Story 39 (P3) — Typed VERSION_HISTORY schema validator
+Status: Open
+Discovered: April 2026 — pattern recognized after two structural regressions
+  (v2.2.12/13 missing entries killed the Current badge; v2.4.0/v2.3.4
+  techNote violations slipped past)
+Target: v2.7.x or later
+Symptom: Missing required fields, malformed entries, structural drift can
+  land in VERSION_HISTORY without test coverage. Updates tab silently
+  degrades — missing badge, missing headline, malformed bullets.
+Impact: Coach-facing tab loses signal. Same regression class as the techNote
+  leaks: documentation-only fences fail under deploy pressure.
+Root cause: Hypothesis. Pattern across two distinct regressions suggests
+  structural validation gap, not authoring discipline gap.
+Proposed fixes:
+  A. JSDoc + Vitest schema check — assert every entry has version (semver),
+     date (string), headline (string), userChanges (array), techNote (in
+     approved set or null), internalChanges (array). Pragmatic, no new deps,
+     fits current Vitest pattern. Augments the existing techNote test.
+  B. Migrate versionHistory.js to TypeScript — real type safety, but
+     introduces TS to a JS-only codebase for one file. Big surface area for
+     small payoff.
+  C. Zod schema with parse-on-import — runtime validation, catches drift at
+     app boot. Adds dependency for one file. Fail-loud at boot is risky for
+     a PWA.
+Recommendation: A. Stay in Vitest, no new deps, no language migration.
+  Revisit B only if TS adoption broadens elsewhere.
 
 ---
 

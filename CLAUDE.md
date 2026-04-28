@@ -34,6 +34,8 @@ Youth baseball/softball lineup generator — a mobile-first PWA for coaches to m
 
 Default base for new work: develop.
 
+**Enforcement: every change starts on a feature/fix/hotfix branch.** Direct commits to develop or main are not permitted except for declared hotfixes that branch off main. The branch strategy applies to docs-only changes too — small commits on develop have caused real release-notes coordination bugs (see PR #29 retrospective). No exceptions because the work feels small.
+
 ### Infrastructure notes
 
 - Vitest v4 syntax: fork options live at top level
@@ -42,8 +44,7 @@ Default base for new work: develop.
 - Windows test environment requires singleFork for scoring tests
   to avoid OOM cascade. If OOM returns, check test weight before
   excluding.
-- Pre-push hook must NOT use `|| npm test` retry — it hides real
-  failures. Hook is currently: `cd frontend && npm test` only.
+**Pre-push hook (v2.5.3):** `.husky/pre-push` runs `cd frontend && npm test` (no retry) and includes a branch guard rejecting direct pushes to `develop` and `main`. Override for declared hotfixes only: `ALLOW_DIRECT_PUSH=1 git push`. The earlier `|| npm test` retry was removed because it was duplicated (ran tests up to four times) and masked first-run failures.
 
 ### Known issue: Windows Vitest cold-start OOM
 
@@ -100,7 +101,7 @@ User Action → React state (instant) → localStorage (instant) → Supabase (a
 App hydrates from localStorage first (instant/offline), then syncs with Supabase in background. All Supabase calls are non-blocking — app is fully functional offline.
 
 ### Frontend Structure
-All UI and business logic lives in `frontend/src/App.jsx` (~5,000 lines). Extracted modules: `migrations.js`, `formatters.js`, `flagBootstrap.js` (imported by App.jsx).
+All UI and business logic lives in `frontend/src/App.jsx` (~5,000 lines). Extracted modules: `migrations.js`, `formatters.js`, `flagBootstrap.js`, `versionHistory.js` (imported by App.jsx).
 
 Key sections within App.jsx:
 - **~1–457**: Constants (SKILLS, TAGS, BAT_SKILLS, position colors, field layouts)
@@ -163,6 +164,7 @@ Auth routes (additive only — do not modify existing handlers):
 - **Supabase service role key** lives only in backend environment — never sent to the client
 - Frontend continues using anon key for existing data operations
 - Admin UI: `frontend/public/admin.html` — Google OAuth + magic link, six management tabs
+- **`loginLimiter`** is active on `POST /magic-link`: 15-minute window, max 5 requests per IP. Added in commit `91aaf43` (April 6, 2026, v2.2.18). Returns `429 TOO_MANY_ATTEMPTS` when exceeded. Do NOT assume this was removed — the removal was planned but never landed. See Story 26 + Story 35 for test fragility implications.
 
 ### Auth Principle (non-negotiable)
 Viewing lineup and share links must **never** require login. Auth must never block Game Mode or share link rendering.
@@ -260,7 +262,7 @@ If any answer is "no": stop. Document the gap in DOC_TEST_DEBT.md, then decide w
 7. Stage **specific files by path** — never `git add -A` (risks picking up unrelated untracked files)
 8. [x] loginLimiter: 15min window, max 5 — applied to POST /magic-link ✓
 9. [ ] Confirm `RESEND_DOMAIN_VERIFIED=true` in Render env vars (only after domain verified)
-10. [ ] Run `npm test` — confirm 421 passed / 1 skipped (as of v2.5.1, April 27, 2026) / 0 failed
+10. [ ] Run `npm test` — confirm 434 passed / 1 skipped (as of v2.5.3, April 28, 2026) / 0 failed
 
 ### VERSION_HISTORY Schema (dual-layer — both required)
 ```js
@@ -287,6 +289,12 @@ If any answer is "no": stop. Document the gap in DOC_TEST_DEBT.md, then decide w
 }
 ```
 **RULE**: `userChanges` answers "What does the coach experience differently?" — never expose refactors, CI, migrations, or internal tooling there.
+
+### UPDATES TAB CONTENT RULE
+
+The Updates tab is coach-facing. `headline` and `userChanges` must be plain-English coach benefits. Technical detail belongs in `internalChanges`, git commit messages, and ROADMAP.md only. The `techNote` field must be one of the four approved strings listed above. `internalChanges` is never rendered.
+
+Enforced by: `frontend/src/__tests__/versionHistory.test.js`
 
 ### Game-Day Validation (required before deploys touching lineup/game mode/share)
 - Generate lineup <60s
@@ -389,7 +397,7 @@ End-to-end ordered sequence for promoting work from develop to production. Follo
 Tests: `frontend/src/tests/` (frontend), `backend/scripts/tests/` (backend integration).
 
 - **Framework**: Vitest (frontend), custom test-runner.js (backend)
-- **Total**: 422 tests. CI target: 421 passed / 1 skipped / 0 failed (frontend, as of v2.5.1 — April 27, 2026)
+- **Total**: 435 tests. CI target: 434 passed / 1 skipped / 0 failed (frontend, as of v2.5.3 — April 28, 2026)
 - Known failing: **engine.v2 test 2.3** (7-player roster produces no warning — fix in separate session)
 
 ### Frontend test files
@@ -412,6 +420,21 @@ Auth middleware, team data, feedback, contracts, schedule integrity, idempotency
 - Changes to `lineupEngineV2.js`, `scoringEngine.js`, or `playerMapper.js` → must pass `npm test`
 - Changes to `featureFlags.js` or `positions.js` → must pass `npm test`
 - Never use `kaushik.kuberanathan@gmail.com` in automated test suites (Supabase rate limits OTP per address)
+
+### Test-First Discipline (RED → GREEN)
+
+New tests must fail before the fix is applied. RED output is a required deliverable, not an implementation detail.
+
+### RED Checkpoint — non-negotiable
+
+Any Claude Code prompt that includes a test-first step must produce explicit RED output as a deliverable before the fix step.
+
+Rules:
+1. RED output is mandatory evidence. The prompt owner verifies it — not the agent. Agent self-reports of "test passes" without RED evidence do not satisfy the gate.
+2. If RED was missed (e.g. tests authored against already-corrected data), a mutation test is the substitute: temporarily inject a known violation, confirm RED, restore, confirm GREEN. Document both outputs.
+3. Untracked test files survive `git stash` — when running a stash-based RED check on a freshly-extracted module, stash will be a no-op. Mutation tests are the correct tool in that case.
+
+Rationale: A test that has never failed is a test that may never fail. Without RED evidence we are trusting the assertion is enforcing what we believe it enforces. The v2.5.3 techNote guard release proved both halves of this rule — RED was skipped, mutation test caught the gap.
 
 ---
 
@@ -657,7 +680,7 @@ If any answer is "no" — **stop**. Document the debt, then decide whether to pr
 **Minor version gate (x.Y.0 bumps only):** Before bumping minor version, run `debt-p0` from repo root (bash: `source scripts/debt-helpers.sh && debt-p0`; PowerShell: `. .\scripts\debt-helpers.ps1; debt-p0`). Must return "P0 gate clear" before proceeding.
 
 **Exempt release types** (no Ship Gate required):
-- **Meta-governance** — docs-only, zero app code changes. Use `techNote: "Meta-governance release."` in VERSION_HISTORY.
+- **Meta-governance** — docs-only, zero app code changes. Use `techNote: "Minor fixes and internal improvements"` in VERSION_HISTORY.
 - **Hotfix** — must include `[hotfix-exception]` in the commit message body with one sentence explaining why the gate is bypassed.
 
 The Ship Gate exists because we've shipped broken features before. Treat it as a ritual, not bureaucracy.
@@ -672,7 +695,7 @@ Before opening a `develop → main` PR, walk through these items. For each, answ
 
 1. `APP_VERSION` bumped in `frontend/src/App.jsx`
 2. `version` bumped in `frontend/package.json` and `backend/package.json`
-3. `VERSION_HISTORY` entry prepended in `frontend/src/App.jsx` with `userChanges` (coach-readable), `internalChanges` (file-level specificity), and `techNote` (one-line summary)
+3. `VERSION_HISTORY` entry prepended in `frontend/src/data/versionHistory.js` with `userChanges` (coach-readable), `internalChanges` (file-level specificity), and `techNote` (one-line summary)
 4. `CLAUDE.md` "Current Version" line updated + changelog bullet added
 
 ### Backlog and roadmap
@@ -747,8 +770,9 @@ This audit takes 5 minutes and saves hours of confusion at the next session star
 ---
 
 ## Current Version
-**v2.5.2** — April 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/App.jsx`.
+**v2.5.3** — April 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/data/versionHistory.js`.
 
+- v2.5.3 (2026-04-28): Meta-governance patch — VERSION_HISTORY extracted to src/data/versionHistory.js; versionHistory.test.js (3 tests) enforces approved techNote strings; 24 historical techNote violations corrected; UPDATES TAB CONTENT RULE named heading added to CLAUDE.md; versionHistory.js added to extracted-modules list; Meta-governance techNote example corrected to approved string.
 - v2.5.2 (2026-04-28): Game Mode polish — count strip redesigned into two scope-grouped pills (Count + Outs) with stacked label-above-value cells (INNING / BALLS / STRIKES / OUTS). Single render surface: top pill binds dynamically to active batter via `isHomeBatting`; legacy bottom opponent count strip removed. Toast primitive added (top-anchored, dismissable, auto-clearing); half-inning notifications migrated to Toast. Mercy banner symmetric across home and opponent halves. @testing-library/jest-dom added; vitest glob expanded to .jsx; 10 tests (Toast.test.jsx); suite 421→431.
 - v2.5.1 (2026-04-24): ACCESSIBILITY_V1 follow-up + UX consolidation — Game Mode scoreboard polish: truncateTeamName word-boundary aware (cap 12 default, cap 10 for ScoreboardRow); GameContextHeader removed, game number chip + HomeAwayChip (amber @ Away / neutral Home) inline in all 3 header strips; STATE 1 subtitle home/away connector restored (was hardcoded 'vs'); ScoreboardRow labels 16px/#e2e8f0/700; gold borderTop accent; overflow backstop. Tests: opponentNameLabel.test.js + gameHeader.test.js updated; suite 419→421.
 - v2.5.0 (2026-04-24): Feature — scoring outcome sheet semantic cleanup: Strikeout removed, Foul promoted to PITCH OUTCOME header, Out@1st+Flyout in 2-button top row, Home Run full-width. SCORING_SHEET_V2 flag (default true); opp-half +1 Run buttons hidden. OUTCOME_ROWS_V2 export; 8 tests (scoringSheetV2.test.js); suite 411→419. Story 29 resolved; Story 30 logged (isFlagEnabled DB-read refactor).
