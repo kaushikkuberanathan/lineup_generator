@@ -141,9 +141,27 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.5.1";
+var APP_VERSION = "2.5.2";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.5.2',
+    date: '2026-04-27',
+    headline: 'Scoring: half-inning notification now appears at the top with a dismiss button',
+    userChanges: [
+      'The "Half inning ended" notification now slides in at the top of the screen — no longer covers the scoring controls at the bottom.',
+      'Tap the ✕ to dismiss it early, or let it close automatically after 10 seconds.',
+    ],
+    techNote: 'UX improvement and new reusable Toast component',
+    internalChanges: [
+      'LiveScoringPanel.jsx: replaced bespoke bottom-fixed undo toast div with Toast primitive (frontend/src/components/ui/Toast.jsx); removed redundant useEffect setTimeout that duplicated timer logic.',
+      'New: frontend/src/components/ui/Toast.jsx — top-anchored (env safe-area-inset-top + 8px); role=status + aria-live=polite; auto-dismiss with hover/focus pause; optional action button; tone variants (info/success/warning).',
+      'New: frontend/src/components/ui/Toast.test.jsx — 10 tests: render, timing, durationMs=0, pause-on-hover + resume, dismiss button, action button clears timer, aria attrs.',
+      'New: @testing-library/react + @testing-library/jest-dom installed as dev deps; jest-dom matchers registered in src/tests/setup.js.',
+      'New telemetry: inning_undo_dismissed — fires when toast closes via ✕ or 10s expiry (previously silent auto-close).',
+      'Suite: 421 → 431 / 1 skipped / 0 failed.',
+    ],
+  },
   {
     version: '2.5.1',
     date: '2026-04-24',

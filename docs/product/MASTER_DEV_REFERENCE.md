@@ -69,6 +69,14 @@ Manually verify all states before pushing:
 - [ ] Mobile portrait
 - [ ] Mobile landscape
 
+### UI Primitives
+
+Reusable components in `frontend/src/components/ui/`. Use these instead of one-off inline implementations.
+
+| Primitive | File | Description |
+|-----------|------|-------------|
+| Toast | `ui/Toast.jsx` | Top-anchored transient notification — `role=status`, `aria-live=polite`, safe-area-inset-top anchor, auto-dismiss with hover/focus pause, optional action button, tone variants (`info`/`success`/`warning`) |
+
 ### If Untestable Locally
 State explicitly and define a safe production validation approach before pushing.
 
@@ -429,6 +437,15 @@ All three tables have an open `allow_scorer_writes` policy (anon role can write)
 
 ### Still Pending
 - [ ] Drop deprecated column: `ALTER TABLE team_data DROP COLUMN snack_duty` — column verified as still present in Supabase on April 27, 2026 (jsonb type). BEFORE DROPPING: audit codebase for any remaining read/write references to `snack_duty` (grep frontend/ and backend/). If clean, run the ALTER in Supabase SQL Editor. If references exist, they must be removed first.
+
+---
+
+## Analytics — Mixpanel Events
+
+**48 Mixpanel events** as of v2.5.2. Full reference: `docs/analytics/ANALYTICS.md`.
+
+Recent additions:
+- `inning_undo_dismissed` (v2.5.2) — fires when the half-inning undo toast closes via the ✕ dismiss button or natural 10s expiry (previously auto-close was silent).
 
 ---
 

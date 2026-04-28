@@ -447,6 +447,14 @@ All major sections wrapped with `<ErrorBoundary>` (`src/components/Shared/ErrorB
 
 ---
 
+## UI Primitives
+
+Reusable components in `frontend/src/components/ui/`. Use these instead of one-off inline implementations.
+
+**Toast** (`src/components/ui/Toast.jsx`) — Transient notifications use the Toast primitive. Top-anchored below safe-area inset (`env(safe-area-inset-top, 0px) + 8px`), `role=status` + `aria-live=polite`, ≥44×44px tap targets, auto-dismiss with hover/focus pause, optional action button. Do not implement custom fixed-position notification divs — wire to Toast instead.
+
+---
+
 ## Git Staging Discipline
 
 **Always stage specific files by path. Never `git add -A` or `git add .`.**
@@ -738,8 +746,9 @@ This audit takes 5 minutes and saves hours of confusion at the next session star
 ---
 
 ## Current Version
-**v2.5.1** — April 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/App.jsx`.
+**v2.5.2** — April 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/App.jsx`.
 
+- v2.5.2 (2026-04-27): UX/Infra — half-inning notification top-anchored with dismiss button. New Toast primitive (src/components/ui/Toast.jsx): role=status, aria-live=polite, safe-area-inset-top anchor, auto-dismiss with hover/focus pause, optional action. LiveScoringPanel.jsx: bespoke bottom toast replaced; redundant useEffect timer removed; Toast owns timing. New: inning_undo_dismissed telemetry (previously silent). @testing-library/react + jest-dom installed; 10 tests (Toast.test.jsx); suite 421→431.
 - v2.5.1 (2026-04-24): ACCESSIBILITY_V1 follow-up + UX consolidation — Game Mode scoreboard polish: truncateTeamName word-boundary aware (cap 12 default, cap 10 for ScoreboardRow); GameContextHeader removed, game number chip + HomeAwayChip (amber @ Away / neutral Home) inline in all 3 header strips; STATE 1 subtitle home/away connector restored (was hardcoded 'vs'); ScoreboardRow labels 16px/#e2e8f0/700; gold borderTop accent; overflow backstop. Tests: opponentNameLabel.test.js + gameHeader.test.js updated; suite 419→421.
 - v2.5.0 (2026-04-24): Feature — scoring outcome sheet semantic cleanup: Strikeout removed, Foul promoted to PITCH OUTCOME header, Out@1st+Flyout in 2-button top row, Home Run full-width. SCORING_SHEET_V2 flag (default true); opp-half +1 Run buttons hidden. OUTCOME_ROWS_V2 export; 8 tests (scoringSheetV2.test.js); suite 411→419. Story 29 resolved; Story 30 logged (isFlagEnabled DB-read refactor).
 - v2.4.0 (2026-04-24): Feature — game context header, per-team +1 buttons on dedicated scoreboard row, home team name replaces "Us"/"US" (Stories 27 + 28 bundled + layout restructure). Manual run modal removed. deriveGameHeader util; GameContextHeader + ScoreboardRow components.
