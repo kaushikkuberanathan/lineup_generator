@@ -147,10 +147,11 @@ var VERSION_HISTORY = [
   {
     version: '2.5.2',
     date: '2026-04-27',
-    headline: 'Scoring: half-inning notification now appears at the top with a dismiss button',
+    headline: 'Scoring UX refresh: top-anchored half-inning toast + two-pill count/outs strip',
     userChanges: [
       'The "Half inning ended" notification now slides in at the top of the screen — no longer covers the scoring controls at the bottom.',
       'Tap the ✕ to dismiss it early, or let it close automatically after 10 seconds.',
+      'Game Mode count/outs strip now reads as two distinct pills — neutral Count pill (Balls + Strikes) and warm-tinted Outs pill — making outs easier to spot at arm\'s length.',
     ],
     techNote: 'UX improvement and new reusable Toast component',
     internalChanges: [
@@ -160,6 +161,9 @@ var VERSION_HISTORY = [
       'New: @testing-library/react + @testing-library/jest-dom installed as dev deps; jest-dom matchers registered in src/tests/setup.js.',
       'New telemetry: inning_undo_dismissed — fires when toast closes via ✕ or 10s expiry (previously silent auto-close).',
       'Suite: 421 → 431 / 1 skipped / 0 failed.',
+      'LiveScoringPanel.jsx: refactored count strip into two pill containers at both render sites (STATE 1 splash, main scorer). Count pill: rgba(255,255,255,0.06) bg, neutral. Outs pill: rgba(255,140,66,0.12) warm tint, #FF8C42 active dot, #FFB89A label.',
+      'Inning indicator stays outside both pills (leftmost). 10–12px gap between pills. Reuses existing dot-size, dot-gap, and inactive-color tokens.',
+      'Display-only — scoring state, click handlers, and logic untouched. ACCESSIBILITY_V1 flag and reduced-motion behavior preserved.',
     ],
   },
   {

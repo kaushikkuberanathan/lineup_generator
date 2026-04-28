@@ -10,6 +10,9 @@
 - New reusable Toast primitive at `frontend/src/components/ui/Toast.jsx` — top-anchored below safe-area inset, `role=status` + `aria-live=polite`, auto-dismiss with hover/focus pause, optional action button, tone variants.
 - New `inning_undo_dismissed` Mixpanel event — fires on ✕ dismiss or 10s natural expiry (previously auto-close was silent).
 - Test suite: 421 → 431 / 1 skipped. New: `Toast.test.jsx` (10 tests). Added `@testing-library/react` + `@testing-library/jest-dom` dev deps; jest-dom matchers registered in test setup.
+- Game Mode count strip refactored into two visually distinct pill containers — neutral Count pill (B+S) and warm-tinted Outs pill (rgba(255,140,66,0.12), #FF8C42 active dot). Outs are now scannable at a glance vs blending with the count.
+- Inning indicator stays leftmost outside both pills. 10–12px gap. Display-only refactor — no scoring logic touched.
+- Implements Option 1 from prior design review (session 83e794be).
 
 ## v2.5.1 — 2026-04-27 (prod ship; develop merge 2026-04-24)
 - ACCESSIBILITY_V1 follow-up + UX consolidation + v2.4.0 home/away preservation.
