@@ -493,18 +493,24 @@ export default function LiveScoringPanel(props) {
               </span>
             </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: '6px' }}>
-            <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
-              <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>B</span>
-              <div><CountPips n={gs.balls}   max={4} color="#3b82f6" /></div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '11px' }}>
+            {/* Count pill: B + S */}
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', background: 'rgba(255,255,255,0.06)', borderRadius: '9999px', padding: '6px 12px' }}>
+              <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
+                <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>B</span>
+                <div><CountPips n={gs.balls}   max={4} color="#3b82f6" /></div>
+              </div>
+              <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
+                <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>S</span>
+                <div><CountPips n={gs.strikes} max={3} color="#dc2626" /></div>
+              </div>
             </div>
-            <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
-              <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>S</span>
-              <div><CountPips n={gs.strikes} max={3} color="#dc2626" /></div>
-            </div>
-            <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
-              <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>O</span>
-              <div><CountPips n={gs.outs}    max={3} color="#f5c842" /></div>
+            {/* Outs pill */}
+            <div style={{ display: 'flex', alignItems: 'flex-end', background: 'rgba(255,140,66,0.12)', borderRadius: '9999px', padding: '6px 12px' }}>
+              <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
+                <span style={{fontSize:'10px',color:'#FFB89A',fontWeight:600,letterSpacing:'0.5px'}}>OUTS</span>
+                <div><CountPips n={gs.outs}    max={3} color="#FF8C42" /></div>
+              </div>
             </div>
           </div>
         </div>
@@ -819,18 +825,24 @@ export default function LiveScoringPanel(props) {
           {halfArrow} {gs.inning}
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: '6px', flexShrink: 0 }}>
-          <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
-            <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>B</span>
-            <div><CountPips n={gs.balls}   max={4} color="#3b82f6" /></div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '11px', flexShrink: 0 }}>
+          {/* Count pill: B + S */}
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', background: 'rgba(255,255,255,0.06)', borderRadius: '9999px', padding: '6px 12px' }}>
+            <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
+              <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>B</span>
+              <div><CountPips n={gs.balls}   max={4} color="#3b82f6" /></div>
+            </div>
+            <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
+              <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>S</span>
+              <div><CountPips n={gs.strikes} max={3} color="#dc2626" /></div>
+            </div>
           </div>
-          <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
-            <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>S</span>
-            <div><CountPips n={gs.strikes} max={3} color="#dc2626" /></div>
-          </div>
-          <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
-            <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>O</span>
-            <div><CountPips n={gs.outs}    max={3} color="#f5c842" /></div>
+          {/* Outs pill */}
+          <div style={{ display: 'flex', alignItems: 'flex-end', background: 'rgba(255,140,66,0.12)', borderRadius: '9999px', padding: '6px 12px' }}>
+            <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
+              <span style={{fontSize:'10px',color:'#FFB89A',fontWeight:600,letterSpacing:'0.5px'}}>OUTS</span>
+              <div><CountPips n={gs.outs}    max={3} color="#FF8C42" /></div>
+            </div>
           </div>
         </div>
 
