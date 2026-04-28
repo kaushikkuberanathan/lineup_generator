@@ -1,9 +1,23 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: April 28, 2026 (v2.5.2 staged on develop; v2.5.1 shipped to production via PR #27, commit `aadddcd`)
+> Last updated: April 28, 2026 (v2.5.3 staged on develop; v2.5.1 shipped to production via PR #27, commit `aadddcd`)
 > MVP launched: March 24, 2026
 
 ---
+
+## v2.5.3 — 2026-04-28 (develop staged; awaiting prod merge)
+
+Meta-governance patch. No user-facing changes.
+
+- `VERSION_HISTORY` extracted to `frontend/src/data/versionHistory.js` (same pattern as `migrations.js`, `formatters.js`, `flagBootstrap.js`)
+- New test: `frontend/src/__tests__/versionHistory.test.js` — 3 tests, enforces all `techNote` values are in the approved set
+- 24 historical `techNote` strings corrected (v2.1.x–v2.4.0) to use the approved set
+- Named `### UPDATES TAB CONTENT RULE` heading added to `CLAUDE.md` for grep auditability
+- `versionHistory.js` added to extracted-modules list in `CLAUDE.md`; non-approved `'Meta-governance release.'` techNote example in deploy checklist replaced with approved string
+- `.husky/pre-push` updated with branch guard blocking direct push to `develop`/`main`; `ALLOW_DIRECT_PUSH=1` escape for declared hotfixes (Story 37 — Resolved).
+- `.husky/pre-push` retry removed — was duplicated `|| npm test` masking first-run failures (Story 32 — Resolved).
+- `CLAUDE.md` corrected: `/magic-link` rate limiter is active and was never removed in v2.3.3 (Story 35 — Resolved).
+- `backend/scripts/tests/suite-rate-limits.js`: RATE-01b comment corrected to reflect actual code state.
 
 ## v2.5.2 — 2026-04-28 (develop staged; awaiting prod merge)
 
@@ -1207,7 +1221,7 @@ Recommendation: A — test gate runs in CI, blocks PR merge if drifted, doesn't
   change developer workflow. Lowest cost, highest reliability.
 
 ### Story 32 (P3) — Pre-push hook retry hides OOM failures
-Status: Open
+Status: Resolved (v2.5.3, this branch — bundled with Story 37 Husky update)
 Discovered: 2026-04-28 (re-flagged across multiple sessions)
 Target: Next infra patch
 Symptom: .husky/pre-push runs `cd frontend && npm test || npm test`. The retry
@@ -1230,7 +1244,7 @@ Recommendation: B if straightforward to tune; otherwise A. Either way, restore
   the explicit gate. Status quo violates CLAUDE.md.
 
 ### Story 33 (P3) — VERSION_HISTORY techNote validation
-Status: Open
+Status: Resolved (v2.5.3, fd2e069)
 Discovered: 2026-04-28, during v2.5.2 release recon
 Target: Next infra patch
 Symptom: A prior v2.5.2 docs commit used a non-compliant techNote string
@@ -1272,7 +1286,7 @@ Recommendation: A in a focused docs cleanup commit — low risk, restores
   consistency. Defer B unless A surfaces deeper structural issues.
 
 ### Story 35 (P3) — CLAUDE.md docs drift on rate limiter state
-Status: Open
+Status: Resolved (v2.5.3, this branch)
 Discovered: 2026-04-28, during PR #29 diagnostic
 Target: Next infra patch
 Symptom: CLAUDE.md (and the RATE-01b comment in suite-rate-limits.js line 41-44)
@@ -1325,7 +1339,7 @@ Recommendation: C as primary (tests should be robust regardless of trigger
   reasons emerge to revive a test backend.
 
 ### Story 37 (P2) — Branch strategy enforcement gap
-Status: Open
+Status: Resolved (v2.5.3, this branch)
 Discovered: 2026-04-28, during v2.5.2 retrospective
 Target: Next infra patch
 Symptom: Documented branch strategy requires feature/fix branches → develop →
@@ -1350,6 +1364,66 @@ Proposed fixes:
 Recommendation: B. Hard guard for the failure mode we demonstrated, escape
   hatch for genuine hotfixes, no remote workflow change. Bundle with Story 32
   (pre-push hook fix) so we touch the hook once.
+
+---
+
+### Story 38 (P2) — userChanges token scanner
+Status: Open
+Discovered: April 2026 — v2.5.3 techNote guard release closed the techNote
+  leak vector but left userChanges freeform prose with only documentation as
+  guard
+Target: v2.6.x
+Symptom: Technical jargon, component names, internal tooling references can
+  land in coach-facing userChanges bullets with no automated catch. v2.4.0
+  surfaced "LiveScoringPanel", "ScoreboardRow", "GameContextHeader" before
+  techNote-side mitigation; userChanges has the same exposure.
+Impact: Coaches see jarring developer language. Product polish degrades. Trust
+  erodes over time as a fixed-pool techNote sits next to a leaky userChanges
+  layer.
+Root cause: Known. CLAUDE.md UPDATES TAB CONTENT RULE is
+  documentation-as-fence. No automated enforcement on userChanges authoring.
+Proposed fixes:
+  A. Token denylist scan — Vitest assertion against banned substrings:
+     refactor, middleware, hook, RPC, migration, CI, *Panel, *Row, *Header,
+     /component$/, /^Add(ed)? \w+$/. Per-entry override allowed via inline
+     comment for legitimate edge cases. Low complexity, fits existing Vitest
+     pattern. Risk: false positives on legit copy ("refactored to one-tap
+     workflow").
+  B. Allowlist of coach-language patterns — too restrictive, brittle, will
+     reject legitimate copy.
+  C. LLM-grade review at build time — overkill, slow, introduces external
+     dependency on every CI run.
+Recommendation: A. Ship a tight banned-token list (≤10 patterns), per-entry
+  escape hatch via // override comment, mutation-test the guard before merge.
+
+---
+
+### Story 39 (P3) — Typed VERSION_HISTORY schema validator
+Status: Open
+Discovered: April 2026 — pattern recognized after two structural regressions
+  (v2.2.12/13 missing entries killed the Current badge; v2.4.0/v2.3.4
+  techNote violations slipped past)
+Target: v2.7.x or later
+Symptom: Missing required fields, malformed entries, structural drift can
+  land in VERSION_HISTORY without test coverage. Updates tab silently
+  degrades — missing badge, missing headline, malformed bullets.
+Impact: Coach-facing tab loses signal. Same regression class as the techNote
+  leaks: documentation-only fences fail under deploy pressure.
+Root cause: Hypothesis. Pattern across two distinct regressions suggests
+  structural validation gap, not authoring discipline gap.
+Proposed fixes:
+  A. JSDoc + Vitest schema check — assert every entry has version (semver),
+     date (string), headline (string), userChanges (array), techNote (in
+     approved set or null), internalChanges (array). Pragmatic, no new deps,
+     fits current Vitest pattern. Augments the existing techNote test.
+  B. Migrate versionHistory.js to TypeScript — real type safety, but
+     introduces TS to a JS-only codebase for one file. Big surface area for
+     small payoff.
+  C. Zod schema with parse-on-import — runtime validation, catches drift at
+     app boot. Adds dependency for one file. Fail-loud at boot is risky for
+     a PWA.
+Recommendation: A. Stay in Vitest, no new deps, no language migration.
+  Revisit B only if TS adoption broadens elsewhere.
 
 ---
 

@@ -1,1 +1,24 @@
-cd frontend && npm test || npm test
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Branch guard — block direct pushes to develop or main from local.
+# All work must flow through a feature/fix/hotfix branch and merge via PR.
+# See CLAUDE.md § Branch Strategy. Override only for declared emergency hotfixes.
+current_branch=$(git rev-parse --abbrev-ref HEAD)
+if [ "$current_branch" = "develop" ] || [ "$current_branch" = "main" ]; then
+  if [ "$ALLOW_DIRECT_PUSH" != "1" ]; then
+    echo ""
+    echo "❌ Direct push to '$current_branch' blocked by .husky/pre-push."
+    echo "   Use a feature branch: git checkout -b feature/your-change-name"
+    echo "   Then PR feature → develop → main."
+    echo ""
+    echo "   Emergency override (rare — declared hotfixes only):"
+    echo "     ALLOW_DIRECT_PUSH=1 git push"
+    echo ""
+    exit 1
+  fi
+fi
+
+# Run frontend tests before allowing push.
+# No retry — first run must succeed. See ROADMAP Story 32.
+cd frontend && npm test
