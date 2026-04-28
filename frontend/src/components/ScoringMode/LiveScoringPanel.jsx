@@ -877,8 +877,8 @@ export default function LiveScoringPanel(props) {
         </div>
       </div>
 
-      {/* ── Mercy run banner ─────────────────────────────────────────────────── */}
-      {runsThisHalf >= 5 && (
+      {/* ── Mercy run banner — home half ───────────────────────────────────── */}
+      {gs.halfInning === myTeamHalf && runsThisHalf >= 5 && (
         <div style={{
           background: '#7c2d12', color: '#fca5a5',
           fontSize: '13px', fontWeight: 700,
@@ -894,6 +894,33 @@ export default function LiveScoringPanel(props) {
               endHalfInning();
               setShowUndoToast(true);
               track('inning_ended', { trigger: 'mercy', half: gs.halfInning, runs: runsThisHalf });
+            }}
+            style={{
+              background:'#ef4444', border:'none', color:'#fff',
+              fontSize:'12px', fontWeight:700, padding:'4px 10px',
+              borderRadius:'6px', cursor:'pointer'
+            }}
+          >End Half</button>
+        </div>
+      )}
+
+      {/* ── Mercy run banner — opponent half ───────────────────────────────── */}
+      {gs.halfInning !== myTeamHalf && (scoring.oppRunsThisHalf || 0) >= 5 && (
+        <div style={{
+          background: '#7c2d12', color: '#fca5a5',
+          fontSize: '13px', fontWeight: 700,
+          padding: '8px 16px',
+          borderBottom: '1px solid #ef4444',
+          flexShrink: 0,
+          display: 'flex', alignItems: 'center',
+          justifyContent: 'space-between', gap: '8px',
+        }}>
+          <span>⚠️ {scoring.oppRunsThisHalf} {teamLabel} runs this half</span>
+          <button
+            onClick={function() {
+              scoring.endHalfInning();
+              setShowUndoToast(true);
+              track('inning_ended', { trigger: 'opp_mercy', half: gs.halfInning, runs: scoring.oppRunsThisHalf });
             }}
             style={{
               background:'#ef4444', border:'none', color:'#fff',
@@ -1335,29 +1362,6 @@ export default function LiveScoringPanel(props) {
                   border:'1px solid #374151', background:'transparent',
                   color:'#555', fontSize:'12px', cursor:'pointer'
                 }}>+1 {myTeamLabel}</button>
-            </div>
-          )}
-          {/* Opponent mercy banner */}
-          {(scoring.oppRunsThisHalf || 0) >= 5 && (
-            <div style={{
-              marginTop:'8px', background:'#7c2d12', color:'#fca5a5',
-              fontSize:'12px', fontWeight:700, padding:'6px 10px',
-              borderRadius:'6px', textAlign:'center',
-              display:'flex', gap:'8px', justifyContent:'center',
-              alignItems:'center',
-            }}>
-              <span>⚠️ {scoring.oppRunsThisHalf} {teamLabel} runs this half</span>
-              <button
-                onClick={function(){
-                  scoring.endHalfInning();
-                  setShowUndoToast(true);
-                  track('inning_ended', { trigger: 'opp_mercy', half: gs.halfInning, runs: scoring.oppRunsThisHalf });
-                }}
-                style={{
-                  background:'#ef4444', border:'none', color:'#fff',
-                  fontSize:'11px', fontWeight:700, padding:'3px 8px',
-                  borderRadius:'5px', cursor:'pointer'
-                }}>End Half</button>
             </div>
           )}
         </div>
