@@ -1,6 +1,6 @@
 # Dugout Lineup — 1-Pager
 
-> v1.0 — April 16, 2026 — App v2.2.30
+> v2.0 — April 27, 2026 — App v2.5.1
 
 ---
 
@@ -27,6 +27,7 @@ Dugout Lineup eliminates the pre-game scramble for recreational youth baseball a
 | **Base Coach** | Coaches third base without holding a paper card |
 | **Scorekeeper** | Tracks the full game from the share link, batting order clear |
 | **Parent Viewer** | Opens a link and instantly sees where their child is playing |
+| **Administrator** | Manages teams, audit history, and platform health (operational role, not field-day user) |
 
 ---
 
@@ -44,7 +45,7 @@ Dugout Lineup eliminates the pre-game scramble for recreational youth baseball a
 
 ## Tech Stack
 
-React 18 + Vite PWA on Vercel (auto-deploys from main); Node.js / Express backend on Render (free tier, keep-alive via UptimeRobot every 5 min); Supabase (Postgres + JSONB) for cloud sync and short link storage; Claude API (`claude-sonnet-4-6`) proxied through backend for AI schedule import; Mixpanel (32+ events) + Vercel Analytics for usage tracking; localStorage as primary store with Supabase as async background sync.
+React 18 + Vite PWA on Vercel (auto-deploys from main); Node.js / Express backend on Render (Starter plan $7/mo, no spin-down; UptimeRobot availability monitoring); Supabase (Postgres + JSONB) for cloud sync and short link storage; Claude API (`claude-sonnet-4-6`) proxied through backend for AI schedule import; Mixpanel (47 events) + Vercel Analytics for usage tracking; localStorage as primary store with Supabase as async background sync.
 
 ---
 
@@ -62,11 +63,15 @@ Sideline-first, fairness is the product, zero friction for viewers, one-tap core
 
 ## Phase Status
 
-| Phase | Status | Summary |
-|-------|--------|---------|
-| Phase 1 | ✅ Shipped | Core single-coach lineup, schedule, share, PDF, PWA — live since March 24 2026 |
-| Phase 2 | 🔵 In progress | Live scoring, Phase 4 auth (magic link + Google OAuth), admin UI |
-| Phase 3 | 🟡 Backlog | Multi-coach invite, role-based access, season fairness, practice log, push notifications |
+For the authoritative roadmap including current release status, v2.5.1 features, v2.6.0 backlog, and longer-term planning, see [docs/product/ROADMAP.md](ROADMAP.md). This section is intentionally minimal here to avoid drift between docs.
+
+| Snapshot (April 27, 2026) | Status |
+|---|---|
+| Production version | v2.5.1 (shipped April 27, 2026) |
+| Live scoring | Shipped (Mud Hens + Demo All-Stars team gating) |
+| Magic link + Google OAuth auth | Shipped |
+| Admin UI | Shipped |
+| Multi-coach invite, role-based access, season fairness, practice log, push notifications | Backlog (v2.6.0+) |
 
 ---
 
@@ -74,7 +79,7 @@ Sideline-first, fairness is the product, zero friction for viewers, one-tap core
 
 - Lineup generated in < 60 seconds (p50)
 - Share link opens on mobile without login: 100% success rate
-- Test suite: 257 passed / 1 skipped / 0 failed before every deploy
+- Test suite: 421 passed / 1 skipped / 0 failed before every deploy
 - Zero roster wipe incidents (three guards in place)
 - Rollback to stable production: < 10 minutes from detection
 

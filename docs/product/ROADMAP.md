@@ -1,11 +1,11 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: April 2026 (v2.5.1)
+> Last updated: April 27, 2026 (v2.5.1 shipped to production via PR #27, commit `aadddcd` — bundled v2.4.0 + v2.5.0 + v2.5.1)
 > MVP launched: March 24, 2026
 
 ---
 
-## v2.5.1 — 2026-04-24
+## v2.5.1 — 2026-04-27 (prod ship; develop merge 2026-04-24)
 - ACCESSIBILITY_V1 follow-up + UX consolidation + v2.4.0 home/away preservation.
 - `truncateTeamName()` upgraded: word-boundary-aware abbreviation ("Timber Rattlers" → "T. Rattlers"), unicode ellipsis for single-word overflow, default cap 12.
 - `GameContextHeader` component removed; game number relocated as inline `Game N` chip in all 3 scoring header strips (conditional — hidden in practice/orphan games).
@@ -795,6 +795,33 @@
 
 ## 📦 Backlog — Ready to Implement
 
+### v2.6.0 — Critical bugs (user-impacting, ship first)
+
+- [ ] **Diagnose share/print not working in prod** — confirmed broken on April 24, 2026 (game day) and April 27, 2026 (production smoke test post-v2.5.1 deploy). Root cause UNKNOWN. NOT caused by `renderSharedView` hooks violation — that fix shipped in v2.1.6 (commit `46f071a`, `SharedView` component at App.jsx:2560). Investigation needed: reproduce locally, check browser console errors on `?s=` URLs, verify share/print buttons render, check whether share payload generation is failing or share view rendering is failing.
+- [ ] **Audit `snack_duty` codebase usage** before dropping the column. Column verified present in Supabase on April 27, 2026 (jsonb type). Prerequisite for dropping — grep frontend/ and backend/ for any read/write references; if clean, run `ALTER TABLE team_data DROP COLUMN snack_duty;` in Supabase SQL Editor.
+
+### v2.6.0 — Infrastructure (complete before next feature sprint)
+
+- [ ] **CI workflow `BACKEND_URL` audit** — backend job + smoke job both hardcode prod URL (verified April 27, 2026). Evaluate whether to point at a dev/preview backend or make tests environment-aware. Note: smoke job has misleading variable named `DEV_BACKEND_URL` that points to prod URL — fix or rename.
+- [ ] **Verify `RESEND_DOMAIN_VERIFIED=true`** in Render production environment variables (local `.env` confirmed April 27, 2026; Render dashboard not checked this session).
+- [ ] **Investigate Windows Vitest pre-push hook OOM cascade** — currently mitigated by warm-up workaround in CLAUDE.md. Real fix paths: reduce vitest worker count for hook runs, skip pre-push test (rely on CI gate), configure pool to avoid worker-thread cold-start, or move hook to pre-commit instead of pre-push.
+
+### v2.6.0 — Quality of life
+
+- [ ] Install `gh` CLI on Windows machine (`winget install --id GitHub.cli` then `gh auth login`)
+- [ ] Fix `LockFlow.jsx` duplicate `fontSize` lint warning
+- [ ] Bundle size investigation (1681 kB chunk → code splitting)
+- [ ] Enable "Auto-delete head branches" GitHub repo setting
+
+### v2.6.0+ — Auth migration cleanup (was: docs/TODO_activate_membership_rpc.md)
+
+- [ ] **Fix `activate_membership` RPC for email auth (Migration 013)** — The Supabase RPC was originally built for phone-only auth (signature: `activate_membership(p_user_id uuid, p_phone_e164 text, p_first_name text, p_last_name text)`). Phase 4B added email auth without an RPC update; current code uses a direct `.update()` workaround on `team_memberships` in `backend/src/routes/auth.js`.
+  - **Migration:** Add `backend/src/db/migrations/013_fix_activate_membership.sql` updating the RPC signature to accept email + team_id parameters.
+  - **Code:** Restore RPC call in `backend/src/routes/auth.js`, remove the direct update workaround.
+  - **Blocks on:** Nothing — safe to run anytime after Phase 4B is stable. Phase 4B has been stable since v2.x.
+  - **Source:** Originally tracked in `docs/TODO_activate_membership_rpc.md` (now deleted, content migrated here April 27, 2026).
+  - **Target:** v2.6.0 P3 or v2.7.0
+
 ### iOS PWA Install Coaching Overlay
 
 **Status:** Ready to implement (spec complete)
@@ -1197,6 +1224,6 @@ POST https://forms.office.com/formapi/api/b9c4fdbd-efb6-477a-9fb3-32624a22cd70/u
 ## Architecture Notes
 
 - **Storage:** Supabase (primary) + localStorage (offline cache with sync-on-connect)
-- **AI backend:** Render free tier — keep warm via UptimeRobot 5-min ping at `https://lineup-generator-backend.onrender.com/ping`
+- **AI backend:** Render Starter plan ($7/mo) since April 27, 2026 — no spin-down. UptimeRobot monitor #802733786 pings `https://lineup-generator-backend.onrender.com/ping` every 5 minutes for availability monitoring; alerts via email + push notification.
 - **Frontend:** Vercel — auto-deploys on push to `main`
 - **Auth backend deployed (Phase 3):** Email magic-link auth live on Render (Twilio removed). Frontend cutover pending. Until then, all routes remain open (no `requireAuth` middleware on existing routes).

@@ -2,7 +2,7 @@
 
 > Authoritative mapping of every shipped feature to its documentation and test coverage.
 > Update this file whenever a feature ships, changes behavior, or gains new tests.
-> Owner: KK | Last updated: April 2026 (v2.5.0)
+> Owner: KK | Last updated: April 27, 2026 (v2.5.1 prod ship — Registry rows for v2.4-v2.5 features pending; see DOC_TEST_DEBT.md "FEATURE_MAP.md Missing Feature Rows")
 
 ---
 
@@ -63,6 +63,8 @@
 ---
 
 ## Update Rules
+
+> **Known gap (April 27, 2026):** Feature rows for v2.4.0 (Game context header, home/away semantic), v2.5.0 (SCORING_SHEET_V2 default-on, GameContextHeader consolidation prep), and v2.5.1 (truncateTeamName upgrade, ScoreboardRow typography promotion, Game N + Home/Away chip pattern, SharedView component name) are not yet registered. To be added in a focused session — requires reading existing row schema first. Tracked in DOC_TEST_DEBT.md.
 
 See `CLAUDE.md` § Feature Map Update Rules for the full protocol. Quick reference:
 
