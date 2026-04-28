@@ -20,7 +20,7 @@ export default defineConfig({
       singleFork: true
     },
     setupFiles: ['./src/tests/setup.js'],
-    include: ['src/**/*.test.js'],
+    include: ['src/**/*.test.{js,jsx}'],
     exclude: ['**/node_modules/**'],
   },
   plugins: [
