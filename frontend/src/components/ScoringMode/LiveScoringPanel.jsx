@@ -7,6 +7,7 @@ import RunnerConflictModal from './RunnerConflictModal';
 import { track } from '../../utils/analytics';
 import { truncateTeamName, deriveGameHeader } from '../../utils/formatters';
 import { isFlagEnabled } from '../../config/featureFlags';
+import Toast from '../ui/Toast';
 
 var FF = "Georgia,'Times New Roman',serif";
 
@@ -326,19 +327,14 @@ export default function LiveScoringPanel(props) {
   var _undoToast = useState(false);
   var showUndoToast = _undoToast[0]; var setShowUndoToast = _undoToast[1];
 
-  // Dismiss undo toast after 10s
-  useEffect(function() {
-    if (!showUndoToast) return;
-    var t = setTimeout(function() { setShowUndoToast(false); }, 10000);
-    return function() { clearTimeout(t); };
-  }, [showUndoToast]);
 
   // ── Derived ────────────────────────────────────────────────────────────────
   var gs = gameState || {
     inning: 1, halfInning: 'top', outs: 0, balls: 0, strikes: 0,
     myScore: 0, opponentScore: 0, runners: [], currentBatter: null, battingOrderIndex: 0,
   };
-  var halfArrow    = gs.halfInning === 'top' ? '▲' : '▼';
+  var halfArrow       = gs.halfInning === 'top' ? '▲' : '▼';
+  const isHomeBatting = gs.halfInning === myTeamHalf;
   var opponentName = selectedGame ? selectedGame.opponent : 'Opponent';
   var teamLabel    = truncateTeamName(opponentName);
   var myTeamLabel  = truncateTeamName(activeTeam ? activeTeam.name : '');
@@ -489,27 +485,31 @@ export default function LiveScoringPanel(props) {
             </>
           )}
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
-              <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>
-                {gs.halfInning === 'top' ? 'TOP' : 'BOT'}
-              </span>
+            <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:'3px'}}>
+              <span style={{fontSize:'10px',color:'#f5c842',fontWeight:500,letterSpacing:'0.7px',textTransform:'uppercase'}}>INNING</span>
               <span style={{fontSize:'22px',fontWeight:'800',color:'#f5c842',letterSpacing:'1px'}}>
-                {gs.inning}
+                {halfArrow} {gs.inning}
               </span>
             </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: '6px' }}>
-            <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
-              <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>B</span>
-              <div><CountPips n={gs.balls}   max={4} color="#3b82f6" /></div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '11px' }}>
+            {/* Count pill: B + S */}
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', background: 'rgba(255,255,255,0.06)', borderRadius: '9999px', padding: '6px 12px' }}>
+              <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:'3px'}}>
+                <span style={{fontSize:'10px',color:'#cfd8e3',fontWeight:500,letterSpacing:'0.7px',textTransform:'uppercase'}}>BALLS</span>
+                <div><CountPips n={isHomeBatting ? gs.balls : (gs.oppBalls || 0)}   max={4} color="#3b82f6" /></div>
+              </div>
+              <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:'3px'}}>
+                <span style={{fontSize:'10px',color:'#cfd8e3',fontWeight:500,letterSpacing:'0.7px',textTransform:'uppercase'}}>STRIKES</span>
+                <div><CountPips n={isHomeBatting ? gs.strikes : (gs.oppStrikes || 0)} max={3} color="#dc2626" /></div>
+              </div>
             </div>
-            <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
-              <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>S</span>
-              <div><CountPips n={gs.strikes} max={3} color="#dc2626" /></div>
-            </div>
-            <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
-              <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>O</span>
-              <div><CountPips n={gs.outs}    max={3} color="#f5c842" /></div>
+            {/* Outs pill */}
+            <div style={{ display: 'flex', alignItems: 'flex-end', background: 'rgba(255,140,66,0.12)', borderRadius: '9999px', padding: '6px 12px' }}>
+              <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:'3px'}}>
+                <span style={{fontSize:'10px',color:'#FFB89A',fontWeight:500,letterSpacing:'0.7px',textTransform:'uppercase'}}>OUTS</span>
+                <div><CountPips n={gs.outs}    max={3} color="#FF8C42" /></div>
+              </div>
             </div>
           </div>
         </div>
@@ -820,22 +820,29 @@ export default function LiveScoringPanel(props) {
           </>
         )}
 
-        <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#f5c842', flexShrink: 0 }}>
-          {halfArrow} {gs.inning}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px', flexShrink: 0 }}>
+          <span style={{ fontSize: '10px', color: '#f5c842', fontWeight: 500, letterSpacing: '0.7px', textTransform: 'uppercase' }}>INNING</span>
+          <span style={{ fontSize: '15px', fontWeight: 'bold', color: '#f5c842' }}>{halfArrow} {gs.inning}</span>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: '6px', flexShrink: 0 }}>
-          <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
-            <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>B</span>
-            <div><CountPips n={gs.balls}   max={4} color="#3b82f6" /></div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '11px', flexShrink: 0 }}>
+          {/* Count pill: B + S */}
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', background: 'rgba(255,255,255,0.06)', borderRadius: '9999px', padding: '6px 12px' }}>
+            <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:'3px'}}>
+              <span style={{fontSize:'10px',color:'#cfd8e3',fontWeight:500,letterSpacing:'0.7px',textTransform:'uppercase'}}>BALLS</span>
+              <div><CountPips n={isHomeBatting ? gs.balls : (gs.oppBalls || 0)}   max={4} color="#3b82f6" /></div>
+            </div>
+            <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:'3px'}}>
+              <span style={{fontSize:'10px',color:'#cfd8e3',fontWeight:500,letterSpacing:'0.7px',textTransform:'uppercase'}}>STRIKES</span>
+              <div><CountPips n={isHomeBatting ? gs.strikes : (gs.oppStrikes || 0)} max={3} color="#dc2626" /></div>
+            </div>
           </div>
-          <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
-            <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>S</span>
-            <div><CountPips n={gs.strikes} max={3} color="#dc2626" /></div>
-          </div>
-          <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
-            <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>O</span>
-            <div><CountPips n={gs.outs}    max={3} color="#f5c842" /></div>
+          {/* Outs pill */}
+          <div style={{ display: 'flex', alignItems: 'flex-end', background: 'rgba(255,140,66,0.12)', borderRadius: '9999px', padding: '6px 12px' }}>
+            <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:'3px'}}>
+              <span style={{fontSize:'10px',color:'#FFB89A',fontWeight:500,letterSpacing:'0.7px',textTransform:'uppercase'}}>OUTS</span>
+              <div><CountPips n={gs.outs}    max={3} color="#FF8C42" /></div>
+            </div>
           </div>
         </div>
 
@@ -870,8 +877,8 @@ export default function LiveScoringPanel(props) {
         </div>
       </div>
 
-      {/* ── Mercy run banner ─────────────────────────────────────────────────── */}
-      {runsThisHalf >= 5 && (
+      {/* ── Mercy run banner — home half ───────────────────────────────────── */}
+      {gs.halfInning === myTeamHalf && runsThisHalf >= 5 && (
         <div style={{
           background: '#7c2d12', color: '#fca5a5',
           fontSize: '13px', fontWeight: 700,
@@ -897,29 +904,49 @@ export default function LiveScoringPanel(props) {
         </div>
       )}
 
-      {/* ── End inning undo toast ─────────────────────────────────────────────── */}
-      {showUndoToast && (
+      {/* ── Mercy run banner — opponent half ───────────────────────────────── */}
+      {gs.halfInning !== myTeamHalf && (scoring.oppRunsThisHalf || 0) >= 5 && (
         <div style={{
-          position: 'fixed', bottom: '70px', left: '16px', right: '16px',
-          background: '#1e3a5f', border: '1px solid rgba(96,165,250,0.4)',
-          borderRadius: '10px', padding: '10px 14px',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          zIndex: 100, fontFamily: FF,
+          background: '#7c2d12', color: '#fca5a5',
+          fontSize: '13px', fontWeight: 700,
+          padding: '8px 16px',
+          borderBottom: '1px solid #ef4444',
+          flexShrink: 0,
+          display: 'flex', alignItems: 'center',
+          justifyContent: 'space-between', gap: '8px',
         }}>
-          <span style={{ fontSize: '13px', color: '#e2e8f0' }}>Half inning ended</span>
+          <span>⚠️ {scoring.oppRunsThisHalf} {teamLabel} runs this half</span>
           <button
             onClick={function() {
-              undoHalfInning();
-              setShowUndoToast(false);
-              track('inning_undo_tapped');
+              scoring.endHalfInning();
+              setShowUndoToast(true);
+              track('inning_ended', { trigger: 'opp_mercy', half: gs.halfInning, runs: scoring.oppRunsThisHalf });
             }}
             style={{
-              background: '#1d4ed8', border: 'none', borderRadius: '6px',
-              color: '#fff', fontSize: '12px', fontWeight: 700,
-              padding: '5px 12px', cursor: 'pointer', fontFamily: FF,
-            }}>Undo</button>
+              background:'#ef4444', border:'none', color:'#fff',
+              fontSize:'12px', fontWeight:700, padding:'4px 10px',
+              borderRadius:'6px', cursor:'pointer'
+            }}
+          >End Half</button>
         </div>
       )}
+
+      {/* ── End inning undo toast ─────────────────────────────────────────────── */}
+      <Toast
+        open={showUndoToast}
+        message="Half inning ended"
+        actionLabel="Undo"
+        onAction={function() {
+          undoHalfInning();
+          setShowUndoToast(false);
+          track('inning_undo_tapped');
+        }}
+        onDismiss={function() {
+          setShowUndoToast(false);
+          track('inning_undo_dismissed');
+        }}
+        durationMs={10000}
+      />
 
       {/* ── Lock expired banner ───────────────────────────────────────────────── */}
       {scorerLockExpired ? (
@@ -1257,40 +1284,6 @@ export default function LiveScoringPanel(props) {
           background:'#0b1524', borderTop:'1px solid rgba(255,255,255,0.08)',
           padding:'8px 16px', zIndex:50,
         }}>
-          {/* Opponent B/S/O count display */}
-          <div style={{
-            display:'flex', justifyContent:'center', gap:'24px',
-            marginBottom:'8px'
-          }}>
-            {[
-              {label:'B', val: gs.oppBalls || 0, max:4, color:'#60a5fa'},
-              {label:'S', val: gs.oppStrikes || 0, max:3, color:'#f87171'},
-              {label:'O', val: gs.outs, max:3, color:'#fbbf24'},
-            ].map(function(item) {
-              return (
-                <div key={item.label} style={{
-                  display:'flex', flexDirection:'column',
-                  alignItems:'center', gap:'2px'
-                }}>
-                  <span style={{fontSize:'9px',color:'#888',fontWeight:600}}>
-                    {item.label}
-                  </span>
-                  <div style={{display:'flex',gap:'3px'}}>
-                    {Array.from({length:item.max}).map(function(_,i) {
-                      return (
-                        <div key={i} style={{
-                          width:'8px', height:'8px', borderRadius:'50%',
-                          background: i < item.val
-                            ? item.color
-                            : 'rgba(255,255,255,0.12)',
-                        }} />
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
           {/* Opponent pitch buttons */}
           <div style={{display:'flex',gap:'6px',marginBottom:'8px'}}>
             {[
@@ -1335,29 +1328,6 @@ export default function LiveScoringPanel(props) {
                   border:'1px solid #374151', background:'transparent',
                   color:'#555', fontSize:'12px', cursor:'pointer'
                 }}>+1 {myTeamLabel}</button>
-            </div>
-          )}
-          {/* Opponent mercy banner */}
-          {(scoring.oppRunsThisHalf || 0) >= 5 && (
-            <div style={{
-              marginTop:'8px', background:'#7c2d12', color:'#fca5a5',
-              fontSize:'12px', fontWeight:700, padding:'6px 10px',
-              borderRadius:'6px', textAlign:'center',
-              display:'flex', gap:'8px', justifyContent:'center',
-              alignItems:'center',
-            }}>
-              <span>⚠️ {scoring.oppRunsThisHalf} {teamLabel} runs this half</span>
-              <button
-                onClick={function(){
-                  scoring.endHalfInning();
-                  setShowUndoToast(true);
-                  track('inning_ended', { trigger: 'opp_mercy', half: gs.halfInning, runs: scoring.oppRunsThisHalf });
-                }}
-                style={{
-                  background:'#ef4444', border:'none', color:'#fff',
-                  fontSize:'11px', fontWeight:700, padding:'3px 8px',
-                  borderRadius:'5px', cursor:'pointer'
-                }}>End Half</button>
             </div>
           )}
         </div>

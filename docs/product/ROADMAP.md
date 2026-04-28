@@ -1,9 +1,27 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: April 27, 2026 (v2.5.1 shipped to production via PR #27, commit `aadddcd` — bundled v2.4.0 + v2.5.0 + v2.5.1)
+> Last updated: April 28, 2026 (v2.5.2 staged on develop; v2.5.1 shipped to production via PR #27, commit `aadddcd`)
 > MVP launched: March 24, 2026
 
 ---
+
+## v2.5.2 — 2026-04-28 (develop staged; awaiting prod merge)
+
+Game Mode polish release covering three themes:
+
+**Count strip overhaul**
+- Two scope-grouped pills separate count (BALLS / STRIKES) from outs
+- Stacked label-above-value cells: INNING / BALLS / STRIKES / OUTS — full label parity
+- Outs pill uses warm tint (#FF8C42) to signal half-inning advancement
+- Single render surface: top pill binds dynamically to active batter via `isHomeBatting`
+- Removed legacy bottom opponent count strip (eliminated duplicate render surface)
+
+**Toast primitive + half-inning notification**
+- New Toast UI primitive: top-anchored, dismissable, auto-clearing
+- Half-inning notifications migrated to Toast — appear at top, one-tap dismiss
+
+**Mercy banner symmetry**
+- Banner now renders symmetrically for both home and opponent halves
 
 ## v2.5.1 — 2026-04-27 (prod ship; develop merge 2026-04-24)
 - ACCESSIBILITY_V1 follow-up + UX consolidation + v2.4.0 home/away preservation.
@@ -1150,6 +1168,96 @@ Open questions to resolve during implementation:
 - `backend/scripts/tests/suite-rate-limits.js` RATE-01a expects `403 NOT_AUTHORIZED` but gets `429 TOO_MANY_ATTEMPTS` when prior CI runs have burned through the prod backend's rate-limit cap.
 - Fix candidates: (A) throwaway random email per test run, (B) mock rate limiter at test boundary, (C) use dev backend instead of prod. Recommend (A).
 - Blocks nothing directly but masks real regressions if NOT_AUTHORIZED behavior ever breaks.
+
+### Story 31 (P2) — package.json version sync gate
+Status: Open
+Discovered: 2026-04-28, during v2.5.2 release recon
+Target: v2.5.3 or earlier
+Symptom: The v2.5.2 version bump (commit 0c005e1) updated frontend/package.json
+  and APP_VERSION constant in App.jsx but missed backend/package.json — caught
+  only by manual recon during the release deploy. A version-mismatched ship
+  would have made it to prod silently.
+Impact: Production version drift between frontend and backend services. Breaks
+  any client that does version-pinning. Breaks any analytics or telemetry that
+  joins on app_version. Hard to detect without a manual audit.
+Root cause: Known — manual three-file sync (App.jsx APP_VERSION +
+  frontend/package.json + backend/package.json) with no automated guard. Easy
+  to miss one.
+Proposed fixes:
+  A) Vitest test asserting frontend/package.json.version ===
+    backend/package.json.version === APP_VERSION constant. Fails CI if drifted.
+    Cheap.
+  B) Pre-commit hook validating the same. Fails locally before commit. More
+    invasive.
+  C) Single source of truth — one VERSION file imported by all three. Bigger
+    refactor.
+Recommendation: A — test gate runs in CI, blocks PR merge if drifted, doesn't
+  change developer workflow. Lowest cost, highest reliability.
+
+### Story 32 (P3) — Pre-push hook retry hides OOM failures
+Status: Open
+Discovered: 2026-04-28 (re-flagged across multiple sessions)
+Target: Next infra patch
+Symptom: .husky/pre-push runs `cd frontend && npm test || npm test`. The retry
+  exists to mask Windows Vitest cold-start OOM cascades, but it also masks
+  legitimate test failures — a real failure on first run gets a free retry on
+  warm cache, and the hook reports green.
+Impact: Test failures can slip past the local pre-push gate to develop,
+  surfacing only in GitHub Actions CI. Slower feedback loop. CLAUDE.md
+  explicitly states the hook should be `cd frontend && npm test` only.
+Root cause: Known — workaround for Windows Vitest cold-start OOM that was never
+  reverted after the underlying issue was supposed to be addressed.
+Proposed fixes:
+  A) Remove retry. Accept that pushes occasionally fail and need re-run.
+    Restores the explicit gate per CLAUDE.md.
+  B) Increase Vitest worker memory to eliminate the OOM root cause, then remove
+    retry. Stable but requires tuning.
+  C) Switch to Vitest --pool=forks --poolOptions.forks.singleFork. Slower but
+    no OOM. Then remove retry.
+Recommendation: B if straightforward to tune; otherwise A. Either way, restore
+  the explicit gate. Status quo violates CLAUDE.md.
+
+### Story 33 (P3) — VERSION_HISTORY techNote validation
+Status: Open
+Discovered: 2026-04-28, during v2.5.2 release recon
+Target: Next infra patch
+Symptom: A prior v2.5.2 docs commit used a non-compliant techNote string
+  ("UX improvement and new reusable Toast component") instead of one of the four
+  pre-approved generic strings. Caught only by manual review during release recon.
+Impact: Release notes lose their generic-string firewall — internal-detail
+  leakage into user-facing release notes. The four-string convention exists to
+  keep release notes coach-friendly; nothing currently enforces it.
+Root cause: Known — convention documented in CLAUDE.md but no automated check.
+Proposed fixes:
+  A) Vitest test asserting every VERSION_HISTORY entry has a techNote in the
+    approved set: 'Bug fixes and performance improvements' / 'Under-the-hood
+    stability improvements' / 'Performance and reliability improvements' /
+    'Minor fixes and internal improvements'. Fails CI if violated.
+  B) ESLint custom rule on VERSION_HISTORY array literal. More invasive.
+  C) Pre-commit hook check on App.jsx changes. Local-only; CI still vulnerable.
+Recommendation: A — test gates are cheaper than hooks and run in CI for both
+  local and PR pushes.
+
+### Story 34 (P3) — FEATURE_MAP row numbering audit
+Status: Open
+Discovered: 2026-04-28, during v2.5.2 docs gap closure
+Target: Next docs cleanup patch
+Symptom: docs/product/FEATURE_MAP.md row numbering has out-of-sequence rows.
+  Row 23 sits between rows 15 and 16 (confirmed insertion-order artifact, not a
+  deletion gap). Future inserts may compound the disorder.
+Impact: Cosmetic. Makes the table harder to navigate and audit. Coverage summary
+  math depends on accurate row count, so a future delete or insert without full
+  renumber could silently corrupt the totals.
+Root cause: Known — row 23 was inserted out of position rather than appended;
+  no renumber applied at the time.
+Proposed fixes:
+  A) Audit and renumber rows sequentially 1..N. Update all backreferences.
+    Confirm coverage summary still accurate.
+  B) Switch to a different row identifier scheme — section.subsection (1.1,
+    1.2) or feature codes — and stop relying on monotonic integers.
+  C) Leave as-is, accept the cosmetic debt.
+Recommendation: A in a focused docs cleanup commit — low risk, restores
+  consistency. Defer B unless A surfaces deeper structural issues.
 
 ---
 

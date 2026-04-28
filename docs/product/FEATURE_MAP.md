@@ -17,7 +17,7 @@
 
 ---
 
-## Feature Registry (23 features)
+## Feature Registry (24 features)
 
 | # | Feature | Status | Primary Doc | Doc Status | Test File(s) | Test Status | Debt |
 |---|---------|--------|-------------|------------|--------------|-------------|------|
@@ -44,6 +44,7 @@
 | 20 | **Fairness Check + violation warnings** | MVP | `SOLUTION_DESIGN.md` § Scoring Engine | ✅ Current | `engine.v2.test.js` (violations surfaced) | ⚠ Partial | D012 |
 | 21 | **Player profiles (V2 attributes)** | MVP | `SOLUTION_DESIGN.md` § Player Attributes; `PERSONAS.md` § Head Coach | ✅ Current | `scoring.test.js`, `lineupEngineV2-unit.test.js` | ✅ Yes | — |
 | 22 | **Governance infrastructure** | MVP | `CHARTER.md`, `ONE_PAGER.md`, `ROADMAP.md`, `PERSONAS.md`, `faqs.js`, `FEATURE_MAP.md`, `MASTER_DEV_REFERENCE.md`, `CLAUDE.md` | ✅ Current | — | ❌ None | — |
+| 24 | **Toast UI primitive** | MVP | `CLAUDE.md` § UI Primitives | ✅ Current | `src/components/ui/Toast.test.jsx` | ✅ Yes | — |
 
 ---
 
@@ -51,12 +52,12 @@
 
 | Status | Count |
 |--------|-------|
-| ✅ Doc Current | 19 / 23 |
-| ⚠ Doc Stale | 4 / 23 |
-| ❌ Doc Missing | 0 / 23 |
-| ✅ Tests Exist | 4 / 23 |
-| ⚠ Tests Partial | 8 / 23 |
-| ❌ No Tests | 11 / 23 |
+| ✅ Doc Current | 20 / 24 |
+| ⚠ Doc Stale | 4 / 24 |
+| ❌ Doc Missing | 0 / 24 |
+| ✅ Tests Exist | 5 / 24 |
+| ⚠ Tests Partial | 8 / 24 |
+| ❌ No Tests | 11 / 24 |
 
 > The test gap is large but expected — the engine is the highest-risk surface and is well-covered. Features with no test are all UI-layer or integration paths with no engine logic.
 

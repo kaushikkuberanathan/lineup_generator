@@ -141,9 +141,29 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.5.1";
+var APP_VERSION = "2.5.2";
 
 var VERSION_HISTORY = [
+  {
+    version: '2.5.2',
+    date: '2026-04-28',
+    headline: 'Game Mode polish: clearer count strip, smarter notifications, fairer mercy banner',
+    userChanges: [
+      'Count strip redesigned: BALLS, STRIKES, and OUTS now sit in clearly separate pills with full labels — easier to read at a glance from the dugout.',
+      'Count strip now updates correctly when the opposing team is batting — same display whether you are scoring or watching.',
+      'Half-inning notifications appear at the top of the screen and can be dismissed with one tap.',
+      'Mercy run banner now appears symmetrically for both home and opposing innings.',
+    ],
+    techNote: 'Bug fixes and performance improvements',
+    internalChanges: [
+      'LiveScoringPanel: refactored count strip into two scope-grouped pills (count + outs) with stacked label-above-value cells.',
+      'LiveScoringPanel: single render surface for count/outs — top pill binds dynamically to active batter via isHomeBatting; legacy bottom opponent count strip removed.',
+      'Toast primitive added (top-anchored, dismissable, auto-clearing) with project-convention inline styles.',
+      'Half-inning notification migrated to Toast pattern.',
+      'Mercy banner logic made symmetric across home and opponent halves.',
+      '@testing-library/jest-dom added; vitest glob expanded to .jsx.',
+    ],
+  },
   {
     version: '2.5.1',
     date: '2026-04-24',

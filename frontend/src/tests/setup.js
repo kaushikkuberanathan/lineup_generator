@@ -1,3 +1,5 @@
+import '@testing-library/jest-dom';
+
 // jsdom does not implement window.matchMedia — add a minimal stub so modules
 // that call it at load time (e.g. analytics.js deviceContext) don't throw.
 Object.defineProperty(window, 'matchMedia', {

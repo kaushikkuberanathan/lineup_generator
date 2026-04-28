@@ -143,6 +143,7 @@ All `team_data` columns are JSONB — structure matches localStorage exactly, no
 - **Opponent tracking**: `oppBalls`, `oppStrikes`, `oppRunsThisHalf` in gameState; `recordOppPitch()` in `useLiveScoring`. Auto-flips half-inning at 3 outs. `opp_runs_this_half` persisted to Supabase.
 - **Mercy rule**: banner at `runsThisHalf >= 5` (our half) or `oppRunsThisHalf >= 5` (their half); shows End Inning + End Game buttons.
 - **Hook location**: `frontend/src/hooks/useLiveScoring.js`. UI: `frontend/src/components/ScoringMode/`.
+- **Single render surface for count/outs (added v2.5.2):** Game Mode count and outs render in exactly one place — the top pill in `LiveScoringPanel.jsx`. The pill binds dynamically to the active batter via `const isHomeBatting = gs.halfInning === myTeamHalf`. BALLS reads `gs.balls` when home is batting, `gs.oppBalls || 0` otherwise. STRIKES uses the symmetric pattern. OUTS reads `gs.outs` (shared across halves). Stacked label-above-value pattern (INNING / BALLS / STRIKES / OUTS) is the convention for scoring strips. Future scoring UI must NOT introduce a parallel count display.
 
 ### Backend (`backend/`)
 Existing routes in `index.js`:
@@ -447,6 +448,14 @@ All major sections wrapped with `<ErrorBoundary>` (`src/components/Shared/ErrorB
 
 ---
 
+## UI Primitives
+
+Reusable components in `frontend/src/components/ui/`. Use these instead of one-off inline implementations.
+
+**Toast** (`src/components/ui/Toast.jsx`) — Transient notifications use the Toast primitive. Top-anchored below safe-area inset (`env(safe-area-inset-top, 0px) + 8px`), `role=status` + `aria-live=polite`, ≥44×44px tap targets, auto-dismiss with hover/focus pause, optional action button. Do not implement custom fixed-position notification divs — wire to Toast instead.
+
+---
+
 ## Git Staging Discipline
 
 **Always stage specific files by path. Never `git add -A` or `git add .`.**
@@ -738,8 +747,9 @@ This audit takes 5 minutes and saves hours of confusion at the next session star
 ---
 
 ## Current Version
-**v2.5.1** — April 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/App.jsx`.
+**v2.5.2** — April 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/App.jsx`.
 
+- v2.5.2 (2026-04-28): Game Mode polish — count strip redesigned into two scope-grouped pills (Count + Outs) with stacked label-above-value cells (INNING / BALLS / STRIKES / OUTS). Single render surface: top pill binds dynamically to active batter via `isHomeBatting`; legacy bottom opponent count strip removed. Toast primitive added (top-anchored, dismissable, auto-clearing); half-inning notifications migrated to Toast. Mercy banner symmetric across home and opponent halves. @testing-library/jest-dom added; vitest glob expanded to .jsx; 10 tests (Toast.test.jsx); suite 421→431.
 - v2.5.1 (2026-04-24): ACCESSIBILITY_V1 follow-up + UX consolidation — Game Mode scoreboard polish: truncateTeamName word-boundary aware (cap 12 default, cap 10 for ScoreboardRow); GameContextHeader removed, game number chip + HomeAwayChip (amber @ Away / neutral Home) inline in all 3 header strips; STATE 1 subtitle home/away connector restored (was hardcoded 'vs'); ScoreboardRow labels 16px/#e2e8f0/700; gold borderTop accent; overflow backstop. Tests: opponentNameLabel.test.js + gameHeader.test.js updated; suite 419→421.
 - v2.5.0 (2026-04-24): Feature — scoring outcome sheet semantic cleanup: Strikeout removed, Foul promoted to PITCH OUTCOME header, Out@1st+Flyout in 2-button top row, Home Run full-width. SCORING_SHEET_V2 flag (default true); opp-half +1 Run buttons hidden. OUTCOME_ROWS_V2 export; 8 tests (scoringSheetV2.test.js); suite 411→419. Story 29 resolved; Story 30 logged (isFlagEnabled DB-read refactor).
 - v2.4.0 (2026-04-24): Feature — game context header, per-team +1 buttons on dedicated scoreboard row, home team name replaces "Us"/"US" (Stories 27 + 28 bundled + layout restructure). Manual run modal removed. deriveGameHeader util; GameContextHeader + ScoreboardRow components.
