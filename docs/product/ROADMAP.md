@@ -1166,7 +1166,9 @@ Open questions to resolve during implementation:
 ### Story 26 (P2): Backend RATE-01a test flakiness — stateful against prod rate limiter
 - **Surfaced:** April 24, 2026 (PR #17 CI run — admin-bypassed because only CLAUDE.md changed).
 - `backend/scripts/tests/suite-rate-limits.js` RATE-01a expects `403 NOT_AUTHORIZED` but gets `429 TOO_MANY_ATTEMPTS` when prior CI runs have burned through the prod backend's rate-limit cap.
-- Fix candidates: (A) throwaway random email per test run, (B) mock rate limiter at test boundary, (C) use dev backend instead of prod. Recommend (A).
+- Update 2026-04-28: VAL-09 (validation, no email) is also affected by this rate limit issue, not just RATE-01a.
+- Fix candidates: (A) throwaway random email per test run, (B) mock rate limiter at test boundary, (C) use dev backend instead of prod. (D) Cleanest structural fix: key loginLimiter by email instead of IP. Eliminates cross-run pollution from CI runner IPs. Side benefit: rate limit becomes meaningful for real abuse patterns (per-account) instead of per-source-IP.
+- Recommendation: (D) addresses root cause; combine with throwaway-email per run from original recommendation as defense in depth.
 - Blocks nothing directly but masks real regressions if NOT_AUTHORIZED behavior ever breaks.
 
 ### Story 31 (P2) — package.json version sync gate
@@ -1258,6 +1260,59 @@ Proposed fixes:
   C) Leave as-is, accept the cosmetic debt.
 Recommendation: A in a focused docs cleanup commit — low risk, restores
   consistency. Defer B unless A surfaces deeper structural issues.
+
+### Story 35 (P3) — CLAUDE.md docs drift on rate limiter state
+Status: Open
+Discovered: 2026-04-28, during PR #29 diagnostic
+Target: Next infra patch
+Symptom: CLAUDE.md (and the RATE-01b comment in suite-rate-limits.js line 41-44)
+  state the magic-link rate limiter was removed in v2.3.3. Backend code shows the
+  limiter has been live continuously since commit 91aaf43 (April 6, 2026).
+  Documentation was factually incorrect.
+Impact: Misleads future debugging. The PR #29 diagnostic took longer than
+  necessary because operators had to disprove the "limiter was removed" claim
+  before reaching root cause. Doc trust degraded.
+Root cause: Known — claim was made in code comments when the limiter was
+  apparently planned for removal but the removal commit never landed. No
+  subsequent doc correction.
+Proposed fixes:
+  A) Audit CLAUDE.md and any related docs/comments for "rate limiter removed"
+    claims; correct to current state with the loginLimiter spec (5 req per
+    15 min, IP-keyed).
+  B) Add the limiter spec to the "## Auth Strategy" section of CLAUDE.md as a
+    permanent reference.
+  C) Update RATE-01b comment in suite-rate-limits.js to reflect actual code
+    state.
+Recommendation: All three — small focused docs commit. Pair with Story 26 fix
+  for one clean PR.
+
+### Story 36 (P3) — CI backend integration tests don't account for double-trigger request volume
+Status: Open
+Discovered: 2026-04-28, during PR #29 CI failure
+Target: Next infra patch
+Symptom: Commit b92fdb3 (April 22, 2026) added pull_request triggers to backend
+  integration tests without updating the tests for the doubled request volume.
+  Push event hits /magic-link 3x; PR open event re-runs minutes later, totaling
+  6+ requests within the 15-minute rate-limit window. Multi-commit develop
+  branches compound the count further (n commits × 3 = 3n requests).
+Impact: PRs systematically fail CI on the rate-limit tests when develop has had
+  recent activity. False positives erode trust in CI as a real merge gate. PR
+  #29 was merged with red CI on this basis — establishes a precedent that should
+  not become routine.
+Root cause: Known — workflow trigger expansion without corresponding test
+  infrastructure update.
+Proposed fixes:
+  A) Skip backend integration tests on pull_request events when the same commit
+    was already tested on push (deduplication via commit SHA cache).
+  B) Add a wait-for-rate-limit-window step before running magic-link tests on
+    PR events.
+  C) Fix at the test layer per Story 26 — make tests rate-limit-aware so the
+    trigger volume doesn't matter.
+  D) Run integration tests against a separate test backend with a higher rate
+    limit (was deleted April 27 per memory — would require standing it back up).
+Recommendation: C as primary (tests should be robust regardless of trigger
+  pattern), A as bonus (doesn't hurt to deduplicate). Skip D unless other
+  reasons emerge to revive a test backend.
 
 ---
 

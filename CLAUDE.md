@@ -163,6 +163,7 @@ Auth routes (additive only — do not modify existing handlers):
 - **Supabase service role key** lives only in backend environment — never sent to the client
 - Frontend continues using anon key for existing data operations
 - Admin UI: `frontend/public/admin.html` — Google OAuth + magic link, six management tabs
+- **`loginLimiter`** is active on `POST /magic-link`: 15-minute window, max 5 requests per IP. Added in commit `91aaf43` (April 6, 2026, v2.2.18). Returns `429 TOO_MANY_ATTEMPTS` when exceeded. Do NOT assume this was removed — the removal was planned but never landed. See Story 26 + Story 35 for test fragility implications.
 
 ### Auth Principle (non-negotiable)
 Viewing lineup and share links must **never** require login. Auth must never block Game Mode or share link rendering.
