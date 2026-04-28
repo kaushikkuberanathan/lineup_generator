@@ -484,31 +484,29 @@ export default function LiveScoringPanel(props) {
             </>
           )}
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
-              <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>
-                {gs.halfInning === 'top' ? 'TOP' : 'BOT'}
-              </span>
+            <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:'3px'}}>
+              <span style={{fontSize:'10px',color:'#f5c842',fontWeight:500,letterSpacing:'0.7px',textTransform:'uppercase'}}>INNING</span>
               <span style={{fontSize:'22px',fontWeight:'800',color:'#f5c842',letterSpacing:'1px'}}>
-                {gs.inning}
+                {halfArrow} {gs.inning}
               </span>
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '11px' }}>
             {/* Count pill: B + S */}
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', background: 'rgba(255,255,255,0.06)', borderRadius: '9999px', padding: '6px 12px' }}>
-              <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
-                <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>B</span>
+              <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:'3px'}}>
+                <span style={{fontSize:'10px',color:'#cfd8e3',fontWeight:500,letterSpacing:'0.7px',textTransform:'uppercase'}}>BALLS</span>
                 <div><CountPips n={gs.balls}   max={4} color="#3b82f6" /></div>
               </div>
-              <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
-                <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>S</span>
+              <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:'3px'}}>
+                <span style={{fontSize:'10px',color:'#cfd8e3',fontWeight:500,letterSpacing:'0.7px',textTransform:'uppercase'}}>STRIKES</span>
                 <div><CountPips n={gs.strikes} max={3} color="#dc2626" /></div>
               </div>
             </div>
             {/* Outs pill */}
             <div style={{ display: 'flex', alignItems: 'flex-end', background: 'rgba(255,140,66,0.12)', borderRadius: '9999px', padding: '6px 12px' }}>
-              <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
-                <span style={{fontSize:'10px',color:'#FFB89A',fontWeight:600,letterSpacing:'0.5px'}}>OUTS</span>
+              <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:'3px'}}>
+                <span style={{fontSize:'10px',color:'#FFB89A',fontWeight:500,letterSpacing:'0.7px',textTransform:'uppercase'}}>OUTS</span>
                 <div><CountPips n={gs.outs}    max={3} color="#FF8C42" /></div>
               </div>
             </div>
@@ -821,26 +819,27 @@ export default function LiveScoringPanel(props) {
           </>
         )}
 
-        <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#f5c842', flexShrink: 0 }}>
-          {halfArrow} {gs.inning}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px', flexShrink: 0 }}>
+          <span style={{ fontSize: '10px', color: '#f5c842', fontWeight: 500, letterSpacing: '0.7px', textTransform: 'uppercase' }}>INNING</span>
+          <span style={{ fontSize: '15px', fontWeight: 'bold', color: '#f5c842' }}>{halfArrow} {gs.inning}</span>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '11px', flexShrink: 0 }}>
           {/* Count pill: B + S */}
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', background: 'rgba(255,255,255,0.06)', borderRadius: '9999px', padding: '6px 12px' }}>
-            <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
-              <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>B</span>
+            <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:'3px'}}>
+              <span style={{fontSize:'10px',color:'#cfd8e3',fontWeight:500,letterSpacing:'0.7px',textTransform:'uppercase'}}>BALLS</span>
               <div><CountPips n={gs.balls}   max={4} color="#3b82f6" /></div>
             </div>
-            <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
-              <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>S</span>
+            <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:'3px'}}>
+              <span style={{fontSize:'10px',color:'#cfd8e3',fontWeight:500,letterSpacing:'0.7px',textTransform:'uppercase'}}>STRIKES</span>
               <div><CountPips n={gs.strikes} max={3} color="#dc2626" /></div>
             </div>
           </div>
           {/* Outs pill */}
           <div style={{ display: 'flex', alignItems: 'flex-end', background: 'rgba(255,140,66,0.12)', borderRadius: '9999px', padding: '6px 12px' }}>
-            <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
-              <span style={{fontSize:'10px',color:'#FFB89A',fontWeight:600,letterSpacing:'0.5px'}}>OUTS</span>
+            <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:'3px'}}>
+              <span style={{fontSize:'10px',color:'#FFB89A',fontWeight:500,letterSpacing:'0.7px',textTransform:'uppercase'}}>OUTS</span>
               <div><CountPips n={gs.outs}    max={3} color="#FF8C42" /></div>
             </div>
           </div>
