@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 
+var FF = "Georgia,'Times New Roman',serif";
+
 /**
- * Top-anchored transient notification.
- * Sits below safe-area inset, above page content.
- * Auto-dismisses unless hovered/focused. Supports an optional action button + dismiss.
+ * Top-anchored transient notification, styled to match the project's
+ * inline-style convention (slate-blue card surface used in scoring views).
  *
  * Props:
  *  - open: boolean
@@ -12,7 +13,6 @@ import { useEffect, useRef, useState, useCallback } from 'react';
  *  - onAction?: () => void
  *  - onDismiss: () => void
  *  - durationMs?: number          default 10000; pass 0 to disable auto-dismiss
- *  - tone?: 'info' | 'success' | 'warning'  default 'info'
  */
 export default function Toast({
   open,
@@ -21,7 +21,6 @@ export default function Toast({
   onAction,
   onDismiss,
   durationMs = 10000,
-  tone = 'info',
 }) {
   const timerRef = useRef(null);
   const [paused, setPaused] = useState(false);
@@ -44,12 +43,6 @@ export default function Toast({
 
   if (!open) return null;
 
-  const toneClass = {
-    info: 'bg-slate-800 border-slate-700 text-white',
-    success: 'bg-emerald-700 border-emerald-600 text-white',
-    warning: 'bg-amber-600 border-amber-500 text-white',
-  }[tone];
-
   return (
     <div
       role="status"
@@ -59,41 +52,87 @@ export default function Toast({
       onMouseLeave={() => setPaused(false)}
       onFocus={() => setPaused(true)}
       onBlur={() => setPaused(false)}
-      className="fixed left-0 right-0 z-50 flex justify-center px-3 pointer-events-none"
-      style={{ top: 'calc(env(safe-area-inset-top, 0px) + 8px)' }}
+      style={{
+        position: 'fixed',
+        top: 'calc(env(safe-area-inset-top, 0px) + 8px)',
+        left: '16px',
+        right: '16px',
+        zIndex: 100,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: '8px',
+        background: '#1e3a5f',
+        border: '1px solid rgba(96,165,250,0.4)',
+        borderRadius: '10px',
+        padding: '10px 14px',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.35)',
+        fontFamily: FF,
+        animation: 'toast-in 180ms ease-out',
+      }}
     >
-      <div
-        className={`pointer-events-auto w-full max-w-md flex items-center gap-2 rounded-lg border shadow-lg px-3 py-2 animate-toast-in ${toneClass}`}
-      >
-        <span className="flex-1 text-sm font-medium truncate">{message}</span>
+      <span style={{
+        flex: 1,
+        fontSize: '13px',
+        color: '#e2e8f0',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+      }}>
+        {message}
+      </span>
 
-        {actionLabel && onAction && (
-          <button
-            type="button"
-            data-testid="toast-action"
-            onClick={() => {
-              clearTimer();
-              onAction();
-            }}
-            className="min-h-[44px] min-w-[44px] px-3 rounded-md bg-white/15 hover:bg-white/25 text-sm font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
-          >
-            {actionLabel}
-          </button>
-        )}
-
+      {actionLabel && onAction && (
         <button
           type="button"
-          aria-label="Dismiss notification"
-          data-testid="toast-dismiss"
+          data-testid="toast-action"
           onClick={() => {
             clearTimer();
-            onDismiss();
+            onAction();
           }}
-          className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-md hover:bg-white/15 text-lg leading-none focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+          style={{
+            background: '#1d4ed8',
+            border: 'none',
+            borderRadius: '6px',
+            color: '#fff',
+            fontSize: '12px',
+            fontWeight: 700,
+            padding: '8px 14px',
+            minHeight: '44px',
+            minWidth: '44px',
+            cursor: 'pointer',
+            fontFamily: FF,
+          }}
         >
-          ✕
+          {actionLabel}
         </button>
-      </div>
+      )}
+
+      <button
+        type="button"
+        aria-label="Dismiss notification"
+        data-testid="toast-dismiss"
+        onClick={() => {
+          clearTimer();
+          onDismiss();
+        }}
+        style={{
+          background: 'transparent',
+          border: 'none',
+          color: '#e2e8f0',
+          fontSize: '18px',
+          lineHeight: 1,
+          padding: '0',
+          minHeight: '44px',
+          minWidth: '44px',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        ✕
+      </button>
     </div>
   );
 }
