@@ -44,8 +44,7 @@ Default base for new work: develop.
 - Windows test environment requires singleFork for scoring tests
   to avoid OOM cascade. If OOM returns, check test weight before
   excluding.
-- Pre-push hook must NOT use `|| npm test` retry — it hides real
-  failures. Hook is currently: `cd frontend && npm test` only.
+**Pre-push hook (v2.5.3):** `.husky/pre-push` runs `cd frontend && npm test` (no retry) and includes a branch guard rejecting direct pushes to `develop` and `main`. Override for declared hotfixes only: `ALLOW_DIRECT_PUSH=1 git push`. The earlier `|| npm test` retry was removed because it was duplicated (ran tests up to four times) and masked first-run failures.
 
 ### Known issue: Windows Vitest cold-start OOM
 

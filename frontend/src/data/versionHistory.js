@@ -2,8 +2,10 @@
   {
     version: '2.5.3',
     date: 'April 2026',
-    headline: '',
-    userChanges: [],
+    headline: 'Branch strategy enforcement, governance hardening, and rate limiter docs corrections',
+    userChanges: [
+      'No user-facing changes — internal hygiene release.',
+    ],
     techNote: 'Minor fixes and internal improvements',
     internalChanges: [
       'Added VERSION_HISTORY validation test enforcing approved techNote strings (frontend/src/__tests__/versionHistory.test.js)',
@@ -11,6 +13,9 @@
       'Corrected 24 historical techNote strings spanning v2.1.x through v2.4.0 to use the approved set',
       'Restored named UPDATES TAB CONTENT RULE heading in CLAUDE.md for grep auditability',
       "Added versionHistory.js to the extracted-modules list in CLAUDE.md (line 105) and replaced the non-approved 'Meta-governance release.' techNote example in the deploy checklist (line 669) with an approved string",
+      'Branch enforcement: .husky/pre-push now blocks direct push to develop/main; ALLOW_DIRECT_PUSH=1 escape for declared hotfixes (Story 37 — Resolved).',
+      'Pre-push hook: removed `|| npm test` retry that was duplicated and masked first-run failures (Story 32 — Resolved).',
+      'Rate limiter docs: corrected CLAUDE.md and suite-rate-limits.js comment falsely stating /magic-link rate limiter was removed in v2.3.3. Limiter has been live continuously since v2.2.18 (Story 35 — Resolved).',
     ],
   },
   {

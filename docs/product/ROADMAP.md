@@ -14,6 +14,10 @@ Meta-governance patch. No user-facing changes.
 - 24 historical `techNote` strings corrected (v2.1.x–v2.4.0) to use the approved set
 - Named `### UPDATES TAB CONTENT RULE` heading added to `CLAUDE.md` for grep auditability
 - `versionHistory.js` added to extracted-modules list in `CLAUDE.md`; non-approved `'Meta-governance release.'` techNote example in deploy checklist replaced with approved string
+- `.husky/pre-push` updated with branch guard blocking direct push to `develop`/`main`; `ALLOW_DIRECT_PUSH=1` escape for declared hotfixes (Story 37 — Resolved).
+- `.husky/pre-push` retry removed — was duplicated `|| npm test` masking first-run failures (Story 32 — Resolved).
+- `CLAUDE.md` corrected: `/magic-link` rate limiter is active and was never removed in v2.3.3 (Story 35 — Resolved).
+- `backend/scripts/tests/suite-rate-limits.js`: RATE-01b comment corrected to reflect actual code state.
 
 ## v2.5.2 — 2026-04-28 (develop staged; awaiting prod merge)
 
@@ -1217,7 +1221,7 @@ Recommendation: A — test gate runs in CI, blocks PR merge if drifted, doesn't
   change developer workflow. Lowest cost, highest reliability.
 
 ### Story 32 (P3) — Pre-push hook retry hides OOM failures
-Status: Open
+Status: Resolved (v2.5.3, this branch — bundled with Story 37 Husky update)
 Discovered: 2026-04-28 (re-flagged across multiple sessions)
 Target: Next infra patch
 Symptom: .husky/pre-push runs `cd frontend && npm test || npm test`. The retry
@@ -1240,7 +1244,7 @@ Recommendation: B if straightforward to tune; otherwise A. Either way, restore
   the explicit gate. Status quo violates CLAUDE.md.
 
 ### Story 33 (P3) — VERSION_HISTORY techNote validation
-Status: Open
+Status: Resolved (v2.5.3, fd2e069)
 Discovered: 2026-04-28, during v2.5.2 release recon
 Target: Next infra patch
 Symptom: A prior v2.5.2 docs commit used a non-compliant techNote string
@@ -1282,7 +1286,7 @@ Recommendation: A in a focused docs cleanup commit — low risk, restores
   consistency. Defer B unless A surfaces deeper structural issues.
 
 ### Story 35 (P3) — CLAUDE.md docs drift on rate limiter state
-Status: Open
+Status: Resolved (v2.5.3, this branch)
 Discovered: 2026-04-28, during PR #29 diagnostic
 Target: Next infra patch
 Symptom: CLAUDE.md (and the RATE-01b comment in suite-rate-limits.js line 41-44)
@@ -1335,7 +1339,7 @@ Recommendation: C as primary (tests should be robust regardless of trigger
   reasons emerge to revive a test backend.
 
 ### Story 37 (P2) — Branch strategy enforcement gap
-Status: Open
+Status: Resolved (v2.5.3, this branch)
 Discovered: 2026-04-28, during v2.5.2 retrospective
 Target: Next infra patch
 Symptom: Documented branch strategy requires feature/fix branches → develop →
