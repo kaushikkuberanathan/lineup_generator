@@ -152,6 +152,7 @@ var VERSION_HISTORY = [
       'The "Half inning ended" notification now slides in at the top of the screen — no longer covers the scoring controls at the bottom.',
       'Tap the ✕ to dismiss it early, or let it close automatically after 10 seconds.',
       'Game Mode count/outs strip now reads as two distinct pills — neutral Count pill (Balls + Strikes) and warm-tinted Outs pill — making outs easier to spot at arm\'s length.',
+      'Mercy-rule warning ("⚠ 5 runs this half") now appears at the top of the screen for both Mud Hens and opponent half-innings — previously the opponent version was tucked inside the bottom pitch controls.',
     ],
     techNote: 'UX improvement and new reusable Toast component',
     internalChanges: [
@@ -164,6 +165,8 @@ var VERSION_HISTORY = [
       'LiveScoringPanel.jsx: refactored count strip into two pill containers at both render sites (STATE 1 splash, main scorer). Count pill: rgba(255,255,255,0.06) bg, neutral. Outs pill: rgba(255,140,66,0.12) warm tint, #FF8C42 active dot, #FFB89A label.',
       'Inning indicator stays outside both pills (leftmost). 10–12px gap between pills. Reuses existing dot-size, dot-gap, and inactive-color tokens.',
       'Display-only — scoring state, click handlers, and logic untouched. ACCESSIBILITY_V1 flag and reduced-motion behavior preserved.',
+      'LiveScoringPanel.jsx: opponent mercy banner moved out of the fixed-position bottom pitch bar to the top-level panel position. Both banners now use identical full-width stripe styling (#7c2d12 bg, #fca5a5 text, #ef4444 borderBottom, fontSize 13px).',
+      'Both mercy banners now have explicit half-inning guards (gs.halfInning === myTeamHalf for home, !== for opponent) — render eligibility is structural rather than reset-dependent.',
     ],
   },
   {

@@ -13,6 +13,7 @@
 - Game Mode count strip refactored into two visually distinct pill containers — neutral Count pill (B+S) and warm-tinted Outs pill (rgba(255,140,66,0.12), #FF8C42 active dot). Outs are now scannable at a glance vs blending with the count.
 - Inning indicator stays leftmost outside both pills. 10–12px gap. Display-only refactor — no scoring logic touched.
 - Implements Option 1 from prior design review (session 83e794be).
+- Mercy banner now renders at the top for both home and opponent half-innings (was asymmetric — opponent version was inside the bottom pitch bar). Identical full-width stripe styling for both. Explicit half-inning guards added.
 
 ## v2.5.1 — 2026-04-27 (prod ship; develop merge 2026-04-24)
 - ACCESSIBILITY_V1 follow-up + UX consolidation + v2.4.0 home/away preservation.

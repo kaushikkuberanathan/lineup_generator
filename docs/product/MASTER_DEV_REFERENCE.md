@@ -449,6 +449,8 @@ Recent additions:
 
 Count/outs strip pattern (v2.5.2): two pills rendered at both LiveScoringPanel.jsx render sites (STATE 1 splash + main scorer). Tokens: Count pill bg `rgba(255,255,255,0.06)` (neutral); Outs pill bg `rgba(255,140,66,0.12)` (warm tint), active dot `#FF8C42`, label `#FFB89A`. Inning indicator stays leftmost, outside both pills. Display-only — no scoring logic touched.
 
+- Mercy banner pattern: both home and opponent render at top-of-panel as full-width stripes (#7c2d12). Explicit half-inning guards (gs.halfInning === myTeamHalf vs !==) gate render eligibility.
+
 ---
 
 ## v2.6.0 Backlog
