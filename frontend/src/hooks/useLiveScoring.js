@@ -248,6 +248,48 @@ function forceAdvance(runners, batterId) {
   return { remaining: newRunners, runsScored: runsScored };
 }
 
+/**
+ * Pure function. Toggles half-inning, advances inning if needed,
+ * and resets all per-half-inning state. No side effects.
+ *
+ * Used by 5 internal call sites inside the useLiveScoring hook:
+ *   - resolveAtBat (3-out path)
+ *   - endHalfInning (manual)
+ *   - recordOppPitch (strikeout 3-out path)
+ *   - recordOppPitch (direct out 3-out path)
+ *   - confirmRunnerAdvancement (3-out path)
+ *
+ * Each call site is responsible for its own pre/post side effects:
+ *   - undoSnapRef capture (endHalfInning only)
+ *   - setAb(null) (resolveAtBat only)
+ *   - setPendingAdvancement(null) (confirmRunnerAdvancement only)
+ *   - oppGamePitches increment (recordOppPitch paths only)
+ *   - battingOrderIndex / myScore (resolveAtBat only)
+ *   - audit event emission (all sites — call-site-specific signatures)
+ *
+ * Returns a new gs object (immutable update via Object.assign).
+ */
+export function flipHalfInning(gs) {
+  var nextHalf   = gs.halfInning === 'top' ? 'bottom' : 'top';
+  var nextInning = gs.halfInning === 'bottom' ? gs.inning + 1 : gs.inning;
+
+  return Object.assign({}, gs, {
+    inning:                  nextInning,
+    halfInning:              nextHalf,
+    outs:                    0,
+    balls:                   0,
+    strikes:                 0,
+    oppBalls:                0,
+    oppStrikes:              0,
+    oppCurrentBatterPitches: 0,
+    oppInningPitches:        0,
+    runners:                 [],
+    currentBatter:           null,
+    runsThisHalf:            0,
+    oppRunsThisHalf:         0,
+  });
+}
+
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
 export function useLiveScoring(params) {
