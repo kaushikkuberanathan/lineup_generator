@@ -782,21 +782,9 @@ export function useLiveScoring(params) {
     var newGs;
 
     if (newOuts >= 3) {
-      // Half-inning over — flip half, advance inning if needed, clear field
-      var nextHalf   = gs.halfInning === 'top' ? 'bottom' : 'top';
-      var nextInning = gs.halfInning === 'bottom' ? gs.inning + 1 : gs.inning;
-      newGs = Object.assign({}, gs, {
-        inning:            nextInning,
-        halfInning:        nextHalf,
-        outs:              0,
-        balls:             0,
-        strikes:           0,
-        runners:           [],
+      newGs = Object.assign({}, flipHalfInning(gs), {
         myScore:           newMyScore,
-        currentBatter:     null,
         battingOrderIndex: nextIndex,
-        runsThisHalf:      0,
-        oppRunsThisHalf:   0,
       });
     } else {
       newGs = Object.assign({}, gs, {
