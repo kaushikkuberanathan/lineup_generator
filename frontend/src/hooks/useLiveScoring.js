@@ -895,21 +895,7 @@ export function useLiveScoring(params) {
       var newOuts = gs.outs + 1;
 
       if (newOuts >= 3) {
-        var nextHalf2 = gs.halfInning === 'top' ? 'bottom' : 'top';
-        var nextInning2 = gs.halfInning === 'bottom' ? gs.inning + 1 : gs.inning;
-        var flipGs = Object.assign({}, gs, {
-          inning:          nextInning2,
-          halfInning:      nextHalf2,
-          outs:            0,
-          balls:           0,
-          strikes:         0,
-          oppBalls:        0,
-          oppStrikes:      0,
-          runners:         [],
-          currentBatter:   null,
-          runsThisHalf:    0,
-          oppRunsThisHalf: 0,
-        });
+        var flipGs = flipHalfInning(gs);
         setPendingAdvancement(null);
         setGs(flipGs);
         persist(flipGs);
