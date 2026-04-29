@@ -991,23 +991,7 @@ export function useLiveScoring(params) {
     if (!isEnabled || !isScorerRef.current) return;
     var gs = gsRef.current;
     undoSnapRef.current = Object.assign({}, gs); // save for undo
-    var nextHalf = gs.halfInning === 'top' ? 'bottom' : 'top';
-    var nextInning = gs.halfInning === 'bottom' ? gs.inning + 1 : gs.inning;
-    var nextIndex = gs.battingOrderIndex;
-    var newGs = Object.assign({}, gs, {
-      inning: nextInning,
-      halfInning: nextHalf,
-      outs: 0, balls: 0, strikes: 0,
-      runners: [],
-      currentBatter: null,
-      battingOrderIndex: nextIndex,
-      runsThisHalf: 0,
-      oppRunsThisHalf: 0,
-      oppBalls: 0,
-      oppStrikes: 0,
-      oppCurrentBatterPitches: 0,
-      oppInningPitches:        0,
-    });
+    var newGs = flipHalfInning(gs);
     setGs(newGs);
     persist(newGs);
     audit('half_inning_ended', { inning: gs.inning, halfInning: gs.halfInning, runsScored: gs.runsThisHalf });
