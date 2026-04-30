@@ -952,16 +952,6 @@ Game Mode polish release covering three themes:
 
 ---
 
-## Phase 5 — Security Hardening
-
-### Approve-Link Token Security
-- Current approve/deny links in admin emails are unsecured (UUID only)
-- Phase 5: implement HMAC-signed tokens with 24hr expiry
-- See docs/TODO_approve_link_security.md for full implementation plan
-- Blocks: none — implement before opening to multiple teams
-
----
-
 ## Phase 5 — Multi-Team & Delegated Access
 
 ### Phase 5A — Self-service team creation
@@ -1492,6 +1482,17 @@ POST https://forms.office.com/formapi/api/b9c4fdbd-efb6-477a-9fb3-32624a22cd70/u
 - Add error alerting if POST returns non-201
 
 **Risk:** Token extraction pattern could change if Microsoft updates their form page HTML. Mitigate with error alerting and Power Automate (county-side) as fallback.
+
+---
+
+## Security
+
+Source of truth: `docs/product/SECURITY_FRAMEWORK.md`
+
+- Phase 0 (Quick Wins) — not started
+- Phase 1 (MVP Security Floor) — not started (absorbs legacy approve-link HMAC item)
+- Phase 2 (Hardening) — not started
+- Phase 3 (Scale & Compliance) — not started
 
 ---
 
