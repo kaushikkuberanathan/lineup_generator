@@ -847,6 +847,7 @@ Game Mode polish release covering three themes:
 - [ ] **CI workflow `BACKEND_URL` audit** — backend job + smoke job both hardcode prod URL (verified April 27, 2026). Evaluate whether to point at a dev/preview backend or make tests environment-aware. Note: smoke job has misleading variable named `DEV_BACKEND_URL` that points to prod URL — fix or rename.
 - [ ] **Verify `RESEND_DOMAIN_VERIFIED=true`** in Render production environment variables (local `.env` confirmed April 27, 2026; Render dashboard not checked this session).
 - [ ] **Investigate Windows Vitest pre-push hook OOM cascade** — currently mitigated by warm-up workaround in CLAUDE.md. Real fix paths: reduce vitest worker count for hook runs, skip pre-push test (rely on CI gate), configure pool to avoid worker-thread cold-start, or move hook to pre-commit instead of pre-push.
+  - **Related:** See "Pre-push hook: skip test suite on docs-only changes" in the narrative Backlog section below for a complementary fast-path workaround.
 
 ### v2.6.0 — Quality of life
 
@@ -1414,6 +1415,25 @@ Proposed fixes:
      a PWA.
 Recommendation: A. Stay in Vitest, no new deps, no language migration.
   Revisit B only if TS adoption broadens elsewhere.
+
+### Pre-push hook: skip test suite on docs-only changes
+- **Problem:** Pre-push hook runs full `npm test` on every push, including docs-only PRs. Cold-cache runs OOM (~6+ min environment setup) and force `--no-verify` bypass. Warm-cache runs are 78s but still wasteful for changes that touch zero code.
+- **Proposed fix:** In the pre-push hook, detect whether the diff vs `origin/develop` contains any non-docs files. If only `docs/`, `*.md`, or `CLAUDE.md` files changed, skip the test suite with a printed notice. Otherwise run tests as today.
+- **Sketch:**
+```bash
+  CHANGED=$(git diff --name-only origin/develop..HEAD)
+  if echo "$CHANGED" | grep -vE '^(docs/|.*\.md$|CLAUDE\.md$)' | grep -q .; then
+    npm test || exit 1
+  else
+    echo "Docs-only change detected — skipping test suite."
+  fi
+```
+- **Why now:** Hit twice during recent docs pushes (v2.5.3 docs addendum, SECURITY_FRAMEWORK.md). Friction will compound as docs cadence increases.
+- **Risk:** Low. Hook still gates code changes. Docs PRs already have human review at GitHub before merge.
+- **Effort:** ~30 min. One file change in `.husky/pre-push` or equivalent hook script.
+- **Priority:** Low — quality-of-life, not blocking. Pick up during a slow sprint or alongside next CI/tooling work.
+- **Related:** Complementary to the "Investigate Windows Vitest pre-push hook OOM cascade" item at the top of this ROADMAP under v2.6.0 Infrastructure. That item targets root-cause OOM mitigation; this item is a fast-path workaround for docs-only changes. Either solves the docs-push pain; together they harden the full hook.
+- **Origin:** Surfaced during SECURITY_FRAMEWORK.md push 2026-04-30; bypassed that push with `--no-verify` after manual test run confirmed clean.
 
 ---
 
