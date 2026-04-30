@@ -8013,7 +8013,7 @@ export default function App() {
     { key:"home",    label:"Home",     icon:"🏠" },
     { key:"team",    label:"My Team",  icon:"👥" },
     { key:"gameday", label:"Game Day", icon:"🏟" },
-    liveScoringEnabled ? { key:"scoring", label:"Scoring", icon:"\u26BE" } : null,
+    liveScoringEnabled && !combinedGamemodeAndScoringEnabled ? { key:"scoring", label:"Scoring", icon:"⚾" } : null,
     { key:"more",    label:"Support",  icon:"⚙️" },
   ].filter(Boolean);
   var ROSTER_SUBTABS = [
@@ -8024,8 +8024,10 @@ export default function App() {
     { key:"lineups",  label:"Lineups"             },
     { key:"songs",    label:"Songs"               },
     { key:"gamemode", label:"GAME MODE", launcher:true },
-    { key:"dugout",   label:"DUGOUT VIEW", launcher:true },
-  ];
+    combinedGamemodeAndScoringEnabled
+      ? { key:"dugout", label:"DUGOUT VIEW", launcher:true }
+      : null,
+  ].filter(Boolean);
   var SEASON_SUBTABS = [
     { key:"schedule", label:"Schedule" },
     { key:"snack",    label:"Snacks"   },
@@ -8213,7 +8215,7 @@ export default function App() {
       {primaryTab === "more" && moreTab === "updates"  ? renderUpdates()  : null}
       {primaryTab === "more" && moreTab === "legal"    ? <LegalSection C={C} S={S} /> : null}
       {primaryTab === "more" && moreTab === "faq"      ? <FAQSection C={C} S={S} />   : null}
-      {primaryTab === "scoring" && liveScoringEnabled ? (
+      {primaryTab === "scoring" && liveScoringEnabled && !combinedGamemodeAndScoringEnabled ? (
         <ScoringMode
           activeTeam={activeTeam}
           activeTeamId={activeTeamId}
@@ -8559,6 +8561,11 @@ export default function App() {
           sport={activeTeam ? activeTeam.sport : "baseball"}
           absentTonight={absentTonight}
           onExit={function() { setDugoutViewActive(false); }}
+          activeTeam={activeTeam}
+          activeTeamId={activeTeamId}
+          user={user}
+          session={session}
+          schedule={schedule}
         />
       ) : null}
       {needRefresh && (
