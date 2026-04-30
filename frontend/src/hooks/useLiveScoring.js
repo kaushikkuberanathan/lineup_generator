@@ -248,6 +248,48 @@ function forceAdvance(runners, batterId) {
   return { remaining: newRunners, runsScored: runsScored };
 }
 
+/**
+ * Pure function. Toggles half-inning, advances inning if needed,
+ * and resets all per-half-inning state. No side effects.
+ *
+ * Used by 5 internal call sites inside the useLiveScoring hook:
+ *   - resolveAtBat (3-out path)
+ *   - endHalfInning (manual)
+ *   - recordOppPitch (strikeout 3-out path)
+ *   - recordOppPitch (direct out 3-out path)
+ *   - confirmRunnerAdvancement (3-out path)
+ *
+ * Each call site is responsible for its own pre/post side effects:
+ *   - undoSnapRef capture (endHalfInning only)
+ *   - setAb(null) (resolveAtBat only)
+ *   - setPendingAdvancement(null) (confirmRunnerAdvancement only)
+ *   - oppGamePitches increment (recordOppPitch paths only)
+ *   - battingOrderIndex / myScore (resolveAtBat only)
+ *   - audit event emission (all sites — call-site-specific signatures)
+ *
+ * Returns a new gs object (immutable update via Object.assign).
+ */
+export function flipHalfInning(gs) {
+  var nextHalf   = gs.halfInning === 'top' ? 'bottom' : 'top';
+  var nextInning = gs.halfInning === 'bottom' ? gs.inning + 1 : gs.inning;
+
+  return Object.assign({}, gs, {
+    inning:                  nextInning,
+    halfInning:              nextHalf,
+    outs:                    0,
+    balls:                   0,
+    strikes:                 0,
+    oppBalls:                0,
+    oppStrikes:              0,
+    oppCurrentBatterPitches: 0,
+    oppInningPitches:        0,
+    runners:                 [],
+    currentBatter:           null,
+    runsThisHalf:            0,
+    oppRunsThisHalf:         0,
+  });
+}
+
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
 export function useLiveScoring(params) {
@@ -740,21 +782,9 @@ export function useLiveScoring(params) {
     var newGs;
 
     if (newOuts >= 3) {
-      // Half-inning over — flip half, advance inning if needed, clear field
-      var nextHalf   = gs.halfInning === 'top' ? 'bottom' : 'top';
-      var nextInning = gs.halfInning === 'bottom' ? gs.inning + 1 : gs.inning;
-      newGs = Object.assign({}, gs, {
-        inning:            nextInning,
-        halfInning:        nextHalf,
-        outs:              0,
-        balls:             0,
-        strikes:           0,
-        runners:           [],
+      newGs = Object.assign({}, flipHalfInning(gs), {
         myScore:           newMyScore,
-        currentBatter:     null,
         battingOrderIndex: nextIndex,
-        runsThisHalf:      0,
-        oppRunsThisHalf:   0,
       });
     } else {
       newGs = Object.assign({}, gs, {
@@ -865,21 +895,7 @@ export function useLiveScoring(params) {
       var newOuts = gs.outs + 1;
 
       if (newOuts >= 3) {
-        var nextHalf2 = gs.halfInning === 'top' ? 'bottom' : 'top';
-        var nextInning2 = gs.halfInning === 'bottom' ? gs.inning + 1 : gs.inning;
-        var flipGs = Object.assign({}, gs, {
-          inning:          nextInning2,
-          halfInning:      nextHalf2,
-          outs:            0,
-          balls:           0,
-          strikes:         0,
-          oppBalls:        0,
-          oppStrikes:      0,
-          runners:         [],
-          currentBatter:   null,
-          runsThisHalf:    0,
-          oppRunsThisHalf: 0,
-        });
+        var flipGs = flipHalfInning(gs);
         setPendingAdvancement(null);
         setGs(flipGs);
         persist(flipGs);
@@ -961,23 +977,7 @@ export function useLiveScoring(params) {
     if (!isEnabled || !isScorerRef.current) return;
     var gs = gsRef.current;
     undoSnapRef.current = Object.assign({}, gs); // save for undo
-    var nextHalf = gs.halfInning === 'top' ? 'bottom' : 'top';
-    var nextInning = gs.halfInning === 'bottom' ? gs.inning + 1 : gs.inning;
-    var nextIndex = gs.battingOrderIndex;
-    var newGs = Object.assign({}, gs, {
-      inning: nextInning,
-      halfInning: nextHalf,
-      outs: 0, balls: 0, strikes: 0,
-      runners: [],
-      currentBatter: null,
-      battingOrderIndex: nextIndex,
-      runsThisHalf: 0,
-      oppRunsThisHalf: 0,
-      oppBalls: 0,
-      oppStrikes: 0,
-      oppCurrentBatterPitches: 0,
-      oppInningPitches:        0,
-    });
+    var newGs = flipHalfInning(gs);
     setGs(newGs);
     persist(newGs);
     audit('half_inning_ended', { inning: gs.inning, halfInning: gs.halfInning, runsScored: gs.runsThisHalf });
@@ -1052,17 +1052,8 @@ export function useLiveScoring(params) {
         newOuts = newOuts + 1;
         newOppBalls = 0; newOppStrikes = 0;
         if (newOuts >= 3) {
-          var nextHalfK = gs.halfInning === 'top' ? 'bottom' : 'top';
-          var nextInningK = gs.halfInning === 'bottom' ? gs.inning + 1 : gs.inning;
-          newGs = Object.assign({}, gs, {
-            inning: nextInningK, halfInning: nextHalfK,
-            outs: 0, balls: 0, strikes: 0,
-            oppBalls: 0, oppStrikes: 0,
-            runners: [], currentBatter: null,
-            runsThisHalf: 0, oppRunsThisHalf: 0,
-            oppCurrentBatterPitches: 0,
-            oppInningPitches:        0,
-            oppGamePitches:          (gs.oppGamePitches || 0) + 1,
+          newGs = Object.assign({}, flipHalfInning(gs), {
+            oppGamePitches: (gs.oppGamePitches || 0) + 1,
           });
           setGs(newGs); persist(newGs);
           audit('half_inning_ended_opp', { inning: gs.inning });
@@ -1094,17 +1085,8 @@ export function useLiveScoring(params) {
       newOuts = newOuts + 1;
       newOppBalls = 0; newOppStrikes = 0;
       if (newOuts >= 3) {
-        var nextHalfO = gs.halfInning === 'top' ? 'bottom' : 'top';
-        var nextInningO = gs.halfInning === 'bottom' ? gs.inning + 1 : gs.inning;
-        newGs = Object.assign({}, gs, {
-          inning: nextInningO, halfInning: nextHalfO,
-          outs: 0, balls: 0, strikes: 0,
-          oppBalls: 0, oppStrikes: 0,
-          runners: [], currentBatter: null,
-          runsThisHalf: 0, oppRunsThisHalf: 0,
-          oppCurrentBatterPitches: 0,
-          oppInningPitches:        0,
-          oppGamePitches:          (gs.oppGamePitches || 0) + 1,
+        newGs = Object.assign({}, flipHalfInning(gs), {
+          oppGamePitches: (gs.oppGamePitches || 0) + 1,
         });
         setGs(newGs); persist(newGs);
         audit('half_inning_ended_opp', { inning: gs.inning });
