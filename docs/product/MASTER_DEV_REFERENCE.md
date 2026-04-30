@@ -475,6 +475,12 @@ Count/outs strip pattern (v2.5.2): two pills rendered at both LiveScoringPanel.j
 
 ---
 
+## Security Framework
+
+Refer to `docs/product/SECURITY_FRAMEWORK.md` for the phased security roadmap (Phase 0 quick wins → Phase 3 compliance). Any change touching auth, share links, API authorization, secrets handling, or PII flows must reference an item from that doc and update its Status Tracker.
+
+---
+
 ## Release Ritual — Develop to Main Promotion
 
 End-to-end ordered sequence for promoting work from develop to production. Follow top-to-bottom; each step has its own gate. Established April 27, 2026.
