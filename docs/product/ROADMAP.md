@@ -743,6 +743,36 @@ Game Mode polish release covering three themes:
 
 ---
 
+## 🔴 P0 — Critical / Blocking
+
+### Story 27 (P0) — Share-link viewer routing broken in prod
+
+**Status:** Open  
+**Discovered:** April 30, 2026 during Slice 0 (combined game view) dev test on Vercel preview  
+**Target:** Hotfix branch — separate from feature/combined-game-view  
+
+**Symptom:** Share links render the full authenticated app shell (bottom nav, editing UI, "Lineup Finalized — Unlock to make changes", "Install Dugout Lineup" PWA prompt) instead of the unauthenticated viewer experience.
+
+**Impact:** Violates the non-negotiable auth principle — viewing must never require login, share links must always work unauthenticated. Recipients see coach-side UI and editing affordances. P0 by stated principle, even though scope is pre-existing in prod.
+
+**Root cause:** Unknown — likely URL parsing or `isViewer` / `isViewer64` detection at App.jsx top-level (~lines 7920–7950). Upstream of Slice 0 wiring; not caused by combined-game-view work.
+
+**Confirmation it's not Slice 0:**
+- Slice 0 only added DugoutView wiring inside the existing `isViewer` branch
+- The bug is that `isViewer` itself isn't being set true on share-link load — upstream of any Slice 0 change
+- Same failure mode whether combined flag is ON or OFF
+
+**Proposed fixes:**
+- Option A — URL-routing investigation: check share URL format, isViewer/isViewer64 logic, base64 payload extraction
+- Option B — Add regression test for share-link rendering (no test exists today, hence silent breakage)
+- Option C — Both, single hotfix
+
+**Recommendation:** Option C. New branch `hotfix/share-link-viewer-routing` from main. Tests + fix together (RED → GREEN). Once merged, re-run Pass 3 from Slice 0 test plan as the regression gate.
+
+**Blocks:** Final merge of feature/combined-game-view to main is NOT blocked — note in PR body that share-link viewer is broken in prod regardless of this change.
+
+---
+
 ## 🔴 P1 — Bugs / Critical Gaps
 
 | # | Item | Notes |
