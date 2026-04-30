@@ -475,6 +475,73 @@ Count/outs strip pattern (v2.5.2): two pills rendered at both LiveScoringPanel.j
 
 ---
 
+## Release Ritual — Develop to Main Promotion
+
+End-to-end ordered sequence for promoting work from develop to production. Follow top-to-bottom; each step has its own gate. Established April 27, 2026.
+
+### Phase 1: Pre-flight (before any commits)
+
+1. **Branch hygiene audit** — Run `git status`, `git fetch --prune`, `git branch -vv`. Confirm clean working tree, identify stale branches.
+2. **Verify local mirrors remote** — Both `main` and `develop` should be in sync with `origin/*`. Pull if behind.
+3. **Confirm starting branch** — Feature branches always cut from `develop`, never from `main`.
+
+### Phase 2: Feature branch workflow
+
+4. **Create feature branch** from `develop`: `git checkout -b feature/<descriptive-name>`
+5. **Rebase if needed** — If develop has moved since branch was conceived, rebase onto current `origin/develop` BEFORE making changes (clean tree required, use `git stash` if needed).
+6. **Make changes, run all local gates** — Tests pass, build clean, manual UI verification per surface area changed.
+7. **Stage with explicit paths** — Never `git add -A` or `git add .`. List specific files. See ## Git Staging Discipline.
+8. **Commit with descriptive message** — Multi-line message describing user impact + technical detail. See VERSION_HISTORY schema for guidance on userChanges vs internalChanges framing.
+9. **Push feature branch** — Pre-push hook runs full test suite. If hook OOM-cascades on Windows, follow workaround in ### Known issue: Windows Vitest cold-start OOM.
+
+### Phase 3: PR to develop
+
+10. **Open PR as DRAFT** — Always draft first. Triggers Vercel preview deployment without merge risk.
+11. **Verify CI checks pass** — All required checks must be green. NEVER bypass via admin override (branch protection enforces this on `main`; same discipline applies to `develop`).
+12. **Validate on Vercel preview** — Real device testing on iPhone SE / iPad / desktop. Run ### Game-Day Validation if deploy touches lineup/game mode/share.
+13. **Mark ready for review** — Only after preview validation passes.
+14. **Squash-merge to develop** — Keeps develop history clean (1 commit per feature). Delete branch when GitHub prompts.
+
+### Phase 4: Develop soak
+
+15. **Sync local develop** — `git checkout develop && git pull origin develop`
+16. **Soak period** — Minimum 24 hours of develop time before promoting to main. Use the app naturally. Game-day testing is the gold standard.
+17. **Watch UptimeRobot** — Confirm prod stays green during soak. (UptimeRobot push notifications must be enabled — see ## Key Infrastructure.)
+
+### Phase 5: PR to main
+
+18. **Repeat pre-flight audit** — `git fetch --prune`, confirm both develop and main in sync with remotes.
+19. **Run ### Pre-deploy Checklist** — Version bumps, VERSION_HISTORY, ROADMAP, CLAUDE.md updates. Test suite passes.
+20. **Run ## Pre-release Docs Checklist** — All doc artifacts current.
+21. **Confirm ## Ship Gate** — All four questions answered.
+22. **Open PR develop → main as DRAFT** — Same draft-first discipline.
+23. **Verify CI green on develop's preview** — Vercel auto-deploys per branch.
+24. **Mark ready, merge** — Squash-merge or merge-commit (squash recommended). Render auto-deploy fires for backend; Vercel auto-deploy fires for frontend.
+
+### Phase 6: Production verification (within 10 min of merge)
+
+25. **Smoke test prod** — `dugoutlineup.com` loads, `/ping` <2s, login works (or auth-not-required path), share link works, Game Mode renders, SCORING_SHEET_V2 (or current scoring sheet) renders correctly.
+26. **Watch UptimeRobot** — Confirm green during the 10-min window.
+27. **If anything fails** — Execute ### Rollback Procedure immediately.
+
+### Phase 7: Post-deploy cleanup
+
+28. **Sync local main** — `git checkout main && git pull origin main`
+29. **Delete merged branches** — Both local and remote: `git branch -D <feature-branch>` and `git push origin --delete <feature-branch>` if not auto-deleted.
+30. **Log v(N+1) backlog items** — Anything surfaced during deploy that didn't get fixed: stale docs, lint warnings, infra paper cuts.
+31. **Update memory/notes** — Record what worked, what was friction, what's next session's first task.
+
+### Anti-patterns (DO NOT)
+
+- ❌ Push directly to `main` (branch protection blocks; admin bypass disabled)
+- ❌ Cut feature branch from `main` (always from `develop`)
+- ❌ Merge a PR with failing CI checks via admin override
+- ❌ Skip the 24-hour develop soak unless it's a hotfix (see ## Ship Gate exempt types)
+- ❌ Use `git add -A` for staging — explicit paths only
+- ❌ Promote multiple unrelated versions in one PR without explicit awareness — discovered April 27, 2026 that develop was 12 commits ahead of main, bundling v2.4.0 + v2.5.0 + v2.5.1 in one promotion. This is acceptable in retrospect but should be a deliberate decision, not a discovery.
+
+---
+
 ## Strategic North Star
 
 > You've built a great system for shipping safely — now shift focus to making the product usable in 30 seconds on a baseball field.
