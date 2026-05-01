@@ -54,7 +54,7 @@ export function NowBattingBar({ battingOrder, currentIndex, onAdvance, onBack, a
       padding: '8px 10px', width: '100%', boxSizing: 'border-box',
       display: 'flex', alignItems: 'stretch', gap: '8px',
     }}>
-      <button onClick={onBack} title="Previous batter" style={btnStyle}>‹</button>
+      <button onClick={onBack} aria-label="Previous batter" style={btnStyle}>‹</button>
       {pills.map(function(pill) {
         return (
           <div key={pill.label} style={{
@@ -76,7 +76,7 @@ export function NowBattingBar({ battingOrder, currentIndex, onAdvance, onBack, a
           </div>
         );
       })}
-      <button onClick={onAdvance} title="Next batter" style={btnStyle}>›</button>
+      <button onClick={onAdvance} aria-label="Next batter" style={btnStyle}>›</button>
     </div>
     </div>
   );

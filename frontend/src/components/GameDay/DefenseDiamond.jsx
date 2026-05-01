@@ -222,7 +222,7 @@ export function DefenseDiamond({ roster, grid, innings, selectedInning, onSelect
       {/* ── Inning selector — single scrollable row ────── */}
       <div style={{ display:"flex", flexWrap:"nowrap", gap:"4px", alignItems:"center",
         marginBottom:"12px", overflowX:"auto", WebkitOverflowScrolling:"touch", paddingBottom:"2px" }}>
-        <span style={{ fontSize:"9px", color:textMuted, fontWeight:"bold",
+        <span style={{ fontSize:"11px", color:textMuted, fontWeight:"bold",
           textTransform:"uppercase", letterSpacing:"0.08em", flexShrink:0 }}>Inn</span>
         <button
           onClick={function() { setDiamondInning(null); }}
@@ -303,7 +303,7 @@ export function DefenseDiamond({ roster, grid, innings, selectedInning, onSelect
                           <td key={i} style={{ padding:"3px 10px", textAlign:"center",
                             borderTop:"2px solid rgba(220,38,38,0.3)",
                             background:"rgba(220,38,38,0.05)",
-                            fontSize:"9px", fontWeight:"bold", color:"#dc2626",
+                            fontSize:"11px", fontWeight:"bold", color:"#dc2626",
                             letterSpacing:"0.08em", textTransform:"uppercase" }}>
                             Out
                           </td>
