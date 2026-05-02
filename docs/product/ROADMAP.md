@@ -784,6 +784,7 @@ Game Mode polish release covering three themes:
 | 5 | **Mud Hens g2 batting stats** | SQL restore in Supabase pending — two-query fix identified, not yet applied |
 | 6 | **Absent player auto-assign** | Out Tonight players (e.g. Aiden) occasionally still assigned to a field position when auto-assign runs — `activeBattingOrder` filters batting order correctly but engine absent exclusion may have a gap |
 | 7 | **Game Ball "—" display bug** | Schedule card shows "—" dash instead of recipient names after multi-player game ball selection — read path may not be normalizing the `gameBall` array at render |
+| 41 | **Local test gate broken by Defender fork-spawn scanning** | Husky pre-push hook cannot spawn Vitest fork workers — Defender real-time scans Node.js child processes on Cox managed endpoint, blocking IPC handshake within 60s timeout. Fails on single 2KB test file with 2.5GB RAM free. Root cause is endpoint security, not memory. Proposed fix: try `pool: 'threads'` in vite.config.js, in parallel file IT ticket for path exclusions on node_modules + Node install + project root. Currently bypassed via `--no-verify` on May 1, 2026 push of f974b20. Blocks every push to develop/main until resolved. |
 
 ---
 
@@ -797,6 +798,8 @@ Game Mode polish release covering three themes:
 | 4 | **Reset Roster confirmation prompt** | Currently destructive with no warning dialog |
 | 5 | **Per-game batting order** | Order should be regeneratable after each game using latest cumulative stats; stat-to-order feedback loop needs polish |
 | 6 | **Practice Tab** | Session log with date, focus area, drill notes, and player attendance checkboxes — fully specced, not yet built |
+| 42 | **Pre-push hook doesn't differentiate env-broken vs test-failure** | When hook fails, developer cannot tell if it's environmental OOM/spawn issue or real regression without manually reading Vitest output. Friction makes `--no-verify` more tempting. Proposed fix: hook detects timeout patterns and emits "ENVIRONMENT TIMEOUT" vs "TEST FAILURE" messages; logs bypass invocations for audit. P2 polish, address when hook touches happen. |
+| 43 | **Branch protection allows admin bypass; main should be stricter than develop** | Push to develop on May 1 reported "Bypassed rule violations" for required PR + status checks. Standard GitHub behavior — owner has implicit bypass unless "Do not allow bypassing the above settings" is checked. Acceptable on develop for solo iteration; main should require explicit unlock. Proposed fix: enable strict toggle on main only. Blocks: requires Story 41 resolution first (otherwise can't merge to main without re-bypassing). |
 
 ---
 
@@ -811,6 +814,8 @@ Game Mode polish release covering three themes:
 | 5 | **TypeScript migration** | Still `.jsx`, no types — lower priority but growing tech debt |
 | 6 | **ESLint config** | No linting enforcement in the repo |
 | 7 | **OOM contract test** | `useLiveScore.contract.test.js` (untracked on main, committed on develop) causes pre-push hook worker OOM on Windows — fix vitest worker allocation or add to exclude list |
+| 40 | **Pre-push hook misfires on legitimate feature→develop merges** | `.husky/pre-push` blocks all pushes to develop including `--no-ff` merges from feature branches. Workaround: `ALLOW_DIRECT_PUSH=1` env var per push. Low impact but training-wheels feel. Proposed fix: detect merge commits at HEAD via `git rev-parse HEAD^2`; allow when HEAD is a merge commit. P3 polish. |
+| 44 | **Bypass events on protected branches not surfaced in commit history** | When admin bypasses branch protection, bypass logs to GitHub's server-side admin log but no indicator on commit page. Future audits require digging through admin logs. Proposed fix: convention — every bypassed push includes footer in merge commit message: `[Bypass: branch protection / reason: <one line>]`. Self-documents in `git log`. P3 polish, apply on next bypass. |
 
 ---
 
@@ -1207,6 +1212,7 @@ Open questions to resolve during implementation:
 - Fix candidates: (A) async `isFlagEnabled` that reads Supabase `feature_flags` at app boot and caches; (B) `flagBootstrap.js` extended to fetch DB flags and merge into a runtime registry; (C) add a startup fetch in App.jsx hydration path, similar to team data load.
 - Recommend (B) — keeps the evaluation function synchronous at the call site while moving the async fetch to bootstrap. Matches existing `flagBootstrap.js` pattern.
 - Blocks nothing directly; current localStorage override remains available as workaround.
+- Connects to Story 41: until both resolved, runtime flag changes require redeploy + can't be locally test-validated.
 
 ### Story 26 (P2): Backend RATE-01a test flakiness — stateful against prod rate limiter
 - **Surfaced:** April 24, 2026 (PR #17 CI run — admin-bypassed because only CLAUDE.md changed).
