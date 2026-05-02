@@ -1,5 +1,22 @@
 ﻿export var VERSION_HISTORY = [
   {
+    version: '2.5.4',
+    date: '2026-05-01',
+    headline: 'Slice 0 of combined game view — internal lift behind feature flag',
+    userChanges: [
+      'No user-facing changes — combined view feature flag remains OFF in production.',
+    ],
+    techNote: 'Under-the-hood stability improvements',
+    internalChanges: [
+      'Lifted ScoringMode/index.jsx logic into DugoutView.jsx under COMBINED_GAMEMODE_AND_SCORING flag',
+      'ScoringMode/index.jsx remains in repo behind flag for one soak cycle, planned for deletion in follow-up slice',
+      'App.jsx flag gating: PRIMARY_TABS hides Scoring tab when flag ON; GAMEDAY_SUBTABS hides DUGOUT VIEW pill when flag OFF; ScoringMode render branch gated on flag OFF',
+      'Mutual exclusion enforced: flag OFF ships ScoringMode + Scoring tab; flag ON ships DugoutView + DUGOUT VIEW pill',
+      'Story 27 (P0) opened: share-link viewer routing broken in prod (pre-existing bug, separate hotfix)',
+      'Stories 40-44 captured: pre-push hook merge-commit detection, Defender fork-spawn workaround, hook env-vs-test differentiation, branch protection bypass posture, bypass audit convention',
+    ],
+  },
+  {
     version: '2.5.3',
     date: 'April 2026',
     headline: 'Branch strategy enforcement, governance hardening, and rate limiter docs corrections',

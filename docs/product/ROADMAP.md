@@ -1,11 +1,23 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: April 28, 2026 (v2.5.3 staged on develop; v2.5.1 shipped to production via PR #27, commit `aadddcd`)
+> Last updated: May 1, 2026 (v2.5.4 staged on develop; v2.5.3 shipped to production via PR #31, commit `b167890`)
 > MVP launched: March 24, 2026
 
 ---
 
-## v2.5.3 — 2026-04-28 (develop staged; awaiting prod merge)
+## v2.5.4 — 2026-05-01 (develop staged; awaiting prod merge)
+
+Slice 0 of combined game view. No user-facing changes — COMBINED_GAMEMODE_AND_SCORING flag defaults OFF in production.
+
+- `DugoutView.jsx` — full rewrite: lifted ScoringMode state, hook, and handlers; renders under `COMBINED_GAMEMODE_AND_SCORING` flag
+- `App.jsx` — 4 targeted changes: `PRIMARY_TABS` hides Scoring tab when flag ON; `GAMEDAY_SUBTABS` hides DUGOUT VIEW pill when flag OFF; ScoringMode render branch gated on flag OFF; DugoutView call site wired with 5 new props
+- `ScoreboardRow.jsx` (new) — extracted scoring row primitive from LiveScoringPanel
+- `useLiveScoring.js` — Story 20 refactor: `flipHalfInning()` helper extracted; `resolveAtBat`, `endHalfInning`, `recordOppPitch` (strikeout + direct-out paths), `confirmRunnerAdvancement` all consolidated onto helper
+- `featureFlags.js` — `COMBINED_GAMEMODE_AND_SCORING: false` added
+- Story 27 (P0) opened: share-link viewer routing broken in prod (pre-existing, separate hotfix)
+- Stories 40–44 captured in backlog (pre-push hook, Defender fork-spawn, branch protection posture)
+
+## v2.5.3 — 2026-04-28 (shipped to prod 2026-04-28)
 
 Meta-governance patch. No user-facing changes.
 
@@ -19,7 +31,7 @@ Meta-governance patch. No user-facing changes.
 - `CLAUDE.md` corrected: `/magic-link` rate limiter is active and was never removed in v2.3.3 (Story 35 — Resolved).
 - `backend/scripts/tests/suite-rate-limits.js`: RATE-01b comment corrected to reflect actual code state.
 
-## v2.5.2 — 2026-04-28 (develop staged; awaiting prod merge)
+## v2.5.2 — 2026-04-28 (shipped to prod 2026-04-28)
 
 Game Mode polish release + VERSION_HISTORY content governance patch:
 
