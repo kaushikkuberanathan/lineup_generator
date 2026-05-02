@@ -19,9 +19,9 @@ export const FEATURE_FLAGS = {
 
   // Accessibility Phase 1 — font floor 12–14px, touch targets ≥44px,
   // contrast uplift in Game Mode overlays, aria labels, position abbreviation labels.
-  // Enable locally: localStorage.setItem("flag_ACCESSIBILITY_V1", "true")
-  // Disable locally: localStorage.setItem("flag_ACCESSIBILITY_V1", "false")
-  ACCESSIBILITY_V1: false,
+  // GA default-on as of Phase 1a. Roll back per-user if needed:
+  // localStorage.setItem("flag_ACCESSIBILITY_V1", "false")
+  ACCESSIBILITY_V1: true,
 
   // Scoring Sheet V2 — outcome sheet semantic cleanup: Foul moved to PITCH OUTCOME
   // section, Strikeout removed from contact sheet, opp-half +1 buttons hidden.
