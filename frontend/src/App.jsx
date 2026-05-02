@@ -28,6 +28,7 @@ import { OfflineIndicator } from './components/Shared/OfflineIndicator';
 import { MaintenanceScreen } from './components/Shared/MaintenanceScreen';
 import { DefenseDiamond }  from './components/GameDay/DefenseDiamond';
 import { GameModeScreen }  from './components/game-mode/GameModeScreen';
+import { DugoutView }      from './components/game-mode/DugoutView';
 import { LegalSection }       from './components/Support/LegalSection';
 import { FAQSection }         from './components/Support/FAQSection';
 import { BattingHandSelector } from './components/BattingHandSelector';
@@ -142,7 +143,7 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.5.3";
+var APP_VERSION = "2.5.4";
 
 function loadJSON(key, def) {
   try {
@@ -1204,6 +1205,9 @@ export default function App() {
   var _gameModeActive = useState(false);
   var gameModeActive = _gameModeActive[0]; var setGameModeActive = _gameModeActive[1];
 
+  var _dugoutViewActive = useState(false);
+  var dugoutViewActive = _dugoutViewActive[0]; var setDugoutViewActive = _dugoutViewActive[1];
+
   var _syncStatus = useState("idle");
   var syncStatus = _syncStatus[0]; var setSyncStatus = _syncStatus[1];
 
@@ -1523,6 +1527,7 @@ export default function App() {
   var _liveScoring = useFeatureFlag('live_scoring', activeTeamId);
   var _isAlwaysScoringTeam = (activeTeam && (activeTeam.name === 'Mud Hens' || activeTeam.name === 'Demo All-Stars'));
   var liveScoringEnabled = _isAlwaysScoringTeam ? true : _liveScoring.enabled;
+  var combinedGamemodeAndScoringEnabled = FEATURE_FLAGS.COMBINED_GAMEMODE_AND_SCORING || localStorage.getItem("flag:combined_gamemode_and_scoring") === "1";
   var _primaryTab = useState("home");
   var primaryTab = _primaryTab[0]; var setPrimaryTab = _primaryTab[1];
   var _rosterTab = useState("players");
@@ -7938,7 +7943,7 @@ export default function App() {
       var _vp = new URLSearchParams(window.location.search);
       var _viewerFlagOn = runtimeFlags.VIEWER_MODE || localStorage.getItem("flag:viewer_mode") === "1";
       var isViewer = _viewerFlagOn && (_vp.get("view") === "true" || _vp.get("role") === "viewer");
-      return <ErrorBoundary fallback="Viewer Mode">{isViewer ? <ViewerMode payload={sharePayload} /> : <SharedView payload={sharePayload} renderFieldSVG={renderFieldSVG} />}</ErrorBoundary>;
+      return <ErrorBoundary fallback="Viewer Mode">{isViewer ? (combinedGamemodeAndScoringEnabled ? <DugoutView payload={sharePayload} isViewer={true} onExit={function() {}} /> : <ViewerMode payload={sharePayload} />) : <SharedView payload={sharePayload} renderFieldSVG={renderFieldSVG} />}</ErrorBoundary>;
     }
     return (
       <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", minHeight:"100vh", background:"#fdf8f0", gap:"12px" }}>
@@ -8000,7 +8005,7 @@ export default function App() {
       var payload = JSON.parse(decodeURIComponent(escape(atob(shareParam))));
       var _viewerFlagOn64 = runtimeFlags.VIEWER_MODE || localStorage.getItem("flag:viewer_mode") === "1";
       var isViewer64 = _viewerFlagOn64 && (urlParams.get("view") === "true" || urlParams.get("role") === "viewer");
-      return <ErrorBoundary fallback="Viewer Mode">{isViewer64 ? <ViewerMode payload={payload} /> : <SharedView payload={payload} renderFieldSVG={renderFieldSVG} />}</ErrorBoundary>;
+      return <ErrorBoundary fallback="Viewer Mode">{isViewer64 ? (combinedGamemodeAndScoringEnabled ? <DugoutView payload={payload} isViewer={true} onExit={function() {}} /> : <ViewerMode payload={payload} />) : <SharedView payload={payload} renderFieldSVG={renderFieldSVG} />}</ErrorBoundary>;
     }
   } catch (e) {}
 
@@ -8008,7 +8013,7 @@ export default function App() {
     { key:"home",    label:"Home",     icon:"🏠" },
     { key:"team",    label:"My Team",  icon:"👥" },
     { key:"gameday", label:"Game Day", icon:"🏟" },
-    liveScoringEnabled ? { key:"scoring", label:"Scoring", icon:"\u26BE" } : null,
+    liveScoringEnabled && !combinedGamemodeAndScoringEnabled ? { key:"scoring", label:"Scoring", icon:"⚾" } : null,
     { key:"more",    label:"Support",  icon:"⚙️" },
   ].filter(Boolean);
   var ROSTER_SUBTABS = [
@@ -8019,7 +8024,10 @@ export default function App() {
     { key:"lineups",  label:"Lineups"             },
     { key:"songs",    label:"Songs"               },
     { key:"gamemode", label:"GAME MODE", launcher:true },
-  ];
+    combinedGamemodeAndScoringEnabled
+      ? { key:"dugout", label:"DUGOUT VIEW", launcher:true }
+      : null,
+  ].filter(Boolean);
   var SEASON_SUBTABS = [
     { key:"schedule", label:"Schedule" },
     { key:"snack",    label:"Snacks"   },
@@ -8055,20 +8063,23 @@ export default function App() {
         {GAMEDAY_SUBTABS.map(function(st) {
           if (st.launcher) {
             if (!_showGameMode) { return null; }
-            var gmActive = gameModeActive;
+            var isActive = st.key === "dugout" ? dugoutViewActive : gameModeActive;
+            var handleLaunch = st.key === "dugout"
+              ? function() { setDugoutViewActive(true); }
+              : function() { setGameModeActive(true); };
             return (
               <button key={st.key}
-                onClick={function() { setGameModeActive(true); }}
-                style={{ flex:"0 0 auto", padding: gmActive ? "7px 16px" : "7px 14px", borderRadius:"6px",
-                  border: gmActive ? "2px solid " + C.gold : "none",
+                onClick={handleLaunch}
+                style={{ flex:"0 0 auto", padding: isActive ? "7px 16px" : "7px 14px", borderRadius:"6px",
+                  border: isActive ? "2px solid " + C.gold : "none",
                   cursor:"pointer",
-                  fontSize: gmActive ? "14px" : "12px",
+                  fontSize: isActive ? "14px" : "12px",
                   fontWeight:"bold", fontFamily:"Georgia,serif",
                   letterSpacing:"0.04em", textTransform:"uppercase",
-                  background: gmActive ? C.gold : "#e05c2a",
-                  color: gmActive ? C.navy : "#fff",
-                  boxShadow: gmActive ? "0 3px 10px rgba(245,200,66,0.5)" : "0 2px 6px rgba(224,92,42,0.35)",
-                  transform: gmActive ? "translateY(-2px)" : "none",
+                  background: isActive ? C.gold : "#e05c2a",
+                  color: isActive ? C.navy : "#fff",
+                  boxShadow: isActive ? "0 3px 10px rgba(245,200,66,0.5)" : "0 2px 6px rgba(224,92,42,0.35)",
+                  transform: isActive ? "translateY(-2px)" : "none",
                   transition:"all 0.15s" }}>
                 {st.label}
               </button>
@@ -8204,7 +8215,7 @@ export default function App() {
       {primaryTab === "more" && moreTab === "updates"  ? renderUpdates()  : null}
       {primaryTab === "more" && moreTab === "legal"    ? <LegalSection C={C} S={S} /> : null}
       {primaryTab === "more" && moreTab === "faq"      ? <FAQSection C={C} S={S} />   : null}
-      {primaryTab === "scoring" && liveScoringEnabled ? (
+      {primaryTab === "scoring" && liveScoringEnabled && !combinedGamemodeAndScoringEnabled ? (
         <ScoringMode
           activeTeam={activeTeam}
           activeTeamId={activeTeamId}
@@ -8459,13 +8470,13 @@ export default function App() {
         </ErrorBoundary>
       </div>
       {subTabBar}
-      <div id="app-scroll-body" style={Object.assign({}, S.body, showInstallBanner && !gameModeActive ? { paddingBottom:"136px" } : {})}>
+      <div id="app-scroll-body" style={Object.assign({}, S.body, showInstallBanner && !gameModeActive && !dugoutViewActive ? { paddingBottom:"136px" } : {})}>
         <div style={{ width:"100%", maxWidth:"480px", marginLeft:"auto", marginRight:"auto", paddingLeft:"16px", paddingRight:"16px", boxSizing:"border-box" }}>
           {(primaryTab === "home" || (!activeTeam && primaryTab !== "more")) ? renderHome() : tabContent}
         </div>
       </div>
       <ErrorBoundary fallback="Now Batting">
-        {!gameModeActive && primaryTab === "gameday" && activeBattingOrder && activeBattingOrder.length > 0 ? (
+        {!gameModeActive && !dugoutViewActive && primaryTab === "gameday" && activeBattingOrder && activeBattingOrder.length > 0 ? (
           <NowBattingBar
             battingOrder={activeBattingOrder}
             currentIndex={currentBatterIndex}
@@ -8480,7 +8491,7 @@ export default function App() {
           />
         ) : null}
       </ErrorBoundary>
-      {showInstallBanner && !gameModeActive ? (
+      {showInstallBanner && !gameModeActive && !dugoutViewActive ? (
         <div style={{ position:"fixed", bottom:"calc(56px + env(safe-area-inset-bottom, 0px))", left:0, right:0, zIndex:199,
           background:"#1a2f5e", borderTop:"1px solid rgba(245,200,66,0.4)",
           padding:"10px 16px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:12 }}>
@@ -8513,7 +8524,7 @@ export default function App() {
           ) : null}
         </div>
       ) : null}
-      {!gameModeActive ? renderBottomNav() : null}
+      {!gameModeActive && !dugoutViewActive ? renderBottomNav() : null}
       {renderExitSheet()}
       {gameModeActive ? (
         <GameModeScreen
@@ -8539,6 +8550,22 @@ export default function App() {
             persistGameModeInning(0);
           }}
           onExit={function() { setGameModeActive(false); }}
+        />
+      ) : null}
+      {dugoutViewActive ? (
+        <DugoutView
+          teamId={activeTeamId}
+          roster={roster}
+          battingOrder={activeBattingOrder}
+          innings={innings}
+          sport={activeTeam ? activeTeam.sport : "baseball"}
+          absentTonight={absentTonight}
+          onExit={function() { setDugoutViewActive(false); }}
+          activeTeam={activeTeam}
+          activeTeamId={activeTeamId}
+          user={user}
+          session={session}
+          schedule={schedule}
         />
       ) : null}
       {needRefresh && (

@@ -600,6 +600,40 @@ Evaluation priority: compile-time default → localStorage per-user override →
 
 ---
 
+### COMBINED_GAMEMODE_AND_SCORING — mutual-exclusion gating pattern
+
+Introduced in v2.5.4 (Slice 0). The combined Game View feature replaces the legacy multi-tab scoring UX with a single DugoutView surface. During the rollout window (Slices 0–3), both surfaces coexist in the codebase. To prevent dual-surface user confusion, the COMBINED_GAMEMODE_AND_SCORING flag enforces strict mutual exclusion at three sites in App.jsx.
+
+**Three invariants — must hold at all times, future slices must not break:**
+
+1. **Flag OFF → ScoringMode + Scoring tab** are reachable; **DugoutView via the GameDay pill is NOT reachable**. This is the legacy path. Production users land here today.
+2. **Flag ON → DugoutView + DUGOUT VIEW pill** are reachable; **ScoringMode + Scoring tab are NOT reachable**. This is the future path.
+3. The two states are mutually exclusive — at no flag combination should both surfaces be simultaneously reachable. Both reachable would mean two scoring sessions could be claimed for the same game from different entry points, with attendant double-write and double-subscribe risks.
+
+**Three enforcement sites in App.jsx:**
+
+| Site | Code shape | Behavior |
+|---|---|---|
+| PRIMARY_TABS array | `liveScoringEnabled && !combinedGamemodeAndScoringEnabled ? { key:"scoring", ... } : null` | Hides Scoring bottom-nav tab when flag ON |
+| GAMEDAY_SUBTABS array | `combinedGamemodeAndScoringEnabled ? { key:"dugout", label:"DUGOUT VIEW", launcher:true } : null` | Hides DUGOUT VIEW pill when flag OFF |
+| ScoringMode render branch | `{primaryTab === "scoring" && liveScoringEnabled && !combinedGamemodeAndScoringEnabled ? <ScoringMode ... /> : null}` | Blocks ScoringMode mount when flag ON, even if user navigated via stale URL or refresh |
+
+**Flag mechanics:**
+
+COMBINED_GAMEMODE_AND_SCORING is a static FEATURE_FLAGS object value plus localStorage override (`flag:combined_gamemode_and_scoring=1`). It is NOT Supabase-backed (unlike `live_scoring`). This means flipping it in production requires a redeploy. See Story 30 (P2 backlog) for the runtime-flip limitation and Story 41 (P1 backlog) for the local-test-gate constraint that affects flag deployment validation.
+
+**Slice rollout context:**
+
+- Slice 0 (v2.5.4) — DugoutView lift, flag default-OFF, prod unchanged
+- Slice 1 (planned) — Scoreboard wiring inside DugoutView
+- Slice 2 (planned) — Lineup wiring inside DugoutView
+- Slice 3 (planned) — Scoring controls integration
+- Post-Slice 3 — flag flips ON, ScoringMode deleted from repo
+
+Until ScoringMode is deleted, all three invariants must be preserved. Any change touching PRIMARY_TABS, GAMEDAY_SUBTABS, or the ScoringMode render branch must be evaluated against the invariants above.
+
+---
+
 ## Version Management
 
 Versions follow **semver** (`MAJOR.MINOR.PATCH`):

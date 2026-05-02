@@ -2,7 +2,7 @@
 
 > Authoritative mapping of every shipped feature to its documentation and test coverage.
 > Update this file whenever a feature ships, changes behavior, or gains new tests.
-> Owner: KK | Last updated: April 27, 2026 (v2.5.1 prod ship — Registry rows for v2.4-v2.5 features pending; see DOC_TEST_DEBT.md "FEATURE_MAP.md Missing Feature Rows")
+> Owner: KK | Last updated: 2026-05-01 (v2.5.4 — added row #25 DugoutView/Combined Game View; rows #8 and #11 updated with consolidation note; ScoreboardRow debt item D017 added to DOC_TEST_DEBT.md)
 
 ---
 
@@ -17,7 +17,7 @@
 
 ---
 
-## Feature Registry (24 features)
+## Feature Registry (25 features)
 
 | # | Feature | Status | Primary Doc | Doc Status | Test File(s) | Test Status | Debt |
 |---|---------|--------|-------------|------------|--------------|-------------|------|
@@ -28,10 +28,11 @@
 | 5 | **Game result logging + batting stats** | MVP | `ROADMAP.md` § v2.1.x entries | ⚠ Stale | None | ❌ None | D016 |
 | 6 | **Walk-up songs per player** | MVP | `SOLUTION_DESIGN.md` § Walk-up Songs Architecture; `CHARTER.md` § Scope | ✅ Current | None | ❌ None | D004 |
 | 7 | **Out Tonight attendance tracking** | MVP | `CLAUDE.md` (as "Out Tonight"); `ROADMAP.md` § v2.2.30 | ✅ Current | `engine.v2.test.js` Group 6, `lineupEngineV2-unit.test.js` Group X, `bench-equity.test.js` absent-player | ⚠ Partial | D008 |
-| 8 | **Game Mode (full-screen dugout view)** | MVP | `SOLUTION_DESIGN.md` § Navigation Structure | ✅ Current | None | ❌ None | D006 |
+| 8 | **Game Mode (full-screen dugout view)** | MVP | `SOLUTION_DESIGN.md` § Navigation Structure | ✅ Current | None | ❌ None | D006; Will be consolidated into Combined Game View (#25) when flag flips ON. |
 | 9 | **Share links (8-char Supabase-backed)** | MVP | `SOLUTION_DESIGN.md` § RLS Policy Map; `CLAUDE.md` Auth Principle | ✅ Current | None | ❌ None | D005 |
 | 10 | **PDF export + print view** | MVP | `ROADMAP.md` § v1.x | ⚠ Stale | None | ❌ None | D011 |
-| 11 | **Live scoring (scorer lock, inning entry, game finalization)** | Pilot | `ROADMAP.md` § v2.2.29–v2.3.3; `PERSONAS.md` § Scorekeeper; `MASTER_DEV_REFERENCE.md` § Game Object Shape | ✅ Current | `finalizeSchedule.test.js`, `undoHalfInning.test.js`, `newGameTemplate.test.js`, `practiceModeIsolation.test.js`, `realtimeRaceGuard.test.js`, `runnerPlacement.test.js` | ⚠ Partial | D001 |
+| 11 | **Live scoring (scorer lock, inning entry, game finalization)** | Pilot | `ROADMAP.md` § v2.2.29–v2.3.3; `PERSONAS.md` § Scorekeeper; `MASTER_DEV_REFERENCE.md` § Game Object Shape | ✅ Current | `finalizeSchedule.test.js`, `undoHalfInning.test.js`, `newGameTemplate.test.js`, `practiceModeIsolation.test.js`, `realtimeRaceGuard.test.js`, `runnerPlacement.test.js` | ⚠ Partial | D001; Will be consolidated into Combined Game View (#25) when flag flips ON. |
+| 25 | **Combined Game View (DugoutView — flag-gated unified scoring surface)** | Phase 3 | `docs/SOLUTION_DESIGN.md` § Feature Flag System | ✅ Current | DugoutView wired in feature/combined-game-view; no dedicated test file yet | ❌ None | D017; mutual-exclusion invariant untested |
 | 12 | **Practice Mode** | Pilot | `CLAUDE.md` § Live Scoring Architecture; `ROADMAP.md` § v2.3.3 | ✅ Current | `practiceModeIsolation.test.js` | ✅ Yes | — |
 | 13 | **Runner Placement on Diamond** | Pilot | `CLAUDE.md` § Roster identity; `ROADMAP.md` § v2.3.3 | ✅ Current | `runnerPlacement.test.js` | ✅ Yes | — |
 | 14 | **Opponent Half Tracking** | Pilot | `CLAUDE.md` § Live Scoring Architecture; `ROADMAP.md` § v2.3.2–v2.5.0 | ✅ Current | `liveStateMerge.test.js` (opp integration) | ⚠ Partial | — |
@@ -52,12 +53,12 @@
 
 | Status | Count |
 |--------|-------|
-| ✅ Doc Current | 20 / 24 |
-| ⚠ Doc Stale | 4 / 24 |
-| ❌ Doc Missing | 0 / 24 |
-| ✅ Tests Exist | 5 / 24 |
-| ⚠ Tests Partial | 8 / 24 |
-| ❌ No Tests | 11 / 24 |
+| ✅ Doc Current | 21 / 25 |
+| ⚠ Doc Stale | 4 / 25 |
+| ❌ Doc Missing | 0 / 25 |
+| ✅ Tests Exist | 5 / 25 |
+| ⚠ Tests Partial | 8 / 25 |
+| ❌ No Tests | 12 / 25 |
 
 > The test gap is large but expected — the engine is the highest-risk surface and is well-covered. Features with no test are all UI-layer or integration paths with no engine logic.
 
