@@ -15,12 +15,22 @@ export function mapPlayerToV2(player) {
     : v1.includes('needsWork') ? 'needs_support' : null;
   var inferredArm = v1.includes('strongArm') ? 'strong'
     : v1.includes('weakArm') ? 'developing' : null;
+  // TODO(v2.5.x): wire speed/contact/power/discipline into return object
+  // Pattern: `speed: player.speed ?? inferredSpeed ?? "average"`
+  // V1 tag mapping is computed but not yet applied as V2 fallback.
+  // Deferred from Phase 1b lint cleanup — wiring is a behavior change
+  // (V1 tags would propagate into V2 scoring), out of
+  // pipeline-restoration scope.
+  // eslint-disable-next-line no-unused-vars -- see TODO(v2.5.x) above
   var inferredSpeed = v1.includes('fast') ? 'fast'
     : v1.includes('slow') ? 'developing' : null;
   var inferredReaction = v1.includes('gameAware') ? 'quick' : null;
+  // eslint-disable-next-line no-unused-vars -- see TODO(v2.5.x) above
   var inferredContact = (player.batSkills || []).includes('goodContact') ? 'high'
     : (player.batSkills || []).includes('poorContact') ? 'developing' : null;
+  // eslint-disable-next-line no-unused-vars -- see TODO(v2.5.x) above
   var inferredPower = (player.batSkills || []).includes('power') ? 'high' : null;
+  // eslint-disable-next-line no-unused-vars -- see TODO(v2.5.x) above
   var inferredDiscipline = (player.batSkills || []).includes('patientHitter')
     ? 'disciplined' : null;
 

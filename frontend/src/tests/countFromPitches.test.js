@@ -13,7 +13,6 @@ var BALL            = 'ball';
 var STRIKE_CALLED   = 'strike_called';
 var STRIKE_SWINGING = 'strike_swinging';
 var FOUL            = 'foul';
-var CONTACT         = 'contact';
 
 function p(type) { return { type: type }; }
 

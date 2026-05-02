@@ -1,4 +1,4 @@
-export function MaintenanceScreen({ version }) {
+﻿export function MaintenanceScreen({ version }) {
   return (
     <div style={{
       display: "flex",
@@ -19,7 +19,7 @@ export function MaintenanceScreen({ version }) {
         marginBottom: "12px",
         textAlign: "center",
       }}>
-        We'll be right back
+        We’ll be right back
       </div>
       <div style={{
         fontSize: "14px",

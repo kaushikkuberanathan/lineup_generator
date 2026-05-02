@@ -87,9 +87,8 @@ describe('Group 1 — Bench count correctness (12-player, 6 innings)', function 
 
   test('1.6: every player appears in every inning (either fielded or BENCH — no null slots)', function () {
     Object.entries(result.grid).forEach(function (entry) {
-      var name = entry[0];
       var innings = entry[1];
-      innings.forEach(function (pos, i) {
+      innings.forEach(function (pos) {
         expect(pos).not.toBeNull();
       });
     });
@@ -109,7 +108,6 @@ describe('Group 1 — Bench count correctness (12-player, 6 innings)', function 
 
   test('1.8: no player has more BENCH assignments than innings (sanity cap)', function () {
     Object.entries(result.grid).forEach(function (entry) {
-      var name = entry[0];
       var benchCount = entry[1].filter(function (pos) { return pos === 'BENCH'; }).length;
       expect(benchCount).toBeLessThanOrEqual(INNINGS);
     });

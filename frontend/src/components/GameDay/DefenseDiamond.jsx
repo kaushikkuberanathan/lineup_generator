@@ -26,7 +26,6 @@ var POS_COLORS = {
   RC:"#8e44ad", RF:"#239b56", Bench:"#555555"
 };
 
-var navy      = "#0f1f3d";
 var textMuted = "#6b7280";
 var red       = "#c8102e";
 
