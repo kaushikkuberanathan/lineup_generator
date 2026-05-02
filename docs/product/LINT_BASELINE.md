@@ -177,7 +177,7 @@ Hook findings remain as specifications for Step J-2.
 
 Reconciliation: 21 + 109 + 5 + 9 = **144** ✓ matches baseline.
 
-### After Step J-1 (2026-05-02 — commit [step-j1-commit])
+### After Step J-1 (2026-05-02 — commit 18b984a)
 
 | Bucket | Findings | Notes |
 |--------|--------:|-------|
