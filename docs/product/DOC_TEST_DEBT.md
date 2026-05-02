@@ -40,7 +40,7 @@
 | | |
 |---|---|
 | **Area** | Game Mode (full-screen dugout view) |
-| **Description** | No tests cover GameModeScreen rendering, inning advance, batter advance, or QuickSwap candidate filtering. The QuickSwap `onClick` regression in March 2026 (DefenseDiamond missing handlers) would not have been caught by tests. |
+| **Description** | No tests cover GameModeScreen rendering, inning advance, batter advance, or QuickSwap candidate filtering. The QuickSwap `onClick` regression in March 2026 (DefenseDiamond missing handlers) would not have been caught by tests. Scope expanded in v2.5.4: now includes DugoutView's flag-ON render path (mounts ScoringModeEntry + LiveScoringPanel + RestoreScoreModal under feature flag COMBINED_GAMEMODE_AND_SCORING). Coverage gaps are inherited from ScoringMode, not new — but the new container surface needs at least a smoke test before flag flips ON in production. |
 | **Risk if unfixed** | Silent regression breaks the #2 Strategic North Star ("Game Mode dugout-ready under pressure"). |
 | **Proposed test** | `frontend/src/tests/gameMode.test.js` — render GameModeScreen with fixture lineup, simulate inning advance, simulate QuickSwap tap, assert state transitions and candidate filtering (including absent-player exclusion). |
 | **Opened** | 2026-04-17 |
@@ -142,6 +142,15 @@
 | **Opened** | 2026-04-24 |
 | **Age** | 0 days |
 | **Target** | v2.6.x |
+
+### 🟡 P2 — D017: ScoreboardRow primitive has no test coverage
+
+- **Discovered:** 2026-05-01 (during Slice 0 / v2.5.4 Pre-release Docs Checklist walk)
+- **Component:** `frontend/src/components/game-mode/ScoreboardRow.jsx`
+- **Symptom:** New extracted primitive (70 lines, props-driven) has zero unit or integration tests. Used by LiveScoringPanel today; will be used by DugoutView in Slices 1–3.
+- **Risk:** Score display regressions undetectable until manual game-day validation. Critical surface (the score is the most important thing on screen during a game).
+- **Proposed fix:** Add a small unit test file (`ScoreboardRow.test.jsx`) covering the prop matrix — `myTeamLabel`, `oppLabel`, scores, `isScorer` toggle for +1 button visibility, `onAddMyRun`/`onAddOppRun` callbacks fire correctly.
+- **Target:** Before Slice 1 (scoreboard wiring) merges to main.
 
 ---
 
@@ -321,11 +330,11 @@
 |---|---|---|---|---|
 | 🔴 P0 | 2 | 0 | 0 | **2** |
 | 🟠 P1 | 3 | 2 | 1 | **6** |
-| 🟡 P2 | 5 | 4 | 3 | **12** |
-| **Total** | **10** | **6** | **4** | **20** |
+| 🟡 P2 | 6 | 4 | 3 | **13** |
+| **Total** | **11** | **6** | **4** | **21** |
 
 **Age distribution:**
-- 0–30 days: 20
+- 0–30 days: 21
 - 31–60 days: 0
 - 60+ days: 0
 
@@ -342,3 +351,4 @@
 - **v2.2 — April 2026 (v2.3.3 hygiene patch)** — Age fields updated (0→7 days). All stale v2.2.40/v2.2.39 target fields corrected: P0/P1 items → v2.3.4, P2 items → v2.4.0. Ship blocker updated to v2.4.0. Age distribution corrected to 19 (was 17 — prior undercounting). Scorer-Lock item (D001) annotated: v2.3.3 test additions add live scoring coverage but do not resolve the scorer-lock null check specifically. FEATURE_MAP Missing Rows item updated to note v2.3.3 added 3 new rows; remaining gap is Analytics, PWA, Governance exact-match.
 - **v2.3 — April 2026 (v2.5.0 release)** — Added D-S30 (P2 test gap): isFlagEnabled has no DB-read path. Dashboard updated: P2 test gaps 4→5, total 19→20. Ship blocker updated to v2.6.0.
 - **v2.4 — April 2026 (v2.5.2 release)** — Toast.test.jsx added (`src/components/ui/Toast.test.jsx`, 10 tests); suite 421→431. FEATURE_MAP.md row 24 added (Toast UI primitive, ✅ Doc Current, ✅ Yes tests). Dashboard unchanged — no new debt items opened.
+- **v2.5 — May 2026 (v2.5.4 release)** — P0 #2 (Game Mode Rendering + State) scope expanded to include DugoutView flag-ON render path (COMBINED_GAMEMODE_AND_SCORING). New P2 test gap D017 added: ScoreboardRow primitive untested. FEATURE_MAP.md row #25 added (Combined Game View / DugoutView, ✅ Doc Current, ❌ No Tests). Dashboard updated: P2 test gaps 5→6, total 20→21.

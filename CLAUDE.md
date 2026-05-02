@@ -321,6 +321,7 @@ Story 1 (April 22, 2026) was the regression that surfaced this — every batter 
 - `MERGE_FIELDS` is defined once as a shared const — do not duplicate at boot hydration and loadTeam hydration
 - `truncateTeamName()` in `formatters.js` handles all team name display in compact contexts (scoreboard, headers, chips). It is word-boundary aware — never bypass it with raw team names. Default cap is 12 chars; use cap=10 for scoreboard contexts where horizontal space is tight on 375px viewports.
 - Home/away semantic is first-class scoring context. Use `selectedGame.home` directly with a dedicated `HomeAwayChip` component — never bury it as metadata inside another element. Away games render with amber accent (`#f5c842`); home games render neutral (`#94a3b8`). Guard: `selectedGame && typeof selectedGame.home === 'boolean'` (excludes practice mode and legacy orphan games without the field).
+- COMBINED_GAMEMODE_AND_SCORING — mutual-exclusion flag gating between legacy ScoringMode and new DugoutView surfaces; three invariants and three enforcement sites; see `docs/SOLUTION_DESIGN.md` § Feature Flag System for full details.
 
 ---
 
