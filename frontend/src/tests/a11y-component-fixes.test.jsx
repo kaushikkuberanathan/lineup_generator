@@ -4,6 +4,7 @@ import { render } from '@testing-library/react';
 import { OfflineIndicator } from '../components/Shared/OfflineIndicator';
 import { DefenseDiamond } from '../components/GameDay/DefenseDiamond';
 import { NowBattingBar } from '../components/GameDay/NowBattingStrip';
+import { LockFlow } from '../components/GameDay/LockFlow';
 
 // ============================================================================
 // F3 — OfflineIndicator: status label font-size must meet 12px WCAG floor
@@ -122,6 +123,78 @@ describe('F4/F5 — NowBattingStrip aria-labels', function() {
     var btn = container.querySelector('button[aria-label="Next batter"]');
     expect(btn).not.toBeNull();
     expect(btn.hasAttribute('title')).toBe(false);
+  });
+
+});
+
+// ============================================================================
+// F6 — LockFlow modal a11y attributes
+// ============================================================================
+
+describe('F6 — LockFlow modal a11y attributes', function() {
+
+  test('F6 — modal panel has dialog role + aria-modal + aria-label', function() {
+    var { container } = render(
+      <LockFlow
+        activeWarnings={[]}
+        nextGame={null}
+        hasPin={false}
+        onConfirmLock={function() {}}
+        onRequestPin={function() {}}
+        onClose={function() {}}
+      />
+    );
+    var dialog = container.querySelector('[role="dialog"]');
+    expect(dialog).not.toBeNull();
+    expect(dialog.getAttribute('aria-modal')).toBe('true');
+    expect(dialog.getAttribute('aria-label')).toBe('Lock Lineup');
+  });
+
+});
+
+// ============================================================================
+// F7 — DefenseDiamond inning row contrast (Option A: outlined pill)
+// ============================================================================
+
+describe('F7 — DefenseDiamond inning pill contrast', function() {
+
+  var roster = [{ name: 'Alice' }, { name: 'Bob' }];
+  var grid   = { 'Alice': ['P', 'P'], 'Bob': ['C', 'C'] };
+
+  test('F7 — selected pill red-outlined, unselected pills navy-outlined, transparent background', function() {
+    var { container } = render(
+      <DefenseDiamond
+        roster={roster}
+        grid={grid}
+        innings={2}
+        selectedInning={0}
+        onSelectInning={function() {}}
+      />
+    );
+
+    var buttons        = Array.from(container.querySelectorAll('button'));
+    var allBtn         = buttons.find(function(b) { return b.textContent.trim() === 'All'; });
+    var selectedPill   = buttons.find(function(b) { return b.textContent.trim() === '1'; });
+    var unselectedPill = buttons.find(function(b) { return b.textContent.trim() === '2'; });
+
+    expect(allBtn).not.toBeNull();
+    expect(selectedPill).not.toBeNull();
+    expect(unselectedPill).not.toBeNull();
+
+    // Selected inning pill ("1") — red fill, red border, white text
+    expect(selectedPill.style.backgroundColor).toContain('200, 16, 46');   // rgb(#c8102e)
+    expect(selectedPill.style.borderColor).toContain('200, 16, 46');
+    expect(selectedPill.style.color).toContain('255, 255, 255');            // rgb(#fff)
+
+    // Unselected inning pill ("2") — transparent bg, navy border, navy text
+    expect(unselectedPill.style.backgroundColor).not.toContain('15, 31, 61'); // no navy fill
+    expect(unselectedPill.style.borderColor).toContain('15, 31, 61');         // rgb(#0F1F3D)
+    expect(unselectedPill.style.color).toContain('15, 31, 61');
+
+    // Unselected "All" button — same contract as unselected inning pill
+    expect(allBtn.style.backgroundColor).not.toContain('15, 31, 61');
+    expect(allBtn.style.borderColor).toContain('15, 31, 61');
+    expect(allBtn.style.color).toContain('15, 31, 61');
   });
 
 });

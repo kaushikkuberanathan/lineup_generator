@@ -315,16 +315,16 @@ management.
 
 ### FIX-NOW (actionable this session, no locked-file edits required)
 
-| # | File | Finding | Section | Fix |
-|---|------|---------|---------|-----|
-| F1 | `GameDay/DefenseDiamond.jsx` L225 | `fontSize:"9px"` — below project a11y floor (11px allowed in dense bold contexts where 12px overflows tight grids) | S1 | Raise to `fontSize:"11px"` |
-| F2 | `GameDay/DefenseDiamond.jsx` L306 | `fontSize:"9px"` — below project a11y floor (11px allowed in dense bold contexts where 12px overflows tight grids) | S1 | Raise to `fontSize:"11px"` |
-| F3 | `Shared/OfflineIndicator.jsx` L30 | `fontSize:"10px"` on critical status text | S1 | Raise to `fontSize:"12px"` |
-| F4 | `GameDay/NowBattingStrip.jsx` L57 | Icon-only `‹` button uses `title` not `aria-label` | S3 | Replace `title=` with `aria-label="Previous batter"` |
-| F5 | `GameDay/NowBattingStrip.jsx` L79 | Icon-only `›` button uses `title` not `aria-label` | S3 | Replace `title=` with `aria-label="Next batter"` |
-| F6 | `GameDay/LockFlow.jsx` | No `role="dialog"` / `aria-modal` / `aria-label` on modal root | S5 | Add `role="dialog"` `aria-modal="true"` `aria-label="Lock Lineup"` to outermost container |
-| F7 | `GameDay/DefenseDiamond.jsx` | Unselected inning pill text: insufficient contrast against background (WCAG AA 4.5:1) — surfaced on-device | Contrast | Raise unselected pill text/border color to ≥ 4.5:1 against background; confirm exact values via visual inspection before coding |
-| F8 | `Support/LegalSection.jsx` L75 | ~~Back button accessibility check~~ **CLOSED — NO FINDING**: button renders `‹ Back` text; accessible name provided by visible content | S3 | No action needed |
+| # | File | Finding | Section | Fix | Status |
+|---|------|---------|---------|-----|--------|
+| F1 | `GameDay/DefenseDiamond.jsx` L225 | `fontSize:"9px"` — below project a11y floor (11px allowed in dense bold contexts where 12px overflows tight grids) | S1 | Raise to `fontSize:"11px"` | **RESOLVED** [step-c-commit] |
+| F2 | `GameDay/DefenseDiamond.jsx` L306 | `fontSize:"9px"` — below project a11y floor (11px allowed in dense bold contexts where 12px overflows tight grids) | S1 | Raise to `fontSize:"11px"` | **RESOLVED** [step-c-commit] |
+| F3 | `Shared/OfflineIndicator.jsx` L30 | `fontSize:"10px"` on critical status text | S1 | Raise to `fontSize:"12px"` | **RESOLVED** [step-c-commit] |
+| F4 | `GameDay/NowBattingStrip.jsx` L57 | Icon-only `‹` button uses `title` not `aria-label` | S3 | Replace `title=` with `aria-label="Previous batter"` | **RESOLVED** [step-c-commit] |
+| F5 | `GameDay/NowBattingStrip.jsx` L79 | Icon-only `›` button uses `title` not `aria-label` | S3 | Replace `title=` with `aria-label="Next batter"` | **RESOLVED** [step-c-commit] |
+| F6 | `GameDay/LockFlow.jsx` | No `role="dialog"` / `aria-modal` / `aria-label` on modal root | S5 | Add `role="dialog"` `aria-modal="true"` `aria-label="Lock Lineup"` to outermost container | **RESOLVED** [step-c-commit] |
+| F7 | `GameDay/DefenseDiamond.jsx` | Unselected inning pill text: insufficient contrast against background (WCAG AA 4.5:1) — surfaced on-device | Contrast | Outlined-pill Option A: transparent bg + 1.5px navy border + navy text (unselected); red bg + red border (selected inning); navy bg + navy border (All selected) | **RESOLVED** [step-c-commit] |
+| F8 | `Support/LegalSection.jsx` L75 | ~~Back button accessibility check~~ **CLOSED — NO FINDING**: button renders `‹ Back` text; accessible name provided by visible content | S3 | No action needed | **CLOSED** |
 
 ### NEEDS VISUAL INSPECTION (fix-now candidates pending confirmation)
 
@@ -349,6 +349,8 @@ management.
 | LockFlow.jsx step-circle false-positive (S2) | 1 hit | Not a real finding |
 | PendingApprovalScreen.jsx stepIcon false-positive (S2) | 1 hit | Not a real finding |
 | PlayerHandBadge.jsx lineHeight false-positive (S2) | 1 hit | Not a real finding — regex matched `lineHeight` not `height` |
+| LockFlow.jsx Escape key dismissal | 1 | WCAG 2.1 SC 2.1.2 (No Keyboard Trap) — modal should close on Escape. Deferred from F6 recon; requires controlled `onKeyDown` handler or migration to `<dialog>` element |
+| LockFlow.jsx focus management on open/close | 1 | WCAG 2.1 SC 2.4.3 (Focus Order) — focus should move into modal on open and return to trigger element on close. Deferred from F6 recon; requires ref-based focus management |
 
 ### USABILITY FINDINGS (non-a11y, surfaced during a11y phone testing)
 
@@ -375,9 +377,12 @@ appear to be at or above the 12px floor.
 
 ## Final Triage Tally
 
-**7 fix-now findings across 4 component files**
+**7 fix-now findings across 4 component files — ALL RESOLVED**
 (DefenseDiamond.jsx, OfflineIndicator.jsx, NowBattingStrip.jsx, LockFlow.jsx)
 F8 closed as NO FINDING (LegalSection back button has visible text).
+Resolved in commit [step-c-commit] on `feature/design-tokens`.
+
+**0 remaining fix-now items.**
 
 **2 needs-visual-inspection items** (V2 closed)
 (DefenseDiamond.jsx inning numbers V1, NowBattingStrip.jsx tap target size V3)
@@ -385,7 +390,7 @@ F8 closed as NO FINDING (LegalSection back button has visible text).
 **1 usability finding, non-a11y, defer-v2.5.x HIGH**
 (U1 — App.jsx More tab horizontal overflow, LEGAL tab cut off in portrait)
 
-**391 defer-to-v2.5.x findings** (App.jsx: 232+13+126+31+1; components near-floor: 27)
+**~391 defer-to-v2.5.x findings** (App.jsx: 232+13+126+31+1; components near-floor: 27; plus LockFlow escape key + focus management deferred from F6 recon)
 
 **6 defer-to-v2.6.0 findings** (Auth screens: 6 button findings)
 

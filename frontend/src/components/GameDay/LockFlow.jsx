@@ -167,7 +167,8 @@ export function LockFlow({ activeWarnings, nextGame, hasPin, onConfirmLock, onRe
     <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, background:"rgba(0,0,0,0.55)", zIndex:9000,
       display:"flex", alignItems:"flex-end", justifyContent:"center" }}
       onClick={function(e) { if (e.target === e.currentTarget) onClose(); }}>
-      <div style={{ background:"#fff", borderRadius:"16px 16px 0 0", padding:"24px 20px 32px",
+      <div role="dialog" aria-modal="true" aria-label="Lock Lineup"
+        style={{ background:"#fff", borderRadius:"16px 16px 0 0", padding:"24px 20px 32px",
         width:"100%", maxWidth:"520px", maxHeight:"80vh", overflowY:"auto",
         boxShadow:"0 -4px 24px rgba(0,0,0,0.18)" }}>
         {/* Close handle */}
