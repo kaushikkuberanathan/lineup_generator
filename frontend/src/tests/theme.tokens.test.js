@@ -13,7 +13,7 @@
  * Run: cd frontend && npm test -- theme.tokens
  */
 
-import { tokens, color, opacity, space, radius, font, zIndex } from '../theme';
+import { tokens, color, opacity, space, radius, font, zIndex, shadow } from '../theme';
 
 const HEX_RE  = /^#([0-9A-Fa-f]{6}|[0-9A-Fa-f]{3})$/;
 const RGBA_RE = /^rgba\(\d+,\d+,\d+,[\d.]+\)$/;
@@ -35,10 +35,7 @@ describe('Group 1 — top-level structure', function () {
     expect(tokens).toHaveProperty('radius');
     expect(tokens).toHaveProperty('font');
     expect(tokens).toHaveProperty('zIndex');
-  });
-
-  test('1.3: shadow group is absent (deferred to v2.4.1)', function () {
-    expect(tokens).not.toHaveProperty('shadow');
+    expect(tokens).toHaveProperty('shadow');
   });
 
 });
@@ -223,6 +220,54 @@ describe('Group 7 — barrel exports (theme/index.js)', function () {
     expect(radius).toBeDefined();
     expect(font).toBeDefined();
     expect(zIndex).toBeDefined();
+  });
+
+});
+
+// ─── Group 8 — shadow tokens ──────────────────────────────────────────────────
+
+describe('Group 8 — shadow tokens', function () {
+
+  test('8.1: tokens.shadow is a defined, non-null object', function () {
+    expect(tokens.shadow).toBeDefined();
+    expect(tokens.shadow).not.toBeNull();
+    expect(typeof tokens.shadow).toBe('object');
+  });
+
+  test('8.2: shadow has exactly the four expected keys', function () {
+    ['subtle', 'card', 'elevated', 'overlay'].forEach(function (k) {
+      expect(tokens.shadow).toHaveProperty(k);
+    });
+    expect(Object.keys(tokens.shadow).length).toBe(4);
+  });
+
+  test('8.3: all shadow values are non-empty strings', function () {
+    Object.entries(tokens.shadow).forEach(function ([k, v]) {
+      expect(typeof v).toBe('string');
+      expect(v.length).toBeGreaterThan(0);
+    });
+  });
+
+  test('8.4: tokens.shadow.subtle has the expected value', function () {
+    expect(tokens.shadow.subtle).toBe('0 1px 4px rgba(15,31,61,0.06)');
+  });
+
+  test('8.5: tokens.shadow.card has the expected value (compound two-layer)', function () {
+    expect(tokens.shadow.card).toBe('0 1px 3px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06)');
+  });
+
+  // shadow.elevated is reserved for App.jsx call sites (locked, deferred to v2.5.x — see DESIGN_AUDIT.md §6)
+  test('8.6: tokens.shadow.elevated has the expected value', function () {
+    expect(tokens.shadow.elevated).toBe('0 4px 12px rgba(0,0,0,0.12)');
+  });
+
+  test('8.7: tokens.shadow.overlay has the expected value', function () {
+    expect(tokens.shadow.overlay).toBe('0 4px 12px rgba(0,0,0,0.35)');
+  });
+
+  test('8.8: named export shadow from index.js resolves and matches tokens.shadow', function () {
+    expect(shadow).toBeDefined();
+    expect(shadow.card).toBe(tokens.shadow.card);
   });
 
 });

@@ -14,4 +14,4 @@
 import { tokens } from './tokens.js';
 
 export { tokens };
-export const { color, opacity, space, radius, font, zIndex } = tokens;
+export const { color, opacity, space, radius, font, zIndex, shadow } = tokens;
