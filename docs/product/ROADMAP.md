@@ -1,9 +1,19 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: May 1, 2026 (v2.5.4 staged on develop; v2.5.3 shipped to production via PR #31, commit `b167890`)
+> Last updated: May 2, 2026 (v2.5.5 staged on develop; v2.5.3 shipped to production via PR #31, commit `b167890`)
 > MVP launched: March 24, 2026
 
 ---
+
+## v2.5.5 — 2026-05-02 (develop staged; awaiting prod merge)
+
+Slice 1 of combined game view. No user-facing changes — COMBINED_GAMEMODE_AND_SCORING flag defaults OFF in production.
+
+- `BattingOrderStrip/index.jsx` (new) — read-only batting order display component (Now Batting / On Deck / In Hole / +N more badge); mirrors NowBattingBar visual language without navigation controls
+- `DugoutView.jsx` — integrated BattingOrderStrip: renders below ScoringModeEntry (entry state) and above LiveScoringPanel (active scoring state); accepts new `currentBatterIndex` prop
+- `App.jsx` — added `currentBatterIndex` to DugoutView call site prop spread
+- `BattingOrderStrip.test.jsx` (new, 6 tests), `DugoutView.test.jsx` (new, 5 tests), `ScoreboardRow.test.jsx` (new, 4 tests — resolves D017)
+- Test suite: 437 → 452 passing
 
 ## v2.5.4 — 2026-05-01 (develop staged; awaiting prod merge)
 

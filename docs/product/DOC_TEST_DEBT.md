@@ -143,14 +143,13 @@
 | **Age** | 0 days |
 | **Target** | v2.6.x |
 
-### 🟡 P2 — D017: ScoreboardRow primitive has no test coverage
+### ✅ RESOLVED — D017: ScoreboardRow primitive has no test coverage
 
 - **Discovered:** 2026-05-01 (during Slice 0 / v2.5.4 Pre-release Docs Checklist walk)
+- **Resolved:** 2026-05-02 (Slice 1 / v2.5.5 — `ScoreboardRow.test.jsx` added, 4 tests)
 - **Component:** `frontend/src/components/game-mode/ScoreboardRow.jsx`
-- **Symptom:** New extracted primitive (70 lines, props-driven) has zero unit or integration tests. Used by LiveScoringPanel today; will be used by DugoutView in Slices 1–3.
-- **Risk:** Score display regressions undetectable until manual game-day validation. Critical surface (the score is the most important thing on screen during a game).
-- **Proposed fix:** Add a small unit test file (`ScoreboardRow.test.jsx`) covering the prop matrix — `myTeamLabel`, `oppLabel`, scores, `isScorer` toggle for +1 button visibility, `onAddMyRun`/`onAddOppRun` callbacks fire correctly.
-- **Target:** Before Slice 1 (scoreboard wiring) merges to main.
+- **Test file:** `frontend/src/components/game-mode/ScoreboardRow.test.jsx`
+- **Coverage:** scores from props, team labels, +1 button visibility (isScorer), default prop fallbacks
 
 ---
 
