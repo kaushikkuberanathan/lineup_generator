@@ -73,7 +73,7 @@ Located at App.jsx ~458–720. Two-phase auto-assign algorithm:
 ## Test Suite
 
 - **Framework**: Vitest
-- **CI target**: 452 passed / 1 skipped / 0 failed (as of v2.5.5, May 2, 2026)
+- **CI target**: 498 passed / 1 skipped / 0 failed (as of v2.5.6, May 3, 2026)
 - **Known skip**: engine.v2 test 2.3 (7-player roster produces no warning — fix in separate session)
 
 #### Test files
@@ -92,6 +92,8 @@ Located at App.jsx ~458–720. Two-phase auto-assign algorithm:
 | `BattingOrderStrip.test.jsx` | BattingOrderStrip component: Now Batting / On Deck / In Hole pill rendering, +N more badge, empty state, currentBatterIndex cycling (6 tests) |
 | `DugoutView.test.jsx` | DugoutView smoke tests: entry state renders, active scoring state renders, BattingOrderStrip present in both states, onExit handler (5 tests) |
 | `ScoreboardRow.test.jsx` | ScoreboardRow: scores from props, team labels, +1 button visibility (isScorer), default prop fallbacks (4 tests) |
+| `a11y-component-fixes.test.jsx` | F1-F7 a11y assertions: DefenseDiamond font floors (F1/F2), OfflineIndicator font floor (F3), NowBattingStrip aria-labels (F4/F5), LockFlow dialog role (F6), DefenseDiamond inning pill contrast (F7) (11 tests) |
+| `theme.tokens.test.js` | Design token contract shape: top-level groups, color palette, font, spacing, zIndex, barrel exports (34 tests) |
 
 #### Rules
 
@@ -136,7 +138,7 @@ Use `?disable_flag=<name>` to revert. Full guide: `docs/features/feature-flags.m
 | `MAINTENANCE_MODE` | `false` | Show maintenance screen during deploys |
 | `VIEWER_MODE` | `false` | Read-only swipeable inning cards; Share Viewer Link button |
 | `GAME_MODE` | `true` | Full-screen game day mode |
-| `ACCESSIBILITY_V1` | `false` | Font floors, touch targets, contrast uplift, aria labels |
+| `ACCESSIBILITY_V1` | `true` | Font floors, touch targets, contrast uplift, aria labels — GA default-on (Phase 1a). Roll back per-user: `localStorage.setItem("flag_ACCESSIBILITY_V1", "false")` |
 | `SCORING_SHEET_V2` | `true` | Outcome sheet semantic cleanup: Foul→PITCH OUTCOME, Strikeout removed, opp-half +1 buttons hidden |
 
 ---
