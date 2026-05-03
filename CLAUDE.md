@@ -532,7 +532,7 @@ Every other session: open `docs/product/DOC_TEST_DEBT.md` — close P0s, promote
 ## Current Version
 **v2.5.6** — May 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/data/versionHistory.js`.
 
-- v2.5.6 (2026-05-03): UX Track Phase 1a — ACCESSIBILITY_V1 promoted to GA (default-on); F1-F7 component a11y fixes; design tokens scaffolding (theme/tokens.js); ESLint pipeline restored; 39 new tests (a11y-fixes ×11, tokens ×27, accessibility.v1 +1); suite 452→491.
+- v2.5.6 (2026-05-03): UX Track Phase 1a — ACCESSIBILITY_V1 promoted to GA (default-on); F1-F7 component a11y fixes; design tokens scaffolding (theme/tokens.js); ESLint pipeline restored; 39 new tests (a11y-fixes ×11, tokens ×27, accessibility.v1 +1); suite 452→498.
 - v2.5.5 (2026-05-02): Slice 1 of combined game view — BattingOrderStrip component added; integrated into DugoutView (entry + active states); currentBatterIndex prop wired from App.jsx. 15 new tests (BattingOrderStrip ×6, DugoutView ×5, ScoreboardRow ×4); D017 resolved; suite 437→452.
 - v2.5.4 (2026-05-01): Slice 0 of combined game view — ScoringMode logic lifted into DugoutView.jsx under COMBINED_GAMEMODE_AND_SCORING flag (default OFF). No user-facing change in prod. Stories 27, 40–44 captured in backlog.
 - v2.5.3 docs addendum (2026-04-30): Added SECURITY_FRAMEWORK.md reference and Security Practices section.

@@ -14,6 +14,7 @@
       'ACCESSIBILITY_V1 feature flag promoted to GA (default-on; rollback per-user via localStorage flag_ACCESSIBILITY_V1=false if needed)',
       'Component a11y fixes F1-F7: DefenseDiamond inning label (9px→11px) and outs header (9px→11px), OfflineIndicator status label (10px→12px), NowBattingStrip aria-labels for prev/next batter, LockFlow dialog role + aria-modal, DefenseDiamond outlined-pill contrast on inning row',
       'Design tokens scaffolding: theme/tokens.js (186 lines, semantic tokens), theme/index.js (barrel export), DESIGN_AUDIT.md (provenance audit, 675 lines)',
+      'Phase 1c shadow tokens (PR #41): theme/tokens.js shadow group added (subtle/card/elevated/overlay); five call-site migrations from inline boxShadow literals (LoginScreen, PendingApprovalScreen, RequestAccessScreen, FairnessCheck, Toast); theme.tokens.test.js expanded 27→34 tests',
       'ESLint pipeline restoration: .eslintrc.cjs config (ESLint 8.57 legacy format), LINT_BASELINE.md baseline (144 problems documented, 21 FIX-NOW resolved, 123 outstanding), 12 file lint touchups (eslint-disable suppressions and exhaustive-deps annotations — no logic changes)',
       'New test files: a11y-component-fixes.test.jsx (11 tests covering F1-F7), theme.tokens.test.js (34 tests covering token contract shape; expanded from 27 in Phase 1c shadow tokens)',
       'accessibility.v1.test.js updated for GA default (22→23 tests, +1 Group 5 GA-default + override test)',
