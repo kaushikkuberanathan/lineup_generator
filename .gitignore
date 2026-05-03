@@ -14,3 +14,7 @@ supabase/.temp/
 
 # Node modules (root-level, for husky and other root devDependencies)
 node_modules/
+
+# Agent recon outputs
+lint-baseline-output.txt
+recon-output.txt

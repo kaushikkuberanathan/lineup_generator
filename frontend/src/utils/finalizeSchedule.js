@@ -8,7 +8,7 @@ function loadJSON(key, fallback) {
 }
 
 function saveJSON(key, value) {
-  try { localStorage.setItem(key, JSON.stringify(value)); } catch(e) {}
+  try { localStorage.setItem(key, JSON.stringify(value)); } catch(_) { /* quota or blocked storage; primary persistence is Supabase */ }
 }
 
 // Writes usScore/oppScore/gameStatus/finalizedAt to the game object in

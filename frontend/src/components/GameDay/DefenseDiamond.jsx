@@ -18,6 +18,7 @@
  */
 
 import { useState } from "react";
+import { tokens } from "../../theme/tokens";
 
 var POS_COLORS = {
   P:"#e05c2a", C:"#7f3f3f", "1B":"#2471a3", "2B":"#2980b9",
@@ -25,7 +26,6 @@ var POS_COLORS = {
   RC:"#8e44ad", RF:"#239b56", Bench:"#555555"
 };
 
-var navy      = "#0f1f3d";
 var textMuted = "#6b7280";
 var red       = "#c8102e";
 
@@ -216,20 +216,25 @@ export function DefenseDiamond({ roster, grid, innings, selectedInning, onSelect
   var outDisplay     = diamondInning !== null ? [outByInning[diamondInning] || []]   : outByInning;
   var benchInnLabels = diamondInning !== null ? [diamondInning] : innArr;
 
+  // TODO(v2.5.x): align to design tokens
+  //   - Replace raw '1.5px' border-width with a token when tokens.borderWidth.thin is added
+  //   - Add tokens.color.semantic.interactiveBorder for navy interactive borders
   return (
     <div>
 
       {/* ── Inning selector — single scrollable row ────── */}
       <div style={{ display:"flex", flexWrap:"nowrap", gap:"4px", alignItems:"center",
         marginBottom:"12px", overflowX:"auto", WebkitOverflowScrolling:"touch", paddingBottom:"2px" }}>
-        <span style={{ fontSize:"9px", color:textMuted, fontWeight:"bold",
+        <span style={{ fontSize:"11px", color:textMuted, fontWeight:"bold",
           textTransform:"uppercase", letterSpacing:"0.08em", flexShrink:0 }}>Inn</span>
         <button
           onClick={function() { setDiamondInning(null); }}
-          style={{ padding:"3px 8px", borderRadius:"10px", border:"none", cursor:"pointer",
+          style={{ padding:"3px 8px", borderRadius:"10px",
+            border: "1.5px solid " + tokens.color.brand.navy,
+            cursor:"pointer",
             fontSize:"11px", fontWeight:"bold", fontFamily:"inherit", flexShrink:0,
-            background: diamondInning === null ? navy : "rgba(15,31,61,0.07)",
-            color: diamondInning === null ? "#fff" : textMuted }}>
+            background: diamondInning === null ? tokens.color.brand.navy : "transparent",
+            color: diamondInning === null ? "#fff" : tokens.color.brand.navy }}>
           All
         </button>
         {innArr.map(function(i) {
@@ -237,10 +242,12 @@ export function DefenseDiamond({ roster, grid, innings, selectedInning, onSelect
           return (
             <button key={i}
               onClick={function(idx) { return function() { setDiamondInning(idx); }; }(i)}
-              style={{ padding:"3px 8px", borderRadius:"10px", border:"none", cursor:"pointer",
+              style={{ padding:"3px 8px", borderRadius:"10px",
+                border: active ? "1.5px solid " + red : "1.5px solid " + tokens.color.brand.navy,
+                cursor:"pointer",
                 fontSize:"11px", fontWeight:"bold", fontFamily:"inherit", flexShrink:0,
-                background: active ? red : "rgba(15,31,61,0.07)",
-                color: active ? "#fff" : textMuted }}>
+                background: active ? red : "transparent",
+                color: active ? "#fff" : tokens.color.brand.navy }}>
               {i + 1}
             </button>
           );
@@ -303,7 +310,7 @@ export function DefenseDiamond({ roster, grid, innings, selectedInning, onSelect
                           <td key={i} style={{ padding:"3px 10px", textAlign:"center",
                             borderTop:"2px solid rgba(220,38,38,0.3)",
                             background:"rgba(220,38,38,0.05)",
-                            fontSize:"9px", fontWeight:"bold", color:"#dc2626",
+                            fontSize:"11px", fontWeight:"bold", color:"#dc2626",
                             letterSpacing:"0.08em", textTransform:"uppercase" }}>
                             Out
                           </td>

@@ -441,6 +441,9 @@ frontend/src/
 │   └── featureFlags.js  ← Feature flag registry + evaluation
 ├── content/
 │   └── faqs.js          ← FAQ content (categories + items)
+├── theme/
+│   ├── tokens.js        ← Semantic design token definitions (Phase 1a)
+│   └── index.js         ← Barrel export
 ├── utils/
 │   ├── lineupEngineV2.js
 │   ├── scoringEngine.js
@@ -495,6 +498,10 @@ Native app deep-link behavior is OS-mediated — there is no client-side detecti
 - **Browser fallback:** Any URL scheme not handled by an installed app opens in the mobile browser, where web players are available for Spotify, Apple Music, and YouTube.
 
 The Songs sub-tab in Game Day → Batting filters to tonight's active batting order only — players marked Out Tonight are excluded.
+
+### Design Tokens Architecture (Phase 1a, v2.5.6)
+
+`frontend/src/theme/tokens.js` defines the semantic design token foundation: color palette, font sizes, spacing scale, z-index values, and border radii — all as a plain JS object. `theme/index.js` re-exports the token map as the barrel entry point. In Phase 1a there are zero consumers — the module tree-shakes out of the production bundle entirely and carries no runtime cost. Phase 1b (tracked in `docs/product/UX_REFACTOR_ROADMAP.md`) will wire tokens into components using CSS custom properties or inline style references. The token contract shape (top-level groups, palette structure, required keys) is enforced by `theme.tokens.test.js` (27 tests) so any structural regression is caught before it reaches consumers.
 
 ---
 

@@ -92,8 +92,8 @@ describe('2 — FEATURE_FLAGS registry', function() {
     expect(FEATURE_FLAGS).toHaveProperty('ACCESSIBILITY_V1');
   });
 
-  test('2.2 ACCESSIBILITY_V1 defaults to false', function() {
-    expect(FEATURE_FLAGS['ACCESSIBILITY_V1']).toBe(false);
+  test('2.2 ACCESSIBILITY_V1 defaults to true (GA, Phase 1a)', function() {
+    expect(FEATURE_FLAGS['ACCESSIBILITY_V1']).toBe(true);
   });
 
   test('2.3 existing flags are untouched', function() {
@@ -118,8 +118,8 @@ describe('2 — FEATURE_FLAGS registry', function() {
 
 describe('3 — isFlagEnabled defaults (no localStorage override)', function() {
 
-  test('3.1 returns false for ACCESSIBILITY_V1 (default off)', function() {
-    expect(isFlagEnabled('ACCESSIBILITY_V1')).toBe(false);
+  test('3.1 returns true for ACCESSIBILITY_V1 (default on, GA)', function() {
+    expect(isFlagEnabled('ACCESSIBILITY_V1')).toBe(true);
   });
 
   test('3.2 returns true for USE_NEW_LINEUP_ENGINE (default on)', function() {
@@ -157,15 +157,15 @@ describe('4 — isFlagEnabled localStorage override', function() {
   });
 
   test('4.3 removing localStorage key restores default', function() {
-    localStorage.setItem('flag_ACCESSIBILITY_V1', 'true');
-    expect(isFlagEnabled('ACCESSIBILITY_V1')).toBe(true);
-    localStorage.removeItem('flag_ACCESSIBILITY_V1');
+    localStorage.setItem('flag_ACCESSIBILITY_V1', 'false');
     expect(isFlagEnabled('ACCESSIBILITY_V1')).toBe(false);
+    localStorage.removeItem('flag_ACCESSIBILITY_V1');
+    expect(isFlagEnabled('ACCESSIBILITY_V1')).toBe(true);
   });
 
   test('4.4 unrelated localStorage keys do not interfere', function() {
     localStorage.setItem('flag_VIEWER_MODE', 'true');
-    expect(isFlagEnabled('ACCESSIBILITY_V1')).toBe(false);
+    expect(isFlagEnabled('ACCESSIBILITY_V1')).toBe(true);
     expect(isFlagEnabled('VIEWER_MODE')).toBe(true);
   });
 
@@ -177,8 +177,28 @@ describe('4 — isFlagEnabled localStorage override', function() {
 
   test('4.6 arbitrary string (not "true"/"false") falls back to default', function() {
     localStorage.setItem('flag_ACCESSIBILITY_V1', '1');   // not "true"
-    expect(isFlagEnabled('ACCESSIBILITY_V1')).toBe(false);
+    expect(isFlagEnabled('ACCESSIBILITY_V1')).toBe(true);  // falls back to default (true)
     localStorage.setItem('flag_ACCESSIBILITY_V1', 'yes'); // not "true"
+    expect(isFlagEnabled('ACCESSIBILITY_V1')).toBe(true);  // falls back to default (true)
+  });
+
+  test('4.7 localStorage "true" activates COMBINED_GAMEMODE_AND_SCORING', function() {
+    localStorage.setItem('flag_COMBINED_GAMEMODE_AND_SCORING', 'true');
+    expect(isFlagEnabled('COMBINED_GAMEMODE_AND_SCORING')).toBe(true);
+    localStorage.removeItem('flag_COMBINED_GAMEMODE_AND_SCORING');
+  });
+
+});
+
+// ============================================================================
+// Group 5 — ACCESSIBILITY_V1 GA default (Phase 1a)
+// ============================================================================
+
+describe('5 — ACCESSIBILITY_V1 GA default', function() {
+
+  test('5.1 isFlagEnabled returns true by default; "false" override disables it', function() {
+    expect(isFlagEnabled('ACCESSIBILITY_V1')).toBe(true);
+    localStorage.setItem('flag_ACCESSIBILITY_V1', 'false');
     expect(isFlagEnabled('ACCESSIBILITY_V1')).toBe(false);
   });
 

@@ -52,6 +52,7 @@ export function useFeatureFlags() {
       setFlags(merged);
       setLoading(false);
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only no-varying-deps: useFeatureFlags takes no args; setFlags/setLoading are stable setters, not re-fetch triggers.
   }, []);
 
   return { flags: flags, loading: loading };

@@ -5,7 +5,9 @@
  *   - Level-to-number mapping functions (reliability, reaction, arm, contact, etc.)
  *   - getBallTypeFit: position groupings — infield, outfield (LC/RC not CF), catcher
  *   - getPositionScore: all 10 valid positions score > 0; LC/RC work correctly
- *   - getPreferredModifier / getAvoidPenalty
+ *   - TODO(v2.5.x): no test coverage yet for getPreferredModifier,
+ *     getAvoidPenalty, getRunningScore, getBenchCandidateScore —
+ *     imports removed in Phase 1b lint cleanup; re-add when writing tests
  *   - Composite scores: getFieldScore, getBattingScore, getBattingOrderScore
  *   - V1→V2 silent fallback guard (usedFallback always false)
  *   - mapPlayerToV2: V1 field mapping, prefs→preferredPositions, dislikes→avoidPositions,
@@ -23,14 +25,10 @@ import {
   getDisciplineValue,
   getSpeedValue,
   getBallTypeFit,
-  getPreferredModifier,
-  getAvoidPenalty,
   getPositionScore,
   getFieldScore,
   getBattingScore,
-  getRunningScore,
   getBattingOrderScore,
-  getBenchCandidateScore,
   getFieldAwarenessScore,
 } from '../utils/scoringEngine.js';
 import { mapPlayerToV2 } from '../utils/playerMapper.js';

@@ -40,6 +40,7 @@ export class ErrorBoundary extends Component {
   }
 
   handleReset() {
+    // eslint-disable-next-line no-unused-vars -- functional updater pattern; prev unused but signals intent
     this.setState((prev) => ({
       hasError: false,
       error: null,

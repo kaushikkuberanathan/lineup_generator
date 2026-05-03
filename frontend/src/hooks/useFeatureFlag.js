@@ -54,6 +54,7 @@ export function useFeatureFlag(flagName, teamId) {
       });
 
     return function() { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- stable-setter deps: setEnabled/setLoading are useState setters with guaranteed stable identity; flagName/teamId are the correct re-fetch triggers.
   }, [flagName, teamId]);
 
   return { enabled: enabled, loading: loading };
