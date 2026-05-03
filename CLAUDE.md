@@ -258,7 +258,7 @@ Target: resolved within 10 min of detection.
 ---
 
 ## Test Suite
-Changes to `lineupEngineV2.js`, `scoringEngine.js`, or `playerMapper.js` → must pass frontend `npm test` (Vitest, 434 tests).
+Changes to `lineupEngineV2.js`, `scoringEngine.js`, or `playerMapper.js` → must pass frontend `npm test` (Vitest, 452 tests passing / 1 skipped).
 Changes to `featureFlags.js` or `positions.js` → must pass frontend `npm test`.
 Changes to backend code → must pass backend custom runner (`backend/scripts/tests/test-runner.js`, 13 suites).
 > Full suite detail: see `frontend/CLAUDE.md` → **## Test Suite** and `backend/CLAUDE.md` → **## Test Suite**
@@ -375,6 +375,9 @@ UptimeRobot pinging a free-tier Render service every 5 min keeps it awake 24/7 �
 | 5 | **MERGE_FIELDS test-file copies** | Three test files (`migration.test.js:267`, `scheduleIntegrity.test.js:113`, `scheduleIntegrity.test.js:181`) each define their own local MERGE_FIELDS copy. These are kept in sync manually. Future: extract to a shared test fixture and import. |
 | 6 | **pending_sync not re-attempted** | `finalizeSchedule.js` writes `pending_sync:<teamId>:finalize` to localStorage on Supabase failure but no retry mechanism exists yet. Coach must re-open the app while online for the next write to succeed. |
 | 7 | **Windows Vitest cold-start OOM cascade** | Environmental — not a code issue. See Branch Strategy → Infrastructure notes → "Known issue: Windows Vitest cold-start OOM" for workaround. |
+| 8 | **BattingOrderStrip static when scoring engine advances batters (flag ON only)** | Strip reads App's localStorage `currentBatterIndex`; `useLiveScoring` advances its own `batting_order_index` independently. Not synchronized. Resolved by Story 46 (Slice 2). Not visible in production — `COMBINED_GAMEMODE_AND_SCORING` flag default-OFF. |
+| 9 | **Bases diamond clips at bottom at 375px viewport (flag ON only)** | Home plate not visible during active scoring. `LiveScoringPanel` sized for full-screen pre-stacking; `BattingOrderStrip` overhead reduces vertical budget. Resolved by Story 46 (Slice 2). |
+| 10 | **Pitch map masked by scoring CTAs at 375px viewport (flag ON only)** | At-bat pitch history obscured behind fixed-position outcome CTA row. Same root cause as bug 9 — layout height budget. Resolved by Story 46 (Slice 2). |
 
 ---
 

@@ -1495,6 +1495,53 @@ Recommendation: A. Stay in Vitest, no new deps, no language migration.
 
 ---
 
+### Story 46 (P1) — Slice 2 — Combined View Layout Shell
+Status: Open
+Discovered: 2026-05-03 (post-Slice 1 smoke test on dev; COMBINED_GAMEMODE_AND_SCORING flag ON)
+Target: v2.5.6 or v2.6.0 (TBD based on scope)
+
+Three sub-items, all surfaced when the combined-view flag is enabled on dev:
+
+**Sub-item 1: BattingOrderStrip does not advance with scoring engine**
+Strip reads App's localStorage `currentBatterIndex`. Scoring engine maintains its own `batting_order_index` in `live_game_state`. The two are not synchronized — strip stays static while scoring engine advances batters internally.
+
+**Sub-item 2: Bases diamond clipped at 375px viewport**
+At 375px, the bases diamond visualization is clipped at the bottom — home plate not visible during active scoring. `LiveScoringPanel` was sized for full-screen presence pre-stacking; BattingOrderStrip above it reduces available vertical space without any corresponding layout adjustment.
+
+**Sub-item 3: Pitch map masked by scoring CTAs at 375px viewport**
+Pitch map (at-bat pitch history) is obscured behind the row of scoring outcome CTAs. Pitch buttons are `position: fixed` at `bottom: 60px` (nav clearance) and do not adapt to the reduced viewport height when BattingOrderStrip is stacked above `LiveScoringPanel`.
+
+**Impact:** Combined view is not pilot-ready until all three are resolved. Coaches cannot trust a static strip; clipped diamond hides base runner state; masked pitch map loses at-bat history visibility.
+
+**Root cause:**
+- Sub-1: Two sources of truth between App's `currentBatterIndex` and `useLiveScoring`'s internal batter index. Slice 2 architectural call: introduce derived `dugoutFocusMode` state — when `'scoring'`, strip reads from the scoring hook; when `'lineup'`, strip reads from App. Single source per mode; focus-mode state machine arbitrates.
+- Sub-2/3: 375px vertical space budget exceeded when `BattingOrderStrip` stacks above `LiveScoringPanel`. Layout pass needed to compress non-essential vertical space, or collapse strip to compact mode when scoring is active.
+
+**Proposed fixes (one Slice, all three together):**
+- (a) Lift `currentBatterIndex` (and `currentInning`) to App as single source of truth. Wire both into DugoutView via props. Introduce `dugoutFocusMode` derived state (`'lineup'` | `'scoring'`) that selects which batter-index source the strip displays.
+- (b) `ScoreboardRow` accepts new inning + half-inning props (the deferred Slice 1 test substitution "renders inning + half-inning indicator" becomes implementable — RED → GREEN).
+- (c) Compact-mode layout for `BattingOrderStrip` when `dugoutFocusMode === 'scoring'` (smaller pill height, recover ~40px vertical). Reduce `LiveScoringPanel`'s diamond top padding. Verify pitch map z-index above scoring CTAs row.
+- (d) Tests: state machine transitions (`lineup` → `scoring` → `lineup`), regression for Sub-1 (scoring advance updates strip), 375px viewport snapshot tests for Sub-2/3.
+
+**Recommendation:** Single Slice 2 PR. Target v2.5.6 (patch) if architecture stays clean; v2.6.0 (minor) if state-machine extraction warrants the bump.
+
+---
+
+### Story 47 (P3) — ScoreboardRow active-half visual indicator
+Status: Open
+Discovered: 2026-05-03 (smoke test enhancement request)
+Target: Slice 2 if layout slack; Slice 3 polish pass otherwise
+
+**Symptom:** Currently-batting team's scoreboard label has no animated affordance. Yellow inning indicator (▲ 2) carries some signal, but a pulsing dot or animated underline next to the team label during their at-bat would be more glanceable from the dugout.
+
+**Impact:** UX polish, not a defect. Coaches infer batting team from inning indicator today.
+
+**Proposed fix:** Add `isAtBat` boolean prop to `ScoreboardRow`; render a small pulsing dot next to the team label whose half is active.
+
+**Recommendation:** Implement during Slice 2 if there is layout slack; defer to Slice 3 polish pass otherwise.
+
+---
+
 ### Automated Score Reporting (County Integration)
 **Status:** Architecture finalized, implementation pending
 **Trigger:** Coach taps "Report Score" on a completed game

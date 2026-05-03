@@ -2,7 +2,7 @@
 
 > Authoritative mapping of every shipped feature to its documentation and test coverage.
 > Update this file whenever a feature ships, changes behavior, or gains new tests.
-> Owner: KK | Last updated: 2026-05-01 (v2.5.4 — added row #25 DugoutView/Combined Game View; rows #8 and #11 updated with consolidation note; ScoreboardRow debt item D017 added to DOC_TEST_DEBT.md)
+> Owner: KK | Last updated: 2026-05-03 (v2.5.5 — row #25 test status updated: BattingOrderStrip.test.jsx + DugoutView.test.jsx + ScoreboardRow.test.jsx added; D017 cleared)
 
 ---
 
@@ -32,7 +32,7 @@
 | 9 | **Share links (8-char Supabase-backed)** | MVP | `SOLUTION_DESIGN.md` § RLS Policy Map; `CLAUDE.md` Auth Principle | ✅ Current | None | ❌ None | D005 |
 | 10 | **PDF export + print view** | MVP | `ROADMAP.md` § v1.x | ⚠ Stale | None | ❌ None | D011 |
 | 11 | **Live scoring (scorer lock, inning entry, game finalization)** | Pilot | `ROADMAP.md` § v2.2.29–v2.3.3; `PERSONAS.md` § Scorekeeper; `MASTER_DEV_REFERENCE.md` § Game Object Shape | ✅ Current | `finalizeSchedule.test.js`, `undoHalfInning.test.js`, `newGameTemplate.test.js`, `practiceModeIsolation.test.js`, `realtimeRaceGuard.test.js`, `runnerPlacement.test.js` | ⚠ Partial | D001; Will be consolidated into Combined Game View (#25) when flag flips ON. |
-| 25 | **Combined Game View (DugoutView — flag-gated unified scoring surface)** | Phase 3 | `docs/SOLUTION_DESIGN.md` § Feature Flag System | ✅ Current | DugoutView wired in feature/combined-game-view; no dedicated test file yet | ❌ None | D017; mutual-exclusion invariant untested |
+| 25 | **Combined Game View (DugoutView — flag-gated unified scoring surface)** | Phase 3 | `docs/SOLUTION_DESIGN.md` § Feature Flag System | ✅ Current | `BattingOrderStrip.test.jsx` (6), `DugoutView.test.jsx` (5), `ScoreboardRow.test.jsx` (4) | ⚠ Partial | mutual-exclusion invariant untested; D018 (batter index sync); D019 (375px layout) |
 | 12 | **Practice Mode** | Pilot | `CLAUDE.md` § Live Scoring Architecture; `ROADMAP.md` § v2.3.3 | ✅ Current | `practiceModeIsolation.test.js` | ✅ Yes | — |
 | 13 | **Runner Placement on Diamond** | Pilot | `CLAUDE.md` § Roster identity; `ROADMAP.md` § v2.3.3 | ✅ Current | `runnerPlacement.test.js` | ✅ Yes | — |
 | 14 | **Opponent Half Tracking** | Pilot | `CLAUDE.md` § Live Scoring Architecture; `ROADMAP.md` § v2.3.2–v2.5.0 | ✅ Current | `liveStateMerge.test.js` (opp integration) | ⚠ Partial | — |
@@ -57,8 +57,8 @@
 | ⚠ Doc Stale | 4 / 25 |
 | ❌ Doc Missing | 0 / 25 |
 | ✅ Tests Exist | 5 / 25 |
-| ⚠ Tests Partial | 8 / 25 |
-| ❌ No Tests | 12 / 25 |
+| ⚠ Tests Partial | 9 / 25 |
+| ❌ No Tests | 11 / 25 |
 
 > The test gap is large but expected — the engine is the highest-risk surface and is well-covered. Features with no test are all UI-layer or integration paths with no engine logic.
 
