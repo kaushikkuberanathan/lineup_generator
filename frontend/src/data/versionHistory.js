@@ -1,5 +1,22 @@
 ﻿export var VERSION_HISTORY = [
   {
+    version: '2.5.5',
+    date: '2026-05-02',
+    headline: 'Slice 1 of combined game view — batting strip and scoreboard tests',
+    userChanges: [
+      'No user-facing changes — combined view feature flag remains OFF in production.',
+    ],
+    techNote: 'Under-the-hood stability improvements',
+    internalChanges: [
+      'Added BattingOrderStrip component (frontend/src/components/BattingOrderStrip/index.jsx) — read-only batting order display (Now Batting / On Deck / In Hole / +N more) for DugoutView',
+      'Integrated BattingOrderStrip into DugoutView.jsx: renders in both entry (below ScoringModeEntry) and active scoring (above LiveScoringPanel) states',
+      'Added currentBatterIndex prop to DugoutView; wired at App.jsx call site',
+      'New tests: BattingOrderStrip.test.jsx (6 tests), DugoutView.test.jsx (5 tests), ScoreboardRow.test.jsx (4 tests — resolves D017)',
+      'D017 resolved: ScoreboardRow now has full unit test coverage (prop matrix, +1 buttons, defaults)',
+      'Suite: 437 → 452 tests passing',
+    ],
+  },
+  {
     version: '2.5.4',
     date: '2026-05-01',
     headline: 'Slice 0 of combined game view — internal lift behind feature flag',

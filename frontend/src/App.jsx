@@ -143,7 +143,7 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.5.4";
+var APP_VERSION = "2.5.5";
 
 function loadJSON(key, def) {
   try {
@@ -8560,6 +8560,7 @@ export default function App() {
           innings={innings}
           sport={activeTeam ? activeTeam.sport : "baseball"}
           absentTonight={absentTonight}
+          currentBatterIndex={currentBatterIndex}
           onExit={function() { setDugoutViewActive(false); }}
           activeTeam={activeTeam}
           activeTeamId={activeTeamId}

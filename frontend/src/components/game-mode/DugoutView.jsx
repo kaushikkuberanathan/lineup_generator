@@ -15,6 +15,7 @@ import LiveScoringPanel from '../ScoringMode/LiveScoringPanel';
 import RestoreScoreModal from '../ScoringMode/RestoreScoreModal';
 import { useLiveScoring } from '../../hooks/useLiveScoring';
 import { useFeatureFlag } from '../../hooks/useFeatureFlag';
+import { BattingOrderStrip } from '../BattingOrderStrip';
 
 var FF = "Georgia,'Times New Roman',serif";
 
@@ -22,6 +23,7 @@ export function DugoutView({
   teamId, roster, battingOrder, innings, sport,
   absentTonight, payload, isViewer, onExit,
   activeTeam, activeTeamId, user, session, schedule,
+  currentBatterIndex,
 }) {
   // ── State (lifted from ScoringMode/index.jsx) ─────────────────────────────
   var _selGame = useState(null);
@@ -203,18 +205,29 @@ export function DugoutView({
       minHeight: '100vh',
     }}>
       {showEntry ? (
-        <ScoringModeEntry
-          activeTeam={activeTeam}
-          schedule={schedule || []}
-          selectedGame={selectedGame}
-          onSelectGame={handleSelectGame}
-          onClaimScorer={handleClaimScorer}
-          onJoinViewer={handleJoinViewer}
-          onPractice={handlePractice}
-          onClose={onExit}
-        />
+        <>
+          <ScoringModeEntry
+            activeTeam={activeTeam}
+            schedule={schedule || []}
+            selectedGame={selectedGame}
+            onSelectGame={handleSelectGame}
+            onClaimScorer={handleClaimScorer}
+            onJoinViewer={handleJoinViewer}
+            onPractice={handlePractice}
+            onClose={onExit}
+          />
+          <BattingOrderStrip
+            battingOrder={battingOrder || []}
+            currentBatterIndex={currentBatterIndex || 0}
+          />
+        </>
       ) : (
-        <LiveScoringPanel
+        <>
+          <BattingOrderStrip
+            battingOrder={battingOrder || []}
+            currentBatterIndex={currentBatterIndex || 0}
+          />
+          <LiveScoringPanel
           gameState={scoring.gameState}
           currentAtBat={scoring.currentAtBat}
           isScorer={scoring.isScorer}
@@ -252,6 +265,7 @@ export function DugoutView({
           onPause={handlePauseSession}
           onSettings={function() { setShowRestore(true); }}
         />
+        </>
       )}
 
       <RestoreScoreModal

@@ -32,7 +32,7 @@
 | **Risk if unfixed** | Silent regression breaks the #1 Strategic North Star ("share link bulletproof"). A future refactor of `shareCurrentLineup` or `SharedView.jsx` could ship with the link returning stale or incomplete data and we would not catch it pre-deploy. |
 | **Proposed test** | `frontend/src/tests/shareLink.test.js` — build a lineup fixture, call `shareCurrentLineup`, parse the `share_links.payload` JSONB, assert every expected field is present and correctly filtered. Also a DOM test that `SharedView` renders all sections without errors given the payload. |
 | **Opened** | 2026-04-17 |
-| **Age** | 7 days |
+| **Age** | 16 days |
 | **Target** | v2.3.4 |
 
 ### 🔴 P0 — Game Mode Rendering + State
@@ -40,11 +40,11 @@
 | | |
 |---|---|
 | **Area** | Game Mode (full-screen dugout view) |
-| **Description** | No tests cover GameModeScreen rendering, inning advance, batter advance, or QuickSwap candidate filtering. The QuickSwap `onClick` regression in March 2026 (DefenseDiamond missing handlers) would not have been caught by tests. Scope expanded in v2.5.4: now includes DugoutView's flag-ON render path (mounts ScoringModeEntry + LiveScoringPanel + RestoreScoreModal under feature flag COMBINED_GAMEMODE_AND_SCORING). Coverage gaps are inherited from ScoringMode, not new — but the new container surface needs at least a smoke test before flag flips ON in production. |
+| **Description** | No tests cover GameModeScreen rendering, inning advance, batter advance, or QuickSwap candidate filtering. The QuickSwap `onClick` regression in March 2026 (DefenseDiamond missing handlers) would not have been caught by tests. Scope expanded in v2.5.4: now includes DugoutView's flag-ON render path (mounts ScoringModeEntry + LiveScoringPanel + RestoreScoreModal under feature flag COMBINED_GAMEMODE_AND_SCORING). Coverage gaps are inherited from ScoringMode, not new — but the new container surface needs at least a smoke test before flag flips ON in production. **Update v2.5.5:** `DugoutView.test.jsx` (5 smoke tests) added — "smoke test before flag flip" threshold met for the DugoutView container. GameModeScreen itself remains untested. |
 | **Risk if unfixed** | Silent regression breaks the #2 Strategic North Star ("Game Mode dugout-ready under pressure"). |
 | **Proposed test** | `frontend/src/tests/gameMode.test.js` — render GameModeScreen with fixture lineup, simulate inning advance, simulate QuickSwap tap, assert state transitions and candidate filtering (including absent-player exclusion). |
 | **Opened** | 2026-04-17 |
-| **Age** | 7 days |
+| **Age** | 16 days |
 | **Target** | v2.3.4 |
 
 ### 🟠 P1 — Live Scoring Scorer-Lock Regression
@@ -56,7 +56,7 @@
 | **Risk if unfixed** | Scoring users silently unable to claim the role with no surfaced error — exactly what v2.2.29 had to fix in prod. |
 | **Proposed test** | Add to `frontend/src/tests/scoring.test.js` — assert `claimScorerLock` rejects null `scorer_user_id` before issuing the upsert, OR assert that the shim fallback produces a non-null value in all code paths. |
 | **Opened** | 2026-04-17 |
-| **Age** | 7 days |
+| **Age** | 16 days |
 | **Target** | v2.3.4 |
 
 ### 🟠 P1 — Auth Flow End-to-End (Magic Link + Google OAuth)
@@ -68,7 +68,7 @@
 | **Risk if unfixed** | Phase 2 auth cutover (planned) cannot ship safely without regression coverage. An auth-gate re-activation that silently blocks unauthenticated viewers would reproduce the v2.2.22 hotfix scenario. |
 | **Proposed test** | `frontend/src/tests/auth.test.js` — mock Supabase client, simulate magic link flow, assert `useAuth` state transitions correctly through `pending → authenticated`. Also test: share link renders when `authState === unauthenticated`. |
 | **Opened** | 2026-04-17 |
-| **Age** | 7 days |
+| **Age** | 16 days |
 | **Target** | Before Phase 2 auth cutover (not version-pinned) |
 
 ### 🟠 P1 — Roster-Wipe Guard + Recovery Endpoint
@@ -80,8 +80,44 @@
 | **Risk if unfixed** | Two roster-wipe incidents already happened (Jan, Feb 2026). The guard is the primary prevention; if it silently stops working, we're back to paper recovery. |
 | **Proposed test** | `backend/src/tests/teamData.test.js` — test the guard returns 409, test force-override returns 200, test history endpoint rejects without ADMIN_KEY, test history endpoint returns snapshots with ADMIN_KEY. |
 | **Opened** | 2026-04-17 |
-| **Age** | 7 days |
+| **Age** | 16 days |
 | **Target** | v2.3.4 |
+
+### 🟠 P1 — D018: BattingOrderStrip ↔ scoring engine batter index sync
+
+| | |
+|---|---|
+| **Area** | Combined Game View (DugoutView) |
+| **Description** | `BattingOrderStrip` reads `currentBatterIndex` from App's localStorage state. `useLiveScoring` internally advances `batting_order_index` in `live_game_state`. The two are not synchronized — the strip stays static while the scoring engine advances batters. Surfaces only when `COMBINED_GAMEMODE_AND_SCORING` flag is ON. |
+| **Risk if unfixed** | Coaches see a stale batter strip during live scoring — "Now Batting" shows the wrong player. Silent mismatch between display and scoring state. |
+| **Proposed fix** | Slice 2 (Story 46a): introduce `dugoutFocusMode` derived state. When `'scoring'`, strip reads `scoring.gameState.battingOrderIndex` from the `useLiveScoring` hook. When `'lineup'`, strip reads App's `currentBatterIndex`. |
+| **Opened** | 2026-05-03 |
+| **Age** | 0 days |
+| **Target** | v2.5.6 (Slice 2) |
+
+### 🟠 P1 — D019: 375px viewport vertical space budget in combined view
+
+| | |
+|---|---|
+| **Area** | Combined Game View (DugoutView) |
+| **Description** | At 375px viewport (iPhone SE, budget Android), two layout failures occur when `COMBINED_GAMEMODE_AND_SCORING` is ON: (a) bases diamond clips at the bottom — home plate not visible; (b) pitch map (at-bat pitch history) is masked behind the row of scoring outcome CTAs. Root cause: `BattingOrderStrip` stacked above `LiveScoringPanel` reduces available vertical space; fixed-position pitch buttons don't adapt. |
+| **Risk if unfixed** | Combined view unusable on the most common coach phone form factor. Diamond base runner state hidden. Pitch history inaccessible. |
+| **Proposed fix** | Slice 2 (Story 46b/c): compact-mode layout for `BattingOrderStrip` when `dugoutFocusMode === 'scoring'` (~40px vertical recovery); reduce `LiveScoringPanel` diamond top padding; verify pitch map z-index above CTAs row. Add 375px viewport snapshot tests. |
+| **Opened** | 2026-05-03 |
+| **Age** | 0 days |
+| **Target** | v2.5.6 (Slice 2) |
+
+### 🟠 P1 — D020: dugoutFocusMode state machine untested
+
+| | |
+|---|---|
+| **Area** | Combined Game View (DugoutView) |
+| **Description** | `dugoutFocusMode` derived state (`'lineup'` | `'scoring'`) does not exist yet — it is the core Slice 2 architectural addition. Once introduced, its transitions (`lineup` → `scoring` on scorer claim, `scoring` → `lineup` on exit/between innings) have no tests. Edge cases: inning ends mid-at-bat, team is batting (no defensive grid to show), game ends. |
+| **Risk if unfixed** | Incorrect focus-mode transitions would show the wrong body panel (grid vs scoring controls) at the wrong moment — the core combined-view UX guarantee. |
+| **Proposed fix** | Slice 2 (Story 46d): unit tests for `dugoutFocusMode` state machine transitions; component tests asserting correct body panel renders per mode. |
+| **Opened** | 2026-05-03 |
+| **Age** | 0 days |
+| **Target** | v2.5.6 (Slice 2) |
 
 ### 🟡 P2 — Walk-Up Song Navigation
 
@@ -92,7 +128,7 @@
 | **Risk if unfixed** | A future refactor of `activeBattingOrder` filtering could silently unfilter Songs view — would go unnoticed until a DJ parent complains about absent kids in the playlist. |
 | **Proposed test** | Add to existing test or new `frontend/src/tests/songs.test.js` — assert Songs renders only `activeBattingOrder` players, assert Play button's href matches `player.walkUpSong.url`. |
 | **Opened** | 2026-04-17 |
-| **Age** | 7 days |
+| **Age** | 16 days |
 | **Target** | v2.4.0 |
 
 ### 🟡 P2 — PWA Install Prompt Logic
@@ -104,7 +140,7 @@
 | **Risk if unfixed** | Platform-specific install UX regressions; user confusion on a non-critical path. |
 | **Proposed test** | `frontend/src/tests/pwaInstall.test.js` — mock `window.navigator.standalone`, `window.matchMedia("(display-mode: standalone)")`, and `beforeinstallprompt` event, assert correct banner variant renders. |
 | **Opened** | 2026-04-17 |
-| **Age** | 7 days |
+| **Age** | 16 days |
 | **Target** | v2.4.0 |
 
 ### 🟡 P2 — Analytics track() Wrapper + SSR Guards
@@ -116,7 +152,7 @@
 | **Risk if unfixed** | A future refactor could remove the guard and break CI if any test environment lacks window/navigator. |
 | **Proposed test** | Add to existing fixtures — assert `track()` is a no-op when window is undefined, assert `getDeviceContext()` returns safe defaults in SSR-like env. |
 | **Opened** | 2026-04-17 |
-| **Age** | 7 days |
+| **Age** | 16 days |
 | **Target** | v2.4.0 |
 
 ### 🟡 P2 — AI Photo Import End-to-End
@@ -128,7 +164,7 @@
 | **Risk if unfixed** | The v2.2.4 bug (large phone photos exceeding 5MB after base64) was a real prod incident; no regression test was added with the fix. |
 | **Proposed test** | `backend/src/tests/aiProxy.test.js` — mock Anthropic API, test POST /api/ai with oversize payload returns 413, test valid payload returns parsed structure. |
 | **Opened** | 2026-04-17 |
-| **Age** | 7 days |
+| **Age** | 16 days |
 | **Target** | v2.4.0 |
 
 ### 🟡 P2 — D-S30: isFlagEnabled has no DB-read path (Story 30)
@@ -143,14 +179,13 @@
 | **Age** | 0 days |
 | **Target** | v2.6.x |
 
-### 🟡 P2 — D017: ScoreboardRow primitive has no test coverage
+### ✅ RESOLVED — D017: ScoreboardRow primitive has no test coverage
 
 - **Discovered:** 2026-05-01 (during Slice 0 / v2.5.4 Pre-release Docs Checklist walk)
+- **Resolved:** 2026-05-02 (Slice 1 / v2.5.5 — `ScoreboardRow.test.jsx` added, 4 tests)
 - **Component:** `frontend/src/components/game-mode/ScoreboardRow.jsx`
-- **Symptom:** New extracted primitive (70 lines, props-driven) has zero unit or integration tests. Used by LiveScoringPanel today; will be used by DugoutView in Slices 1–3.
-- **Risk:** Score display regressions undetectable until manual game-day validation. Critical surface (the score is the most important thing on screen during a game).
-- **Proposed fix:** Add a small unit test file (`ScoreboardRow.test.jsx`) covering the prop matrix — `myTeamLabel`, `oppLabel`, scores, `isScorer` toggle for +1 button visibility, `onAddMyRun`/`onAddOppRun` callbacks fire correctly.
-- **Target:** Before Slice 1 (scoreboard wiring) merges to main.
+- **Test file:** `frontend/src/components/game-mode/ScoreboardRow.test.jsx`
+- **Coverage:** scores from props, team labels, +1 button visibility (isScorer), default prop fallbacks
 
 ---
 
@@ -329,12 +364,12 @@
 | Priority | Test Gaps | Doc Gaps | Process Gaps | Total |
 |---|---|---|---|---|
 | 🔴 P0 | 2 | 0 | 0 | **2** |
-| 🟠 P1 | 3 | 2 | 1 | **6** |
-| 🟡 P2 | 6 | 4 | 3 | **13** |
-| **Total** | **11** | **6** | **4** | **21** |
+| 🟠 P1 | 6 | 2 | 1 | **9** |
+| 🟡 P2 | 5 | 4 | 3 | **12** |
+| **Total** | **13** | **6** | **4** | **23** |
 
 **Age distribution:**
-- 0–30 days: 21
+- 0–30 days: 23
 - 31–60 days: 0
 - 60+ days: 0
 
@@ -352,3 +387,4 @@
 - **v2.3 — April 2026 (v2.5.0 release)** — Added D-S30 (P2 test gap): isFlagEnabled has no DB-read path. Dashboard updated: P2 test gaps 4→5, total 19→20. Ship blocker updated to v2.6.0.
 - **v2.4 — April 2026 (v2.5.2 release)** — Toast.test.jsx added (`src/components/ui/Toast.test.jsx`, 10 tests); suite 421→431. FEATURE_MAP.md row 24 added (Toast UI primitive, ✅ Doc Current, ✅ Yes tests). Dashboard unchanged — no new debt items opened.
 - **v2.5 — May 2026 (v2.5.4 release)** — P0 #2 (Game Mode Rendering + State) scope expanded to include DugoutView flag-ON render path (COMBINED_GAMEMODE_AND_SCORING). New P2 test gap D017 added: ScoreboardRow primitive untested. FEATURE_MAP.md row #25 added (Combined Game View / DugoutView, ✅ Doc Current, ❌ No Tests). Dashboard updated: P2 test gaps 5→6, total 20→21.
+- **v2.6 — May 2026 (v2.5.5 pre-release patch)** — D017 resolved (ScoreboardRow.test.jsx added, 4 tests). P0 #2 annotated: DugoutView.test.jsx (5 smoke tests) added — "smoke test before flag flip" threshold met. Added D018 (P1, batter index sync), D019 (P1, 375px layout), D020 (P1, dugoutFocusMode state machine) — all covered by Story 46 (Slice 2). All age fields swept from 7 → 16 days. Dashboard updated: P1 test gaps 3→6 (+D018/D019/D020), P2 test gaps 6→5 (−D017), total 21→23.

@@ -73,7 +73,7 @@ Located at App.jsx ~458–720. Two-phase auto-assign algorithm:
 ## Test Suite
 
 - **Framework**: Vitest
-- **CI target**: 434 passed / 1 skipped / 0 failed (as of v2.5.3, April 28, 2026)
+- **CI target**: 452 passed / 1 skipped / 0 failed (as of v2.5.5, May 2, 2026)
 - **Known skip**: engine.v2 test 2.3 (7-player roster produces no warning — fix in separate session)
 
 #### Test files
@@ -89,6 +89,9 @@ Located at App.jsx ~458–720. Two-phase auto-assign algorithm:
 | `formatters.test.js` | fmtAvg, fmtStat, time formatting helpers |
 | `flagBootstrap.test.js` | Feature flag bootstrap, localStorage override, URL param enable/disable |
 | `trackingUrl.test.js` | UTM outboundLinkProps, CAMPAIGNS registry, medium auto-detection (17 tests) |
+| `BattingOrderStrip.test.jsx` | BattingOrderStrip component: Now Batting / On Deck / In Hole pill rendering, +N more badge, empty state, currentBatterIndex cycling (6 tests) |
+| `DugoutView.test.jsx` | DugoutView smoke tests: entry state renders, active scoring state renders, BattingOrderStrip present in both states, onExit handler (5 tests) |
+| `ScoreboardRow.test.jsx` | ScoreboardRow: scores from props, team labels, +1 button visibility (isScorer), default prop fallbacks (4 tests) |
 
 #### Rules
 

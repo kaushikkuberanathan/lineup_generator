@@ -455,6 +455,7 @@ frontend/src/
 └── components/
     ├── Auth/
     ├── GameDay/
+    ├── BattingOrderStrip/  ← read-only batting order strip (Now Batting / On Deck / In Hole / +N more); used by DugoutView
     ├── ScoringMode/
     ├── game-mode/
     ├── Shared/
@@ -624,10 +625,10 @@ COMBINED_GAMEMODE_AND_SCORING is a static FEATURE_FLAGS object value plus localS
 
 **Slice rollout context:**
 
-- Slice 0 (v2.5.4) — DugoutView lift, flag default-OFF, prod unchanged
-- Slice 1 (planned) — Scoreboard wiring inside DugoutView
-- Slice 2 (planned) — Lineup wiring inside DugoutView
-- Slice 3 (planned) — Scoring controls integration
+- Slice 0 (v2.5.4, shipped) — DugoutView lift, flag default-OFF, prod unchanged
+- Slice 1 (v2.5.5, shipped) — BattingOrderStrip integration + currentBatterIndex prop wiring; ScoreboardRow test coverage; D017 resolved
+- Slice 2 (planned) — Combined view layout shell: persistent ScoreboardRow header (inning + half-inning), BattingOrderStrip below header, contextual body (defense grid vs LiveScoringPanel) driven by derived dugoutFocusMode state. Includes Bug 1/2/3 layout fixes from v2.5.5 smoke test (Story 46).
+- Slice 3 (planned) — Flag flip default-ON in prod; legacy GameModeScreen path deprecation; ScoringMode/index.jsx deletion.
 - Post-Slice 3 — flag flips ON, ScoringMode deleted from repo
 
 Until ScoringMode is deleted, all three invariants must be preserved. Any change touching PRIMARY_TABS, GAMEDAY_SUBTABS, or the ScoringMode render branch must be evaluated against the invariants above.
