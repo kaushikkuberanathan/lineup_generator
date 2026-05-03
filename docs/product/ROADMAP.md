@@ -828,6 +828,7 @@ Game Mode polish release covering three themes:
 | 7 | **OOM contract test** | `useLiveScore.contract.test.js` (untracked on main, committed on develop) causes pre-push hook worker OOM on Windows — fix vitest worker allocation or add to exclude list |
 | 40 | **Pre-push hook misfires on legitimate feature→develop merges** | `.husky/pre-push` blocks all pushes to develop including `--no-ff` merges from feature branches. Workaround: `ALLOW_DIRECT_PUSH=1` env var per push. Low impact but training-wheels feel. Proposed fix: detect merge commits at HEAD via `git rev-parse HEAD^2`; allow when HEAD is a merge commit. P3 polish. |
 | 44 | **Bypass events on protected branches not surfaced in commit history** | When admin bypasses branch protection, bypass logs to GitHub's server-side admin log but no indicator on commit page. Future audits require digging through admin logs. Proposed fix: convention — every bypassed push includes footer in merge commit message: `[Bypass: branch protection / reason: <one line>]`. Self-documents in `git log`. P3 polish, apply on next bypass. |
+| 45 | **Husky v10 + doc drift cleanup** | Pre-push hook prints v10 deprecation warning; CLAUDE.md test count says 434 (actual 437); second worktree at `lineup-generator-ux` undocumented; hook fires false-positive on `--delete` and cross-worktree pushes. Bundle as one chore PR after a Slice ships. |
 
 ---
 
@@ -1482,6 +1483,41 @@ Recommendation: A. Stay in Vitest, no new deps, no language migration.
 - **Priority:** Low — quality-of-life, not blocking. Pick up during a slow sprint or alongside next CI/tooling work.
 - **Related:** Complementary to the "Investigate Windows Vitest pre-push hook OOM cascade" item at the top of this ROADMAP under v2.6.0 Infrastructure. That item targets root-cause OOM mitigation; this item is a fast-path workaround for docs-only changes. Either solves the docs-push pain; together they harden the full hook.
 - **Origin:** Surfaced during SECURITY_FRAMEWORK.md push 2026-04-30; bypassed that push with `--no-verify` after manual test run confirmed clean.
+
+---
+
+### Story 45 (P3) — Husky v10 + doc drift cleanup
+Status: Open
+Discovered: 2026-05-02 (branch hygiene session)
+Target: TBD — next quiet window after a Slice ships
+Symptom: Four low-friction issues bundled together:
+  1. Pre-push hook prints Husky v10 deprecation warning on every push
+     ("Please remove the following two lines from .husky/pre-push:
+      #!/usr/bin/env sh / . "$(dirname -- "$0")/_/husky.sh"").
+     Will become a hard failure in v10.0.0.
+  2. CLAUDE.md test count reads 434; actual suite is 437 passed / 1 skipped
+     (delta: versionHistory.test.js + accessibility.v1.test.js added in v2.5.3/v2.5.4).
+  3. Hook fires false-positive block on `git push origin --delete <branch>`
+     when current branch is develop — the branch-guard regex matches develop
+     regardless of whether code is being pushed.
+  4. Hook fires false-positive block on cross-worktree pushes from develop
+     (second worktree at lineup-generator-ux is undocumented in CLAUDE.md).
+Impact: Low — common path works correctly. Noise on edge cases (branch deletes,
+  cross-worktree pushes). Will become blocking when Husky v10 ships.
+Root cause: Known for all four items:
+  1. Husky shebang block deprecated in v9, removed in v10.
+  2. Test count in CLAUDE.md not updated when new test files shipped.
+  3. Pre-push hook branch guard checks the current branch, not the ref being pushed.
+  4. Worktree was created without a CLAUDE.md documentation step.
+Proposed fixes:
+  (a) Strip the two deprecated shebang lines from .husky/pre-push.
+      Add --delete short-circuit: if the push deletes a remote ref (new SHA is
+      all zeros), skip test run and branch guard. Update CLAUDE.md test count
+      to 437. Add worktree note to CLAUDE.md Infrastructure section.
+  (b) Defer indefinitely; accept noise; use ALLOW_DIRECT_PUSH=1 override on
+      edge cases.
+Recommendation: (a) — all four are one-liners. Bundle as a single chore PR.
+  Effort: ~30 min. No behavior change on the common push path.
 
 ---
 
