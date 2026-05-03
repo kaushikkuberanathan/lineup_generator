@@ -1,7 +1,20 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: May 2, 2026 (v2.5.5 staged on develop; v2.5.3 shipped to production via PR #31, commit `b167890`)
+> Last updated: May 3, 2026 (v2.5.6 staged on develop; v2.5.5 shipped to production via PR #40)
 > MVP launched: March 24, 2026
+
+---
+
+## v2.5.6 — 2026-05-03 (develop staged; awaiting prod merge) — UX Track Phase 1a
+
+Shipped:
+- ACCESSIBILITY_V1 feature flag promoted to GA (default-on)
+- Component a11y fixes F1-F7 (DefenseDiamond, OfflineIndicator, NowBattingStrip, LockFlow)
+- Design tokens scaffolding (theme/tokens.js, theme/index.js barrel export, DESIGN_AUDIT.md)
+- ESLint pipeline restoration + LINT_BASELINE.md (144 problems documented, 21 FIX-NOW resolved)
+- 39 new tests (11 a11y-fixes + 27 tokens + 1 accessibility.v1 GA group); suite 452→491
+
+For full UX track planning detail, see `docs/product/UX_REFACTOR_ROADMAP.md`.
 
 ---
 

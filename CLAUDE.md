@@ -191,7 +191,7 @@ If any answer is "no": stop. Document the gap in DOC_TEST_DEBT.md, then decide w
 7. Stage **specific files by path** — never `git add -A` (risks picking up unrelated untracked files)
 8. [x] loginLimiter: 15min window, max 5 — applied to POST /magic-link ✓
 9. [ ] Confirm `RESEND_DOMAIN_VERIFIED=true` in Render env vars (only after domain verified)
-10. [ ] Run `npm test` — confirm 452 passed / 1 skipped (as of v2.5.5, May 2, 2026) / 0 failed
+10. [ ] Run `npm test` — confirm 498 passed / 1 skipped (as of v2.5.6, May 3, 2026) / 0 failed
 
 ### VERSION_HISTORY Schema (dual-layer — both required)
 ```js
@@ -258,7 +258,7 @@ Target: resolved within 10 min of detection.
 ---
 
 ## Test Suite
-Changes to `lineupEngineV2.js`, `scoringEngine.js`, or `playerMapper.js` → must pass frontend `npm test` (Vitest, 452 tests passing / 1 skipped).
+Changes to `lineupEngineV2.js`, `scoringEngine.js`, or `playerMapper.js` → must pass frontend `npm test` (Vitest, 498 tests passing / 1 skipped).
 Changes to `featureFlags.js` or `positions.js` → must pass frontend `npm test`.
 Changes to backend code → must pass backend custom runner (`backend/scripts/tests/test-runner.js`, 13 suites).
 > Full suite detail: see `frontend/CLAUDE.md` → **## Test Suite** and `backend/CLAUDE.md` → **## Test Suite**
@@ -530,11 +530,35 @@ Every other session: open `docs/product/DOC_TEST_DEBT.md` — close P0s, promote
 ---
 
 ## Current Version
-**v2.5.5** — May 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/data/versionHistory.js`.
+**v2.5.6** — May 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/data/versionHistory.js`.
 
+- v2.5.6 (2026-05-03): UX Track Phase 1a — ACCESSIBILITY_V1 promoted to GA (default-on); F1-F7 component a11y fixes; design tokens scaffolding (theme/tokens.js); ESLint pipeline restored; 39 new tests (a11y-fixes ×11, tokens ×27, accessibility.v1 +1); suite 452→491.
 - v2.5.5 (2026-05-02): Slice 1 of combined game view — BattingOrderStrip component added; integrated into DugoutView (entry + active states); currentBatterIndex prop wired from App.jsx. 15 new tests (BattingOrderStrip ×6, DugoutView ×5, ScoreboardRow ×4); D017 resolved; suite 437→452.
 - v2.5.4 (2026-05-01): Slice 0 of combined game view — ScoringMode logic lifted into DugoutView.jsx under COMBINED_GAMEMODE_AND_SCORING flag (default OFF). No user-facing change in prod. Stories 27, 40–44 captured in backlog.
 - v2.5.3 docs addendum (2026-04-30): Added SECURITY_FRAMEWORK.md reference and Security Practices section.
 - v2.5.3 (2026-04-28): Meta-governance patch — VERSION_HISTORY extracted to src/data/versionHistory.js; versionHistory.test.js (3 tests) enforces approved techNote strings; 24 historical techNote violations corrected; UPDATES TAB CONTENT RULE named heading added to CLAUDE.md; versionHistory.js added to extracted-modules list; Meta-governance techNote example corrected to approved string.
 - v2.5.2 (2026-04-28): Game Mode polish — count strip redesigned into two scope-grouped pills (Count + Outs) with stacked label-above-value cells (INNING / BALLS / STRIKES / OUTS). Single render surface: top pill binds dynamically to active batter via `isHomeBatting`; legacy bottom opponent count strip removed. Toast primitive added (top-anchored, dismissable, auto-clearing); half-inning notifications migrated to Toast. Mercy banner symmetric across home and opponent halves. @testing-library/jest-dom added; vitest glob expanded to .jsx; 10 tests (Toast.test.jsx); suite 421→431.
 - v2.5.1 (2026-04-24): ACCESSIBILITY_V1 follow-up + UX consolidation — Game Mode scoreboard polish: truncateTeamName word-boundary aware (cap 12 default, cap 10 for ScoreboardRow); GameContextHeader removed, game number chip + HomeAwayChip (amber @ Away / neutral Home) inline in all 3 header strips; STATE 1 subtitle home/away connector restored (was hardcoded 'vs'); ScoreboardRow labels 16px/#e2e8f0/700; gold borderTop accent; overflow backstop. Tests: opponentNameLabel.test.js + gameHeader.test.js updated; suite 419→421.
+
+---
+
+## Active Tracks
+
+This project runs two parallel tracks. Each has its own roadmap; both promote to main via develop.
+
+### Dugout Track — combined view rollout
+- Tracker: `docs/product/ROADMAP.md` (main project roadmap)
+- Worktree: `lineup-generator/` (this directory)
+- Recent: Slice 0 (v2.5.4), Slice 1 (v2.5.5)
+- Next: Slice 2 (combined view layout shell — Story 46)
+
+### UX Track — accessibility, design tokens, tooling foundation
+- Tracker: `docs/product/UX_REFACTOR_ROADMAP.md`
+- Worktree: `lineup-generator-ux/` (separate working directory)
+- Recent: Phase 1a (v2.5.6 — F1-F7 + ACCESSIBILITY_V1 GA + design tokens + ESLint)
+- Next: Phase 1c — shadow tokens (in progress on feature/phase-1c-shadow-tokens)
+
+### Cross-track discipline
+- At session start on either track, read this section + `git log` since last session
+- User-visible work on either track ships behind a flag default-OFF, soaks, then GA-promotes in a separate release
+- Track manifest gets updated whenever a track-related PR merges or current work changes

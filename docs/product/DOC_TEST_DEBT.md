@@ -387,4 +387,16 @@
 - **v2.3 — April 2026 (v2.5.0 release)** — Added D-S30 (P2 test gap): isFlagEnabled has no DB-read path. Dashboard updated: P2 test gaps 4→5, total 19→20. Ship blocker updated to v2.6.0.
 - **v2.4 — April 2026 (v2.5.2 release)** — Toast.test.jsx added (`src/components/ui/Toast.test.jsx`, 10 tests); suite 421→431. FEATURE_MAP.md row 24 added (Toast UI primitive, ✅ Doc Current, ✅ Yes tests). Dashboard unchanged — no new debt items opened.
 - **v2.5 — May 2026 (v2.5.4 release)** — P0 #2 (Game Mode Rendering + State) scope expanded to include DugoutView flag-ON render path (COMBINED_GAMEMODE_AND_SCORING). New P2 test gap D017 added: ScoreboardRow primitive untested. FEATURE_MAP.md row #25 added (Combined Game View / DugoutView, ✅ Doc Current, ❌ No Tests). Dashboard updated: P2 test gaps 5→6, total 20→21.
-- **v2.6 — May 2026 (v2.5.5 pre-release patch)** — D017 resolved (ScoreboardRow.test.jsx added, 4 tests). P0 #2 annotated: DugoutView.test.jsx (5 smoke tests) added — "smoke test before flag flip" threshold met. Added D018 (P1, batter index sync), D019 (P1, 375px layout), D020 (P1, dugoutFocusMode state machine) — all covered by Story 46 (Slice 2). All age fields swept from 7 → 16 days. Dashboard updated: P1 test gaps 3→6 (+D018/D019/D020), P2 test gaps 6→5 (−D017), total 21→23.
+- **v2.6 — May 2026 (v2.5.5 + v2.5.6 releases)**
+
+  v2.5.5 docs patch (forward-ported to develop):
+  - D017 resolved (ScoreboardRow.test.jsx, 4 tests)
+  - D018/D019/D020 added (P1, Slice 2 scope)
+  - Age sweep: open items 7→16 days
+  - Dashboard: P1 3→6, P2 6→5, total 21→23
+
+  v2.5.6 release patch:
+  - Test inventory updates: BattingOrderStrip (6), DugoutView (5), ScoreboardRow (4), a11y-component-fixes (11), theme.tokens (34)
+  - accessibility.v1.test.js: 22→23 tests
+  - Suite count: 452 → 498 (Slice 1 +15, PR #39 +39, PR #41 Phase 1c +7 net)
+  - Phase 1c shadow tokens: theme.tokens.test.js expanded 27→34
