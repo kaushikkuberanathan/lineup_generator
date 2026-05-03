@@ -77,16 +77,16 @@ No Airbnb, no semicolon enforcement, no import ordering. Goal is a working lint 
 | `components/Shared/ErrorBoundary.jsx` | 43 | 1 | `no-unused-vars` | warn | ✓ Resolved — Batch 3 |
 | `components/Shared/MaintenanceScreen.jsx` | 22 | 1 | `react/no-unescaped-entities` | error | ✓ Resolved — Batch 5 |
 | `components/Support/FAQSection.jsx` | 13 | 1 | `no-unused-vars` | warn | ✓ Resolved — Batch 3 |
-| `hooks/useBackendHealth.js` | 96 | 1 | `react-hooks/exhaustive-deps` | warn | Pending — Step J-2 |
-| `hooks/useFeatureFlag.js` | 57 | 1 | `react-hooks/exhaustive-deps` | warn | Pending — Step J-2 |
-| `hooks/useFeatureFlags.js` | 55 | 1 | `react-hooks/exhaustive-deps` | warn | Pending — Step J-2 |
+| `hooks/useBackendHealth.js` | 96 | 1 | `react-hooks/exhaustive-deps` | warn | ✓ Resolved — Step J-2 |
+| `hooks/useFeatureFlag.js` | 57 | 1 | `react-hooks/exhaustive-deps` | warn | ✓ Resolved — Step J-2 |
+| `hooks/useFeatureFlags.js` | 55 | 1 | `react-hooks/exhaustive-deps` | warn | ✓ Resolved — Step J-2 |
 | `tests/bench-equity.test.js` | 90, 92, 112 | 3 | `no-unused-vars` | warn | ✓ Resolved — Batch 1 |
 | `tests/countFromPitches.test.js` | 16 | 1 | `no-unused-vars` | warn | ✓ Resolved — Batch 1 |
 | `tests/scoring.test.js` | 26, 27, 31, 33 | 4 | `no-unused-vars` | warn | ✓ Resolved — Batch 1 |
 | `utils/analytics.js` | 68 | 1 | `no-empty` | error | ✓ Resolved — Batch 4 |
 | `utils/finalizeSchedule.js` | 11 | 1 | `no-empty` | error | ✓ Resolved — Batch 4 |
 | `utils/playerMapper.js` | 18, 21, 23, 24 | 4 | `no-unused-vars` | warn | ✓ Resolved — Batch 2 |
-| **Total** | | **21** | | | 18 resolved / 3 pending |
+| **Total** | | **21** | | | 21 resolved / 0 pending |
 
 **Note — `utils/playerMapper.js` (Batch 2):** The 4 findings were preserved with
 `eslint-disable-next-line no-unused-vars -- see TODO(v2.5.x) above` annotations, not
@@ -188,6 +188,17 @@ Reconciliation: 21 + 109 + 5 + 9 = **144** ✓ matches baseline.
 | Defer-to-parallel-sessions | 9 | Unchanged |
 | **Outstanding** | **126** | 3 + 109 + 5 + 9 = **126** ✓ matches `npm run lint` |
 
+### After Step J-2 (2026-05-02 — commit [step-j2-commit])
+
+| Bucket | Findings | Notes |
+|--------|--------:|-------|
+| Resolved — Step J-1 (Batches 1–5) | 18 | Mechanical fixes — zero behavior change |
+| Resolved — Step J-2 (3 hooks) | 3 | exhaustive-deps annotations — zero behavior change |
+| Defer-to-v2.5.x | 109 | Unchanged |
+| Defer-to-v2.6.0 (Auth) | 5 | Unchanged |
+| Defer-to-parallel-sessions | 9 | Unchanged |
+| **Outstanding** | **123** | 109 + 5 + 9 = **123** ✓ matches `npm run lint` |
+
 ---
 
 ## 7. Step J-1 Observations
@@ -214,3 +225,20 @@ drop planned V2 fallback wiring. Preserved with
 `eslint-disable-next-line no-unused-vars -- see TODO(v2.5.x) above` and a 6-line TODO
 block. The `TODO(v2.5.x)` markers in `playerMapper.js` are the authoritative deferral
 record.
+
+## Step J-2 Observations
+
+Three hook exhaustive-deps findings, three distinct patterns. Each was a legitimate
+intentional omission with a different rationale:
+
+- **useBackendHealth.js** (`mount-only effect:`): `[]` is defensive. `check()` is
+  re-created fresh on every render but closes over only stable values (useState setters,
+  refs, module constants). Adding it to deps causes infinite re-execution.
+- **useFeatureFlag.js** (`stable-setter deps:`): Dep array correctly captures
+  `[flagName, teamId]`. The flagged setters (`setEnabled`, `setLoading`) are stable per
+  React's useState contract; lint flagged them mechanically.
+- **useFeatureFlags.js** (`mount-only no-varying-deps:`): Hook takes zero parameters.
+  `[]` is the only semantically correct choice; the flagged setters are stable.
+
+Pattern-name distinctions are deliberately specific. None of the three was a real bug;
+the pipeline correctly raised them for review and review confirmed intentionality.
