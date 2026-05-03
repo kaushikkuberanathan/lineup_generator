@@ -27,6 +27,12 @@ export const FEATURE_FLAGS = {
   // section, Strikeout removed from contact sheet, opp-half +1 buttons hidden.
   // Roll back: localStorage.setItem("flag_SCORING_SHEET_V2", "false")
   SCORING_SHEET_V2: true,
+
+  // Combined Game Mode + Scoring view (DugoutView) — single full-screen surface
+  // combining live scoring controls with field positions and batting order.
+  // Default OFF. Enable per-user: localStorage.setItem("flag_COMBINED_GAMEMODE_AND_SCORING", "true")
+  // Disable: localStorage.setItem("flag_COMBINED_GAMEMODE_AND_SCORING", "false")
+  COMBINED_GAMEMODE_AND_SCORING: false,
 };
 
 /**

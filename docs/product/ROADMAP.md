@@ -1,11 +1,33 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: April 28, 2026 (v2.5.3 staged on develop; v2.5.1 shipped to production via PR #27, commit `aadddcd`)
+> Last updated: May 2, 2026 (v2.5.5 staged on develop; v2.5.3 shipped to production via PR #31, commit `b167890`)
 > MVP launched: March 24, 2026
 
 ---
 
-## v2.5.3 — 2026-04-28 (develop staged; awaiting prod merge)
+## v2.5.5 — 2026-05-02 (develop staged; awaiting prod merge)
+
+Slice 1 of combined game view. No user-facing changes — COMBINED_GAMEMODE_AND_SCORING flag defaults OFF in production.
+
+- `BattingOrderStrip/index.jsx` (new) — read-only batting order display component (Now Batting / On Deck / In Hole / +N more badge); mirrors NowBattingBar visual language without navigation controls
+- `DugoutView.jsx` — integrated BattingOrderStrip: renders below ScoringModeEntry (entry state) and above LiveScoringPanel (active scoring state); accepts new `currentBatterIndex` prop
+- `App.jsx` — added `currentBatterIndex` to DugoutView call site prop spread
+- `BattingOrderStrip.test.jsx` (new, 6 tests), `DugoutView.test.jsx` (new, 5 tests), `ScoreboardRow.test.jsx` (new, 4 tests — resolves D017)
+- Test suite: 437 → 452 passing
+
+## v2.5.4 — 2026-05-01 (develop staged; awaiting prod merge)
+
+Slice 0 of combined game view. No user-facing changes — COMBINED_GAMEMODE_AND_SCORING flag defaults OFF in production.
+
+- `DugoutView.jsx` — full rewrite: lifted ScoringMode state, hook, and handlers; renders under `COMBINED_GAMEMODE_AND_SCORING` flag
+- `App.jsx` — 4 targeted changes: `PRIMARY_TABS` hides Scoring tab when flag ON; `GAMEDAY_SUBTABS` hides DUGOUT VIEW pill when flag OFF; ScoringMode render branch gated on flag OFF; DugoutView call site wired with 5 new props
+- `ScoreboardRow.jsx` (new) — extracted scoring row primitive from LiveScoringPanel
+- `useLiveScoring.js` — Story 20 refactor: `flipHalfInning()` helper extracted; `resolveAtBat`, `endHalfInning`, `recordOppPitch` (strikeout + direct-out paths), `confirmRunnerAdvancement` all consolidated onto helper
+- `featureFlags.js` — `COMBINED_GAMEMODE_AND_SCORING: false` added
+- Story 27 (P0) opened: share-link viewer routing broken in prod (pre-existing, separate hotfix)
+- Stories 40–44 captured in backlog (pre-push hook, Defender fork-spawn, branch protection posture)
+
+## v2.5.3 — 2026-04-28 (shipped to prod 2026-04-28)
 
 Meta-governance patch. No user-facing changes.
 
@@ -19,7 +41,7 @@ Meta-governance patch. No user-facing changes.
 - `CLAUDE.md` corrected: `/magic-link` rate limiter is active and was never removed in v2.3.3 (Story 35 — Resolved).
 - `backend/scripts/tests/suite-rate-limits.js`: RATE-01b comment corrected to reflect actual code state.
 
-## v2.5.2 — 2026-04-28 (develop staged; awaiting prod merge)
+## v2.5.2 — 2026-04-28 (shipped to prod 2026-04-28)
 
 Game Mode polish release + VERSION_HISTORY content governance patch:
 
@@ -743,6 +765,36 @@ Game Mode polish release covering three themes:
 
 ---
 
+## 🔴 P0 — Critical / Blocking
+
+### Story 27 (P0) — Share-link viewer routing broken in prod
+
+**Status:** Open  
+**Discovered:** April 30, 2026 during Slice 0 (combined game view) dev test on Vercel preview  
+**Target:** Hotfix branch — separate from feature/combined-game-view  
+
+**Symptom:** Share links render the full authenticated app shell (bottom nav, editing UI, "Lineup Finalized — Unlock to make changes", "Install Dugout Lineup" PWA prompt) instead of the unauthenticated viewer experience.
+
+**Impact:** Violates the non-negotiable auth principle — viewing must never require login, share links must always work unauthenticated. Recipients see coach-side UI and editing affordances. P0 by stated principle, even though scope is pre-existing in prod.
+
+**Root cause:** Unknown — likely URL parsing or `isViewer` / `isViewer64` detection at App.jsx top-level (~lines 7920–7950). Upstream of Slice 0 wiring; not caused by combined-game-view work.
+
+**Confirmation it's not Slice 0:**
+- Slice 0 only added DugoutView wiring inside the existing `isViewer` branch
+- The bug is that `isViewer` itself isn't being set true on share-link load — upstream of any Slice 0 change
+- Same failure mode whether combined flag is ON or OFF
+
+**Proposed fixes:**
+- Option A — URL-routing investigation: check share URL format, isViewer/isViewer64 logic, base64 payload extraction
+- Option B — Add regression test for share-link rendering (no test exists today, hence silent breakage)
+- Option C — Both, single hotfix
+
+**Recommendation:** Option C. New branch `hotfix/share-link-viewer-routing` from main. Tests + fix together (RED → GREEN). Once merged, re-run Pass 3 from Slice 0 test plan as the regression gate.
+
+**Blocks:** Final merge of feature/combined-game-view to main is NOT blocked — note in PR body that share-link viewer is broken in prod regardless of this change.
+
+---
+
 ## 🔴 P1 — Bugs / Critical Gaps
 
 | # | Item | Notes |
@@ -754,6 +806,7 @@ Game Mode polish release covering three themes:
 | 5 | **Mud Hens g2 batting stats** | SQL restore in Supabase pending — two-query fix identified, not yet applied |
 | 6 | **Absent player auto-assign** | Out Tonight players (e.g. Aiden) occasionally still assigned to a field position when auto-assign runs — `activeBattingOrder` filters batting order correctly but engine absent exclusion may have a gap |
 | 7 | **Game Ball "—" display bug** | Schedule card shows "—" dash instead of recipient names after multi-player game ball selection — read path may not be normalizing the `gameBall` array at render |
+| 41 | **Local test gate broken by Defender fork-spawn scanning** | Husky pre-push hook cannot spawn Vitest fork workers — Defender real-time scans Node.js child processes on Cox managed endpoint, blocking IPC handshake within 60s timeout. Fails on single 2KB test file with 2.5GB RAM free. Root cause is endpoint security, not memory. Proposed fix: try `pool: 'threads'` in vite.config.js, in parallel file IT ticket for path exclusions on node_modules + Node install + project root. Currently bypassed via `--no-verify` on May 1, 2026 push of f974b20. Blocks every push to develop/main until resolved. |
 
 ---
 
@@ -767,6 +820,8 @@ Game Mode polish release covering three themes:
 | 4 | **Reset Roster confirmation prompt** | Currently destructive with no warning dialog |
 | 5 | **Per-game batting order** | Order should be regeneratable after each game using latest cumulative stats; stat-to-order feedback loop needs polish |
 | 6 | **Practice Tab** | Session log with date, focus area, drill notes, and player attendance checkboxes — fully specced, not yet built |
+| 42 | **Pre-push hook doesn't differentiate env-broken vs test-failure** | When hook fails, developer cannot tell if it's environmental OOM/spawn issue or real regression without manually reading Vitest output. Friction makes `--no-verify` more tempting. Proposed fix: hook detects timeout patterns and emits "ENVIRONMENT TIMEOUT" vs "TEST FAILURE" messages; logs bypass invocations for audit. P2 polish, address when hook touches happen. |
+| 43 | **Branch protection allows admin bypass; main should be stricter than develop** | Push to develop on May 1 reported "Bypassed rule violations" for required PR + status checks. Standard GitHub behavior — owner has implicit bypass unless "Do not allow bypassing the above settings" is checked. Acceptable on develop for solo iteration; main should require explicit unlock. Proposed fix: enable strict toggle on main only. Blocks: requires Story 41 resolution first (otherwise can't merge to main without re-bypassing). |
 
 ---
 
@@ -781,6 +836,9 @@ Game Mode polish release covering three themes:
 | 5 | **TypeScript migration** | Still `.jsx`, no types — lower priority but growing tech debt |
 | 6 | **ESLint config** | No linting enforcement in the repo |
 | 7 | **OOM contract test** | `useLiveScore.contract.test.js` (untracked on main, committed on develop) causes pre-push hook worker OOM on Windows — fix vitest worker allocation or add to exclude list |
+| 40 | **Pre-push hook misfires on legitimate feature→develop merges** | `.husky/pre-push` blocks all pushes to develop including `--no-ff` merges from feature branches. Workaround: `ALLOW_DIRECT_PUSH=1` env var per push. Low impact but training-wheels feel. Proposed fix: detect merge commits at HEAD via `git rev-parse HEAD^2`; allow when HEAD is a merge commit. P3 polish. |
+| 44 | **Bypass events on protected branches not surfaced in commit history** | When admin bypasses branch protection, bypass logs to GitHub's server-side admin log but no indicator on commit page. Future audits require digging through admin logs. Proposed fix: convention — every bypassed push includes footer in merge commit message: `[Bypass: branch protection / reason: <one line>]`. Self-documents in `git log`. P3 polish, apply on next bypass. |
+| 45 | **Husky v10 + doc drift cleanup** | Pre-push hook prints v10 deprecation warning; CLAUDE.md test count says 434 (actual 437); second worktree at `lineup-generator-ux` undocumented; hook fires false-positive on `--delete` and cross-worktree pushes. Bundle as one chore PR after a Slice ships. |
 
 ---
 
@@ -847,6 +905,7 @@ Game Mode polish release covering three themes:
 - [ ] **CI workflow `BACKEND_URL` audit** — backend job + smoke job both hardcode prod URL (verified April 27, 2026). Evaluate whether to point at a dev/preview backend or make tests environment-aware. Note: smoke job has misleading variable named `DEV_BACKEND_URL` that points to prod URL — fix or rename.
 - [ ] **Verify `RESEND_DOMAIN_VERIFIED=true`** in Render production environment variables (local `.env` confirmed April 27, 2026; Render dashboard not checked this session).
 - [ ] **Investigate Windows Vitest pre-push hook OOM cascade** — currently mitigated by warm-up workaround in CLAUDE.md. Real fix paths: reduce vitest worker count for hook runs, skip pre-push test (rely on CI gate), configure pool to avoid worker-thread cold-start, or move hook to pre-commit instead of pre-push.
+  - **Related:** See "Pre-push hook: skip test suite on docs-only changes" in the narrative Backlog section below for a complementary fast-path workaround.
 
 ### v2.6.0 — Quality of life
 
@@ -949,16 +1008,6 @@ Game Mode polish release covering three themes:
 12. **Set up GitHub Actions CI** — block Vercel auto-deploy unless build + engine tests pass; 2-hour setup, eliminates broken deploys
 
 > **Note:** File split (P3 code quality) should happen in parallel with or just before Phase 3 auth work. It will reduce new feature implementation time by ~40%.
-
----
-
-## Phase 5 — Security Hardening
-
-### Approve-Link Token Security
-- Current approve/deny links in admin emails are unsecured (UUID only)
-- Phase 5: implement HMAC-signed tokens with 24hr expiry
-- See docs/TODO_approve_link_security.md for full implementation plan
-- Blocks: none — implement before opening to multiple teams
 
 ---
 
@@ -1186,6 +1235,7 @@ Open questions to resolve during implementation:
 - Fix candidates: (A) async `isFlagEnabled` that reads Supabase `feature_flags` at app boot and caches; (B) `flagBootstrap.js` extended to fetch DB flags and merge into a runtime registry; (C) add a startup fetch in App.jsx hydration path, similar to team data load.
 - Recommend (B) — keeps the evaluation function synchronous at the call site while moving the async fetch to bootstrap. Matches existing `flagBootstrap.js` pattern.
 - Blocks nothing directly; current localStorage override remains available as workaround.
+- Connects to Story 41: until both resolved, runtime flag changes require redeploy + can't be locally test-validated.
 
 ### Story 26 (P2): Backend RATE-01a test flakiness — stateful against prod rate limiter
 - **Surfaced:** April 24, 2026 (PR #17 CI run — admin-bypassed because only CLAUDE.md changed).
@@ -1425,6 +1475,60 @@ Proposed fixes:
 Recommendation: A. Stay in Vitest, no new deps, no language migration.
   Revisit B only if TS adoption broadens elsewhere.
 
+### Pre-push hook: skip test suite on docs-only changes
+- **Problem:** Pre-push hook runs full `npm test` on every push, including docs-only PRs. Cold-cache runs OOM (~6+ min environment setup) and force `--no-verify` bypass. Warm-cache runs are 78s but still wasteful for changes that touch zero code.
+- **Proposed fix:** In the pre-push hook, detect whether the diff vs `origin/develop` contains any non-docs files. If only `docs/`, `*.md`, or `CLAUDE.md` files changed, skip the test suite with a printed notice. Otherwise run tests as today.
+- **Sketch:**
+```bash
+  CHANGED=$(git diff --name-only origin/develop..HEAD)
+  if echo "$CHANGED" | grep -vE '^(docs/|.*\.md$|CLAUDE\.md$)' | grep -q .; then
+    npm test || exit 1
+  else
+    echo "Docs-only change detected — skipping test suite."
+  fi
+```
+- **Why now:** Hit twice during recent docs pushes (v2.5.3 docs addendum, SECURITY_FRAMEWORK.md). Friction will compound as docs cadence increases.
+- **Risk:** Low. Hook still gates code changes. Docs PRs already have human review at GitHub before merge.
+- **Effort:** ~30 min. One file change in `.husky/pre-push` or equivalent hook script.
+- **Priority:** Low — quality-of-life, not blocking. Pick up during a slow sprint or alongside next CI/tooling work.
+- **Related:** Complementary to the "Investigate Windows Vitest pre-push hook OOM cascade" item at the top of this ROADMAP under v2.6.0 Infrastructure. That item targets root-cause OOM mitigation; this item is a fast-path workaround for docs-only changes. Either solves the docs-push pain; together they harden the full hook.
+- **Origin:** Surfaced during SECURITY_FRAMEWORK.md push 2026-04-30; bypassed that push with `--no-verify` after manual test run confirmed clean.
+
+---
+
+### Story 45 (P3) — Husky v10 + doc drift cleanup
+Status: Open
+Discovered: 2026-05-02 (branch hygiene session)
+Target: TBD — next quiet window after a Slice ships
+Symptom: Four low-friction issues bundled together:
+  1. Pre-push hook prints Husky v10 deprecation warning on every push
+     ("Please remove the following two lines from .husky/pre-push:
+      #!/usr/bin/env sh / . "$(dirname -- "$0")/_/husky.sh"").
+     Will become a hard failure in v10.0.0.
+  2. CLAUDE.md test count reads 434; actual suite is 437 passed / 1 skipped
+     (delta: versionHistory.test.js + accessibility.v1.test.js added in v2.5.3/v2.5.4).
+  3. Hook fires false-positive block on `git push origin --delete <branch>`
+     when current branch is develop — the branch-guard regex matches develop
+     regardless of whether code is being pushed.
+  4. Hook fires false-positive block on cross-worktree pushes from develop
+     (second worktree at lineup-generator-ux is undocumented in CLAUDE.md).
+Impact: Low — common path works correctly. Noise on edge cases (branch deletes,
+  cross-worktree pushes). Will become blocking when Husky v10 ships.
+Root cause: Known for all four items:
+  1. Husky shebang block deprecated in v9, removed in v10.
+  2. Test count in CLAUDE.md not updated when new test files shipped.
+  3. Pre-push hook branch guard checks the current branch, not the ref being pushed.
+  4. Worktree was created without a CLAUDE.md documentation step.
+Proposed fixes:
+  (a) Strip the two deprecated shebang lines from .husky/pre-push.
+      Add --delete short-circuit: if the push deletes a remote ref (new SHA is
+      all zeros), skip test run and branch guard. Update CLAUDE.md test count
+      to 437. Add worktree note to CLAUDE.md Infrastructure section.
+  (b) Defer indefinitely; accept noise; use ALLOW_DIRECT_PUSH=1 override on
+      edge cases.
+Recommendation: (a) — all four are one-liners. Bundle as a single chore PR.
+  Effort: ~30 min. No behavior change on the common push path.
+
 ---
 
 ### Automated Score Reporting (County Integration)
@@ -1492,6 +1596,17 @@ POST https://forms.office.com/formapi/api/b9c4fdbd-efb6-477a-9fb3-32624a22cd70/u
 - Add error alerting if POST returns non-201
 
 **Risk:** Token extraction pattern could change if Microsoft updates their form page HTML. Mitigate with error alerting and Power Automate (county-side) as fallback.
+
+---
+
+## Security
+
+Source of truth: `docs/product/SECURITY_FRAMEWORK.md`
+
+- Phase 0 (Quick Wins) — not started
+- Phase 1 (MVP Security Floor) — not started (absorbs legacy approve-link HMAC item)
+- Phase 2 (Hardening) — not started
+- Phase 3 (Scale & Compliance) — not started
 
 ---
 

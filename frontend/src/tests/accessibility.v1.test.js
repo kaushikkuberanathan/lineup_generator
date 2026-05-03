@@ -106,6 +106,10 @@ describe('2 — FEATURE_FLAGS registry', function() {
     expect(FEATURE_FLAGS['USE_NEW_LINEUP_ENGINE']).toBe(true);
   });
 
+  test('2.5 COMBINED_GAMEMODE_AND_SCORING defaults to false', function() {
+    expect(FEATURE_FLAGS['COMBINED_GAMEMODE_AND_SCORING']).toBe(false);
+  });
+
 });
 
 // ============================================================================
@@ -128,6 +132,10 @@ describe('3 — isFlagEnabled defaults (no localStorage override)', function() {
 
   test('3.4 returns false for VIEWER_MODE (default off)', function() {
     expect(isFlagEnabled('VIEWER_MODE')).toBe(false);
+  });
+
+  test('3.5 returns false for COMBINED_GAMEMODE_AND_SCORING (default off)', function() {
+    expect(isFlagEnabled('COMBINED_GAMEMODE_AND_SCORING')).toBe(false);
   });
 
 });
@@ -172,6 +180,12 @@ describe('4 — isFlagEnabled localStorage override', function() {
     expect(isFlagEnabled('ACCESSIBILITY_V1')).toBe(true);  // falls back to default (true)
     localStorage.setItem('flag_ACCESSIBILITY_V1', 'yes'); // not "true"
     expect(isFlagEnabled('ACCESSIBILITY_V1')).toBe(true);  // falls back to default (true)
+  });
+
+  test('4.7 localStorage "true" activates COMBINED_GAMEMODE_AND_SCORING', function() {
+    localStorage.setItem('flag_COMBINED_GAMEMODE_AND_SCORING', 'true');
+    expect(isFlagEnabled('COMBINED_GAMEMODE_AND_SCORING')).toBe(true);
+    localStorage.removeItem('flag_COMBINED_GAMEMODE_AND_SCORING');
   });
 
 });
