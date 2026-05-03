@@ -73,7 +73,7 @@ Located at App.jsx ~458–720. Two-phase auto-assign algorithm:
 ## Test Suite
 
 - **Framework**: Vitest
-- **CI target**: 498 passed / 1 skipped / 0 failed (as of v2.5.6, May 3, 2026)
+- **CI target**: 499 passed / 1 skipped / 0 failed (as of v2.5.6, May 3, 2026)
 - **Known skip**: engine.v2 test 2.3 (7-player roster produces no warning — fix in separate session)
 
 #### Test files

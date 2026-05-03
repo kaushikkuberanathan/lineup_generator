@@ -20,7 +20,7 @@
       'accessibility.v1.test.js updated for GA default (22→23 tests, +1 Group 5 GA-default + override test)',
       'New tooling: scripts/recon/a11y-recon.ps1 (a11y audit automation, 282 lines)',
       'New documentation: A11Y_AUDIT.md (F1-F7 categorization + resolution log), UX_REFACTOR_ROADMAP.md (Phase 1a/1b/1c roadmap, parallel to main ROADMAP.md), LINT_BASELINE.md, DESIGN_AUDIT.md',
-      'Test suite count: 452 → 498 passing / 1 skipped (34 files; includes Phase 1c +7 net from shadow token tests)',
+      'Test suite count: 452 → 499 passing / 1 skipped (34 files; includes Phase 1c +7 net from shadow token tests, plus +1 test 4.7 recovered from main during release merge)',
     ],
   },
   {

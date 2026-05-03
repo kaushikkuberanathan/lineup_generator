@@ -191,7 +191,7 @@ If any answer is "no": stop. Document the gap in DOC_TEST_DEBT.md, then decide w
 7. Stage **specific files by path** — never `git add -A` (risks picking up unrelated untracked files)
 8. [x] loginLimiter: 15min window, max 5 — applied to POST /magic-link ✓
 9. [ ] Confirm `RESEND_DOMAIN_VERIFIED=true` in Render env vars (only after domain verified)
-10. [ ] Run `npm test` — confirm 498 passed / 1 skipped (as of v2.5.6, May 3, 2026) / 0 failed
+10. [ ] Run `npm test` — confirm 499 passed / 1 skipped (as of v2.5.6, May 3, 2026) / 0 failed
 
 ### VERSION_HISTORY Schema (dual-layer — both required)
 ```js
@@ -258,7 +258,7 @@ Target: resolved within 10 min of detection.
 ---
 
 ## Test Suite
-Changes to `lineupEngineV2.js`, `scoringEngine.js`, or `playerMapper.js` → must pass frontend `npm test` (Vitest, 498 tests passing / 1 skipped).
+Changes to `lineupEngineV2.js`, `scoringEngine.js`, or `playerMapper.js` → must pass frontend `npm test` (Vitest, 499 tests passing / 1 skipped).
 Changes to `featureFlags.js` or `positions.js` → must pass frontend `npm test`.
 Changes to backend code → must pass backend custom runner (`backend/scripts/tests/test-runner.js`, 13 suites).
 > Full suite detail: see `frontend/CLAUDE.md` → **## Test Suite** and `backend/CLAUDE.md` → **## Test Suite**
@@ -532,7 +532,7 @@ Every other session: open `docs/product/DOC_TEST_DEBT.md` — close P0s, promote
 ## Current Version
 **v2.5.6** — May 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/data/versionHistory.js`.
 
-- v2.5.6 (2026-05-03): UX Track Phase 1a — ACCESSIBILITY_V1 promoted to GA (default-on); F1-F7 component a11y fixes; design tokens scaffolding (theme/tokens.js); ESLint pipeline restored; 39 new tests (a11y-fixes ×11, tokens ×27, accessibility.v1 +1); suite 452→498.
+- v2.5.6 (2026-05-03): UX Track Phase 1a — ACCESSIBILITY_V1 promoted to GA (default-on); F1-F7 component a11y fixes; design tokens scaffolding (theme/tokens.js); ESLint pipeline restored; 39 new tests (a11y-fixes ×11, tokens ×27, accessibility.v1 +1); suite 452→499.
 - v2.5.5 (2026-05-02): Slice 1 of combined game view — BattingOrderStrip component added; integrated into DugoutView (entry + active states); currentBatterIndex prop wired from App.jsx. 15 new tests (BattingOrderStrip ×6, DugoutView ×5, ScoreboardRow ×4); D017 resolved; suite 437→452.
 - v2.5.4 (2026-05-01): Slice 0 of combined game view — ScoringMode logic lifted into DugoutView.jsx under COMBINED_GAMEMODE_AND_SCORING flag (default OFF). No user-facing change in prod. Stories 27, 40–44 captured in backlog.
 - v2.5.3 docs addendum (2026-04-30): Added SECURITY_FRAMEWORK.md reference and Security Practices section.
