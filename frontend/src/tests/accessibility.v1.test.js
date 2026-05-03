@@ -202,4 +202,10 @@ describe('5 — ACCESSIBILITY_V1 GA default', function() {
     expect(isFlagEnabled('ACCESSIBILITY_V1')).toBe(false);
   });
 
+  test('4.7 localStorage "true" activates COMBINED_GAMEMODE_AND_SCORING', function() {
+    localStorage.setItem('flag_COMBINED_GAMEMODE_AND_SCORING', 'true');
+    expect(isFlagEnabled('COMBINED_GAMEMODE_AND_SCORING')).toBe(true);
+    localStorage.removeItem('flag_COMBINED_GAMEMODE_AND_SCORING');
+  });
+
 });
