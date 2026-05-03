@@ -27,7 +27,7 @@ export function OfflineIndicator({ isOnline, hasCache, isLandscape }) {
       cursor:"default", flexShrink:0 }}>
       <div style={{ width:"7px", height:"7px", borderRadius:"50%", background:dot, flexShrink:0 }} />
       {!isLandscape ? (
-        <span style={{ fontSize:"10px", color:"rgba(255,255,255,0.75)", letterSpacing:"0.05em", whiteSpace:"nowrap" }}>
+        <span style={{ fontSize:"12px", color:"rgba(255,255,255,0.75)", letterSpacing:"0.05em", whiteSpace:"nowrap" }}>
           {label}
         </span>
       ) : null}

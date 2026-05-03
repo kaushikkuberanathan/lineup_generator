@@ -65,7 +65,7 @@ export function track(event, props) {
     if (window.location.hostname === "localhost") {
       console.log("[analytics]", event, props || {});
     }
-  } catch (e) {}
+  } catch (_) { /* analytics failure must not crash the app */ }
 }
 
 export { mixpanel };

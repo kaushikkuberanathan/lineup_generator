@@ -93,6 +93,7 @@ useEffect(function() {
     clearInterval(recheckRef.current);
     clearTimeout(hideTimerRef.current);
   };
+// eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only effect: check() closes over only stable values (refs, setters, module constants); adding it to deps causes infinite re-execution.
 }, []);
 
   return { status: status, latencyMs: latencyMs, checkingVisible: checkingVisible };

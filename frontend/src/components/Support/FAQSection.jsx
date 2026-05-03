@@ -8,9 +8,8 @@ import { FAQ_CATEGORIES } from "../../content/faqs";
  *
  * Props:
  *   C   {object}  color constants from App.jsx
- *   S   {object}  shared style helpers from App.jsx
  */
-export function FAQSection({ C, S }) {
+export function FAQSection({ C }) {
   var _cat = useState(FAQ_CATEGORIES[0].id);
   var activeCategory = _cat[0];
   var setActiveCategory = _cat[1];
