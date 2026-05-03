@@ -12,6 +12,7 @@
 
 import { useState, useEffect } from 'react';
 import { track } from '@/utils/analytics';
+import { tokens } from "../../theme/tokens";
 
 const TEAM_ID = import.meta.env.VITE_DEFAULT_TEAM_ID || '1774297491626';
 
@@ -191,7 +192,7 @@ const styles = {
     backgroundColor: '#ffffff',
     borderRadius: '16px',
     padding: '32px 28px',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06)',
+    boxShadow: tokens.shadow.card,
   },
   header: {
     textAlign: 'center',
