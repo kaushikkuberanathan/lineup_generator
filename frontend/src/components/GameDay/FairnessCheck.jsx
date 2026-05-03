@@ -9,6 +9,8 @@
  *   C       {object}  color/theme constants (C.white, C.border, C.text, C.red)
  */
 
+import { tokens } from "../../theme/tokens";
+
 export function FairnessCheck({ roster, grid, C }) {
   var pcCounts = roster.map(function(p) {
     return (grid[p.name] || []).filter(function(pos) { return pos === "P" || pos === "C"; }).length;
@@ -66,7 +68,7 @@ export function FairnessCheck({ roster, grid, C }) {
     <div style={{ background:C.white, borderRadius:"8px", border:"1px solid " + C.border,
       borderLeft:"4px solid " + (allPass ? "#27ae60" : "#d4a017"),
       padding:"12px 14px", marginBottom:"14px",
-      boxShadow:"0 1px 4px rgba(15,31,61,0.06)" }}>
+      boxShadow:tokens.shadow.subtle }}>
       <div style={{ fontSize:"13px", fontWeight:"bold", marginBottom:"8px",
         color: allPass ? "#27ae60" : "#d4a017" }}>
         {allPass ? "✅ Fairness Check Passed" : "⚠️ Fairness Check — " + failCount + " issue" + (failCount !== 1 ? "s" : "")}

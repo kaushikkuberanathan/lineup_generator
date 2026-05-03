@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { tokens } from "../../theme/tokens";
 
 var FF = "Georgia,'Times New Roman',serif";
 
@@ -66,7 +67,7 @@ export default function Toast({
         border: '1px solid rgba(96,165,250,0.4)',
         borderRadius: '10px',
         padding: '10px 14px',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.35)',
+        boxShadow: tokens.shadow.overlay,
         fontFamily: FF,
         animation: 'toast-in 180ms ease-out',
       }}

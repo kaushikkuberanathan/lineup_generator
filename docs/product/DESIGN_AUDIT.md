@@ -360,19 +360,46 @@ Recon method: PowerShell regex on `borderRadius: 'value'` (JS object form).
 
 ## 6. Shadow Inventory
 
-Recon method: PowerShell regex on `boxShadow: 'value'` (JS object form) + `box-shadow: value` (CSS form).
+**Phase 1c addendum (2026-05-03).** Fresh recon replaced the v2.4.1 placeholder. 25 occurrences surveyed across App.jsx and extracted components. The prior "16 distinct values, v2.4.1 backlog" count was from a summarized pass — this recon is authoritative.
 
-**Result: 21 occurrences across 16 distinct `boxShadow` values. Shadow group DROPPED from this PR.**
+### Naming rationale — semantic vs. size-based
 
-The 6-value threshold for a clean `sm`/`md`/`lg` mapping was not met. Each Game Mode element invented its own shadow expression. The values cluster loosely but not cleanly enough to justify named tokens without a dedicated normalization pass.
+A size-based scale (`sm`/`md`/`lg`) was considered and rejected. `shadow.card` is a compound two-layer value — `'0 1px 3px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06)'` — qualitatively different from single-layer shadows. It is not a "bigger" version of `shadow.subtle`. No sensible linear progression runs through these values. Semantic naming is mandatory.
 
-**v2.4.1 backlog:** Run a fresh `boxShadow` grep at the start of the shadow normalization session. The exact 16 values were not captured for this document (the recon output was summarized rather than pasted in full). The v2.4.1 session should:
+### Tokens extracted (Phase 1c — Commit A)
 
-1. Re-run the boxShadow recon script
-2. Cluster the 16 values by visual weight (subtle lift, card, modal/overlay)
-3. Propose `shadow.sm`, `shadow.md`, `shadow.lg` tokens based on empirical clustering
-4. Add shape tests before implementing (RED → GREEN)
-5. Document in an addendum to this file
+Four tokens defined in `frontend/src/theme/tokens.js`:
+
+- **`shadow.subtle`** — `'0 1px 4px rgba(15,31,61,0.06)'` — Navy-tinted minimal lift. 1x in FairnessCheck.jsx. Consistent with the `color.overlay` navy tint family.
+- **`shadow.card`** — `'0 1px 3px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06)'` — Compound two-layer card elevation. 3x across three auth screens (LoginScreen, PendingApprovalScreen, RequestAccessScreen) — all three used the identical literal.
+- **`shadow.elevated`** — `'0 4px 12px rgba(0,0,0,0.12)'` — **RESERVED.** No in-scope component migrated today. Established as canonical for App.jsx dropdowns and elevated panels. Migration deferred to v2.5.x when App.jsx is unlocked. Follows `font.family.sans` "introduced as canonical" precedent.
+- **`shadow.overlay`** — `'0 4px 12px rgba(0,0,0,0.35)'` — Heavy float layer. 1x in Toast.jsx.
+
+### Call-site migration (Phase 1c — Commit B)
+
+Five in-scope component files migrated:
+
+| File | Token |
+|------|-------|
+| `frontend/src/components/Auth/LoginScreen.jsx` | `shadow.card` |
+| `frontend/src/components/Auth/PendingApprovalScreen.jsx` | `shadow.card` |
+| `frontend/src/components/Auth/RequestAccessScreen.jsx` | `shadow.card` |
+| `frontend/src/components/GameDay/FairnessCheck.jsx` | `shadow.subtle` |
+| `frontend/src/components/ui/Toast.jsx` | `shadow.overlay` |
+
+App.jsx call sites are locked (v2.5.x migration).
+
+### Not tokenized — deferred drift
+
+**Brand-color tinted shadows (~4x App.jsx):** Gold and orange button variants with tinted shadows. Call-site-specific; deferred to a `tint()` helper or per-variant button primitive in v2.5.x.
+
+**LockFlow.jsx upward directional shadow (1x):** `'0 -4px 24px rgba(0,0,0,0.18)'` — negative Y offset on a bottom-sheet footer. Composition pattern scoped to `<BottomSheet>` primitive; deferred to v2.5.0.
+
+### Open question — tooltip shadow mismatch
+
+App.jsx contains one tooltip-style value: `boxShadow: '0 4px 24px rgba(0,0,0,0.3)'`. This differs from `shadow.overlay` on two axes: blur radius (24px vs. 12px) and alpha (0.30 vs. 0.35).
+
+This decision should not be auto-resolved during v2.5.x's call-site migration. The 24px-vs-12px blur difference is visually noticeable on a tooltip; resolution requires either confirming intentional drift (introduce `shadow.tooltip`) or confirming accidental drift (migrate to `shadow.overlay`, accept visual change). Pull this question forward as an explicit gate when the v2.5.x session begins.
 
 ---
 
@@ -528,6 +555,17 @@ Complete traceability: every token in `frontend/src/theme/tokens.js` mapped to i
 
 **zIndex introduction note:** No prior zIndex scale existed in the codebase (confirmed by absence of a centralized zIndex registry). Values are introduced as canonical based on layering intent. Confirm at call sites during v2.5.0 primitive work.
 
+### shadow
+
+| Token | Value | Occurrences | Source |
+|-------|-------|-------------|--------|
+| `shadow.subtle` | `'0 1px 4px rgba(15,31,61,0.06)'` | 1x | FairnessCheck.jsx — navy-tinted minimal lift |
+| `shadow.card` | `'0 1px 3px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06)'` | 3x | Auth screens (LoginScreen, PendingApproval, RequestAccess) — compound two-layer |
+| `shadow.elevated` | `'0 4px 12px rgba(0,0,0,0.12)'` | — | **Reserved** — App.jsx dropdowns and elevated panels; migration deferred to v2.5.x |
+| `shadow.overlay` | `'0 4px 12px rgba(0,0,0,0.35)'` | 1x | Toast.jsx — heavy float layer |
+
+**shadow introduction note:** Size-based naming (`sm`/`md`/`lg`) was rejected — `shadow.card` is a compound two-layer value, not a "bigger" version of `shadow.subtle`. `shadow.elevated` is introduced as canonical with no in-scope migration today, parallel to `font.family.sans`. App.jsx call sites migrate in v2.5.x when App.jsx is unlocked.
+
 ---
 
 ## 8. Drift Flags
@@ -558,7 +596,7 @@ Everything in this table is intentionally NOT tokenized. It belongs to the v2.5.
 | **Radius pill aliases** | `999px`, `99px` | ~3x | Unify to `radius.pill` (9999px) at call sites |
 | **Space half-steps** | `6px`, `10px`, `14px` | many | Between 4px scale steps; migrate to nearest |
 | **Compound padding** | 120+ distinct two-axis strings | 120+x | Normalize at call sites in v2.5.x |
-| **Shadows** | 16 distinct `boxShadow` values | 21x | Full inventory deferred to v2.4.1 |
+| **Shadows** | Brand-color tinted shadows (~4x App.jsx); LockFlow.jsx upward directional (`'0 -4px 24px rgba(0,0,0,0.18)'`, 1x); App.jsx tooltip (`'0 4px 24px rgba(0,0,0,0.3)'`, 1x — open question, see §6) | ~6x | Call-site migration deferred to v2.5.x; tooltip drift requires explicit resolution before migration |
 
 ---
 

@@ -10,7 +10,6 @@
 //   - All values are strings or numbers — no computed expressions.
 //   - The opacity group is a reference scale. color.overlay holds
 //     pre-mixed rgba values for direct use in React inline styles.
-//   - shadow group is ABSENT — deferred to v2.4.1 after normalization pass.
 //
 // Nothing imports from this file yet. Consumers arrive in v2.5.0 (primitives).
 
@@ -178,9 +177,22 @@ export const tokens = {
     toast:         700,  // must clear everything — highest layer
   },
 
-  // shadow: DROPPED from this PR.
-  //   21 occurrences across 16 distinct values — too many one-offs for a
-  //   clean sm/md/lg mapping. Full inventory in DESIGN_AUDIT.md under
-  //   "Shadow drift — v2.4.1 backlog."
+  // ─── SHADOW ─────────────────────────────────────────────────────────────────
+  // Values sourced from fresh recon (2026-05-03). 25 occurrences across 4
+  // semantic clusters. Brand-color tinted shadows (gold/orange button variants,
+  // ~4x in App.jsx) not tokenized — call-site-specific; deferred to tint()
+  // helper or per-variant button primitive (v2.5.x).
+  // LockFlow.jsx '0 -4px 24px rgba(0,0,0,0.18)' excluded — upward directional
+  // shadow on bottom-sheet footer; deferred to <BottomSheet> primitive (v2.5.0).
+
+  shadow: {
+    subtle:   '0 1px 4px rgba(15,31,61,0.06)',                             // 1x FairnessCheck.jsx — navy-tinted minimal lift; consistent with color.overlay family
+    card:     '0 1px 3px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06)', // 3x auth screens (identical) — compound two-layer; primary card surface elevation
+    // RESERVED — App.jsx call sites (locked); migration deferred to v2.5.x.
+    // No in-scope component uses this value today. Parallel to font.family.sans
+    // "introduced as canonical" precedent. See DESIGN_AUDIT.md §6.
+    elevated: '0 4px 12px rgba(0,0,0,0.12)',                              // App.jsx dropdowns + elevated panels
+    overlay:  '0 4px 12px rgba(0,0,0,0.35)',                              // 1x Toast.jsx — heavy float layer; modals, tooltips
+  },
 
 };

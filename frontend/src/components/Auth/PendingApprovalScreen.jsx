@@ -10,6 +10,8 @@
  *   and arrive here again on a new visit)
  */
 
+import { tokens } from "../../theme/tokens";
+
 export function PendingApprovalScreen({ onTryLogin }) {
   const pendingEmail = localStorage.getItem('lg_pending_email') || '';
 
@@ -79,7 +81,7 @@ const styles = {
     backgroundColor: '#ffffff',
     borderRadius: '16px',
     padding: '36px 28px',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06)',
+    boxShadow: tokens.shadow.card,
     textAlign: 'center',
   },
   icon: {
