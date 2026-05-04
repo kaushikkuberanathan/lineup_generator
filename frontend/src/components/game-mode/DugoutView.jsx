@@ -280,6 +280,7 @@ export function DugoutView({
           onAddOppRun={function() { scoring.addManualRun && scoring.addManualRun('opp'); }}
           inning={gs.inning - 1}
           halfInning={gs.halfInning}
+          onExit={onExit}
         />
 
         {/* Fixed-height header row: batting order strip */}

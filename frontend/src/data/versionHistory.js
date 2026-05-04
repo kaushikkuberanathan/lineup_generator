@@ -21,6 +21,8 @@
       'LiveScoringPanel: added data-testid="pitch-map" to pitch chips container',
       'Test additions: dugoutFocusMode state machine (3 tests), ScoreboardRow inning rendering (3 tests), Bug 8 regression (2 tests), 375px viewport pattern (3 tests). DugoutView.viewport.test.jsx establishes viewport-test pattern for the suite. Suite: 499 → 510 passing / 1 skipped.',
       'Story 48 filed: defense view inning auto-sync to scoring inning (post-pilot, v2.6.x).',
+      'ScoreboardRow: added optional onExit prop; renders absolute-positioned ✕ exit button (left side, 44×44px touch target, aria-label="Exit", data-testid="scoreboard-exit"). Lifted from per-mode wiring to persistent header affordance across all DugoutView modes. Story 50 fix-up.',
+      'DugoutView: passes onExit through to ScoreboardRow mount. Exit now visible in lineup mode (DefenseDiamond view), not just scoring mode. Suite: 510 → 516 passing.',
     ],
   },
   {

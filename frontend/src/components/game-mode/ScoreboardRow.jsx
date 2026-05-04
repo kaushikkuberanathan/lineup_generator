@@ -19,6 +19,7 @@ export default function ScoreboardRow(props) {
   var onAddOppRun = props.onAddOppRun || function() {};
   var inning      = props.inning;      // 0-indexed; undefined = omit indicator
   var halfInning  = props.halfInning;  // 'top' | 'bottom'
+  var onExit      = props.onExit;      // optional — renders exit button when provided
 
   var inningLabel = (inning !== undefined && halfInning !== undefined)
     ? (halfInning === 'top' ? 'Top' : 'Bot') + ' ' + ordinal(inning + 1)
@@ -43,6 +44,7 @@ export default function ScoreboardRow(props) {
 
   return (
     <div style={{
+      position: 'relative',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       gap: '24px', padding: '8px 16px',
       background: '#0a1628',
@@ -53,6 +55,22 @@ export default function ScoreboardRow(props) {
       overflow: 'hidden',
       fontFamily: "Georgia,'Times New Roman',serif",
     }}>
+      {onExit ? (
+        <button
+          data-testid="scoreboard-exit"
+          aria-label="Exit"
+          onClick={onExit}
+          style={{
+            position: 'absolute', left: '4px',
+            width: '44px', height: '44px',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'transparent', border: 'none',
+            color: '#94a3b8', fontSize: '18px', cursor: 'pointer',
+            borderRadius: '8px',
+            fontFamily: "Georgia,'Times New Roman',serif",
+          }}
+        >✕</button>
+      ) : null}
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1 }}>
           <span style={labelStyle}>{myTeamLabel.toUpperCase()}</span>

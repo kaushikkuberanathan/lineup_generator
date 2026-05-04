@@ -60,4 +60,25 @@ describe('ScoreboardRow', function() {
     render(<ScoreboardRow halfInning="top" />);
     expect(screen.queryByText(/^Top |^Bot /)).toBeNull();
   });
+
+  // ── Slice 2 fix-up: onExit prop (Story 50) ───────────────────────────────────
+
+  describe('onExit prop', function() {
+    it('renders exit button when onExit is provided', function() {
+      render(<ScoreboardRow onExit={vi.fn()} />);
+      expect(screen.getByTestId('scoreboard-exit')).toBeInTheDocument();
+    });
+
+    it('does not render exit button when onExit is not provided', function() {
+      render(<ScoreboardRow />);
+      expect(screen.queryByTestId('scoreboard-exit')).toBeNull();
+    });
+
+    it('clicking exit button calls onExit exactly once', function() {
+      var onExit = vi.fn();
+      render(<ScoreboardRow onExit={onExit} />);
+      fireEvent.click(screen.getByTestId('scoreboard-exit'));
+      expect(onExit).toHaveBeenCalledTimes(1);
+    });
+  });
 });

@@ -228,3 +228,40 @@ describe('dugoutFocusMode state machine', function() {
     expect(strip.getAttribute('data-batter-index')).toBe('1');
   });
 });
+
+// ── Slice 2 fix-up: exit affordance across modes (Story 50) ──────────────────
+
+describe('exit affordance across modes', function() {
+  function claimScorer() {
+    act(function() {
+      fireEvent.click(screen.getByTestId('claim-btn'));
+    });
+  }
+
+  it('in lineup mode (currentAtBat=null), exit button is visible on ScoreboardRow', function() {
+    var onExit = vi.fn();
+    render(<DugoutView {...defaultProps} onExit={onExit} />);
+    claimScorer();
+    // dugoutFocusMode='lineup' — ScoreboardRow must show exit button
+    expect(screen.getByTestId('scoreboard-exit')).toBeInTheDocument();
+  });
+
+  it('in scoring mode (currentAtBat non-null), exit button is still visible on ScoreboardRow', function() {
+    var onExit = vi.fn();
+    vi.mocked(useLiveScoring).mockReturnValue(createScoringWithAtBat());
+    render(<DugoutView {...defaultProps} onExit={onExit} />);
+    claimScorer();
+    // dugoutFocusMode='scoring' — exit button must persist
+    expect(screen.getByTestId('scoreboard-exit')).toBeInTheDocument();
+  });
+
+  it('clicking exit button calls the onExit prop passed to DugoutView', function() {
+    var onExit = vi.fn();
+    render(<DugoutView {...defaultProps} onExit={onExit} />);
+    claimScorer();
+    act(function() {
+      fireEvent.click(screen.getByTestId('scoreboard-exit'));
+    });
+    expect(onExit).toHaveBeenCalledTimes(1);
+  });
+});

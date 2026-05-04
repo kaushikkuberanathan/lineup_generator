@@ -1608,6 +1608,19 @@ Target: Slice 2 if layout slack; Slice 3 polish pass otherwise
 
 ---
 
+### Story 50 (P1) — DugoutView exit affordance
+Status: Resolved in v2.5.7 fix-up (2026-05-04)
+Discovered: 2026-05-04 (Slice 2 dev soak smoke test)
+Target: v2.5.7 (in-line fix, no version bump) ✓
+
+**Symptom:** Combined view lineup mode (DefenseDiamond view) had no exit button. Coach was trapped in DugoutView with only browser back — invisible in PWA install mode.
+
+**Root cause:** Slice 2 introduced `dugoutFocusMode='lineup'` state without adding an exit affordance. Pre-Slice 2, only entry state and scoring state existed, both with exit wired. No test asserted exit button presence in either mode.
+
+**Resolution:** Lifted exit affordance to `ScoreboardRow` via optional `onExit` prop (absolute-positioned `✕` button, 44×44px touch target, `aria-label="Exit"`, `data-testid="scoreboard-exit"`). ScoreboardRow is persistent across both modes — exit is now always visible when scoring is active. `DugoutView` passes `onExit` through to its `ScoreboardRow` mount. Regression tests added for both modes + `ScoreboardRow` prop behavior. Suite: 510 → 516 passing.
+
+---
+
 ### Story 48 (P2) — Auto-sync defense view inning to scoring inning
 Status: Open
 Discovered: 2026-05-04 (Slice 2 scope lock — Council session)
