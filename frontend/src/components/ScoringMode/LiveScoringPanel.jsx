@@ -1005,7 +1005,7 @@ export default function LiveScoringPanel(props) {
           <DiamondSVG runners={gs.runners} battingOrder={battingOrder} />
         </div>
 
-        <div style={{ width: '100%', textAlign: 'center' }}>
+        <div data-testid="pitch-map" style={{ width: '100%', textAlign: 'center' }}>
           {pitches.length > 0 ? (
             <div>
               <div style={{ fontSize: '10px', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>

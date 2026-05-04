@@ -6,6 +6,10 @@
  * Viewer path: replaces ViewerMode on share links when flag is on + isViewer=true.
  *
  * Slice 0: ScoringMode logic lifted in — full game entry + live scoring flow.
+ * Slice 2: DefenseDiamond lifted into body; dugoutFocusMode state machine drives
+ *   which surface is visible. Both surfaces stay mounted (display:none toggle).
+ *   ScoreboardRow gains inning + halfInning props. Layout is flex column to fix
+ *   375px viewport clipping (Bugs 8/9/10).
  * ScoringMode/index.jsx remains in repo behind the flag for one soak cycle.
  */
 
@@ -13,9 +17,13 @@ import { useState, useEffect } from 'react';
 import ScoringModeEntry from '../ScoringMode/ScoringModeEntry';
 import LiveScoringPanel from '../ScoringMode/LiveScoringPanel';
 import RestoreScoreModal from '../ScoringMode/RestoreScoreModal';
+import ScoreboardRow from './ScoreboardRow';
+import { DefenseDiamond } from '../GameDay/DefenseDiamond';
 import { useLiveScoring } from '../../hooks/useLiveScoring';
 import { useFeatureFlag } from '../../hooks/useFeatureFlag';
 import { BattingOrderStrip } from '../BattingOrderStrip';
+import { FEATURE_FLAGS } from '../../config/featureFlags';
+import { truncateTeamName } from '../../utils/formatters';
 
 var FF = "Georgia,'Times New Roman',serif";
 
@@ -24,6 +32,8 @@ export function DugoutView({
   absentTonight, payload, isViewer, onExit,
   activeTeam, activeTeamId, user, session, schedule,
   currentBatterIndex,
+  grid,
+  onPositionTap,
 }) {
   // ── State (lifted from ScoringMode/index.jsx) ─────────────────────────────
   var _selGame = useState(null);
@@ -44,11 +54,15 @@ export function DugoutView({
   var _mth = useState('top');
   var myTeamHalf = _mth[0]; var setMyTeamHalf = _mth[1];
 
-  // ── Feature flag ──────────────────────────────────────────────────────────
+  // ── Feature flags ─────────────────────────────────────────────────────────
   var _lsFlag = useFeatureFlag('live_scoring', activeTeamId || teamId);
   var liveScoringEnabled = _lsFlag.enabled;
   // AUTH TESTING SHIM — remove "|| true" when flag is confirmed working in prod
   var isEnabled = liveScoringEnabled || true;
+
+  // Combined Game Mode + Scoring flag — matches App.jsx:1530 pattern
+  var combinedFlag = FEATURE_FLAGS.COMBINED_GAMEMODE_AND_SCORING ||
+    localStorage.getItem('flag:combined_gamemode_and_scoring') === '1';
 
   // ── Batting order mapping ─────────────────────────────────────────────────
   var roster_ = roster || [];
@@ -107,6 +121,15 @@ export function DugoutView({
     isPractice:   isPractice,
   });
 
+  // ── Slice 2: derived state machine ───────────────────────────────────────
+  // 'lineup' when no active at-bat; 'scoring' during an at-bat
+  var dugoutFocusMode = (scoring.currentAtBat !== null) ? 'scoring' : 'lineup';
+
+  // Bug 8 fix: when COMBINED flag ON, strip reads scoring engine's batter index
+  var battingIdxForStrip = combinedFlag
+    ? (scoring.gameState ? scoring.gameState.battingOrderIndex || 0 : 0)
+    : (currentBatterIndex || 0);
+
   // ── Claim scorer lock on scorerClaimed → true ─────────────────────────────
   useEffect(function() {
     if (scorerClaimed && scoring.claimScorerLock) {
@@ -149,6 +172,15 @@ export function DugoutView({
     setScorerClaimed(false);
     setViewerMode(false);
   }
+
+  // ── Scoreboard label helpers ──────────────────────────────────────────────
+  var gs = scoring.gameState || {
+    inning: 1, halfInning: 'top', outs: 0, balls: 0, strikes: 0,
+    myScore: 0, opponentScore: 0, runners: [], battingOrderIndex: 0,
+  };
+  var opponentName  = selectedGame ? selectedGame.opponent : 'Opponent';
+  var myTeamLabelSB = truncateTeamName(activeTeam ? activeTeam.name : '', 10);
+  var teamLabelSB   = truncateTeamName(opponentName, 10);
 
   // ── Viewer path (share links — payload-based, no scoring context) ─────────
   if (isViewer) {
@@ -194,88 +226,136 @@ export function DugoutView({
     );
   }
 
-  // ── Coach path — game entry or live scoring ───────────────────────────────
+  // ── Coach path — game entry ───────────────────────────────────────────────
   var showEntry = !scorerClaimed && !viewerMode;
 
+  if (showEntry) {
+    return (
+      <div style={{
+        position: 'fixed', inset: 0, zIndex: 1000,
+        background: '#0b1524', color: '#fff',
+        fontFamily: FF,
+        minHeight: '100vh',
+      }}>
+        <ScoringModeEntry
+          activeTeam={activeTeam}
+          schedule={schedule || []}
+          selectedGame={selectedGame}
+          onSelectGame={handleSelectGame}
+          onClaimScorer={handleClaimScorer}
+          onJoinViewer={handleJoinViewer}
+          onPractice={handlePractice}
+          onClose={onExit}
+        />
+        <BattingOrderStrip
+          battingOrder={battingOrder || []}
+          currentBatterIndex={currentBatterIndex || 0}
+        />
+      </div>
+    );
+  }
+
+  // ── Coach path — post-entry: Slice 2 flex-column shell ───────────────────
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 1000,
       background: '#0b1524', color: '#fff',
       fontFamily: FF,
-      minHeight: '100vh',
     }}>
-      {showEntry ? (
-        <>
-          <ScoringModeEntry
-            activeTeam={activeTeam}
-            schedule={schedule || []}
-            selectedGame={selectedGame}
-            onSelectGame={handleSelectGame}
-            onClaimScorer={handleClaimScorer}
-            onJoinViewer={handleJoinViewer}
-            onPractice={handlePractice}
-            onClose={onExit}
-          />
-          <BattingOrderStrip
-            battingOrder={battingOrder || []}
-            currentBatterIndex={currentBatterIndex || 0}
-          />
-        </>
-      ) : (
-        <>
-          <BattingOrderStrip
-            battingOrder={battingOrder || []}
-            currentBatterIndex={currentBatterIndex || 0}
-          />
-          <LiveScoringPanel
-          gameState={scoring.gameState}
-          currentAtBat={scoring.currentAtBat}
+      <div
+        data-testid="dugout-shell"
+        style={{
+          display: 'flex', flexDirection: 'column',
+          height: '100vh', overflow: 'hidden',
+        }}
+      >
+        {/* Fixed-height header row: scoreboard */}
+        <ScoreboardRow
+          myTeamLabel={myTeamLabelSB}
+          oppLabel={teamLabelSB}
+          myScore={gs.myScore || 0}
+          oppScore={gs.opponentScore || 0}
           isScorer={scoring.isScorer}
-          scorerName={scoring.scorerName}
-          scorerLockExpired={scoring.scorerLockExpired}
-          suggestedBatter={scoring.suggestedBatter}
-          pendingAdvancement={scoring.pendingAdvancement}
-          battingOrder={mappedBattingOrder}
-          claimScorerLock={scoring.claimScorerLock}
-          claimError={scoring.claimError}
-          releaseScorerLock={scoring.releaseScorerLock}
-          startAtBat={scoring.startAtBat}
-          recordPitch={scoring.recordPitch}
-          resolveAtBat={scoring.resolveAtBat}
-          undoLastPitch={scoring.undoLastPitch}
-          confirmRunnerAdvancement={scoring.confirmRunnerAdvancement}
-          resolveRunnerConflict={scoring.resolveRunnerConflict}
-          runnerConflict={scoring.runnerConflict}
-          incrementOpponentScore={scoring.incrementOpponentScore}
-          addManualRun={scoring.addManualRun}
-          endHalfInning={scoring.endHalfInning}
-          undoHalfInning={scoring.undoHalfInning}
-          endGame={scoring.endGame}
-          runsThisHalf={scoring.runsThisHalf}
-          rules={scoring.rules}
-          pitchUIConfig={scoring.pitchUIConfig}
-          ruleWarnings={scoring.ruleWarnings}
-          selectedGame={selectedGame}
-          activeTeam={activeTeam}
-          isPractice={isPractice}
-          myTeamHalf={myTeamHalf}
-          isAdminTestMode={isAdminTestMode}
-          scoring={scoring}
-          onExit={handleExitSession}
-          onPause={handlePauseSession}
-          onSettings={function() { setShowRestore(true); }}
+          onAddMyRun={function() { scoring.addManualRun && scoring.addManualRun('us'); }}
+          onAddOppRun={function() { scoring.addManualRun && scoring.addManualRun('opp'); }}
+          inning={gs.inning - 1}
+          halfInning={gs.halfInning}
         />
-        </>
-      )}
 
-      <RestoreScoreModal
-        gameId={gameId}
-        teamId={activeTeamId || teamId}
-        userId={scoringUserId}
-        userName={scoringUserName}
-        isOpen={showRestore}
-        onClose={function() { setShowRestore(false); }}
-      />
+        {/* Fixed-height header row: batting order strip */}
+        <BattingOrderStrip
+          battingOrder={battingOrder || []}
+          currentBatterIndex={battingIdxForStrip}
+        />
+
+        {/* Scrollable body — both panels always mounted; CSS display toggles */}
+        <div style={{ flex: 1, overflowY: 'auto', position: 'relative', minHeight: 0 }}>
+          <div
+            data-testid="defense-diamond-mount"
+            style={{ display: dugoutFocusMode === 'lineup' ? 'block' : 'none' }}
+          >
+            <DefenseDiamond
+              roster={roster || []}
+              grid={grid || {}}
+              innings={innings || 6}
+              onPositionTap={onPositionTap || null}
+            />
+          </div>
+
+          <div
+            data-testid="scoring-panel-mount"
+            style={{ display: dugoutFocusMode === 'scoring' ? 'block' : 'none' }}
+          >
+            <LiveScoringPanel
+              gameState={scoring.gameState}
+              currentAtBat={scoring.currentAtBat}
+              isScorer={scoring.isScorer}
+              scorerName={scoring.scorerName}
+              scorerLockExpired={scoring.scorerLockExpired}
+              suggestedBatter={scoring.suggestedBatter}
+              pendingAdvancement={scoring.pendingAdvancement}
+              battingOrder={mappedBattingOrder}
+              claimScorerLock={scoring.claimScorerLock}
+              claimError={scoring.claimError}
+              releaseScorerLock={scoring.releaseScorerLock}
+              startAtBat={scoring.startAtBat}
+              recordPitch={scoring.recordPitch}
+              resolveAtBat={scoring.resolveAtBat}
+              undoLastPitch={scoring.undoLastPitch}
+              confirmRunnerAdvancement={scoring.confirmRunnerAdvancement}
+              resolveRunnerConflict={scoring.resolveRunnerConflict}
+              runnerConflict={scoring.runnerConflict}
+              incrementOpponentScore={scoring.incrementOpponentScore}
+              addManualRun={scoring.addManualRun}
+              endHalfInning={scoring.endHalfInning}
+              undoHalfInning={scoring.undoHalfInning}
+              endGame={scoring.endGame}
+              runsThisHalf={scoring.runsThisHalf}
+              rules={scoring.rules}
+              pitchUIConfig={scoring.pitchUIConfig}
+              ruleWarnings={scoring.ruleWarnings}
+              selectedGame={selectedGame}
+              activeTeam={activeTeam}
+              isPractice={isPractice}
+              myTeamHalf={myTeamHalf}
+              isAdminTestMode={isAdminTestMode}
+              scoring={scoring}
+              onExit={handleExitSession}
+              onPause={handlePauseSession}
+              onSettings={function() { setShowRestore(true); }}
+            />
+          </div>
+        </div>
+
+        <RestoreScoreModal
+          gameId={gameId}
+          teamId={activeTeamId || teamId}
+          userId={scoringUserId}
+          userName={scoringUserName}
+          isOpen={showRestore}
+          onClose={function() { setShowRestore(false); }}
+        />
+      </div>
     </div>
   );
 }

@@ -191,7 +191,7 @@ If any answer is "no": stop. Document the gap in DOC_TEST_DEBT.md, then decide w
 7. Stage **specific files by path** — never `git add -A` (risks picking up unrelated untracked files)
 8. [x] loginLimiter: 15min window, max 5 — applied to POST /magic-link ✓
 9. [ ] Confirm `RESEND_DOMAIN_VERIFIED=true` in Render env vars (only after domain verified)
-10. [ ] Run `npm test` — confirm 499 passed / 1 skipped (as of v2.5.6, May 3, 2026) / 0 failed
+10. [ ] Run `npm test` — confirm 510 passed / 1 skipped (as of v2.5.7, May 4, 2026) / 0 failed
 
 ### VERSION_HISTORY Schema (dual-layer — both required)
 ```js
@@ -258,7 +258,7 @@ Target: resolved within 10 min of detection.
 ---
 
 ## Test Suite
-Changes to `lineupEngineV2.js`, `scoringEngine.js`, or `playerMapper.js` → must pass frontend `npm test` (Vitest, 499 tests passing / 1 skipped).
+Changes to `lineupEngineV2.js`, `scoringEngine.js`, or `playerMapper.js` → must pass frontend `npm test` (Vitest, 510 tests passing / 1 skipped).
 Changes to `featureFlags.js` or `positions.js` → must pass frontend `npm test`.
 Changes to backend code → must pass backend custom runner (`backend/scripts/tests/test-runner.js`, 13 suites).
 > Full suite detail: see `frontend/CLAUDE.md` → **## Test Suite** and `backend/CLAUDE.md` → **## Test Suite**
@@ -375,9 +375,9 @@ UptimeRobot pinging a free-tier Render service every 5 min keeps it awake 24/7 �
 | 5 | **MERGE_FIELDS test-file copies** | Three test files (`migration.test.js:267`, `scheduleIntegrity.test.js:113`, `scheduleIntegrity.test.js:181`) each define their own local MERGE_FIELDS copy. These are kept in sync manually. Future: extract to a shared test fixture and import. |
 | 6 | **pending_sync not re-attempted** | `finalizeSchedule.js` writes `pending_sync:<teamId>:finalize` to localStorage on Supabase failure but no retry mechanism exists yet. Coach must re-open the app while online for the next write to succeed. |
 | 7 | **Windows Vitest cold-start OOM cascade** | Environmental — not a code issue. See Branch Strategy → Infrastructure notes → "Known issue: Windows Vitest cold-start OOM" for workaround. |
-| 8 | **BattingOrderStrip static when scoring engine advances batters (flag ON only)** | Strip reads App's localStorage `currentBatterIndex`; `useLiveScoring` advances its own `batting_order_index` independently. Not synchronized. Resolved by Story 46 (Slice 2). Not visible in production — `COMBINED_GAMEMODE_AND_SCORING` flag default-OFF. |
-| 9 | **Bases diamond clips at bottom at 375px viewport (flag ON only)** | Home plate not visible during active scoring. `LiveScoringPanel` sized for full-screen pre-stacking; `BattingOrderStrip` overhead reduces vertical budget. Resolved by Story 46 (Slice 2). |
-| 10 | **Pitch map masked by scoring CTAs at 375px viewport (flag ON only)** | At-bat pitch history obscured behind fixed-position outcome CTA row. Same root cause as bug 9 — layout height budget. Resolved by Story 46 (Slice 2). |
+| 8 | ~~**BattingOrderStrip static when scoring engine advances batters (flag ON only)**~~ | **Resolved v2.5.7** — `battingIdxForStrip` switches source: `gameState.battingOrderIndex` (flag ON) vs App prop (flag OFF). |
+| 9 | ~~**Bases diamond clips at bottom at 375px viewport (flag ON only)**~~ | **Resolved v2.5.7** — DugoutView flex-column shell with `overflow-y:auto` body eliminates vertical clipping. |
+| 10 | ~~**Pitch map masked by scoring CTAs at 375px viewport (flag ON only)**~~ | **Resolved v2.5.7** — same flex-column layout fix as Bug 9; scoring-panel-mount scrolls within bounded body. |
 
 ---
 
@@ -530,8 +530,9 @@ Every other session: open `docs/product/DOC_TEST_DEBT.md` — close P0s, promote
 ---
 
 ## Current Version
-**v2.5.6** — May 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/data/versionHistory.js`.
+**v2.5.7** — May 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/data/versionHistory.js`.
 
+- v2.5.7 (2026-05-04): Slice 2 — DefenseDiamond lifted into DugoutView body; dugoutFocusMode state machine ('lineup'/'scoring'); ScoreboardRow inning+halfInning indicator; Bug 8 fix (BattingOrderStrip batter source); Bugs 9/10 fix (flex-column 375px layout); Story 46 resolved; 11 new tests; suite 499→510.
 - v2.5.6 (2026-05-03): UX Track Phase 1a — ACCESSIBILITY_V1 promoted to GA (default-on); F1-F7 component a11y fixes; design tokens scaffolding (theme/tokens.js); ESLint pipeline restored; 39 new tests (a11y-fixes ×11, tokens ×27, accessibility.v1 +1); suite 452→499.
 - v2.5.5 (2026-05-02): Slice 1 of combined game view — BattingOrderStrip component added; integrated into DugoutView (entry + active states); currentBatterIndex prop wired from App.jsx. 15 new tests (BattingOrderStrip ×6, DugoutView ×5, ScoreboardRow ×4); D017 resolved; suite 437→452.
 - v2.5.4 (2026-05-01): Slice 0 of combined game view — ScoringMode logic lifted into DugoutView.jsx under COMBINED_GAMEMODE_AND_SCORING flag (default OFF). No user-facing change in prod. Stories 27, 40–44 captured in backlog.

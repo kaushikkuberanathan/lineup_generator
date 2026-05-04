@@ -1,5 +1,29 @@
 ﻿export var VERSION_HISTORY = [
   {
+    version: '2.5.7',
+    date: 'May 2026',
+    headline: 'Slice 2 — combined Game Mode + Scoring layout (flag-gated)',
+    userChanges: [
+      '(Behind COMBINED_GAMEMODE_AND_SCORING flag — default OFF) Combined view now shows defense lineup and live scoring in one screen, switching automatically as the game progresses',
+      'Scoreboard now shows the current inning and half-inning (Top 3rd / Bot 5th)',
+      'Batting order strip stays in sync with the scoring engine — when an at-bat resolves, the next batter pill advances automatically',
+      'Layout fixed at small phone widths (375px) — defense diamond and pitch map both render without clipping',
+    ],
+    techNote: 'Under-the-hood stability improvements',
+    internalChanges: [
+      'DugoutView: lifted DefenseDiamond into body; swap region between defense + scoring controlled by dugoutFocusMode derived state',
+      'dugoutFocusMode state machine: (currentAtBat !== null) ? \'scoring\' : \'lineup\' — system-driven, not user-toggled; both panels stay mounted via display:none toggle',
+      'ScoreboardRow: added inning + halfInning props; ordinal rendering (Top 3rd / Bot 5th) with backward-compat fallback when props omitted',
+      'BattingOrderStrip currentBatterIndex source switches on COMBINED flag: gameState.battingOrderIndex (ON) vs App-passed prop (OFF). Bug 8 fix.',
+      'DugoutView layout: flex column, fixed-height ScoreboardRow + BattingOrderStrip headers, dugout-body fills remaining viewport with overflow-y:auto. Bugs 9/10 fix.',
+      'Both DefenseDiamond and LiveScoringPanel stay mounted across mode switches; CSS display:none preserves DefenseDiamond inning-scrub state across at-bat boundaries.',
+      'App.jsx DugoutView mount site: added grid={grid} prop',
+      'LiveScoringPanel: added data-testid="pitch-map" to pitch chips container',
+      'Test additions: dugoutFocusMode state machine (3 tests), ScoreboardRow inning rendering (3 tests), Bug 8 regression (2 tests), 375px viewport pattern (3 tests). DugoutView.viewport.test.jsx establishes viewport-test pattern for the suite. Suite: 499 → 510 passing / 1 skipped.',
+      'Story 48 filed: defense view inning auto-sync to scoring inning (post-pilot, v2.6.x).',
+    ],
+  },
+  {
     version: '2.5.6',
     date: '2026-05-03',
     headline: 'UX track Phase 1a — accessibility GA, design tokens scaffolding, and tooling foundation',
