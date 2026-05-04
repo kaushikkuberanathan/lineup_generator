@@ -1,7 +1,24 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: May 4, 2026 (Story 48 logged — defense view inning sync; v2.5.6 staged on develop)
+> Last updated: May 4, 2026 (v2.5.7 on feature/slice-2-combined-view; Story 46 resolved)
 > MVP launched: March 24, 2026
+
+---
+
+## v2.5.7 — 2026-05-04 (feature/slice-2-combined-view) — Slice 2: combined view layout
+
+Shipped behind COMBINED_GAMEMODE_AND_SCORING flag (default OFF). No user-visible change in production.
+
+- `DugoutView.jsx` — DefenseDiamond lifted into body; dugoutFocusMode state machine (`'lineup'` when `currentAtBat===null`, `'scoring'` otherwise); both panels stay mounted via CSS `display:none` toggle; flex-column shell layout fills 100vh for 375px fix
+- `ScoreboardRow.jsx` — added optional `inning` (0-indexed) + `halfInning` props; renders "Top 3rd / Bot 5th" indicator; backward-compat when omitted
+- `LiveScoringPanel.jsx` — `data-testid="pitch-map"` added to pitch chips container
+- `App.jsx` — DugoutView mount site: `grid={grid}` prop added
+- Bug 8 resolved: `BattingOrderStrip` reads `gameState.battingOrderIndex` when flag ON (was always reading App prop)
+- Bugs 9/10 resolved: flex-column layout with `overflow-y:auto` body eliminates 375px vertical clipping
+- Story 46 (combined view layout shell) resolved
+- Story 48 filed: defense view inning auto-sync to scoring inning (backlog, v2.6.x)
+- Test additions: +11 tests (dugoutFocusMode state machine ×3, ScoreboardRow inning ×3, Bug 8 regression ×2, 375px viewport ×3); suite 499 → 510 / 1 skipped
+- New test file: `DugoutView.viewport.test.jsx` establishes 375px viewport test pattern for the suite
 
 ---
 
@@ -1545,9 +1562,9 @@ Recommendation: (a) — all four are one-liners. Bundle as a single chore PR.
 ---
 
 ### Story 46 (P1) — Slice 2 — Combined View Layout Shell
-Status: Open
+Status: Resolved in v2.5.7 (2026-05-04)
 Discovered: 2026-05-03 (post-Slice 1 smoke test on dev; COMBINED_GAMEMODE_AND_SCORING flag ON)
-Target: v2.5.6 or v2.6.0 (TBD based on scope)
+Target: v2.5.7 ✓
 
 Three sub-items, all surfaced when the combined-view flag is enabled on dev:
 
