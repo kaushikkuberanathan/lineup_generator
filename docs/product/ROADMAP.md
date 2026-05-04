@@ -1,6 +1,6 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: May 3, 2026 (v2.5.6 staged on develop; v2.5.5 shipped to production via PR #40)
+> Last updated: May 4, 2026 (Story 48 logged — defense view inning sync; v2.5.6 staged on develop)
 > MVP launched: March 24, 2026
 
 ---
@@ -1588,6 +1588,26 @@ Target: Slice 2 if layout slack; Slice 3 polish pass otherwise
 **Proposed fix:** Add `isAtBat` boolean prop to `ScoreboardRow`; render a small pulsing dot next to the team label whose half is active.
 
 **Recommendation:** Implement during Slice 2 if there is layout slack; defer to Slice 3 polish pass otherwise.
+
+---
+
+### Story 48 (P2) — Auto-sync defense view inning to scoring inning
+Status: Open
+Discovered: 2026-05-04 (Slice 2 scope lock — Council session)
+Target: Post-pilot validation cycle (v2.6.x)
+
+**Symptom:** Coach in DugoutView 'lineup' mode (or GameModeScreen) can be viewing inning 4 lineup while the game is in inning 2. Dugout state doesn't track scoring state automatically.
+
+**Impact:** Cognitive load — coach has to manually scrub to the current inning before making swap decisions. Easy to make a swap on the wrong inning's grid.
+
+**Root cause:** DefenseDiamond uncontrolled mode + `GameModeScreen.initialInning` are persisted-display state (`gameModeInning` in App.jsx), never reconciled with `gameState.inning` from `useLiveScoring`.
+
+**Proposed fixes:**
+- Option 1: Auto-sync — when scoring inning advances, defense view follows. Simplest. Loses scrubbing capability mid-game.
+- Option 2: Soft-sync — show "View: Inning 4 / Game: Inning 2" indicator + "Jump to current" button. Preserves scrubbing.
+- Option 3: Hybrid — auto-sync on inning advance from scoring, but coach scrubbing locks the view until they tap "Resume sync".
+
+**Recommendation:** Option 2 for first pass. Preserves coach agency (scrubbing for swap planning is a real use case) while making drift visible. Revisit if pilots show coaches don't notice the indicator.
 
 ---
 
