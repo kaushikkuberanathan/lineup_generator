@@ -1,6 +1,6 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: May 4, 2026 (v2.5.7; Stories 46, 50 resolved; Stories 48, 49, 51 filed)
+> Last updated: May 6, 2026 (v2.5.7 hook fix; Stories 45, 53 resolved; Story 53 filed + resolved same session)
 > MVP launched: March 24, 2026
 
 ---
@@ -1529,9 +1529,9 @@ Recommendation: A. Stay in Vitest, no new deps, no language migration.
 ---
 
 ### Story 45 (P3) — Husky v10 + doc drift cleanup
-Status: Open
+Status: Resolved in v2.5.7 hook fix (2026-05-06)
 Discovered: 2026-05-02 (branch hygiene session)
-Target: TBD — next quiet window after a Slice ships
+Target: v2.5.7 ✓
 Symptom: Four low-friction issues bundled together:
   1. Pre-push hook prints Husky v10 deprecation warning on every push
      ("Please remove the following two lines from .husky/pre-push:
@@ -1687,6 +1687,21 @@ Target: v2.6.x or alongside Story 49
 | `ACCESSIBILITY_V1` | `true` | `localStorage.setItem('flag_ACCESSIBILITY_V1', 'true')` |
 
 This is a docs-only change with zero risk. Should ship in the same PR as or before Story 49's implementation.
+
+---
+
+### Story 53 (P3) — Pre-push hook scope correction
+Status: Resolved in v2.5.7 hook fix (2026-05-06)
+Discovered: 2026-05-06 (during v2.5.7 release session — blocked `git push -u origin chore/sync-main-into-develop`)
+Target: v2.5.7 ✓
+
+**Symptom:** `.husky/pre-push` hook blocked ANY `git push origin ...` operation when HEAD was on develop, including pushes to non-protected remote refs (e.g. `chore/sync-main-into-develop`). Hook should only block pushes that update the develop or main tip on the remote, not pushes to other remote refs.
+
+**Root cause:** Hook read `git rev-parse --abbrev-ref HEAD` (the local branch name) instead of parsing Git's stdin refspec list. When HEAD=develop and you push to `origin/chore/sync-main-into-develop`, HEAD is still `develop` — hook blocked.
+
+**Fix applied:** Hook now reads stdin per Git's pre-push protocol (`<local-ref> <local-sha> <remote-ref> <remote-sha>`). Only blocks when `remote_ref` is exactly `refs/heads/develop` or `refs/heads/main`. Deletions (all-zeros SHA) always pass through. Also removed two Husky v9-deprecated shebang lines (Story 45 item 1).
+
+**Relationship to Story 45:** Resolves Story 45 items 1 (deprecated shebang) and 3 (--delete false positive, same root cause). Story 45 fully resolved.
 
 ---
 
