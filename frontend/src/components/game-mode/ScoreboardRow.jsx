@@ -1,3 +1,14 @@
+function ordinal(n) {
+  var s = n % 100;
+  if (s >= 11 && s <= 13) return n + 'th';
+  switch (n % 10) {
+    case 1: return n + 'st';
+    case 2: return n + 'nd';
+    case 3: return n + 'rd';
+    default: return n + 'th';
+  }
+}
+
 export default function ScoreboardRow(props) {
   var myTeamLabel = props.myTeamLabel || 'TEAM';
   var oppLabel    = props.oppLabel    || 'OPP';
@@ -6,6 +17,13 @@ export default function ScoreboardRow(props) {
   var isScorer    = props.isScorer;
   var onAddMyRun  = props.onAddMyRun  || function() {};
   var onAddOppRun = props.onAddOppRun || function() {};
+  var inning      = props.inning;      // 0-indexed; undefined = omit indicator
+  var halfInning  = props.halfInning;  // 'top' | 'bottom'
+  var onExit      = props.onExit;      // optional — renders exit button when provided
+
+  var inningLabel = (inning !== undefined && halfInning !== undefined)
+    ? (halfInning === 'top' ? 'Top' : 'Bot') + ' ' + ordinal(inning + 1)
+    : null;
 
   var labelStyle = {
     fontSize: '16px', fontWeight: 700, color: '#e2e8f0',
@@ -26,6 +44,7 @@ export default function ScoreboardRow(props) {
 
   return (
     <div style={{
+      position: 'relative',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       gap: '24px', padding: '8px 16px',
       background: '#0a1628',
@@ -36,6 +55,22 @@ export default function ScoreboardRow(props) {
       overflow: 'hidden',
       fontFamily: "Georgia,'Times New Roman',serif",
     }}>
+      {onExit ? (
+        <button
+          data-testid="scoreboard-exit"
+          aria-label="Exit"
+          onClick={onExit}
+          style={{
+            position: 'absolute', left: '4px',
+            width: '44px', height: '44px',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'transparent', border: 'none',
+            color: '#94a3b8', fontSize: '18px', cursor: 'pointer',
+            borderRadius: '8px',
+            fontFamily: "Georgia,'Times New Roman',serif",
+          }}
+        >✕</button>
+      ) : null}
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1 }}>
           <span style={labelStyle}>{myTeamLabel.toUpperCase()}</span>
@@ -50,7 +85,15 @@ export default function ScoreboardRow(props) {
         ) : null}
       </div>
 
-      <span style={{ color: '#374151', fontSize: '20px' }}>:</span>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+        <span style={{ color: '#374151', fontSize: '20px' }}>:</span>
+        {inningLabel ? (
+          <span style={{
+            fontSize: '10px', fontWeight: 700, color: '#94a3b8',
+            letterSpacing: '0.04em', whiteSpace: 'nowrap',
+          }}>{inningLabel}</span>
+        ) : null}
+      </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1 }}>

@@ -83,42 +83,6 @@
 | **Age** | 16 days |
 | **Target** | v2.3.4 |
 
-### 🟠 P1 — D018: BattingOrderStrip ↔ scoring engine batter index sync
-
-| | |
-|---|---|
-| **Area** | Combined Game View (DugoutView) |
-| **Description** | `BattingOrderStrip` reads `currentBatterIndex` from App's localStorage state. `useLiveScoring` internally advances `batting_order_index` in `live_game_state`. The two are not synchronized — the strip stays static while the scoring engine advances batters. Surfaces only when `COMBINED_GAMEMODE_AND_SCORING` flag is ON. |
-| **Risk if unfixed** | Coaches see a stale batter strip during live scoring — "Now Batting" shows the wrong player. Silent mismatch between display and scoring state. |
-| **Proposed fix** | Slice 2 (Story 46a): introduce `dugoutFocusMode` derived state. When `'scoring'`, strip reads `scoring.gameState.battingOrderIndex` from the `useLiveScoring` hook. When `'lineup'`, strip reads App's `currentBatterIndex`. |
-| **Opened** | 2026-05-03 |
-| **Age** | 0 days |
-| **Target** | v2.5.6 (Slice 2) |
-
-### 🟠 P1 — D019: 375px viewport vertical space budget in combined view
-
-| | |
-|---|---|
-| **Area** | Combined Game View (DugoutView) |
-| **Description** | At 375px viewport (iPhone SE, budget Android), two layout failures occur when `COMBINED_GAMEMODE_AND_SCORING` is ON: (a) bases diamond clips at the bottom — home plate not visible; (b) pitch map (at-bat pitch history) is masked behind the row of scoring outcome CTAs. Root cause: `BattingOrderStrip` stacked above `LiveScoringPanel` reduces available vertical space; fixed-position pitch buttons don't adapt. |
-| **Risk if unfixed** | Combined view unusable on the most common coach phone form factor. Diamond base runner state hidden. Pitch history inaccessible. |
-| **Proposed fix** | Slice 2 (Story 46b/c): compact-mode layout for `BattingOrderStrip` when `dugoutFocusMode === 'scoring'` (~40px vertical recovery); reduce `LiveScoringPanel` diamond top padding; verify pitch map z-index above CTAs row. Add 375px viewport snapshot tests. |
-| **Opened** | 2026-05-03 |
-| **Age** | 0 days |
-| **Target** | v2.5.6 (Slice 2) |
-
-### 🟠 P1 — D020: dugoutFocusMode state machine untested
-
-| | |
-|---|---|
-| **Area** | Combined Game View (DugoutView) |
-| **Description** | `dugoutFocusMode` derived state (`'lineup'` | `'scoring'`) does not exist yet — it is the core Slice 2 architectural addition. Once introduced, its transitions (`lineup` → `scoring` on scorer claim, `scoring` → `lineup` on exit/between innings) have no tests. Edge cases: inning ends mid-at-bat, team is batting (no defensive grid to show), game ends. |
-| **Risk if unfixed** | Incorrect focus-mode transitions would show the wrong body panel (grid vs scoring controls) at the wrong moment — the core combined-view UX guarantee. |
-| **Proposed fix** | Slice 2 (Story 46d): unit tests for `dugoutFocusMode` state machine transitions; component tests asserting correct body panel renders per mode. |
-| **Opened** | 2026-05-03 |
-| **Age** | 0 days |
-| **Target** | v2.5.6 (Slice 2) |
-
 ### 🟡 P2 — Walk-Up Song Navigation
 
 | | |
@@ -345,6 +309,12 @@
 - **2026-04-17 (v2.2.38)** — **SOLUTION_DESIGN.md §CI/CD Pipeline: branch strategy, GitHub Actions workflows, Husky pre-push hook, smoke test scope, Dev environment URLs added.** Previously marked "No CI/CD pipeline" in Known Tradeoffs despite infrastructure being live.
 - **2026-04-17 (v2.2.38)** — **SOLUTION_DESIGN.md §Live Scoring Framework: Tier 1/2/3 breakdown, scorer lock rationale, non-goals documented.** Previously undocumented.
 
+### May 4, 2026 — v2.5.7 (Slice 2)
+
+- ✅ **D018 — BattingOrderStrip batter index sync** — Resolved. `BattingOrderStrip` now reads `gameState.battingOrderIndex` from `useLiveScoring` when `COMBINED_GAMEMODE_AND_SCORING` flag is ON, and App-passed `currentBatterIndex` when OFF. Bug 8 fix. (`DugoutView.jsx` + `DugoutView.test.jsx` regression test ×2)
+- ✅ **D019 — 375px viewport vertical space (combined view)** — Resolved. DugoutView flex-column layout shell with fixed-height header regions and `overflow-y:auto` body eliminates diamond clip and pitch map masking. Bug 9/10 fix. (`DugoutView.viewport.test.jsx` ×3 viewport tests)
+- ✅ **D020 — dugoutFocusMode state machine untested** — Resolved. State machine (`currentAtBat !== null ? 'scoring' : 'lineup'`) tested for all three transitions + null/non-null boundary. (`DugoutView.test.jsx` ×3 state machine tests + `ScoreboardRow.test.jsx` inning rendering ×3)
+
 ### April 27, 2026 — v2.5.1 deploy session
 
 - ✅ **Add ADMIN_KEY to Render production env vars** — verified present in prod Render dashboard during deploy verification.
@@ -364,12 +334,12 @@
 | Priority | Test Gaps | Doc Gaps | Process Gaps | Total |
 |---|---|---|---|---|
 | 🔴 P0 | 2 | 0 | 0 | **2** |
-| 🟠 P1 | 6 | 2 | 1 | **9** |
+| 🟠 P1 | 3 | 2 | 1 | **6** |
 | 🟡 P2 | 5 | 4 | 3 | **12** |
-| **Total** | **13** | **6** | **4** | **23** |
+| **Total** | **10** | **6** | **4** | **20** |
 
 **Age distribution:**
-- 0–30 days: 23
+- 0–30 days: 20
 - 31–60 days: 0
 - 60+ days: 0
 
@@ -400,3 +370,9 @@
   - accessibility.v1.test.js: 22→23 tests
   - Suite count: 452 → 498 (Slice 1 +15, PR #39 +39, PR #41 Phase 1c +7 net)
   - Phase 1c shadow tokens: theme.tokens.test.js expanded 27→34
+
+- **v2.7 — May 2026 (v2.5.7 Slice 2 release)**
+  - D018/D019/D020 resolved and moved to Resolved section (all three: P1, Combined Game View area)
+  - New test file: `DugoutView.viewport.test.jsx` (3 tests — establishes 375px viewport test pattern for the suite)
+  - Dashboard: P1 test gaps 6→3, P1 total 9→6, overall total 23→20, age distribution 23→20
+  - Suite count: 499 → 516 (Slice 2 +11 net: state machine ×3, ScoreboardRow inning ×3, Bug 8 regression ×2, viewport ×3; Story 50 fix-up +6)

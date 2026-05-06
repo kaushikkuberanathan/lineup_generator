@@ -634,11 +634,48 @@ COMBINED_GAMEMODE_AND_SCORING is a static FEATURE_FLAGS object value plus localS
 
 - Slice 0 (v2.5.4, shipped) — DugoutView lift, flag default-OFF, prod unchanged
 - Slice 1 (v2.5.5, shipped) — BattingOrderStrip integration + currentBatterIndex prop wiring; ScoreboardRow test coverage; D017 resolved
-- Slice 2 (planned) — Combined view layout shell: persistent ScoreboardRow header (inning + half-inning), BattingOrderStrip below header, contextual body (defense grid vs LiveScoringPanel) driven by derived dugoutFocusMode state. Includes Bug 1/2/3 layout fixes from v2.5.5 smoke test (Story 46).
+- Slice 2 (v2.5.7, shipped) — DugoutView layout shell + dugoutFocusMode state machine; ScoreboardRow inning/halfInning props; BattingOrderStrip batter-source fix (Bug 8); 375px flex-column layout fix (Bugs 9/10); Story 46 + Story 50 resolved. See sections below.
 - Slice 3 (planned) — Flag flip default-ON in prod; legacy GameModeScreen path deprecation; ScoringMode/index.jsx deletion.
 - Post-Slice 3 — flag flips ON, ScoringMode deleted from repo
 
 Until ScoringMode is deleted, all three invariants must be preserved. Any change touching PRIMARY_TABS, GAMEDAY_SUBTABS, or the ScoringMode render branch must be evaluated against the invariants above.
+
+---
+
+### dugoutFocusMode state machine (v2.5.7)
+
+Derived state inside `DugoutView.jsx`:
+
+```js
+var dugoutFocusMode = currentAtBat !== null ? 'scoring' : 'lineup';
+```
+
+- System-driven, NOT user-toggled. The coach does not pick a mode; it follows scoring engine state.
+- `'lineup'` renders DefenseDiamond (visible by default and between at-bats)
+- `'scoring'` renders LiveScoringPanel (visible during active at-bat)
+
+### Panel mount convention (v2.5.7)
+
+Both DefenseDiamond and LiveScoringPanel stay mounted across mode switches. Visibility is toggled via CSS `display:none`, NOT via React conditional unmounting.
+
+Rationale: preserves DefenseDiamond inning-scrub state across at-bat boundaries (coach scrubbing to inning 5 in lineup mode does not reset when an at-bat starts and resolves).
+
+### DugoutView layout shell (v2.5.7)
+
+Flex column at full viewport height. Fixed-height regions:
+- ScoreboardRow header (top)
+- BattingOrderStrip sub-header (below ScoreboardRow)
+- Body region (`flex:1`, `overflow-y:auto`) renders one of: DefenseDiamond OR LiveScoringPanel based on `dugoutFocusMode`
+
+This is the 375px viewport fix pattern (Bugs 9/10 from v2.5.5 smoke test).
+
+### ScoreboardRow inning + halfInning props (v2.5.7)
+
+Two new optional props added in v2.5.7:
+- `inning`: number, 0-indexed
+- `halfInning`: `'top'` | `'bottom'`
+
+When both provided, renders an ordinal indicator near the score colon ("Top 3rd", "Bot 5th"). When omitted, no indicator renders — backward compatible with any pre-v2.5.7 mount site.
 
 ---
 
