@@ -1,10 +1,10 @@
 # UX Architecture Refactor — Canonical Roadmap
 
-**Branch:** `feature/design-tokens`
+**Branch:** `develop` (working trunk; per-phase feature branches off develop)
 **Worktree:** `C:\Users\KKUBERANA1\Documents\lineup-generator-ux`
 **Owner:** KK (kaushik.kuberanathan@gmail.com)
 **Created:** 2026-05-01
-**Status:** Phase 1 in progress
+**Status:** Phase 1 complete (shipped v2.5.6). Phase 2 next. Current detour: roster polish on `chore/ux-roster-polish-and-housekeeping`.
 
 > Every future UX session on this branch reads this document first.
 > It is the single source of truth for context, sequencing, scope, gate
@@ -29,7 +29,7 @@ will become blockers as the app scales toward more coaches and more surfaces:
 
 ## 2. Phase Map
 
-### Phase 1 — Foundation (v2.4.x) — **IN PROGRESS**
+### Phase 1 — Foundation (v2.4.x → shipped as v2.5.6) — **COMPLETE**
 
 **Goal:** Establish the design token system, ship accessibility as default-on,
 restore the lint pipeline, and document shadow tokens.
@@ -37,13 +37,11 @@ restore the lint pipeline, and document shadow tokens.
 | Sub-phase | Deliverable | Status |
 |-----------|-------------|--------|
 | 1.0 — Design tokens | `frontend/src/theme/tokens.js` + `theme/index.js` + 27 tests + `DESIGN_AUDIT.md` | ✅ Done — commit `9ea4ff4` |
-| 1a — A11y GA | Audit doc, flag flip `ACCESSIBILITY_V1: false → true`, test update, fix-now findings | 🔄 This session |
-| 1b — ESLint restoration | `eslint.config.js` (or `.eslintrc.cjs`), `LINT_BASELINE.md`, in-scope fixes | 🔄 This session |
-| 1c — Shadow tokens | Shadow recon, `shadow.sm/md/lg` tokens, addendum to `DESIGN_AUDIT.md` | ⬜ Deferred to v2.4.1 |
+| 1a — A11y GA | Audit doc, flag flip `ACCESSIBILITY_V1: false → true`, test update, fix-now findings | ✅ Done |
+| 1b — ESLint restoration | `eslint.config.js` (or `.eslintrc.cjs`), `LINT_BASELINE.md`, in-scope fixes | ✅ Done |
+| 1c — Shadow tokens | Shadow recon, `shadow.sm/md/lg` tokens, addendum to `DESIGN_AUDIT.md` | ✅ Done |
 
-**Version target:** 1a + 1b ship under v2.4.x umbrella. Actual APP_VERSION
-bump happens when the parallel Game Day branch merges and all v2.4.x phases
-are complete.
+**Version target (actual):** Phase 1 (1.0 + 1a + 1b + 1c) shipped as v2.5.6. Original target was v2.4.x; cascade slipped by 1–2 minor versions due to parallel Game Day track merges. Phase 2–6 version targets in this doc remain as planning estimates only — actual ship versions will be stamped at release.
 
 ---
 
@@ -170,7 +168,7 @@ before documenting it as canonical.
 | Gate phrase | What it unlocks | Example usage |
 |-------------|----------------|--------------|
 | `all clear — App.jsx editing approved` | Allows edits to `App.jsx` and all other locked files listed above | KK types this when the parallel session is complete and merged |
-| `confirmed — push to feature/design-tokens` | Authorizes a `git push origin feature/design-tokens` | KK types this after reviewing local commit output |
+| `confirmed — push to <branch-name>` | Authorizes a `git push origin <branch-name>` for the active per-phase branch | KK types this after reviewing local commit output. Example: `confirmed — push to chore/ux-roster-polish-and-housekeeping` |
 
 **STOP template** (use when a task requires a locked file):
 
@@ -301,6 +299,9 @@ stopped. Pick up from the last completed step.
 | Phase | Commit | What shipped |
 |-------|--------|-------------|
 | 1.0 — Design tokens | `9ea4ff4` | `frontend/src/theme/tokens.js` (full token set: color, overlay, opacity, space, radius, font, zIndex) · `frontend/src/theme/index.js` (barrel + named convenience exports) · `frontend/src/tests/theme.tokens.test.js` (27 tests, all passing) · `docs/product/DESIGN_AUDIT.md` (full provenance audit: 150+ colors, 130+ rgba, spacing, font, radius inventories; drift flags; token mapping table) · Build: clean · Tests: 27/27 pass |
+| 1a — Accessibility V1 GA | shipped in v2.5.6 (`315a9b1` on develop, `2cd4b3b` squash on main, PR #45) | `docs/product/A11Y_AUDIT.md` · `featureFlags.js` `ACCESSIBILITY_V1: true` · `accessibility.v1.test.js` GA-default assertions · fix-now findings resolved across Shared/* surface |
+| 1b — ESLint pipeline restoration | shipped in v2.5.6 (`315a9b1` on develop, `2cd4b3b` squash on main, PR #45) | `frontend/eslint.config.js` (or `.eslintrc.cjs`) · `docs/product/LINT_BASELINE.md` · in-scope findings fixed in `theme/*`, `Shared/*`, `Support/*` |
+| 1c — Shadow tokens | shipped in v2.5.6 (`315a9b1` on develop, `2cd4b3b` squash on main, PR #45) | `shadow.sm/md/lg` tokens added to `tokens.js` + barrel · test coverage in `theme.tokens.test.js` · `DESIGN_AUDIT.md §6` addendum |
 
 **Deferred from Phase 1.0:**
 - Shadow tokens (`shadow.sm/md/lg`) — 16 distinct box-shadow values found,
@@ -315,70 +316,59 @@ stopped. Pick up from the last completed step.
 
 ## 9. Active Backlog
 
-### Phase 1a — Accessibility V1 GA (this session, not yet started)
+### Phase 1a — Accessibility V1 GA
 
-**Status:** Awaiting KK approval of this roadmap doc before starting recon.
-
-**Steps:**
-- [ ] A — PowerShell recon: audit non-Game-Mode component files for font
-  sizes < 12px, touch targets < 44px, missing aria-labels
-- [ ] B — Write `docs/product/A11Y_AUDIT.md` with findings categorized as
-  fix-now / defer-to-v2.5.x / defer-to-v2.6.0
-- [ ] C — For each fix-now finding: write failing test (RED), show diff, fix
-  to GREEN, repeat
-- [ ] D — Flip `featureFlags.js` `ACCESSIBILITY_V1: false → true`; update
-  `accessibility.v1.test.js` to add GA-default assertion
-- [ ] E — Run `cd frontend && npm test` + `npm run build`. Show KK output.
-  Stop and await commit direction.
-
-**Expected output files:**
-- `docs/product/A11Y_AUDIT.md`
-- Updated `frontend/src/config/featureFlags.js`
-- Updated `frontend/src/tests/accessibility.v1.test.js`
-- Possibly updated Shared/* component files (fix-now findings only)
+**Status:** ✅ COMPLETE — shipped in v2.5.6. See §8 Done-So-Far Ledger.
 
 ---
 
-### Phase 1b — ESLint Pipeline Restoration (this session, after 1a)
+### Phase 1b — ESLint Pipeline Restoration
 
-**Status:** Not started.
-
-**Steps:**
-- [ ] F — Read `frontend/package.json`, confirm ESLint version, decide
-  config format (flat config v9+ or legacy v8). Stop, show KK, get approval.
-- [ ] G — Write ESLint config. Show KK before saving.
-- [ ] H — Run `npm run lint`, capture output. Summarize counts and top rules.
-  Show KK.
-- [ ] I — Write `docs/product/LINT_BASELINE.md` with in-scope vs out-of-scope
-  split. Show KK before fixing.
-- [ ] J — Fix in-scope findings (theme/*, Shared/*, Support/*), one file at
-  a time with per-file approval.
-- [ ] K — Run lint again. Confirm in-scope files clean. Stop and await
-  commit direction.
-
-**Expected output files:**
-- `frontend/eslint.config.js` (or `frontend/.eslintrc.cjs`)
-- `docs/product/LINT_BASELINE.md`
-- Updated `frontend/src/theme/tokens.js` (if lint findings)
-- Updated `frontend/src/theme/index.js` (if lint findings)
-- Updated Shared/Support component files (in-scope lint findings only)
+**Status:** ✅ COMPLETE — shipped in v2.5.6. See §8 Done-So-Far Ledger.
 
 ---
 
-### Phase 1c — Shadow Tokens (v2.4.1, deferred from this session)
+### Phase 1c — Shadow Tokens
 
-**Status:** Deferred. Do not start until after Phase 1a + 1b are committed.
+**Status:** ✅ COMPLETE — shipped in v2.5.6. See §8 Done-So-Far Ledger.
 
-**Instructions for the v2.4.1 session:**
-1. Re-run the `boxShadow` recon script (21 occurrences, 16 distinct values
-   found in the v2.4.0 session — re-run to verify still current)
-2. Cluster the values by visual weight: subtle lift, card elevation, modal/overlay
-3. Propose `shadow.sm`, `shadow.md`, `shadow.lg` tokens
-4. Write failing test (RED) before adding tokens
-5. Add shadow group to `frontend/src/theme/tokens.js`
-6. Add shadow exports to `frontend/src/theme/index.js`
-7. Add test cases to `theme.tokens.test.js`
-8. Document addendum in `docs/product/DESIGN_AUDIT.md` §6
+---
+
+### Roster Polish (R1) — one-off detour BEFORE Phase 2 (active)
+
+**Status:** 🔄 Active — branch `chore/ux-roster-polish-and-housekeeping` off develop.
+
+**Why a detour:** Stress-test v2.5.6 design tokens on a real, low-risk surface (Roster + Player Profile) before Phase 2 primitives migration. Validates token coverage on production screens; surfaces token gaps early; produces visible polish coaches will see immediately. Not a structural phase — does not reorder the Phase Map.
+
+**Scope guardrails:**
+- Touch only Roster, Player Profile, V2 card section components, Add/Edit Player forms.
+- Zero overlap with `App.jsx`, `components/game-mode/*` (kebab — locked), `components/ScoringMode/*` (locked), or any Game Day surface.
+- `components/GameDay/*` (CamelCase) is in-scope per locked-files registry, but R1 stays out of it to avoid coordination friction with the parallel Game Day track.
+
+**Steps:**
+- [ ] Doc commit (this commit): roadmap + LINT_BASELINE refresh, no code.
+- [ ] Roster recon: file inventory, import graph audit (verify no locked-set imports), design token baseline per file, test coverage read.
+- [ ] Pick first polish target (smallest-scope-first).
+- [ ] Per-target loop: RED test → token application → GREEN → diff review → commit.
+- [ ] Phone smoke test on Vercel preview before merge to develop.
+
+**Expected output files:**
+- `docs/product/UX_REFACTOR_ROADMAP.md` (this update)
+- `docs/product/LINT_BASELINE.md` (header + §3.3 fixes)
+- Roster + Player Profile surface files (token migrations only — no behavior changes)
+- New tests as needed for token assertions
+
+---
+
+### Phase 2 — UI Primitives (next, after R1 ships)
+
+**Status:** ⏭️ Next. Branch will be created off develop after R1 merges.
+
+**Goals (per §2 Phase Map):** Introduce reusable UI primitives — likely Card, Button, Text, BottomSheet at minimum — consuming v2.5.6 design tokens directly. Primitives become the substrate for Phase 3 call-site replacement.
+
+**Working assumption:** Text primitive ships first (smallest scope, highest leverage — every other primitive consumes it; also unblocks deferred LockFlow.jsx L130 dup-fontSize cleanup). Order TBD when R1 closes.
+
+**Version target:** Next minor after R1 ships. Cascade for Phase 3–6 will re-evaluate at that point.
 
 ---
 
