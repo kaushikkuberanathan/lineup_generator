@@ -127,7 +127,7 @@ export function LockFlow({ activeWarnings, nextGame, hasPin, onConfirmLock, onRe
           Confirm Lock
         </div>
         <div style={{ background:"rgba(15,31,61,0.04)", border:"1px solid rgba(15,31,61,0.1)", borderRadius:"10px", padding:"14px", marginBottom:"18px" }}>
-          <div style={{ fontSize:"13px", color:textMuted, marginBottom:"6px", letterSpacing:"0.05em", textTransform:"uppercase", fontSize:"10px" }}>
+          <div style={{ fontSize:"10px", color:textMuted, marginBottom:"6px", letterSpacing:"0.05em", textTransform:"uppercase" }}>
             You are about to lock the lineup for
           </div>
           {gameLabel ? (
