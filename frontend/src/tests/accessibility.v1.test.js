@@ -106,8 +106,8 @@ describe('2 — FEATURE_FLAGS registry', function() {
     expect(FEATURE_FLAGS['USE_NEW_LINEUP_ENGINE']).toBe(true);
   });
 
-  test('2.5 COMBINED_GAMEMODE_AND_SCORING defaults to false', function() {
-    expect(FEATURE_FLAGS['COMBINED_GAMEMODE_AND_SCORING']).toBe(false);
+  test('2.5 COMBINED_GAMEMODE_AND_SCORING defaults to true (GA default-on, Slice 3)', function() {
+    expect(FEATURE_FLAGS['COMBINED_GAMEMODE_AND_SCORING']).toBe(true);
   });
 
 });
@@ -134,8 +134,8 @@ describe('3 — isFlagEnabled defaults (no localStorage override)', function() {
     expect(isFlagEnabled('VIEWER_MODE')).toBe(false);
   });
 
-  test('3.5 returns false for COMBINED_GAMEMODE_AND_SCORING (default off)', function() {
-    expect(isFlagEnabled('COMBINED_GAMEMODE_AND_SCORING')).toBe(false);
+  test('3.5 returns true for COMBINED_GAMEMODE_AND_SCORING (GA default-on, Slice 3)', function() {
+    expect(isFlagEnabled('COMBINED_GAMEMODE_AND_SCORING')).toBe(true);
   });
 
 });

@@ -73,7 +73,7 @@ Located at App.jsx ~458–720. Two-phase auto-assign algorithm:
 ## Test Suite
 
 - **Framework**: Vitest
-- **CI target**: 499 passed / 1 skipped / 0 failed (as of v2.5.6, May 3, 2026)
+- **CI target**: 551 passed / 1 skipped / 0 failed (as of v2.6.0, May 7, 2026)
 - **Known skip**: engine.v2 test 2.3 (7-player roster produces no warning — fix in separate session)
 
 #### Test files
@@ -140,6 +140,7 @@ Use `?disable_flag=<name>` to revert. Full guide: `docs/features/feature-flags.m
 | `GAME_MODE` | `true` | Full-screen game day mode |
 | `ACCESSIBILITY_V1` | `true` | Font floors, touch targets, contrast uplift, aria labels — GA default-on (Phase 1a). Roll back per-user: `localStorage.setItem("flag_ACCESSIBILITY_V1", "false")` |
 | `SCORING_SHEET_V2` | `true` | Outcome sheet semantic cleanup: Foul→PITCH OUTCOME, Strikeout removed, opp-half +1 buttons hidden |
+| `COMBINED_GAMEMODE_AND_SCORING` | `true` | DugoutView — combined Game Mode + Scoring surface. GA default-on as of Slice 3 (v2.6.0). Legacy ScoringMode removed. Roll back per-user: `localStorage.setItem("flag_COMBINED_GAMEMODE_AND_SCORING", "false")` |
 
 ---
 

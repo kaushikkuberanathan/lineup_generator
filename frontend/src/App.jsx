@@ -21,7 +21,6 @@ import { NowBattingBar } from './components/GameDay/NowBattingStrip';
 import { LockFlow } from './components/GameDay/LockFlow';
 import { FairnessCheck } from './components/GameDay/FairnessCheck';
 import { ParentView } from './components/GameDay/ParentView';
-import { ViewerMode } from './components/Viewer/ViewerMode';
 import { EmptyState } from './components/Home/EmptyState';
 import { ValidationBanner } from './components/Shared/ValidationBanner';
 import { OfflineIndicator } from './components/Shared/OfflineIndicator';
@@ -38,7 +37,6 @@ import { LoginScreen } from './components/Auth/LoginScreen';
 import { RequestAccessScreen } from './components/Auth/RequestAccessScreen';
 import { PendingApprovalScreen } from './components/Auth/PendingApprovalScreen';
 import { useFeatureFlag } from '@/hooks/useFeatureFlag';
-import ScoringMode from './components/ScoringMode/index.jsx';
 import { VERSION_HISTORY } from './data/versionHistory';
 
 // ============================================================
@@ -143,7 +141,7 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.5.8";
+var APP_VERSION = "2.6.0";
 
 function loadJSON(key, def) {
   try {
@@ -1527,7 +1525,6 @@ export default function App() {
   var _liveScoring = useFeatureFlag('live_scoring', activeTeamId);
   var _isAlwaysScoringTeam = (activeTeam && (activeTeam.name === 'Mud Hens' || activeTeam.name === 'Demo All-Stars'));
   var liveScoringEnabled = _isAlwaysScoringTeam ? true : _liveScoring.enabled;
-  var combinedGamemodeAndScoringEnabled = FEATURE_FLAGS.COMBINED_GAMEMODE_AND_SCORING || localStorage.getItem("flag:combined_gamemode_and_scoring") === "1";
   var _primaryTab = useState("home");
   var primaryTab = _primaryTab[0]; var setPrimaryTab = _primaryTab[1];
   var _rosterTab = useState("players");
@@ -7905,8 +7902,6 @@ export default function App() {
   // ============================================================
   // SHARED LINEUP VIEW (read-only, opened via share link)
   // ============================================================
-  // renderViewerMode — extracted to components/Viewer/ViewerMode.jsx
-
   // renderSharedView — extracted to SharedView component above App()
 
   // ============================================================
@@ -7943,7 +7938,7 @@ export default function App() {
       var _vp = new URLSearchParams(window.location.search);
       var _viewerFlagOn = runtimeFlags.VIEWER_MODE || localStorage.getItem("flag:viewer_mode") === "1";
       var isViewer = _viewerFlagOn && (_vp.get("view") === "true" || _vp.get("role") === "viewer");
-      return <ErrorBoundary fallback="Viewer Mode">{isViewer ? (combinedGamemodeAndScoringEnabled ? <DugoutView payload={sharePayload} isViewer={true} onExit={function() {}} /> : <ViewerMode payload={sharePayload} />) : <SharedView payload={sharePayload} renderFieldSVG={renderFieldSVG} />}</ErrorBoundary>;
+      return <ErrorBoundary fallback="Viewer Mode">{isViewer ? <DugoutView payload={sharePayload} isViewer={true} onExit={function() {}} /> : <SharedView payload={sharePayload} renderFieldSVG={renderFieldSVG} />}</ErrorBoundary>;
     }
     return (
       <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", minHeight:"100vh", background:"#fdf8f0", gap:"12px" }}>
@@ -8005,7 +8000,7 @@ export default function App() {
       var payload = JSON.parse(decodeURIComponent(escape(atob(shareParam))));
       var _viewerFlagOn64 = runtimeFlags.VIEWER_MODE || localStorage.getItem("flag:viewer_mode") === "1";
       var isViewer64 = _viewerFlagOn64 && (urlParams.get("view") === "true" || urlParams.get("role") === "viewer");
-      return <ErrorBoundary fallback="Viewer Mode">{isViewer64 ? (combinedGamemodeAndScoringEnabled ? <DugoutView payload={payload} isViewer={true} onExit={function() {}} /> : <ViewerMode payload={payload} />) : <SharedView payload={payload} renderFieldSVG={renderFieldSVG} />}</ErrorBoundary>;
+      return <ErrorBoundary fallback="Viewer Mode">{isViewer64 ? <DugoutView payload={payload} isViewer={true} onExit={function() {}} /> : <SharedView payload={payload} renderFieldSVG={renderFieldSVG} />}</ErrorBoundary>;
     }
   } catch (e) {}
 
@@ -8013,7 +8008,6 @@ export default function App() {
     { key:"home",    label:"Home",     icon:"🏠" },
     { key:"team",    label:"My Team",  icon:"👥" },
     { key:"gameday", label:"Game Day", icon:"🏟" },
-    liveScoringEnabled && !combinedGamemodeAndScoringEnabled ? { key:"scoring", label:"Scoring", icon:"⚾" } : null,
     { key:"more",    label:"Support",  icon:"⚙️" },
   ].filter(Boolean);
   var ROSTER_SUBTABS = [
@@ -8023,10 +8017,7 @@ export default function App() {
   var GAMEDAY_SUBTABS = [
     { key:"lineups",  label:"Lineups"             },
     { key:"songs",    label:"Songs"               },
-    { key:"gamemode", label:"GAME MODE", launcher:true },
-    combinedGamemodeAndScoringEnabled
-      ? { key:"dugout", label:"DUGOUT VIEW", launcher:true }
-      : null,
+    { key:"dugout", label:"DUGOUT VIEW", launcher:true },
   ].filter(Boolean);
   var SEASON_SUBTABS = [
     { key:"schedule", label:"Schedule" },
@@ -8215,18 +8206,6 @@ export default function App() {
       {primaryTab === "more" && moreTab === "updates"  ? renderUpdates()  : null}
       {primaryTab === "more" && moreTab === "legal"    ? <LegalSection C={C} S={S} /> : null}
       {primaryTab === "more" && moreTab === "faq"      ? <FAQSection C={C} S={S} />   : null}
-      {primaryTab === "scoring" && liveScoringEnabled && !combinedGamemodeAndScoringEnabled ? (
-        <ScoringMode
-          activeTeam={activeTeam}
-          activeTeamId={activeTeamId}
-          user={user}
-          session={session}
-          schedule={schedule}
-          roster={roster}
-          battingOrder={activeBattingOrder}
-          onClose={function() { setPrimaryTab("gameday"); }}
-        />
-      ) : null}
     </div>
   );
 

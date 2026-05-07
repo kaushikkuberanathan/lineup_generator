@@ -1,5 +1,24 @@
 ﻿export var VERSION_HISTORY = [
   {
+    version: '2.6.0',
+    date: 'May 2026',
+    headline: 'Slice 3 — DUGOUT VIEW is now the default Game Day experience',
+    userChanges: [
+      'DUGOUT VIEW is now the default way to run your game — live scoring, defense lineup, and batting order all in one screen',
+      'The separate Scoring tab has been retired; everything is now in Game Day',
+    ],
+    techNote: 'Under-the-hood stability improvements',
+    internalChanges: [
+      'Slice 3: flipped COMBINED_GAMEMODE_AND_SCORING default from false to true in featureFlags.js',
+      'Removed legacy ScoringMode component import and render block from App.jsx (primaryTab scoring path)',
+      'Removed Scoring tab from PRIMARY_TABS (was gated off when combined flag ON)',
+      'Replaced GAME MODE + conditional DUGOUT VIEW in GAMEDAY_SUBTABS with single DUGOUT VIEW launcher',
+      'Simplified viewer share-link paths — always routes to DugoutView isViewer=true (ViewerMode import removed)',
+      'Removed combinedGamemodeAndScoringEnabled runtime variable from App.jsx (no longer needed)',
+      'ROADMAP.md: Slice 3 marked resolved v2.6.0; Slice 4 (ScoringMode component deletion) logged in backlog',
+    ],
+  },
+  {
     version: '2.5.8',
     date: 'May 2026',
     headline: 'Infrastructure stability — test gate restored, hook fixes',

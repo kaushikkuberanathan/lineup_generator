@@ -30,9 +30,9 @@ export const FEATURE_FLAGS = {
 
   // Combined Game Mode + Scoring view (DugoutView) — single full-screen surface
   // combining live scoring controls with field positions and batting order.
-  // Default OFF. Enable per-user: localStorage.setItem("flag_COMBINED_GAMEMODE_AND_SCORING", "true")
-  // Disable: localStorage.setItem("flag_COMBINED_GAMEMODE_AND_SCORING", "false")
-  COMBINED_GAMEMODE_AND_SCORING: false,
+  // GA default-on as of Slice 3 (v2.6.0). Legacy ScoringMode removed.
+  // Roll back per-user: localStorage.setItem("flag_COMBINED_GAMEMODE_AND_SCORING", "false")
+  COMBINED_GAMEMODE_AND_SCORING: true,
 };
 
 /**
