@@ -4,7 +4,7 @@
 **Worktree:** `C:\Users\KKUBERANA1\Documents\lineup-generator-ux`
 **Owner:** KK (kaushik.kuberanathan@gmail.com)
 **Created:** 2026-05-01
-**Status:** Phase 1 complete (shipped v2.5.6). Phase 2 next. Current detour: roster polish on `chore/ux-roster-polish-and-housekeeping`.
+**Status:** Phase 1 complete (shipped v2.5.6). R1 Roster Polish complete (shipped develop `930c9b4`, PR #55). Phase 2 UI Primitives next.
 
 > Every future UX session on this branch reads this document first.
 > It is the single source of truth for context, sequencing, scope, gate
@@ -269,8 +269,8 @@ section first to bootstrap.
 ```
 git log --oneline -3
 ```
-Expected: `9ea4ff4 feat(tokens): v2.4.0 design tokens scaffolding` as the
-most recent commit, or newer commits from subsequent phases.
+Expected: `930c9b4 chore(ux-r1): R1 Roster Polish — design token migration` as the
+most recent commit on develop, or newer commits from subsequent phases.
 
 **Step 2: Read the active state**
 - This document (you're reading it)
@@ -302,6 +302,7 @@ stopped. Pick up from the last completed step.
 | 1a — Accessibility V1 GA | shipped in v2.5.6 (`315a9b1` on develop, `2cd4b3b` squash on main, PR #45) | `docs/product/A11Y_AUDIT.md` · `featureFlags.js` `ACCESSIBILITY_V1: true` · `accessibility.v1.test.js` GA-default assertions · fix-now findings resolved across Shared/* surface |
 | 1b — ESLint pipeline restoration | shipped in v2.5.6 (`315a9b1` on develop, `2cd4b3b` squash on main, PR #45) | `frontend/eslint.config.js` (or `.eslintrc.cjs`) · `docs/product/LINT_BASELINE.md` · in-scope findings fixed in `theme/*`, `Shared/*`, `Support/*` |
 | 1c — Shadow tokens | shipped in v2.5.6 (`315a9b1` on develop, `2cd4b3b` squash on main, PR #45) | `shadow.sm/md/lg` tokens added to `tokens.js` + barrel · test coverage in `theme.tokens.test.js` · `DESIGN_AUDIT.md §6` addendum |
+| R1 — Roster Polish | `930c9b4` on develop, PR #55 | Token migration: `EmptyState` (7 tokens) · `BattingHandSelector` (4 tokens) · `PlayerHandBadge` (2 tokens, 10px→11px WCAG lift) · `ViewerMode` (15 tokens, 10px→11px WCAG lift POS_LABELS) · 36 new characterization tests · suite 516→552 · open design decision: BattingHandSelector active green `#16a34a` has no exact token (nearest: `status.success` `#27AE60` would change appearance — deferred) |
 
 **Deferred from Phase 1.0:**
 - Shadow tokens (`shadow.sm/md/lg`) — 16 distinct box-shadow values found,
@@ -334,41 +335,23 @@ stopped. Pick up from the last completed step.
 
 ---
 
-### Roster Polish (R1) — one-off detour BEFORE Phase 2 (active)
+### Roster Polish (R1) — one-off detour BEFORE Phase 2
 
-**Status:** 🔄 Active — branch `chore/ux-roster-polish-and-housekeeping` off develop.
+**Status:** ✅ COMPLETE — `930c9b4` on develop, PR #55. See §8 Done-So-Far Ledger.
 
-**Why a detour:** Stress-test v2.5.6 design tokens on a real, low-risk surface (Roster + Player Profile) before Phase 2 primitives migration. Validates token coverage on production screens; surfaces token gaps early; produces visible polish coaches will see immediately. Not a structural phase — does not reorder the Phase Map.
-
-**Scope guardrails:**
-- Touch only Roster, Player Profile, V2 card section components, Add/Edit Player forms.
-- Zero overlap with `App.jsx`, `components/game-mode/*` (kebab — locked), `components/ScoringMode/*` (locked), or any Game Day surface.
-- `components/GameDay/*` (CamelCase) is in-scope per locked-files registry, but R1 stays out of it to avoid coordination friction with the parallel Game Day track.
-
-**Steps:**
-- [ ] Doc commit (this commit): roadmap + LINT_BASELINE refresh, no code.
-- [ ] Roster recon: file inventory, import graph audit (verify no locked-set imports), design token baseline per file, test coverage read.
-- [ ] Pick first polish target (smallest-scope-first).
-- [ ] Per-target loop: RED test → token application → GREEN → diff review → commit.
-- [ ] Phone smoke test on Vercel preview before merge to develop.
-
-**Expected output files:**
-- `docs/product/UX_REFACTOR_ROADMAP.md` (this update)
-- `docs/product/LINT_BASELINE.md` (header + §3.3 fixes)
-- Roster + Player Profile surface files (token migrations only — no behavior changes)
-- New tests as needed for token assertions
+**Open item carried forward:** `BattingHandSelector` active background `#16a34a` has no exact token. Nearest candidate `tokens.color.status.success` (`#27AE60`) would change button appearance. Resolve in Phase 2 or Phase 3 call-site pass — either normalize the token or add a `successAlt` token variant.
 
 ---
 
-### Phase 2 — UI Primitives (next, after R1 ships)
+### Phase 2 — UI Primitives (active next)
 
-**Status:** ⏭️ Next. Branch will be created off develop after R1 merges.
+**Status:** ⏭️ Next. Cut `feature/phase-2-primitives` from develop when ready to begin.
 
-**Goals (per §2 Phase Map):** Introduce reusable UI primitives — likely Card, Button, Text, BottomSheet at minimum — consuming v2.5.6 design tokens directly. Primitives become the substrate for Phase 3 call-site replacement.
+**Goals (per §2 Phase Map):** Introduce reusable UI primitives — Card, Button, Text, Badge, Stack — consuming v2.5.6 design tokens directly. Primitives become the substrate for Phase 3 call-site replacement.
 
-**Working assumption:** Text primitive ships first (smallest scope, highest leverage — every other primitive consumes it; also unblocks deferred LockFlow.jsx L130 dup-fontSize cleanup). Order TBD when R1 closes.
+**Working assumption:** `Text` primitive ships first (smallest scope, highest leverage — every other primitive consumes it; also unblocks deferred `LockFlow.jsx:130` dup-fontSize cleanup). Order TBD at session start.
 
-**Version target:** Next minor after R1 ships. Cascade for Phase 3–6 will re-evaluate at that point.
+**Version target:** Next minor after Phase 2 merges. Cascade for Phase 3–6 will re-evaluate at that point.
 
 ---
 
