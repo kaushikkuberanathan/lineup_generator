@@ -1,7 +1,18 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: May 4, 2026 (v2.5.7; Stories 46, 50 resolved; Stories 48, 49, 51 filed)
+> Last updated: May 7, 2026 (v2.5.8 — Story 41 resolved; pool:threads fix; hook + docs patches to main)
 > MVP launched: March 24, 2026
+
+---
+
+## v2.5.8 — 2026-05-07 (feature/story-41-threads-pool) — Infrastructure stability
+
+No user-visible changes.
+
+- `frontend/vite.config.js` — switched `pool: 'forks'` → `pool: 'threads'`. Cox Defender endpoint security blocked child_process.fork IPC handshake in git hook context. worker_threads are intra-process and unaffected. Pre-push test gate now functions without `--no-verify`. Story 41 resolved.
+- `CLAUDE.md` — updated infrastructure note; removed Windows Vitest cold-start OOM section (no longer applicable).
+- `ROADMAP.md` — Story 41 marked resolved in P1 table.
+- Stories 45 + 53 (pre-push hook stdin fix + Husky shebang cleanup) already shipped in `487377c` on develop; promoted to main as part of this release.
 
 ---
 
@@ -838,7 +849,7 @@ Game Mode polish release covering three themes:
 | 5 | **Mud Hens g2 batting stats** | SQL restore in Supabase pending — two-query fix identified, not yet applied |
 | 6 | **Absent player auto-assign** | Out Tonight players (e.g. Aiden) occasionally still assigned to a field position when auto-assign runs — `activeBattingOrder` filters batting order correctly but engine absent exclusion may have a gap |
 | 7 | **Game Ball "—" display bug** | Schedule card shows "—" dash instead of recipient names after multi-player game ball selection — read path may not be normalizing the `gameBall` array at render |
-| 41 | **Local test gate broken by Defender fork-spawn scanning** | Husky pre-push hook cannot spawn Vitest fork workers — Defender real-time scans Node.js child processes on Cox managed endpoint, blocking IPC handshake within 60s timeout. Fails on single 2KB test file with 2.5GB RAM free. Root cause is endpoint security, not memory. Proposed fix: try `pool: 'threads'` in vite.config.js, in parallel file IT ticket for path exclusions on node_modules + Node install + project root. Currently bypassed via `--no-verify` on May 1, 2026 push of f974b20. Blocks every push to develop/main until resolved. |
+| ~~41~~ | ~~**Local test gate broken by Defender fork-spawn scanning**~~ | ✅ **Resolved v2.5.8** — switched `pool: 'forks'` → `pool: 'threads'` in `vite.config.js`. worker_threads are intra-process; Defender does not intercept them. 516 tests pass. |
 
 ---
 
@@ -1529,9 +1540,9 @@ Recommendation: A. Stay in Vitest, no new deps, no language migration.
 ---
 
 ### Story 45 (P3) — Husky v10 + doc drift cleanup
-Status: Open
+Status: Resolved in v2.5.7 hook fix (2026-05-06)
 Discovered: 2026-05-02 (branch hygiene session)
-Target: TBD — next quiet window after a Slice ships
+Target: v2.5.7 ✓
 Symptom: Four low-friction issues bundled together:
   1. Pre-push hook prints Husky v10 deprecation warning on every push
      ("Please remove the following two lines from .husky/pre-push:
@@ -1687,6 +1698,21 @@ Target: v2.6.x or alongside Story 49
 | `ACCESSIBILITY_V1` | `true` | `localStorage.setItem('flag_ACCESSIBILITY_V1', 'true')` |
 
 This is a docs-only change with zero risk. Should ship in the same PR as or before Story 49's implementation.
+
+---
+
+### Story 53 (P3) — Pre-push hook scope correction
+Status: Resolved in v2.5.7 hook fix (2026-05-06)
+Discovered: 2026-05-06 (during v2.5.7 release session — blocked `git push -u origin chore/sync-main-into-develop`)
+Target: v2.5.7 ✓
+
+**Symptom:** `.husky/pre-push` hook blocked ANY `git push origin ...` operation when HEAD was on develop, including pushes to non-protected remote refs (e.g. `chore/sync-main-into-develop`). Hook should only block pushes that update the develop or main tip on the remote, not pushes to other remote refs.
+
+**Root cause:** Hook read `git rev-parse --abbrev-ref HEAD` (the local branch name) instead of parsing Git's stdin refspec list. When HEAD=develop and you push to `origin/chore/sync-main-into-develop`, HEAD is still `develop` — hook blocked.
+
+**Fix applied:** Hook now reads stdin per Git's pre-push protocol (`<local-ref> <local-sha> <remote-ref> <remote-sha>`). Only blocks when `remote_ref` is exactly `refs/heads/develop` or `refs/heads/main`. Deletions (all-zeros SHA) always pass through. Also removed two Husky v9-deprecated shebang lines (Story 45 item 1).
+
+**Relationship to Story 45:** Resolves Story 45 items 1 (deprecated shebang) and 3 (--delete false positive, same root cause). Story 45 fully resolved.
 
 ---
 
