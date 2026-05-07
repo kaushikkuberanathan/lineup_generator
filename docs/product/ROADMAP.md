@@ -1,7 +1,18 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: May 6, 2026 (v2.5.7 hook fix; Stories 45, 53 resolved; Story 53 filed + resolved same session)
+> Last updated: May 7, 2026 (v2.5.8 — Story 41 resolved; pool:threads fix; hook + docs patches to main)
 > MVP launched: March 24, 2026
+
+---
+
+## v2.5.8 — 2026-05-07 (feature/story-41-threads-pool) — Infrastructure stability
+
+No user-visible changes.
+
+- `frontend/vite.config.js` — switched `pool: 'forks'` → `pool: 'threads'`. Cox Defender endpoint security blocked child_process.fork IPC handshake in git hook context. worker_threads are intra-process and unaffected. Pre-push test gate now functions without `--no-verify`. Story 41 resolved.
+- `CLAUDE.md` — updated infrastructure note; removed Windows Vitest cold-start OOM section (no longer applicable).
+- `ROADMAP.md` — Story 41 marked resolved in P1 table.
+- Stories 45 + 53 (pre-push hook stdin fix + Husky shebang cleanup) already shipped in `487377c` on develop; promoted to main as part of this release.
 
 ---
 
@@ -838,7 +849,7 @@ Game Mode polish release covering three themes:
 | 5 | **Mud Hens g2 batting stats** | SQL restore in Supabase pending — two-query fix identified, not yet applied |
 | 6 | **Absent player auto-assign** | Out Tonight players (e.g. Aiden) occasionally still assigned to a field position when auto-assign runs — `activeBattingOrder` filters batting order correctly but engine absent exclusion may have a gap |
 | 7 | **Game Ball "—" display bug** | Schedule card shows "—" dash instead of recipient names after multi-player game ball selection — read path may not be normalizing the `gameBall` array at render |
-| 41 | **Local test gate broken by Defender fork-spawn scanning** | Husky pre-push hook cannot spawn Vitest fork workers — Defender real-time scans Node.js child processes on Cox managed endpoint, blocking IPC handshake within 60s timeout. Fails on single 2KB test file with 2.5GB RAM free. Root cause is endpoint security, not memory. Proposed fix: try `pool: 'threads'` in vite.config.js, in parallel file IT ticket for path exclusions on node_modules + Node install + project root. Currently bypassed via `--no-verify` on May 1, 2026 push of f974b20. Blocks every push to develop/main until resolved. |
+| ~~41~~ | ~~**Local test gate broken by Defender fork-spawn scanning**~~ | ✅ **Resolved v2.5.8** — switched `pool: 'forks'` → `pool: 'threads'` in `vite.config.js`. worker_threads are intra-process; Defender does not intercept them. 516 tests pass. |
 
 ---
 

@@ -15,10 +15,8 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
-    pool: 'forks',
-    forks: {
-      singleFork: true
-    },
+    pool: 'threads',
+    maxWorkers: 1,
     setupFiles: ['./src/tests/setup.js'],
     include: ['src/**/*.test.{js,jsx}'],
     exclude: ['**/node_modules/**'],
