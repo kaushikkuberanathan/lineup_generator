@@ -1,7 +1,7 @@
 # ESLint Baseline — Phase 1b
 
 **Date:** 2026-05-02  
-**Branch:** `feature/design-tokens`  
+**Branch:** `develop` (baseline established on `feature/design-tokens`; carried forward)  
 **Config file:** `frontend/.eslintrc.cjs`  
 **Baseline command:** `eslint src --ext .js,.jsx --max-warnings 0` (run from `frontend/`)  
 **Raw output:** `lint-baseline-output.txt` (repo root, untracked)
@@ -107,15 +107,15 @@ record. See Section 7 for full rationale.
 
 ---
 
-### DEFER-TO-V2.6.0 — Auth re-skin (5 findings)
+### DEFER-TO-V2.7.0 — Auth re-skin / Phase 5 (5 findings)
 
 All findings are `react/no-unescaped-entities` — literal apostrophes in user-facing strings. Cosmetically correct in the UI today. Auth component re-skin is Phase 5 (v2.7.0); these are deferred to that phase so they are fixed once as part of the full Auth surface pass.
 
-| File | Findings | Rule |
-|------|---------:|------|
-| `components/Auth/LoginScreen.jsx` | 2 | `react/no-unescaped-entities` |
-| `components/Auth/PendingApprovalScreen.jsx` | 2 | `react/no-unescaped-entities` |
-| `components/Auth/RequestAccessScreen.jsx` | 1 | `react/no-unescaped-entities` |
+| File | Lines | Findings | Rule |
+|------|-------|---------:|------|
+| `components/Auth/LoginScreen.jsx` | :61, :97 | 2 | `react/no-unescaped-entities` |
+| `components/Auth/PendingApprovalScreen.jsx` | :29, :53 | 2 | `react/no-unescaped-entities` |
+| `components/Auth/RequestAccessScreen.jsx` | :168 | 1 | `react/no-unescaped-entities` |
 
 ---
 
