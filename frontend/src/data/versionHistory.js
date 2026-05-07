@@ -1,5 +1,20 @@
 ﻿export var VERSION_HISTORY = [
   {
+    version: '2.5.8',
+    date: 'May 2026',
+    headline: 'Infrastructure stability — test gate restored, hook fixes',
+    userChanges: [
+      'Bug fixes and reliability improvements',
+    ],
+    techNote: 'Under-the-hood stability improvements',
+    internalChanges: [
+      'Story 41 resolved: switched Vitest pool from forks (child_process.fork) + singleFork:true to threads (worker_threads) + maxWorkers:1. Cox Defender endpoint security blocked fork IPC handshake in git hook context; worker_threads are intra-process and unaffected. maxWorkers:1 preserves single-worker execution to prevent thread-race test isolation failures. Pre-push test gate now functional without --no-verify.',
+      'CLAUDE.md: replaced singleFork/OOM infrastructure notes with threads + maxWorkers:1 explanation.',
+      'Stories 45 + 53 resolved (shipped in 487377c): pre-push hook reads stdin refspec per Git protocol; only blocks remote refs refs/heads/develop and refs/heads/main; deletions pass through; Husky v9 deprecated shebang lines removed.',
+      'ROADMAP.md: Story 41 marked resolved v2.5.8 in P1 table.',
+    ],
+  },
+  {
     version: '2.5.7',
     date: 'May 2026',
     headline: 'Slice 2 — combined Game Mode + Scoring layout (flag-gated)',

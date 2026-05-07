@@ -38,28 +38,8 @@ Default base for new work: develop.
 
 ### Infrastructure notes
 
-- Vitest v4 syntax: fork options live at top level
-  (`pool: 'forks'`, `forks: { singleFork: true }`), NOT inside
-  `poolOptions` (which was deprecated in v4).
-- Windows test environment requires singleFork for scoring tests
-  to avoid OOM cascade. If OOM returns, check test weight before
-  excluding.
+- Vitest v4 pool: `pool: 'threads'`, `maxWorkers: 1` — switched from `pool: 'forks'` + `singleFork: true` in Story 41 fix. Cox Defender endpoint security blocked child_process.fork IPC in git hook context; worker_threads are intra-process and unaffected. `maxWorkers: 1` enforces single-worker execution to prevent thread-race test isolation failures (same safety rationale as the former `singleFork: true`).
 **Pre-push hook (v2.5.3):** `.husky/pre-push` runs `cd frontend && npm test` (no retry) and includes a branch guard rejecting direct pushes to `develop` and `main`. Override for declared hotfixes only: `ALLOW_DIRECT_PUSH=1 git push`. The earlier `|| npm test` retry was removed because it was duplicated (ran tests up to four times) and masked first-run failures.
-
-### Known issue: Windows Vitest cold-start OOM
-
-On Windows with <4GB free RAM, Vitest's single-fork pool may
-cascade-OOM 10+ files during cold-start. Symptoms: "FetchStream
-closed early" or worker timeouts across many files.
-
-Workaround:
-1. Close other memory-hungry apps
-2. Run `cd frontend && npm test` directly once to warm module cache
-3. Re-attempt git push
-
-This is environmental. Do NOT add retry logic to the pre-push hook
-(`|| npm test`). Retries hide real failures because the second attempt
-runs a subset of files after OOM, producing false-positive exit 0.
 
 ---
 
@@ -531,8 +511,9 @@ Every other session: open `docs/product/DOC_TEST_DEBT.md` — close P0s, promote
 ---
 
 ## Current Version
-**v2.5.7** — May 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/data/versionHistory.js`.
+**v2.5.8** — May 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/data/versionHistory.js`.
 
+- v2.5.8 (2026-05-07): Infrastructure stability — Story 41 resolved (Vitest pool: forks → threads; Cox Defender fork-spawn block eliminated; pre-push test gate functional without --no-verify); Stories 45+53 resolved (hook stdin refspec fix + Husky shebang cleanup).
 - v2.5.7 (2026-05-04): Slice 2 — DefenseDiamond lifted into DugoutView body; dugoutFocusMode state machine ('lineup'/'scoring'); ScoreboardRow inning+halfInning indicator; Bug 8 fix (BattingOrderStrip batter source); Bugs 9/10 fix (flex-column 375px layout); Story 46 resolved; + fix-up Story 50 (exit button on ScoreboardRow, persistent across modes); suite 499→516.
 - v2.5.6 (2026-05-03): UX Track Phase 1a — ACCESSIBILITY_V1 promoted to GA (default-on); F1-F7 component a11y fixes; design tokens scaffolding (theme/tokens.js); ESLint pipeline restored; 39 new tests (a11y-fixes ×11, tokens ×27, accessibility.v1 +1); suite 452→499.
 - v2.5.5 (2026-05-02): Slice 1 of combined game view — BattingOrderStrip component added; integrated into DugoutView (entry + active states); currentBatterIndex prop wired from App.jsx. 15 new tests (BattingOrderStrip ×6, DugoutView ×5, ScoreboardRow ×4); D017 resolved; suite 437→452.
