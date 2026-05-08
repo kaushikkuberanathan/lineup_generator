@@ -376,3 +376,10 @@
   - New test file: `DugoutView.viewport.test.jsx` (3 tests — establishes 375px viewport test pattern for the suite)
   - Dashboard: P1 test gaps 6→3, P1 total 9→6, overall total 23→20, age distribution 23→20
   - Suite count: 499 → 516 (Slice 2 +11 net: state machine ×3, ScoreboardRow inning ×3, Bug 8 regression ×2, viewport ×3; Story 50 fix-up +6)
+
+- **v2.8 — May 2026 (v2.5.10 release — Phase 2 primitives + Phase 3 Step 1)**
+  - 5 new primitive test files: `Badge.test.jsx`, `Button.test.jsx`, `Card.test.jsx`, `Stack.test.jsx`, `Text.test.jsx` (+107 tests)
+  - PR #62 (Phase 3 Step 1): `PlayerHandBadge.test.jsx` modified for Badge primitive composition; no net test count change
+  - FEATURE_MAP.md row #28 added (UI primitives — Badge / Button / Card / Stack / Text, ⚠ Partial — primitives covered, 1 consumer migrated)
+  - Suite count: 658 post-v2.5.10 (Phase 2 +107 from primitives; PR #62 no net change; v2.5.8/v2.5.9 deltas not tracked in this dashboard)
+  - Dashboard unchanged — no new debt items opened (consumer-test gap captured in row 28's Debt column, not as a separate item)

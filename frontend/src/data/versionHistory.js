@@ -1,5 +1,18 @@
 ﻿export var VERSION_HISTORY = [
   {
+    version: '2.5.10',
+    date: 'May 2026',
+    headline: 'Stability and performance update',
+    userChanges: [],
+    techNote: 'Under-the-hood stability improvements',
+    internalChanges: [
+      'Phase 2 primitives shipped: Badge, Button, Card, Stack, Text components in frontend/src/components/ui/',
+      '107 new component tests across 5 primitive .test.jsx files (Badge.test.jsx, Button.test.jsx, Card.test.jsx, Stack.test.jsx, Text.test.jsx)',
+      'LockFlow.jsx: removed dead duplicate fontSize:"13px" declaration in lock-confirmation header — second 10px declaration was already winning, no visual change',
+      'PlayerHandBadge.jsx migrated to use Badge primitive (Phase 3 Step 1, PR #62) — first consumer of v2.5.10 primitives, pure refactor with no visual change',
+    ],
+  },
+  {
     version: '2.5.9',
     date: 'May 2026',
     headline: 'Slice 3 — DUGOUT VIEW is now the default Game Day experience',

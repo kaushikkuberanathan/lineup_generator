@@ -511,8 +511,9 @@ Every other session: open `docs/product/DOC_TEST_DEBT.md` — close P0s, promote
 ---
 
 ## Current Version
-**v2.5.9** — May 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/data/versionHistory.js`.
+**v2.5.10** — May 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/data/versionHistory.js`.
 
+- v2.5.10 (2026-05-08): Phase 2 — UI primitives (Badge, Button, Card, Stack, Text) added to frontend/src/components/ui/; +107 component tests; LockFlow.jsx duplicate fontSize cleanup (no visual change); Phase 3 Step 1 — PlayerHandBadge.jsx migrated to Badge primitive (PR #62, first consumer, pure refactor).
 - v2.5.9 (2026-05-07): Slice 3 — COMBINED_GAMEMODE_AND_SCORING flipped default-ON; legacy ScoringMode import + render block + Scoring tab removed; DUGOUT VIEW is now sole game-day launcher; ViewerMode share-link path simplified to DugoutView isViewer=true.
 - v2.5.8 (2026-05-07): Infrastructure stability — Story 41 resolved (Vitest pool: forks → threads; Cox Defender fork-spawn block eliminated; pre-push test gate functional without --no-verify); Stories 45+53 resolved (hook stdin refspec fix + Husky shebang cleanup).
 - v2.5.7 (2026-05-04): Slice 2 — DefenseDiamond lifted into DugoutView body; dugoutFocusMode state machine ('lineup'/'scoring'); ScoreboardRow inning+halfInning indicator; Bug 8 fix (BattingOrderStrip batter source); Bugs 9/10 fix (flex-column 375px layout); Story 46 resolved; + fix-up Story 50 (exit button on ScoreboardRow, persistent across modes); suite 499→516.
