@@ -171,7 +171,7 @@ If any answer is "no": stop. Document the gap in DOC_TEST_DEBT.md, then decide w
 7. Stage **specific files by path** — never `git add -A` (risks picking up unrelated untracked files)
 8. [x] loginLimiter: 15min window, max 5 — applied to POST /magic-link ✓
 9. [ ] Confirm `RESEND_DOMAIN_VERIFIED=true` in Render env vars (only after domain verified)
-10. [ ] Run `npm test` — confirm 516 passed / 1 skipped (as of v2.5.7, May 4, 2026) / 0 failed
+10. [ ] Run `npm test` — confirm 551 passed / 1 skipped (as of v2.5.9, May 7, 2026) / 0 failed
 
 ### VERSION_HISTORY Schema (dual-layer — both required)
 ```js
@@ -301,7 +301,7 @@ Story 1 (April 22, 2026) was the regression that surfaced this — every batter 
 - `MERGE_FIELDS` is defined once as a shared const — do not duplicate at boot hydration and loadTeam hydration
 - `truncateTeamName()` in `formatters.js` handles all team name display in compact contexts (scoreboard, headers, chips). It is word-boundary aware — never bypass it with raw team names. Default cap is 12 chars; use cap=10 for scoreboard contexts where horizontal space is tight on 375px viewports.
 - Home/away semantic is first-class scoring context. Use `selectedGame.home` directly with a dedicated `HomeAwayChip` component — never bury it as metadata inside another element. Away games render with amber accent (`#f5c842`); home games render neutral (`#94a3b8`). Guard: `selectedGame && typeof selectedGame.home === 'boolean'` (excludes practice mode and legacy orphan games without the field).
-- COMBINED_GAMEMODE_AND_SCORING — mutual-exclusion flag gating between legacy ScoringMode and new DugoutView surfaces; three invariants and three enforcement sites; see `docs/SOLUTION_DESIGN.md` § Feature Flag System for full details.
+- COMBINED_GAMEMODE_AND_SCORING — GA default-on as of Slice 3 (v2.5.9). Legacy ScoringMode and its Scoring tab removed. DugoutView is now the sole game-day surface. See `docs/SOLUTION_DESIGN.md` § Feature Flag System for full architectural history.
 - **dugoutFocusMode** (v2.5.7+) — Derived state machine inside DugoutView: `(currentAtBat !== null) ? 'scoring' : 'lineup'`. System-driven, not user-toggled. DefenseDiamond renders in `'lineup'` mode; LiveScoringPanel renders in `'scoring'` mode. Both panels stay mounted; visibility toggled via CSS `display:none` to preserve DefenseDiamond inning-scrub state across at-bat boundaries. See `docs/SOLUTION_DESIGN.md` § dugoutFocusMode state machine for full architectural notes.
 
 ---
@@ -511,8 +511,9 @@ Every other session: open `docs/product/DOC_TEST_DEBT.md` — close P0s, promote
 ---
 
 ## Current Version
-**v2.5.8** — May 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/data/versionHistory.js`.
+**v2.5.9** — May 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/data/versionHistory.js`.
 
+- v2.5.9 (2026-05-07): Slice 3 — COMBINED_GAMEMODE_AND_SCORING flipped default-ON; legacy ScoringMode import + render block + Scoring tab removed; DUGOUT VIEW is now sole game-day launcher; ViewerMode share-link path simplified to DugoutView isViewer=true.
 - v2.5.8 (2026-05-07): Infrastructure stability — Story 41 resolved (Vitest pool: forks → threads; Cox Defender fork-spawn block eliminated; pre-push test gate functional without --no-verify); Stories 45+53 resolved (hook stdin refspec fix + Husky shebang cleanup).
 - v2.5.7 (2026-05-04): Slice 2 — DefenseDiamond lifted into DugoutView body; dugoutFocusMode state machine ('lineup'/'scoring'); ScoreboardRow inning+halfInning indicator; Bug 8 fix (BattingOrderStrip batter source); Bugs 9/10 fix (flex-column 375px layout); Story 46 resolved; + fix-up Story 50 (exit button on ScoreboardRow, persistent across modes); suite 499→516.
 - v2.5.6 (2026-05-03): UX Track Phase 1a — ACCESSIBILITY_V1 promoted to GA (default-on); F1-F7 component a11y fixes; design tokens scaffolding (theme/tokens.js); ESLint pipeline restored; 39 new tests (a11y-fixes ×11, tokens ×27, accessibility.v1 +1); suite 452→499.
@@ -532,8 +533,8 @@ This project runs two parallel tracks. Each has its own roadmap; both promote to
 ### Dugout Track — combined view rollout
 - Tracker: `docs/product/ROADMAP.md` (main project roadmap)
 - Worktree: `lineup-generator/` (this directory)
-- Recent: Slice 0 (v2.5.4), Slice 1 (v2.5.5), Slice 2 (v2.5.7)
-- Next: Slice 3 (flag flip default-ON; legacy ScoringMode deprecation)
+- Recent: Slice 0 (v2.5.4), Slice 1 (v2.5.5), Slice 2 (v2.5.7), Slice 3 (v2.5.9)
+- Next: Slice 4 — ScoringMode component directory deletion + ViewerMode cleanup
 
 ### UX Track — accessibility, design tokens, tooling foundation
 - Tracker: `docs/product/UX_REFACTOR_ROADMAP.md`

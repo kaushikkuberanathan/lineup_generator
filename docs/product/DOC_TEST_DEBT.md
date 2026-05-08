@@ -32,8 +32,8 @@
 | **Risk if unfixed** | Silent regression breaks the #1 Strategic North Star ("share link bulletproof"). A future refactor of `shareCurrentLineup` or `SharedView.jsx` could ship with the link returning stale or incomplete data and we would not catch it pre-deploy. |
 | **Proposed test** | `frontend/src/tests/shareLink.test.js` — build a lineup fixture, call `shareCurrentLineup`, parse the `share_links.payload` JSONB, assert every expected field is present and correctly filtered. Also a DOM test that `SharedView` renders all sections without errors given the payload. |
 | **Opened** | 2026-04-17 |
-| **Age** | 16 days |
-| **Target** | v2.3.4 |
+| **Age** | 20 days |
+| **Target** | v2.6.x |
 
 ### 🔴 P0 — Game Mode Rendering + State
 
@@ -44,7 +44,7 @@
 | **Risk if unfixed** | Silent regression breaks the #2 Strategic North Star ("Game Mode dugout-ready under pressure"). |
 | **Proposed test** | `frontend/src/tests/gameMode.test.js` — render GameModeScreen with fixture lineup, simulate inning advance, simulate QuickSwap tap, assert state transitions and candidate filtering (including absent-player exclusion). |
 | **Opened** | 2026-04-17 |
-| **Age** | 16 days |
+| **Age** | 20 days |
 | **Target** | v2.3.4 |
 
 ### 🟠 P1 — Live Scoring Scorer-Lock Regression

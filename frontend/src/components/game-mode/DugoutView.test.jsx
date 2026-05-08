@@ -214,19 +214,7 @@ describe('dugoutFocusMode state machine', function() {
     expect(strip.getAttribute('data-batter-index')).toBe('3');
   });
 
-  it('Bug 8: BattingOrderStrip reads App-passed currentBatterIndex when COMBINED flag is OFF', function() {
-    // localStorage cleared in beforeEach → combinedFlag = false
-    vi.mocked(useLiveScoring).mockReturnValue(
-      Object.assign(createDefaultScoring(), {
-        gameState: Object.assign({}, createDefaultScoring().gameState, { battingOrderIndex: 3 }),
-      })
-    );
-    render(<DugoutView {...defaultProps} currentBatterIndex={1} />);
-    claimScorer();
-    var strip = screen.getByTestId('batting-order-strip');
-    // flag OFF → reads prop, not gameState.battingOrderIndex
-    expect(strip.getAttribute('data-batter-index')).toBe('1');
-  });
+
 });
 
 // ── Slice 2 fix-up: exit affordance across modes (Story 50) ──────────────────
