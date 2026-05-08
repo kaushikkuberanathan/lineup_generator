@@ -1,8 +1,16 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: May 7, 2026 (v2.5.9 — Slice 3 — DUGOUT VIEW default-on; legacy ScoringMode removed)
+> Last updated: May 8, 2026 (v2.5.10 — Phase 2 UI primitives shipped)
 > MVP launched: March 24, 2026
 
+---
+
+## v2.5.10 — 2026-05-08 (feature/phase-2-primitives) — Phase 2: UI primitives foundation
+No user-visible changes. Foundation for incremental migration of inline-styled components to shared primitives.
+- `frontend/src/components/ui/` — added 5 primitives: `Badge.jsx`, `Button.jsx`, `Card.jsx`, `Stack.jsx`, `Text.jsx`
+- `frontend/src/components/ui/` — added 5 corresponding test files: `Badge.test.jsx`, `Button.test.jsx`, `Card.test.jsx`, `Stack.test.jsx`, `Text.test.jsx` (107 new component tests)
+- `frontend/src/components/GameDay/LockFlow.jsx` — removed dead duplicate `fontSize:"13px"` declaration in lock-confirmation header (second `fontSize:"10px"` was already winning, no visual change)
+- PR #62 (Phase 3 Step 1: PlayerHandBadge.jsx migrated to Badge primitive — first consumer of the new primitives) already shipped in `b2cc6b5` on develop; promoted to main as part of this release.
 ---
 
 ## v2.5.9 — 2026-05-07 (feature/slice-3-flag-flip) — Slice 3: DUGOUT VIEW default-on
