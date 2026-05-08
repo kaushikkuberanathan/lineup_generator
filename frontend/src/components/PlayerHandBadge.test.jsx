@@ -39,23 +39,24 @@ describe('PlayerHandBadge (root) — R1 token characterization', function () {
 
   test('R3.4: badge border-radius is 4px (tokens.radius.xs)', function () {
     render(<PlayerHandBadge hand="R" />);
-    var span = screen.getByText('R');
+    var span = screen.getByText('R').parentElement;
     expect(span.style.borderRadius).toBe('4px');
   });
 
-  // ── WCAG floor — genuine RED before migration ─────────────────────────────
+  // ── WCAG floor — fontSize on inner Text span post-Badge-migration ────────
 
   test('R3.5: badge font-size is 11px (tokens.font.size.xs — WCAG floor)', function () {
     render(<PlayerHandBadge hand="R" />);
     var span = screen.getByText('R');
-    // Current source has 10px — this test is RED before the fix is applied.
-    // After migration to tokens.font.size.xs (11px) this goes GREEN.
+    // Post-Badge-migration: fontSize lives on inner Text span (composed by
+    // Badge). screen.getByText returns the inner span where text resides,
+    // so this assertion targets the correct element without traversal.
     expect(span.style.fontSize).toBe('11px');
   });
 
   test('R3.6: L badge has blue-tinted background (semantic: left-hand identity)', function () {
     render(<PlayerHandBadge hand="L" />);
-    var span = screen.getByText('L');
+    var span = screen.getByText('L').parentElement;
     // #dbeafe = rgb(219, 190, 254)? No: db=219, ea=234, fe=254 → rgb(219, 234, 254)
     // JSDOM normalizes hex; assert rgb equivalent
     expect(span.style.background).toBe('rgb(219, 234, 254)');
@@ -63,7 +64,7 @@ describe('PlayerHandBadge (root) — R1 token characterization', function () {
 
   test('R3.7: R badge has gray background (semantic: right-hand identity)', function () {
     render(<PlayerHandBadge hand="R" />);
-    var span = screen.getByText('R');
+    var span = screen.getByText('R').parentElement;
     // #f3f4f6 = rgb(243, 244, 246)
     expect(span.style.background).toBe('rgb(243, 244, 246)');
   });
