@@ -1,11 +1,11 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: May 7, 2026 (v2.6.0 — Slice 3 — DUGOUT VIEW default-on; legacy ScoringMode removed)
+> Last updated: May 7, 2026 (v2.5.9 — Slice 3 — DUGOUT VIEW default-on; legacy ScoringMode removed)
 > MVP launched: March 24, 2026
 
 ---
 
-## v2.6.0 — 2026-05-07 (feature/slice-3-flag-flip) — Slice 3: DUGOUT VIEW default-on
+## v2.5.9 — 2026-05-07 (feature/slice-3-flag-flip) — Slice 3: DUGOUT VIEW default-on
 
 User-visible: DUGOUT VIEW is now the default game-day experience. Separate Scoring tab retired.
 

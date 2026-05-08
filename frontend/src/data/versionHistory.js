@@ -1,6 +1,6 @@
 ﻿export var VERSION_HISTORY = [
   {
-    version: '2.6.0',
+    version: '2.5.9',
     date: 'May 2026',
     headline: 'Slice 3 — DUGOUT VIEW is now the default Game Day experience',
     userChanges: [
@@ -15,7 +15,7 @@
       'Replaced GAME MODE + conditional DUGOUT VIEW in GAMEDAY_SUBTABS with single DUGOUT VIEW launcher',
       'Simplified viewer share-link paths — always routes to DugoutView isViewer=true (ViewerMode import removed)',
       'Removed combinedGamemodeAndScoringEnabled runtime variable from App.jsx (no longer needed)',
-      'ROADMAP.md: Slice 3 marked resolved v2.6.0; Slice 4 (ScoringMode component deletion) logged in backlog',
+      'ROADMAP.md: Slice 3 marked resolved v2.5.9; Slice 4 (ScoringMode component deletion) logged in backlog',
     ],
   },
   {

@@ -33,8 +33,7 @@
 | **Proposed test** | `frontend/src/tests/shareLink.test.js` — build a lineup fixture, call `shareCurrentLineup`, parse the `share_links.payload` JSONB, assert every expected field is present and correctly filtered. Also a DOM test that `SharedView` renders all sections without errors given the payload. |
 | **Opened** | 2026-04-17 |
 | **Age** | 20 days |
-| **Target** | v2.6.x (deferred — see v2.6.0 unblock below) |
-| **v2.6.0 explicit unblock** | Slice 3 (flag flip) does not touch `shareCurrentLineup`, `SharedView.jsx`, or any share-link payload path. Risk is unchanged by this release. Deferred to v2.6.x with acknowledgement. |
+| **Target** | v2.6.x |
 
 ### 🔴 P0 — Game Mode Rendering + State
 
