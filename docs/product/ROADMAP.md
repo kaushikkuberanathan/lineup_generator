@@ -1755,6 +1755,136 @@ Target: v2.6.x (next tidy-up pass)
 
 **Note:** Do NOT delete `frontend/src/components/ScoringMode/` until a build confirms zero references. Slice 4 is a separate PR.
 
+### Story 55 (P3) — PR merge-target validation
+Status: Open
+Discovered: 2026-05-11 — during v2.5.10 promotion divergence investigation
+Target: TBD
+Symptom: PR #57 was titled "chore: sync main (v2.5.8) into develop" but
+was merged into `main` instead of `develop`. The PR added 452 lines of
+test coverage and a UX_REFACTOR_ROADMAP docs update that landed on main
+rather than develop, contributing to the main/develop divergence that
+caused 9 file conflicts on PR #64.
+Impact: Single-instance silent misrouting. No user impact (content was
+eventually mirrored to develop), but ~45 min of recovery time during
+the v2.5.10 promotion. Future occurrences could drop substantive work
+or create more painful reconciliations.
+Root cause: Hypothesis — PR base/compare dropdown defaulted to wrong
+target; reviewer did not catch the mismatch between title and target.
+Proposed fixes:
+  - (a) GitHub PR template with explicit "Target branch: [develop|main]"
+        field that must be acknowledged
+  - (b) GitHub Action to validate PR title regex against base branch
+        (e.g., titles containing "into develop" must target develop)
+  - (c) Branch protection rule requiring approval from a non-author
+        reviewer for any merge into main
+Recommendation: (b) — highest leverage, automated, low overhead,
+catches exactly this pattern. (c) is good general hygiene independent
+of this story. (a) is weak (humans skip checkboxes).
+
+### Story 56 (P3) — Vite CJS Node API deprecation
+Status: Open
+Discovered: 2026-05-11 — during v2.5.10 Vitest suite run
+Target: TBD (before Vite drops CJS support)
+Symptom: Frontend test run emits two deprecation warnings on every run:
+  1. "The CJS build of Vite's Node API is deprecated"
+  2. "esbuild option was specified by vite:react-babel plugin. This
+      option is deprecated, please use oxc instead."
+Impact: None today (warnings only, tests pass). Future Vite major
+version bump will drop CJS support, at which point the test pipeline
+breaks.
+Root cause: Known — vite.config.js and/or its plugins use CJS-style
+require/exports and pass esbuild options to a plugin that now prefers
+oxc.
+Proposed fixes:
+  - (a) Migrate vite.config.js to ESM (export default) and update
+        plugin options to use oxc instead of esbuild
+  - (b) Pin Vite at current major and defer the migration
+Recommendation: (a) — small one-off migration, no behavior change,
+removes a known future blocker. Can be done as a chore PR alongside
+or independent of any feature work.
+
+### Story 57 (P3) — PR conflict-resolution playbook in CLAUDE.md
+Status: Open
+Discovered: 2026-05-11 — during v2.5.10 promotion divergence recovery
+Target: TBD (docs hygiene)
+Symptom: CLAUDE.md does not document the conflict-resolution decision
+tree for handling divergence between long-lived branches
+(develop ↔ main). The v2.5.10 promotion process invented this on the
+fly and lost ~45 min recovering from a wrong choice (sync-branch +
+squash-merge erased the merge-commit ancestry needed for the
+destination PR to see resolution).
+Impact: Procedural — every divergence recovery rediscovers the same
+trade-offs from scratch.
+Root cause: Known — undocumented procedure.
+Proposed fixes:
+  - (a) Add a section to CLAUDE.md titled "Conflict resolution when
+        develop ↔ main diverge" with this decision tree:
+        * If conflicts are mechanical (one side wins everywhere):
+          resolve directly on the destination PR via GitHub web editor.
+          Creates a real merge commit, preserves ancestry.
+        * If conflict resolution needs substantive review/audit: cut a
+          sync branch off destination, merge source into it, PR
+          sync-branch → destination, USE "Create a merge commit" option
+          (NOT squash) to preserve ancestry.
+        * Avoid: sync-branch + squash-merge (erases ancestry,
+          destination PR re-conflicts).
+        * Avoid: direct push to develop/main with ALLOW_DIRECT_PUSH
+          (bypasses safety gates that exist for exactly this kind of
+          pressure).
+Recommendation: (a) — write it once, save the recovery time next time.
+
+### Story 58 (P3) — v2.5.9 release-note wording correction
+Status: Open
+Discovered: 2026-05-11 — during v2.5.10 rollback safety audit
+Target: TBD (docs hygiene; can be batched with any v2.5.10+ docs sweep)
+Symptom: v2.5.9 commit message (PR #60) and the v2.5.9 entry in
+versionHistory.js claim "legacy ScoringMode removed." Diagnostic
+confirmed frontend/src/components/ScoringMode/index.jsx still exists
+on develop and main — only the default flag and routing were changed.
+Wording overstates the change.
+Impact: Misleading audit trail. Future readers (humans or AI assistants
+with stale context) may believe ScoringMode files are physically
+deleted when they are not. Affects rollback planning conversations and
+search-grep mental models.
+Root cause: Known — wording in v2.5.9 commit and release notes was
+imprecise.
+Proposed fixes:
+  - (a) Correct the VERSION_HISTORY entry for v2.5.9 to read:
+        "DugoutView default-on as of Slice 3. ScoringMode routing
+        removed; ScoringMode/index.jsx file persists for
+        explicit-flag-override fallback."
+  - (b) Leave it as-is; document the correction in a separate
+        "errata" section
+Recommendation: (a) — VERSION_HISTORY is authoritative documentation
+and should be precise. Cost is a single entry edit.
+
+### Story 59 (P3) — Unused `tokens` import in PlayerHandBadge.jsx
+Status: Open
+Discovered: 2026-05-12 — Phase 3 Step 2 prep diagnostic
+Target: v2.5.11 (batched into Phase 3 Step 2 PR)
+Symptom: frontend/src/components/PlayerHandBadge.jsx imports `tokens`
+from `../theme/tokens` on line 3. The import is unreferenced in the
+file body. Auto-merge artifact from PR #64's web-editor conflict
+resolution: main's `tokens` import auto-merged alongside develop's
+Phase 3 Step 1 implementation rewrite, which uses Badge primitive and
+no longer references tokens directly.
+Impact: Lint debt only — tree-shaking removes the import from the
+bundle. ESLint no-unused-vars would flag this on a strict run; current
+CI passes, so lint is not currently gated at --max-warnings 0 (worth
+a separate audit, not in scope of this story).
+Root cause: Known — non-conflicting hunks from main side auto-merged
+into the web-editor resolution; the resolver only saw and resolved the
+conflicting implementation hunk.
+Proposed fixes:
+  - (a) Remove the unused `import { tokens } from '../theme/tokens';`
+        line. Batch into Phase 3 Step 2 PR alongside Home/index.jsx
+        migration; call out the cleanup explicitly in the PR body.
+  - (b) Cut a separate `chore/cleanup-unused-tokens-import` branch for
+        a focused single-line cleanup.
+Recommendation: (a) — single-line cleanup does not deserve its own PR
+ceremony, and the Phase 3 Step 2 PR is contextually adjacent (same
+components directory).
+
 ---
 
 ### Automated Score Reporting (County Integration)
