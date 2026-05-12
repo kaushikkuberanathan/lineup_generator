@@ -1,7 +1,26 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: May 7, 2026 (v2.5.8 — Story 41 resolved; pool:threads fix; hook + docs patches to main)
+> Last updated: May 8, 2026 (v2.5.10 — Phase 2 UI primitives shipped)
 > MVP launched: March 24, 2026
+
+---
+
+## v2.5.10 — 2026-05-08 (feature/phase-2-primitives) — Phase 2: UI primitives foundation
+No user-visible changes. Foundation for incremental migration of inline-styled components to shared primitives.
+- `frontend/src/components/ui/` — added 5 primitives: `Badge.jsx`, `Button.jsx`, `Card.jsx`, `Stack.jsx`, `Text.jsx`
+- `frontend/src/components/ui/` — added 5 corresponding test files: `Badge.test.jsx`, `Button.test.jsx`, `Card.test.jsx`, `Stack.test.jsx`, `Text.test.jsx` (107 new component tests)
+- `frontend/src/components/GameDay/LockFlow.jsx` — removed dead duplicate `fontSize:"13px"` declaration in lock-confirmation header (second `fontSize:"10px"` was already winning, no visual change)
+- PR #62 (Phase 3 Step 1: PlayerHandBadge.jsx migrated to Badge primitive — first consumer of the new primitives) already shipped in `b2cc6b5` on develop; promoted to main as part of this release.
+---
+
+## v2.5.9 — 2026-05-07 (feature/slice-3-flag-flip) — Slice 3: DUGOUT VIEW default-on
+
+User-visible: DUGOUT VIEW is now the default game-day experience. Separate Scoring tab retired.
+
+- `featureFlags.js` — `COMBINED_GAMEMODE_AND_SCORING: false` → `true` (GA default-on)
+- `App.jsx` — removed `import ScoringMode`; removed `import { ViewerMode }`; removed `combinedGamemodeAndScoringEnabled` runtime var; removed Scoring tab from `PRIMARY_TABS`; replaced GAME MODE + conditional DUGOUT VIEW in `GAMEDAY_SUBTABS` with single DUGOUT VIEW launcher; removed ScoringMode render block; simplified viewer share-link paths to always route to `DugoutView isViewer={true}`
+- Story 49 (flag key normalization) deferred — `combinedGamemodeAndScoringEnabled` runtime var removed, so the colon vs. underscore inconsistency is moot for this flag; other flags not touched
+- Slice 4 logged below: ScoringMode component directory + ViewerMode component deletion
 
 ---
 
@@ -1713,6 +1732,28 @@ Target: v2.5.7 ✓
 **Fix applied:** Hook now reads stdin per Git's pre-push protocol (`<local-ref> <local-sha> <remote-ref> <remote-sha>`). Only blocks when `remote_ref` is exactly `refs/heads/develop` or `refs/heads/main`. Deletions (all-zeros SHA) always pass through. Also removed two Husky v9-deprecated shebang lines (Story 45 item 1).
 
 **Relationship to Story 45:** Resolves Story 45 items 1 (deprecated shebang) and 3 (--delete false positive, same root cause). Story 45 fully resolved.
+
+---
+
+### Story 54 (P3) — Slice 4: ScoringMode + ViewerMode component deletion
+Status: Open
+Discovered: 2026-05-07 (post-Slice 3 dead-code audit)
+Target: v2.6.x (next tidy-up pass)
+
+**Context:** Slice 3 removed all import and render sites for `ScoringMode` and `ViewerMode` from `App.jsx`. The component directories still exist on disk:
+- `frontend/src/components/ScoringMode/` — full legacy scoring surface (no longer imported)
+- `frontend/src/components/Viewer/ViewerMode.jsx` — legacy viewer component (no longer imported)
+
+**Work:**
+1. Delete `frontend/src/components/ScoringMode/` directory and all files
+2. Delete `frontend/src/components/Viewer/ViewerMode.jsx`
+3. Check whether `frontend/src/components/Viewer/` directory has other files; delete if empty
+4. Run `npm run build` and `npm test` — confirm no broken imports
+5. Update FEATURE_MAP.md — remove ScoringMode row (dead component)
+
+**Risk:** Low. No import sites remain after Slice 3. Build will catch any missed reference.
+
+**Note:** Do NOT delete `frontend/src/components/ScoringMode/` until a build confirms zero references. Slice 4 is a separate PR.
 
 ---
 

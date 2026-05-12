@@ -2,7 +2,7 @@
 
 > Authoritative mapping of every shipped feature to its documentation and test coverage.
 > Update this file whenever a feature ships, changes behavior, or gains new tests.
-> Owner: KK | Last updated: 2026-05-04 (v2.5.7 — row #25 D018/D019 resolved, DugoutView.viewport.test.jsx added)
+> Owner: KK | Last updated: 2026-05-08 (v2.5.10 — Phase 2 + Phase 3 Step 1 shipped: row #28 added)
 
 ---
 
@@ -17,7 +17,7 @@
 
 ---
 
-## Feature Registry (27 features)
+## Feature Registry (28 features)
 
 | # | Feature | Status | Primary Doc | Doc Status | Test File(s) | Test Status | Debt |
 |---|---------|--------|-------------|------------|--------------|-------------|------|
@@ -28,13 +28,14 @@
 | 5 | **Game result logging + batting stats** | MVP | `ROADMAP.md` § v2.1.x entries | ⚠ Stale | None | ❌ None | D016 |
 | 6 | **Walk-up songs per player** | MVP | `SOLUTION_DESIGN.md` § Walk-up Songs Architecture; `CHARTER.md` § Scope | ✅ Current | None | ❌ None | D004 |
 | 7 | **Out Tonight attendance tracking** | MVP | `CLAUDE.md` (as "Out Tonight"); `ROADMAP.md` § v2.2.30 | ✅ Current | `engine.v2.test.js` Group 6, `lineupEngineV2-unit.test.js` Group X, `bench-equity.test.js` absent-player | ⚠ Partial | D008 |
-| 8 | **Game Mode (full-screen dugout view)** | MVP | `SOLUTION_DESIGN.md` § Navigation Structure | ✅ Current | None | ❌ None | D006; Will be consolidated into Combined Game View (#25) when flag flips ON. |
+| 8 | **Game Mode (full-screen dugout view)** | Removed | `SOLUTION_DESIGN.md` § Navigation Structure | ⚠ Stale | None | ❌ None | D006; ScoringMode render block + Scoring tab removed in Slice 3 (v2.5.9). Superseded by #25. |
 | 9 | **Share links (8-char Supabase-backed)** | MVP | `SOLUTION_DESIGN.md` § RLS Policy Map; `CLAUDE.md` Auth Principle | ✅ Current | None | ❌ None | D005 |
 | 10 | **PDF export + print view** | MVP | `ROADMAP.md` § v1.x | ⚠ Stale | None | ❌ None | D011 |
-| 11 | **Live scoring (scorer lock, inning entry, game finalization)** | Pilot | `ROADMAP.md` § v2.2.29–v2.3.3; `PERSONAS.md` § Scorekeeper; `MASTER_DEV_REFERENCE.md` § Game Object Shape | ✅ Current | `finalizeSchedule.test.js`, `undoHalfInning.test.js`, `newGameTemplate.test.js`, `practiceModeIsolation.test.js`, `realtimeRaceGuard.test.js`, `runnerPlacement.test.js` | ⚠ Partial | D001; Will be consolidated into Combined Game View (#25) when flag flips ON. |
-| 25 | **Combined Game View (DugoutView — flag-gated unified scoring surface)** | Phase 3 | `docs/SOLUTION_DESIGN.md` § Feature Flag System | ✅ Current | `BattingOrderStrip.test.jsx` (6), `DugoutView.test.jsx` (5), `ScoreboardRow.test.jsx` (4), `DugoutView.viewport.test.jsx` (3) | ⚠ Partial | mutual-exclusion invariant untested |
+| 11 | **Live scoring (scorer lock, inning entry, game finalization)** | Pilot | `ROADMAP.md` § v2.2.29–v2.3.3; `PERSONAS.md` § Scorekeeper; `MASTER_DEV_REFERENCE.md` § Game Object Shape | ✅ Current | `finalizeSchedule.test.js`, `undoHalfInning.test.js`, `newGameTemplate.test.js`, `practiceModeIsolation.test.js`, `realtimeRaceGuard.test.js`, `runnerPlacement.test.js` | ⚠ Partial | D001; Scoring now surfaces through Combined Game View (#25) only. ScoringMode component still on disk (Slice 4 pending). |
+| 25 | **Combined Game View (DugoutView — unified scoring surface)** | MVP | `docs/SOLUTION_DESIGN.md` § Feature Flag System | ✅ Current | `BattingOrderStrip.test.jsx` (6), `DugoutView.test.jsx` (5), `ScoreboardRow.test.jsx` (4), `DugoutView.viewport.test.jsx` (3) | ⚠ Partial | GA default-on as of Slice 3 (v2.5.9); mutual-exclusion invariant untested (legacy ScoringMode removed) |
 | 26 | **ACCESSIBILITY_V1 — Game Mode a11y enhancements** | MVP | `CLAUDE.md` § Feature Flags; `docs/product/A11Y_AUDIT.md`; `SOLUTION_DESIGN.md` § Feature Flag System | ✅ Current | `a11y-component-fixes.test.jsx` (11), `accessibility.v1.test.js` (23) | ⚠ Partial | Game Mode font/touch/contrast untested at component level; F1-F7 fixes covered |
 | 27 | **Design Tokens — semantic token foundation** | Phase 2 | `docs/product/DESIGN_AUDIT.md`; `SOLUTION_DESIGN.md` § Design Tokens Architecture | ✅ Current | `theme.tokens.test.js` (34) | ⚠ Partial | Shape contract tested; no consumer tests (zero consumers in Phase 1a) |
+| 28 | **UI primitives — Badge / Button / Card / Stack / Text** | Phase 2 | `ROADMAP.md` § v2.5.10; `CLAUDE.md` § UI Primitives | ✅ Current | `Badge.test.jsx`, `Button.test.jsx`, `Card.test.jsx`, `Stack.test.jsx`, `Text.test.jsx` (107 total) | ⚠ Partial | Primitives covered in isolation; 1 consumer migrated as of v2.5.10 (PlayerHandBadge via PR #62); more queued for Phase 3 |
 | 12 | **Practice Mode** | Pilot | `CLAUDE.md` § Live Scoring Architecture; `ROADMAP.md` § v2.3.3 | ✅ Current | `practiceModeIsolation.test.js` | ✅ Yes | — |
 | 13 | **Runner Placement on Diamond** | Pilot | `CLAUDE.md` § Roster identity; `ROADMAP.md` § v2.3.3 | ✅ Current | `runnerPlacement.test.js` | ✅ Yes | — |
 | 14 | **Opponent Half Tracking** | Pilot | `CLAUDE.md` § Live Scoring Architecture; `ROADMAP.md` § v2.3.2–v2.5.0 | ✅ Current | `liveStateMerge.test.js` (opp integration) | ⚠ Partial | — |
