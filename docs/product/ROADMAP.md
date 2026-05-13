@@ -952,6 +952,8 @@ Game Mode polish release covering three themes:
 ---
 
 ### Theme System (Phase 3 — Post-Component Refactor)
+> Note: this "Phase 3" is distinct from the **UX Refactor track's Phase 3** (call-site replacement, active — see `docs/product/UX_REFACTOR_ROADMAP.md`). Naming collision flagged for future doc disambiguation.
+
 **Recommended approach:** Design tokens + ThemeContext + localStorage persistence
 **Why deferred:** App.jsx is a 5,000+ line monolith with hundreds of hardcoded hex colors. A proper theme system requires finding and replacing every hardcoded color — a 2-3 day refactor with high regression risk. Best done alongside the planned App.jsx component split.
 
@@ -1877,7 +1879,7 @@ Recommendation: (a) — VERSION_HISTORY is authoritative documentation
 and should be precise. Cost is a single entry edit.
 
 ### Story 59 (P3) — Unused `tokens` import in PlayerHandBadge.jsx
-Status: Open
+Status: Resolved — fix path (a) shipped via PR #68 (squash `66a4586` on develop, 2026-05-13)
 Discovered: 2026-05-12 — Phase 3 Step 2 prep diagnostic
 Target: v2.5.11 (batched into Phase 3 Step 2 PR)
 Symptom: frontend/src/components/PlayerHandBadge.jsx imports `tokens`
@@ -1902,6 +1904,40 @@ Proposed fixes:
 Recommendation: (a) — single-line cleanup does not deserve its own PR
 ceremony, and the Phase 3 Step 2 PR is contextually adjacent (same
 components directory).
+
+### Story 60 (P3) — Token coverage gaps surfaced in EmptyState migration
+Status: Open
+Discovered: 2026-05-13 — Phase 3 Step 2 PR #68 EmptyState migration
+Target: future R-track patch or theme-extension story
+Symptom: EmptyState.jsx title styling uses raw passthrough values
+through `Text` primitive's `|| size` / `|| color` fallback because
+two design values lack token equivalents:
+  - `15px` font size — between `font.size.sm` (12px) and
+    `font.size.md` (14px). Used in EmptyState title. Drift.
+  - `#374151` (gray-700) — not in `color.text.*` palette. Closest
+    existing token is `text.primary` (`#0F1F3D`, alias of brand
+    navy, would change appearance). Used in EmptyState title.
+    Drift.
+Impact: Token system has known coverage holes; consumer code uses
+raw values via primitives' passthrough mechanism. Acceptable for
+v2.5.x but inconsistent with the "tokens are the source of truth"
+direction. Future Phase 3 migrations may hit the same gap.
+Root cause: Known — original component used these exact values; the
+token set was derived from broader patterns and didn't capture them.
+Proposed fixes:
+  - (a) Add tokens for both values: `font.size.smd` (or similar) = 15px;
+        `color.text.midDark` (or similar) = `#374151`. Audit other
+        components for callers of these raw values; migrate EmptyState
+        title's raw passthroughs to token references.
+  - (b) Normalize EmptyState title to nearest existing tokens
+        (downsize to `font.size.sm` (12px); recolor to
+        `text.secondary` or similar). Acceptable visual drift, no
+        token additions.
+  - (c) Defer until Theme System Phase 3 — multi-theme support will
+        require comprehensive color token audit anyway.
+Recommendation: (a) — most precise; preserves current visual; one
+focused R-track patch. Alternatively defer to (c) if Theme System
+Phase 3 is on the near horizon.
 
 ---
 

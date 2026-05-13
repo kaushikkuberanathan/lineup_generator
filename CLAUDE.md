@@ -538,11 +538,11 @@ This project runs two parallel tracks. Each has its own roadmap; both promote to
 - Recent: Slice 0 (v2.5.4), Slice 1 (v2.5.5), Slice 2 (v2.5.7), Slice 3 (v2.5.9), Slice 4 (v2.5.11 — partial: legacy root + ViewerMode removed; ScoringMode/ directory preserved for 7 live children imported by DugoutView)
 - Next: Optional follow-up — relocate live ScoringMode children into `components/game-mode/scoring/` then collapse the ScoringMode/ directory. Separate refactor PR; not gated on any v2.6.0 work.
 
-### UX Track — accessibility, design tokens, tooling foundation
+### UX Track — accessibility, design tokens, primitives, call-site refactor
 - Tracker: `docs/product/UX_REFACTOR_ROADMAP.md`
 - Worktree: `lineup-generator-ux/` (separate working directory)
-- Recent: Phase 1a (v2.5.6 — F1-F7 + ACCESSIBILITY_V1 GA + design tokens + ESLint)
-- Next: Phase 1c — shadow tokens (in progress on feature/phase-1c-shadow-tokens)
+- Recent: Phase 1a–1c + R1 Roster Polish (v2.5.6) · Phase 2 UI Primitives + Phase 3 Step 1 PlayerHandBadge → Badge (v2.5.10, PRs #61–#63) · Phase 3 Step 2 EmptyState → Stack/Text/Button + Story 59 cleanup (PR #68 on develop, pending next promotion)
+- Next: Phase 3 Step 3+ — additional call-site migrations (recommended start: `Support/FAQSection` and `Support/LegalSection`)
 
 ### Cross-track discipline
 - At session start on either track, read this section + `git log` since last session

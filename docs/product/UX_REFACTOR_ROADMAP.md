@@ -4,7 +4,7 @@
 **Worktree:** `C:\Users\KKUBERANA1\Documents\lineup-generator-ux`
 **Owner:** KK (kaushik.kuberanathan@gmail.com)
 **Created:** 2026-05-01
-**Status:** Phase 1 complete (shipped v2.5.6). R1 Roster Polish complete (shipped develop `930c9b4`, PR #55). Phase 2 UI Primitives next.
+**Status:** Phases 1.0/1a/1b/1c shipped v2.5.6. R1 Roster Polish shipped `930c9b4` (PR #55). Phase 2 UI Primitives shipped v2.5.10 (PR #61 + release #63). Phase 3 Step 1 PlayerHandBadge → Badge shipped v2.5.10 (PR #62). Phase 3 Step 2 EmptyState → Stack/Text/Button + Story 59 cleanup shipped develop @ `66a4586` (PR #68, pending next promotion). Phase 3 Step 3+ active next.
 
 > Every future UX session on this branch reads this document first.
 > It is the single source of truth for context, sequencing, scope, gate
@@ -303,6 +303,9 @@ stopped. Pick up from the last completed step.
 | 1b — ESLint pipeline restoration | shipped in v2.5.6 (`315a9b1` on develop, `2cd4b3b` squash on main, PR #45) | `frontend/eslint.config.js` (or `.eslintrc.cjs`) · `docs/product/LINT_BASELINE.md` · in-scope findings fixed in `theme/*`, `Shared/*`, `Support/*` |
 | 1c — Shadow tokens | shipped in v2.5.6 (`315a9b1` on develop, `2cd4b3b` squash on main, PR #45) | `shadow.sm/md/lg` tokens added to `tokens.js` + barrel · test coverage in `theme.tokens.test.js` · `DESIGN_AUDIT.md §6` addendum |
 | R1 — Roster Polish | `930c9b4` on develop, PR #55 | Token migration: `EmptyState` (7 tokens) · `BattingHandSelector` (4 tokens) · `PlayerHandBadge` (2 tokens, 10px→11px WCAG lift) · `ViewerMode` (15 tokens, 10px→11px WCAG lift POS_LABELS) · 36 new characterization tests · suite 516→552 · open design decision: BattingHandSelector active green `#16a34a` has no exact token (nearest: `status.success` `#27AE60` would change appearance — deferred) |
+| Phase 2 — UI Primitives | shipped in v2.5.10, PR #61 (primitives) + PR #63 (release) | `frontend/src/components/ui/Badge.jsx` (30 lines) · `Button.jsx` (91) · `Card.jsx` (53) · `Stack.jsx` (65) · `Text.jsx` (45) · colocated `*.test.jsx` for each · 107 new tests · suite ~552→~659 · primitives consume design tokens directly and accept raw passthroughs (`\|\| size`, `\|\| color`) for off-token values |
+| Phase 3 Step 1 — PlayerHandBadge → Badge | shipped in v2.5.10, PR #62 | `frontend/src/components/PlayerHandBadge.jsx` migrated from inline styling to `<Badge variant={hand}>` consumer · `PlayerHandBadge.test.jsx` updated for new DOM shape · validates Phase 2 Badge primitive contract |
+| Phase 3 Step 2 — EmptyState → Stack/Text/Button + Story 59 | PR #68, squash `66a4586` on develop (2026-05-13, pending next promotion) | `frontend/src/components/Home/EmptyState.jsx` migrated to consume `<Stack>` + `<Text>` + `<Button>` primitives · `EmptyState.test.jsx` R1.5 query updated to traverse Button's inner Text span · `PlayerHandBadge.jsx` dead `tokens` import removed (closes Story 59) · validates Stack/Text/Button primitive contract · 3 files, 24 ins / 15 del · token coverage gaps surfaced (15px font size + `#374151` text color — see Story 60) |
 
 **Deferred from Phase 1.0:**
 - Shadow tokens (`shadow.sm/md/lg`) — 16 distinct box-shadow values found,
@@ -343,15 +346,47 @@ stopped. Pick up from the last completed step.
 
 ---
 
-### Phase 2 — UI Primitives (active next)
+### Phase 2 — UI Primitives
 
-**Status:** ⏭️ Next. Cut `feature/phase-2-primitives` from develop when ready to begin.
+**Status:** ✅ COMPLETE — shipped in v2.5.10, PR #61 (primitives) + PR #63 (release). See §8 Done-So-Far Ledger.
 
-**Goals (per §2 Phase Map):** Introduce reusable UI primitives — Card, Button, Text, Badge, Stack — consuming v2.5.6 design tokens directly. Primitives become the substrate for Phase 3 call-site replacement.
+**Shipped substrate:** `components/ui/Badge.jsx`, `Button.jsx`, `Card.jsx`, `Stack.jsx`, `Text.jsx` (plus pre-existing `Toast.jsx` from v2.5.2). Each colocated with `*.test.jsx`. 107 new tests. Primitives consume design tokens directly and accept raw passthroughs (`|| size`, `|| color`) for off-token values.
 
-**Working assumption:** `Text` primitive ships first (smallest scope, highest leverage — every other primitive consumes it; also unblocks deferred `LockFlow.jsx:130` dup-fontSize cleanup). Order TBD at session start.
+---
 
-**Version target:** Next minor after Phase 2 merges. Cascade for Phase 3–6 will re-evaluate at that point.
+### Phase 3 Step 1 — PlayerHandBadge → Badge primitive
+
+**Status:** ✅ COMPLETE — shipped in v2.5.10, PR #62. See §8 Done-So-Far Ledger.
+
+---
+
+### Phase 3 Step 2 — EmptyState → Stack/Text/Button + Story 59 cleanup
+
+**Status:** ✅ COMPLETE — PR #68, squashed as `66a4586` on develop on 2026-05-13. Pending next develop→main promotion. See §8 Done-So-Far Ledger.
+
+**Token coverage gaps surfaced** (raw passthroughs used in EmptyState title; filed as Story 60 in main ROADMAP.md for future R-track patch):
+- `15px` font size — between `font.size.sm` (12px) and `font.size.md` (14px)
+- `#374151` text color — not in `color.text.*` palette
+
+---
+
+### Phase 3 Step 3+ — additional call-site migrations (active next)
+
+**Status:** ⏭️ Next. Cut `feature/phase-3-step-3-<target-component>` from develop when ready to begin.
+
+**Goals:** Continue Phase 3 consumer migration of root-level inline-styled components onto `components/ui/` primitives + tokens. Each step is a single-component migration with RED → GREEN test discipline, similar to Step 1 (Badge consumer) and Step 2 (Stack/Text/Button consumer).
+
+**Council-recommended starting targets:**
+- `Support/FAQSection.jsx` — heavy `Text` usage likely; non-game-day-critical
+- `Support/LegalSection.jsx` — heavy `Text` usage likely; non-game-day-critical
+
+**Subsequent candidate pool:** `BattingOrderStrip/`, `GameDay/DefenseDiamond.jsx`, `FairnessCheck.jsx`, `LockFlow.jsx`, `NowBattingStrip.jsx`, `Shared/MaintenanceScreen.jsx`, `OfflineIndicator.jsx`, `ValidationBanner.jsx`. `GameDay/ParentView.jsx` needs recon (no Phase 1 audit touch on record).
+
+**Pre-Step-3 hygiene:** `Shared/PlayerHandBadge.jsx` filename collision with root `components/PlayerHandBadge.jsx` (migrated in Phase 3 Step 1) — investigate whether duplicate, stale, or distinct before any work touches PlayerHandBadge-adjacent components.
+
+**Locked files reminder (per §3):** App.jsx, migrations.js, formatters.js, flagBootstrap.js, `components/game-mode/*`, `components/ScoringMode/*`, both `package.json`, CLAUDE.md. Phase 3 targets must avoid these.
+
+**Version target:** v2.5.12 or whatever the next release-prep PR aggregates pending develop work.
 
 ---
 
