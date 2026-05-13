@@ -1,7 +1,42 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: May 8, 2026 (v2.5.10 — Phase 2 UI primitives shipped)
+> Last updated: May 13, 2026 (v2.5.11 — multi-PR release: Slice 4 cleanup + UX Phase 3 Step 2 + docs catchup)
 > MVP launched: March 24, 2026
+
+---
+
+## v2.5.11 — 2026-05-13 — Slice 4 cleanup + Phase 3 Step 2 + docs catchup
+
+No user-visible changes. Three PRs aggregated under v2.5.11 banner — internal foundation work.
+
+### Slice 4 dead-code cleanup (PR #67, Story 54 partial)
+
+- Deleted: `frontend/src/components/ScoringMode/index.jsx` (legacy root component — last consumer removed in v2.5.9 Slice 3)
+- Deleted: `frontend/src/components/ScoringMode/README.md`
+- Deleted: `frontend/src/components/Viewer/ViewerMode.jsx` (only consumer was its colocated test; share-link path moved to `DugoutView isViewer={true}` in Slice 3)
+- Deleted: `frontend/src/components/Viewer/ViewerMode.test.jsx`
+- `frontend/src/components/Viewer/` directory removed (became empty after the two file deletions)
+- `frontend/src/components/ScoringMode/` directory **preserved** — still holds 7 live child components that `game-mode/DugoutView.jsx` imports directly (`ScoringModeEntry`, `LiveScoringPanel`, `RestoreScoreModal`) plus their transitive imports (`FinishGameModal`, `GameModeGearMenu`, `LiveScoreViewer`, `RunnerConflictModal`). Original Story 54 plan called for full directory deletion; recon showed that would break the build because DugoutView depends on those children. Restructuring those children into `components/game-mode/scoring/` is a separate refactor PR.
+
+### UX Phase 3 Step 2 — EmptyState → primitives (PR #68)
+
+- `frontend/src/components/Home/EmptyState.jsx` migrated to consume Phase 2 UI primitives — outer flex → `<Stack>`, subtitle → `<Text>`, title → `<Text>`, button → `<Button variant="secondary">`. Removed direct `tokens` import (primitives consume tokens internally).
+- `EmptyState.test.jsx` R1.5 query updated for new DOM shape (`button > span` traversal post-Button-migration); 8 tests passing.
+- Story 59 closed: removed unused `tokens` import from `frontend/src/components/PlayerHandBadge.jsx` — auto-merge artifact from PR #64's web-editor conflict resolution.
+- Token coverage gaps surfaced in EmptyState title styling (15px font size + #374151 text color used via raw passthroughs) — filed as Story 60 for future R-track patch.
+- Validates Phase 2 primitive contract in second consumer (after Phase 3 Step 1's PlayerHandBadge → Badge in v2.5.10).
+
+### UX track documentation catchup (PR #69)
+
+- `docs/product/UX_REFACTOR_ROADMAP.md` Status header + §8 Done-So-Far Ledger + §9 Active Backlog updated to reflect Phase 2 + Phase 3 Step 1 + Phase 3 Step 2 ship status (previously 3 phases stale).
+- `CLAUDE.md` Active Tracks → UX entry refreshed.
+- `docs/product/ROADMAP.md` Story 59 marked Resolved; Story 60 (token coverage gaps) filed; Theme System Phase 3 header disambiguated from UX Refactor track's Phase 3 via inline blockquote note.
+
+### Release mechanics
+
+- Build: `npm run build` clean (520 modules transformed, same as Slice 4 baseline; PR #68 + #69 added no new modules).
+- Tests: 644 passing + 1 skipped on develop @ `2b66710` (suite shifted from 658 post-v2.5.10 due to Slice 4's ViewerMode.test.jsx deletion; PR #68 + #69 net 0 test count change). 3 worker-spawn timeouts during local full-suite runs on Windows are the documented Known Bug #7 (Windows Vitest cold-start cascade — environmental, not code); CI on Linux confirms full GREEN.
+- Version bump path: 2.5.10 → 2.5.11 (patch — internal foundation work, not a milestone; v2.6.0 reserved for share/print fix + snack_duty drop + other P0s).
 
 ---
 
@@ -936,6 +971,8 @@ Game Mode polish release covering three themes:
 ---
 
 ### Theme System (Phase 3 — Post-Component Refactor)
+> Note: this "Phase 3" is distinct from the **UX Refactor track's Phase 3** (call-site replacement, active — see `docs/product/UX_REFACTOR_ROADMAP.md`). Naming collision flagged for future doc disambiguation.
+
 **Recommended approach:** Design tokens + ThemeContext + localStorage persistence
 **Why deferred:** App.jsx is a 5,000+ line monolith with hundreds of hardcoded hex colors. A proper theme system requires finding and replacing every hardcoded color — a 2-3 day refactor with high regression risk. Best done alongside the planned App.jsx component split.
 
@@ -1736,24 +1773,190 @@ Target: v2.5.7 ✓
 ---
 
 ### Story 54 (P3) — Slice 4: ScoringMode + ViewerMode component deletion
-Status: Open
+Status: **Resolved (partial) in v2.5.11** — see release entry at top of file
 Discovered: 2026-05-07 (post-Slice 3 dead-code audit)
-Target: v2.6.x (next tidy-up pass)
+Shipped: 2026-05-13 (PR for feature/story-54-slice-4-cleanup)
 
-**Context:** Slice 3 removed all import and render sites for `ScoringMode` and `ViewerMode` from `App.jsx`. The component directories still exist on disk:
-- `frontend/src/components/ScoringMode/` — full legacy scoring surface (no longer imported)
-- `frontend/src/components/Viewer/ViewerMode.jsx` — legacy viewer component (no longer imported)
+**What was actually deleted:**
+- `frontend/src/components/ScoringMode/index.jsx` (legacy root)
+- `frontend/src/components/ScoringMode/README.md`
+- `frontend/src/components/Viewer/ViewerMode.jsx`
+- `frontend/src/components/Viewer/ViewerMode.test.jsx`
+- `frontend/src/components/Viewer/` directory (became empty)
 
-**Work:**
-1. Delete `frontend/src/components/ScoringMode/` directory and all files
-2. Delete `frontend/src/components/Viewer/ViewerMode.jsx`
-3. Check whether `frontend/src/components/Viewer/` directory has other files; delete if empty
-4. Run `npm run build` and `npm test` — confirm no broken imports
-5. Update FEATURE_MAP.md — remove ScoringMode row (dead component)
+**What was NOT deleted, and why:**
+- `frontend/src/components/ScoringMode/` directory remains because `game-mode/DugoutView.jsx` imports `ScoringModeEntry`, `LiveScoringPanel`, and `RestoreScoreModal` directly from it (lines 17–19). These three plus their transitive imports (`FinishGameModal`, `GameModeGearMenu`, `LiveScoreViewer`, `RunnerConflictModal`) are the live game-day surface. The original Story 54 framing — "delete the directory" — was based on the assumption that the whole directory was dead. Recon proved it half-live.
 
-**Risk:** Low. No import sites remain after Slice 3. Build will catch any missed reference.
+**Risk realization:** Original Story 54 risk was assessed "Low — no import sites remain". That assessment was wrong. Slice 3 only removed the App.jsx-level imports; DugoutView's deeper imports into ScoringMode/ child components survived Slice 3 unaltered. A clean directory deletion would have broken the build immediately on `DugoutView.jsx:17`.
 
-**Note:** Do NOT delete `frontend/src/components/ScoringMode/` until a build confirms zero references. Slice 4 is a separate PR.
+**Follow-up (optional, not blocking anything):**
+Move the 7 live ScoringMode children into `components/game-mode/scoring/`, update DugoutView's 3 import lines, update 3 test-file imports (`runnerPlacement.test.js`, `scoringModeEntry.upcoming.test.js`, `scoringSheetV2.test.js`), then `git rm -r components/ScoringMode/`. ~93 KB of source move; clear blast radius. Treat as a standalone refactor PR.
+
+**Bonus finding (defer):** `LiveScoreViewer.jsx` is an 86-byte stub returning `<div>LiveScoreViewer</div>` and is rendered at `LiveScoringPanel.jsx:289`. Cosmetic dead code rendered inside the live scoring panel. Touch in a focused cleanup, not now — modifying `LiveScoringPanel.jsx` risks accidental game-day behavior changes.
+
+### Story 55 (P3) — PR merge-target validation
+Status: Open
+Discovered: 2026-05-11 — during v2.5.10 promotion divergence investigation
+Target: TBD
+Symptom: PR #57 was titled "chore: sync main (v2.5.8) into develop" but
+was merged into `main` instead of `develop`. The PR added 452 lines of
+test coverage and a UX_REFACTOR_ROADMAP docs update that landed on main
+rather than develop, contributing to the main/develop divergence that
+caused 9 file conflicts on PR #64.
+Impact: Single-instance silent misrouting. No user impact (content was
+eventually mirrored to develop), but ~45 min of recovery time during
+the v2.5.10 promotion. Future occurrences could drop substantive work
+or create more painful reconciliations.
+Root cause: Hypothesis — PR base/compare dropdown defaulted to wrong
+target; reviewer did not catch the mismatch between title and target.
+Proposed fixes:
+  - (a) GitHub PR template with explicit "Target branch: [develop|main]"
+        field that must be acknowledged
+  - (b) GitHub Action to validate PR title regex against base branch
+        (e.g., titles containing "into develop" must target develop)
+  - (c) Branch protection rule requiring approval from a non-author
+        reviewer for any merge into main
+Recommendation: (b) — highest leverage, automated, low overhead,
+catches exactly this pattern. (c) is good general hygiene independent
+of this story. (a) is weak (humans skip checkboxes).
+
+### Story 56 (P3) — Vite CJS Node API deprecation
+Status: Open
+Discovered: 2026-05-11 — during v2.5.10 Vitest suite run
+Target: TBD (before Vite drops CJS support)
+Symptom: Frontend test run emits two deprecation warnings on every run:
+  1. "The CJS build of Vite's Node API is deprecated"
+  2. "esbuild option was specified by vite:react-babel plugin. This
+      option is deprecated, please use oxc instead."
+Impact: None today (warnings only, tests pass). Future Vite major
+version bump will drop CJS support, at which point the test pipeline
+breaks.
+Root cause: Known — vite.config.js and/or its plugins use CJS-style
+require/exports and pass esbuild options to a plugin that now prefers
+oxc.
+Proposed fixes:
+  - (a) Migrate vite.config.js to ESM (export default) and update
+        plugin options to use oxc instead of esbuild
+  - (b) Pin Vite at current major and defer the migration
+Recommendation: (a) — small one-off migration, no behavior change,
+removes a known future blocker. Can be done as a chore PR alongside
+or independent of any feature work.
+
+### Story 57 (P3) — PR conflict-resolution playbook in CLAUDE.md
+Status: Open
+Discovered: 2026-05-11 — during v2.5.10 promotion divergence recovery
+Target: TBD (docs hygiene)
+Symptom: CLAUDE.md does not document the conflict-resolution decision
+tree for handling divergence between long-lived branches
+(develop ↔ main). The v2.5.10 promotion process invented this on the
+fly and lost ~45 min recovering from a wrong choice (sync-branch +
+squash-merge erased the merge-commit ancestry needed for the
+destination PR to see resolution).
+Impact: Procedural — every divergence recovery rediscovers the same
+trade-offs from scratch.
+Root cause: Known — undocumented procedure.
+Proposed fixes:
+  - (a) Add a section to CLAUDE.md titled "Conflict resolution when
+        develop ↔ main diverge" with this decision tree:
+        * If conflicts are mechanical (one side wins everywhere):
+          resolve directly on the destination PR via GitHub web editor.
+          Creates a real merge commit, preserves ancestry.
+        * If conflict resolution needs substantive review/audit: cut a
+          sync branch off destination, merge source into it, PR
+          sync-branch → destination, USE "Create a merge commit" option
+          (NOT squash) to preserve ancestry.
+        * Avoid: sync-branch + squash-merge (erases ancestry,
+          destination PR re-conflicts).
+        * Avoid: direct push to develop/main with ALLOW_DIRECT_PUSH
+          (bypasses safety gates that exist for exactly this kind of
+          pressure).
+Recommendation: (a) — write it once, save the recovery time next time.
+
+### Story 58 (P3) — v2.5.9 release-note wording correction
+Status: Open
+Discovered: 2026-05-11 — during v2.5.10 rollback safety audit
+Target: TBD (docs hygiene; can be batched with any v2.5.10+ docs sweep)
+Symptom: v2.5.9 commit message (PR #60) and the v2.5.9 entry in
+versionHistory.js claim "legacy ScoringMode removed." Diagnostic
+confirmed frontend/src/components/ScoringMode/index.jsx still exists
+on develop and main — only the default flag and routing were changed.
+Wording overstates the change.
+Impact: Misleading audit trail. Future readers (humans or AI assistants
+with stale context) may believe ScoringMode files are physically
+deleted when they are not. Affects rollback planning conversations and
+search-grep mental models.
+Root cause: Known — wording in v2.5.9 commit and release notes was
+imprecise.
+Proposed fixes:
+  - (a) Correct the VERSION_HISTORY entry for v2.5.9 to read:
+        "DugoutView default-on as of Slice 3. ScoringMode routing
+        removed; ScoringMode/index.jsx file persists for
+        explicit-flag-override fallback."
+  - (b) Leave it as-is; document the correction in a separate
+        "errata" section
+Recommendation: (a) — VERSION_HISTORY is authoritative documentation
+and should be precise. Cost is a single entry edit.
+
+### Story 59 (P3) — Unused `tokens` import in PlayerHandBadge.jsx
+Status: Resolved — fix path (a) shipped via PR #68 (squash `66a4586` on develop, 2026-05-13)
+Discovered: 2026-05-12 — Phase 3 Step 2 prep diagnostic
+Target: v2.5.11 (batched into Phase 3 Step 2 PR)
+Symptom: frontend/src/components/PlayerHandBadge.jsx imports `tokens`
+from `../theme/tokens` on line 3. The import is unreferenced in the
+file body. Auto-merge artifact from PR #64's web-editor conflict
+resolution: main's `tokens` import auto-merged alongside develop's
+Phase 3 Step 1 implementation rewrite, which uses Badge primitive and
+no longer references tokens directly.
+Impact: Lint debt only — tree-shaking removes the import from the
+bundle. ESLint no-unused-vars would flag this on a strict run; current
+CI passes, so lint is not currently gated at --max-warnings 0 (worth
+a separate audit, not in scope of this story).
+Root cause: Known — non-conflicting hunks from main side auto-merged
+into the web-editor resolution; the resolver only saw and resolved the
+conflicting implementation hunk.
+Proposed fixes:
+  - (a) Remove the unused `import { tokens } from '../theme/tokens';`
+        line. Batch into Phase 3 Step 2 PR alongside Home/index.jsx
+        migration; call out the cleanup explicitly in the PR body.
+  - (b) Cut a separate `chore/cleanup-unused-tokens-import` branch for
+        a focused single-line cleanup.
+Recommendation: (a) — single-line cleanup does not deserve its own PR
+ceremony, and the Phase 3 Step 2 PR is contextually adjacent (same
+components directory).
+
+### Story 60 (P3) — Token coverage gaps surfaced in EmptyState migration
+Status: Open
+Discovered: 2026-05-13 — Phase 3 Step 2 PR #68 EmptyState migration
+Target: future R-track patch or theme-extension story
+Symptom: EmptyState.jsx title styling uses raw passthrough values
+through `Text` primitive's `|| size` / `|| color` fallback because
+two design values lack token equivalents:
+  - `15px` font size — between `font.size.sm` (12px) and
+    `font.size.md` (14px). Used in EmptyState title. Drift.
+  - `#374151` (gray-700) — not in `color.text.*` palette. Closest
+    existing token is `text.primary` (`#0F1F3D`, alias of brand
+    navy, would change appearance). Used in EmptyState title.
+    Drift.
+Impact: Token system has known coverage holes; consumer code uses
+raw values via primitives' passthrough mechanism. Acceptable for
+v2.5.x but inconsistent with the "tokens are the source of truth"
+direction. Future Phase 3 migrations may hit the same gap.
+Root cause: Known — original component used these exact values; the
+token set was derived from broader patterns and didn't capture them.
+Proposed fixes:
+  - (a) Add tokens for both values: `font.size.smd` (or similar) = 15px;
+        `color.text.midDark` (or similar) = `#374151`. Audit other
+        components for callers of these raw values; migrate EmptyState
+        title's raw passthroughs to token references.
+  - (b) Normalize EmptyState title to nearest existing tokens
+        (downsize to `font.size.sm` (12px); recolor to
+        `text.secondary` or similar). Acceptable visual drift, no
+        token additions.
+  - (c) Defer until Theme System Phase 3 — multi-theme support will
+        require comprehensive color token audit anyway.
+Recommendation: (a) — most precise; preserves current visual; one
+focused R-track patch. Alternatively defer to (c) if Theme System
+Phase 3 is on the near horizon.
 
 ---
 

@@ -383,3 +383,11 @@
   - FEATURE_MAP.md row #28 added (UI primitives — Badge / Button / Card / Stack / Text, ⚠ Partial — primitives covered, 1 consumer migrated)
   - Suite count: 658 post-v2.5.10 (Phase 2 +107 from primitives; PR #62 no net change; v2.5.8/v2.5.9 deltas not tracked in this dashboard)
   - Dashboard unchanged — no new debt items opened (consumer-test gap captured in row 28's Debt column, not as a separate item)
+
+- **v2.9 — May 2026 (v2.5.11 release — Slice 4 cleanup + UX Phase 3 Step 2 + docs catchup)**
+  - Slice 4 (PR #67): `Viewer/ViewerMode.test.jsx` deleted (−14 tests). `ScoringMode/index.jsx` deleted but had no associated tests (legacy root component; only the preserved live children have tests, all untouched and passing).
+  - PR #68 (Phase 3 Step 2): `EmptyState.test.jsx` modified — R1.5 query updated for new DOM shape (`button > span` traversal post-migration to Button primitive); 8 tests passing, no net count change. `PlayerHandBadge.jsx` dead `tokens` import removed (Story 59 closure); no test impact.
+  - PR #69 (docs catchup): Documentation-only changes — `UX_REFACTOR_ROADMAP.md`, `CLAUDE.md`, `ROADMAP.md` updated; no test impact. Story 59 closed; Story 60 filed (token coverage gaps).
+  - FEATURE_MAP.md row #28 updated: consumer-migration count 1 → 2 (EmptyState added as second primitive consumer).
+  - Suite count: 658 (post-v2.5.10) → 644 + 1 skipped (post-v2.5.11; Slice 4 dropped 14 ViewerMode tests; PR #68 + #69 net 0).
+  - Dashboard impact: no new debt items opened. No existing open items resolved by v2.5.11 work.
