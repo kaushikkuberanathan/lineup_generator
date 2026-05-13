@@ -4,13 +4,15 @@
     date: 'May 2026',
     headline: 'Stability and performance update',
     userChanges: [],
-    techNote: 'Minor fixes and internal improvements',
+    techNote: 'Under-the-hood stability improvements',
     internalChanges: [
       'Slice 4 dead-code cleanup (Story 54): removed the legacy ScoringMode root component (frontend/src/components/ScoringMode/index.jsx) and its sibling README.md — both unreferenced since v2.5.9 Slice 3 retired the legacy ScoringMode tab.',
       'Removed ViewerMode entirely: frontend/src/components/Viewer/ViewerMode.jsx + Viewer/ViewerMode.test.jsx deleted (only consumer was its colocated test file; share-link rendering moved to DugoutView isViewer=true in Slice 3).',
       'ScoringMode/ directory PRESERVED on disk — still holds 7 live child components (ScoringModeEntry, LiveScoringPanel, RestoreScoreModal, FinishGameModal, GameModeGearMenu, LiveScoreViewer, RunnerConflictModal) which DugoutView imports directly. Directory restructure (move children to game-mode/scoring/) deferred — separate refactor PR.',
       'Tests covering the preserved live children (runnerPlacement.test.js, scoringModeEntry.upcoming.test.js, scoringSheetV2.test.js) untouched and passing post-deletion.',
       'No user-facing change. Build clean (520 modules transformed, same as pre-deletion baseline).',
+      'Phase 3 Step 2 (PR #68): EmptyState.jsx migrated to consume Phase 2 UI primitives (Stack, Text, Button) — validates primitive contract in second consumer after Phase 3 Step 1 (PlayerHandBadge → Badge). Includes Story 59 cleanup (removed unused tokens import in PlayerHandBadge.jsx, an auto-merge artifact from PR #64). Token coverage gaps surfaced (15px font size + #374151 text color) — filed as Story 60 for future R-track patch.',
+      'UX track documentation catchup (PR #69): brought UX_REFACTOR_ROADMAP.md, CLAUDE.md Active Tracks, and ROADMAP.md current with Phase 2 + Phase 3 Step 1 + Phase 3 Step 2 ship status; closed Story 59 in backlog; filed Story 60 (token coverage gaps); disambiguated Theme System Phase 3 header from UX Refactor track Phase 3.',
     ],
   },
   {
