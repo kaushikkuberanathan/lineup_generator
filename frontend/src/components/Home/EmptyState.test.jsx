@@ -50,10 +50,11 @@ describe('EmptyState — R1 token characterization', function () {
     expect(btn.style.borderRadius).toBe('8px');
   });
 
-  test('R1.5: button font-size is 13px (tokens.font.size.body)', function () {
+  test('R1.5: button font-size is 13px (via Button → Text size="body")', function () {
     var { container } = render(<EmptyState hasQuery={false} onCreateTeam={() => {}} />);
-    var btn = container.querySelector('button');
-    expect(btn.style.fontSize).toBe('13px');
+    var btnText = container.querySelector('button > span');
+    expect(btnText).not.toBeNull();
+    expect(btnText.style.fontSize).toBe('13px');
   });
 
   test('R1.6: subtitle font-size is 12px (tokens.font.size.sm)', function () {
