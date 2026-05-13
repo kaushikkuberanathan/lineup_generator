@@ -1,7 +1,23 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: May 8, 2026 (v2.5.10 — Phase 2 UI primitives shipped)
+> Last updated: May 13, 2026 (v2.5.11 — Slice 4 dead-code cleanup)
 > MVP launched: March 24, 2026
+
+---
+
+## v2.5.11 — 2026-05-13 (feature/story-54-slice-4-cleanup) — Slice 4: dead-code cleanup
+
+No user-visible changes. Story 54 partial: deleted truly-dead files only; preserved live children.
+
+- Deleted: `frontend/src/components/ScoringMode/index.jsx` (legacy root component — last consumer removed in v2.5.9 Slice 3)
+- Deleted: `frontend/src/components/ScoringMode/README.md`
+- Deleted: `frontend/src/components/Viewer/ViewerMode.jsx` (only consumer was its colocated test; share-link path moved to `DugoutView isViewer={true}` in Slice 3)
+- Deleted: `frontend/src/components/Viewer/ViewerMode.test.jsx`
+- `frontend/src/components/Viewer/` directory removed (became empty after the two file deletions)
+- `frontend/src/components/ScoringMode/` directory **preserved** — still holds 7 live child components that `game-mode/DugoutView.jsx` imports directly (`ScoringModeEntry`, `LiveScoringPanel`, `RestoreScoreModal`) plus their transitive imports (`FinishGameModal`, `GameModeGearMenu`, `LiveScoreViewer`, `RunnerConflictModal`). Original Story 54 plan called for full directory deletion; recon showed that would break the build because DugoutView depends on those children. Restructuring those children into `components/game-mode/scoring/` is a separate refactor PR.
+- Build: `npm run build` clean (520 modules transformed, same as pre-deletion baseline)
+- Tests: full suite green; targeted re-run of all formerly-flaky files confirmed no regression. 3 worker-spawn timeouts during full-suite runs are the documented Known Bug #7 (Windows Vitest cold-start cascade — environmental, not code).
+- Version bump path: 2.5.10 → 2.5.11 (patch — dead-code housekeeping, not a milestone; v2.6.0 reserved for share/print fix + snack_duty drop + other P0s)
 
 ---
 
@@ -1736,24 +1752,26 @@ Target: v2.5.7 ✓
 ---
 
 ### Story 54 (P3) — Slice 4: ScoringMode + ViewerMode component deletion
-Status: Open
+Status: **Resolved (partial) in v2.5.11** — see release entry at top of file
 Discovered: 2026-05-07 (post-Slice 3 dead-code audit)
-Target: v2.6.x (next tidy-up pass)
+Shipped: 2026-05-13 (PR for feature/story-54-slice-4-cleanup)
 
-**Context:** Slice 3 removed all import and render sites for `ScoringMode` and `ViewerMode` from `App.jsx`. The component directories still exist on disk:
-- `frontend/src/components/ScoringMode/` — full legacy scoring surface (no longer imported)
-- `frontend/src/components/Viewer/ViewerMode.jsx` — legacy viewer component (no longer imported)
+**What was actually deleted:**
+- `frontend/src/components/ScoringMode/index.jsx` (legacy root)
+- `frontend/src/components/ScoringMode/README.md`
+- `frontend/src/components/Viewer/ViewerMode.jsx`
+- `frontend/src/components/Viewer/ViewerMode.test.jsx`
+- `frontend/src/components/Viewer/` directory (became empty)
 
-**Work:**
-1. Delete `frontend/src/components/ScoringMode/` directory and all files
-2. Delete `frontend/src/components/Viewer/ViewerMode.jsx`
-3. Check whether `frontend/src/components/Viewer/` directory has other files; delete if empty
-4. Run `npm run build` and `npm test` — confirm no broken imports
-5. Update FEATURE_MAP.md — remove ScoringMode row (dead component)
+**What was NOT deleted, and why:**
+- `frontend/src/components/ScoringMode/` directory remains because `game-mode/DugoutView.jsx` imports `ScoringModeEntry`, `LiveScoringPanel`, and `RestoreScoreModal` directly from it (lines 17–19). These three plus their transitive imports (`FinishGameModal`, `GameModeGearMenu`, `LiveScoreViewer`, `RunnerConflictModal`) are the live game-day surface. The original Story 54 framing — "delete the directory" — was based on the assumption that the whole directory was dead. Recon proved it half-live.
 
-**Risk:** Low. No import sites remain after Slice 3. Build will catch any missed reference.
+**Risk realization:** Original Story 54 risk was assessed "Low — no import sites remain". That assessment was wrong. Slice 3 only removed the App.jsx-level imports; DugoutView's deeper imports into ScoringMode/ child components survived Slice 3 unaltered. A clean directory deletion would have broken the build immediately on `DugoutView.jsx:17`.
 
-**Note:** Do NOT delete `frontend/src/components/ScoringMode/` until a build confirms zero references. Slice 4 is a separate PR.
+**Follow-up (optional, not blocking anything):**
+Move the 7 live ScoringMode children into `components/game-mode/scoring/`, update DugoutView's 3 import lines, update 3 test-file imports (`runnerPlacement.test.js`, `scoringModeEntry.upcoming.test.js`, `scoringSheetV2.test.js`), then `git rm -r components/ScoringMode/`. ~93 KB of source move; clear blast radius. Treat as a standalone refactor PR.
+
+**Bonus finding (defer):** `LiveScoreViewer.jsx` is an 86-byte stub returning `<div>LiveScoreViewer</div>` and is rendered at `LiveScoringPanel.jsx:289`. Cosmetic dead code rendered inside the live scoring panel. Touch in a focused cleanup, not now — modifying `LiveScoringPanel.jsx` risks accidental game-day behavior changes.
 
 ### Story 55 (P3) — PR merge-target validation
 Status: Open

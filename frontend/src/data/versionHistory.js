@@ -1,5 +1,19 @@
 ﻿export var VERSION_HISTORY = [
   {
+    version: '2.5.11',
+    date: 'May 2026',
+    headline: 'Stability and performance update',
+    userChanges: [],
+    techNote: 'Minor fixes and internal improvements',
+    internalChanges: [
+      'Slice 4 dead-code cleanup (Story 54): removed the legacy ScoringMode root component (frontend/src/components/ScoringMode/index.jsx) and its sibling README.md — both unreferenced since v2.5.9 Slice 3 retired the legacy ScoringMode tab.',
+      'Removed ViewerMode entirely: frontend/src/components/Viewer/ViewerMode.jsx + Viewer/ViewerMode.test.jsx deleted (only consumer was its colocated test file; share-link rendering moved to DugoutView isViewer=true in Slice 3).',
+      'ScoringMode/ directory PRESERVED on disk — still holds 7 live child components (ScoringModeEntry, LiveScoringPanel, RestoreScoreModal, FinishGameModal, GameModeGearMenu, LiveScoreViewer, RunnerConflictModal) which DugoutView imports directly. Directory restructure (move children to game-mode/scoring/) deferred — separate refactor PR.',
+      'Tests covering the preserved live children (runnerPlacement.test.js, scoringModeEntry.upcoming.test.js, scoringSheetV2.test.js) untouched and passing post-deletion.',
+      'No user-facing change. Build clean (520 modules transformed, same as pre-deletion baseline).',
+    ],
+  },
+  {
     version: '2.5.10',
     date: 'May 2026',
     headline: 'Stability and performance update',

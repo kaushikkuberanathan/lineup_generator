@@ -86,7 +86,7 @@ All `team_data` columns are JSONB — structure matches localStorage exactly, no
 `scorer_user_id` (game_scoring_sessions) and `actor_user_id` (scoring_audit_log) are `text` type — FK to `auth.users` dropped for pre-auth testing. Restore at Phase 4C cutover. RLS policy `allow_scorer_writes` on all three scoring tables is open (anon write); replace with `auth.uid()` scoped policies at Phase 4C.
 
 ### Live Scoring Architecture
-- **Hook**: `frontend/src/hooks/useLiveScoring.js`. UI: `frontend/src/components/ScoringMode/`
+- **Hook**: `frontend/src/hooks/useLiveScoring.js`. UI: `frontend/src/components/ScoringMode/` (directory retained post-Slice 4 for 7 live child components imported by `game-mode/DugoutView.jsx`; pending future restructure into `game-mode/scoring/`)
 - **Tables**: `live_game_state` (upserted per event), `game_scoring_sessions` (scorer lock + heartbeat), `scoring_audit_log` (append-only)
 - **Auth shims active** (until Phase 4C cutover) — `_effectiveUserId` in hook, `scoringUserId` fallback in ScoringMode.
 > Full architecture detail: see `frontend/CLAUDE.md` → **## Live Scoring Architecture**
@@ -511,8 +511,9 @@ Every other session: open `docs/product/DOC_TEST_DEBT.md` — close P0s, promote
 ---
 
 ## Current Version
-**v2.5.10** — May 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/data/versionHistory.js`.
+**v2.5.11** — May 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/data/versionHistory.js`.
 
+- v2.5.11 (2026-05-13): Slice 4 dead-code cleanup (Story 54) — removed legacy `ScoringMode/index.jsx` + `ScoringMode/README.md` (both unreferenced since Slice 3); removed `Viewer/ViewerMode.jsx` + colocated test (replaced by DugoutView isViewer=true in Slice 3). ScoringMode/ directory PRESERVED — still holds 7 live child components DugoutView imports directly (directory restructure deferred to a separate refactor PR). No user-facing change.
 - v2.5.10 (2026-05-08): Phase 2 — UI primitives (Badge, Button, Card, Stack, Text) added to frontend/src/components/ui/; +107 component tests; LockFlow.jsx duplicate fontSize cleanup (no visual change); Phase 3 Step 1 — PlayerHandBadge.jsx migrated to Badge primitive (PR #62, first consumer, pure refactor).
 - v2.5.9 (2026-05-07): Slice 3 — COMBINED_GAMEMODE_AND_SCORING flipped default-ON; legacy ScoringMode import + render block + Scoring tab removed; DUGOUT VIEW is now sole game-day launcher; ViewerMode share-link path simplified to DugoutView isViewer=true.
 - v2.5.8 (2026-05-07): Infrastructure stability — Story 41 resolved (Vitest pool: forks → threads; Cox Defender fork-spawn block eliminated; pre-push test gate functional without --no-verify); Stories 45+53 resolved (hook stdin refspec fix + Husky shebang cleanup).
@@ -534,8 +535,8 @@ This project runs two parallel tracks. Each has its own roadmap; both promote to
 ### Dugout Track — combined view rollout
 - Tracker: `docs/product/ROADMAP.md` (main project roadmap)
 - Worktree: `lineup-generator/` (this directory)
-- Recent: Slice 0 (v2.5.4), Slice 1 (v2.5.5), Slice 2 (v2.5.7), Slice 3 (v2.5.9)
-- Next: Slice 4 — ScoringMode component directory deletion + ViewerMode cleanup
+- Recent: Slice 0 (v2.5.4), Slice 1 (v2.5.5), Slice 2 (v2.5.7), Slice 3 (v2.5.9), Slice 4 (v2.5.11 — partial: legacy root + ViewerMode removed; ScoringMode/ directory preserved for 7 live children imported by DugoutView)
+- Next: Optional follow-up — relocate live ScoringMode children into `components/game-mode/scoring/` then collapse the ScoringMode/ directory. Separate refactor PR; not gated on any v2.6.0 work.
 
 ### UX Track — accessibility, design tokens, tooling foundation
 - Tracker: `docs/product/UX_REFACTOR_ROADMAP.md`
