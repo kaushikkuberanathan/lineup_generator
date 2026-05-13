@@ -1,13 +1,15 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: May 13, 2026 (v2.5.11 — Slice 4 dead-code cleanup)
+> Last updated: May 13, 2026 (v2.5.11 — multi-PR release: Slice 4 cleanup + UX Phase 3 Step 2 + docs catchup)
 > MVP launched: March 24, 2026
 
 ---
 
-## v2.5.11 — 2026-05-13 (feature/story-54-slice-4-cleanup) — Slice 4: dead-code cleanup
+## v2.5.11 — 2026-05-13 — Slice 4 cleanup + Phase 3 Step 2 + docs catchup
 
-No user-visible changes. Story 54 partial: deleted truly-dead files only; preserved live children.
+No user-visible changes. Three PRs aggregated under v2.5.11 banner — internal foundation work.
+
+### Slice 4 dead-code cleanup (PR #67, Story 54 partial)
 
 - Deleted: `frontend/src/components/ScoringMode/index.jsx` (legacy root component — last consumer removed in v2.5.9 Slice 3)
 - Deleted: `frontend/src/components/ScoringMode/README.md`
@@ -15,9 +17,26 @@ No user-visible changes. Story 54 partial: deleted truly-dead files only; preser
 - Deleted: `frontend/src/components/Viewer/ViewerMode.test.jsx`
 - `frontend/src/components/Viewer/` directory removed (became empty after the two file deletions)
 - `frontend/src/components/ScoringMode/` directory **preserved** — still holds 7 live child components that `game-mode/DugoutView.jsx` imports directly (`ScoringModeEntry`, `LiveScoringPanel`, `RestoreScoreModal`) plus their transitive imports (`FinishGameModal`, `GameModeGearMenu`, `LiveScoreViewer`, `RunnerConflictModal`). Original Story 54 plan called for full directory deletion; recon showed that would break the build because DugoutView depends on those children. Restructuring those children into `components/game-mode/scoring/` is a separate refactor PR.
-- Build: `npm run build` clean (520 modules transformed, same as pre-deletion baseline)
-- Tests: full suite green; targeted re-run of all formerly-flaky files confirmed no regression. 3 worker-spawn timeouts during full-suite runs are the documented Known Bug #7 (Windows Vitest cold-start cascade — environmental, not code).
-- Version bump path: 2.5.10 → 2.5.11 (patch — dead-code housekeeping, not a milestone; v2.6.0 reserved for share/print fix + snack_duty drop + other P0s)
+
+### UX Phase 3 Step 2 — EmptyState → primitives (PR #68)
+
+- `frontend/src/components/Home/EmptyState.jsx` migrated to consume Phase 2 UI primitives — outer flex → `<Stack>`, subtitle → `<Text>`, title → `<Text>`, button → `<Button variant="secondary">`. Removed direct `tokens` import (primitives consume tokens internally).
+- `EmptyState.test.jsx` R1.5 query updated for new DOM shape (`button > span` traversal post-Button-migration); 8 tests passing.
+- Story 59 closed: removed unused `tokens` import from `frontend/src/components/PlayerHandBadge.jsx` — auto-merge artifact from PR #64's web-editor conflict resolution.
+- Token coverage gaps surfaced in EmptyState title styling (15px font size + #374151 text color used via raw passthroughs) — filed as Story 60 for future R-track patch.
+- Validates Phase 2 primitive contract in second consumer (after Phase 3 Step 1's PlayerHandBadge → Badge in v2.5.10).
+
+### UX track documentation catchup (PR #69)
+
+- `docs/product/UX_REFACTOR_ROADMAP.md` Status header + §8 Done-So-Far Ledger + §9 Active Backlog updated to reflect Phase 2 + Phase 3 Step 1 + Phase 3 Step 2 ship status (previously 3 phases stale).
+- `CLAUDE.md` Active Tracks → UX entry refreshed.
+- `docs/product/ROADMAP.md` Story 59 marked Resolved; Story 60 (token coverage gaps) filed; Theme System Phase 3 header disambiguated from UX Refactor track's Phase 3 via inline blockquote note.
+
+### Release mechanics
+
+- Build: `npm run build` clean (520 modules transformed, same as Slice 4 baseline; PR #68 + #69 added no new modules).
+- Tests: 644 passing + 1 skipped on develop @ `2b66710` (suite shifted from 658 post-v2.5.10 due to Slice 4's ViewerMode.test.jsx deletion; PR #68 + #69 net 0 test count change). 3 worker-spawn timeouts during local full-suite runs on Windows are the documented Known Bug #7 (Windows Vitest cold-start cascade — environmental, not code); CI on Linux confirms full GREEN.
+- Version bump path: 2.5.10 → 2.5.11 (patch — internal foundation work, not a milestone; v2.6.0 reserved for share/print fix + snack_duty drop + other P0s).
 
 ---
 
