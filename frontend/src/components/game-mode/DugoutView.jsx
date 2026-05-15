@@ -123,7 +123,7 @@ export function DugoutView({
 
   // ── Slice 2: derived state machine ───────────────────────────────────────
   // 'lineup' when no active at-bat; 'scoring' during an at-bat
-  var dugoutFocusMode = (scoring.currentAtBat !== null) ? 'scoring' : 'lineup';
+  var dugoutFocusMode = (scoring.currentAtBat !== null || scorerClaimed) ? 'scoring' : 'lineup';
 
   // Bug 8 fix: when COMBINED flag ON, strip reads scoring engine's batter index
   var battingIdxForStrip = combinedFlag

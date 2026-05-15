@@ -1,5 +1,17 @@
 ﻿export var VERSION_HISTORY = [
   {
+    version: '2.5.13',
+    date: '2026-05-15',
+    title: 'Scoring restoration — leagueRules crash + DugoutView deadlock',
+    changes: [
+      'Fixed: getRules no longer throws on unrecognized age group keys (e.g. "10U") — normalizes aliases, falls back to canonical profile with console.warn',
+      'Fixed: dugoutFocusMode deadlock — LiveScoringPanel now visible when scorer enters Practice Mode or claims a real game',
+      'Updated: DugoutView tests assert v2.5.13 dugoutFocusMode contract',
+      'Docs: CLAUDE.md dugoutFocusMode entry updated; Story 48 named as follow-up for in-session defense toggle',
+    ],
+    techNote: 'Bug fixes and performance improvements',
+  },
+  {
     version: '2.5.12',
     date: 'May 2026',
     headline: 'Stability and performance update',
