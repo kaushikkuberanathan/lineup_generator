@@ -157,16 +157,19 @@ describe('dugoutFocusMode state machine', function() {
     });
   }
 
-  it('when currentAtBat is null, DefenseDiamond mount is visible and scoring mount is hidden', function() {
-    // currentAtBat: null (default) → dugoutFocusMode = 'lineup'
+  it('when scorer is claimed and currentAtBat is null, scoring mount is visible (v2.5.12 deadlock fix)', function() {
+    // v2.5.12 revision: dugoutFocusMode = (currentAtBat !== null || scorerClaimed) ? 'scoring' : 'lineup'.
+    // Once the coach claims scorer, focus is 'scoring' so the suggestedBatter card is reachable
+    // and startAtBat() can be called. Pre-v2.5.12 this state showed DefenseDiamond, which
+    // deadlocked the scorer (no UI to start the first at-bat). See Story 16.
     render(<DugoutView {...defaultProps} />);
     claimScorer();
 
-    var defMount = screen.getByTestId('defense-diamond-mount');
-    expect(defMount.style.display).not.toBe('none');
-
     var scoreMount = screen.getByTestId('scoring-panel-mount');
-    expect(scoreMount.style.display).toBe('none');
+    expect(scoreMount.style.display).not.toBe('none');
+
+    var defMount = screen.getByTestId('defense-diamond-mount');
+    expect(defMount.style.display).toBe('none');
   });
 
   it('when currentAtBat is non-null, scoring mount is visible and DefenseDiamond mount is hidden', function() {
@@ -181,24 +184,29 @@ describe('dugoutFocusMode state machine', function() {
     expect(defMount.style.display).toBe('none');
   });
 
-  it('mode transitions: lineup → scoring → lineup as currentAtBat changes', function() {
+  it('scorer mode: focus stays scoring across currentAtBat transitions (v2.5.12)', function() {
+    // v2.5.12 revision: once scorerClaimed is true, dugoutFocusMode stays 'scoring' for the
+    // whole session. currentAtBat transitions no longer flip the focus mode for a scorer.
+    // (Viewer path — scorerClaimed=false, viewerMode=true — still has the original
+    // currentAtBat-driven transitions; not covered here.)
     var rendered = render(<DugoutView {...defaultProps} />);
     claimScorer();
 
-    // lineup mode: defense visible
-    expect(screen.getByTestId('defense-diamond-mount').style.display).not.toBe('none');
+    // scorerClaimed=true, currentAtBat=null → scoring visible
+    expect(screen.getByTestId('scoring-panel-mount').style.display).not.toBe('none');
+    expect(screen.getByTestId('defense-diamond-mount').style.display).toBe('none');
 
-    // scoring mode: currentAtBat becomes non-null
+    // currentAtBat becomes non-null → still scoring
     vi.mocked(useLiveScoring).mockReturnValue(createScoringWithAtBat());
     rendered.rerender(<DugoutView {...defaultProps} />);
     expect(screen.getByTestId('scoring-panel-mount').style.display).not.toBe('none');
     expect(screen.getByTestId('defense-diamond-mount').style.display).toBe('none');
 
-    // back to lineup mode: currentAtBat null again
+    // currentAtBat null again → still scoring (scorerClaimed remains true)
     vi.mocked(useLiveScoring).mockReturnValue(createDefaultScoring());
     rendered.rerender(<DugoutView {...defaultProps} />);
-    expect(screen.getByTestId('defense-diamond-mount').style.display).not.toBe('none');
-    expect(screen.getByTestId('scoring-panel-mount').style.display).toBe('none');
+    expect(screen.getByTestId('scoring-panel-mount').style.display).not.toBe('none');
+    expect(screen.getByTestId('defense-diamond-mount').style.display).toBe('none');
   });
 
   it('Bug 8: BattingOrderStrip reads gameState.battingOrderIndex when COMBINED flag is ON', function() {

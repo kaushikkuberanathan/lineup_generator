@@ -312,11 +312,21 @@ const RULE_PROFILES = {
   },
 };
 
+var AGE_GROUP_ALIASES = {
+  '10U':       '9-10U',
+  '9U':        '9-10U',
+  '10U-minor': '9-10U-minor',
+  '9U-minor':  '9-10U-minor',
+};
+
 export function getRules(sport, ageGroup) {
-  var key = sport + ':' + ageGroup;
+  var normalizedAgeGroup = AGE_GROUP_ALIASES[ageGroup] || ageGroup;
+  var key = sport + ':' + normalizedAgeGroup;
   var profile = RULE_PROFILES[key];
   if (!profile) {
-    throw new Error('No rule profile found for "' + key + '". Valid keys: ' + Object.keys(RULE_PROFILES).join(', '));
+    console.warn('[leagueRules] Unknown profile "' + key + '" — falling back to default');
+    var fallbackKey = sport === SPORT.SOFTBALL ? 'softball:9-10U' : 'baseball:9-10U';
+    return RULE_PROFILES[fallbackKey];
   }
   return profile;
 }
