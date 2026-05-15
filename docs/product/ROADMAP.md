@@ -1,7 +1,29 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: May 13, 2026 (v2.5.11 — multi-PR release: Slice 4 cleanup + UX Phase 3 Step 2 + docs catchup)
+> Last updated: May 14, 2026 (v2.5.12 — multi-PR release: Badge/PlayerHandBadge consolidation + backlog hygiene)
 > MVP launched: March 24, 2026
+
+---
+
+## v2.5.12 — 2026-05-14 — Badge/PlayerHandBadge consolidation + backlog hygiene
+
+No user-visible changes. Two PRs aggregated under v2.5.12 banner — internal primitive consolidation and backlog documentation.
+
+### UX Phase 3 — Badge/PlayerHandBadge consolidation (PR #73, f6c4bc4)
+
+- `frontend/src/components/ui/Badge.jsx`: new `context = 'light' | 'dark'` prop with token-driven dark variants
+- `frontend/src/components/PlayerHandBadge.jsx`: extended with `context` prop, forwarded to Badge
+- `frontend/src/components/Shared/PlayerHandBadge.jsx`: deleted (stale precursor; filename collision resolved)
+- `frontend/src/components/GameDay/NowBattingStrip.jsx`: repointed to root PlayerHandBadge + `context="dark"` wired in
+- `frontend/src/components/GameDay/NowBattingStrip.test.jsx`: new — integration regression guard (63 lines)
+- `frontend/src/components/PlayerHandBadge.test.jsx`: +4 tests (R3.8–R3.11, RED → GREEN)
+- `frontend/src/components/ui/Badge.test.jsx`: +5 tests (BD8.1–BD10.1, RED → GREEN)
+- Story 63 (P2) logged: pre-existing now-batting strip badge data-path bug (out of scope for this release)
+
+### Backlog hygiene pass (PR #74, 7c6f001, Story 34)
+
+- `docs/product/ROADMAP.md`: Story 27 renumbered → Story 61 (5 references updated); P2 row 47 promoted → Story 62 with typed AC; Gaps 17/18/25/52 documented in Retired / Never Filed; 13 resolved headings marked ✅; scoring v2.4.x renamed from "candidates" → "completed"
+- Story 34 closed (backlog hygiene scope complete)
 
 ---
 

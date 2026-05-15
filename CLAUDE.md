@@ -171,7 +171,7 @@ If any answer is "no": stop. Document the gap in DOC_TEST_DEBT.md, then decide w
 7. Stage **specific files by path** — never `git add -A` (risks picking up unrelated untracked files)
 8. [x] loginLimiter: 15min window, max 5 — applied to POST /magic-link ✓
 9. [ ] Confirm `RESEND_DOMAIN_VERIFIED=true` in Render env vars (only after domain verified)
-10. [ ] Run `npm test` — confirm 551 passed / 1 skipped (as of v2.5.9, May 7, 2026) / 0 failed
+10. [ ] Run `npm test` — confirm 654 passed / 1 skipped (as of v2.5.12, May 14, 2026) / 0 failed
 
 ### VERSION_HISTORY Schema (dual-layer — both required)
 ```js
@@ -238,7 +238,7 @@ Target: resolved within 10 min of detection.
 ---
 
 ## Test Suite
-Changes to `lineupEngineV2.js`, `scoringEngine.js`, or `playerMapper.js` → must pass frontend `npm test` (Vitest, 516 tests passing / 1 skipped).
+Changes to `lineupEngineV2.js`, `scoringEngine.js`, or `playerMapper.js` → must pass frontend `npm test` (Vitest, 654 tests passing / 1 skipped).
 Changes to `featureFlags.js` or `positions.js` → must pass frontend `npm test`.
 Changes to backend code → must pass backend custom runner (`backend/scripts/tests/test-runner.js`, 13 suites).
 > Full suite detail: see `frontend/CLAUDE.md` → **## Test Suite** and `backend/CLAUDE.md` → **## Test Suite**
@@ -302,7 +302,11 @@ Story 1 (April 22, 2026) was the regression that surfaced this — every batter 
 - `truncateTeamName()` in `formatters.js` handles all team name display in compact contexts (scoreboard, headers, chips). It is word-boundary aware — never bypass it with raw team names. Default cap is 12 chars; use cap=10 for scoreboard contexts where horizontal space is tight on 375px viewports.
 - Home/away semantic is first-class scoring context. Use `selectedGame.home` directly with a dedicated `HomeAwayChip` component — never bury it as metadata inside another element. Away games render with amber accent (`#f5c842`); home games render neutral (`#94a3b8`). Guard: `selectedGame && typeof selectedGame.home === 'boolean'` (excludes practice mode and legacy orphan games without the field).
 - COMBINED_GAMEMODE_AND_SCORING — GA default-on as of Slice 3 (v2.5.9). Legacy ScoringMode and its Scoring tab removed. DugoutView is now the sole game-day surface. See `docs/SOLUTION_DESIGN.md` § Feature Flag System for full architectural history.
-- **dugoutFocusMode** (v2.5.7+) — Derived state machine inside DugoutView: `(currentAtBat !== null) ? 'scoring' : 'lineup'`. System-driven, not user-toggled. DefenseDiamond renders in `'lineup'` mode; LiveScoringPanel renders in `'scoring'` mode. Both panels stay mounted; visibility toggled via CSS `display:none` to preserve DefenseDiamond inning-scrub state across at-bat boundaries. See `docs/SOLUTION_DESIGN.md` § dugoutFocusMode state machine for full architectural notes.
+- **dugoutFocusMode** (v2.5.7+, revised v2.5.12) — Derived state machine inside DugoutView: `(currentAtBat !== null || scorerClaimed) ? 'scoring' : 'lineup'`. System-driven, not user-toggled. Behaviour by role:
+  - **Scorer (`scorerClaimed=true`)** — `'scoring'` for the entire session. LiveScoringPanel stays visible so the coach can see the suggestedBatter card and start the first at-bat. DefenseDiamond is mounted but `display:none` and has no in-DugoutView toggle today; coach must exit DugoutView to review defense between at-bats. Scorer-side defense-view toggle is the designated follow-up — see Story 48.
+  - **Viewer (`viewerMode=true`, `scorerClaimed=false`)** — original state machine still applies: `'lineup'` (DefenseDiamond) between at-bats, `'scoring'` (LiveScoringPanel) during. Unchanged from v2.5.7.
+  - Both panels stay mounted; visibility toggled via CSS `display:none` to preserve DefenseDiamond inning-scrub state across at-bat boundaries. See `docs/SOLUTION_DESIGN.md` § dugoutFocusMode state machine for full architectural notes. **Rationale for revision:** v2.5.7 design created a deadlock — coach claimed scorer, `currentAtBat` was null, mode resolved to `'lineup'`, LiveScoringPanel was hidden, no UI to call `scoring.startAtBat()`, mode stuck on `'lineup'` forever. Surfaced as Story 16 ("No batting order set") — the empty-state copy was a misleading downstream symptom of the panel never becoming startable.
+- **Badge context prop** (v2.5.12+) — Use `context="dark"` on `PlayerHandBadge` (or `Badge` directly) for dark surfaces like Game Mode and the scoring strip. Default `context="light"` applies to all light/cream backgrounds. Dark variants are token-driven: `tokens.color.overlay.whiteLight` background + `tokens.color.text.onDark` text. See `frontend/src/components/ui/Badge.jsx`.
 
 ---
 
@@ -511,8 +515,9 @@ Every other session: open `docs/product/DOC_TEST_DEBT.md` — close P0s, promote
 ---
 
 ## Current Version
-**v2.5.11** — May 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/data/versionHistory.js`.
+**v2.5.12** — May 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/data/versionHistory.js`.
 
+- v2.5.12 (2026-05-14): Multi-PR release. (1) UX Phase 3 — Badge context prop + PlayerHandBadge consolidation (PR #73): Badge primitive gained `context='light'|'dark'` prop with token-driven dark variants; PlayerHandBadge.jsx extended to forward context; Shared/PlayerHandBadge.jsx deleted (stale precursor, filename collision resolved); NowBattingStrip.jsx repointed to root PlayerHandBadge with context="dark"; integration regression guard NowBattingStrip.test.jsx (new file, 63 lines) + 5 Badge tests + 4 PlayerHandBadge tests; Story 63 (P2) logged. (2) Backlog hygiene pass (PR #74, closes Story 34): Story 27 → 61 renumber (5 references), P2 row 47 → Story 62 promotion, Gaps 17/18/25/52 retired, 13 resolved headings marked ✅. Suite 644 → 654 passed + 1 skipped. No user-facing change.
 - v2.5.11 (2026-05-13): Multi-PR release. (1) Slice 4 dead-code cleanup (Story 54, PR #67): removed legacy `ScoringMode/index.jsx` + `ScoringMode/README.md` (both unreferenced since Slice 3); removed `Viewer/ViewerMode.jsx` + colocated test (replaced by DugoutView isViewer=true in Slice 3). ScoringMode/ directory PRESERVED — still holds 7 live child components DugoutView imports directly (directory restructure deferred to a separate refactor PR). (2) UX Phase 3 Step 2 (PR #68): EmptyState.jsx migrated to Stack/Text/Button primitives; Story 59 closed (PlayerHandBadge unused tokens import removed); token coverage gaps filed as Story 60. (3) UX track docs catchup (PR #69): UX_REFACTOR_ROADMAP, CLAUDE.md Active Tracks, ROADMAP brought current with Phase 2 + Phase 3 Step 1/2 ship status. No user-facing change.
 - v2.5.10 (2026-05-08): Phase 2 — UI primitives (Badge, Button, Card, Stack, Text) added to frontend/src/components/ui/; +107 component tests; LockFlow.jsx duplicate fontSize cleanup (no visual change); Phase 3 Step 1 — PlayerHandBadge.jsx migrated to Badge primitive (PR #62, first consumer, pure refactor).
 - v2.5.9 (2026-05-07): Slice 3 — COMBINED_GAMEMODE_AND_SCORING flipped default-ON; legacy ScoringMode import + render block + Scoring tab removed; DUGOUT VIEW is now sole game-day launcher; ViewerMode share-link path simplified to DugoutView isViewer=true.
