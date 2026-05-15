@@ -69,4 +69,35 @@ describe('PlayerHandBadge (root) — R1 token characterization', function () {
     expect(span.style.background).toBe('rgb(243, 244, 246)');
   });
 
+  // ── Context prop — light/dark surface variants ─────────────────────────────
+
+  test('R3.8: hand="L" + context="dark" — outer badge background is whiteLight overlay', function () {
+    render(<PlayerHandBadge hand="L" context="dark" />);
+    var span = screen.getByText('L').parentElement;
+    // tokens.color.overlay.whiteLight = 'rgba(255,255,255,0.15)'
+    // JSDOM normalizes to 'rgba(255, 255, 255, 0.15)' (spaces inserted after commas)
+    expect(span.style.background).toBe('rgba(255, 255, 255, 0.15)');
+  });
+
+  test('R3.9: hand="L" + context="dark" — outer badge color is onDark white', function () {
+    render(<PlayerHandBadge hand="L" context="dark" />);
+    var span = screen.getByText('L').parentElement;
+    // tokens.color.text.onDark = '#FFFFFF' → JSDOM normalizes to rgb(255, 255, 255)
+    expect(span.style.color).toBe('rgb(255, 255, 255)');
+  });
+
+  test('R3.10: hand="R" + context="dark" — outer badge background is whiteLight overlay', function () {
+    render(<PlayerHandBadge hand="R" context="dark" />);
+    var span = screen.getByText('R').parentElement;
+    expect(span.style.background).toBe('rgba(255, 255, 255, 0.15)');
+  });
+
+  test('R3.11: hand="L" + explicit context="light" matches default light styling', function () {
+    render(<PlayerHandBadge hand="L" context="light" />);
+    var span = screen.getByText('L').parentElement;
+    // Preservation guard: explicit context="light" must render identical to
+    // omitted context (R3.6 behavior). GREEN before AND after Step 2.D.4.
+    expect(span.style.background).toBe('rgb(219, 234, 254)');
+  });
+
 });
