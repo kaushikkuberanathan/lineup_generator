@@ -1,5 +1,20 @@
 ﻿export var VERSION_HISTORY = [
   {
+    version: '2.5.12',
+    date: 'May 2026',
+    headline: 'Stability and performance update',
+    userChanges: [],
+    techNote: 'Under-the-hood stability improvements',
+    internalChanges: [
+      'UX Phase 3 — Badge context prop + PlayerHandBadge consolidation (PR #73, develop @ f6c4bc4): Badge primitive (frontend/src/components/ui/Badge.jsx) gained a context = "light" | "dark" prop; dark variants are token-driven (no hard-coded colors). PlayerHandBadge (frontend/src/components/PlayerHandBadge.jsx) extended to forward the context prop to its underlying Badge.',
+      'Filename collision resolved: frontend/src/components/Shared/PlayerHandBadge.jsx deleted (stale precursor). The root frontend/src/components/PlayerHandBadge.jsx is now the single source of truth.',
+      'NowBattingStrip (frontend/src/components/GameDay/NowBattingStrip.jsx) repointed to import the root PlayerHandBadge and pass context="dark" so the dugout-strip badges read correctly against the dark scoreboard background.',
+      'Regression guard added: frontend/src/components/GameDay/NowBattingStrip.test.jsx (new file, 63 lines) plus assertions added to frontend/src/components/PlayerHandBadge.test.jsx and frontend/src/components/ui/Badge.test.jsx.',
+      'Story 63 logged in P2 backlog: pre-existing strip-badge data-path bug (out of scope for the consolidation; surfaced during PR #73 review).',
+      'Backlog hygiene pass (PR #74, develop @ 7c6f001, closes Story 34): Story 27 (P0 share-link routing) renumbered → Story 61 with 5 in-doc references updated; P2 row 47 (dbLoadShareLink) promoted → Story 62 with typed acceptance criteria; Gaps 17/18/25/52 documented in the Retired / Never Filed section; scoring-updates v2.4.x section renamed from "candidates" → "completed"; 13 resolved story headings marked ✅ in place; Story 34 AC updated to close hygiene pass scope.',
+    ],
+  },
+  {
     version: '2.5.11',
     date: 'May 2026',
     headline: 'Stability and performance update',
