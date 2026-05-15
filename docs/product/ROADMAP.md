@@ -121,7 +121,7 @@ Slice 0 of combined game view. No user-facing changes — COMBINED_GAMEMODE_AND_
 - `ScoreboardRow.jsx` (new) — extracted scoring row primitive from LiveScoringPanel
 - `useLiveScoring.js` — Story 20 refactor: `flipHalfInning()` helper extracted; `resolveAtBat`, `endHalfInning`, `recordOppPitch` (strikeout + direct-out paths), `confirmRunnerAdvancement` all consolidated onto helper
 - `featureFlags.js` — `COMBINED_GAMEMODE_AND_SCORING: false` added
-- Story 27 (P0) opened: share-link viewer routing broken in prod (pre-existing, separate hotfix)
+- Story 61 (P0) opened: share-link viewer routing broken in prod (pre-existing, separate hotfix)
 - Stories 40–44 captured in backlog (pre-push hook, Defender fork-spawn, branch protection posture)
 
 ## v2.5.3 — 2026-04-28 (shipped to prod 2026-04-28)
@@ -864,7 +864,7 @@ Game Mode polish release covering three themes:
 
 ## 🔴 P0 — Critical / Blocking
 
-### Story 27 (P0) — Share-link viewer routing broken in prod
+### Story 61 (P0) — Share-link viewer routing broken in prod
 
 **Status:** Open  
 **Discovered:** April 30, 2026 during Slice 0 (combined game view) dev test on Vercel preview  
@@ -920,6 +920,17 @@ Game Mode polish release covering three themes:
 | 42 | **Pre-push hook doesn't differentiate env-broken vs test-failure** | When hook fails, developer cannot tell if it's environmental OOM/spawn issue or real regression without manually reading Vitest output. Friction makes `--no-verify` more tempting. Proposed fix: hook detects timeout patterns and emits "ENVIRONMENT TIMEOUT" vs "TEST FAILURE" messages; logs bypass invocations for audit. P2 polish, address when hook touches happen. |
 | 43 | **Branch protection allows admin bypass; main should be stricter than develop** | Push to develop on May 1 reported "Bypassed rule violations" for required PR + status checks. Standard GitHub behavior — owner has implicit bypass unless "Do not allow bypassing the above settings" is checked. Acceptable on develop for solo iteration; main should require explicit unlock. Proposed fix: enable strict toggle on main only. Blocks: requires Story 41 resolution first (otherwise can't merge to main without re-bypassing). |
 
+### Story 62 (P2) — dbLoadShareLink silent null collapses three failure modes
+
+**Problem:** `dbLoadShareLink` returns null for at least three distinct failure modes (row not found, RLS block, malformed slug) and the caller cannot distinguish them — all three collapse into a single silent null, making the share-link error surface undiagnosable.
+
+**Acceptance criteria:**
+- Caller receives a typed result or error code distinguishing: (a) not found, (b) RLS/auth block, (c) malformed slug
+- Share-link error UI surfaces a user-meaningful message per failure mode
+- Unit test covers all three paths
+
+**Priority:** P2 | **Connects to:** Story 61 (P0 share-link routing)
+
 ---
 
 ## 🟢 P3 — Code Quality / Observability
@@ -953,6 +964,12 @@ Game Mode polish release covering three themes:
 ## ✅ Resolved / Won't Fix
 
 - **Android PWA screenshot restriction** — OS-level security policy on standalone PWA windows. Not fixable in web code without breaking Game Mode UX. Workaround: Share Link. iOS unaffected. Closed April 2026.
+
+---
+
+## 🗃️ Retired / Never Filed
+
+Story numbers 17, 18, 25, and 52 were never allocated. No entries exist in this file for these numbers. This stub is intentional — it closes the gap so future audits do not re-investigate these numbers.
 
 ---
 
@@ -1190,7 +1207,7 @@ Game Mode polish release covering three themes:
 
 ---
 
-## scoring-updates — v2.4.x candidates
+## scoring-updates — completed in v2.4.x
 
 ### Feature: Opponent runners on base
 - Diamond UI parity with home-team runner display during opponent half.
@@ -1199,7 +1216,7 @@ Game Mode polish release covering three themes:
 - Bundle with 10U+ walk/strikeout rule logic for opponent half.
 - Surfaced from v2.3.2 dev-test coach feedback (KK, April 2026).
 
-### Story 27 (P2) — Home team name replaces "Us" / "US" throughout scoring
+### ✅ Story 27 (P2) — Home team name replaces "Us" / "US" throughout scoring
 Status: Resolved — v2.4.0 (2026-04-24)
 Discovered: 2026-04-24, during v2.3.4 opponent-name sweep local smoke
 Target: v2.4.x
@@ -1228,7 +1245,7 @@ Recommendation: Option B. teamShort was a pre-v2.3.4 hack; consolidating
 Notes: Could bundle with Story 28 (game context header) since both edit
   LiveScoringPanel.jsx — ~half the PR overhead.
 
-### Story 29 (P2) — Scoring sheet semantic cleanup (SCORING_SHEET_V2)
+### ✅ Story 29 (P2) — Scoring sheet semantic cleanup (SCORING_SHEET_V2)
 Status: Resolved — v2.5.0 (2026-04-24)
 Discovered: 2026-04-24, post v2.4.0 scoring review
 Target: v2.5.0
@@ -1242,7 +1259,7 @@ Resolution: SCORING_SHEET_V2 feature flag (default true). OUTCOME_ROWS_V2
   full-width). Opp-half +1 Run buttons hidden (superseded by ScoreboardRow chips).
   8 tests in scoringSheetV2.test.js.
 
-### Story 28 (P2) — Game context header at top of scoring screen
+### ✅ Story 28 (P2) — Game context header at top of scoring screen
 Status: Resolved — v2.4.0 (2026-04-24)
 Discovered: 2026-04-24, coach observation during v2.3.4 scoring review
 Target: v2.4.x
@@ -1369,7 +1386,7 @@ Proposed fixes:
 Recommendation: A — test gate runs in CI, blocks PR merge if drifted, doesn't
   change developer workflow. Lowest cost, highest reliability.
 
-### Story 32 (P3) — Pre-push hook retry hides OOM failures
+### ✅ Story 32 (P3) — Pre-push hook retry hides OOM failures
 Status: Resolved (v2.5.3, this branch — bundled with Story 37 Husky update)
 Discovered: 2026-04-28 (re-flagged across multiple sessions)
 Target: Next infra patch
@@ -1392,7 +1409,7 @@ Proposed fixes:
 Recommendation: B if straightforward to tune; otherwise A. Either way, restore
   the explicit gate. Status quo violates CLAUDE.md.
 
-### Story 33 (P3) — VERSION_HISTORY techNote validation
+### ✅ Story 33 (P3) — VERSION_HISTORY techNote validation
 Status: Resolved (v2.5.3, fd2e069)
 Discovered: 2026-04-28, during v2.5.2 release recon
 Target: Next infra patch
@@ -1433,8 +1450,10 @@ Proposed fixes:
   C) Leave as-is, accept the cosmetic debt.
 Recommendation: A in a focused docs cleanup commit — low risk, restores
   consistency. Defer B unless A surfaces deeper structural issues.
+Acceptance criteria:
+  - Hygiene pass complete: Story 27 (P0) collision resolved → renumbered Story 61; P2 table row 47 (dbLoadShareLink) promoted to Story 62; gaps 17/18/25/52 documented in ## 🗃️ Retired / Never Filed stub. Completed 2026-05-14.
 
-### Story 35 (P3) — CLAUDE.md docs drift on rate limiter state
+### ✅ Story 35 (P3) — CLAUDE.md docs drift on rate limiter state
 Status: Resolved (v2.5.3, this branch)
 Discovered: 2026-04-28, during PR #29 diagnostic
 Target: Next infra patch
@@ -1487,7 +1506,7 @@ Recommendation: C as primary (tests should be robust regardless of trigger
   pattern), A as bonus (doesn't hurt to deduplicate). Skip D unless other
   reasons emerge to revive a test backend.
 
-### Story 37 (P2) — Branch strategy enforcement gap
+### ✅ Story 37 (P2) — Branch strategy enforcement gap
 Status: Resolved (v2.5.3, this branch)
 Discovered: 2026-04-28, during v2.5.2 retrospective
 Target: Next infra patch
@@ -1595,7 +1614,7 @@ Recommendation: A. Stay in Vitest, no new deps, no language migration.
 
 ---
 
-### Story 45 (P3) — Husky v10 + doc drift cleanup
+### ✅ Story 45 (P3) — Husky v10 + doc drift cleanup
 Status: Resolved in v2.5.7 hook fix (2026-05-06)
 Discovered: 2026-05-02 (branch hygiene session)
 Target: v2.5.7 ✓
@@ -1630,7 +1649,7 @@ Recommendation: (a) — all four are one-liners. Bundle as a single chore PR.
 
 ---
 
-### Story 46 (P1) — Slice 2 — Combined View Layout Shell
+### ✅ Story 46 (P1) — Slice 2 — Combined View Layout Shell
 Status: Resolved in v2.5.7 (2026-05-04)
 Discovered: 2026-05-03 (post-Slice 1 smoke test on dev; COMBINED_GAMEMODE_AND_SCORING flag ON)
 Target: v2.5.7 ✓
@@ -1677,7 +1696,7 @@ Target: Slice 2 if layout slack; Slice 3 polish pass otherwise
 
 ---
 
-### Story 50 (P1) — DugoutView exit affordance
+### ✅ Story 50 (P1) — DugoutView exit affordance
 Status: Resolved in v2.5.7 fix-up (2026-05-04)
 Discovered: 2026-05-04 (Slice 2 dev soak smoke test)
 Target: v2.5.7 (in-line fix, no version bump) ✓
@@ -1757,7 +1776,7 @@ This is a docs-only change with zero risk. Should ship in the same PR as or befo
 
 ---
 
-### Story 53 (P3) — Pre-push hook scope correction
+### ✅ Story 53 (P3) — Pre-push hook scope correction
 Status: Resolved in v2.5.7 hook fix (2026-05-06)
 Discovered: 2026-05-06 (during v2.5.7 release session — blocked `git push -u origin chore/sync-main-into-develop`)
 Target: v2.5.7 ✓
@@ -1772,7 +1791,7 @@ Target: v2.5.7 ✓
 
 ---
 
-### Story 54 (P3) — Slice 4: ScoringMode + ViewerMode component deletion
+### ✅ Story 54 (P3) — Slice 4: ScoringMode + ViewerMode component deletion
 Status: **Resolved (partial) in v2.5.11** — see release entry at top of file
 Discovered: 2026-05-07 (post-Slice 3 dead-code audit)
 Shipped: 2026-05-13 (PR for feature/story-54-slice-4-cleanup)
@@ -1897,7 +1916,7 @@ Proposed fixes:
 Recommendation: (a) — VERSION_HISTORY is authoritative documentation
 and should be precise. Cost is a single entry edit.
 
-### Story 59 (P3) — Unused `tokens` import in PlayerHandBadge.jsx
+### ✅ Story 59 (P3) — Unused `tokens` import in PlayerHandBadge.jsx
 Status: Resolved — fix path (a) shipped via PR #68 (squash `66a4586` on develop, 2026-05-13)
 Discovered: 2026-05-12 — Phase 3 Step 2 prep diagnostic
 Target: v2.5.11 (batched into Phase 3 Step 2 PR)
