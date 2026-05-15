@@ -1,7 +1,41 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: May 14, 2026 (v2.5.12 — multi-PR release: Badge/PlayerHandBadge consolidation + backlog hygiene)
+> Last updated: May 15, 2026 (v2.5.13 — scoring restoration: leagueRules crash + DugoutView deadlock)
 > MVP launched: March 24, 2026
+
+---
+
+## v2.5.13 — 2026-05-15 — Scoring restoration
+
+**Title:** Scoring restoration — leagueRules crash + DugoutView deadlock
+
+Closes Stories 15 and 16.
+
+### Changes
+
+- **Fixed:** `getRules` no longer throws on unrecognized age group keys (e.g. `"10U"`). New alias map normalizes `10U`/`9U`/`10U-minor`/`9U-minor` to canonical `9-10U` / `9-10U-minor` keys. When normalization still doesn't match, falls back to `baseball:9-10U` (or `softball:9-10U`) and emits `console.warn('[leagueRules] Unknown profile "X" — falling back to default')`. Pre-v2.5.13 this throw at hook-init time blocked the scoring surface from rendering entirely.
+- **Fixed:** `dugoutFocusMode` deadlock — LiveScoringPanel is now visible whenever the coach has claimed scorer (Practice Mode or real game). Formula revised: `(currentAtBat !== null || scorerClaimed) ? 'scoring' : 'lineup'`. Pre-v2.5.13 the state machine showed DefenseDiamond at the start of every scoring session, with no UI to call `startAtBat()` — locking the coach out of starting the first at-bat.
+- **Updated:** Two `DugoutView.test.jsx` tests rewritten to assert the v2.5.13 contract. Viewer-path transitions (still currentAtBat-driven) untouched.
+- **Docs:** Root `CLAUDE.md` `dugoutFocusMode` entry rewritten with the new formula, per-role behaviour, and the deadlock rationale. Story 48 named as the designated follow-up for the scorer-side defense-view toggle.
+
+### Files changed
+
+- `frontend/src/utils/leagueRules.js` — alias map + fallback return
+- `frontend/src/components/game-mode/DugoutView.jsx` — `dugoutFocusMode` formula
+- `frontend/src/components/game-mode/DugoutView.test.jsx` — two tests
+- `CLAUDE.md` — `dugoutFocusMode` doc entry
+- `frontend/src/App.jsx` — `APP_VERSION` bump
+- `frontend/package.json` / `backend/package.json` — version bump
+- `frontend/src/data/versionHistory.js` — release entry prepended
+
+### Release mechanics
+
+- Suite: 654 passed / 1 skipped / 0 failed (44 test files)
+- Build: clean (module count reported at deploy step)
+
+### Follow-up
+
+- **Story 48** — in-session defense-view toggle for scorers. v2.5.13 leaves DefenseDiamond mounted but `display:none` for the entire scorer session; toggle should surface on ScoreboardRow so coaches can review positions between at-bats without exiting DugoutView.
 
 ---
 
@@ -1328,14 +1362,16 @@ Open questions to resolve during implementation:
 
 ## Backlog
 
-### Story 15 (P1): RLS policy blocking saveTeamData calls in real-game mode
+### ✅ Story 15 (P1): RLS policy blocking saveTeamData calls in real-game mode
 **Surfaced:** April 23, 2026 (real-game smoke test)
+**Status:** Resolved v2.5.13
 - Supabase RLS policy on team_data table rejecting writes from scoring session (anon key, pre-auth).
 - Affects roster/schedule sync to Supabase. Does not block in-session scoring (three-layer pattern protects local state).
 - Investigation: is RLS policy `allow_scorer_writes` correct? Is anon key auth state set on the Supabase client at write time?
 
-### Story 16 (P1): "No batting order set" in real-game mode despite localStorage data
+### ✅ Story 16 (P1): "No batting order set" in real-game mode despite localStorage data
 **Surfaced:** April 23, 2026
+**Status:** Resolved v2.5.13 — dugoutFocusMode deadlock fixed; scorerClaimed now gates scoring surface visibility
 - "No batting order set" UI message appears in real-game mode even though localStorage has full roster and batting order.
 - Likely cause: team_data Supabase READ also failing (per Story 15 RLS), so React state stays empty on mount; localStorage hydration not reached.
 - Fix Story 15 first, then re-test. If READ and WRITE both fail under same policy, a single RLS fix resolves both.
