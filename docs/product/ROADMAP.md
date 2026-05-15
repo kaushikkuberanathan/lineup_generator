@@ -1977,6 +1977,42 @@ Recommendation: (a) — most precise; preserves current visual; one
 focused R-track patch. Alternatively defer to (c) if Theme System
 Phase 3 is on the near horizon.
 
+### Story 63 (P2) — Now-batting strip hand badges not rendering
+Status: Open
+Discovered: 2026-05-14 — Phase 3 Step 2.D.5 visual verification;
+  confirmed pre-existing by prod + local test (pre-2.D code shows
+  same behavior). Went unnoticed because the Mud Hens roster
+  historically had no batting-hand data set, masking the
+  strip-specific failure. Root issue: roster view (App.jsx / root
+  PlayerHandBadge) reads battingHand correctly and displays L/R
+  badges; NowBattingStrip does not — confirming the bug is in how
+  NowBattingBar receives or processes that data, not in the
+  component or badge rendering.
+Target: TBD
+Symptom: NowBattingBar pills show player first names but no L/R hand
+  badge, even for players with battingHand set. The integration
+  regression guard (NowBattingStrip.test.jsx, added in Phase 3
+  Step 2.D.3) proves the component renders correctly given a proper
+  synthetic roster — the failure is upstream of the component
+  boundary.
+Impact: Game Mode coaches lose at-a-glance batting-hand info in the
+  now-batting strip. Game and lineup functions unaffected — degraded
+  info display only. Workaround: open the player card.
+Root cause: hypothesis, unconfirmed — NowBattingBar's `roster` prop
+  (optional; getHand uses it for battingHand lookup) is not being
+  passed by its parent (DugoutView / App.jsx), or battingOrder name
+  strings do not match `roster[].name`, causing getHand to fall
+  through to "U" for every pill.
+Proposed fixes:
+  - (a) Trace the NowBattingBar render site in the parent — confirm
+        whether roster is passed and whether name keys align.
+  - (b) If roster is not passed, wire it through.
+  - (c) If name mismatch, normalize the lookup key.
+  Investigation may touch App.jsx (locked — gate phrase required).
+Recommendation: diagnose the parent wiring before fixing. Own branch
+off develop; RED integration test at the real-parent-path level (not
+the synthetic-roster level the existing guard uses).
+
 ---
 
 ### Automated Score Reporting (County Integration)

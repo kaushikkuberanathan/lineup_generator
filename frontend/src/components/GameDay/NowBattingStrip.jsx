@@ -10,7 +10,7 @@
  *   roster        {Array}       optional — player objects used to look up battingHand
  */
 
-import { PlayerHandBadge } from "../Shared/PlayerHandBadge";
+import { PlayerHandBadge } from "../PlayerHandBadge";
 
 function firstName(name) {
   if (!name) return name;
@@ -66,7 +66,7 @@ export function NowBattingBar({ battingOrder, currentIndex, onAdvance, onBack, a
             <div style={{ fontSize: '20px', fontWeight: 'bold', lineHeight: 1.1,
               color: pill.active ? '#f5c842' : 'rgba(255,255,255,0.85)',
               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {firstName(pill.name)}{' '}<PlayerHandBadge hand={pill.hand} />
+              {firstName(pill.name)}{' '}<PlayerHandBadge hand={pill.hand} context="dark" />
             </div>
             <div style={{ fontSize: '10px', marginTop: '3px',
               color: pill.active ? 'rgba(245,200,66,0.7)' : 'rgba(255,255,255,0.4)',
