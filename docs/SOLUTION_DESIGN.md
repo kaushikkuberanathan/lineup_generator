@@ -467,16 +467,15 @@ frontend/src/
     └── Viewer/
 ```
 
-### Navigation Structure (v2.2.24+)
+### Navigation Structure (v2.5.9+)
 
-5 primary tabs in a fixed bottom nav bar (portrait) / sidebar (landscape):
+4 primary tabs in a fixed bottom nav bar (portrait) / sidebar (landscape):
 
 | Primary Tab | Sub-tabs | Responsibility |
 |---|---|---|
 | **My Team** | Players / Songs | Player cards with V2 attribute editing, add/remove, constraints; Walk-up song management per player |
-| **Game Day** | Lineups / Songs / Game Mode | Lineups as default (v2.2.24 restructure); Songs sub-tab filtered to tonight's active batting order; Full-screen Game Mode dugout view |
+| **Game Day** | Lineups / Songs / Dugout View | Lineups as default (v2.2.24 restructure); Songs sub-tab filtered to tonight's active batting order; Dugout View — unified game-day surface (lineup + live scoring) |
 | **Season** | Schedule / Snacks | Game list, AI import, result logging, batting stat entry; Per-game snack duty assignment |
-| **Scoring** | — | Live scoring tab (pilot teams: Mud Hens, Demo All-Stars); Claim Scorer Role, inning-by-inning run entry |
 | **More** | About / Updates / Links / Feedback / Support | App description + info; Version history; External resources; Coach feedback + bug reports; FAQ |
 
 ### State Management
