@@ -425,7 +425,7 @@ Auth gate is currently bypassed in production (v2.2.22 hotfix) pending Phase 2 c
 |---|---|
 | Framework | React 18 (functional components + hooks) |
 | Build | Vite 5 |
-| Styling | Inline styles + CSS vars (no Tailwind; single-file constraint) |
+| Styling | Inline styles only — no Tailwind, no CSS modules. Design tokens defined in `theme/tokens.js` as plain JS constants; consumed via inline `style={{}}` references across components. Hex literals used at call sites until full token migration is complete. |
 | PDF | jsPDF (loaded on demand, not bundled) |
 | Analytics | Vercel Analytics + Mixpanel |
 | Hosting | Vercel with CI/CD on push to `main` |
@@ -442,7 +442,7 @@ frontend/src/
 ├── content/
 │   └── faqs.js          ← FAQ content (categories + items)
 ├── theme/
-│   ├── tokens.js        ← Semantic design token definitions (Phase 1a)
+│   ├── tokens.js        ← Design token definitions (colors, spacing, typography constants)
 │   └── index.js         ← Barrel export
 ├── utils/
 │   ├── lineupEngineV2.js
@@ -459,8 +459,9 @@ frontend/src/
     ├── Auth/
     ├── GameDay/
     ├── BattingOrderStrip/  ← read-only batting order strip (Now Batting / On Deck / In Hole / +N more); used by DugoutView
-    ├── ScoringMode/
+    ├── ScoringMode/            ← 7 child components imported by DugoutView; index.jsx removed v2.5.11
     ├── game-mode/
+    │   └── DugoutView.jsx   ← Combined game + scoring view (sole game-day surface since v2.5.9)
     ├── Shared/
     ├── Support/
     └── Viewer/
