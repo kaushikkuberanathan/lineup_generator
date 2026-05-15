@@ -136,4 +136,41 @@ describe('Badge — Phase 2 primitive', function () {
     expect(container.querySelector('span').getAttribute('aria-label')).toBe('Left-handed batter');
   });
 
+  // ── BD8 — hand-L with context="dark" ─────────────────────────────────────
+
+  test('BD8.1: hand-L + context="dark" outer span background is whiteLight overlay', function () {
+    var { container } = render(<Badge variant="hand-L" context="dark">L</Badge>);
+    // tokens.color.overlay.whiteLight = 'rgba(255,255,255,0.15)'
+    // JSDOM normalizes to 'rgba(255, 255, 255, 0.15)' (spaces inserted after commas)
+    expect(container.querySelector('span').style.background).toBe('rgba(255, 255, 255, 0.15)');
+  });
+
+  test('BD8.2: hand-L + context="dark" outer span color is onDark white', function () {
+    var { container } = render(<Badge variant="hand-L" context="dark">L</Badge>);
+    // tokens.color.text.onDark = '#FFFFFF' — JSDOM normalizes hex → rgb(255, 255, 255)
+    expect(container.querySelector('span').style.color).toBe('rgb(255, 255, 255)');
+  });
+
+  // ── BD9 — hand-R with context="dark" ─────────────────────────────────────
+
+  test('BD9.1: hand-R + context="dark" outer span background is whiteLight overlay', function () {
+    var { container } = render(<Badge variant="hand-R" context="dark">R</Badge>);
+    expect(container.querySelector('span').style.background).toBe('rgba(255, 255, 255, 0.15)');
+  });
+
+  test('BD9.2: hand-R + context="dark" outer span color is onDark white', function () {
+    var { container } = render(<Badge variant="hand-R" context="dark">R</Badge>);
+    expect(container.querySelector('span').style.color).toBe('rgb(255, 255, 255)');
+  });
+
+  // ── BD10 — context="light" preservation guard ────────────────────────────
+
+  test('BD10.1: explicit context="light" matches implicit default (hand-L light styles)', function () {
+    var { container } = render(<Badge variant="hand-L" context="light">L</Badge>);
+    // Preservation guard: explicit context="light" must render identical to
+    // omitted context (i.e., BD2.1 behavior). Stays GREEN before AND after
+    // Badge.jsx implementation in Step 2.C.
+    expect(container.querySelector('span').style.background).toBe('rgb(219, 234, 254)');
+  });
+
 });

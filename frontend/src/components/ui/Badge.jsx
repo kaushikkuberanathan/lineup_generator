@@ -2,11 +2,17 @@ import { tokens } from '../../theme/tokens';
 import { Text } from './Text';
 
 var VARIANT_STYLES = {
-  'hand-L': { background: '#dbeafe', color: '#1d4ed8' },
-  'hand-R': { background: '#f3f4f6', color: '#4b5563' },
+  'hand-L': {
+    light: { background: '#dbeafe', color: '#1d4ed8' },
+    dark: { background: tokens.color.overlay.whiteLight, color: tokens.color.text.onDark },
+  },
+  'hand-R': {
+    light: { background: '#f3f4f6', color: '#4b5563' },
+    dark: { background: tokens.color.overlay.whiteLight, color: tokens.color.text.onDark },
+  },
 };
 
-export function Badge({ variant, children, style, ...rest }) {
+export function Badge({ variant, context = 'light', children, style, ...rest }) {
   if (children == null) return null;
 
   return (
@@ -19,7 +25,7 @@ export function Badge({ variant, children, style, ...rest }) {
           borderRadius: tokens.radius.xs,
           lineHeight: '16px',
         },
-        VARIANT_STYLES[variant] || {},
+        (VARIANT_STYLES[variant] || {})[context] || {},
         style
       )}
       {...rest}
