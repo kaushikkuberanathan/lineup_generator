@@ -1,15 +1,23 @@
 import { useState } from "react";
 import { FAQ_CATEGORIES } from "../../content/faqs";
+import { Pill } from "../ui/Pill";
+import { ListRow } from "../ui/ListRow";
+import { Text } from "../ui/Text";
+import { Stack } from "../ui/Stack";
+import { tokens } from "../../theme/tokens";
 
 /**
  * FAQSection
  * Support tab → FAQ sub-tab.
  * Category picker at top; each category expands into accordion Q&A pairs.
  *
- * Props:
- *   C   {object}  color constants from App.jsx
+ * Phase 3 Step 3 migration: C/S props removed; consumes ui primitives.
+ *   Category pills → Pill (active/inactive)
+ *   Accordion rows → ListRow (full-width tap target)
+ *   Layout         → Stack
+ *   Typography     → Text
  */
-export function FAQSection({ C }) {
+export function FAQSection() {
   var _cat = useState(FAQ_CATEGORIES[0].id);
   var activeCategory = _cat[0];
   var setActiveCategory = _cat[1];
@@ -28,45 +36,47 @@ export function FAQSection({ C }) {
     <div>
       {/* Section header */}
       <div style={{ padding: "12px 16px 4px" }}>
-        <div style={{ fontSize: "11px", fontWeight: "700", letterSpacing: "0.08em", color: C.textMuted, textTransform: "uppercase" }}>
+        <Text
+          size="xs"
+          weight="bold"
+          style={{
+            display: "block",
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+            color: tokens.color.text.tertiary,
+          }}
+        >
           Frequently Asked Questions
-        </div>
+        </Text>
       </div>
 
-      {/* Category picker */}
+      {/* Category picker — Stack handles flex/gap; outer div holds bottom border + scroll hints */}
       <div style={{
-        display: "flex",
-        overflowX: "auto",
-        gap: "8px",
         padding: "8px 16px 12px",
-        borderBottom: "1px solid " + C.border,
+        borderBottom: "1px solid " + tokens.color.border.default,
         WebkitOverflowScrolling: "touch",
-        scrollbarWidth: "none"
+        scrollbarWidth: "none",
       }}>
-        {FAQ_CATEGORIES.map(function(cat) {
-          var active = cat.id === activeCategory;
-          return (
-            <button
-              key={cat.id}
-              onClick={function() { setActiveCategory(cat.id); setOpenItem(null); }}
-              style={{
-                flexShrink: 0,
-                padding: "6px 12px",
-                borderRadius: "20px",
-                border: "1px solid " + (active ? C.navy : C.border),
-                background: active ? C.navy : "#fff",
-                color: active ? "#fff" : C.textMuted,
-                fontSize: "12px",
-                fontWeight: active ? "700" : "500",
-                fontFamily: "Georgia, serif",
-                cursor: "pointer",
-                whiteSpace: "nowrap"
-              }}
-            >
-              {cat.emoji} {cat.label}
-            </button>
-          );
-        })}
+        <Stack
+          direction="row"
+          gap="sm"
+          style={{ overflowX: "auto", paddingBottom: "4px" }}
+        >
+          {FAQ_CATEGORIES.map(function(cat) {
+            return (
+              <Pill
+                key={cat.id}
+                active={activeCategory === cat.id}
+                onClick={function() {
+                  setActiveCategory(cat.id);
+                  setOpenItem(null);
+                }}
+              >
+                {cat.emoji} {cat.label}
+              </Pill>
+            );
+          })}
+        </Stack>
       </div>
 
       {/* Q&A accordion */}
@@ -74,58 +84,55 @@ export function FAQSection({ C }) {
         {category.items.map(function(item, idx) {
           var isOpen = openItem === idx;
           return (
-            <div
-              key={idx}
-              style={{
-                borderBottom: "1px solid " + C.border,
-                background: "#fff"
-              }}
-            >
-              <button
+            <div key={idx}>
+              <ListRow
                 onClick={function() { toggleItem(idx); }}
-                style={{
-                  display: "flex",
-                  alignItems: "flex-start",
-                  justifyContent: "space-between",
-                  width: "100%",
-                  background: "none",
-                  border: "none",
-                  padding: "14px 16px",
-                  cursor: "pointer",
-                  textAlign: "left",
-                  gap: "10px"
-                }}
+                showDivider={!isOpen}
               >
-                <div style={{
-                  fontSize: "14px",
-                  fontWeight: "600",
-                  color: C.navy,
-                  lineHeight: "1.4",
-                  flex: 1,
-                  fontFamily: "Georgia, serif"
-                }}>
-                  {item.q}
-                </div>
-                <span style={{
-                  fontSize: "16px",
-                  color: C.textMuted,
-                  flexShrink: 0,
-                  marginTop: "1px",
-                  transform: isOpen ? "rotate(90deg)" : "none",
-                  transition: "transform 0.15s ease",
-                  display: "inline-block"
-                }}>›</span>
-              </button>
+                <Stack
+                  direction="row"
+                  justify="between"
+                  align="start"
+                  gap="md"
+                  style={{ flex: 1 }}
+                >
+                  <Text
+                    size="md"
+                    weight="semibold"
+                    family="serif"
+                    color="navy"
+                    style={{ lineHeight: "1.4", flex: 1 }}
+                  >
+                    {item.q}
+                  </Text>
+                  <span style={{
+                    fontSize: "16px",
+                    color: tokens.color.text.tertiary,
+                    flexShrink: 0,
+                    marginTop: "1px",
+                    transform: isOpen ? "rotate(90deg)" : "none",
+                    transition: "transform 0.15s ease",
+                    display: "inline-block",
+                  }}>›</span>
+                </Stack>
+              </ListRow>
               {isOpen ? (
                 <div style={{
                   padding: "12px 16px 16px",
-                  fontSize: "13px",
-                  color: "#374151",
-                  lineHeight: "1.75",
                   background: "#f8fafc",
-                  borderTop: "1px solid " + C.border
+                  borderTop: "1px solid " + tokens.color.border.default,
+                  borderBottom: "1px solid " + tokens.color.border.default,
                 }}>
-                  {item.a}
+                  <Text
+                    style={{
+                      display: "block",
+                      fontSize: "13px",
+                      color: "#374151",
+                      lineHeight: "1.75",
+                    }}
+                  >
+                    {item.a}
+                  </Text>
                 </div>
               ) : null}
             </div>
@@ -133,8 +140,14 @@ export function FAQSection({ C }) {
         })}
       </div>
 
-      <div style={{ padding: "4px 16px 24px", fontSize: "11px", color: C.textMuted, textAlign: "center", lineHeight: "1.6" }}>
-        Still have questions? Use the Feedback tab to ask.
+      <div style={{ padding: "4px 16px 24px" }}>
+        <Text
+          size="xs"
+          color="tertiary"
+          style={{ display: "block", textAlign: "center", lineHeight: "1.6" }}
+        >
+          Still have questions? Use the Feedback tab to ask.
+        </Text>
       </div>
     </div>
   );

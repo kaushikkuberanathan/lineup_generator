@@ -8204,8 +8204,8 @@ export default function App() {
       {primaryTab === "more" && moreTab === "links"    ? renderLinks()    : null}
       {primaryTab === "more" && moreTab === "about"    ? renderAbout()    : null}
       {primaryTab === "more" && moreTab === "updates"  ? renderUpdates()  : null}
-      {primaryTab === "more" && moreTab === "legal"    ? <LegalSection C={C} S={S} /> : null}
-      {primaryTab === "more" && moreTab === "faq"      ? <FAQSection C={C} S={S} />   : null}
+      {primaryTab === "more" && moreTab === "legal"    ? <LegalSection /> : null}
+      {primaryTab === "more" && moreTab === "faq"      ? <FAQSection />   : null}
     </div>
   );
 
