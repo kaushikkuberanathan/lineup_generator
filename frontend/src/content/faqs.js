@@ -189,7 +189,11 @@ export var FAQ_CATEGORIES = [
     items: [
       {
         q: "How do I record the score during the game?",
-        a: "Tap the Scoring tab on the bottom nav, then tap Claim Scorer Role — this locks the scorer seat to your device so two people don't overwrite each other. Enter runs inning by inning as they happen. The coach can see the score update in real time on their device via share link."
+        a: "Tap Game Day on the bottom nav, then tap the Dugout sub-tab. Choose which half your team bats (top or bottom), then tap Claim Scorer Role — this locks the scorer seat to your device so two people don't overwrite each other. During each at-bat, use the pitch buttons: Ball, Strike (called), Strike K (swinging), Foul, and Contact. Outs and runs update automatically as plays resolve. The coach sees the score update live on their device via share link."
+      },
+      {
+        q: "How do I tell the app whether my team bats first or second?",
+        a: "When you open the Dugout sub-tab under Game Day, you'll be asked to pick your team's batting half — Top (your team bats first) or Bottom (your team bats second). This controls when the scoring screen shows your lineup vs. the opponent batter card. If you're not sure, check your game schedule — home teams typically bat in the bottom half. Set this once per game before claiming the scorer role."
       },
       {
         q: "Someone else already claimed the scorer role. What do I do?",
@@ -201,7 +205,7 @@ export var FAQ_CATEGORIES = [
       },
       {
         q: "I want to try the scoring features without messing up a real game. Is there a way to practice?",
-        a: "Yes — Practice Mode is built for exactly this. From Game Day, open any game and tap the Practice Mode toggle (🏋) before claiming the scorer role. Everything works the same — pitches, runs, outs, runners on bases, half-inning flips — but nothing saves to the cloud. Nobody else sees your practice session and the real game data is untouched. Great for walking through scoring with an assistant coach before your first game, or testing scenarios like how a runner-out-at-3rd affects the count."
+        a: "Yes — Practice Mode is built for exactly this. Tap Game Day on the bottom nav, then tap the Dugout sub-tab. On the entry screen, tap Practice Mode (🏋) instead of selecting a real game. Everything works the same — pitches, runs, outs, runners on bases, half-inning flips — but nothing saves to the cloud. Nobody else sees your practice session and the real game data is untouched. Great for walking through scoring with an assistant coach before your first game, or testing scenarios like how a runner-out-at-3rd affects the count."
       },
       {
         q: "How do I track the opposing team's pitches during their at-bat?",
