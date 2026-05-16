@@ -425,7 +425,7 @@ Auth gate is currently bypassed in production (v2.2.22 hotfix) pending Phase 2 c
 |---|---|
 | Framework | React 18 (functional components + hooks) |
 | Build | Vite 5 |
-| Styling | Inline styles + CSS vars (no Tailwind; single-file constraint) |
+| Styling | Inline styles only — no Tailwind, no CSS modules. Design tokens defined in `theme/tokens.js` as plain JS constants; consumed via inline `style={{}}` references across components. Hex literals used at call sites until full token migration is complete. |
 | PDF | jsPDF (loaded on demand, not bundled) |
 | Analytics | Vercel Analytics + Mixpanel |
 | Hosting | Vercel with CI/CD on push to `main` |
@@ -442,7 +442,7 @@ frontend/src/
 ├── content/
 │   └── faqs.js          ← FAQ content (categories + items)
 ├── theme/
-│   ├── tokens.js        ← Semantic design token definitions (Phase 1a)
+│   ├── tokens.js        ← Design token definitions (colors, spacing, typography constants)
 │   └── index.js         ← Barrel export
 ├── utils/
 │   ├── lineupEngineV2.js
@@ -459,23 +459,23 @@ frontend/src/
     ├── Auth/
     ├── GameDay/
     ├── BattingOrderStrip/  ← read-only batting order strip (Now Batting / On Deck / In Hole / +N more); used by DugoutView
-    ├── ScoringMode/
+    ├── ScoringMode/            ← 7 child components imported by DugoutView; index.jsx removed v2.5.11
     ├── game-mode/
+    │   └── DugoutView.jsx   ← Combined game + scoring view (sole game-day surface since v2.5.9)
     ├── Shared/
     ├── Support/
     └── Viewer/
 ```
 
-### Navigation Structure (v2.2.24+)
+### Navigation Structure (v2.5.9+)
 
-5 primary tabs in a fixed bottom nav bar (portrait) / sidebar (landscape):
+4 primary tabs in a fixed bottom nav bar (portrait) / sidebar (landscape):
 
 | Primary Tab | Sub-tabs | Responsibility |
 |---|---|---|
 | **My Team** | Players / Songs | Player cards with V2 attribute editing, add/remove, constraints; Walk-up song management per player |
-| **Game Day** | Lineups / Songs / Game Mode | Lineups as default (v2.2.24 restructure); Songs sub-tab filtered to tonight's active batting order; Full-screen Game Mode dugout view |
+| **Game Day** | Lineups / Songs / Dugout View | Lineups as default (v2.2.24 restructure); Songs sub-tab filtered to tonight's active batting order; Dugout View — unified game-day surface (lineup + live scoring) |
 | **Season** | Schedule / Snacks | Game list, AI import, result logging, batting stat entry; Per-game snack duty assignment |
-| **Scoring** | — | Live scoring tab (pilot teams: Mud Hens, Demo All-Stars); Claim Scorer Role, inning-by-inning run entry |
 | **More** | About / Updates / Links / Feedback / Support | App description + info; Version history; External resources; Coach feedback + bug reports; FAQ |
 
 ### State Management

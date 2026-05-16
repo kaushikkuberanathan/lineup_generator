@@ -53,10 +53,10 @@ Every product decision is evaluated against this principle first.
 - County score report checkbox per completed game
 - Game Mode — full-screen dugout view with inning advance, batting strip, Quick Swap
 - Out Tonight — absent players shown with red indicators across all 11 lineup surfaces
+- Live scoring — real-time at-bat tracking, scorer lock, game state sync via Supabase Realtime (v2.5.9)
 
 ### Phase 2 — In Progress
 
-- Live scoring: real-time at-bat tracking, scorer lock, game state sync via Supabase Realtime
 - Phase 4 auth: email magic link + Google OAuth, no passwords, no SMS
 - Admin UI (`admin.html`) — team management, user management, approval routing
 
@@ -283,7 +283,7 @@ Core single-coach lineup and schedule management. Auto-assign engine, batting or
 
 | Item | Status | Exit Criteria |
 |------|--------|---------------|
-| Live scoring (at-bat tracking, scorer lock) | In progress | Scorer can track full game from dugout device |
+| Live scoring (at-bat tracking, scorer lock) | ✅ Shipped (v2.5.9) | Scorer can track full game from dugout device |
 | Phase 4 auth (magic link + Google OAuth) | Parked — shims in place | Auth ships without blocking any existing viewer/share link |
 | Admin UI — six management tabs | In progress | KK can provision teams and manage users from admin.html |
 | RLS cutover (`004_rls_fixes.sql`) | Parked | Run only after Phase 4 auth confirmed end-to-end |

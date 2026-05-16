@@ -225,6 +225,17 @@
 - **Source:** Surfaced during v2.6.0 documentation foundation sweep on April 27, 2026.
 - **Why P3:** Not actively misleading — coaches without the flag never reach the relevant FAQ answer expecting it to apply. But represents a content quality gap worth resolving once flag count grows.
 
+### 🟡 P2 — D-S31: FEATURE_MAP.md Coverage Summary denominator drift
+
+| | |
+|---|---|
+| **Area** | Governance (Feature Map) |
+| **Status** | Open |
+| **Type** | Doc gap |
+| **Opened** | 2026-05-15 |
+| **Target** | (opportunistic — no version target) |
+| **Summary** | FEATURE_MAP.md Coverage Summary denominators show `/ 27` (lines 59–64) but heading at line 20 reads "Feature Registry (28 features)" and row recount confirms 28. Six summary lines need denominator bump to `/ 28`. Cosmetic number-printing fix — category counts unaffected. Discovered during v2.5.9 GA-state reconciliation patch (commit c97d5ae). |
+
 ---
 
 ## Open — Tooling / Process Gaps
