@@ -1,5 +1,20 @@
 ﻿export var VERSION_HISTORY = [
   {
+    version: '2.5.14',
+    date: '2026-05-16',
+    title: 'UX Phase 3 — Design System Primitives',
+    userChanges: [
+      'Support tab visual consistency improved — FAQ, Legal, offline banner, and validation notices now use the app\'s design system throughout',
+    ],
+    internalChanges: [
+      'Pill and ListRow UI primitives added (45 new tests, PL/LR series)',
+      'FAQSection, LegalSection, ValidationBanner, OfflineIndicator migrated to design system primitives — C/S prop threading removed',
+      'FAQSection and LegalSection behavioral regression guards added (9 tests, F/L series)',
+      'Test suite: 734 passing / 1 skipped',
+    ],
+    techNote: 'Under-the-hood stability improvements',
+  },
+  {
     version: '2.5.13',
     date: '2026-05-15',
     title: 'Scoring restoration — leagueRules crash + DugoutView deadlock',
