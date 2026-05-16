@@ -1,14 +1,11 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: May 15, 2026 (v2.5.13 — scoring restoration: leagueRules crash + DugoutView deadlock)
+> Last updated: May 16, 2026 (v2.5.14 — UX Phase 3: Design System Primitives)
 > MVP launched: March 24, 2026
 
 ---
 
-## Unreleased — Phase 3 Step 3 + Step 4 (feature/ux-phase-3-support-pages)
-
-> Commits on `feature/ux-phase-3-support-pages`, not yet shipped. PR open pending docs sweep.
-> When promoted, this section converts to a `## vX.Y.Z` release header — the branch parenthetical is removed and step entries stay as-is.
+## v2.5.14 — 2026-05-16 — UX Phase 3 — Design System Primitives
 
 ### UX Phase 3 Step 3 — Pill + ListRow primitives + Support page migrations (commit `40ad221`)
 
