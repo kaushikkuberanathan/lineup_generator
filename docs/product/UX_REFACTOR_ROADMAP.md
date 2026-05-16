@@ -4,7 +4,7 @@
 **Worktree:** `C:\Users\KKUBERANA1\Documents\lineup-generator-ux`
 **Owner:** KK (kaushik.kuberanathan@gmail.com)
 **Created:** 2026-05-01
-**Status:** Phases 1.0/1a/1b/1c shipped v2.5.6. R1 Roster Polish shipped `930c9b4` (PR #55). Phase 2 UI Primitives shipped v2.5.10 (PR #61 + release #63). Phase 3 Step 1 PlayerHandBadge → Badge shipped v2.5.10 (PR #62). Phase 3 Step 2 EmptyState → Stack/Text/Button + Story 59 cleanup shipped develop @ `66a4586` (PR #68, pending next promotion). Phase 3 Step 3+ active next.
+**Status:** Phases 1.0/1a/1b/1c shipped v2.5.6. R1 Roster Polish shipped `930c9b4` (PR #55). Phase 2 UI Primitives shipped v2.5.10 (PR #61 + release #63). Phase 3 Step 1 PlayerHandBadge → Badge shipped v2.5.10 (PR #62). Phase 3 Step 2 EmptyState → Stack/Text/Button + Story 59 cleanup shipped develop @ `66a4586` (PR #68, pending next promotion). Phase 3 Step 3 — Pill + ListRow primitives + Support page migrations — committed `40ad221` on `feature/ux-phase-3-support-pages` (pending PR). Phase 3 Step 4 — ValidationBanner + OfflineIndicator — committed `6f54757` on the same branch (pending PR). Phase 3 Step 5+ open.
 
 > Every future UX session on this branch reads this document first.
 > It is the single source of truth for context, sequencing, scope, gate
@@ -306,6 +306,8 @@ stopped. Pick up from the last completed step.
 | Phase 2 — UI Primitives | shipped in v2.5.10, PR #61 (primitives) + PR #63 (release) | `frontend/src/components/ui/Badge.jsx` (30 lines) · `Button.jsx` (91) · `Card.jsx` (53) · `Stack.jsx` (65) · `Text.jsx` (45) · colocated `*.test.jsx` for each · 107 new tests · suite ~552→~659 · primitives consume design tokens directly and accept raw passthroughs (`\|\| size`, `\|\| color`) for off-token values |
 | Phase 3 Step 1 — PlayerHandBadge → Badge | shipped in v2.5.10, PR #62 | `frontend/src/components/PlayerHandBadge.jsx` migrated from inline styling to `<Badge variant={hand}>` consumer · `PlayerHandBadge.test.jsx` updated for new DOM shape · validates Phase 2 Badge primitive contract |
 | Phase 3 Step 2 — EmptyState → Stack/Text/Button + Story 59 | PR #68, squash `66a4586` on develop (2026-05-13, pending next promotion) | `frontend/src/components/Home/EmptyState.jsx` migrated to consume `<Stack>` + `<Text>` + `<Button>` primitives · `EmptyState.test.jsx` R1.5 query updated to traverse Button's inner Text span · `PlayerHandBadge.jsx` dead `tokens` import removed (closes Story 59) · validates Stack/Text/Button primitive contract · 3 files, 24 ins / 15 del · token coverage gaps surfaced (15px font size + `#374151` text color — see Story 60) |
+| Phase 3 Step 3 — Pill + ListRow primitives + Support page migrations | commit `40ad221` on `feature/ux-phase-3-support-pages` (pending PR) | **Primitives:** `frontend/src/components/ui/Pill.jsx` (compact toggle chip, no 44px floor — chip rows are the hit target; 22 tests PL-series) · `ListRow.jsx` (full-width tappable row, 44px floor enforced, optional bottom divider; 23 tests LR-series) · **Migrations:** `Support/FAQSection.jsx` (category picker → Pill, accordion rows → ListRow, layout → Stack, typography → Text; C/S props removed) · `Support/LegalSection.jsx` (doc list → ListRow, back nav → Button ghost + border:none escape, viewer body → Card with full style escape — see Story 64; C/S props removed) · **App.jsx:** dead C/S props removed from both render sites (lines 8207-8208) · **Decisions:** built new primitives (Option C) rather than extend Button; BattingHandSelector Pill migration deferred (see Story 66) · **Token gaps filed:** Story 64 (S.card remediation), Story 65 (token batch) · 7 files / 779 ins / 192 del · suite 654→699 |
+| Phase 3 Step 4 — ValidationBanner + OfflineIndicator migrations | commit `6f54757` on `feature/ux-phase-3-support-pages` (pending PR) | **Migrations:** `Shared/ValidationBanner.jsx` (Stack + Text; literal success/warning bg + border tints + dark-on-tint text colors preserved as style escapes — no `successBg`/`warningBg`/`successText`/`warningText` tokens, see Story 65) · `Shared/OfflineIndicator.jsx` (Stack + Text; **4 token wins** — `tokens.color.brand.red` + `status.warning` + `status.success` for dot colors (exact matches) + `tokens.radius.pill` for chip shape; rgba tints stay literal; non-interactive by contract — locked by OI6.1 `expect(querySelector('button')).toBeNull()`) · **Tests:** 12 VB-series + 14 OI-series characterization tests · Style escapes documented inline, filed as follow-up to Story 65 · 4 files / 363 ins / 25 del · suite 699→725 |
 
 **Deferred from Phase 1.0:**
 - Shadow tokens (`shadow.sm/md/lg`) — 16 distinct box-shadow values found,
@@ -370,23 +372,39 @@ stopped. Pick up from the last completed step.
 
 ---
 
-### Phase 3 Step 3+ — additional call-site migrations (active next)
+### Phase 3 Step 3 — Pill + ListRow primitives + Support page migrations
 
-**Status:** ⏭️ Next. Cut `feature/phase-3-step-3-<target-component>` from develop when ready to begin.
+**Status:** ✅ COMPLETE — committed `40ad221` on `feature/ux-phase-3-support-pages` (pending PR). See §8 Done-So-Far Ledger.
 
-**Goals:** Continue Phase 3 consumer migration of root-level inline-styled components onto `components/ui/` primitives + tokens. Each step is a single-component migration with RED → GREEN test discipline, similar to Step 1 (Badge consumer) and Step 2 (Stack/Text/Button consumer).
+**Decisions captured:**
+- Built new `Pill` + `ListRow` primitives (recon Option C) rather than extending Button's API. Pill has no 44px floor by design; ListRow does (mirrors Button precedent).
+- `S.card` from App.jsx has no clean Card primitive equivalent — used full `style` escape on Card. Remediation filed as Story 64.
+- BattingHandSelector deferred (Story 66) — three Pill contract mismatches (green active vs navy, rounded vs pill, sans vs serif). Awaiting Pill `tone`/`shape` API decision.
 
-**Council-recommended starting targets:**
-- `Support/FAQSection.jsx` — heavy `Text` usage likely; non-game-day-critical
-- `Support/LegalSection.jsx` — heavy `Text` usage likely; non-game-day-critical
+---
 
-**Subsequent candidate pool:** `BattingOrderStrip/`, `GameDay/DefenseDiamond.jsx`, `FairnessCheck.jsx`, `LockFlow.jsx`, `NowBattingStrip.jsx`, `Shared/MaintenanceScreen.jsx`, `OfflineIndicator.jsx`, `ValidationBanner.jsx`. `GameDay/ParentView.jsx` needs recon (no Phase 1 audit touch on record).
+### Phase 3 Step 4 — ValidationBanner + OfflineIndicator migrations
 
-**Pre-Step-3 hygiene:** `Shared/PlayerHandBadge.jsx` filename collision with root `components/PlayerHandBadge.jsx` (migrated in Phase 3 Step 1) — investigate whether duplicate, stale, or distinct before any work touches PlayerHandBadge-adjacent components.
+**Status:** ✅ COMPLETE — committed `6f54757` on `feature/ux-phase-3-support-pages` (pending PR). See §8 Done-So-Far Ledger.
+
+**Notes:**
+- Characterization-test discipline: 26 tests written first against pre-migration source (all green); migrations preserved every assertion.
+- OfflineIndicator delivered 4 token wins (brand.red / status.warning / status.success / radius.pill). Cleanest tokenization conversion in Phase 3 so far.
+- OI6.1 locks the non-interactive contract — defensive guard against future "make it a Pill" temptation.
+
+---
+
+### Phase 3 Step 5+ — additional call-site migrations (open)
+
+**Status:** ⏭️ Next. Continue Phase 3 consumer migration of inline-styled components onto `components/ui/` primitives. Each step is a single-component (or small bundle) migration with characterization-test discipline established in Steps 3-4.
+
+**Subsequent candidate pool:** `BattingOrderStrip/`, `GameDay/DefenseDiamond.jsx`, `FairnessCheck.jsx`, `LockFlow.jsx`, `NowBattingStrip.jsx`, `Shared/MaintenanceScreen.jsx`. `GameDay/ParentView.jsx` needs recon (no Phase 1 audit touch on record).
+
+**Deferred (see Story 66):** `BattingHandSelector` Pill migration — already tokens-wired, not a regression risk. Reassess once Pill grows a `tone` API.
 
 **Locked files reminder (per §3):** App.jsx, migrations.js, formatters.js, flagBootstrap.js, `components/game-mode/*`, `components/ScoringMode/*`, both `package.json`, CLAUDE.md. Phase 3 targets must avoid these.
 
-**Version target:** v2.5.12 or whatever the next release-prep PR aggregates pending develop work.
+**Version target:** v2.6.x or whatever release-prep PR aggregates pending develop work.
 
 ---
 
