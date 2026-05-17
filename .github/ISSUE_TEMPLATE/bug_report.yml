@@ -1,0 +1,78 @@
+name: Bug Report
+description: Report something broken or not working as expected
+title: "[Bug]: "
+labels: ["type: bug", "status: triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before submitting — is this a game-day blocker? Add the `game-day` label after creating.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - lineup-engine
+        - game-mode
+        - roster
+        - team-management
+        - batting
+        - positions
+        - auth
+        - pwa
+        - mobile-ux
+        - backend
+        - frontend
+        - deployment
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      options:
+        - "P0 — production broken, game-day blocked"
+        - "P1 — high, workaround exists"
+        - "P2 — medium, not urgent"
+        - "P3 — low"
+    validations:
+      required: true
+
+  - type: textarea
+    id: symptom
+    attributes:
+      label: What happened?
+      description: Be specific. What did you see vs. what you expected?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: "1. Go to...\n2. Tap...\n3. See..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: device
+    attributes:
+      label: Device / browser
+      placeholder: "iPhone 15 Safari, Android Chrome 124, desktop Chrome, etc."
+    validations:
+      required: true
+
+  - type: textarea
+    id: root_cause
+    attributes:
+      label: Root cause (if known)
+      placeholder: "known | hypothesis: ... | unknown"
+
+  - type: checkboxes
+    id: share_link
+    attributes:
+      label: Share link affected?
+      options:
+        - label: "Yes — unauthenticated share link is broken or degraded"
