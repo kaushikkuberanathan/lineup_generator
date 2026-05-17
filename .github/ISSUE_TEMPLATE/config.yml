@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Product Roadmap
+    url: https://github.com/kaushikkuberanathan/lineup_generator/blob/main/docs/product/ROADMAP.md
+    about: Check the roadmap before opening a story — it may already be tracked.
+  - name: Doc & Test Debt Ledger
+    url: https://github.com/kaushikkuberanathan/lineup_generator/blob/main/docs/product/DOC_TEST_DEBT.md
+    about: Check here before logging tech debt — avoid duplicates.

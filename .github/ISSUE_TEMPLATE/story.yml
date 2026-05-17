@@ -1,0 +1,106 @@
+name: Story
+description: New product capability or improvement — maps to ROADMAP backlog format
+title: "[Story]: "
+labels: ["type: feature", "status: triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this for coach-facing features, UX improvements, and product capabilities. Maps directly to the ROADMAP Story template.
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      options:
+        - "P0 — critical, blocks coaches"
+        - "P1 — high value, next sprint"
+        - "P2 — medium, backlog"
+        - "P3 — low, nice to have"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - lineup-engine
+        - game-mode
+        - roster
+        - team-management
+        - batting
+        - positions
+        - auth
+        - pwa
+        - mobile-ux
+        - backend
+        - frontend
+        - deployment
+    validations:
+      required: true
+
+  - type: dropdown
+    id: user
+    attributes:
+      label: Primary user
+      options:
+        - Coach
+        - Assistant Coach
+        - Parent
+        - Scorekeeper
+        - Dugout Helper
+    validations:
+      required: true
+
+  - type: textarea
+    id: symptom
+    attributes:
+      label: Symptom / problem to solve
+      description: What coach or parent pain point does this address?
+    validations:
+      required: true
+
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact
+      description: Who is affected and how badly?
+    validations:
+      required: true
+
+  - type: textarea
+    id: root_cause
+    attributes:
+      label: Root cause
+      placeholder: "known | hypothesis: ... | unknown"
+
+  - type: textarea
+    id: proposed_fix
+    attributes:
+      label: Proposed fix / solution options
+      description: Options with tradeoffs where relevant.
+    validations:
+      required: true
+
+  - type: textarea
+    id: recommendation
+    attributes:
+      label: Recommendation
+      description: Which option and why.
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: MVP acceptance criteria
+      placeholder: "- Coach can...\n- Works on mobile Safari...\n- Share link unaffected..."
+    validations:
+      required: true
+
+  - type: input
+    id: target
+    attributes:
+      label: Target version
+      placeholder: "e.g. v2.6.0"
