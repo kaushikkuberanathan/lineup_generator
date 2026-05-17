@@ -1,5 +1,5 @@
 # ⚾ Lineup Generator
-> **Last Updated:** April 27, 2026 (v2.5.1 in production)
+> **Last Updated:** May 17, 2026 (v2.5.14 in production)
 
 > **Baseball and softball lineup management for youth coaches — built on the sideline, for the sideline.**
 
@@ -134,6 +134,42 @@ This is vibe coding at its best — not generating boilerplate, but genuinely co
 ## Roadmap
 
 The authoritative roadmap — including v2.5.x release history, current v2.6.0 backlog, and longer-term planning — lives in [docs/product/ROADMAP.md](docs/product/ROADMAP.md). README is intentionally kept minimal here to avoid drift between docs.
+
+---
+
+## GitHub Workflow
+
+Issues, PRs, and product tracking use a structured system built into this repo.
+
+### Filing Issues
+
+Three structured templates are available — no blank issues:
+
+| Template | Use For |
+|---|---|
+| **Bug Report** | Something broken or not working as expected — includes game-day urgency flag |
+| **Story** | New coach-facing feature or product improvement — mirrors ROADMAP Story format |
+| **Tech Debt** | Missing test coverage, doc gaps, or process issues — mirrors DOC_TEST_DEBT ledger |
+
+→ [Open an issue](https://github.com/kaushikkuberanathan/lineup_generator/issues/new/choose)
+
+### Opening a Pull Request
+
+Every PR includes an embedded 16-item pre-release checklist and Ship Gate — covering version bumps, docs updates, test hygiene, overnight soak on `dev.dugoutlineup.com`, and mobile smoke test. No merge without all items checked.
+
+### Labels
+
+Issues and PRs are tagged across six dimensions: type, area, priority, status, user persona, and release type. Game-day urgency (`game-day`, `speed-critical`) and persona labels (`user: coach`, `user: parent`) are first-class.
+
+→ [View all labels](https://github.com/kaushikkuberanathan/lineup_generator/labels)
+
+### Project Board
+
+Active work tracked on the [Dugout Lineup — Product Board](https://github.com/users/kaushikkuberanathan/projects/6/views/1?layout=board).
+
+Columns: **Inbox → Triaged → In Progress → Soak (develop) → Ready to Merge → Done**
+
+The **Soak** column maps to the overnight soak rule — no PR moves to Ready to Merge without at least one cycle on `dev.dugoutlineup.com`.
 
 ---
 
