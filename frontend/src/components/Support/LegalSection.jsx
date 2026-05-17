@@ -1,155 +1,211 @@
 import { useState } from "react";
 import { LEGAL_DOCS } from "../../content/legal";
+import { ListRow } from "../ui/ListRow";
+import { Button } from "../ui/Button";
+import { Card } from "../ui/Card";
+import { Text } from "../ui/Text";
+import { Stack } from "../ui/Stack";
+import { tokens } from "../../theme/tokens";
 
 /**
  * LegalSection
  * Support tab → Legal sub-tab.
  * Two views: list (cards for each document) and detail (single document reader).
  *
- * Props:
- *   C   {object}  color constants from App.jsx (C.navy, C.text, C.textMuted, etc.)
- *   S   {object}  shared style helpers from App.jsx (S.card, S.btn)
+ * Phase 3 Step 3 migration: C/S props removed; consumes ui primitives.
+ *   Doc rows  → ListRow
+ *   Back nav  → Button variant="ghost" + border:none style escape
+ *   Doc body  → Card (style escape — S.card has no clean token equivalent)
+ *   Layout    → Stack
+ *   Typography → Text
  */
-export function LegalSection({ C, S }) {
+export function LegalSection() {
   var _open = useState(null);
   var openDoc = _open[0];
   var setOpenDoc = _open[1];
 
   if (openDoc) {
-    return <LegalViewer doc={openDoc} onBack={function() { setOpenDoc(null); }} C={C} S={S} />;
+    return <LegalViewer doc={openDoc} onBack={function() { setOpenDoc(null); }} />;
   }
 
   return (
     <div>
       <div style={{ padding: "12px 16px 4px" }}>
-        <div style={{ fontSize: "11px", fontWeight: "700", letterSpacing: "0.08em", color: C.textMuted, textTransform: "uppercase" }}>
+        <Text
+          size="xs"
+          weight="bold"
+          style={{
+            display: "block",
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+            color: tokens.color.text.tertiary,
+          }}
+        >
           Legal &amp; Policies
-        </div>
+        </Text>
       </div>
-      {LEGAL_DOCS.map(function(doc) {
+      {LEGAL_DOCS.map(function(doc, idx, arr) {
+        var isLast = idx === arr.length - 1;
         return (
-          <button
+          <ListRow
             key={doc.id}
             onClick={function() { setOpenDoc(doc); }}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              width: "100%",
-              background: "#fff",
-              border: "none",
-              borderBottom: "1px solid " + C.border,
-              padding: "14px 16px",
-              cursor: "pointer",
-              textAlign: "left",
-              fontFamily: "Georgia, 'Times New Roman', serif"
-            }}
+            showDivider={!isLast}
           >
-            <span style={{ fontSize: "20px", marginRight: "12px", flexShrink: 0 }}>{doc.emoji}</span>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: "14px", fontWeight: "600", color: C.navy, marginBottom: "2px" }}>{doc.title}</div>
-              <div style={{ fontSize: "12px", color: C.textMuted }}>{doc.summary}</div>
-            </div>
-            <span style={{ fontSize: "16px", color: C.textMuted, marginLeft: "8px", flexShrink: 0 }}>›</span>
-          </button>
+            <span style={{
+              fontSize: "20px",
+              marginRight: "12px",
+              flexShrink: 0,
+            }}>
+              {doc.emoji}
+            </span>
+            <Stack
+              direction="col"
+              gap="xs"
+              style={{ flex: 1, minWidth: 0 }}
+            >
+              <Text size="md" weight="semibold" family="serif" color="navy">
+                {doc.title}
+              </Text>
+              <Text size="sm" color="secondary">
+                {doc.summary}
+              </Text>
+            </Stack>
+            <Text
+              size="lg"
+              color="secondary"
+              style={{ marginLeft: "8px", flexShrink: 0 }}
+            >
+              ›
+            </Text>
+          </ListRow>
         );
       })}
-      <div style={{ padding: "16px", fontSize: "11px", color: C.textMuted, textAlign: "center", lineHeight: "1.6" }}>
-        Last updated April 2026 &middot; Questions? Use the Feedback tab.
+      <div style={{ padding: "16px" }}>
+        <Text
+          size="xs"
+          color="tertiary"
+          style={{ display: "block", textAlign: "center", lineHeight: "1.6" }}
+        >
+          Last updated April 2026 &middot; Questions? Use the Feedback tab.
+        </Text>
       </div>
     </div>
   );
 }
 
-function LegalViewer({ doc, onBack, C, S }) {
+function LegalViewer({ doc, onBack }) {
   return (
     <div>
       {/* Back header */}
       <div style={{
-        display: "flex",
-        alignItems: "center",
-        gap: "10px",
         padding: "12px 16px",
-        borderBottom: "1px solid " + C.border,
-        background: "#fff"
+        borderBottom: "1px solid " + tokens.color.border.default,
+        background: tokens.color.surface.card,
       }}>
-        <button
-          onClick={onBack}
-          style={{
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            fontSize: "14px",
-            color: C.navy,
-            fontFamily: "Georgia, serif",
-            fontWeight: "600",
-            padding: "4px 0",
-            display: "flex",
-            alignItems: "center",
-            gap: "4px"
-          }}
-        >
-          ‹ Back
-        </button>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: "14px", fontWeight: "700", color: C.navy }}>
+        <Stack direction="row" align="center" gap="md">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onBack}
+            style={{ border: "none" }}
+          >
+            ‹ Back
+          </Button>
+          <Text
+            size="md"
+            weight="bold"
+            color="navy"
+            style={{ display: "block", flex: 1 }}
+          >
             {doc.emoji} {doc.title}
-          </div>
-        </div>
+          </Text>
+        </Stack>
       </div>
 
       {/* Document body */}
-      <div style={Object.assign({}, S.card, { margin: "12px 12px 4px" })}>
-        <div style={{ fontSize: "11px", color: C.textMuted, marginBottom: "16px" }}>
-          Last updated {doc.lastUpdated}
-        </div>
-        {doc.sections.map(function(section, idx) {
-          if (section.type === "h3") {
-            return (
-              <div key={idx} style={{
-                fontSize: "13px",
-                fontWeight: "700",
-                color: C.navy,
-                marginTop: idx === 0 ? 0 : "16px",
-                marginBottom: "6px",
-                letterSpacing: "0.02em"
-              }}>
-                {section.text}
-              </div>
-            );
-          }
-          if (section.type === "p") {
-            return (
-              <div key={idx} style={{
-                fontSize: "13px",
-                color: C.text,
-                lineHeight: "1.7",
-                marginBottom: "10px"
-              }}>
-                {section.text}
-              </div>
-            );
-          }
-          if (section.type === "ul") {
-            return (
-              <ul key={idx} style={{
-                margin: "0 0 10px",
-                paddingLeft: "20px",
-                fontSize: "13px",
-                color: C.text,
-                lineHeight: "1.7"
-              }}>
-                {section.items.map(function(item, i) {
-                  return <li key={i} style={{ marginBottom: "4px" }}>{item}</li>;
-                })}
-              </ul>
-            );
-          }
-          return null;
-        })}
+      <div style={{ margin: "12px 12px 4px" }}>
+        {/* style escape: S.card has no Card token equivalent
+            (10px radius, asymmetric padding, custom shadow) — file remediation story */}
+        <Card
+          style={{
+            borderRadius: "10px",
+            padding: "16px 18px",
+            boxShadow: "0 2px 8px rgba(15,31,61,0.06)",
+            marginBottom: "14px",
+            border: "1px solid " + tokens.color.border.default,
+          }}
+        >
+          <Text
+            size="xs"
+            color="tertiary"
+            style={{ display: "block", marginBottom: "16px" }}
+          >
+            Last updated {doc.lastUpdated}
+          </Text>
+          {doc.sections.map(function(section, idx) {
+            if (section.type === "h3") {
+              return (
+                <Text
+                  key={idx}
+                  size="body"
+                  weight="bold"
+                  color="navy"
+                  style={{
+                    display: "block",
+                    marginTop: idx === 0 ? 0 : "16px",
+                    marginBottom: "6px",
+                    letterSpacing: "0.02em",
+                  }}
+                >
+                  {section.text}
+                </Text>
+              );
+            }
+            if (section.type === "p") {
+              return (
+                <Text
+                  key={idx}
+                  size="body"
+                  style={{
+                    display: "block",
+                    color: tokens.color.text.primary,
+                    lineHeight: "1.7",
+                    marginBottom: "10px",
+                  }}
+                >
+                  {section.text}
+                </Text>
+              );
+            }
+            if (section.type === "ul") {
+              return (
+                <ul key={idx} style={{
+                  margin: "0 0 10px",
+                  paddingLeft: "20px",
+                  fontSize: tokens.font.size.body,
+                  color: tokens.color.text.primary,
+                  lineHeight: "1.7",
+                }}>
+                  {section.items.map(function(item, i) {
+                    return <li key={i} style={{ marginBottom: "4px" }}>{item}</li>;
+                  })}
+                </ul>
+              );
+            }
+            return null;
+          })}
+        </Card>
       </div>
 
-      <div style={{ padding: "12px 16px 24px", fontSize: "11px", color: C.textMuted, textAlign: "center" }}>
-        Questions about this policy? Use the Feedback tab.
+      <div style={{ padding: "12px 16px 24px" }}>
+        <Text
+          size="xs"
+          color="tertiary"
+          style={{ display: "block", textAlign: "center" }}
+        >
+          Questions about this policy? Use the Feedback tab.
+        </Text>
       </div>
     </div>
   );

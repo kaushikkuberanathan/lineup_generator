@@ -141,7 +141,7 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.5.13";
+var APP_VERSION = "2.5.14";
 
 function loadJSON(key, def) {
   try {
@@ -8204,8 +8204,8 @@ export default function App() {
       {primaryTab === "more" && moreTab === "links"    ? renderLinks()    : null}
       {primaryTab === "more" && moreTab === "about"    ? renderAbout()    : null}
       {primaryTab === "more" && moreTab === "updates"  ? renderUpdates()  : null}
-      {primaryTab === "more" && moreTab === "legal"    ? <LegalSection C={C} S={S} /> : null}
-      {primaryTab === "more" && moreTab === "faq"      ? <FAQSection C={C} S={S} />   : null}
+      {primaryTab === "more" && moreTab === "legal"    ? <LegalSection /> : null}
+      {primaryTab === "more" && moreTab === "faq"      ? <FAQSection />   : null}
     </div>
   );
 

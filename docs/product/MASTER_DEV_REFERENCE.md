@@ -302,6 +302,83 @@ Product documents are versioned alongside the app. Both CHARTER.md and ONE_PAGER
 
 ---
 
+## GitHub Operating System
+
+All issue tracking, PR workflow, and product backlog management runs through GitHub. This section is the canonical reference for how the system is configured.
+
+### Issue Templates
+
+Located at `.github/ISSUE_TEMPLATE/`. Blank issues are disabled — all issues must use a template.
+
+| Template | File | Use When |
+|---|---|---|
+| **Bug Report** | `bug_report.yml` | Something broken or not working as expected. Includes area, priority, device, steps to reproduce, and share-link impact flag. |
+| **Story** | `story.yml` | New coach-facing feature or product improvement. Fields mirror the ROADMAP Story template: priority, area, user, symptom, impact, root cause, proposed fix, recommendation, acceptance criteria, target version. |
+| **Tech Debt** | `tech_debt.yml` | Missing test coverage, doc gap, or process issue. Fields mirror DOC_TEST_DEBT.md: debt type, priority, area, description, risk, target version, proposed resolution. |
+
+→ [Open an issue](https://github.com/kaushikkuberanathan/lineup_generator/issues/new/choose)
+
+### PR Template
+
+Located at `.github/pull_request_template.md`. Embedded in every PR automatically.
+
+Structure:
+- **Summary + Related Issue** — what changed and why; closes #N
+- **Type of Change** — 7 options including hotfix (requires `[hotfix-exception]` in commit body)
+- **Pre-release Docs Checklist** — 14 items across 4 subsections: version + changelog, architecture + ops docs, user-facing, test hygiene
+- **Ship Gate** — 5 items: overnight soak confirmed, share link tested, Game Mode tested, lineup generates in <60s, bottom nav pinned
+- **Screenshots / Notes** — manual verification evidence
+
+No PR merges without all relevant checklist items checked.
+
+### Labels
+
+Six label dimensions applied to all issues and PRs:
+
+| Dimension | Prefix | Purpose |
+|---|---|---|
+| Type | `type:` | bug, feature, ux, tech-debt, docs, compliance |
+| Area | `area:` | lineup-engine, game-mode, roster, team-management, batting, positions, auth, pwa, mobile-ux, backend, frontend, deployment |
+| Priority | `priority:` | critical, high, medium, low |
+| Status | `status:` | triage, ready, in-progress, blocked, testing, ready-for-deploy |
+| User persona | `user:` | coach, parent, scorekeeper |
+| Release type | `release:` | hotfix, patch, minor |
+
+Game-day labels (`game-day`, `speed-critical`, `mobile-only`) are first-class — apply these immediately on any issue that impacts live game operation.
+
+→ [View all labels](https://github.com/kaushikkuberanathan/lineup_generator/labels)
+
+### Project Board
+
+[Dugout Lineup — Product Board](https://github.com/users/kaushikkuberanathan/projects/6/views/1?layout=board)
+
+**Columns (left → right = lifecycle flow):**
+
+| Column | Meaning |
+|---|---|
+| **Inbox** | Auto-populated on issue creation. Needs triage. |
+| **Triaged** | Priority and area confirmed. Ready to schedule. |
+| **In Progress** | Active development. Branch exists. |
+| **Soak (develop)** | Code merged to develop. Overnight soak in progress at `dev.dugoutlineup.com`. |
+| **Ready to Merge** | Soak complete. PR to main open or ready to open. |
+| **Done** | Auto-populated on PR merge to main. |
+
+**Automation rules:**
+- Item added to project → move to **Inbox**
+- Pull request merged → move to **Done**
+
+### `--no-verify` Exception Rule
+
+`git push --no-verify` is acceptable **only when all three conditions are true:**
+
+1. The commit is docs-only or meta-governance (zero app code, zero `frontend/` files changed)
+2. The pre-push hook failure is the documented Bug #7 Windows Vitest worker-timeout flake
+3. CI is running on the PR and will execute the full suite as the authoritative gate
+
+This is not a general escape hatch. Any `--no-verify` usage outside these conditions requires explicit justification in the commit message.
+
+---
+
 ## Feature Flags Reference
 
 All flags live in the Supabase `feature_flags` table (global flags have `team_id = null`). Toggle instantly without a deploy — changes take effect on next page load.

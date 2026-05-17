@@ -41,6 +41,8 @@ Default base for new work: develop.
 - Vitest v4 pool: `pool: 'threads'`, `maxWorkers: 1` — switched from `pool: 'forks'` + `singleFork: true` in Story 41 fix. Cox Defender endpoint security blocked child_process.fork IPC in git hook context; worker_threads are intra-process and unaffected. `maxWorkers: 1` enforces single-worker execution to prevent thread-race test isolation failures (same safety rationale as the former `singleFork: true`).
 **Pre-push hook (v2.5.3):** `.husky/pre-push` runs `cd frontend && npm test` (no retry) and includes a branch guard rejecting direct pushes to `develop` and `main`. Override for declared hotfixes only: `ALLOW_DIRECT_PUSH=1 git push`. The earlier `|| npm test` retry was removed because it was duplicated (ran tests up to four times) and masked first-run failures.
 
+**`--no-verify` exception:** Acceptable only when all three conditions are true: (a) commit is docs-only or meta-governance — zero app code, zero `frontend/` files changed; (b) pre-push failure is the documented Bug #7 worker-timeout flake; (c) CI is running on the PR as the authoritative gate. Any usage outside these conditions requires explicit justification in the commit message body. See also: MASTER_DEV_REFERENCE.md § GitHub Operating System.
+
 ---
 
 ## Commands
@@ -171,7 +173,7 @@ If any answer is "no": stop. Document the gap in DOC_TEST_DEBT.md, then decide w
 7. Stage **specific files by path** — never `git add -A` (risks picking up unrelated untracked files)
 8. [x] loginLimiter: 15min window, max 5 — applied to POST /magic-link ✓
 9. [ ] Confirm `RESEND_DOMAIN_VERIFIED=true` in Render env vars (only after domain verified)
-10. [ ] Run `npm test` — confirm 654 passed / 1 skipped (as of v2.5.12, May 14, 2026) / 0 failed
+10. [ ] Run `npm test` — confirm 734 passed / 1 skipped (as of v2.5.14, May 16, 2026) / 0 failed
 
 ### VERSION_HISTORY Schema (dual-layer — both required)
 ```js
@@ -359,7 +361,7 @@ UptimeRobot pinging a free-tier Render service every 5 min keeps it awake 24/7 �
 | 4 | **Phase 4C deferred** | Auth gate activation (`requireAuth` middleware on existing routes), RLS enforcement on scoring tables (`auth.uid()` policies), HMAC-signed approve/deny links in admin emails — all parked until Phase 4 auth cutover. |
 | 5 | **MERGE_FIELDS test-file copies** | Three test files (`migration.test.js:267`, `scheduleIntegrity.test.js:113`, `scheduleIntegrity.test.js:181`) each define their own local MERGE_FIELDS copy. These are kept in sync manually. Future: extract to a shared test fixture and import. |
 | 6 | **pending_sync not re-attempted** | `finalizeSchedule.js` writes `pending_sync:<teamId>:finalize` to localStorage on Supabase failure but no retry mechanism exists yet. Coach must re-open the app while online for the next write to succeed. |
-| 7 | **Windows Vitest cold-start OOM cascade** | Environmental — not a code issue. See Branch Strategy → Infrastructure notes → "Known issue: Windows Vitest cold-start OOM" for workaround. |
+| 7 | **Windows Vitest cold-start worker-timeout flake** | Environmental — not a code issue. Presents as worker-startup timeout (may also cascade as OOM under low memory). See Branch Strategy → Infrastructure notes for workaround. `--no-verify` acceptable only when: (a) commit is docs-only or meta-governance, (b) this is the confirmed failure cause, (c) CI is running as authoritative gate. Not a general escape hatch. |
 | 8 | ~~**BattingOrderStrip static when scoring engine advances batters (flag ON only)**~~ | **Resolved v2.5.7** — `battingIdxForStrip` switches source: `gameState.battingOrderIndex` (flag ON) vs App prop (flag OFF). |
 | 9 | ~~**Bases diamond clips at bottom at 375px viewport (flag ON only)**~~ | **Resolved v2.5.7** — DugoutView flex-column shell with `overflow-y:auto` body eliminates vertical clipping. |
 | 10 | ~~**Pitch map masked by scoring CTAs at 375px viewport (flag ON only)**~~ | **Resolved v2.5.7** — same flex-column layout fix as Bug 9; scoring-panel-mount scrolls within bounded body. |
@@ -515,8 +517,9 @@ Every other session: open `docs/product/DOC_TEST_DEBT.md` — close P0s, promote
 ---
 
 ## Current Version
-**v2.5.13** — May 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/data/versionHistory.js`.
+**v2.5.14** — May 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/data/versionHistory.js`.
 
+- v2.5.14 (2026-05-16): UX Phase 3 primitives — Pill, ListRow, 4 component migrations, 80 new tests.
 - v2.5.13 (2026-05-15): Scoring restoration. (1) `leagueRules.getRules`: alias normalization (10U/9U/10U-minor/9U-minor → canonical) + fallback to `baseball:9-10U`/`softball:9-10U` with `console.warn` instead of throwing on unknown age groups — fixes hook-init crash that blocked the scoring surface entirely. (2) `DugoutView.dugoutFocusMode`: formula revised to `(currentAtBat !== null || scorerClaimed) ? 'scoring' : 'lineup'` — closes the deadlock where a coach claimed scorer, `currentAtBat` was null, mode stayed `'lineup'`, LiveScoringPanel was `display:none`, no UI to call `startAtBat()`. (3) `DugoutView.test.jsx`: two state-machine tests rewritten to assert the v2.5.13 contract; viewer-path transitions left for a follow-up scope. (4) Docs: root `CLAUDE.md` `dugoutFocusMode` entry rewritten with new formula, per-role behaviour, and deadlock rationale; Story 48 named as follow-up for the in-DugoutView defense-view toggle. Closes Stories 15, 16. Suite stayed at 654 passed + 1 skipped.
 - v2.5.12 (2026-05-14): Multi-PR release. (1) UX Phase 3 — Badge context prop + PlayerHandBadge consolidation (PR #73): Badge primitive gained `context='light'|'dark'` prop with token-driven dark variants; PlayerHandBadge.jsx extended to forward context; Shared/PlayerHandBadge.jsx deleted (stale precursor, filename collision resolved); NowBattingStrip.jsx repointed to root PlayerHandBadge with context="dark"; integration regression guard NowBattingStrip.test.jsx (new file, 63 lines) + 5 Badge tests + 4 PlayerHandBadge tests; Story 63 (P2) logged. (2) Backlog hygiene pass (PR #74, closes Story 34): Story 27 → 61 renumber (5 references), P2 row 47 → Story 62 promotion, Gaps 17/18/25/52 retired, 13 resolved headings marked ✅. Suite 644 → 654 passed + 1 skipped. No user-facing change.
 - v2.5.11 (2026-05-13): Multi-PR release. (1) Slice 4 dead-code cleanup (Story 54, PR #67): removed legacy `ScoringMode/index.jsx` + `ScoringMode/README.md` (both unreferenced since Slice 3); removed `Viewer/ViewerMode.jsx` + colocated test (replaced by DugoutView isViewer=true in Slice 3). ScoringMode/ directory PRESERVED — still holds 7 live child components DugoutView imports directly (directory restructure deferred to a separate refactor PR). (2) UX Phase 3 Step 2 (PR #68): EmptyState.jsx migrated to Stack/Text/Button primitives; Story 59 closed (PlayerHandBadge unused tokens import removed); token coverage gaps filed as Story 60. (3) UX track docs catchup (PR #69): UX_REFACTOR_ROADMAP, CLAUDE.md Active Tracks, ROADMAP brought current with Phase 2 + Phase 3 Step 1/2 ship status. No user-facing change.

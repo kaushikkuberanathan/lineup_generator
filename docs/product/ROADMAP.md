@@ -1,7 +1,31 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: May 15, 2026 (v2.5.13 — scoring restoration: leagueRules crash + DugoutView deadlock)
+> Last updated: May 16, 2026 (v2.5.14 — UX Phase 3: Design System Primitives)
 > MVP launched: March 24, 2026
+
+---
+
+## v2.5.14 — 2026-05-16 — UX Phase 3 — Design System Primitives
+
+### UX Phase 3 Step 3 — Pill + ListRow primitives + Support page migrations (commit `40ad221`)
+
+- `frontend/src/components/ui/Pill.jsx` — new compact toggle-chip primitive (variant via `active` prop; non-44px-floor by design; serves horizontal-scroll selector rows). 22 tests (PL-series).
+- `frontend/src/components/ui/ListRow.jsx` — new full-width tappable row primitive (44px floor enforced, optional bottom divider). 23 tests (LR-series).
+- `frontend/src/components/Support/FAQSection.jsx` — C/S props removed; category picker → Pill, accordion rows → ListRow, layout → Stack, typography → Text.
+- `frontend/src/components/Support/LegalSection.jsx` — C/S props removed; doc list → ListRow, back nav → Button (ghost variant + style escape), viewer body → Card (full style escape — see Story 64), layout → Stack, typography → Text.
+- `frontend/src/App.jsx` — dead C/S props removed from both Support render sites (lines 8207-8208).
+- Token gaps surfaced inline: documented as Story 65 (token batch).
+
+### UX Phase 3 Step 4 — ValidationBanner + OfflineIndicator migrations (commit `6f54757`)
+
+- `frontend/src/components/Shared/ValidationBanner.jsx` — consumes Stack + Text; literal success/warning bg + border tints + dark-on-tint text colors preserved as style escapes (no token equivalents — see Story 65).
+- `frontend/src/components/Shared/OfflineIndicator.jsx` — consumes Stack + Text; **4 token wins**: `brand.red`, `status.warning`, `status.success` for dot colors (exact matches) + `radius.pill` for the outer chip shape. rgba alpha tints stay literal. Non-interactive by contract (renders `<div>`, not Pill/Button — locked by OI6.1 test).
+- 26 characterization tests added across both components (12 VB, 14 OI) — lock the visual contract for the migration.
+
+### Release mechanics
+
+- Suite: 725 passed + 1 skipped + 0 failed (48 test files) on the post-Step-4 commit.
+- Bug #7 Windows worker-timeout flake observed on 4 separate files across this session's runs (a11y-component-fixes, attendance, scheduleIntegrity, a11y again). All transient; CI is the authoritative gate.
 
 ---
 
@@ -2070,6 +2094,132 @@ Proposed fixes:
 Recommendation: diagnose the parent wiring before fixing. Own branch
 off develop; RED integration test at the real-parent-path level (not
 the synthetic-roster level the existing guard uses).
+
+### Story 64 (P3) — S.card remediation
+Status: Open
+Discovered: 2026-05-15 — Phase 3 Step 3 LegalSection migration
+Target: v2.6.x
+Symptom: `S.card` (App.jsx:741-745) uses `borderRadius: '10px'` (in
+  the documented drift zone — between `radius.md` 8px and `radius.lg`
+  12px, no token), `padding: '16px 18px'` (asymmetric, no Card
+  padding token combines vertical+horizontal), `boxShadow:
+  '0 2px 8px rgba(15,31,61,0.06)'` (single-layer navy-tint,
+  different from `tokens.shadow.card` which is a compound 2-layer
+  shadow), plus `marginBottom: '14px'` and `border: '1px solid '
+  + C.border`. No combination of Card primitive props covers this
+  shape.
+Impact: LegalViewer Card consumes the primitive via full `style`
+  escape — Card contributes little beyond semantic intent at this
+  call site. Any future S.card consumer will face the same problem.
+Root cause: `S.card` predates the Card primitive (Card landed in
+  Phase 2 v2.5.10); it was never migrated when Card was introduced.
+Proposed fixes:
+  - (a) Add a Card variant with border + custom shadow that matches
+        `S.card`'s visual properties. Cleanest long-term answer; covers
+        the broader app pattern of cards floating on a light page bg.
+  - (b) Tokenize 10px radius and 16/18px padding, then migrate to
+        standard Card props. Reduces drift permanently but requires
+        token additions that may not generalize.
+  - (c) Leave Card primitive untouched; remove `S.card` entirely after
+        auditing all consumers and rewriting each call site with
+        explicit inline styles using existing tokens.
+Recommendation: (a) — a bordered Card variant with shadow support
+  covers the broader app pattern (cards that float on light bg) and
+  generalizes beyond this single call site. Audit S.card consumers in
+  App.jsx first to confirm the variant API matches everyone, not just
+  LegalViewer.
+
+### Story 65 (P3) — Token gap batch: style escapes from Phase 3 migrations
+Status: Open
+Discovered: 2026-05-15 — Phase 3 Steps 3-4 migrations
+Target: v2.6.x
+Symptom: Multiple style escapes documented inline across
+  FAQSection.jsx, LegalSection.jsx, ValidationBanner.jsx, and
+  OfflineIndicator.jsx — all lacking token equivalents. Specifically:
+  - `letterSpacing: '0.08em'` (FAQ + Legal section eyebrows) — drifts
+    from `tokens.font.letterSpacing.wide` (0.06em)
+  - line-heights `1.4`, `1.6`, `1.7`, `1.75` — no `font.lineHeight.*`
+    token group exists
+  - `color: '#374151'` (FAQ answer body) — no body-text token; same
+    gap Story 60 flagged
+  - `color: '#78350f'` (ValidationBanner list items) — dark amber body,
+    no token
+  - `color: '#065f46'` / `'#92400e'` (ValidationBanner titles) —
+    dark-on-tint, no `successText`/`warningText` tokens
+  - bg tints `#d1fae5`, `#fef3c7` (ValidationBanner) — no
+    `successBg`/`warningBg` tokens (the tokens.js comment line 49
+    explicitly notes `successBg: DROPPED — #DCFCE7 appears 1x`)
+  - rgba alpha tints (OfflineIndicator backgrounds + borders) — six
+    distinct values, none tokenized
+  - `color: 'rgba(255,255,255,0.75)'` (OfflineIndicator label) —
+    on-dark text at non-full alpha, no token
+Impact: Style escapes bypass the token system; future theme changes
+  require hunting literals across files instead of updating tokens.
+  Number of style escapes is growing with each Phase 3 migration —
+  the gap will worsen if not batched soon.
+Root cause: Token palette in `frontend/src/theme/tokens.js` was
+  designed for primary UI surfaces (brand colors, page surfaces,
+  borders, primary text). Status tones, line-heights, letter-spacing
+  granularity, and alpha-blended tints were never enumerated. The
+  components that need them are the secondary/contextual surfaces
+  the audit didn't initially capture.
+Proposed fix: Extend `tokens.js` with:
+  - `tokens.font.lineHeight.*` group: tight (1.4), normal (1.5),
+    relaxed (1.6), comfortable (1.7), loose (1.75)
+  - Add `tokens.font.letterSpacing.wider` = 0.08em (new); keep
+    `.wide` = 0.06em unchanged — two distinct tokens
+  - `tokens.color.text.body` = '#374151' (dark body copy on light bg)
+  - `tokens.color.status.successBg` = '#d1fae5',
+    `warningBg` = '#fef3c7'; `errorBg` already exists (`#FEE2E2`,
+    tokens.js line 47)
+  - `tokens.color.status.successText` = '#065f46',
+    `warningText` = '#92400e', `errorText` (new — value TBD by
+    design pass)
+  - Decide on rgba tint convention (tokens vs. composed via `tint()`
+    helper) — defer to Theme System Phase 3 if no helper exists yet
+Recommendation: Batch the additions in one focused PR; update the
+  Phase 3 Step 3-4 call sites immediately after to consume tokens
+  instead of literals. Don't pursue rgba tint tokenization in this
+  story — that's a Theme System concern and needs its own design
+  pass.
+
+### Story 66 (P3) — BattingHandSelector: defer Pill migration
+Status: Deferred
+Discovered: 2026-05-15 — Phase 3 Step 3 stretch-goal evaluation
+Target: v2.7.x, or post-Pill-tone-API
+Symptom: BattingHandSelector's three hand-toggle buttons look like
+  Pill candidates but have 3 contract mismatches with the current
+  Pill primitive:
+  - Active color is `#16a34a` (green) — Pill's active is
+    `brand.navy`. Pill has no `tone` prop.
+  - Border radius is `tokens.radius.sm` (6px, rounded rectangle) —
+    Pill is `tokens.radius.pill` (9999px, fully pill-shaped).
+  - Font-family is `'inherit'` (page sans) — Pill bakes
+    `family='serif'` into its Text wrapper.
+  Existing test pinning: R2.3 asserts the literal active green
+  `rgb(22, 163, 74)` — migration without a Pill green tone breaks it.
+Impact: Low. Component is already fully tokens-wired (migrated to
+  tokens in Phase 1c R1 Roster Polish, v2.5.6) and self-contained
+  (no C/S props). Not a regression risk; just not yet migrated to
+  the Pill primitive.
+Root cause: Pill's API has no `tone` or `shape` prop. The green
+  active affordance in BattingHandSelector is intentional UX (green
+  = confirmed hand selection) — migrating to navy would change the
+  visual semantics of the control.
+Proposed fixes:
+  - (a) Extend Pill with `tone="success"` (and possibly other tones)
+        that swaps the active background to a green token — see
+        Story 65 for the prerequisite green-tone token addition.
+  - (b) Extend Pill with `shape="rounded"` (radius.sm instead of
+        radius.pill) to preserve the rectangular look.
+  - (c) Both (a) and (b) — full migration with two new Pill props.
+  - (d) Skip Pill — keep BattingHandSelector as inline-styled (it's
+        already token-aware), file the Pill API extensions as a
+        separate primitive-evolution story.
+Recommendation: (d) until Pill tone API decision is made. Don't
+  force the migration and change the visual affordance without
+  design review. Reassess when Pill grows a tone API for other
+  reasons (e.g., status-themed Pills land somewhere else).
 
 ---
 
