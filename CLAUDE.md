@@ -41,6 +41,8 @@ Default base for new work: develop.
 - Vitest v4 pool: `pool: 'threads'`, `maxWorkers: 1` — switched from `pool: 'forks'` + `singleFork: true` in Story 41 fix. Cox Defender endpoint security blocked child_process.fork IPC in git hook context; worker_threads are intra-process and unaffected. `maxWorkers: 1` enforces single-worker execution to prevent thread-race test isolation failures (same safety rationale as the former `singleFork: true`).
 **Pre-push hook (v2.5.3):** `.husky/pre-push` runs `cd frontend && npm test` (no retry) and includes a branch guard rejecting direct pushes to `develop` and `main`. Override for declared hotfixes only: `ALLOW_DIRECT_PUSH=1 git push`. The earlier `|| npm test` retry was removed because it was duplicated (ran tests up to four times) and masked first-run failures.
 
+**`--no-verify` exception:** Acceptable only when all three conditions are true: (a) commit is docs-only or meta-governance — zero app code, zero `frontend/` files changed; (b) pre-push failure is the documented Bug #7 worker-timeout flake; (c) CI is running on the PR as the authoritative gate. Any usage outside these conditions requires explicit justification in the commit message body. See also: MASTER_DEV_REFERENCE.md § GitHub Operating System.
+
 ---
 
 ## Commands
@@ -359,7 +361,7 @@ UptimeRobot pinging a free-tier Render service every 5 min keeps it awake 24/7 �
 | 4 | **Phase 4C deferred** | Auth gate activation (`requireAuth` middleware on existing routes), RLS enforcement on scoring tables (`auth.uid()` policies), HMAC-signed approve/deny links in admin emails — all parked until Phase 4 auth cutover. |
 | 5 | **MERGE_FIELDS test-file copies** | Three test files (`migration.test.js:267`, `scheduleIntegrity.test.js:113`, `scheduleIntegrity.test.js:181`) each define their own local MERGE_FIELDS copy. These are kept in sync manually. Future: extract to a shared test fixture and import. |
 | 6 | **pending_sync not re-attempted** | `finalizeSchedule.js` writes `pending_sync:<teamId>:finalize` to localStorage on Supabase failure but no retry mechanism exists yet. Coach must re-open the app while online for the next write to succeed. |
-| 7 | **Windows Vitest cold-start OOM cascade** | Environmental — not a code issue. See Branch Strategy → Infrastructure notes → "Known issue: Windows Vitest cold-start OOM" for workaround. |
+| 7 | **Windows Vitest cold-start worker-timeout flake** | Environmental — not a code issue. Presents as worker-startup timeout (may also cascade as OOM under low memory). See Branch Strategy → Infrastructure notes for workaround. `--no-verify` acceptable only when: (a) commit is docs-only or meta-governance, (b) this is the confirmed failure cause, (c) CI is running as authoritative gate. Not a general escape hatch. |
 | 8 | ~~**BattingOrderStrip static when scoring engine advances batters (flag ON only)**~~ | **Resolved v2.5.7** — `battingIdxForStrip` switches source: `gameState.battingOrderIndex` (flag ON) vs App prop (flag OFF). |
 | 9 | ~~**Bases diamond clips at bottom at 375px viewport (flag ON only)**~~ | **Resolved v2.5.7** — DugoutView flex-column shell with `overflow-y:auto` body eliminates vertical clipping. |
 | 10 | ~~**Pitch map masked by scoring CTAs at 375px viewport (flag ON only)**~~ | **Resolved v2.5.7** — same flex-column layout fix as Bug 9; scoring-panel-mount scrolls within bounded body. |
