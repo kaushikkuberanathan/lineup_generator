@@ -21,6 +21,11 @@ const CI_SAFE = process.env.CI_SAFE === 'true';
 
 async function run(test, BASE_URL, supabaseAdmin, state) {
 
+  // TD-01: isAdminRequest always passes on localhost — not testable without
+  //        live auth (Phase 4C). Intentionally skipped.
+  // TD-02/03: CI_SAFE write protection — correct, must stay skipped in CI.
+  // TD-05: force:true would wipe live Mud Hens roster — must stay skipped forever.
+
   // ── TD-01: non-admin rejected ────────────────────────────────────────────────
   // isAdminRequest always passes from localhost — cannot test 403 from this runner.
 
