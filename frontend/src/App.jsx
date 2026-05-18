@@ -4565,6 +4565,60 @@ export default function App() {
           </div>
         ) : null}
 
+        {/* ── Story 67 — Share CTA restored ──────────────────── */}
+        {showShareSheet ? (
+          <>
+            <div style={{ position:"fixed", inset:0, zIndex:10000, background:"rgba(0,0,0,0.4)" }}
+              onClick={function() { setShowShareSheet(false); }} />
+            <div style={{ position:"fixed", bottom:0, left:0, right:0, zIndex:10001,
+              background:"#fff", borderRadius:"16px 16px 0 0", padding:"20px 16px 32px",
+              boxShadow:"0 -4px 24px rgba(0,0,0,0.15)" }}>
+              <div style={{ fontWeight:"bold", fontSize:"15px", color:C.navy,
+                fontFamily:"Georgia,serif", marginBottom:"12px" }}>Share Lineup</div>
+              {backendHealth.status === 'slow' || backendHealth.status === 'down' ? (
+                <div style={{ fontSize:"11px", color:C.textMuted, background:"rgba(180,83,9,0.07)",
+                  border:"1px solid rgba(180,83,9,0.2)", borderRadius:"8px",
+                  padding:"8px 10px", marginBottom:"12px" }}>
+                  ⏳ Server is warming up — sharing may take up to 30 seconds
+                </div>
+              ) : null}
+              <div style={{ display:"flex", flexDirection:"column", gap:"10px" }}>
+                <button style={{ ...S.btn("ghost"), border:"1px solid rgba(15,31,61,0.2)", padding:"13px", fontSize:"14px", textAlign:"left" }}
+                  onClick={function() { setShowShareSheet(false); shareCurrentLineup(); }}>
+                  🔗 Share as Link
+                </button>
+                {(runtimeFlags.VIEWER_MODE || localStorage.getItem("flag:viewer_mode") === "1") ? (
+                  <button style={{ ...S.btn("ghost"), border:"1px solid rgba(15,31,61,0.2)", padding:"13px", fontSize:"14px", textAlign:"left" }}
+                    onClick={function() { setShowShareSheet(false); shareViewerLink(); }}>
+                    👁 Share Viewer Link
+                  </button>
+                ) : null}
+                <button style={{ ...S.btn("ghost"), border:"1px solid rgba(15,31,61,0.2)", padding:"13px", fontSize:"14px", textAlign:"left" }}
+                  onClick={function() { setShowShareSheet(false); generatePDF("share"); }} disabled={pdfLoading || pdfSharing}>
+                  📤 {pdfSharing ? "Preparing..." : "Share as PDF"}
+                </button>
+                <button style={{ ...S.btn("gold"), padding:"13px", fontSize:"14px" }}
+                  onClick={function() { setShowShareSheet(false); generatePDF("download"); }} disabled={pdfLoading || pdfSharing}>
+                  ⬇ {pdfLoading ? "Generating..." : "Download PDF"}
+                </button>
+                <button style={{ ...S.btn("ghost"), padding:"11px", fontSize:"13px", color:C.textMuted }}
+                  onClick={function() { setShowShareSheet(false); }}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </>
+        ) : null}
+        <div style={{ padding:"8px 16px 4px" }}>
+          <div style={{ display:"flex", gap:"8px", alignItems:"center" }}>
+            <button style={{ ...S.btn("primary"), display:"flex", alignItems:"center", gap:"6px" }}
+              onClick={function() { setShowShareSheet(true); }}>
+              <span>📤</span> Share Lineup
+            </button>
+          </div>
+        </div>
+        {/* ── End Story 67 ─────────────────────────────────────── */}
+
         {/* ── Defense / Batting sub-sub-tab bar ─── */}
         <div style={{
           display:"flex", gap:"6px", marginBottom:"14px",
@@ -7561,6 +7615,13 @@ export default function App() {
   // ============================================================
   // PRINT TAB
   // ============================================================
+  // ─────────────────────────────────────────────────────────────────
+  // ORPHAN — Story 67 (2026-05-18)
+  // renderPrint() was disconnected from the tab tree in a prior refactor.
+  // Its Share CTA was lifted into renderLineups() on 2026-05-18.
+  // This function has zero call sites and is intentionally not invoked.
+  // Delete in a dedicated cleanup commit after Story 67 is verified in prod.
+  // ─────────────────────────────────────────────────────────────────
   function renderPrint() {
     var teamName = activeTeam ? activeTeam.name : "My Team";
     var today = new Date().toLocaleDateString("en-US", { weekday:"long", month:"long", day:"numeric", year:"numeric" });
