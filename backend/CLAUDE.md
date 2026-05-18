@@ -41,7 +41,7 @@ Set in `backend/.env`. See `backend/.env.example` for a template.
 Existing routes in `index.js` (do not modify — additive only):
 - `GET /health` — health check (async DB connectivity check; 503 on DB failure)
 - `GET /ping` — uptime ping (UptimeRobot monitor #802733786, every 5 min)
-- `POST /api/ai` — Claude API proxy (`claude-sonnet-4-6`, max 1000 tokens, 25s timeout)
+- `POST /api/ai` — Claude API proxy (`claude-sonnet-4-6`, max 1000 tokens, 30s timeout)
 
 Auth routes (additive only — do not modify existing handlers):
 - `POST /api/v1/auth/*` — auth routes (`src/routes/auth.js`)
@@ -91,7 +91,7 @@ Three guards in place:
 | `suite-data-integrity.js` | Schema constraints enforced correctly |
 | `suite-feedback.js` | `POST /api/v1/feedback` |
 | `suite-team-data.js` | `POST /api/teams/:teamId/data` and `GET /api/teams/:teamId/history` |
-| `suite-regression.js` | Health, ping, lineup generation, AI proxy — no regressions |
+| `suite-regression.js` | Health, ping, lineup generation, AI proxy type validation (REG-05/06) — no regressions |
 
 ---
 
