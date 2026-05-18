@@ -409,3 +409,10 @@
   - Age sweep: open P0/P1 items refreshed to 27 days (most opened 2026-04-17); D-S30 P2 item refreshed to 20 days (opened 2026-04-24). Already written in the working tree from the prior fan-out — not re-edited.
   - Suite count: 644 + 1 skipped (post-v2.5.11) → 654 + 1 skipped (post-v2.5.12; PR #73 +10 net: NowBattingStrip new file + 5 Badge + 4 PlayerHandBadge).
   - Dashboard impact: no new debt items opened (Story 63 lives in ROADMAP P2 backlog, not DOC_TEST_DEBT). No existing open items resolved by v2.5.12 work. Age distribution unchanged (max age 27 days; still 0–30 bucket).
+
+- **v2.11 — May 2026 (v2.5.13 + v2.5.14 — scoring fix + UX Phase 3 primitives)**
+  - PR #76: DugoutView.test.jsx updated (dugoutFocusMode contract)
+  - PR #83: Pill.test.jsx (22 tests), ListRow.test.jsx (23 tests),
+    ValidationBanner.test.jsx (12 tests), OfflineIndicator.test.jsx (14 tests) — new
+  - PR #85: FAQSection.test.jsx (4 tests), LegalSection.test.jsx (5 tests) — new
+  - Suite count: 654 → 734 passing / 1 skipped / 0 failed

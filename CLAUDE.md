@@ -309,6 +309,7 @@ Story 1 (April 22, 2026) was the regression that surfaced this — every batter 
   - **Viewer (`viewerMode=true`, `scorerClaimed=false`)** — original state machine still applies: `'lineup'` (DefenseDiamond) between at-bats, `'scoring'` (LiveScoringPanel) during. Unchanged from v2.5.7.
   - Both panels stay mounted; visibility toggled via CSS `display:none` to preserve DefenseDiamond inning-scrub state across at-bat boundaries. See `docs/SOLUTION_DESIGN.md` § dugoutFocusMode state machine for full architectural notes. **Rationale for revision:** v2.5.7 design created a deadlock — coach claimed scorer, `currentAtBat` was null, mode resolved to `'lineup'`, LiveScoringPanel was hidden, no UI to call `scoring.startAtBat()`, mode stuck on `'lineup'` forever. Surfaced as Story 16 ("No batting order set") — the empty-state copy was a misleading downstream symptom of the panel never becoming startable.
 - **Badge context prop** (v2.5.12+) — Use `context="dark"` on `PlayerHandBadge` (or `Badge` directly) for dark surfaces like Game Mode and the scoring strip. Default `context="light"` applies to all light/cream backgrounds. Dark variants are token-driven: `tokens.color.overlay.whiteLight` background + `tokens.color.text.onDark` text. See `frontend/src/components/ui/Badge.jsx`.
+- **Self-styled Support components** (v2.5.14+) — FAQSection, LegalSection, ValidationBanner, OfflineIndicator are self-styled via design tokens. Do not add C or S prop threading to these components. Pattern: import primitives + tokens directly; no external color/style props.
 
 ---
 
@@ -550,8 +551,8 @@ This project runs two parallel tracks. Each has its own roadmap; both promote to
 ### UX Track — accessibility, design tokens, primitives, call-site refactor
 - Tracker: `docs/product/UX_REFACTOR_ROADMAP.md`
 - Worktree: `lineup-generator-ux/` (separate working directory)
-- Recent: Phase 1a–1c + R1 Roster Polish (v2.5.6) · Phase 2 UI Primitives + Phase 3 Step 1 PlayerHandBadge → Badge (v2.5.10, PRs #61–#63) · Phase 3 Step 2 EmptyState → Stack/Text/Button + Story 59 cleanup (PR #68 on develop, pending next promotion)
-- Next: Phase 3 Step 3+ — additional call-site migrations (recommended start: `Support/FAQSection` and `Support/LegalSection`)
+- Recent: Phase 1a–1c + R1 Roster Polish (v2.5.6) · Phase 2 UI Primitives + Phase 3 Step 1 PlayerHandBadge → Badge (v2.5.10, PRs #61–#63) · Phase 3 Step 2 EmptyState → Stack/Text/Button + Story 59 cleanup (PR #68 on develop, pending next promotion) · v2.5.14 — Pill + ListRow primitives, FAQSection/LegalSection/ValidationBanner/OfflineIndicator migrated (PRs #83–#85)
+- Next: Phase 3 — App.jsx component split (post-token + post-primitive work); Support tab P1 behavioral fixes (App.jsx gate required)
 
 ### Cross-track discipline
 - At session start on either track, read this section + `git log` since last session
