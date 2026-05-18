@@ -1558,7 +1558,7 @@ export default function App() {
   var parentViewActive = _parentViewActive[0]; var setParentViewActive = _parentViewActive[1];
   var _selectedParentPlayer = useState(null);
   var selectedParentPlayer = _selectedParentPlayer[0]; var setSelectedParentPlayer = _selectedParentPlayer[1];
-  var _moreTab = useState("about");
+  var _moreTab = useState("faq");
   var moreTab = _moreTab[0]; var setMoreTab = _moreTab[1];
   var _sharePayload = useState(null);
   var sharePayload = _sharePayload[0]; var setSharePayload = _sharePayload[1];
@@ -1930,7 +1930,7 @@ export default function App() {
   var fbHistoryOpen = _fbHistoryOpen[0]; var setFbHistoryOpen = _fbHistoryOpen[1];
   var _showOnboarding = useState(false);
   var showOnboarding = _showOnboarding[0]; var setShowOnboarding = _showOnboarding[1];
-  var _aboutGuideOpen = useState(true);
+  var _aboutGuideOpen = useState(false);
   var aboutGuideOpen = _aboutGuideOpen[0]; var setAboutGuideOpen = _aboutGuideOpen[1];
   var _expandedVersion = useState(APP_VERSION);
   var expandedVersion = _expandedVersion[0]; var setExpandedVersion = _expandedVersion[1];
@@ -2833,7 +2833,7 @@ export default function App() {
     setFbChangeTypes([]);
     setFbCategory("General");
     setFbConfirm("Thanks! Your feedback has been saved.");
-    setTimeout(function() { setFbConfirm(""); }, 2000);
+    setTimeout(function() { setFbConfirm(""); }, 4000);
   }
 
   function submitBug() {
@@ -2861,7 +2861,7 @@ export default function App() {
     setBugLocation("");
     setBugSeverity("");
     setBugConfirm("Issue reported. Thank you!");
-    setTimeout(function() { setBugConfirm(""); }, 2000);
+    setTimeout(function() { setBugConfirm(""); }, 4000);
   }
 
   // --- AI schedule parser ---
@@ -7300,17 +7300,17 @@ export default function App() {
               <div style={S.sectionTitle}>{section.group}</div>
               {section.items.map(function(link, li) {
                 return (
-                  <div key={li} style={{ display:"flex", alignItems:"flex-start", gap:"12px", padding:"12px 0",
-                      borderBottom: li < section.items.length - 1 ? "1px solid rgba(15,31,61,0.07)" : "none" }}>
+                  <a key={li}
+                     {...outboundLinkProps(link.url, { campaign: link.campaign, content: link.content })}
+                     style={{ display:"flex", alignItems:"flex-start", gap:"12px", padding:"12px 0",
+                       borderBottom: li < section.items.length - 1 ? "1px solid rgba(15,31,61,0.07)" : "none",
+                       textDecoration:"none", cursor:"pointer" }}>
                     <span style={{ fontSize:"22px", lineHeight:"1", marginTop:"2px", flexShrink:0 }}>{link.emoji}</span>
                     <div style={{ flex:1, minWidth:0 }}>
                       <div style={{ fontSize:"13px", fontWeight:"700", color:C.navy, marginBottom:"3px" }}>{link.label}</div>
                       <div style={{ fontSize:"11px", color:C.textMuted, lineHeight:"1.5", marginBottom:"5px" }}>{link.desc}</div>
-                      <div style={{ fontSize:"12px" }}>
-                        <a {...outboundLinkProps(link.url, { campaign: link.campaign, content: link.content })} style={{ color:"#2563eb", textDecoration:"none" }}>🔗 Click here</a>
-                      </div>
                     </div>
-                  </div>
+                  </a>
                 );
               })}
             </div>
@@ -8024,12 +8024,12 @@ export default function App() {
     { key:"snack",    label:"Snacks"   },
   ];
   var MORE_SUBTABS = [
+    { key:"faq",      label:"FAQ"      },
+    { key:"feedback", label:"Feedback" },
+    { key:"links",    label:"Links"    },
     { key:"about",    label:"About"    },
     { key:"updates",  label:"Updates"  },
-    { key:"links",    label:"Links"    },
-    { key:"feedback", label:"Feedback" },
     { key:"legal",    label:"Legal"    },
-    { key:"faq",      label:"FAQ"      },
   ];
 
   // Sub-tab bar — rendered inside tabContent when Game Day or Season is active
