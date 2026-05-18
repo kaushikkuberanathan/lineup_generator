@@ -970,6 +970,33 @@ Game Mode polish release covering three themes:
 
 **Blocks:** Final merge of feature/combined-game-view to main is NOT blocked — note in PR body that share-link viewer is broken in prod regardless of this change.
 
+### Story 67 (P0) — Share CTA orphaned: shareCurrentLineup() unreachable from Lineups tab
+Status: In Progress
+Discovered: May 18, 2026 — root cause confirmed via code grep
+Target: v2.5.15
+Symptom: Coach finalizes lineup on the Lineups tab and finds no Share CTA.
+  "Print / Share View" label appears but no button exists below it.
+  shareCurrentLineup() has never been callable from this surface.
+Impact: Share-link generation via the natural post-finalize path is non-functional
+  in production for every coach. Schedule-card share (handleShareGame) still works
+  and is the only live path to generating ?s= links, but discoverability is
+  severely degraded. Compounds with Story 61 — even when a link is generated via
+  schedule card, recipient-side rendering is broken.
+Root cause: renderPrint() (App.jsx:7564) was disconnected from the tab tree during
+  a prior refactor. Its Share Lineup button, share sheet JSX, and
+  shareCurrentLineup() call are orphan code — never rendered. GAMEDAY_SUBTABS has
+  no print/share key. renderLineups() (App.jsx:4489) has no share button.
+  The contextLabel "Print / Share View" (App.jsx:8153) is a UI promise the code
+  does not fulfill. The Lineup Finalized banner is not the cause — the Share CTA
+  is absent in both locked and unlocked states.
+Proposed fix: Option A — inline the renderPrint() action bar (App.jsx:7572-7643)
+  into renderLineups(). Always renders regardless of lineupLocked state. No new
+  functions needed; all state (showShareSheet, printOpt, etc.) is at component
+  scope. Delete or clearly tombstone renderPrint() after inlining to prevent
+  re-orphaning.
+See also: Story 61 (P0) — recipient-side viewer routing broken (separate fix,
+  separate code site).
+
 ---
 
 ## 🔴 P1 — Bugs / Critical Gaps
