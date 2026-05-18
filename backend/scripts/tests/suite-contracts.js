@@ -94,6 +94,17 @@ async function run(test, BASE_URL, supabaseAdmin, state) {
       return { skip: true, expected: '200 {ok:true}', reason: 'CI_SAFE: skipping DB write against prod' };
     }
     const testTeamId = `test-con-${state.runId}`;
+    // Seed parent teams row — team_data.team_id FK requires it
+    if (supabaseAdmin) {
+      await supabaseAdmin.from('teams').upsert({
+        id: testTeamId,
+        name: 'CON Suite Test',
+        age_group: '8U',
+        year: 2026,
+        sport: 'baseball',
+        owner_id: '',
+      });
+    }
     const res  = await fetch(`${BASE_URL}/api/teams/${testTeamId}/data`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -107,6 +118,7 @@ async function run(test, BASE_URL, supabaseAdmin, state) {
     if (supabaseAdmin) {
       await supabaseAdmin.from('team_data').delete().eq('team_id', testTeamId);
       await supabaseAdmin.from('team_data_history').delete().eq('team_id', testTeamId);
+      await supabaseAdmin.from('teams').delete().eq('id', testTeamId);
     }
     return {
       pass: res.status === 200 && data.ok === true && typeof data.ok === 'boolean',

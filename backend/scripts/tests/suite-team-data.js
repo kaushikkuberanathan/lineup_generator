@@ -43,6 +43,17 @@ async function run(test, BASE_URL, supabaseAdmin, state) {
     if (CI_SAFE) {
       return { skip: true, expected: '200 {ok:true}', reason: 'CI_SAFE: skipping DB write against prod' };
     }
+    // Seed parent teams row — team_data.team_id FK requires it
+    if (supabaseAdmin) {
+      await supabaseAdmin.from('teams').upsert({
+        id: TEST_TEAM_ID,
+        name: 'TD Suite Test',
+        age_group: '8U',
+        year: 2026,
+        sport: 'baseball',
+        owner_id: '',
+      });
+    }
     const res = await fetch(`${BASE_URL}/api/teams/${TEST_TEAM_ID}/data`, {
       method: 'POST',
       headers: {
@@ -70,6 +81,17 @@ async function run(test, BASE_URL, supabaseAdmin, state) {
       return { skip: true, expected: '200 {ok:true}', reason: 'CI_SAFE: skipping DB write against prod' };
     }
     const emptyTeamId = `test-td-empty-${state.runId}`;
+    // Seed parent teams row — team_data.team_id FK requires it
+    if (supabaseAdmin) {
+      await supabaseAdmin.from('teams').upsert({
+        id: emptyTeamId,
+        name: 'TD Suite Empty Test',
+        age_group: '8U',
+        year: 2026,
+        sport: 'baseball',
+        owner_id: '',
+      });
+    }
     const res = await fetch(`${BASE_URL}/api/teams/${emptyTeamId}/data`, {
       method: 'POST',
       headers: {
@@ -82,6 +104,7 @@ async function run(test, BASE_URL, supabaseAdmin, state) {
     // Clean up immediately
     if (supabaseAdmin) {
       await supabaseAdmin.from('team_data').delete().eq('team_id', emptyTeamId);
+      await supabaseAdmin.from('teams').delete().eq('id', emptyTeamId);
     }
     return {
       pass: res.status === 200 && data.ok === true,
@@ -183,6 +206,7 @@ async function run(test, BASE_URL, supabaseAdmin, state) {
   if (!CI_SAFE && supabaseAdmin) {
     await supabaseAdmin.from('team_data').delete().eq('team_id', TEST_TEAM_ID);
     await supabaseAdmin.from('team_data_history').delete().eq('team_id', TEST_TEAM_ID);
+    await supabaseAdmin.from('teams').delete().eq('id', TEST_TEAM_ID);
   }
 }
 
