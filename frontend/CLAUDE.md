@@ -74,7 +74,7 @@ Located at App.jsx ~458–720. Two-phase auto-assign algorithm:
 
 - **Framework**: Vitest
 - **CI target**: 734 passed / 1 skipped / 0 failed (as of v2.5.14, May 16, 2026)
-- **Known skip**: engine.v2 test 2.3 (7-player roster produces no warning — fix in separate session)
+- **Known skip**: bench-equity.test.js test 2.1 (bench rotation fairness — BUG CONFIRMED; identical players, sit-count drift > 1 inning; fix deferred)
 
 #### Test files
 
