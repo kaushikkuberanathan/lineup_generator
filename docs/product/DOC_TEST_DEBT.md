@@ -18,6 +18,7 @@
 - **P0** — blocks confidence in a North Star capability (share link, Game Mode, onboarding). Cannot ship a minor version with P0 debt open.
 - **P1** — material gap in a shipped feature that could regress silently; resolve within 60 days.
 - **P2** — nice-to-have coverage; resolve opportunistically, no hard deadline.
+- **P3** — cosmetic or edge-case gap; no deadline, address when convenient.
 
 ---
 
