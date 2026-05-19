@@ -1,0 +1,22 @@
+# CODEOWNERS — Dugout Lineup
+# Mirrors the locked-file gate phrase convention in CLAUDE.md.
+# Any PR touching these files requires explicit owner review before merge.
+
+# Core app entry point
+frontend/src/App.jsx @kaushikkuberanathan
+
+# Utility files — migration safety critical
+frontend/src/utils/migrations.js @kaushikkuberanathan
+frontend/src/utils/formatters.js @kaushikkuberanathan
+frontend/src/utils/flagBootstrap.js @kaushikkuberanathan
+
+# Locked component directories
+frontend/src/components/game-mode/ @kaushikkuberanathan
+frontend/src/components/ScoringMode/ @kaushikkuberanathan
+
+# Package manifests — dependency changes require review
+frontend/package.json @kaushikkuberanathan
+backend/package.json @kaushikkuberanathan
+
+# Project governance
+CLAUDE.md @kaushikkuberanathan
