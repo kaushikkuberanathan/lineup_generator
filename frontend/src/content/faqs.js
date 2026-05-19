@@ -236,7 +236,7 @@ export var FAQ_CATEGORIES = [
       },
       {
         q: "How do I share the lineup with parents before the game?",
-        a: "Go to Team → Schedule, tap the game card, then tap Share Lineup. This creates a short link parents can open on any device — they see the full defense grid and batting order but cannot edit anything. No account needed to view."
+        a: "After finalizing your lineup, tap the 📤 Share Lineup button on Game Day → Lineups tab. A sheet appears with options to share a link, share as PDF, or download the PDF. The link works on any device — parents open it in a browser, no account needed. You can also share from Team → Schedule by tapping the game card."
       },
       {
         q: "I got a new phone. How do I move all my data?",
