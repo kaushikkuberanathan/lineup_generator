@@ -435,6 +435,28 @@ The phased security roadmap lives in `docs/product/SECURITY_FRAMEWORK.md`. Stand
 
 ---
 
+## Locked Files
+
+The following files require a gate phrase before any edit. This prevents accidental modification of high-risk surfaces during multi-step sessions.
+
+| File / Path | Gate phrase |
+|---|---|
+| `frontend/src/App.jsx` | *"all clear — App.jsx editing approved"* |
+| `frontend/src/utils/migrations.js` | *"all clear — migrations.js editing approved"* |
+| `frontend/src/utils/formatters.js` | *"all clear — formatters.js editing approved"* |
+| `frontend/src/utils/flagBootstrap.js` | *"all clear — flagBootstrap.js editing approved"* |
+| `frontend/src/components/game-mode/*` | *"all clear — game-mode editing approved"* |
+| `frontend/src/components/ScoringMode/*` | *"all clear — ScoringMode editing approved"* |
+| `frontend/package.json` | *"all clear — frontend/package.json editing approved"* |
+| `backend/package.json` | *"all clear — backend/package.json editing approved"* |
+| `CLAUDE.md` | *"all clear — CLAUDE.md editing approved"* |
+
+**Push gate phrase:** *"confirmed — push to [branch-name]"* — required before any `git push` to a named branch. Never push without the explicit gate phrase AND a clean local build.
+
+**Why these files:** App.jsx is a 10,000+ line monolith where accidental edits cause hard-to-detect regressions. migrations.js, formatters.js, and flagBootstrap.js are extracted utilities with their own test suites — changes here have cross-cutting impact. game-mode/ and ScoringMode/ are the live game-day surface. Both package.json files gate the version bump ritual.
+
+---
+
 ## Issue & Backlog Hygiene
 
 Every Story in ROADMAP.md must have a corresponding GitHub Issue. This is non-negotiable — it enables `closes #N` in commits, label-based filtering, and automation hooks.
