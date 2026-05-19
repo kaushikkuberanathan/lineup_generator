@@ -2258,6 +2258,19 @@ Recommendation: (d) until Pill tone API decision is made. Don't
 
 ---
 
+### Story 68 (P2) — GitHub Webhooks & Settings Audit <!-- #132 -->
+
+Status: Open
+Discovered: 2026-05-19, automation session
+Target: v2.6.x
+Symptom: GitHub repo settings have never been audited against available integration points. Automation hooks, security features, and workflow integrations are likely underutilised.
+Impact: Missing automation leverage across the full toolchain — webhooks, required status checks, branch protection rules, Environments, GitHub Apps, Dependabot alerts, secret scanning, CODEOWNERS, deploy keys.
+Root cause: Known — repo was set up organically; settings never reviewed against what GitHub offers.
+Proposed fixes: Dedicated 1-hour audit session covering GitHub repo Settings top-to-bottom. Output: prioritised list of integrations to enable, mapped to specific Dugout Lineup workflow improvements.
+Recommendation: Schedule as a standalone session. Do not bundle with feature work — settings changes have cross-cutting impact and need focused attention.
+
+---
+
 ### Automated Score Reporting (County Integration)
 **Status:** Architecture finalized, implementation pending
 **Trigger:** Coach taps "Report Score" on a completed game
