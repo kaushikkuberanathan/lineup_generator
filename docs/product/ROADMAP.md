@@ -946,13 +946,20 @@ Game Mode polish release covering three themes:
 
 ### Story 61 (P0) — Share-link viewer routing broken in prod
 
-**Status:** Open  
-**Discovered:** April 30, 2026 during Slice 0 (combined game view) dev test on Vercel preview  
-**Target:** Hotfix branch — separate from feature/combined-game-view  
+**Status:** Resolved — vTBD (version assigned on release branch)
+**Discovered:** April 30, 2026 during Slice 0 (combined game view) dev test on Vercel preview
+**Resolved:** May 19, 2026 via `fix/story-61-share-viewer-routing`
 
-**Symptom:** Share links render the full authenticated app shell (bottom nav, editing UI, "Lineup Finalized — Unlock to make changes", "Install Dugout Lineup" PWA prompt) instead of the unauthenticated viewer experience.
+**Resolution:** Original framing was a misdiagnosis. `SharedView` already renders standalone (no coach shell, no nav, no tabs) via early-return at `App.jsx:7989`. Recon on May 19 confirmed the actual root cause was two separate bugs:
 
-**Impact:** Violates the non-negotiable auth principle — viewing must never require login, share links must always work unauthenticated. Recipients see coach-side UI and editing affordances. P0 by stated principle, even though scope is pre-existing in prod.
+- **Bug A** — `dbLoadShareLink` (`frontend/src/supabase.js:145`) had no timeout. Stalled Supabase fetch left the spinner indefinite. Fixed by `Promise.race` against a 10s timer (`SHARE_LINK_FETCH_TIMEOUT_MS`).
+- **Bug B** — `isViewer` at `App.jsx:8001` (and `isViewer64` at `App.jsx:8063`) was gated behind the `VIEWER_MODE` runtime flag, default-OFF in prod. `?view=true` / `?role=viewer` share links always fell through to `SharedView` instead of `DugoutView`. Fixed by removing the flag gate from both share paths.
+
+Tests: `src/tests/shareLink.test.js` — 3 new specs (timeout-stall, happy path, Supabase error). Suite 734 → 737 passing / 1 skipped. Render-path integration test logged as P1 follow-up in DOC_TEST_DEBT.
+
+**Original symptom (misdiagnosed):** Share links render the full authenticated app shell (bottom nav, editing UI, "Lineup Finalized — Unlock to make changes", "Install Dugout Lineup" PWA prompt) instead of the unauthenticated viewer experience.
+
+**Original impact framing:** Violates the non-negotiable auth principle — viewing must never require login, share links must always work unauthenticated. Recipients see coach-side UI and editing affordances. P0 by stated principle, even though scope is pre-existing in prod.
 
 **Root cause:** Unknown — likely URL parsing or `isViewer` / `isViewer64` detection at App.jsx top-level (~lines 7920–7950). Upstream of Slice 0 wiring; not caused by combined-game-view work.
 

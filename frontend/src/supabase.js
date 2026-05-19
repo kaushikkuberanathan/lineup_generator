@@ -142,11 +142,17 @@ export function dbSaveShareLink(id, payload) {
     });
 }
 
+export var SHARE_LINK_FETCH_TIMEOUT_MS = 10000;
+
 export function dbLoadShareLink(id) {
   if (!supabase) { return Promise.resolve(null); }
-  return supabase.from('share_links').select('payload').eq('id', id).single()
+  var query = supabase.from('share_links').select('payload').eq('id', id).single()
     .then(function(r) {
       if (r.error) { return null; }
       return r.data ? r.data.payload : null;
     });
+  var timeout = new Promise(function(resolve) {
+    setTimeout(function() { resolve(null); }, SHARE_LINK_FETCH_TIMEOUT_MS);
+  });
+  return Promise.race([query, timeout]);
 }
