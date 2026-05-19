@@ -2260,7 +2260,9 @@ Recommendation: (d) until Pill tone API decision is made. Don't
 
 ### Story 68 (P2) — GitHub Webhooks & Settings Audit <!-- #132 -->
 
-Status: Open
+Status: Resolved
+Resolved: May 19, 2026 (Story 68 audit session)
+Resolution: Full 8-category GitHub settings audit complete. Two third-party AI apps revoked (ChatGPT Codex Connector, Grok — both had read/write access to all repos). Dependabot alerts enabled (18 vulns surfaced, triage pending). CODEOWNERS file created and merged (PR #133). Branch protection and Actions permissions confirmed clean. Secret scoping deferred to P3.
 Discovered: 2026-05-19, automation session
 Target: v2.6.x
 Symptom: GitHub repo settings have never been audited against available integration points. Automation hooks, security features, and workflow integrations are likely underutilised.
@@ -2268,6 +2270,19 @@ Impact: Missing automation leverage across the full toolchain — webhooks, requ
 Root cause: Known — repo was set up organically; settings never reviewed against what GitHub offers.
 Proposed fixes: Dedicated 1-hour audit session covering GitHub repo Settings top-to-bottom. Output: prioritised list of integrations to enable, mapped to specific Dugout Lineup workflow improvements.
 Recommendation: Schedule as a standalone session. Do not bundle with feature work — settings changes have cross-cutting impact and need focused attention.
+
+---
+
+### Story 69 (P2) — Dependabot Vulnerability Triage <!-- #TBD -->
+
+Status: Open
+Discovered: May 19, 2026 (surfaced during Story 68 audit)
+Target: v2.5.7 or next release
+Symptom: 18 Dependabot alerts active (6 high, 12 moderate) on default branch after enabling alerts during Story 68 audit.
+Impact: Unknown until triaged — may include transitive deps with no direct fix path, or actionable upgrades.
+Root cause: Alerts were disabled; backlog of unreviewed CVEs accumulated.
+Proposed fixes: Triage at https://github.com/kaushikkuberanathan/lineup_generator/security/dependabot — dismiss dev-only/non-exploitable alerts, action any with available patches.
+Recommendation: Triage before next prod release. Dismiss non-exploitable, upgrade where patch exists and tests pass.
 
 ---
 
