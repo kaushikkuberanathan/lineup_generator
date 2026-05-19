@@ -1,5 +1,21 @@
 ﻿export var VERSION_HISTORY = [
   {
+    version: '2.5.15',
+    date: '2026-05-19',
+    headline: 'Share Lineup restored + Support tab polish',
+    userChanges: [
+      'Share Lineup button now appears on the Game Day → Lineups tab — tap it after finalizing to share a link, PDF, or download directly',
+      'Support tab opens to FAQ by default; all resource link rows are fully tappable; share and feedback confirmations stay visible longer',
+    ],
+    internalChanges: [
+      'fix: Story 67 — renderPrint() orphaned Share CTA lifted into renderLineups(); shareCurrentLineup() now reachable from Lineups tab; renderPrint() tombstoned (PR #99)',
+      'fix: Support tab UX — moreTab defaults to FAQ, aboutGuideOpen defaults false, MORE_SUBTABS reordered high-utility first, renderLinks entire row tappable via <a> wrapper, toast duration 2000ms → 4000ms (PR #94)',
+      'docs/test: Story 67 P0 ROADMAP + DOC_TEST_DEBT; backend FK seed fixes TD-02/03/CON-06; REG-05/06 AI proxy validation; bug #3 + skip corrections (PRs #95–98)',
+      'Test suite: 730 passing / 1 skipped (Bug #7 flake on FAQSection environmental)',
+    ],
+    techNote: 'Bug fixes and performance improvements',
+  },
+  {
     version: '2.5.14',
     date: '2026-05-16',
     title: 'UX Phase 3 — Design System Primitives',
