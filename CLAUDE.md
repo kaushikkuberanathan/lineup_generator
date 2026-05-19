@@ -435,6 +435,49 @@ The phased security roadmap lives in `docs/product/SECURITY_FRAMEWORK.md`. Stand
 
 ---
 
+## Issue & Backlog Hygiene
+
+Every Story in ROADMAP.md must have a corresponding GitHub Issue. This is non-negotiable — it enables `closes #N` in commits, label-based filtering, and automation hooks.
+
+### Rules (enforce every session)
+
+1. **New story → GitHub Issue same session.** Use the Story issue template at github.com/kaushikkuberanathan/lineup_generator/issues/new/choose. Never leave a story in ROADMAP.md without a `<!-- #N -->` marker.
+
+2. **Batch sync.** When stories accumulate without issues, run:
+$env:GITHUB_TOKEN = $TOKEN
+node scripts/sync-stories-to-issues.js --dry-run   ← review first
+node scripts/sync-stories-to-issues.js              ← create
+   Script is idempotent — safe to re-run, skips already-linked stories.
+
+3. **Commit message convention.** Any commit that resolves a story must include `closes #N` or `fixes #N` in the message body. GitHub auto-closes the issue on merge to main.
+
+4. **PR body convention.** The Related Issue field in every PR body must reference the issue number(s) the PR resolves. Never leave it as N/A if a story is being closed.
+
+5. **Label discipline.** All issues must carry at minimum one `priority:*` label and one `type:*` label. Area labels are strongly recommended. Labels follow `prefix:name` convention (no spaces). Full taxonomy in `docs/process/ISSUE_TRACKING.md`.
+
+6. **DOC_TEST_DEBT items** also get GitHub Issues using the Governance template. Reference the issue number in the debt ledger entry.
+
+### Scripts
+
+| Script | Purpose |
+|---|---|
+| `scripts/sync-stories-to-issues.js` | Parse ROADMAP.md → create GitHub Issues → patch `<!-- #N -->` markers |
+| `scripts/setup-github-labels.ps1` | Bootstrap/reset all 28 labels (run after repo clone or label drift) |
+
+### Label taxonomy quick reference
+
+| Group | Labels |
+|---|---|
+| Priority | `priority:p0` `priority:p1` `priority:p2` `priority:p3` |
+| Type | `type:bug` `type:feature` `type:chore` `type:governance` `type:hotfix` `type:incident` |
+| Area | `area:scoring` `area:auth` `area:ux` `area:backend` `area:ci-ops` `area:game-mode` `area:share-link` `area:roster` `area:supabase` `area:analytics` |
+| Status | `status:blocked` `status:in-progress` `status:deferred` `status:needs-repro` |
+| Meta | `auto-created` `source:coach-feedback` `needs-overnight-soak` `hotfix-exception` |
+
+Full label definitions and inference rules: `docs/process/ISSUE_TRACKING.md`.
+
+---
+
 ## Ship Gate
 
 Before shipping any non-exempt release, answer these four questions:
