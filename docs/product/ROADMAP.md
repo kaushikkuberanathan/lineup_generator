@@ -1035,7 +1035,7 @@ See also: Story 61 (P0) — recipient-side viewer routing broken (separate fix,
 | 42 | **Pre-push hook doesn't differentiate env-broken vs test-failure** | When hook fails, developer cannot tell if it's environmental OOM/spawn issue or real regression without manually reading Vitest output. Friction makes `--no-verify` more tempting. Proposed fix: hook detects timeout patterns and emits "ENVIRONMENT TIMEOUT" vs "TEST FAILURE" messages; logs bypass invocations for audit. P2 polish, address when hook touches happen. |
 | 43 | **Branch protection allows admin bypass; main should be stricter than develop** | Push to develop on May 1 reported "Bypassed rule violations" for required PR + status checks. Standard GitHub behavior — owner has implicit bypass unless "Do not allow bypassing the above settings" is checked. Acceptable on develop for solo iteration; main should require explicit unlock. Proposed fix: enable strict toggle on main only. Blocks: requires Story 41 resolution first (otherwise can't merge to main without re-bypassing). |
 
-### Story 62 (P2) — dbLoadShareLink silent null collapses three failure modes
+### Story 62 (P2) — dbLoadShareLink silent null collapses three failure modes <!-- #127 -->
 
 **Problem:** `dbLoadShareLink` returns null for at least three distinct failure modes (row not found, RLS block, malformed slug) and the caller cannot distinguish them — all three collapse into a single silent null, making the share-link error surface undiagnosable.
 
@@ -1435,32 +1435,32 @@ Open questions to resolve during implementation:
 - Likely cause: team_data Supabase READ also failing (per Story 15 RLS), so React state stays empty on mount; localStorage hydration not reached.
 - Fix Story 15 first, then re-test. If READ and WRITE both fail under same policy, a single RLS fix resolves both.
 
-### Story 19 (P2 / Phase 2+): Opponent runners on bases
+### Story 19 (P2 / Phase 2+): Opponent runners on bases <!-- #105 -->
 - Diamond UI parity during opponent batting half — full runner advancement tracking.
 - Schema: opp_runners jsonb column on live_game_state.
 - Handler: hit/walk advancement branches in recordOppPitch().
 - Currently only outs and runs tracked for opponent half; no runner visibility for coach.
 
-### Story 20 (P2): Half-flip helper extraction
+### Story 20 (P2): Half-flip helper extraction <!-- #106 -->
 - 4 code sites independently reset half-inning state: resolveAtBat 3-out, endHalfInning, recordOppPitch 3-out, confirmRunnerAdvancement 3-out.
 - Extract to flipHalfInning(gs, cause) shared helper to prevent state drift across these paths.
 
-### Story 21 (P2): "No pitches yet" stale copy
+### Story 21 (P2): "No pitches yet" stale copy <!-- #107 -->
 - Minor UX bug — stale copy shown in pitch area when pitches have already occurred.
 
-### Story 22 (P3): GitHub Actions CI queue delays
+### Story 22 (P3): GitHub Actions CI queue delays <!-- #108 -->
 - CI runs occasionally queue for 30+ min. Investigate: runner availability, billing limits, workflow configuration.
 - Document whether intermittent or reproducible; add to Known Issues if environmental.
 
-### Story 23 (P3): feature_flags table missing migration file
+### Story 23 (P3): feature_flags table missing migration file <!-- #109 -->
 - feature_flags table exists in Supabase but has no migration in supabase/migrations/.
 - Capture DDL in supabase/migrations/ for proper schema versioning and reproducibility.
 
-### Story 24 (P3): Orphan backend test files
+### Story 24 (P3): Orphan backend test files <!-- #110 -->
 - backend/scripts/tests/ contains test-runner.js, suite-rate-limits.js, suite-validation.js.
 - Cleanup decision needed: keep (document purpose) or delete (reduce confusion with CI_SAFE suite).
 
-### Story 30 (P2): isFlagEnabled — no DB-read path; DB flip has no runtime effect without redeploy
+### Story 30 (P2): isFlagEnabled — no DB-read path; DB flip has no runtime effect without redeploy <!-- #112 -->
 - **Surfaced:** April 24, 2026 (post-v2.5.0 merge; DB row flipped expecting user-facing change)
 - `isFlagEnabled(flagName)` is synchronous: reads `FEATURE_FLAGS[flagName]` from the JS bundle default + `localStorage.getItem('flag_' + flagName)`. It does NOT query the Supabase `feature_flags` table at runtime.
 - Current rollout method: code deploy (change default in featureFlags.js) or localStorage override per device.
@@ -1470,7 +1470,7 @@ Open questions to resolve during implementation:
 - Blocks nothing directly; current localStorage override remains available as workaround.
 - Connects to Story 41: until both resolved, runtime flag changes require redeploy + can't be locally test-validated.
 
-### Story 26 (P2): Backend RATE-01a test flakiness — stateful against prod rate limiter
+### Story 26 (P2): Backend RATE-01a test flakiness — stateful against prod rate limiter <!-- #111 -->
 - **Surfaced:** April 24, 2026 (PR #17 CI run — admin-bypassed because only CLAUDE.md changed).
 - `backend/scripts/tests/suite-rate-limits.js` RATE-01a expects `403 NOT_AUTHORIZED` but gets `429 TOO_MANY_ATTEMPTS` when prior CI runs have burned through the prod backend's rate-limit cap.
 - Update 2026-04-28: VAL-09 (validation, no email) is also affected by this rate limit issue, not just RATE-01a.
@@ -1478,7 +1478,7 @@ Open questions to resolve during implementation:
 - Recommendation: (D) addresses root cause; combine with throwaway-email per run from original recommendation as defense in depth.
 - Blocks nothing directly but masks real regressions if NOT_AUTHORIZED behavior ever breaks.
 
-### Story 31 (P2) — package.json version sync gate
+### Story 31 (P2) — package.json version sync gate <!-- #113 -->
 Status: Open
 Discovered: 2026-04-28, during v2.5.2 release recon
 Target: v2.5.3 or earlier
@@ -1547,7 +1547,7 @@ Proposed fixes:
 Recommendation: A — test gates are cheaper than hooks and run in CI for both
   local and PR pushes.
 
-### Story 34 (P3) — FEATURE_MAP row numbering audit
+### Story 34 (P3) — FEATURE_MAP row numbering audit <!-- #114 -->
 Status: Open
 Discovered: 2026-04-28, during v2.5.2 docs gap closure
 Target: Next docs cleanup patch
@@ -1595,7 +1595,7 @@ Proposed fixes:
 Recommendation: All three — small focused docs commit. Pair with Story 26 fix
   for one clean PR.
 
-### Story 36 (P3) — CI backend integration tests don't account for double-trigger request volume
+### Story 36 (P3) — CI backend integration tests don't account for double-trigger request volume <!-- #115 -->
 Status: Open
 Discovered: 2026-04-28, during PR #29 CI failure
 Target: Next infra patch
@@ -1652,7 +1652,7 @@ Recommendation: B. Hard guard for the failure mode we demonstrated, escape
 
 ---
 
-### Story 38 (P2) — userChanges token scanner
+### Story 38 (P2) — userChanges token scanner <!-- #116 -->
 Status: Open
 Discovered: April 2026 — v2.5.3 techNote guard release closed the techNote
   leak vector but left userChanges freeform prose with only documentation as
@@ -1683,7 +1683,7 @@ Recommendation: A. Ship a tight banned-token list (≤10 patterns), per-entry
 
 ---
 
-### Story 39 (P3) — Typed VERSION_HISTORY schema validator
+### Story 39 (P3) — Typed VERSION_HISTORY schema validator <!-- #117 -->
 Status: Open
 Discovered: April 2026 — pattern recognized after two structural regressions
   (v2.2.12/13 missing entries killed the Current badge; v2.4.0/v2.3.4
@@ -1798,7 +1798,7 @@ Pitch map (at-bat pitch history) is obscured behind the row of scoring outcome C
 
 ---
 
-### Story 47 (P3) — ScoreboardRow active-half visual indicator
+### Story 47 (P3) — ScoreboardRow active-half visual indicator <!-- #118 -->
 Status: Open
 Discovered: 2026-05-03 (smoke test enhancement request)
 Target: Slice 2 if layout slack; Slice 3 polish pass otherwise
@@ -1826,7 +1826,7 @@ Target: v2.5.7 (in-line fix, no version bump) ✓
 
 ---
 
-### Story 48 (P2) — Auto-sync defense view inning to scoring inning
+### Story 48 (P2) — Auto-sync defense view inning to scoring inning <!-- #119 -->
 Status: Open
 Discovered: 2026-05-04 (Slice 2 scope lock — Council session)
 Target: Post-pilot validation cycle (v2.6.x)
@@ -1846,7 +1846,7 @@ Target: Post-pilot validation cycle (v2.6.x)
 
 ---
 
-### Story 49 (P2) — Feature flag key scheme normalization
+### Story 49 (P2) — Feature flag key scheme normalization <!-- #120 -->
 Status: Open
 Discovered: 2026-05-04 (Slice 2 dev soak)
 Target: v2.6.x
@@ -1873,7 +1873,7 @@ Coaches enabling flags via console must guess which form the specific check uses
 
 ---
 
-### Story 51 (P2) — Document flag enabling pattern in feature-flags.md
+### Story 51 (P2) — Document flag enabling pattern in feature-flags.md <!-- #121 -->
 Status: Open
 Discovered: 2026-05-04 (Slice 2 dev soak — flag scheme triage)
 Target: v2.6.x or alongside Story 49
@@ -1930,7 +1930,7 @@ Move the 7 live ScoringMode children into `components/game-mode/scoring/`, updat
 
 **Bonus finding (defer):** `LiveScoreViewer.jsx` is an 86-byte stub returning `<div>LiveScoreViewer</div>` and is rendered at `LiveScoringPanel.jsx:289`. Cosmetic dead code rendered inside the live scoring panel. Touch in a focused cleanup, not now — modifying `LiveScoringPanel.jsx` risks accidental game-day behavior changes.
 
-### Story 55 (P3) — PR merge-target validation
+### Story 55 (P3) — PR merge-target validation <!-- #122 -->
 Status: Open
 Discovered: 2026-05-11 — during v2.5.10 promotion divergence investigation
 Target: TBD
@@ -1956,7 +1956,7 @@ Recommendation: (b) — highest leverage, automated, low overhead,
 catches exactly this pattern. (c) is good general hygiene independent
 of this story. (a) is weak (humans skip checkboxes).
 
-### Story 56 (P3) — Vite CJS Node API deprecation
+### Story 56 (P3) — Vite CJS Node API deprecation <!-- #123 -->
 Status: Open
 Discovered: 2026-05-11 — during v2.5.10 Vitest suite run
 Target: TBD (before Vite drops CJS support)
@@ -1978,7 +1978,7 @@ Recommendation: (a) — small one-off migration, no behavior change,
 removes a known future blocker. Can be done as a chore PR alongside
 or independent of any feature work.
 
-### Story 57 (P3) — PR conflict-resolution playbook in CLAUDE.md
+### Story 57 (P3) — PR conflict-resolution playbook in CLAUDE.md <!-- #124 -->
 Status: Open
 Discovered: 2026-05-11 — during v2.5.10 promotion divergence recovery
 Target: TBD (docs hygiene)
@@ -2008,7 +2008,7 @@ Proposed fixes:
           pressure).
 Recommendation: (a) — write it once, save the recovery time next time.
 
-### Story 58 (P3) — v2.5.9 release-note wording correction
+### Story 58 (P3) — v2.5.9 release-note wording correction <!-- #125 -->
 Status: Open
 Discovered: 2026-05-11 — during v2.5.10 rollback safety audit
 Target: TBD (docs hygiene; can be batched with any v2.5.10+ docs sweep)
@@ -2060,7 +2060,7 @@ Recommendation: (a) — single-line cleanup does not deserve its own PR
 ceremony, and the Phase 3 Step 2 PR is contextually adjacent (same
 components directory).
 
-### Story 60 (P3) — Token coverage gaps surfaced in EmptyState migration
+### Story 60 (P3) — Token coverage gaps surfaced in EmptyState migration <!-- #126 -->
 Status: Open
 Discovered: 2026-05-13 — Phase 3 Step 2 PR #68 EmptyState migration
 Target: future R-track patch or theme-extension story
@@ -2094,7 +2094,7 @@ Recommendation: (a) — most precise; preserves current visual; one
 focused R-track patch. Alternatively defer to (c) if Theme System
 Phase 3 is on the near horizon.
 
-### Story 63 (P2) — Now-batting strip hand badges not rendering
+### Story 63 (P2) — Now-batting strip hand badges not rendering <!-- #128 -->
 Status: Open
 Discovered: 2026-05-14 — Phase 3 Step 2.D.5 visual verification;
   confirmed pre-existing by prod + local test (pre-2.D code shows
@@ -2130,7 +2130,7 @@ Recommendation: diagnose the parent wiring before fixing. Own branch
 off develop; RED integration test at the real-parent-path level (not
 the synthetic-roster level the existing guard uses).
 
-### Story 64 (P3) — S.card remediation
+### Story 64 (P3) — S.card remediation <!-- #129 -->
 Status: Open
 Discovered: 2026-05-15 — Phase 3 Step 3 LegalSection migration
 Target: v2.6.x
@@ -2164,7 +2164,7 @@ Recommendation: (a) — a bordered Card variant with shadow support
   App.jsx first to confirm the variant API matches everyone, not just
   LegalViewer.
 
-### Story 65 (P3) — Token gap batch: style escapes from Phase 3 migrations
+### Story 65 (P3) — Token gap batch: style escapes from Phase 3 migrations <!-- #130 -->
 Status: Open
 Discovered: 2026-05-15 — Phase 3 Steps 3-4 migrations
 Target: v2.6.x
@@ -2218,7 +2218,7 @@ Recommendation: Batch the additions in one focused PR; update the
   story — that's a Theme System concern and needs its own design
   pass.
 
-### Story 66 (P3) — BattingHandSelector: defer Pill migration
+### Story 66 (P3) — BattingHandSelector: defer Pill migration <!-- #131 -->
 Status: Deferred
 Discovered: 2026-05-15 — Phase 3 Step 3 stretch-goal evaluation
 Target: v2.7.x, or post-Pill-tone-API
