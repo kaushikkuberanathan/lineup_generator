@@ -29,7 +29,7 @@
 | | |
 |---|---|
 | **Area** | Share links (8-char Supabase-backed) |
-| **Description** | No automated test validates that a share link generated from a locked lineup renders correctly in Viewer mode with (a) full defensive grid, (b) full batting order, (c) absent players filtered, (d) walk-up song links. Root cause of missing link generation confirmed May 18, 2026: renderPrint() orphaned at App.jsx:7564, shareCurrentLineup() dead. Fix tracked in Story 67. |
+| **Description** | No automated test validates that a share link generated from a locked lineup renders correctly in Viewer mode with (a) full defensive grid, (b) full batting order, (c) absent players filtered, (d) walk-up song links. Root cause of missing link generation confirmed May 18, 2026: renderPrint() orphaned at App.jsx:7564, shareCurrentLineup() dead. Fix tracked in Story 67. shareCurrentLineup() is now live and reachable from the Lineups tab (Story 67, v2.5.15) — this test gap is now urgent, not hypothetical. Priority elevated. |
 | **Risk if unfixed** | Silent regression breaks the #1 Strategic North Star ("share link bulletproof"). A future refactor of `shareCurrentLineup` or `SharedView.jsx` could ship with the link returning stale or incomplete data and we would not catch it pre-deploy. |
 | **Proposed test** | `frontend/src/tests/shareLink.test.js` — build a lineup fixture, call `shareCurrentLineup`, parse the `share_links.payload` JSONB, assert every expected field is present and correctly filtered. Also a DOM test that `SharedView` renders all sections without errors given the payload. |
 | **Opened** | 2026-04-17 |

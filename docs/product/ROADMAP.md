@@ -971,7 +971,8 @@ Game Mode polish release covering three themes:
 **Blocks:** Final merge of feature/combined-game-view to main is NOT blocked — note in PR body that share-link viewer is broken in prod regardless of this change.
 
 ### Story 67 (P0) — Share CTA orphaned: shareCurrentLineup() unreachable from Lineups tab
-Status: In Progress
+Status: Resolved — v2.5.15 (2026-05-19)
+Resolved: renderPrint() action bar lifted into renderLineups() via PR #99 (commit a355b1a). shareCurrentLineup() now reachable from Lineups tab. All three share paths confirmed working in local smoke test and dev.dugoutlineup.com overnight soak.
 Discovered: May 18, 2026 — root cause confirmed via code grep
 Target: v2.5.15
 Symptom: Coach finalizes lineup on the Lineups tab and finds no Share CTA.
