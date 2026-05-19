@@ -1,42 +1,35 @@
-name: Bug Report
-description: Report something broken or not working as expected
-title: "[Bug]: "
-labels: ["type: bug", "status: triage"]
+name: "🐛 Bug Report"
+description: Something is broken or behaving unexpectedly
+title: "[Bug] "
+labels: ["type:bug", "status:needs-repro"]
 body:
-  - type: markdown
-    attributes:
-      value: |
-        Before submitting — is this a game-day blocker? Add the `game-day` label after creating.
-
-  - type: dropdown
-    id: area
-    attributes:
-      label: Area
-      options:
-        - lineup-engine
-        - game-mode
-        - roster
-        - team-management
-        - batting
-        - positions
-        - auth
-        - pwa
-        - mobile-ux
-        - backend
-        - frontend
-        - deployment
-    validations:
-      required: true
 
   - type: dropdown
     id: priority
     attributes:
-      label: Priority
+      label: Severity
+      description: How badly does this block you?
       options:
-        - "P0 — production broken, game-day blocked"
-        - "P1 — high, workaround exists"
-        - "P2 — medium, not urgent"
-        - "P3 — low"
+        - "P0 — Production broken / share links down"
+        - "P1 — Blocks me at the field, no workaround"
+        - "P2 — Annoying but I can work around it"
+        - "P3 — Minor, low urgency"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Where did this happen?
+      options:
+        - Lineup generation
+        - Game Mode / Live Scoring
+        - Share link / Viewer
+        - Roster / Batting order
+        - Schedule / Results
+        - Auth / Login
+        - Settings / Feedback tab
+        - Other
     validations:
       required: true
 
@@ -44,35 +37,61 @@ body:
     id: symptom
     attributes:
       label: What happened?
-      description: Be specific. What did you see vs. what you expected?
-    validations:
-      required: true
+      description: Describe the broken behavior. Be specific — what did you tap, what did you expect, what did you see instead?
+      placeholder: |
+        Steps to reproduce:
+        1. Opened Game Mode
+        2. Tapped "Next batter"
+        3. App showed wrong player name
 
-  - type: textarea
-    id: steps
-    attributes:
-      label: Steps to reproduce
-      placeholder: "1. Go to...\n2. Tap...\n3. See..."
-    validations:
-      required: true
-
-  - type: textarea
-    id: device
-    attributes:
-      label: Device / browser
-      placeholder: "iPhone 15 Safari, Android Chrome 124, desktop Chrome, etc."
+        Expected: Connor
+        Actual: undefined
     validations:
       required: true
 
   - type: textarea
     id: root_cause
     attributes:
-      label: Root cause (if known)
-      placeholder: "known | hypothesis: ... | unknown"
+      label: Root cause hypothesis
+      description: If you have a theory, write it here. Leave blank if unknown.
+      placeholder: "Likely related to player.id undefined — see CLAUDE.md roster identity rule"
+
+  - type: textarea
+    id: proposed_fix
+    attributes:
+      label: Proposed fix / options
+      description: What approaches could fix this? Note tradeoffs if multiple options.
+      placeholder: |
+        Option A: [description] — tradeoff: [...]
+        Option B: [description] — tradeoff: [...]
+        Recommendation: Option A because [...]
+
+  - type: input
+    id: version
+    attributes:
+      label: App version
+      description: Found in the About tab (e.g. v2.5.6)
+      placeholder: "v2.5.6"
+
+  - type: input
+    id: device
+    attributes:
+      label: Device / browser
+      description: e.g. iPhone 14 / Safari, Pixel 7 / Chrome
+      placeholder: "iPhone 14 / Safari"
 
   - type: checkboxes
-    id: share_link
+    id: regression_check
     attributes:
-      label: Share link affected?
+      label: Regression check
       options:
-        - label: "Yes — unauthenticated share link is broken or degraded"
+        - label: This worked in a previous version
+        - label: This has never worked (new feature)
+        - label: Unknown / first time testing this
+
+  - type: textarea
+    id: roadmap_link
+    attributes:
+      label: ROADMAP story reference
+      description: If this maps to an existing Story in ROADMAP.md, note it here (e.g. "Story 27")
+      placeholder: "Story 27"

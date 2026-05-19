@@ -1,0 +1,74 @@
+name: "📚 Governance / Debt"
+description: Documentation gap, test debt, process improvement, or tooling issue
+title: "[Governance] "
+labels: ["type:governance"]
+body:
+
+  - type: markdown
+    attributes:
+      value: |
+        > Use this template for items that belong in `docs/product/DOC_TEST_DEBT.md`.
+        > After filing, add the issue number to the matching debt item in DOC_TEST_DEBT.md.
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      options:
+        - "P0 — Blocks next release"
+        - "P1 — Must fix soon"
+        - "P2 — Important, not urgent"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Documentation
+        - Test coverage
+        - CI / Tooling
+        - Process / Governance
+        - Schema / Migration
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What is the gap or debt? Be specific about what's missing or broken.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed_action
+    attributes:
+      label: Proposed action
+      description: Specific steps to resolve this item
+    validations:
+      required: true
+
+  - type: input
+    id: target_version
+    attributes:
+      label: Target version
+      placeholder: "v2.6.0"
+
+  - type: input
+    id: opened
+    attributes:
+      label: Opened
+      description: Date this was discovered
+      placeholder: "2026-05-19"
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: doc_test_debt_checklist
+    attributes:
+      label: DOC_TEST_DEBT.md sync
+      options:
+        - label: Corresponding entry added to DOC_TEST_DEBT.md
+        - label: Issue number referenced in DOC_TEST_DEBT.md entry

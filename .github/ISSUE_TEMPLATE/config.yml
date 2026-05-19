@@ -1,8 +1,14 @@
 blank_issues_enabled: false
 contact_links:
-  - name: Product Roadmap
+  - name: 💬 General feedback
+    url: https://dugoutlineup.com
+    about: Use the Feedback tab inside the app for general suggestions
+  - name: 🔥 Production incident
+    url: https://github.com/kaushikkuberanathan/lineup_generator/issues/new?template=bug_report.yml&labels=type:bug,priority:p0
+    about: Production is down or share links are broken — file a P0 bug immediately
+  - name: 📋 Product Roadmap
     url: https://github.com/kaushikkuberanathan/lineup_generator/blob/main/docs/product/ROADMAP.md
-    about: Check the roadmap before opening a story — it may already be tracked.
-  - name: Doc & Test Debt Ledger
+    about: Check the roadmap before opening a story — it may already be tracked
+  - name: 📊 Doc & Test Debt Ledger
     url: https://github.com/kaushikkuberanathan/lineup_generator/blob/main/docs/product/DOC_TEST_DEBT.md
-    about: Check here before logging tech debt — avoid duplicates.
+    about: Check here before logging tech debt — avoid duplicates

@@ -1,22 +1,36 @@
-name: Story
-description: New product capability or improvement — maps to ROADMAP backlog format
-title: "[Story]: "
-labels: ["type: feature", "status: triage"]
+name: "📋 Story"
+description: New backlog story — feature, fix, or improvement for ROADMAP.md
+title: "Story [N]: "
+labels: ["status:in-progress"]
 body:
+
   - type: markdown
     attributes:
       value: |
-        Use this for coach-facing features, UX improvements, and product capabilities. Maps directly to the ROADMAP Story template.
+        > **Naming:** Set the title to `Story [N]: [short name]` where N is the next sequential story number in ROADMAP.md.
+        > After filing, add this issue number to the matching Story block in ROADMAP.md.
 
   - type: dropdown
     id: priority
     attributes:
       label: Priority
       options:
-        - "P0 — critical, blocks coaches"
-        - "P1 — high value, next sprint"
-        - "P2 — medium, backlog"
-        - "P3 — low, nice to have"
+        - "P0 — Drop everything"
+        - "P1 — Fix this release"
+        - "P2 — Next 1-2 releases"
+        - "P3 — Backlog"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: Type
+      options:
+        - Feature
+        - Bug
+        - Chore
+        - Governance
     validations:
       required: true
 
@@ -25,39 +39,39 @@ body:
     attributes:
       label: Area
       options:
-        - lineup-engine
-        - game-mode
-        - roster
-        - team-management
-        - batting
-        - positions
-        - auth
-        - pwa
-        - mobile-ux
-        - backend
-        - frontend
-        - deployment
+        - Scoring / Game Mode
+        - Auth
+        - UX / Frontend
+        - Backend
+        - CI / Ops
+        - Share link
+        - Roster
+        - Supabase / DB
+        - Analytics
+        - Other
     validations:
       required: true
 
-  - type: dropdown
-    id: user
+  - type: input
+    id: discovered
     attributes:
-      label: Primary user
-      options:
-        - Coach
-        - Assistant Coach
-        - Parent
-        - Scorekeeper
-        - Dugout Helper
+      label: Discovered
+      description: Date and context (e.g. "2026-05-19, real-game smoke test")
+      placeholder: "2026-05-19, [context]"
     validations:
       required: true
+
+  - type: input
+    id: target_version
+    attributes:
+      label: Target version
+      placeholder: "v2.6.0"
 
   - type: textarea
     id: symptom
     attributes:
-      label: Symptom / problem to solve
-      description: What coach or parent pain point does this address?
+      label: Symptom
+      description: What goes wrong? What does the coach experience?
     validations:
       required: true
 
@@ -66,6 +80,7 @@ body:
     attributes:
       label: Impact
       description: Who is affected and how badly?
+      placeholder: "All coaches using share links in production. Share link loads a blank screen instead of the lineup."
     validations:
       required: true
 
@@ -73,34 +88,29 @@ body:
     id: root_cause
     attributes:
       label: Root cause
-      placeholder: "known | hypothesis: ... | unknown"
+      description: Known / hypothesis / unknown — and what it is
+      placeholder: "Unknown — routing logic in App.jsx renderSharedView may not be receiving the ?s= param correctly after the v2.5.x rewrite."
 
   - type: textarea
-    id: proposed_fix
+    id: proposed_fixes
     attributes:
-      label: Proposed fix / solution options
-      description: Options with tradeoffs where relevant.
-    validations:
-      required: true
+      label: Proposed fixes
+      description: Options with tradeoffs
 
   - type: textarea
     id: recommendation
     attributes:
       label: Recommendation
-      description: Which option and why.
-    validations:
-      required: true
+      description: Which option and why
 
-  - type: textarea
-    id: acceptance
+  - type: checkboxes
+    id: gates
     attributes:
-      label: MVP acceptance criteria
-      placeholder: "- Coach can...\n- Works on mobile Safari...\n- Share link unaffected..."
-    validations:
-      required: true
-
-  - type: input
-    id: target
-    attributes:
-      label: Target version
-      placeholder: "e.g. v2.6.0"
+      label: Definition of done
+      options:
+        - label: Tests written (RED → GREEN)
+        - label: Docs updated (Pre-release Docs Checklist walked)
+        - label: Overnight soak on develop
+        - label: Phone smoke test on Vercel preview
+        - label: Share link behavior unaffected (if touching routing)
+        - label: Auth principle unaffected (if touching auth)
