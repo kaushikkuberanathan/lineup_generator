@@ -7997,8 +7997,7 @@ export default function App() {
     }
     if (sharePayload) {
       var _vp = new URLSearchParams(window.location.search);
-      var _viewerFlagOn = runtimeFlags.VIEWER_MODE || localStorage.getItem("flag:viewer_mode") === "1";
-      var isViewer = _viewerFlagOn && (_vp.get("view") === "true" || _vp.get("role") === "viewer");
+      var isViewer = _vp.get("view") === "true" || _vp.get("role") === "viewer";
       return <ErrorBoundary fallback="Viewer Mode">{isViewer ? <DugoutView payload={sharePayload} isViewer={true} onExit={function() {}} /> : <SharedView payload={sharePayload} renderFieldSVG={renderFieldSVG} />}</ErrorBoundary>;
     }
     return (
@@ -8059,8 +8058,7 @@ export default function App() {
     var shareParam = urlParams.get("share");
     if (shareParam) {
       var payload = JSON.parse(decodeURIComponent(escape(atob(shareParam))));
-      var _viewerFlagOn64 = runtimeFlags.VIEWER_MODE || localStorage.getItem("flag:viewer_mode") === "1";
-      var isViewer64 = _viewerFlagOn64 && (urlParams.get("view") === "true" || urlParams.get("role") === "viewer");
+      var isViewer64 = urlParams.get("view") === "true" || urlParams.get("role") === "viewer";
       return <ErrorBoundary fallback="Viewer Mode">{isViewer64 ? <DugoutView payload={payload} isViewer={true} onExit={function() {}} /> : <SharedView payload={payload} renderFieldSVG={renderFieldSVG} />}</ErrorBoundary>;
     }
   } catch (e) {}
