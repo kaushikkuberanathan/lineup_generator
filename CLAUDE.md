@@ -366,6 +366,7 @@ UptimeRobot pinging a free-tier Render service every 5 min keeps it awake 24/7 �
 | 8 | ~~**BattingOrderStrip static when scoring engine advances batters (flag ON only)**~~ | **Resolved v2.5.7** — `battingIdxForStrip` switches source: `gameState.battingOrderIndex` (flag ON) vs App prop (flag OFF). |
 | 9 | ~~**Bases diamond clips at bottom at 375px viewport (flag ON only)**~~ | **Resolved v2.5.7** — DugoutView flex-column shell with `overflow-y:auto` body eliminates vertical clipping. |
 | 10 | ~~**Pitch map masked by scoring CTAs at 375px viewport (flag ON only)**~~ | **Resolved v2.5.7** — same flex-column layout fix as Bug 9; scoring-panel-mount scrolls within bounded body. |
+| 11 | **App.jsx skip-worktree trap** | `frontend/src/App.jsx` has `skip-worktree` set as the physical gate enforcement mechanism. When unlocked for editing, `git diff` and `git status` show 0 changes even though edits ARE on disk. Symptom: `git diff frontend/src/App.jsx` returns nothing despite visible edits. Fix: `git update-index --no-skip-worktree frontend/src/App.jsx`, then re-run `git diff`. Re-lock after commit with `git update-index --skip-worktree frontend/src/App.jsx`. Verify lock state with `git ls-files -v frontend/src/App.jsx` — `S` prefix means skip-worktree is active. Hit in Story 67 and Story 61. **Check the S flag first whenever App.jsx diffs look empty.** |
 
 ---
 
