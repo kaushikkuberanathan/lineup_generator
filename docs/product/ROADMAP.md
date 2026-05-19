@@ -2273,7 +2273,7 @@ Recommendation: Schedule as a standalone session. Do not bundle with feature wor
 
 ---
 
-### Story 69 (P2) — Dependabot Vulnerability Triage <!-- #TBD -->
+### Story 69 (P2) — Dependabot Vulnerability Triage <!-- #135 -->
 
 Status: Open
 Discovered: May 19, 2026 (surfaced during Story 68 audit)
