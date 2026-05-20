@@ -1,5 +1,19 @@
 ﻿export var VERSION_HISTORY = [
   {
+    version: '2.5.16',
+    date: 'May 2026',
+    headline: 'Repo governance & GitHub settings hardening',
+    techNote: 'Minor fixes and internal improvements',
+    userChanges: [],
+    internalChanges: [
+      'GitHub settings audit complete (Story 68) — ChatGPT Codex Connector and Grok revoked, Dependabot alerts enabled, CODEOWNERS added',
+      'CODEOWNERS file — locked file gate convention now machine-enforced via GitHub PR review requests',
+      'GitHub Issue templates — Bug Report, Story, Governance forms with label system',
+      '27 GitHub Issues bootstrapped from ROADMAP backlog (#105–#131)',
+      'Story 69 opened — Dependabot vulnerability triage (18 alerts, 6 high 12 moderate)',
+    ],
+  },
+  {
     version: '2.5.15',
     date: '2026-05-19',
     headline: 'Share Lineup restored + Support tab polish',
