@@ -36,16 +36,17 @@ router.get('/health', async function(req, res) {
       return res.status(503).json({
         status: 'degraded',
         uptime: process.uptime(),
-        version: process.env.npm_package_version || 'unknown',
+        version: require('../../package.json').version,
         db: 'error',
         db_latency_ms: latency,
+        db_error: error.message,
       });
     }
 
     return res.status(200).json({
       status: 'ok',
       uptime: process.uptime(),
-      version: process.env.npm_package_version || 'unknown',
+      version: require('../../package.json').version,
       db: 'ok',
       db_latency_ms: latency,
     });
@@ -53,9 +54,10 @@ router.get('/health', async function(req, res) {
     return res.status(503).json({
       status: 'error',
       uptime: process.uptime(),
-      version: process.env.npm_package_version || 'unknown',
+      version: require('../../package.json').version,
       db: 'unreachable',
       db_latency_ms: Date.now() - start,
+      db_error: err.message,
     });
   }
 });

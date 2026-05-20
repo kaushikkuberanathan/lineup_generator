@@ -143,13 +143,13 @@ app.get('/ping', function(req, res) {
 });
 
 app.use('/api/v1/auth', authRouter);
+app.use('/api/v1/ops', opsRouter);
+app.use('/api/v1/teams', teamDataRouter);
 app.use('/api/v1', adminRouter);
 app.use('/api/v1', feedbackRouter);
 // Ops/data-protection routes — localhost or X-Admin-Key restricted
 // legacy mount — deprecate after /api/v1/teams cutover is confirmed
 app.use('/api/teams', teamDataRouter);
-app.use('/api/v1/ops', opsRouter);
-app.use('/api/v1/teams', teamDataRouter);
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
