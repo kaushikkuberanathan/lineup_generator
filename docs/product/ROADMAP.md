@@ -2296,6 +2296,32 @@ Recommendation: Triage before next prod release. Dismiss non-exploitable, upgrad
 
 ---
 
+### Story 70 (P3) — Release History & CODEOWNERS Hygiene <!-- #141 -->
+
+Status: Open
+Discovered: May 19, 2026 (v2.5.16 bump session — 2026-05-19-B)
+Target: next governance session
+Symptom: Two hygiene gaps: (1) v2.5.15 missing from ROADMAP release history chronology — only referenced in story metadata, never added as a top-level release entry; (2) frontend/src/data/versionHistory.js and --no-verify docs-only exception not in CODEOWNERS or CLAUDE.md respectively.
+Impact: Internal only. Release history has a gap at v2.5.15. versionHistory.js edits bypass the locked-file gate convention.
+Root cause: v2.5.15 bumped without a ROADMAP release entry; versionHistory.js was not on the locked-files list when CODEOWNERS was authored (it was still in App.jsx at that time). --no-verify docs-only exception used without being formally documented.
+Proposed fixes: (1) Backfill v2.5.15 release entry in ROADMAP.md; (2) Add versionHistory.js to .github/CODEOWNERS; (3) Document docs-only --no-verify as a named exception in CLAUDE.md.
+Recommendation: Bundle all three in one chore PR — small scope, no app code.
+
+---
+
+### Story 71 (P2) — Version History Audit: Standardize Schema Across All Entries <!-- #140 -->
+
+Status: Open
+Discovered: May 19, 2026 (v2.5.16 bump session — 2026-05-19-B)
+Target: v2.5.17
+Symptom: VERSION_HISTORY entries in frontend/src/data/versionHistory.js have inconsistent date formats (some "2026-05-04", some "May 2026"), missing headline/techNote fields on older entries, and internalChanges content appearing in userChanges where coaches could see it.
+Impact: Internal only for now. Risk: coach-facing release notes surface technical noise if VERSION_HISTORY is ever consumed directly. Schema test drift risk if new entries follow inconsistent older patterns.
+Root cause: Schema evolved over time (headline + techNote added, versionHistory.js extracted from App.jsx in v2.5.3) without a retroactive audit pass.
+Proposed fixes: Full audit pass — read every entry, flag violations, propose standardized rewrites for KK review, commit in one patch.
+Recommendation: Option A (full audit pass) over schema-test-only approach — customer-facing language quality requires human judgment a test cannot catch.
+
+---
+
 ### Automated Score Reporting (County Integration)
 **Status:** Architecture finalized, implementation pending
 **Trigger:** Coach taps "Report Score" on a completed game
