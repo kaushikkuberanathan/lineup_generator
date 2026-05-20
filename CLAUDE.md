@@ -175,37 +175,9 @@ If any answer is "no": stop. Document the gap in DOC_TEST_DEBT.md, then decide w
 9. [ ] Confirm `RESEND_DOMAIN_VERIFIED=true` in Render env vars (only after domain verified)
 10. [ ] Run `npm test` — confirm 734 passed / 1 skipped (as of v2.5.14, May 16, 2026) / 0 failed
 
-### VERSION_HISTORY Schema (dual-layer — both required)
-```js
-{
-  version: "x.x.x",
-  date: "Month YYYY",
+### VERSION_HISTORY Schema
 
-  // USER-FACING — rendered in Updates tab
-  headline: "One sentence: what the coach gets, not what was built",
-  userChanges: [
-    "Plain English benefit — what does the coach experience differently?",
-  ],
-  techNote: "Bug fixes and performance improvements",
-  // techNote must be one of:
-  //   "Bug fixes and performance improvements"
-  //   "Under-the-hood stability improvements"
-  //   "Performance and reliability improvements"
-  //   "Minor fixes and internal improvements"
-
-  // INTERNAL — NOT rendered, audit trail only
-  internalChanges: [
-    "Exact technical detail — file, function, or system affected",
-  ],
-}
-```
-**RULE**: `userChanges` answers "What does the coach experience differently?" — never expose refactors, CI, migrations, or internal tooling there.
-
-### UPDATES TAB CONTENT RULE
-
-The Updates tab is coach-facing. `headline` and `userChanges` must be plain-English coach benefits. Technical detail belongs in `internalChanges`, git commit messages, and ROADMAP.md only. The `techNote` field must be one of the four approved strings listed above. `internalChanges` is never rendered.
-
-Enforced by: `frontend/src/__tests__/versionHistory.test.js`
+> Full schema + Updates Tab Content Rule: [docs/product/VERSION_HISTORY_SCHEMA.md](docs/product/VERSION_HISTORY_SCHEMA.md)
 
 ### Game-Day Validation (required before deploys touching lineup/game mode/share)
 - Generate lineup <60s
