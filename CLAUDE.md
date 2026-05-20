@@ -366,6 +366,7 @@ UptimeRobot pinging a free-tier Render service every 5 min keeps it awake 24/7 �
 | 8 | ~~**BattingOrderStrip static when scoring engine advances batters (flag ON only)**~~ | **Resolved v2.5.7** — `battingIdxForStrip` switches source: `gameState.battingOrderIndex` (flag ON) vs App prop (flag OFF). |
 | 9 | ~~**Bases diamond clips at bottom at 375px viewport (flag ON only)**~~ | **Resolved v2.5.7** — DugoutView flex-column shell with `overflow-y:auto` body eliminates vertical clipping. |
 | 10 | ~~**Pitch map masked by scoring CTAs at 375px viewport (flag ON only)**~~ | **Resolved v2.5.7** — same flex-column layout fix as Bug 9; scoring-panel-mount scrolls within bounded body. |
+| 11 | **App.jsx skip-worktree trap** | `frontend/src/App.jsx` has `skip-worktree` set as the physical gate enforcement mechanism. When unlocked for editing, `git diff` and `git status` show 0 changes even though edits ARE on disk. Symptom: `git diff frontend/src/App.jsx` returns nothing despite visible edits. Fix: `git update-index --no-skip-worktree frontend/src/App.jsx`, then re-run `git diff`. Re-lock after commit with `git update-index --skip-worktree frontend/src/App.jsx`. Verify lock state with `git ls-files -v frontend/src/App.jsx` — `S` prefix means skip-worktree is active. Hit in Story 67 and Story 61. **Check the S flag first whenever App.jsx diffs look empty.** |
 
 ---
 
@@ -431,6 +432,71 @@ three shims are removed and auth is confirmed working end-to-end.
 ## Security Practices
 
 The phased security roadmap lives in `docs/product/SECURITY_FRAMEWORK.md`. Standing Practices listed in that doc become permanent rules here as items ship. Currently no items have shipped — section will be populated incrementally.
+
+---
+
+## Locked Files
+
+The following files require a gate phrase before any edit. This prevents accidental modification of high-risk surfaces during multi-step sessions.
+
+| File / Path | Gate phrase |
+|---|---|
+| `frontend/src/App.jsx` | *"all clear — App.jsx editing approved"* |
+| `frontend/src/utils/migrations.js` | *"all clear — migrations.js editing approved"* |
+| `frontend/src/utils/formatters.js` | *"all clear — formatters.js editing approved"* |
+| `frontend/src/utils/flagBootstrap.js` | *"all clear — flagBootstrap.js editing approved"* |
+| `frontend/src/components/game-mode/*` | *"all clear — game-mode editing approved"* |
+| `frontend/src/components/ScoringMode/*` | *"all clear — ScoringMode editing approved"* |
+| `frontend/package.json` | *"all clear — frontend/package.json editing approved"* |
+| `backend/package.json` | *"all clear — backend/package.json editing approved"* |
+| `CLAUDE.md` | *"all clear — CLAUDE.md editing approved"* |
+
+**Push gate phrase:** *"confirmed — push to [branch-name]"* — required before any `git push` to a named branch. Never push without the explicit gate phrase AND a clean local build.
+
+**Why these files:** App.jsx is a 10,000+ line monolith where accidental edits cause hard-to-detect regressions. migrations.js, formatters.js, and flagBootstrap.js are extracted utilities with their own test suites — changes here have cross-cutting impact. game-mode/ and ScoringMode/ are the live game-day surface. Both package.json files gate the version bump ritual.
+
+---
+
+## Issue & Backlog Hygiene
+
+Every Story in ROADMAP.md must have a corresponding GitHub Issue. This is non-negotiable — it enables `closes #N` in commits, label-based filtering, and automation hooks.
+
+### Rules (enforce every session)
+
+1. **New story → GitHub Issue same session.** Use the Story issue template at github.com/kaushikkuberanathan/lineup_generator/issues/new/choose. Never leave a story in ROADMAP.md without a `<!-- #N -->` marker.
+
+2. **Batch sync.** When stories accumulate without issues, run:
+$env:GITHUB_TOKEN = $TOKEN
+node scripts/sync-stories-to-issues.js --dry-run   ← review first
+node scripts/sync-stories-to-issues.js              ← create
+   Script is idempotent — safe to re-run, skips already-linked stories.
+
+3. **Commit message convention.** Any commit that resolves a story must include `closes #N` or `fixes #N` in the message body. GitHub auto-closes the issue on merge to main.
+
+4. **PR body convention.** The Related Issue field in every PR body must reference the issue number(s) the PR resolves. Never leave it as N/A if a story is being closed.
+
+5. **Label discipline.** All issues must carry at minimum one `priority:*` label and one `type:*` label. Area labels are strongly recommended. Labels follow `prefix:name` convention (no spaces). Full taxonomy in `docs/process/ISSUE_TRACKING.md`.
+
+6. **DOC_TEST_DEBT items** also get GitHub Issues using the Governance template. Reference the issue number in the debt ledger entry.
+
+### Scripts
+
+| Script | Purpose |
+|---|---|
+| `scripts/sync-stories-to-issues.js` | Parse ROADMAP.md → create GitHub Issues → patch `<!-- #N -->` markers |
+| `scripts/setup-github-labels.ps1` | Bootstrap/reset all 28 labels (run after repo clone or label drift) |
+
+### Label taxonomy quick reference
+
+| Group | Labels |
+|---|---|
+| Priority | `priority:p0` `priority:p1` `priority:p2` `priority:p3` |
+| Type | `type:bug` `type:feature` `type:chore` `type:governance` `type:hotfix` `type:incident` |
+| Area | `area:scoring` `area:auth` `area:ux` `area:backend` `area:ci-ops` `area:game-mode` `area:share-link` `area:roster` `area:supabase` `area:analytics` |
+| Status | `status:blocked` `status:in-progress` `status:deferred` `status:needs-repro` |
+| Meta | `auto-created` `source:coach-feedback` `needs-overnight-soak` `hotfix-exception` |
+
+Full label definitions and inference rules: `docs/process/ISSUE_TRACKING.md`.
 
 ---
 
@@ -518,8 +584,9 @@ Every other session: open `docs/product/DOC_TEST_DEBT.md` — close P0s, promote
 ---
 
 ## Current Version
-**v2.5.15** — May 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/data/versionHistory.js`.
+**v2.5.16** — May 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/data/versionHistory.js`.
 
+- v2.5.16 (2026-05-19): Repo governance & GitHub settings hardening — Story 68 audit complete (2 AI apps revoked, Dependabot enabled), CODEOWNERS added (PR #133), 4 GitHub Issue templates, 27 ROADMAP stories bootstrapped to Issues (#105–#131), Story 69 opened for Dependabot triage.
 - v2.5.15 (2026-05-19): Share Lineup CTA restored on Game Day → Lineups tab (Story 67, PR #99); Support tab polish — FAQ default, full-row link tap targets, longer toast duration (PR #94).
 - v2.5.14 (2026-05-16): UX Phase 3 primitives — Pill, ListRow, 4 component migrations, 80 new tests.
 - v2.5.13 (2026-05-15): Scoring restoration. (1) `leagueRules.getRules`: alias normalization (10U/9U/10U-minor/9U-minor → canonical) + fallback to `baseball:9-10U`/`softball:9-10U` with `console.warn` instead of throwing on unknown age groups — fixes hook-init crash that blocked the scoring surface entirely. (2) `DugoutView.dugoutFocusMode`: formula revised to `(currentAtBat !== null || scorerClaimed) ? 'scoring' : 'lineup'` — closes the deadlock where a coach claimed scorer, `currentAtBat` was null, mode stayed `'lineup'`, LiveScoringPanel was `display:none`, no UI to call `startAtBat()`. (3) `DugoutView.test.jsx`: two state-machine tests rewritten to assert the v2.5.13 contract; viewer-path transitions left for a follow-up scope. (4) Docs: root `CLAUDE.md` `dugoutFocusMode` entry rewritten with new formula, per-role behaviour, and deadlock rationale; Story 48 named as follow-up for the in-DugoutView defense-view toggle. Closes Stories 15, 16. Suite stayed at 654 passed + 1 skipped.

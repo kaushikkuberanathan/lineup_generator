@@ -29,11 +29,23 @@
 | | |
 |---|---|
 | **Area** | Share links (8-char Supabase-backed) |
-| **Description** | No automated test validates that a share link generated from a locked lineup renders correctly in Viewer mode with (a) full defensive grid, (b) full batting order, (c) absent players filtered, (d) walk-up song links. Root cause of missing link generation confirmed May 18, 2026: renderPrint() orphaned at App.jsx:7564, shareCurrentLineup() dead. Fix tracked in Story 67. shareCurrentLineup() is now live and reachable from the Lineups tab (Story 67, v2.5.15) — this test gap is now urgent, not hypothetical. Priority elevated. |
+| **Description** | No automated test validates that a share link generated from a locked lineup renders correctly in Viewer mode with (a) full defensive grid, (b) full batting order, (c) absent players filtered, (d) walk-up song links. Root cause of missing link generation confirmed May 18, 2026: renderPrint() orphaned at App.jsx:7564, shareCurrentLineup() dead. Fix tracked in Story 67. shareCurrentLineup() is now live and reachable from the Lineups tab (Story 67, v2.5.15) — this test gap is now urgent, not hypothetical. Priority elevated. **Update v2.5.16 (2026-05-19):** `frontend/src/tests/shareLink.test.js` now exists — 3 specs cover `dbLoadShareLink` timeout + happy path + Supabase error (Story 61 Bug A). Payload-integrity scope (generated payload shape, absent-player filtering, song link preservation) remains open in the same file. |
 | **Risk if unfixed** | Silent regression breaks the #1 Strategic North Star ("share link bulletproof"). A future refactor of `shareCurrentLineup` or `SharedView.jsx` could ship with the link returning stale or incomplete data and we would not catch it pre-deploy. |
-| **Proposed test** | `frontend/src/tests/shareLink.test.js` — build a lineup fixture, call `shareCurrentLineup`, parse the `share_links.payload` JSONB, assert every expected field is present and correctly filtered. Also a DOM test that `SharedView` renders all sections without errors given the payload. |
+| **Proposed test** | `frontend/src/tests/shareLink.test.js` — **file exists, partial coverage**. Still needed: build a lineup fixture, call `shareCurrentLineup`, parse the `share_links.payload` JSONB, assert every expected field is present and correctly filtered. Also a DOM test that `SharedView` renders all sections without errors given the payload. |
 | **Opened** | 2026-04-17 |
-| **Age** | 27 days |
+| **Age** | 32 days |
+| **Target** | v2.6.x |
+
+### 🟠 P1 — Share-link routing render path (Story 61 follow-up)
+
+| | |
+|---|---|
+| **Area** | Share-link routing branches in `App.jsx` |
+| **Description** | Story 61 (v2.5.16) removed the `VIEWER_MODE` flag gate from `isViewer` (`App.jsx:8001`) and `isViewer64` (`App.jsx:8063`). The viewer-routing fix was verified via Vercel preview smoke test on a real device, not via automated test — `App.jsx` has no existing render-test harness. A future refactor of either share-link branch (or a re-introduction of a flag gate) could silently regress recipient-side routing again. |
+| **Risk if unfixed** | Silent regression on Strategic North Star #1 ("share link bulletproof"). Bug B is a two-character JSX conditional; the next refactor could re-introduce it without anyone noticing until a parent reports a broken link. |
+| **Proposed test** | Render-path integration test in `frontend/src/tests/` — render `<App />` (or extract the share-link branch into a small testable surface) with `window.location.search` stubbed for `?s=abc`, `?s=abc&view=true`, and `?share=<base64>` variants. Assert routing lands on `SharedView` vs `DugoutView` per URL. Requires standing up an `App.jsx` render-test harness for the first time — explicit cost the v2.5.16 PR opted not to pay. |
+| **Opened** | 2026-05-19 |
+| **Age** | 0 days |
 | **Target** | v2.6.x |
 
 ### 🔴 P0 — Game Mode Rendering + State

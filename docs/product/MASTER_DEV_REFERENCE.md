@@ -280,6 +280,9 @@ docs/product/CHARTER.md                 — product charter (vision, scope, pers
 docs/product/ONE_PAGER.md              — single-page scannable product summary
 docs/product/FEATURE_MAP.md             — authoritative feature-to-doc-to-test mapping (18 features)
 docs/product/DOC_TEST_DEBT.md           — documentation and test debt ledger (P0/P1/P2 items)
+scripts/setup-github-labels.ps1         — bootstrap/reset all 28 GitHub labels
+scripts/sync-stories-to-issues.js       — parse ROADMAP.md → create GitHub Issues → patch <!-- #N --> markers
+docs/process/ISSUE_TRACKING.md          — canonical reference: label taxonomy, story→issue flow, commit/PR conventions
 CLAUDE.md                               — project rules + Ship Gate + version history
 
 ---
@@ -297,8 +300,43 @@ Product documents are versioned alongside the app. Both CHARTER.md and ONE_PAGER
 | `PERSONAS.md` | On phase transitions | Last refreshed v2.2.31 (8-persona rewrite) |
 | `FEATURE_MAP.md` | Every release + feature change | See CLAUDE.md § Feature Map Update Rules |
 | `DOC_TEST_DEBT.md` | Every other session (Audit Cadence) | See CLAUDE.md § Audit Cadence |
+| `docs/process/ISSUE_TRACKING.md` | On any process or label change | Issue tracking, label taxonomy, script usage |
 
 **Version bump rule:** On any phase change, update CHARTER.md version header, ONE_PAGER.md version header, and the Phase Status table in ONE_PAGER.md before the release commit.
+
+---
+
+## Issue & Backlog Tracking
+
+GitHub Issues are the single system of record for all open stories, bugs, and incidents. ROADMAP.md is the human-readable narrative — every Story in it has a matching GitHub Issue.
+
+**Rules summary** — full detail in `docs/process/ISSUE_TRACKING.md`:
+- Every ROADMAP Story needs a GitHub Issue (Story template) filed the same session
+- Every Story heading carries a `<!-- #N -->` marker
+- Commits resolving a story use `closes #N` — GitHub auto-closes on merge to main
+- Labels follow `prefix:name` convention — 28 labels across 5 groups
+
+**Scripts:**
+
+```powershell
+# Sync new stories to GitHub Issues (always dry-run first)
+$env:GITHUB_TOKEN = $TOKEN
+node scripts/sync-stories-to-issues.js --dry-run
+node scripts/sync-stories-to-issues.js
+
+# Reset/bootstrap all 28 labels (after clone or drift)
+.\scripts\setup-github-labels.ps1
+```
+
+**Quick filters:**
+- P0s open: `is:open label:priority:p0`
+- P1s open: `is:open label:priority:p1`
+- In-progress: `is:open label:status:in-progress`
+- By area: `is:open label:area:scoring` (swap area as needed)
+
+Issue board: https://github.com/kaushikkuberanathan/lineup_generator/issues
+
+> For GitHub-level configuration detail (PR template, branch protection, Actions permissions, label reset) see [§ GitHub Operating System](#github-operating-system) below.
 
 ---
 
