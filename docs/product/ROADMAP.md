@@ -2320,6 +2320,31 @@ Root cause: Schema evolved over time (headline + techNote added, versionHistory.
 Proposed fixes: Full audit pass — read every entry, flag violations, propose standardized rewrites for KK review, commit in one patch.
 Recommendation: Option A (full audit pass) over schema-test-only approach — customer-facing language quality requires human judgment a test cannot catch.
 
+### Story 72 (P2) — Mount adminRouter and feedbackRouter at specific /api/v1 prefixes
+
+Status: Open
+Discovered: May 20, 2026 — surfaced during chore/backend-route-modularization (PR #TBD)
+Target: Phase 4C or next backend architecture pass
+
+Symptom: adminRouter and feedbackRouter are mounted at the bare /api/v1 prefix. Any
+unmatched request to /api/v1/* falls through into these routers and hits their
+router.use(requireAuth) middleware, returning 401 instead of 404.
+
+Impact: New routes mounted under /api/v1/* are auth-intercepted unless placed before
+the admin/feedback mounts in index.js. Requires mount-order discipline as a workaround.
+Fixed in PR #TBD by reordering mounts (specific before generic).
+
+Root cause: adminRouter and feedbackRouter use a bare /api/v1 mount instead of specific
+prefixes (/api/v1/admin, /api/v1/feedback).
+
+Proposed fix:
+- Option A (recommended): Re-mount adminRouter at /api/v1/admin and feedbackRouter at
+  /api/v1/feedback. Audit frontend callers first (admin.html + test suites).
+- Option B: Keep current order discipline — low risk while route surface is small.
+
+Recommendation: Option A, bundled with Phase 4C auth cutover when admin routes are
+already being touched.
+
 ---
 
 ### Automated Score Reporting (County Integration)
