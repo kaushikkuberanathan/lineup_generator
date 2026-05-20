@@ -54,7 +54,7 @@ export function LegalSection() {
           >
             <span style={{
               fontSize: "20px",
-              marginRight: "12px",
+              marginRight: tokens.space.md,
               flexShrink: 0,
             }}>
               {doc.emoji}
@@ -74,14 +74,14 @@ export function LegalSection() {
             <Text
               size="lg"
               color="secondary"
-              style={{ marginLeft: "8px", flexShrink: 0 }}
+              style={{ marginLeft: tokens.space.sm, flexShrink: 0 }}
             >
               ›
             </Text>
           </ListRow>
         );
       })}
-      <div style={{ padding: "16px" }}>
+      <div style={{ padding: tokens.space.lg }}>
         <Text
           size="xs"
           color="tertiary"
@@ -139,7 +139,7 @@ function LegalViewer({ doc, onBack }) {
           <Text
             size="xs"
             color="tertiary"
-            style={{ display: "block", marginBottom: "16px" }}
+            style={{ display: "block", marginBottom: tokens.space.lg }}
           >
             Last updated {doc.lastUpdated}
           </Text>
@@ -153,7 +153,7 @@ function LegalViewer({ doc, onBack }) {
                   color="navy"
                   style={{
                     display: "block",
-                    marginTop: idx === 0 ? 0 : "16px",
+                    marginTop: idx === 0 ? 0 : tokens.space.lg,
                     marginBottom: "6px",
                     letterSpacing: "0.02em",
                   }}
@@ -182,13 +182,13 @@ function LegalViewer({ doc, onBack }) {
               return (
                 <ul key={idx} style={{
                   margin: "0 0 10px",
-                  paddingLeft: "20px",
+                  paddingLeft: tokens.space.xl,
                   fontSize: tokens.font.size.body,
                   color: tokens.color.text.primary,
                   lineHeight: "1.7",
                 }}>
                   {section.items.map(function(item, i) {
-                    return <li key={i} style={{ marginBottom: "4px" }}>{item}</li>;
+                    return <li key={i} style={{ marginBottom: tokens.space.xs }}>{item}</li>;
                   })}
                 </ul>
               );
