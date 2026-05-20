@@ -5,6 +5,16 @@
 
 ---
 
+## v2.5.16 — 2026-05-19 — Repo governance & GitHub settings hardening
+
+- GitHub settings audit complete (Story 68) — ChatGPT Codex Connector and Grok revoked, Dependabot alerts enabled, CODEOWNERS added
+- CODEOWNERS file — locked file gate convention now machine-enforced via GitHub PR review requests
+- GitHub Issue templates — Bug Report, Story, Governance forms with label system
+- 27 GitHub Issues bootstrapped from ROADMAP backlog (#105–#131)
+- Story 69 opened — Dependabot vulnerability triage (18 alerts, 6 high 12 moderate)
+
+---
+
 ## v2.5.14 — 2026-05-16 — UX Phase 3 — Design System Primitives
 
 ### UX Phase 3 Step 3 — Pill + ListRow primitives + Support page migrations (commit `40ad221`)

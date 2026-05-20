@@ -584,8 +584,9 @@ Every other session: open `docs/product/DOC_TEST_DEBT.md` — close P0s, promote
 ---
 
 ## Current Version
-**v2.5.15** — May 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/data/versionHistory.js`.
+**v2.5.16** — May 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/data/versionHistory.js`.
 
+- v2.5.16 (2026-05-19): Repo governance & GitHub settings hardening — Story 68 audit complete (2 AI apps revoked, Dependabot enabled), CODEOWNERS added (PR #133), 4 GitHub Issue templates, 27 ROADMAP stories bootstrapped to Issues (#105–#131), Story 69 opened for Dependabot triage.
 - v2.5.15 (2026-05-19): Share Lineup CTA restored on Game Day → Lineups tab (Story 67, PR #99); Support tab polish — FAQ default, full-row link tap targets, longer toast duration (PR #94).
 - v2.5.14 (2026-05-16): UX Phase 3 primitives — Pill, ListRow, 4 component migrations, 80 new tests.
 - v2.5.13 (2026-05-15): Scoring restoration. (1) `leagueRules.getRules`: alias normalization (10U/9U/10U-minor/9U-minor → canonical) + fallback to `baseball:9-10U`/`softball:9-10U` with `console.warn` instead of throwing on unknown age groups — fixes hook-init crash that blocked the scoring surface entirely. (2) `DugoutView.dugoutFocusMode`: formula revised to `(currentAtBat !== null || scorerClaimed) ? 'scoring' : 'lineup'` — closes the deadlock where a coach claimed scorer, `currentAtBat` was null, mode stayed `'lineup'`, LiveScoringPanel was `display:none`, no UI to call `startAtBat()`. (3) `DugoutView.test.jsx`: two state-machine tests rewritten to assert the v2.5.13 contract; viewer-path transitions left for a follow-up scope. (4) Docs: root `CLAUDE.md` `dugoutFocusMode` entry rewritten with new formula, per-role behaviour, and deadlock rationale; Story 48 named as follow-up for the in-DugoutView defense-view toggle. Closes Stories 15, 16. Suite stayed at 654 passed + 1 skipped.
