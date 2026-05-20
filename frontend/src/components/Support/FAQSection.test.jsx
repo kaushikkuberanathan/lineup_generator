@@ -1,8 +1,13 @@
 import React from 'react';
 import { describe, test, expect } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
 import { FAQSection } from './FAQSection';
 import { FAQ_CATEGORIES } from '../../content/faqs';
+
+var FAQ_SECTION_SOURCE_PATH = join(dirname(fileURLToPath(import.meta.url)), 'FAQSection.jsx');
 
 // ============================================================================
 // FAQSection — Phase 3 primitive migration regression guard
@@ -79,6 +84,40 @@ describe('FAQSection — primitive migration guard', function () {
   test('F4: footer hint text is rendered', function () {
     render(<FAQSection />);
     expect(screen.queryByText('Still have questions? Use the Feedback tab to ask.')).not.toBeNull();
+  });
+
+  // ----------------------------------------------------------------------------
+  // Phase 3 Step 3 RED tests — added 2026-05-20
+  //
+  // F5 — anti-pattern absence (RED against current code):
+  //   The answer-body Text at L126–135 currently has
+  //   `style={{ ..., fontSize: "13px", ... }}` which overrides the primitive's
+  //   own size handling. Step 3 fix: switch to `<Text size="body">` and drop
+  //   the fontSize from the style override.
+  //
+  //   JSDOM merges caller-passed `style.fontSize` with the primitive-internal
+  //   fontSize (set by Text's `size` prop) into a single `element.style.fontSize`
+  //   value, so a behavioral assertion on the rendered DOM cannot distinguish
+  //   the two. Source-level regex is the appropriate tool: assert no `<Text ...>`
+  //   opening tag has a `style={{ ... fontSize ... }}` prop.
+  //
+  // F6 — coverage gap fill:
+  //   F3 only verifies a single category's picker label. F6 asserts every entry
+  //   in FAQ_CATEGORIES renders its `emoji + ' ' + label` in the picker.
+  // ----------------------------------------------------------------------------
+
+  test('F5: answer body <Text> must not override fontSize via inline style (Step 3 anti-pattern check)', function () {
+    var src = readFileSync(FAQ_SECTION_SOURCE_PATH, 'utf-8');
+    var antiPattern = /<Text[^>]*style=\{\{[^}]*fontSize/;
+    expect(antiPattern.test(src)).toBe(false);
+  });
+
+  test('F6: every FAQ_CATEGORIES label renders in the picker', function () {
+    render(<FAQSection />);
+    FAQ_CATEGORIES.forEach(function (cat) {
+      var picker = cat.emoji + ' ' + cat.label;
+      expect(screen.queryByText(picker)).not.toBeNull();
+    });
   });
 
 });
