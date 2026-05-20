@@ -60,7 +60,7 @@ export function FAQSection() {
         <Stack
           direction="row"
           gap="sm"
-          style={{ overflowX: "auto", paddingBottom: "4px" }}
+          style={{ overflowX: "auto", paddingBottom: tokens.space.xs }}
         >
           {FAQ_CATEGORIES.map(function(cat) {
             return (
@@ -80,7 +80,7 @@ export function FAQSection() {
       </div>
 
       {/* Q&A accordion */}
-      <div style={{ paddingBottom: "24px" }}>
+      <div style={{ paddingBottom: tokens.space.xl2 }}>
         {category.items.map(function(item, idx) {
           var isOpen = openItem === idx;
           return (
@@ -106,7 +106,7 @@ export function FAQSection() {
                     {item.q}
                   </Text>
                   <span style={{
-                    fontSize: "16px",
+                    fontSize: tokens.font.size.lg,
                     color: tokens.color.text.tertiary,
                     flexShrink: 0,
                     marginTop: "1px",
@@ -119,14 +119,14 @@ export function FAQSection() {
               {isOpen ? (
                 <div style={{
                   padding: "12px 16px 16px",
-                  background: "#f8fafc",
+                  background: tokens.color.surface.page,
                   borderTop: "1px solid " + tokens.color.border.default,
                   borderBottom: "1px solid " + tokens.color.border.default,
                 }}>
                   <Text
+                    size="body"
                     style={{
                       display: "block",
-                      fontSize: "13px",
                       color: "#374151",
                       lineHeight: "1.75",
                     }}
