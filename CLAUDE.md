@@ -492,7 +492,7 @@ Before opening a `develop → main` PR, walk through these items. For each, answ
 
 12. New test files listed in `docs/product/DOC_TEST_DEBT.md` test inventory
 13. Test count in `CLAUDE.md` matches actual suite total
-14. Pre-push hook runs `npm test` and passes on the release branch before PR opens
+14. Pre-push hook runs and passes on the release branch before PR opens (hook validates branch guard + skip-on-deletion only — Vitest suite removed by Story 75, PR #155; CI is the authoritative test gate)
 
 ### Final gate
 

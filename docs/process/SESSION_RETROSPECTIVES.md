@@ -10,6 +10,165 @@
 
 ---
 
+## 2026-05-21-A — v2.5.17 + v2.5.18 double-bump, Story 75 hook fix, sync-script hardening, lint debt filed
+
+**Date:** May 21, 2026
+**Session ID:** 2026-05-21-A (Terminal 1)
+**Duration:** ~6 hours (with breaks)
+**Versions shipped to develop:** v2.5.17, v2.5.18 (main still at v2.5.16 — promotion pending)
+**PRs merged:** #149 (v2.5.17 bump), #155 (Story 75 hook fix), #156 (sync-script hardening), #157 (v2.5.18 bump)
+**Issues filed:** Story 77 (P2)
+**Stories closed:** Story 75 (P1) — resolved v2.5.18
+
+---
+
+### Starting State
+
+**Main worktree** (`C:\Users\KKUBERANA1\Documents\lineup-generator`)
+- Branch: `chore/backend-route-modularization` (from prior session 2026-05-20-A)
+- HEAD: `d948914` — retrospective commit
+- Version: v2.5.16
+- Tree: dirty — 2 uncommitted edits (test count 734 → 740 in CLAUDE.md + frontend/CLAUDE.md) + 2 unpushed commits (Story 75 ROADMAP, retrospective)
+
+**UX worktree** (`C:\Users\KKUBERANA1\Documents\lineup-generator-ux`)
+- State unknown at session open; later discovered to be on `fix/sync-script-and-issue-markers` then `feature/ux-tokens-lineheight`
+
+**Production (`main`):** v2.5.16
+
+---
+
+### Ending State
+
+**Main worktree**
+- Branch: `docs/session-retrospective-2026-05-21-A` (cut from origin/develop for this file)
+- Bump branches cleaned up: `chore/version-bump-v2.5.17`, `fix/story-75-pre-push-hook`, `chore/version-bump-v2.5.18` all deleted
+
+**UX worktree**
+- Branch: `feature/ux-tokens-lineheight`
+- HEAD: `10d5222` (v2.5.18 squash merge)
+- Tree: clean
+
+**Production (`main`):** v2.5.16 — unchanged. Develop holds both v2.5.17 and v2.5.18, pending promotion.
+
+---
+
+### What We Did
+
+| # | Work Item | Outcome |
+|---|---|---|
+| 1 | v2.5.17 bump composed from 9 PRs since v2.5.16 | PR #149 merged (squash) |
+| 2 | Story 75 — pre-push hook remediation (Bug #7 mitigation) | PR #155 merged — removed Vitest + lint, kept branch guard + skip-on-deletion, added explicit `exit 0` |
+| 3 | sync-stories-to-issues.js hardening (KK's morning work on UX worktree) | PR #156 merged — placeholder strip, word-boundary regex, metachar escape |
+| 4 | Story 77 (P2) filed — 132 ESLint problems block strict lint gate | ROADMAP entry, `no-undef` errors flagged as potential real bugs |
+| 5 | v2.5.18 bump carrying Story 75 + #156 + Story 77 filing | PR #157 merged (squash) |
+
+---
+
+### Issues Faced
+
+**Issue 1 — Hook exit 0 gotcha (~5 min)**
+When removing the Vitest run from `.husky/pre-push`, the last executable line `[ "$HAS_CONTENT_PUSH" = "0" ] && exit 0` evaluated false for content pushes (the common case), making the script exit 1 and block every push. The old hook hid this because `cd frontend && npm test` ran after and overrode the trailing exit status.
+- Caught on the very first push attempt (good — bug surfaced immediately)
+- Fix: append explicit `exit 0` at end of file
+- Prevention: bash scripts that should always succeed at the end must end with explicit `exit 0`, never with a conditional test
+
+**Issue 2 — Lint gate not viable (~20 min replan)**
+Story 75's Option A was "keep lint/tsc only". `npm run lint` revealed **132 existing ESLint problems** (45 errors, 87 warnings) under `--max-warnings 0`. tsc not viable either (no tsconfig; codebase is pure JSX). Hook reduced to branch-guard + skip-on-deletion only.
+- 3 `no-undef` errors flagged for triage: `supabase` (App.jsx ~2821, 2849), `teamName` (~2941–2959), `updateServiceWorker` (~3517, 8632)
+- Story 77 (P2) filed for systematic triage
+- Prevention: run the gate command once before designing for it — a 30-second `npm run lint` at the start of Story 75 planning would have surfaced this immediately
+
+**Issue 3 — Worktree owns-branch conflict on develop pull (recurring)**
+Tried `git checkout develop && git pull` in main worktree. Failed with "develop already used by worktree at lineup-generator-ux". Resolution: switch main worktree to main, run pull in UX worktree directly via `git -C` path.
+- Hit again later when UX worktree was on a feature branch instead of develop — pull created an unintended merge commit
+- Prevention: `git branch --show-current` on any worktree before `git pull origin <branch>`. KK's two worktree split means develop lives in the UX worktree; main worktree should never expect to own it.
+
+**Issue 4 — UX worktree on non-develop branch created accidental merge (~5 min recovery)**
+After PR #149 merged, ran `git pull origin develop` in UX worktree expecting fast-forward. UX worktree was on `fix/sync-script-and-issue-markers` (KK's overnight work) — pull created merge commit `28a16fd`. Recovered via `git reset --hard 01a5cff` (KK explicitly approved the destructive command). The sync-script work was real and shipped as PR #156 on its own merit.
+- Lesson: always verify current branch before pulling another branch into it
+
+**Issue 5 — Edit tool stale-file errors after branch checkout (~10 min)**
+Several Edit calls during the v2.5.18 bump failed with "File has been modified since read". Branch checkout refreshed the tool's file tracking for files not directly edited by the checkout. Re-Read before Edit resolved.
+- Pattern: treat `git checkout` as a state reset for Edit tool tracking. After switching branches, any file you intend to Edit needs a fresh Read first.
+
+**Issue 6 — App.jsx skip-worktree re-lock timing (Bug #11 recurrence)**
+Re-locked App.jsx BEFORE committing the v2.5.17 bump. `git diff` and `git status` then showed no changes despite the edit being on disk. Recognized the trap quickly (covered in CLAUDE.md Known Bugs row 11), unlocked, staged, committed, then re-locked.
+- Rule confirmed: edit → unlock-stage-commit → re-lock → push. Never re-lock between edit and commit.
+
+**Issue 7 — Bash tool can't run PowerShell cmdlets (~1 min)**
+`Remove-Item` failed via Bash tool because Bash invokes `/usr/bin/bash`, not PowerShell. Used PowerShell tool directly for cleanup.
+- Covered in existing memory `feedback_cmd_tail_fails_use_powershell.md`
+
+---
+
+### What Was Accomplished
+
+- ✅ v2.5.17 shipped to develop (PR #149) — composed entry from 9 accumulated PRs (#139, #142–#148)
+- ✅ Story 75 (P1) resolved — pre-push hook reduced to branch-guard + skip-on-deletion + explicit exit 0 (PR #155)
+- ✅ Story 75 fix validated end-to-end — v2.5.18 push succeeded **without `--no-verify`** on main worktree
+- ✅ sync-stories-to-issues.js hardened (PR #156) — Fix A placeholder strip, Fix B word-boundary regex, metachar escape
+- ✅ Stories 72–76 ROADMAP markers updated from `<!-- #N -->` to real issue numbers `#150–#154`
+- ✅ Story 77 (P2) filed — lint debt triage; `no-undef` errors on `supabase`, `teamName`, `updateServiceWorker` flagged as potential real bugs
+- ✅ v2.5.18 shipped to develop (PR #157)
+- ✅ Both worktrees clean and synced at session close
+- ✅ All bump branches cleaned up locally
+
+---
+
+### Key Decisions Made (and Why)
+
+**Empty post-guard portion of pre-push hook.**
+Option A from Story 75 originally read "keep lint/tsc only" — collapsed to branch-guard-only when lint had 132 existing failures. Chose honest-minimal hook over either ignoring the lint debt or shipping a hook that fails every push.
+
+**New commit (not amend) for exit 0 fix.**
+Followed global no-amend rule even though the broken commit was unpushed. PR squash collapsed both commits on merge anyway.
+
+**No `--no-verify` on v2.5.18 push.**
+First validation of Story 75's fix on the main worktree. Push succeeded cleanly — confirms the new hook works as intended.
+
+**Cherry-pick prior session's carry-forward onto bump branches.**
+v2.5.17 carried Story 75 ROADMAP + retrospective 2026-05-20-A from `chore/backend-route-modularization` via cherry-pick. v2.5.18 carried Story 77 filing in its bump commit. Pattern: prior-session work that didn't ship gets folded into the next bump.
+
+**Refresh test count "as of" date on v2.5.18.**
+Count itself unchanged (740/1) but the "as of v2.5.16, May 20" reference was stale. Updated to "as of v2.5.18, May 21" since PR #156 confirmed the count holds. Rule: the "as of" reference tracks the latest release that ran the suite cleanly, not the last release where the count changed.
+
+---
+
+### What We Could Have Done Better
+
+1. **Run the lint command once before designing the lint gate.** A 30-second `npm run lint` at the start of Story 75 planning would have surfaced the 132-issue debt immediately. Cost: ~20 min of replan + rewrite.
+
+2. **`git branch --show-current` reflex before any worktree pull.** The owns-branch conflict + accidental merge both trace to this. Make it part of session-open and session-mid checks on both worktrees.
+
+3. **Treat `git checkout` as Edit-tool tracking reset.** After any branch switch, plan to re-Read files before batched Edits. Saved retries during v2.5.18 bump.
+
+4. **Bash scripts with conditional final statements need explicit `exit 0`.** Hook exit 0 bug caught immediately, but a one-line lint rule (shellcheck) would catch this class permanently. Worth filing? Maybe — only if other shell scripts grow in the repo.
+
+---
+
+### Carry-Forward Items
+
+| Priority | Item | Notes |
+|---|---|---|
+| P1 | Promote v2.5.17 + v2.5.18 to main | Both on develop. Soak + Ship Gate + Pre-release Docs Checklist + Vercel preview phone-smoke test. Coach-facing changes: none (governance only). |
+| P2 | Story 77 — Lint debt triage | 132 ESLint problems. Recommended: fix 3 `no-undef` errors first (potential real bugs), ~15 min. Then errors, then warnings. |
+| P2 | Story 72 — adminRouter/feedbackRouter specific prefixes | Bundle with Phase 4C cutover |
+| P2 | Story 71 — Version history audit | Standardize schema across all entries |
+| P3 | Story 76 — `\r` artifacts in ROADMAP headings | Cleanup pass when convenient |
+| — | UX track | `feature/ux-tokens-lineheight` open in UX worktree at HEAD=10d5222 |
+
+---
+
+### Next Session Open Checklist
+
+- [ ] `git status` and `git branch --show-current` on both worktrees before any work
+- [ ] Confirm v2.5.17 + v2.5.18 still un-promoted to main (or trigger promotion)
+- [ ] If promoting bundle to main: open Ship Gate, run Pre-release Docs Checklist, Vercel preview phone-smoke
+- [ ] If continuing dev: cut new feature/fix branch from origin/develop in main worktree
+- [ ] Story 77 triage if time allows — start with `no-undef` errors
+
+---
+
 ## 2026-05-20-A — Backend scalability assessment, CLAUDE.md trim, route modularization, Bug #7 escalation
 
 **Date:** May 20, 2026
