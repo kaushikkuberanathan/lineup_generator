@@ -2142,7 +2142,7 @@ the synthetic-roster level the existing guard uses).
 
 ### Story 64 (P3) — S.card remediation <!-- #129 -->
 Status: Open
-Discovered: 2026-05-15 — Phase 3 Step 3 LegalSection migration
+Discovered: 2026-05-15 — Phase 3 Step 3 LegalSection migration; reinforced 2026-05-20 — Phase 3 Step 3 PR #144 confirmed LegalSection.jsx L130-137 retains the full style escape post-migration (Tier 1 scope didn't touch Card properties); 5 properties documented: borderRadius 10px, padding 16px 18px, boxShadow 0 2px 8px rgba(15,31,61,0.06), marginBottom 14px, border 1px solid border.default
 Target: v2.6.x
 Symptom: `S.card` (App.jsx:741-745) uses `borderRadius: '10px'` (in
   the documented drift zone — between `radius.md` 8px and `radius.lg`
@@ -2156,6 +2156,11 @@ Symptom: `S.card` (App.jsx:741-745) uses `borderRadius: '10px'` (in
 Impact: LegalViewer Card consumes the primitive via full `style`
   escape — Card contributes little beyond semantic intent at this
   call site. Any future S.card consumer will face the same problem.
+  Phase 3 Step 3 (PR #144) deliberately left the Card escape
+  untouched per Tier 1 convention; the gap is now visible in two
+  committed forms (S.card in App.jsx + LegalSection.jsx consumer)
+  and will worsen as more components consume Card with bespoke
+  styling.
 Root cause: `S.card` predates the Card primitive (Card landed in
   Phase 2 v2.5.10); it was never migrated when Card was introduced.
 Proposed fixes:
@@ -2174,9 +2179,9 @@ Recommendation: (a) — a bordered Card variant with shadow support
   App.jsx first to confirm the variant API matches everyone, not just
   LegalViewer.
 
-### Story 65 (P3) — Token gap batch: style escapes from Phase 3 migrations <!-- #130 -->
+### Story 65 (P2) — Token gap batch: style escapes from Phase 3 migrations <!-- #130 -->
 Status: Open
-Discovered: 2026-05-15 — Phase 3 Steps 3-4 migrations
+Discovered: 2026-05-15 — Phase 3 Steps 3-4 migrations; reinforced 2026-05-20 — Phase 3 Step 3 PR #144 surfaced lineHeight 1.4/1.6/1.75 in FAQSection (L104, L147, L131) and 1.6/1.7/1.7 in LegalSection (L88, L173, L188)
 Target: v2.6.x
 Symptom: Multiple style escapes documented inline across
   FAQSection.jsx, LegalSection.jsx, ValidationBanner.jsx, and
@@ -2344,6 +2349,75 @@ Proposed fix:
 
 Recommendation: Option A, bundled with Phase 4C auth cutover when admin routes are
 already being touched.
+
+### Story 73 (P3) — Motion/duration tokens missing <!-- #N -->
+Status: Open
+Discovered: 2026-05-20 — Phase 3 Step 3 PR #144 (FAQSection chevron rotation recon)
+Target: future R-track patch to introduce `tokens.motion` group
+Symptom: No motion/duration/easing token group in tokens.js. First
+surfaced site: FAQSection.jsx L114 — `transition: "transform 0.15s ease"`
+on the accordion chevron rotation. Other transition / animation values
+are likely embedded in App.jsx and game-mode components but have not
+been audited.
+Impact: Motion timings will diverge across the app as components are
+touched. No semantic vocabulary for "fast UI feedback" vs "page
+transition" vs "modal enter/exit". Accessibility consideration: no
+central place to honor `prefers-reduced-motion`.
+Root cause: Original 2026-04-30 token audit didn't survey
+transition / animation values. Motion was deemed out of scope for
+the v2.5.0 primitives launch.
+Proposed fixes:
+  - (a) Audit all `transition:` and `animation:` declarations across
+        `frontend/src/`; define a minimal motion scale —
+        `duration.{fast, base, slow}` and `easing.{standard, accelerate,
+        decelerate}` — and a global `prefers-reduced-motion` strategy.
+  - (b) Define only what's needed for currently-migrating components:
+        `duration.fast = '0.15s'`, `easing.standard = 'ease'`. Grow
+        as new sites surface.
+  - (c) Defer to a later "motion design" pass — accept inline transition
+        values until then.
+Recommendation: (b) — minimal additive token introduction unblocks
+Phase 3 momentum without requiring a full motion design system.
+Upgrade to (a) when a UX track explicitly covers motion or when
+`prefers-reduced-motion` becomes a P2 accessibility ask.
+
+### Story 74 (P3) — LegalSection L172 color-via-style anti-pattern <!-- #N -->
+Status: Open
+Discovered: 2026-05-20 — Phase 3 Step 3 PR #144 (LegalSection.jsx recon)
+Target: future R-track patch after `Text` primitive color prop API is verified
+Symptom: `LegalSection.jsx` L167–178 sets `color: tokens.color.text.primary`
+via the `style` prop of `<Text size="body">` instead of via Text's
+`color` prop. Other `<Text>` callers in the same file correctly use
+`color="navy" | "secondary" | "tertiary"`. Same family of anti-pattern
+that PR #144's F5 test caught for `fontSize` overrides — caller
+overrides primitive semantic via style.
+Impact: Visual output is identical today (`tokens.color.text.primary`
+resolves to the same hex as `color="navy"`), so impact is low. Concern
+is consistency and future regression risk if Text's style merging
+behavior changes, plus the convention drift it sets for new authors.
+Root cause: Likely the Text primitive's `color` prop didn't accept
+`"primary"` as a value at the time the file was authored; the style
+override was the only path to apply `text.primary` semantically. Has
+not been verified.
+Proposed fixes:
+  - (a) Audit Text primitive's color prop API
+        (`frontend/src/components/ui/Text.jsx`); add `"primary"` as
+        a supported value mapping to `tokens.color.text.primary` if
+        missing. Migrate L172 to `<Text size="body" color="primary">`
+        and drop the style override.
+  - (b) Document that `color="navy"` is the canonical mapping for
+        `text.primary` (text.primary is an alias of brand.navy);
+        migrate L172 to `color="navy"`. Implication: every caller
+        that wants text.primary in roles where "navy" feels
+        semantically wrong (body text vs brand mark) lives with the
+        naming friction.
+  - (c) Add a lint rule to flag `style={{ color: ... }}` overrides
+        on `<Text>` when a `color` prop equivalent exists. Catches
+        future drift, doesn't fix the existing site.
+Recommendation: (a) + (c) together. Fix the immediate site with a
+proper semantic prop, plus add a guard rail. (b) renames the problem
+rather than solving it. Related: PR #144's F5 anti-pattern guard for
+fontSize — this is the color-prop equivalent.
 
 ---
 
