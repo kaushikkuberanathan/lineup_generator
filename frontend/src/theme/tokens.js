@@ -161,6 +161,14 @@ export const tokens = {
       wide:   '0.06em',   // uppercase chrome labels (INNING, BALLS, OUTS, etc.)
     },
 
+    lineHeight: {
+      tight:       1.2,
+      body:        1.4,
+      comfortable: 1.6,
+      relaxed:     1.7,
+      loose:       1.75,
+    },
+
   },
 
   // ─── Z-INDEX ────────────────────────────────────────────────────────────────
@@ -193,6 +201,21 @@ export const tokens = {
     // "introduced as canonical" precedent. See DESIGN_AUDIT.md §6.
     elevated: '0 4px 12px rgba(0,0,0,0.12)',                              // App.jsx dropdowns + elevated panels
     overlay:  '0 4px 12px rgba(0,0,0,0.35)',                              // 1x Toast.jsx — heavy float layer; modals, tooltips
+  },
+
+  // ─── MOTION ─────────────────────────────────────────────────────────────────
+  // INTRODUCED AS CANONICAL — no prior motion tokens existed in the codebase.
+  // Minimal Story 73 (b) scope: duration.fast + easing.standard. First-surfaced
+  // site: FAQSection.jsx L114 `transition: "transform 0.15s ease"`. Grow as
+  // additional motion call sites are tokenized (Story 73 option (a) trajectory).
+
+  motion: {
+    duration: {
+      fast: '0.15s',    // 1x FAQSection.jsx accordion chevron rotation
+    },
+    easing: {
+      standard: 'ease', // 1x FAQSection.jsx accordion chevron rotation
+    },
   },
 
 };

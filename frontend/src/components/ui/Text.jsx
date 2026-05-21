@@ -11,6 +11,7 @@ var SIZE_MAP = {
 };
 
 var COLOR_MAP = {
+  primary: tokens.color.text.primary,
   secondary: tokens.color.text.secondary,
   tertiary: tokens.color.text.tertiary,
   disabled: tokens.color.text.disabled,

@@ -167,9 +167,9 @@ function LegalViewer({ doc, onBack }) {
                 <Text
                   key={idx}
                   size="body"
+                  color="primary"
                   style={{
                     display: "block",
-                    color: tokens.color.text.primary,
                     lineHeight: "1.7",
                     marginBottom: "10px",
                   }}
