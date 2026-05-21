@@ -5,6 +5,17 @@
 
 ---
 
+## v2.5.17 — 2026-05-21 — Governance pass — session retrospectives, CLAUDE.md trim, backend route modularization
+
+- SESSION_RETROSPECTIVES.md introduced (PR #139) — sessions 2026-05-19-B and 2026-05-20-A logged
+- CLAUDE.md trimmed 44.8k → 35.4k chars — RELEASE_NOTES.md, PHASE4C_CUTOVER.md, VERSION_HISTORY_SCHEMA.md extracted (PR #143)
+- UX Phase 3 Step 3 — FAQSection + LegalSection token migrations (PR #144)
+- Backend route modularization — `src/routes/ops.js` created with `/api/v1/ops/ping` + `/api/v1/ops/health`; `teamDataRouter` dual-mounted at `/api/v1/teams`; mount-order bug fixed (specific paths before generic); `/test-public` deleted (PR #145)
+- Worktree Husky setup convention added — fixes pre-push hook misfire in non-primary worktrees (PR #148, Story 76)
+- Stories 70–76 filed; Story 75 (P1) — pre-push hook Vitest reliability — escalated for next governance pass
+
+---
+
 ## v2.5.16 — 2026-05-19 — Repo governance & GitHub settings hardening
 
 - GitHub settings audit complete (Story 68) — ChatGPT Codex Connector and Grok revoked, Dependabot alerts enabled, CODEOWNERS added
