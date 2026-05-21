@@ -2419,6 +2419,50 @@ proper semantic prop, plus add a guard rail. (b) renames the problem
 rather than solving it. Related: PR #144's F5 anti-pattern guard for
 fontSize — this is the color-prop equivalent.
 
+### Story 76 (P3) — `\r` artifacts embedded in ROADMAP.md Story headings <!-- #N -->
+Status: Open
+Discovered: 2026-05-20 — Phase 3 Step 3 story-filing session (PR #146 edit attempt)
+Target: future docs hygiene patch
+Symptom: Two existing ROADMAP.md story headings contain a literal
+`\r` (carriage return, 0x0D) character mid-line, between the em-dash
+title text and the `<!-- #N -->` issue marker. Confirmed via `xxd`
+hex inspection:
+  - Story 64 heading: `### Story 64 (P3) — S.card remediation\r <!-- #129 -->`
+  - Story 65 heading: `### Story 65 (P2) — Token gap batch: style escapes from Phase 3 migrations\r <!-- #130 -->`
+File is UTF-8 with CRLF line terminators; the embedded `\r` is an
+extra one beyond the line-terminating `\r\n`. Invisible in editors
+and `cat -n` output.
+Impact: Breaks exact-string matching by automated tools (Edit tool,
+sed, grep with anchored patterns). PR #146's Edit 1 (the Story 65
+heading P3 → P2 change) failed with "string not found" on first
+attempt; required a narrower substring workaround. Future story-
+curation tooling (`scripts/sync-stories-to-issues.js`, future label
+or status updaters) may hit the same failure mode silently. Renders
+correctly in Markdown viewers — pure byte-level corruption with no
+visual symptom.
+Root cause: Unknown. Speculative: a prior editor (possibly a Windows
+tool or paste from a CRLF source) inserted an extra `\r` before the
+comment marker. Pattern is em-dash + comment marker juxtaposition —
+only headings carrying both have the artifact; other story headings
+without issue markers are clean.
+Proposed fixes:
+  - (a) One-shot targeted cleanup: PowerShell one-liner to read the
+        file as UTF-8, replace the byte sequence (carriage return +
+        space + `<!--` + space) with (two spaces + `<!--` + space),
+        write back as UTF-8 no BOM with CRLF terminators preserved.
+        Two-character touch, single commit. Verify with `xxd` post-fix.
+  - (b) Audit-wide cleanup: scan all `.md` files in `docs/` for
+        embedded `\r` not at line terminators; document and fix all
+        instances in one pass. Higher scope; addresses unknown
+        unknowns.
+  - (c) Defer until a tool actually fails in CI — accept the
+        workaround for now (use substring matching that avoids the
+        `\r` zone).
+Recommendation: (a) — minimal scope, addresses the two known
+instances, prevents future tooling failures. (b) is broader but
+premature without evidence other files are affected. (c) leaves a
+known landmine for the next agent or automation script.
+
 ---
 
 ### Automated Score Reporting (County Integration)
