@@ -28,3 +28,4 @@ done
 
 # Post-guard test/lint gate removed — Story 75. CI (GitHub Actions) is the
 # authoritative gate. See ROADMAP Story 75 for full rationale.
+exit 0
