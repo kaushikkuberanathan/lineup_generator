@@ -99,4 +99,16 @@ describe('LegalSection — primitive migration guard', function () {
     expect(screen.queryByText(/Questions\? Use the Feedback tab\./)).not.toBeNull();
   });
 
+  test('L7: detail-view footer text renders after opening a doc', function () {
+    render(<LegalSection />);
+
+    var firstDoc = LEGAL_DOCS[0];
+    fireEvent.click(screen.getByText(firstDoc.title));
+
+    // Detail view replaces list view entirely (LegalViewer is a separate return).
+    // List-view footer is gone; detail-view footer (no HTML entities) is the
+    // only "Use the Feedback tab" string visible — exact-match is safe.
+    expect(screen.queryByText('Questions about this policy? Use the Feedback tab.')).not.toBeNull();
+  });
+
 });

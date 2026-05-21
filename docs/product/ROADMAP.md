@@ -5,6 +5,26 @@
 
 ---
 
+## v2.5.18 — 2026-05-21 — Pre-push hook fix, sync-script hardening, lint debt filed
+
+- Story 75 (P1) resolved — Vitest + lint removed from `.husky/pre-push` hook; CI (GitHub Actions) is sole authoritative gate (PR #155)
+- sync-stories-to-issues.js hardened — Fix A: strip `<!-- #N -->` placeholder from issue titles before GitHub API call; Fix B: word-boundary regex replaces `text.includes()` keyword matching; metachar escape prevents crash on `?s=` keyword (PR #156)
+- Stories 72–76 ROADMAP markers updated from `<!-- #N -->` to real issue numbers (#150–#154) following live sync
+- Story 77 (P2) filed — 132 ESLint problems block strict lint gate; `no-undef` errors on `supabase`, `teamName`, `updateServiceWorker` flagged as potential real bugs warranting triage
+
+---
+
+## v2.5.17 — 2026-05-21 — Governance pass — session retrospectives, CLAUDE.md trim, backend route modularization
+
+- SESSION_RETROSPECTIVES.md introduced (PR #139) — sessions 2026-05-19-B and 2026-05-20-A logged
+- CLAUDE.md trimmed 44.8k → 35.4k chars — RELEASE_NOTES.md, PHASE4C_CUTOVER.md, VERSION_HISTORY_SCHEMA.md extracted (PR #143)
+- UX Phase 3 Step 3 — FAQSection + LegalSection token migrations (PR #144)
+- Backend route modularization — `src/routes/ops.js` created with `/api/v1/ops/ping` + `/api/v1/ops/health`; `teamDataRouter` dual-mounted at `/api/v1/teams`; mount-order bug fixed (specific paths before generic); `/test-public` deleted (PR #145)
+- Worktree Husky setup convention added — fixes pre-push hook misfire in non-primary worktrees (PR #148, Story 76)
+- Stories 70–76 filed; Story 75 (P1) — pre-push hook Vitest reliability — escalated for next governance pass
+
+---
+
 ## v2.5.16 — 2026-05-19 — Repo governance & GitHub settings hardening
 
 - GitHub settings audit complete (Story 68) — ChatGPT Codex Connector and Grok revoked, Dependabot alerts enabled, CODEOWNERS added
@@ -2142,7 +2162,7 @@ the synthetic-roster level the existing guard uses).
 
 ### Story 64 (P3) — S.card remediation <!-- #129 -->
 Status: Open
-Discovered: 2026-05-15 — Phase 3 Step 3 LegalSection migration
+Discovered: 2026-05-15 — Phase 3 Step 3 LegalSection migration; reinforced 2026-05-20 — Phase 3 Step 3 PR #144 confirmed LegalSection.jsx L130-137 retains the full style escape post-migration (Tier 1 scope didn't touch Card properties); 5 properties documented: borderRadius 10px, padding 16px 18px, boxShadow 0 2px 8px rgba(15,31,61,0.06), marginBottom 14px, border 1px solid border.default
 Target: v2.6.x
 Symptom: `S.card` (App.jsx:741-745) uses `borderRadius: '10px'` (in
   the documented drift zone — between `radius.md` 8px and `radius.lg`
@@ -2156,6 +2176,11 @@ Symptom: `S.card` (App.jsx:741-745) uses `borderRadius: '10px'` (in
 Impact: LegalViewer Card consumes the primitive via full `style`
   escape — Card contributes little beyond semantic intent at this
   call site. Any future S.card consumer will face the same problem.
+  Phase 3 Step 3 (PR #144) deliberately left the Card escape
+  untouched per Tier 1 convention; the gap is now visible in two
+  committed forms (S.card in App.jsx + LegalSection.jsx consumer)
+  and will worsen as more components consume Card with bespoke
+  styling.
 Root cause: `S.card` predates the Card primitive (Card landed in
   Phase 2 v2.5.10); it was never migrated when Card was introduced.
 Proposed fixes:
@@ -2174,9 +2199,9 @@ Recommendation: (a) — a bordered Card variant with shadow support
   App.jsx first to confirm the variant API matches everyone, not just
   LegalViewer.
 
-### Story 65 (P3) — Token gap batch: style escapes from Phase 3 migrations <!-- #130 -->
+### Story 65 (P2) — Token gap batch: style escapes from Phase 3 migrations <!-- #130 -->
 Status: Open
-Discovered: 2026-05-15 — Phase 3 Steps 3-4 migrations
+Discovered: 2026-05-15 — Phase 3 Steps 3-4 migrations; reinforced 2026-05-20 — Phase 3 Step 3 PR #144 surfaced lineHeight 1.4/1.6/1.75 in FAQSection (L104, L147, L131) and 1.6/1.7/1.7 in LegalSection (L88, L173, L188)
 Target: v2.6.x
 Symptom: Multiple style escapes documented inline across
   FAQSection.jsx, LegalSection.jsx, ValidationBanner.jsx, and
@@ -2293,6 +2318,231 @@ Impact: Unknown until triaged — may include transitive deps with no direct fix
 Root cause: Alerts were disabled; backlog of unreviewed CVEs accumulated.
 Proposed fixes: Triage at https://github.com/kaushikkuberanathan/lineup_generator/security/dependabot — dismiss dev-only/non-exploitable alerts, action any with available patches.
 Recommendation: Triage before next prod release. Dismiss non-exploitable, upgrade where patch exists and tests pass.
+
+---
+
+### Story 70 (P3) — Release History & CODEOWNERS Hygiene <!-- #141 -->
+
+Status: Open
+Discovered: May 19, 2026 (v2.5.16 bump session — 2026-05-19-B)
+Target: next governance session
+Symptom: Two hygiene gaps: (1) v2.5.15 missing from ROADMAP release history chronology — only referenced in story metadata, never added as a top-level release entry; (2) frontend/src/data/versionHistory.js and --no-verify docs-only exception not in CODEOWNERS or CLAUDE.md respectively.
+Impact: Internal only. Release history has a gap at v2.5.15. versionHistory.js edits bypass the locked-file gate convention.
+Root cause: v2.5.15 bumped without a ROADMAP release entry; versionHistory.js was not on the locked-files list when CODEOWNERS was authored (it was still in App.jsx at that time). --no-verify docs-only exception used without being formally documented.
+Proposed fixes: (1) Backfill v2.5.15 release entry in ROADMAP.md; (2) Add versionHistory.js to .github/CODEOWNERS; (3) Document docs-only --no-verify as a named exception in CLAUDE.md.
+Recommendation: Bundle all three in one chore PR — small scope, no app code.
+
+---
+
+### Story 71 (P2) — Version History Audit: Standardize Schema Across All Entries <!-- #140 -->
+
+Status: Open
+Discovered: May 19, 2026 (v2.5.16 bump session — 2026-05-19-B)
+Target: v2.5.17
+Symptom: VERSION_HISTORY entries in frontend/src/data/versionHistory.js have inconsistent date formats (some "2026-05-04", some "May 2026"), missing headline/techNote fields on older entries, and internalChanges content appearing in userChanges where coaches could see it.
+Impact: Internal only for now. Risk: coach-facing release notes surface technical noise if VERSION_HISTORY is ever consumed directly. Schema test drift risk if new entries follow inconsistent older patterns.
+Root cause: Schema evolved over time (headline + techNote added, versionHistory.js extracted from App.jsx in v2.5.3) without a retroactive audit pass.
+Proposed fixes: Full audit pass — read every entry, flag violations, propose standardized rewrites for KK review, commit in one patch.
+Recommendation: Option A (full audit pass) over schema-test-only approach — customer-facing language quality requires human judgment a test cannot catch.
+
+### Story 72 (P2) — Mount adminRouter and feedbackRouter at specific /api/v1 prefixes <!-- #N --> <!-- #150 -->
+
+Status: Open
+Discovered: May 20, 2026 — surfaced during chore/backend-route-modularization (PR #TBD)
+Target: Phase 4C or next backend architecture pass
+
+Symptom: adminRouter and feedbackRouter are mounted at the bare /api/v1 prefix. Any
+unmatched request to /api/v1/* falls through into these routers and hits their
+router.use(requireAuth) middleware, returning 401 instead of 404.
+
+Impact: New routes mounted under /api/v1/* are auth-intercepted unless placed before
+the admin/feedback mounts in index.js. Requires mount-order discipline as a workaround.
+Fixed in PR #TBD by reordering mounts (specific before generic).
+
+Root cause: adminRouter and feedbackRouter use a bare /api/v1 mount instead of specific
+prefixes (/api/v1/admin, /api/v1/feedback).
+
+Proposed fix:
+- Option A (recommended): Re-mount adminRouter at /api/v1/admin and feedbackRouter at
+  /api/v1/feedback. Audit frontend callers first (admin.html + test suites).
+- Option B: Keep current order discipline — low risk while route surface is small.
+
+Recommendation: Option A, bundled with Phase 4C auth cutover when admin routes are
+already being touched.
+
+### Story 73 (P3) — Motion/duration tokens missing <!-- #N --> <!-- #151 -->
+Status: Open
+Discovered: 2026-05-20 — Phase 3 Step 3 PR #144 (FAQSection chevron rotation recon)
+Target: future R-track patch to introduce `tokens.motion` group
+Symptom: No motion/duration/easing token group in tokens.js. First
+surfaced site: FAQSection.jsx L114 — `transition: "transform 0.15s ease"`
+on the accordion chevron rotation. Other transition / animation values
+are likely embedded in App.jsx and game-mode components but have not
+been audited.
+Impact: Motion timings will diverge across the app as components are
+touched. No semantic vocabulary for "fast UI feedback" vs "page
+transition" vs "modal enter/exit". Accessibility consideration: no
+central place to honor `prefers-reduced-motion`.
+Root cause: Original 2026-04-30 token audit didn't survey
+transition / animation values. Motion was deemed out of scope for
+the v2.5.0 primitives launch.
+Proposed fixes:
+  - (a) Audit all `transition:` and `animation:` declarations across
+        `frontend/src/`; define a minimal motion scale —
+        `duration.{fast, base, slow}` and `easing.{standard, accelerate,
+        decelerate}` — and a global `prefers-reduced-motion` strategy.
+  - (b) Define only what's needed for currently-migrating components:
+        `duration.fast = '0.15s'`, `easing.standard = 'ease'`. Grow
+        as new sites surface.
+  - (c) Defer to a later "motion design" pass — accept inline transition
+        values until then.
+Recommendation: (b) — minimal additive token introduction unblocks
+Phase 3 momentum without requiring a full motion design system.
+Upgrade to (a) when a UX track explicitly covers motion or when
+`prefers-reduced-motion` becomes a P2 accessibility ask.
+
+### Story 74 (P3) — LegalSection L172 color-via-style anti-pattern <!-- #N --> <!-- #152 -->
+Status: Open
+Discovered: 2026-05-20 — Phase 3 Step 3 PR #144 (LegalSection.jsx recon)
+Target: future R-track patch after `Text` primitive color prop API is verified
+Symptom: `LegalSection.jsx` L167–178 sets `color: tokens.color.text.primary`
+via the `style` prop of `<Text size="body">` instead of via Text's
+`color` prop. Other `<Text>` callers in the same file correctly use
+`color="navy" | "secondary" | "tertiary"`. Same family of anti-pattern
+that PR #144's F5 test caught for `fontSize` overrides — caller
+overrides primitive semantic via style.
+Impact: Visual output is identical today (`tokens.color.text.primary`
+resolves to the same hex as `color="navy"`), so impact is low. Concern
+is consistency and future regression risk if Text's style merging
+behavior changes, plus the convention drift it sets for new authors.
+Root cause: Likely the Text primitive's `color` prop didn't accept
+`"primary"` as a value at the time the file was authored; the style
+override was the only path to apply `text.primary` semantically. Has
+not been verified.
+Proposed fixes:
+  - (a) Audit Text primitive's color prop API
+        (`frontend/src/components/ui/Text.jsx`); add `"primary"` as
+        a supported value mapping to `tokens.color.text.primary` if
+        missing. Migrate L172 to `<Text size="body" color="primary">`
+        and drop the style override.
+  - (b) Document that `color="navy"` is the canonical mapping for
+        `text.primary` (text.primary is an alias of brand.navy);
+        migrate L172 to `color="navy"`. Implication: every caller
+        that wants text.primary in roles where "navy" feels
+        semantically wrong (body text vs brand mark) lives with the
+        naming friction.
+  - (c) Add a lint rule to flag `style={{ color: ... }}` overrides
+        on `<Text>` when a `color` prop equivalent exists. Catches
+        future drift, doesn't fix the existing site.
+Recommendation: (a) + (c) together. Fix the immediate site with a
+proper semantic prop, plus add a guard rail. (b) renames the problem
+rather than solving it. Related: PR #144's F5 anti-pattern guard for
+fontSize — this is the color-prop equivalent.
+
+### Story 75 (P1) — Pre-push hook: move full Vitest suite out of hook, CI-only <!-- #N --> <!-- #153 -->
+
+Status: Resolved v2.5.18
+Discovered: May 20, 2026 — 4 of 5 push attempts failed during chore/backend-route-modularization session
+Target: Next governance pass
+
+Resolution: Resolved v2.5.18. Removed Vitest suite AND lint from .husky/pre-push
+hook. Root cause: codebase has 132 existing ESLint problems (45 errors, 87
+warnings) under --max-warnings 0 — lint gate would block every push. Branch
+guard (Stories 45+53) retained. CI (GitHub Actions) is now the sole post-push
+gate. Lint debt (132 issues including no-undef on supabase/teamName/
+updateServiceWorker) filed separately as Story 77 (P2).
+
+Symptom: Vitest threads-pool worker handshake exceeds 60s timeout on Windows
+(Cox managed endpoint) during pre-push hook. Affects a different random test file
+each attempt. 4 failures tonight across migration.test.js, FAQSection.test.jsx,
+a11y-component-fixes.test.jsx, Button.test.jsx. One success at 382s. ~45 min
+cumulative wall time lost. Required --no-verify override to complete session work.
+
+Impact: Pre-push hook is unreliable as a quality gate on this machine. Developers
+spend 6-11 min per push attempt with ~80% failure rate under load. Forces
+--no-verify overrides which undermine the hook's purpose.
+
+Root cause: Windows Defender + Cox managed endpoint fork/worker IPC latency.
+Vitest worker startup exceeds the default 60s handshake timeout under memory
+pressure. Non-deterministic — different file fails each attempt.
+
+Proposed fixes:
+  Option A (recommended): Remove full Vitest suite from pre-push hook. Keep only
+  fast checks (lint, tsc --noEmit) in the hook. Let GitHub Actions CI be the
+  authoritative quality gate on push.
+  Option B: Increase Vitest worker timeout in vitest.config.js (workaround,
+  doesn't fix root cause, may mask real hangs).
+  Option C: Move to WSL2 for git operations (larger change, eliminates Defender
+  IPC interference).
+
+Recommendation: Option A. CI already runs on every push to develop/main and is
+the documented authoritative gate. The pre-push hook provides false confidence
+on this machine — it either passes slowly or fails with no real test failures.
+
+### Story 76 (P3) — `\r` artifacts embedded in ROADMAP.md Story headings <!-- #N --> <!-- #154 -->
+Status: Open
+Discovered: 2026-05-20 — Phase 3 Step 3 story-filing session (PR #146 edit attempt)
+Target: future docs hygiene patch
+Symptom: Two existing ROADMAP.md story headings contain a literal
+`\r` (carriage return, 0x0D) character mid-line, between the em-dash
+title text and the `<!-- #N -->` issue marker. Confirmed via `xxd`
+hex inspection:
+  - Story 64 heading: `### Story 64 (P3) — S.card remediation\r <!-- #129 -->`
+  - Story 65 heading: `### Story 65 (P2) — Token gap batch: style escapes from Phase 3 migrations\r <!-- #130 -->`
+File is UTF-8 with CRLF line terminators; the embedded `\r` is an
+extra one beyond the line-terminating `\r\n`. Invisible in editors
+and `cat -n` output.
+Impact: Breaks exact-string matching by automated tools (Edit tool,
+sed, grep with anchored patterns). PR #146's Edit 1 (the Story 65
+heading P3 → P2 change) failed with "string not found" on first
+attempt; required a narrower substring workaround. Future story-
+curation tooling (`scripts/sync-stories-to-issues.js`, future label
+or status updaters) may hit the same failure mode silently. Renders
+correctly in Markdown viewers — pure byte-level corruption with no
+visual symptom.
+Root cause: Unknown. Speculative: a prior editor (possibly a Windows
+tool or paste from a CRLF source) inserted an extra `\r` before the
+comment marker. Pattern is em-dash + comment marker juxtaposition —
+only headings carrying both have the artifact; other story headings
+without issue markers are clean.
+Proposed fixes:
+  - (a) One-shot targeted cleanup: PowerShell one-liner to read the
+        file as UTF-8, replace the byte sequence (carriage return +
+        space + `<!--` + space) with (two spaces + `<!--` + space),
+        write back as UTF-8 no BOM with CRLF terminators preserved.
+        Two-character touch, single commit. Verify with `xxd` post-fix.
+  - (b) Audit-wide cleanup: scan all `.md` files in `docs/` for
+        embedded `\r` not at line terminators; document and fix all
+        instances in one pass. Higher scope; addresses unknown
+        unknowns.
+  - (c) Defer until a tool actually fails in CI — accept the
+        workaround for now (use substring matching that avoids the
+        `\r` zone).
+Recommendation: (a) — minimal scope, addresses the two known
+instances, prevents future tooling failures. (b) is broader but
+premature without evidence other files are affected. (c) leaves a
+known landmine for the next agent or automation script.
+
+### Story 77 (P2) — Lint debt triage: 132 ESLint problems blocking strict gate <!-- #N -->
+
+Status: Open
+Discovered: May 21, 2026 — surfaced during Story 75 pre-push hook remediation
+Target: Next governance pass
+
+Symptom: npm run lint exits 1 with 45 errors + 87 warnings. --max-warnings 0
+means lint cannot be used as a push gate until debt is cleared.
+
+Impact: No fast local lint gate possible. CI is sole quality gate.
+
+Root cause: Accumulated lint debt — empty catch blocks, redeclared vars,
+no-undef (supabase, teamName, updateServiceWorker — potential real bugs),
+unescaped JSX entities, unused vars.
+
+Proposed fix: Triage pass — fix no-undef errors first (potential real bugs),
+then errors, then warnings. Enable strict lint gate after debt cleared.
+
+Recommendation: Fix no-undef block first in isolation (15-min triage).
+Remaining errors/warnings in a follow-up pass.
 
 ---
 

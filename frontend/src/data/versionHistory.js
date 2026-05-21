@@ -1,5 +1,35 @@
 ﻿export var VERSION_HISTORY = [
   {
+    version: '2.5.18',
+    date: 'May 2026',
+    headline: 'Pre-push hook fix, sync-script hardening, lint debt filed',
+    techNote: 'Minor fixes and internal improvements',
+    userChanges: [],
+    internalChanges: [
+      'Story 75 (P1) resolved — Vitest + lint removed from pre-push hook; CI is now sole gate (PR #155)',
+      'sync-stories-to-issues.js hardened — Fix A: strip placeholder from issue titles; Fix B: word-boundary regex replaces substring matching; metachar escape added (PR #156)',
+      'Stories 72–76 ROADMAP markers updated to real issue numbers (#150–#154)',
+      'Story 77 (P2) filed — 132 ESLint problems block strict lint gate; no-undef on supabase/teamName/updateServiceWorker flagged as potential real bugs',
+      'Test suite: 740 passing / 1 skipped / 0 failed',
+    ],
+  },
+  {
+    version: '2.5.17',
+    date: 'May 2026',
+    headline: 'Governance pass — session retrospectives, CLAUDE.md trim, backend route modularization',
+    techNote: 'Minor fixes and internal improvements',
+    userChanges: [],
+    internalChanges: [
+      'SESSION_RETROSPECTIVES.md introduced (PR #139) — entries 2026-05-19-B and 2026-05-20-A logged',
+      'CLAUDE.md trimmed 44.8k → 35.4k chars — RELEASE_NOTES.md, PHASE4C_CUTOVER.md, VERSION_HISTORY_SCHEMA.md extracted (PR #143)',
+      'UX Phase 3 Step 3 — FAQSection + LegalSection token migrations (PR #144)',
+      'Backend route modularization — src/routes/ops.js created, teamDataRouter dual-mounted at /api/v1/teams, mount-order bug fixed, /test-public deleted (PR #145)',
+      'Worktree Husky setup convention added (PR #148, Story 76)',
+      'Stories 70–76 filed; Story 75 (P1 pre-push hook reliability) escalated',
+      'Test suite: 740 passing / 1 skipped / 0 failed',
+    ],
+  },
+  {
     version: '2.5.16',
     date: 'May 2026',
     headline: 'Repo governance & GitHub settings hardening',

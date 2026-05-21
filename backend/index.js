@@ -6,6 +6,7 @@ const authRouter = require('./src/routes/auth');
 const adminRouter = require('./src/routes/admin');
 const feedbackRouter = require('./src/routes/feedback');
 const teamDataRouter = require('./src/routes/teamData');
+const opsRouter = require('./src/routes/ops');
 const { supabaseAdmin } = require('./src/lib/supabase');
 
 const app = express();
@@ -141,14 +142,13 @@ app.get('/ping', function(req, res) {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-app.get('/test-public', (req, res) => {
-  res.json({ ok: true });
-});
-
 app.use('/api/v1/auth', authRouter);
+app.use('/api/v1/ops', opsRouter);
+app.use('/api/v1/teams', teamDataRouter);
 app.use('/api/v1', adminRouter);
 app.use('/api/v1', feedbackRouter);
 // Ops/data-protection routes — localhost or X-Admin-Key restricted
+// legacy mount — deprecate after /api/v1/teams cutover is confirmed
 app.use('/api/teams', teamDataRouter);
 
 app.listen(PORT, () => {
