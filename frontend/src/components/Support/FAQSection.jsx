@@ -111,7 +111,7 @@ export function FAQSection() {
                     flexShrink: 0,
                     marginTop: "1px",
                     transform: isOpen ? "rotate(90deg)" : "none",
-                    transition: "transform 0.15s ease",
+                    transition: "transform " + tokens.motion.duration.fast + " " + tokens.motion.easing.standard,
                     display: "inline-block",
                   }}>›</span>
                 </Stack>
