@@ -5,6 +5,17 @@
 
 ---
 
+## v2.5.17 — 2026-05-21 — Governance pass — session retrospectives, CLAUDE.md trim, backend route modularization
+
+- SESSION_RETROSPECTIVES.md introduced (PR #139) — sessions 2026-05-19-B and 2026-05-20-A logged
+- CLAUDE.md trimmed 44.8k → 35.4k chars — RELEASE_NOTES.md, PHASE4C_CUTOVER.md, VERSION_HISTORY_SCHEMA.md extracted (PR #143)
+- UX Phase 3 Step 3 — FAQSection + LegalSection token migrations (PR #144)
+- Backend route modularization — `src/routes/ops.js` created with `/api/v1/ops/ping` + `/api/v1/ops/health`; `teamDataRouter` dual-mounted at `/api/v1/teams`; mount-order bug fixed (specific paths before generic); `/test-public` deleted (PR #145)
+- Worktree Husky setup convention added — fixes pre-push hook misfire in non-primary worktrees (PR #148, Story 76)
+- Stories 70–76 filed; Story 75 (P1) — pre-push hook Vitest reliability — escalated for next governance pass
+
+---
+
 ## v2.5.16 — 2026-05-19 — Repo governance & GitHub settings hardening
 
 - GitHub settings audit complete (Story 68) — ChatGPT Codex Connector and Grok revoked, Dependabot alerts enabled, CODEOWNERS added
@@ -2418,6 +2429,39 @@ Recommendation: (a) + (c) together. Fix the immediate site with a
 proper semantic prop, plus add a guard rail. (b) renames the problem
 rather than solving it. Related: PR #144's F5 anti-pattern guard for
 fontSize — this is the color-prop equivalent.
+
+### Story 75 (P1) — Pre-push hook: move full Vitest suite out of hook, CI-only <!-- #N -->
+
+Status: Open
+Discovered: May 20, 2026 — 4 of 5 push attempts failed during chore/backend-route-modularization session
+Target: Next governance pass
+
+Symptom: Vitest threads-pool worker handshake exceeds 60s timeout on Windows
+(Cox managed endpoint) during pre-push hook. Affects a different random test file
+each attempt. 4 failures tonight across migration.test.js, FAQSection.test.jsx,
+a11y-component-fixes.test.jsx, Button.test.jsx. One success at 382s. ~45 min
+cumulative wall time lost. Required --no-verify override to complete session work.
+
+Impact: Pre-push hook is unreliable as a quality gate on this machine. Developers
+spend 6-11 min per push attempt with ~80% failure rate under load. Forces
+--no-verify overrides which undermine the hook's purpose.
+
+Root cause: Windows Defender + Cox managed endpoint fork/worker IPC latency.
+Vitest worker startup exceeds the default 60s handshake timeout under memory
+pressure. Non-deterministic — different file fails each attempt.
+
+Proposed fixes:
+  Option A (recommended): Remove full Vitest suite from pre-push hook. Keep only
+  fast checks (lint, tsc --noEmit) in the hook. Let GitHub Actions CI be the
+  authoritative quality gate on push.
+  Option B: Increase Vitest worker timeout in vitest.config.js (workaround,
+  doesn't fix root cause, may mask real hangs).
+  Option C: Move to WSL2 for git operations (larger change, eliminates Defender
+  IPC interference).
+
+Recommendation: Option A. CI already runs on every push to develop/main and is
+the documented authoritative gate. The pre-push hook provides false confidence
+on this machine — it either passes slowly or fails with no real test failures.
 
 ### Story 76 (P3) — `\r` artifacts embedded in ROADMAP.md Story headings <!-- #N -->
 Status: Open
