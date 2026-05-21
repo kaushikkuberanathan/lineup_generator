@@ -2544,6 +2544,75 @@ then errors, then warnings. Enable strict lint gate after debt cleared.
 Recommendation: Fix no-undef block first in isolation (15-min triage).
 Remaining errors/warnings in a follow-up pass.
 
+### Story 78 (P2) — Label schema gaps: missing labels blocking PR hygiene <!-- #N -->
+
+Status: Open
+Discovered: May 21, 2026 — PRs #149, #155, #156, #157, #158, #159, #160
+all missing area:, status:ready-for-review, type:fix, type:docs labels
+Target: Next governance pass
+
+Symptom: Labels area:governance, status:ready-for-review, type:fix, type:docs
+do not exist in the repo — cannot be applied to PRs even when correct.
+
+Impact: PR hygiene incomplete across every PR this session. Label filtering
+and triage broken for the prefix:name scheme.
+
+Root cause: Labels were designed in the prefix:name scheme but never created
+in GitHub Settings → Labels. Missing labels silently fail on application.
+
+Proposed fix: One-time creation pass in GitHub Settings → Labels for all
+missing labels in the scheme. ~5 minutes.
+
+Recommendation: Do in one pass next governance session — unblocks all future PRs.
+
+### Story 79 (P2) — Promote PR merge strategy: squash default overrides regular merge convention <!-- #N -->
+
+Status: Open
+Discovered: May 21, 2026 — PR #159 (develop → main promote) landed as squash
+instead of regular merge; same occurred on previous promote. GitHub's default
+is squash; operator must manually switch each time.
+Target: Next governance pass
+
+Symptom: Promote PRs (develop → main) collapse all develop commit history into
+a single squash commit on main. Individual PR commits (#149, #155, #156, #157,
+#158) not visible in main's history.
+
+Impact: Main history loses granularity. Git log on main shows one release commit
+instead of the individual PRs that composed it.
+
+Root cause: GitHub defaults to squash merge. No checklist step enforces
+"Create a merge commit" selection at promote time.
+
+Proposed fix: Add explicit step to promote checklist in CLAUDE.md:
+"On the PR merge dropdown — select Create a merge commit, NOT squash and merge."
+
+Recommendation: One-line CLAUDE.md addition. Do alongside Story 78.
+
+### Story 80 (P3) — Pre-pull branch check: worktree convention missing from CLAUDE.md <!-- #N -->
+
+Status: Open
+Discovered: May 21, 2026 — git pull origin develop in UX worktree created
+accidental merge commit twice (worktree was on feature branch, not develop).
+Recovered via git reset --hard both times.
+Target: Next governance pass
+
+Symptom: Running git pull origin <branch> in a worktree that's checked out
+on a different branch merges the remote branch INTO the feature branch,
+creating an unintended merge commit.
+
+Impact: Feature branch history polluted; requires destructive reset to recover.
+Caught both times but cost ~5 min each.
+
+Root cause: Convention known but not written down in CLAUDE.md. Relies on
+operator memory each session.
+
+Proposed fix: Add to CLAUDE.md worktree operating conventions:
+"Always run git branch --show-current before any git pull in a worktree.
+If not on the target branch, do not pull — use git fetch + git log origin/<branch>
+to inspect instead."
+
+Recommendation: CLAUDE.md one-liner. Pair with Story 79 in same governance PR.
+
 ---
 
 ### Automated Score Reporting (County Integration)
