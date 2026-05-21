@@ -165,4 +165,9 @@ describe('Text — Phase 2 primitive', function () {
     expect(screen.getByText('text').style.fontSize).toBe('20px');
   });
 
+  test('T1.27: color="primary" → tokens.color.text.primary (#0F1F3D = rgb(15,31,61))', function () {
+    render(<Text color="primary">text</Text>);
+    expect(screen.getByText('text').style.color).toBe('rgb(15, 31, 61)');
+  });
+
 });
