@@ -277,3 +277,30 @@ describe('Group 8 — shadow tokens', function () {
   });
 
 });
+
+// ─── Group 9 — motion tokens ──────────────────────────────────────────────────
+
+describe('Group 9 — motion tokens', function () {
+
+  test('9.1: tokens.motion is a defined, non-null object', function () {
+    expect(tokens.motion).toBeDefined();
+    expect(tokens.motion).not.toBeNull();
+    expect(typeof tokens.motion).toBe('object');
+  });
+
+  test('9.2: motion has duration and easing sub-groups', function () {
+    expect(tokens.motion).toHaveProperty('duration');
+    expect(tokens.motion).toHaveProperty('easing');
+  });
+
+  test('9.3: motion.duration.fast is a non-empty string', function () {
+    expect(typeof tokens.motion.duration.fast).toBe('string');
+    expect(tokens.motion.duration.fast.length).toBeGreaterThan(0);
+  });
+
+  test('9.4: motion.easing.standard is a non-empty string', function () {
+    expect(typeof tokens.motion.easing.standard).toBe('string');
+    expect(tokens.motion.easing.standard.length).toBeGreaterThan(0);
+  });
+
+});
