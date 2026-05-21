@@ -26,6 +26,6 @@ done
 # Skip test run for pure branch deletions (no content to validate).
 [ "$HAS_CONTENT_PUSH" = "0" ] && exit 0
 
-# Run frontend tests before allowing push.
-# No retry — first run must succeed. See ROADMAP Story 32.
-cd frontend && npm test
+# Post-guard test/lint gate removed — Story 75. CI (GitHub Actions) is the
+# authoritative gate. See ROADMAP Story 75 for full rationale.
+exit 0

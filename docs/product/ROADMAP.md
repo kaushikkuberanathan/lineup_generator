@@ -2432,9 +2432,16 @@ fontSize — this is the color-prop equivalent.
 
 ### Story 75 (P1) — Pre-push hook: move full Vitest suite out of hook, CI-only <!-- #N --> <!-- #153 -->
 
-Status: Open
+Status: Resolved v2.5.18
 Discovered: May 20, 2026 — 4 of 5 push attempts failed during chore/backend-route-modularization session
 Target: Next governance pass
+
+Resolution: Resolved v2.5.18. Removed Vitest suite AND lint from .husky/pre-push
+hook. Root cause: codebase has 132 existing ESLint problems (45 errors, 87
+warnings) under --max-warnings 0 — lint gate would block every push. Branch
+guard (Stories 45+53) retained. CI (GitHub Actions) is now the sole post-push
+gate. Lint debt (132 issues including no-undef on supabase/teamName/
+updateServiceWorker) filed separately as Story 77 (P2).
 
 Symptom: Vitest threads-pool worker handshake exceeds 60s timeout on Windows
 (Cox managed endpoint) during pre-push hook. Affects a different random test file
@@ -2506,6 +2513,27 @@ Recommendation: (a) — minimal scope, addresses the two known
 instances, prevents future tooling failures. (b) is broader but
 premature without evidence other files are affected. (c) leaves a
 known landmine for the next agent or automation script.
+
+### Story 77 (P2) — Lint debt triage: 132 ESLint problems blocking strict gate <!-- #N -->
+
+Status: Open
+Discovered: May 21, 2026 — surfaced during Story 75 pre-push hook remediation
+Target: Next governance pass
+
+Symptom: npm run lint exits 1 with 45 errors + 87 warnings. --max-warnings 0
+means lint cannot be used as a push gate until debt is cleared.
+
+Impact: No fast local lint gate possible. CI is sole quality gate.
+
+Root cause: Accumulated lint debt — empty catch blocks, redeclared vars,
+no-undef (supabase, teamName, updateServiceWorker — potential real bugs),
+unescaped JSX entities, unused vars.
+
+Proposed fix: Triage pass — fix no-undef errors first (potential real bugs),
+then errors, then warnings. Enable strict lint gate after debt cleared.
+
+Recommendation: Fix no-undef block first in isolation (15-min triage).
+Remaining errors/warnings in a follow-up pass.
 
 ---
 
