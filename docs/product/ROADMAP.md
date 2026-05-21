@@ -5,6 +5,15 @@
 
 ---
 
+## v2.5.18 — 2026-05-21 — Pre-push hook fix, sync-script hardening, lint debt filed
+
+- Story 75 (P1) resolved — Vitest + lint removed from `.husky/pre-push` hook; CI (GitHub Actions) is sole authoritative gate (PR #155)
+- sync-stories-to-issues.js hardened — Fix A: strip `<!-- #N -->` placeholder from issue titles before GitHub API call; Fix B: word-boundary regex replaces `text.includes()` keyword matching; metachar escape prevents crash on `?s=` keyword (PR #156)
+- Stories 72–76 ROADMAP markers updated from `<!-- #N -->` to real issue numbers (#150–#154) following live sync
+- Story 77 (P2) filed — 132 ESLint problems block strict lint gate; `no-undef` errors on `supabase`, `teamName`, `updateServiceWorker` flagged as potential real bugs warranting triage
+
+---
+
 ## v2.5.17 — 2026-05-21 — Governance pass — session retrospectives, CLAUDE.md trim, backend route modularization
 
 - SESSION_RETROSPECTIVES.md introduced (PR #139) — sessions 2026-05-19-B and 2026-05-20-A logged

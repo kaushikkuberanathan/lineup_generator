@@ -1,5 +1,19 @@
 ﻿export var VERSION_HISTORY = [
   {
+    version: '2.5.18',
+    date: 'May 2026',
+    headline: 'Pre-push hook fix, sync-script hardening, lint debt filed',
+    techNote: 'Minor fixes and internal improvements',
+    userChanges: [],
+    internalChanges: [
+      'Story 75 (P1) resolved — Vitest + lint removed from pre-push hook; CI is now sole gate (PR #155)',
+      'sync-stories-to-issues.js hardened — Fix A: strip placeholder from issue titles; Fix B: word-boundary regex replaces substring matching; metachar escape added (PR #156)',
+      'Stories 72–76 ROADMAP markers updated to real issue numbers (#150–#154)',
+      'Story 77 (P2) filed — 132 ESLint problems block strict lint gate; no-undef on supabase/teamName/updateServiceWorker flagged as potential real bugs',
+      'Test suite: 740 passing / 1 skipped / 0 failed',
+    ],
+  },
+  {
     version: '2.5.17',
     date: 'May 2026',
     headline: 'Governance pass — session retrospectives, CLAUDE.md trim, backend route modularization',
