@@ -161,6 +161,14 @@ export const tokens = {
       wide:   '0.06em',   // uppercase chrome labels (INNING, BALLS, OUTS, etc.)
     },
 
+    lineHeight: {
+      tight:       1.2,
+      body:        1.4,
+      comfortable: 1.6,
+      relaxed:     1.7,
+      loose:       1.75,
+    },
+
   },
 
   // ─── Z-INDEX ────────────────────────────────────────────────────────────────
