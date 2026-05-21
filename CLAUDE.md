@@ -175,7 +175,7 @@ If any answer is "no": stop. Document the gap in DOC_TEST_DEBT.md, then decide w
 7. Stage **specific files by path** — never `git add -A` (risks picking up unrelated untracked files)
 8. [x] loginLimiter: 15min window, max 5 — applied to POST /magic-link ✓
 9. [ ] Confirm `RESEND_DOMAIN_VERIFIED=true` in Render env vars (only after domain verified)
-10. [ ] Run `npm test` — confirm 740 passed / 1 skipped / 0 failed (as of v2.5.16, May 20, 2026)
+10. [ ] Run `npm test` — confirm 740 passed / 1 skipped / 0 failed (as of v2.5.18, May 21, 2026)
 
 ### VERSION_HISTORY Schema
 
@@ -524,8 +524,9 @@ Every other session: open `docs/product/DOC_TEST_DEBT.md` — close P0s, promote
 ---
 
 ## Current Version
-**v2.5.17** — May 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/data/versionHistory.js`.
+**v2.5.18** — May 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/data/versionHistory.js`.
 
+- v2.5.18 (2026-05-21): Pre-push hook fix, sync-script hardening, lint debt filed — Story 75 (P1) resolved (PR #155), sync-stories-to-issues.js hardened (PR #156), Stories 72–76 ROADMAP markers patched #150–#154, Story 77 (P2) filed for 132 ESLint problems.
 - v2.5.17 (2026-05-21): Governance pass — SESSION_RETROSPECTIVES.md introduced (#139), CLAUDE.md trim 44.8k→35.4k chars (#143), UX Phase 3 Step 3 token migrations (#144), backend route modularization with ops.js + teamData dual-mount (#145), worktree Husky convention (#148), Stories 70–76 filed, Story 75 (P1 pre-push hook reliability) escalated.
 - v2.5.16 (2026-05-19): Repo governance & GitHub settings hardening — Story 68 audit complete (2 AI apps revoked, Dependabot enabled), CODEOWNERS added (PR #133), 4 GitHub Issue templates, 27 ROADMAP stories bootstrapped to Issues (#105–#131), Story 69 opened for Dependabot triage.
 - v2.5.15 (2026-05-19): Share Lineup CTA restored on Game Day → Lineups tab (Story 67, PR #99); Support tab polish — FAQ default, full-row link tap targets, longer toast duration (PR #94).
