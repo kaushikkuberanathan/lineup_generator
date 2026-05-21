@@ -55,15 +55,21 @@ function inferLabels(priority, title, body) {
   const text = (title + ' ' + body).toLowerCase();
   const labels = [`priority:p${priority}`];
 
+  const kwMatch = kw => new RegExp(
+    '\\b' + kw.toLowerCase()
+      .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      .replace(/[-\/]/g, '.') + '\\b'
+  ).test(text);
+
   for (const rule of AREA_RULES) {
-    if (rule.keywords.some(kw => text.includes(kw.toLowerCase()))) {
+    if (rule.keywords.some(kwMatch)) {
       labels.push(rule.label);
       break;
     }
   }
 
   for (const rule of TYPE_RULES) {
-    if (rule.keywords.some(kw => text.includes(kw.toLowerCase()))) {
+    if (rule.keywords.some(kwMatch)) {
       labels.push(rule.label);
       break;
     }
@@ -90,7 +96,7 @@ function parseStories(content) {
     if (!headingMatch) { i++; continue; }
 
     const [, num, priority, rawTitle, existingIssue] = headingMatch;
-    const title = rawTitle.trim();
+    const title = rawTitle.replace(/\s*<!--\s*#N\s*-->/i, '').trim();
 
     if (existingIssue) {
       console.log(`  ⏭  Story ${num}: already linked → #${existingIssue}`);

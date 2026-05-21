@@ -2336,7 +2336,7 @@ Root cause: Schema evolved over time (headline + techNote added, versionHistory.
 Proposed fixes: Full audit pass — read every entry, flag violations, propose standardized rewrites for KK review, commit in one patch.
 Recommendation: Option A (full audit pass) over schema-test-only approach — customer-facing language quality requires human judgment a test cannot catch.
 
-### Story 72 (P2) — Mount adminRouter and feedbackRouter at specific /api/v1 prefixes
+### Story 72 (P2) — Mount adminRouter and feedbackRouter at specific /api/v1 prefixes <!-- #N --> <!-- #150 -->
 
 Status: Open
 Discovered: May 20, 2026 — surfaced during chore/backend-route-modularization (PR #TBD)
@@ -2361,7 +2361,7 @@ Proposed fix:
 Recommendation: Option A, bundled with Phase 4C auth cutover when admin routes are
 already being touched.
 
-### Story 73 (P3) — Motion/duration tokens missing <!-- #N -->
+### Story 73 (P3) — Motion/duration tokens missing <!-- #N --> <!-- #151 -->
 Status: Open
 Discovered: 2026-05-20 — Phase 3 Step 3 PR #144 (FAQSection chevron rotation recon)
 Target: future R-track patch to introduce `tokens.motion` group
@@ -2392,7 +2392,7 @@ Phase 3 momentum without requiring a full motion design system.
 Upgrade to (a) when a UX track explicitly covers motion or when
 `prefers-reduced-motion` becomes a P2 accessibility ask.
 
-### Story 74 (P3) — LegalSection L172 color-via-style anti-pattern <!-- #N -->
+### Story 74 (P3) — LegalSection L172 color-via-style anti-pattern <!-- #N --> <!-- #152 -->
 Status: Open
 Discovered: 2026-05-20 — Phase 3 Step 3 PR #144 (LegalSection.jsx recon)
 Target: future R-track patch after `Text` primitive color prop API is verified
@@ -2430,7 +2430,7 @@ proper semantic prop, plus add a guard rail. (b) renames the problem
 rather than solving it. Related: PR #144's F5 anti-pattern guard for
 fontSize — this is the color-prop equivalent.
 
-### Story 75 (P1) — Pre-push hook: move full Vitest suite out of hook, CI-only <!-- #N -->
+### Story 75 (P1) — Pre-push hook: move full Vitest suite out of hook, CI-only <!-- #N --> <!-- #153 -->
 
 Status: Open
 Discovered: May 20, 2026 — 4 of 5 push attempts failed during chore/backend-route-modularization session
@@ -2463,7 +2463,7 @@ Recommendation: Option A. CI already runs on every push to develop/main and is
 the documented authoritative gate. The pre-push hook provides false confidence
 on this machine — it either passes slowly or fails with no real test failures.
 
-### Story 76 (P3) — `\r` artifacts embedded in ROADMAP.md Story headings <!-- #N -->
+### Story 76 (P3) — `\r` artifacts embedded in ROADMAP.md Story headings <!-- #N --> <!-- #154 -->
 Status: Open
 Discovered: 2026-05-20 — Phase 3 Step 3 story-filing session (PR #146 edit attempt)
 Target: future docs hygiene patch
