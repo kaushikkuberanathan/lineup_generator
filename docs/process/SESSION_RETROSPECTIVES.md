@@ -10,6 +10,195 @@
 
 ---
 
+## 2026-05-20-A — Backend scalability assessment, CLAUDE.md trim, route modularization, Bug #7 escalation
+
+**Date:** May 20, 2026
+**Session ID:** 2026-05-20-A (Terminal 1)
+**Duration:** ~4 hours
+**Version shipped:** None (v2.5.16 current; v2.5.17 bump pending)
+**PRs merged:** #145 (chore/backend-route-modularization → develop)
+**Issues filed:** Story 72 (P2), Story 75 (P1)
+**Stories closed:** None (Story 61 confirmed already shipped via PR #103)
+
+---
+
+### Starting State
+
+**Main worktree:** `C:\Users\KKUBERANA1\Documents\lineup-generator`
+- Branch: `docs/story-70-71-roadmap` (mid-CLAUDE.md trim from prior session)
+- HEAD: `b63af84` — docs: extract Phase 4C cutover checklist (step 2/3 of trim)
+- Version: v2.5.16
+- Tree: clean
+- Context: CLAUDE.md trim in progress (2 of 3 extractions committed, step 3 pending); local main stale by 57 commits
+
+**Production:** dugoutlineup.com — v2.5.16, share-link routing confirmed shipped (Story 61 via PR #103)
+
+---
+
+### Ending State
+
+**Main worktree:** `C:\Users\KKUBERANA1\Documents\lineup-generator`
+- Branch: `chore/backend-route-modularization` (pushed, PR #145 merged to develop)
+- HEAD: `3bd7cd5` — Merge remote-tracking branch 'origin/develop' into chore/backend-route-modularization
+- Version: v2.5.16 (no bump this session)
+- Tree: dirty — 2 uncommitted files waiting for version bump batch:
+  - `CLAUDE.md` (test count 734 → 740)
+  - `frontend/CLAUDE.md` (test count 737 → 740)
+
+**Production:** dugoutlineup.com — v2.5.16, unchanged
+
+**Local branches at session end:**
+
+| Branch | State | Notes |
+|---|---|---|
+| `main` | ✅ current with origin/main | Pulled during housekeeping (was 57 commits behind) |
+| `develop` | ✅ PR #145 merged | chore/backend-route-modularization squash-merged |
+| `chore/backend-route-modularization` | ✅ pushed, merged | Safe to delete after confirm |
+
+**Branches deleted this session:**
+
+| Branch | Reason |
+|---|---|
+| `fix/story-27-share-link-routing` | Stale label — contained no unique work; Story 61 already shipped via PR #103 |
+| `docs/story-70-71-roadmap` | All 3 CLAUDE.md trim commits confirmed on develop; branch was a label only |
+
+---
+
+### What We Did
+
+Session opened on the CLAUDE.md trim (Step 3 of 3 pending), pivoted to a backend scalability assessment, then worked through four items in priority order:
+
+| # | Work Item | Outcome |
+|---|---|---|
+| 1 | CLAUDE.md trim — Step 3 (VERSION_HISTORY schema extraction) | Committed to docs/story-70-71-roadmap; confirmed already on develop |
+| 2 | Backend + test coverage assessment | Identified 4 gaps: RLS off, test-against-prod, auth shims, index.js flat |
+| 3 | Story 61 triage | Confirmed shipped to main via PR #103 — no work needed |
+| 4 | Backend route modularization (PR #145) | New ops router, dual-mount teamData, mount reorder, /test-public deletion |
+
+---
+
+### Issues Faced
+
+**Issue 1 — Bug #7 worker-timeout: 4 failures in 5 push attempts (~45 min wall time)**
+Root cause: Vitest threads-pool worker handshake exceeds 60s on Cox managed Windows endpoint under memory pressure. Non-deterministic — different file fails each attempt (migration.test.js, FAQSection.test.jsx, a11y-component-fixes.test.jsx, Button.test.jsx).
+Resolution: One successful push at 382s on attempt 4. Final push used `--no-verify` (merge commit + docs only; CI backstop).
+Time cost: ~45 min cumulative.
+Prevention: Story 75 logged — move full Vitest suite out of pre-push hook; keep only lint/tsc. CI is the authoritative gate.
+
+**Issue 2 — Mount-order latent bug surfaced by new routes**
+Root cause: `adminRouter` and `feedbackRouter` mounted at bare `/api/v1` intercept all unmatched `/api/v1/*` sibling paths via `router.use(requireAuth)`. New `/api/v1/ops` and `/api/v1/teams` routes returned 401 on first smoke test.
+Resolution: Reordered mounts — specific paths before generic. Net zero lines changed; all routes resolved correctly on retry.
+Time cost: ~20 min (recon + fix + re-smoke).
+Prevention: Story 72 logged — re-mount admin/feedback at specific prefixes (`/api/v1/admin`, `/api/v1/feedback`) during Phase 4C cutover.
+
+**Issue 3 — Story 27 vs Story 61 naming mismatch**
+Root cause: Memory had `fix/story-27-share-link-routing` as the active fix branch; ROADMAP had renumbered the story to 61. Branch comparison showed "nothing to compare" on GitHub.
+Resolution: Git recon confirmed Story 61 already shipped via PR #103. Branch deleted as stale label.
+Time cost: ~10 min.
+Prevention: When memory references a story number, verify against ROADMAP before any branch operations.
+
+**Issue 4 — ROADMAP merge conflict from concurrent story additions**
+Root cause: Story 72 (added on chore branch this session) and Stories 73–74 (added on develop via PR #144) both inserted entries at the same ROADMAP line position.
+Resolution: Stash → merge → manual conflict resolution (keep both sides in numeric order) → stash pop → re-push.
+Time cost: ~15 min.
+Prevention: Add stories to ROADMAP at end of Backlog section, not mid-file, to reduce positional conflict probability.
+
+**Issue 5 — Uncommitted working tree blocking merge operations (recurring)**
+Root cause: Multiple instances of making edits without immediately committing (ROADMAP Story 72, test-count bumps) before running merge/checkout commands.
+Resolution: Stash → merge → pop pattern. Worked cleanly both times.
+Time cost: ~5 min per occurrence (×2).
+Prevention: Commit or stash before any merge/checkout operation. Agent now proactively halts and asks — pattern is working.
+
+**Issue 6 — cmd /c via Bash shim drops piped output (recurring)**
+Root cause: Windows cmd.exe output doesn't pipe through the Bash shim cleanly. Affects `type`, `netstat | findstr`, and similar piped commands.
+Resolution: Fall back to PowerShell (`Get-Content`, `Get-NetTCPConnection`) — consistent workaround.
+Time cost: ~3 min per occurrence.
+Prevention: Document in agent session prompt: always use PowerShell equivalents for file reads and network checks on Windows.
+
+---
+
+### What Was Accomplished
+
+✅ CLAUDE.md trimmed from ~44.8k to ~35.4k chars (3 extractions, 3 commits) — confirmed on develop
+✅ Local main synced (was 57 commits behind origin/main)
+✅ Stale branches cleaned up (fix/story-27-share-link-routing, docs/story-70-71-roadmap)
+✅ Story 61 (share-link routing) confirmed shipped to production — no action needed
+✅ Backend scalability assessment completed — 4 gaps identified and prioritized
+✅ `backend/src/routes/ops.js` created — `/api/v1/ops/ping` + `/api/v1/ops/health` with full parity to legacy handlers
+✅ `teamDataRouter` dual-mounted at `/api/v1/teams` alongside legacy `/api/teams`
+✅ Mount-order bug fixed — specific routes before generic `/api/v1` mounts
+✅ `GET /test-public` deleted (zero callers confirmed)
+✅ Backend tests: 71 passed / 0 failed / 13 skipped — all relevant regression tests green
+✅ Frontend tests: 740 passed / 1 skipped / 0 failed
+✅ PR #145 merged to develop (squash)
+✅ Story 72 (P2) logged — adminRouter/feedbackRouter specific prefix mounts
+✅ Story 75 (P1) logged — pre-push hook Vitest reliability
+
+---
+
+### Key Decisions Made (and Why)
+
+**Additive-only backend changes.** All index.js changes followed the Zero-Downtime Constraint — new mounts added alongside existing ones, no handlers removed (except /test-public which had zero callers). Mount reorder was the only structural change to existing lines.
+
+**Extract all three CLAUDE.md sections, not just the changelog.** Changelog alone got under 40k, but all three extractions put us at 35.4k — meaningful headroom for future growth without hitting the threshold again for many releases.
+
+**Story 61 triage before starting new work.** Confirmed the fix was already shipped rather than re-implementing. Saved ~1 hour.
+
+**--no-verify on final merge commit push.** Strict rule condition (a) failed (merge inherits frontend/ files), but conditions (b) and (c) were met (Bug #7 confirmed pattern, CI backstop). Override approved for merge commit + docs-only payload. Justified in PR #145 body.
+
+**Story 75 logged as P1, not P3.** Bug #7 cost 45 min of wall time in a single session and required a rule override. Treating it as a nuisance (P3) understates the ongoing drag. P1 escalation means it gets addressed in the next governance pass, not deferred indefinitely.
+
+---
+
+### What We Could Have Done Better
+
+1. **Commit or stash before every merge/checkout.** Occurred twice this session. Agent is now proactively halting — the pattern is established but needs to be the default reflex, not a recovery pattern.
+
+2. **Verify ROADMAP story number before branch operations.** The Story 27 vs Story 61 mismatch cost 10 min. Rule: grep ROADMAP for the story title before assuming a branch name is current.
+
+3. **Run smoke test before committing — not after.** The mount-order bug would have been caught before the first commit if a quick `node index.js` + curl had been the gate. Backend changes should include a local server start as a pre-commit step.
+
+4. **Add stories at the end of the Backlog section.** Inserting Story 72 mid-file caused a positional merge conflict with Stories 73–74. Appending to the bottom of Backlog eliminates this class of conflict.
+
+---
+
+### Carry-Forward Items
+
+| Priority | Story | Item | Notes |
+|---|---|---|---|
+| P1 | Story 75 | Move Vitest out of pre-push hook | Option A: keep lint/tsc in hook, Vitest to CI only |
+| P1 | — | Phase 4C auth cutover | Parked; pending magic link validation + RLS |
+| P2 | Story 72 | adminRouter/feedbackRouter specific prefix mounts | Bundle with Phase 4C |
+| P2 | — | AI proxy route versioning (PR 2) | `/api/ai` → `/api/v1/ai`; requires App.jsx gate phrase |
+| P2 | — | Version bump to v2.5.17 | Carries test-count edits + Story 75 commit + bump files |
+| P3 | — | Cold start quantification | Pull UptimeRobot 30-day response time data |
+| P3 | — | CLAUDE.md trim → main | On develop; promotes with next release |
+
+**Uncommitted local state (must not be lost):**
+- `CLAUDE.md` — test count updated 734 → 740
+- `frontend/CLAUDE.md` — test count updated 737 → 740
+- `docs/product/ROADMAP.md` Story 75 — committed as `d7fdc41`, unpushed
+
+---
+
+### Next Session Open Checklist
+
+- [ ] `git status` on main worktree — confirm dirty state (CLAUDE.md + frontend/CLAUDE.md uncommitted)
+- [ ] `git log --oneline -5 origin/develop` — anchor on current develop tip
+- [ ] Confirm PR #145 merged on GitHub and develop is clean
+- [ ] Start version bump: v2.5.16 → v2.5.17
+  - Bump `APP_VERSION` in App.jsx (gate phrase required: `all clear — App.jsx editing approved`)
+  - Prepend VERSION_HISTORY entry
+  - Bump both package.json files
+  - Update ROADMAP.md, CLAUDE.md, frontend/CLAUDE.md
+  - Stage test-count edits + Story 75 commit in same bump
+- [ ] `npm run build` — must be clean before push
+- [ ] Push Story 75 + bump commits together
+- [ ] Story 75 implementation: edit pre-push hook — remove Vitest, keep lint/tsc only
+- [ ] Optional: Story 72 planning (adminRouter/feedbackRouter specific prefixes)
+
+---
+
 ## 2026-05-19-B — Story 68: GitHub Settings Audit + v2.5.16 Prod Release
 
 **Date:** May 19, 2026
