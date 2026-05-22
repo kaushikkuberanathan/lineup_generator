@@ -193,7 +193,7 @@ https://github.com/kaushikkuberanathan/lineup_generator/issues/new/choose
 | Script | Location | Purpose |
 |---|---|---|
 | `sync-stories-to-issues.js` | `scripts/` | Parse ROADMAP.md → create GitHub Issues → patch `<!-- #N -->` |
-| `setup-github-labels.ps1` | `scripts/` | Bootstrap / reset all 28 labels |
+| `setup-github-labels.ps1` | `scripts/` | Bootstrap / reset all 31 labels |
 
 Both scripts require `$env:GITHUB_TOKEN` to be set (PAT with `repo` scope).
 
