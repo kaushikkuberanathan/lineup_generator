@@ -2635,6 +2635,53 @@ run npm run build, verify dev server, confirm PWA behavior unchanged.
 
 Recommendation: Treat as standalone upgrade story. Do not block other PRs.
 
+### Story 82 (P3) — ParentView token/primitive migration <!-- #N -->
+
+Status: Open
+Discovered: 2026-05-22 — Phase 3 Step 4 recon (UX track)
+Target: after App.jsx parallel work clarifies S/C prop pattern
+
+Symptom: GameDay/ParentView.jsx (86 lines, extracted from App.jsx v1.6.9)
+uses legacy S.* and C.* prop-injected style helpers rather than design
+tokens or ui/* primitives. Zero imports — fully isolated. Purely
+presentational.
+
+Impact: ParentView is the primary parent-facing Game Day surface. It uses
+11 C.* color references, 2 S.* helper references, 9 hardcoded px font
+sizes (2 at WCAG-floor 10px), ~18 spacing literals, and 0.12em
+letterSpacing (2× the app norm). No token references, no primitives.
+
+Root cause: Extracted from App.jsx v1.6.9, predating the design-tokens
+system. S/C props are the legacy theming mechanism — App.jsx injects
+style helpers rather than each component importing tokens.
+
+Gate condition: Migration is blocked until App.jsx parallel work clarifies
+whether S/C props will be deprecated. Once that path is clear, ParentView
+is a clean migration target (zero locked-path adjacency, no game-path
+logic).
+
+Proposed fixes:
+  - (a) Add tokens import directly to ParentView; replace C.navy →
+        tokens.color.brand.navy, C.textMuted → tokens.color.text.secondary
+        (visual drift check needed — #6b7280 vs #64748B). Migrate 9 font
+        sizes to tokens.font.size.* (skip 10px — WCAG floor). Replace
+        S.btn → Button, S.card → Card, raw divs → Text/Stack.
+  - (b) Wait for App.jsx S/C deprecation to be formally scoped, then
+        migrate ParentView as part of that larger sweep.
+
+Decisions needed before migration:
+  - Button primitive: accepts ~12px→13px text size-up and 44px tap-target
+    fix (visual change)?
+  - C.textMuted (#6b7280) → text.secondary (#64748B): acceptable drift
+    after eyeball?
+  - 0.12em letterSpacing: normalize to tokens.font.letterSpacing.wide
+    (0.06em) or leave as documented drift?
+  - 10px font labels: lift to xs (11px) or leave flagged?
+
+Recommendation: (a) — direct token import is cleaner than waiting for a
+broader S/C deprecation that has no firm timeline. Gate on App.jsx
+parallel work clearing first.
+
 ---
 
 ### Automated Score Reporting (County Integration)
