@@ -263,7 +263,7 @@ When a story ships:
 | Script | Command | Purpose |
 |---|---|---|
 | Story → Issue sync | `node scripts/sync-stories-to-issues.js --dry-run` then without `--dry-run` | Parse ROADMAP.md → create GitHub Issues → patch `<!-- #N -->` markers |
-| Label bootstrap | `.\scripts\setup-github-labels.ps1` | Create/reset all 28 labels (requires `$env:GITHUB_TOKEN`) |
+| Label bootstrap | `.\scripts\setup-github-labels.ps1` | Create/reset all 31 labels (requires `$env:GITHUB_TOKEN`) |
 | Debt gate | `. .\scripts\debt-helpers.ps1; debt-p0` | Check P0 debt before minor version bump |
 | Health check | Manual trigger in GitHub Actions → `health-check.yml` | Verify API + share link + lineup generation |
 

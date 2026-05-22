@@ -314,7 +314,7 @@ GitHub Issues are the single system of record for all open stories, bugs, and in
 - Every ROADMAP Story needs a GitHub Issue (Story template) filed the same session
 - Every Story heading carries a `<!-- #N -->` marker
 - Commits resolving a story use `closes #N` — GitHub auto-closes on merge to main
-- Labels follow `prefix:name` convention — 28 labels across 5 groups
+- Labels follow `prefix:name` convention — 31 labels across 5 groups
 
 **Scripts:**
 
@@ -324,7 +324,7 @@ $env:GITHUB_TOKEN = $TOKEN
 node scripts/sync-stories-to-issues.js --dry-run
 node scripts/sync-stories-to-issues.js
 
-# Reset/bootstrap all 28 labels (after clone or drift)
+# Reset/bootstrap all 31 labels (after clone or drift)
 .\scripts\setup-github-labels.ps1
 ```
 
