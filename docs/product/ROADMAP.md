@@ -2613,6 +2613,28 @@ to inspect instead."
 
 Recommendation: CLAUDE.md one-liner. Pair with Story 79 in same governance PR.
 
+### Story 81 (P2) — Vite major upgrade: resolve 3 deferred esbuild/vite moderate vulns <!-- #N -->
+
+Status: Open
+Discovered: May 21, 2026 — npm audit fix deferred esbuild/vite chain
+during chore/npm-audit-fix session (PR forthcoming)
+Target: Next governance pass
+
+Symptom: 3 moderate vulnerabilities remain in frontend after audit fix —
+esbuild <=0.24.2, vite <=6.4.1, vite-plugin-pwa (various). All dev-only
+build toolchain. Not present in production bundle.
+
+Impact: Low — dev server CORS exposure (GHSA-67mh-4wv8-2f99) during local
+development only. No production exposure. Coaches unaffected.
+
+Root cause: npm audit fix --force required to resolve; upgrades Vite 5/6 → 8
+(breaking major version). Needs scoped upgrade PR with build verification.
+
+Proposed fix: Dedicated chore/vite-upgrade PR — bump vite + vite-plugin-pwa,
+run npm run build, verify dev server, confirm PWA behavior unchanged.
+
+Recommendation: Treat as standalone upgrade story. Do not block other PRs.
+
 ---
 
 ### Automated Score Reporting (County Integration)
