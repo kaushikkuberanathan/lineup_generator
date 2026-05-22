@@ -426,16 +426,16 @@ node scripts/sync-stories-to-issues.js              ← create
 | Script | Purpose |
 |---|---|
 | `scripts/sync-stories-to-issues.js` | Parse ROADMAP.md → create GitHub Issues → patch `<!-- #N -->` markers |
-| `scripts/setup-github-labels.ps1` | Bootstrap/reset all 28 labels (run after repo clone or label drift) |
+| `scripts/setup-github-labels.ps1` | Bootstrap/reset all 31 labels (run after repo clone or label drift) |
 
 ### Label taxonomy quick reference
 
 | Group | Labels |
 |---|---|
 | Priority | `priority:p0` `priority:p1` `priority:p2` `priority:p3` |
-| Type | `type:bug` `type:feature` `type:chore` `type:governance` `type:hotfix` `type:incident` |
+| Type | `type:bug` `type:feature` `type:chore` `type:governance` `type:hotfix` `type:incident` `type:docs` `type:refactor` |
 | Area | `area:scoring` `area:auth` `area:ux` `area:backend` `area:ci-ops` `area:game-mode` `area:share-link` `area:roster` `area:supabase` `area:analytics` |
-| Status | `status:blocked` `status:in-progress` `status:deferred` `status:needs-repro` |
+| Status | `status:blocked` `status:in-progress` `status:deferred` `status:needs-repro` `status:ready-for-review` |
 | Meta | `auto-created` `source:coach-feedback` `needs-overnight-soak` `hotfix-exception` |
 
 Full label definitions and inference rules: `docs/process/ISSUE_TRACKING.md`.
