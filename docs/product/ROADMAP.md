@@ -5,6 +5,17 @@
 
 ---
 
+## v2.5.19 — 2026-05-22 — Supabase import fix restores coach feedback; label schema, audit, governance
+
+- Story 83 (P1) resolved — `supabase` client import added to App.jsx; restores silent feedback/bug POSTs (PR #171)
+- npm audit fix — 12 of 15 frontend + all 3 backend vulns resolved; 3 esbuild/vite chain items deferred as dev-only (PR #164); Story 81 (P2) filed for Vite major upgrade
+- CLAUDE.md updated — promote merge strategy (Story 79), worktree pre-pull convention (Story 80), stale pre-push hook description corrected (PR #165)
+- Label schema expanded 28 → 31 — `type:docs`, `type:refactor`, `status:ready-for-review` added; `setup-github-labels.ps1` + 4 doc references synced (PRs #166, #168, Story 78)
+- Stories 83-85 filed from Story 77 no-undef triage — supabase import gap (Story 83, resolved this release), `teamName` undefined in box-score parser (Story 84, P2), SW update ReferenceError (Story 85, P2) (PR #169)
+- Session retrospective 2026-05-22-A logged (PR #170)
+
+---
+
 ## v2.5.18 — 2026-05-21 — Pre-push hook fix, sync-script hardening, lint debt filed
 
 - Story 75 (P1) resolved — Vitest + lint removed from `.husky/pre-push` hook; CI (GitHub Actions) is sole authoritative gate (PR #155)

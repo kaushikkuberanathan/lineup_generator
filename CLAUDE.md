@@ -527,8 +527,9 @@ Every other session: open `docs/product/DOC_TEST_DEBT.md` — close P0s, promote
 ---
 
 ## Current Version
-**v2.5.18** — May 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/data/versionHistory.js`.
+**v2.5.19** — May 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/data/versionHistory.js`.
 
+- v2.5.19 (2026-05-22): Supabase import fix restores coach feedback; label schema, audit, governance — Story 83 (P1) resolved (PR #171), npm audit 12 of 15 vulns + Story 81 filed (PR #164), CLAUDE.md Stories 79+80 + stale hook description (PR #165), label taxonomy 28→31 (PRs #166, #168), Stories 83-85 filed (PR #169), session retrospective 2026-05-22-A (PR #170).
 - v2.5.18 (2026-05-21): Pre-push hook fix, sync-script hardening, lint debt filed — Story 75 (P1) resolved (PR #155), sync-stories-to-issues.js hardened (PR #156), Stories 72–76 ROADMAP markers patched #150–#154, Story 77 (P2) filed for 132 ESLint problems.
 - v2.5.17 (2026-05-21): Governance pass — SESSION_RETROSPECTIVES.md introduced (#139), CLAUDE.md trim 44.8k→35.4k chars (#143), UX Phase 3 Step 3 token migrations (#144), backend route modularization with ops.js + teamData dual-mount (#145), worktree Husky convention (#148), Stories 70–76 filed, Story 75 (P1 pre-push hook reliability) escalated.
 - v2.5.16 (2026-05-19): Repo governance & GitHub settings hardening — Story 68 audit complete (2 AI apps revoked, Dependabot enabled), CODEOWNERS added (PR #133), 4 GitHub Issue templates, 27 ROADMAP stories bootstrapped to Issues (#105–#131), Story 69 opened for Dependabot triage.

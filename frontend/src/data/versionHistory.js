@@ -1,5 +1,22 @@
 ﻿export var VERSION_HISTORY = [
   {
+    version: '2.5.19',
+    date: 'May 2026',
+    headline: 'Supabase import fix restores coach feedback; label schema, audit, governance',
+    techNote: 'Minor fixes and internal improvements',
+    userChanges: [
+      'Coach feedback and bug reports now reach the backend — supabase client import was missing from App.jsx, causing all feedback POSTs to fail silently (Story 83, PR #171)',
+    ],
+    internalChanges: [
+      'npm audit fix — 12 of 15 frontend + all 3 backend vulns resolved; esbuild/vite chain deferred as dev-only (PR #164, Story 81)',
+      'CLAUDE.md updated — promote merge strategy (Story 79), worktree pre-pull convention (Story 80), stale pre-push hook description corrected (PR #165)',
+      'Label schema expanded 28 → 31 — type:docs, type:refactor, status:ready-for-review added; setup-github-labels.ps1 + 4 doc references synced (PRs #166, #168, Story 78)',
+      'Stories 83-85 filed from Story 77 no-undef triage — supabase import gap (P1, resolved this release), teamName undefined in box-score parser (P2), SW update ReferenceError (P2)',
+      'Session retrospective 2026-05-22-A logged (PR #170)',
+      'Test suite: 740 passing / 1 skipped / 0 failed',
+    ],
+  },
+  {
     version: '2.5.18',
     date: 'May 2026',
     headline: 'Pre-push hook fix, sync-script hardening, lint debt filed',
