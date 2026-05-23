@@ -30,6 +30,7 @@ export const tokens = {
       card:        '#FFFFFF',  // resolves #FFF (121x) + #FFFFFF (21x) → canonical 6-char
       dark:        '#0B1524',  // 12x — Game Mode header gradient, deepest navy surface
       tableHeader: '#F5EFE4',  // 13x — table thead row band (Defense/Batting/Scoring grids)
+      chrome:      '#1E3A5F',  // 5x — mid-tone navy band; game-day strips (NowBattingStrip, BattingOrderStrip) + Toast notification bg
     },
 
     text: {

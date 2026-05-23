@@ -57,7 +57,7 @@ describe('Group 2 — color sub-groups', function () {
   });
 
   test('2.3: color.surface has correct keys as non-empty strings; cream is absent', function () {
-    ['page', 'card', 'dark', 'tableHeader'].forEach(k => {
+    ['page', 'card', 'dark', 'tableHeader', 'chrome'].forEach(k => {
       expect(typeof tokens.color.surface[k]).toBe('string');
       expect(tokens.color.surface[k].length).toBeGreaterThan(0);
     });
