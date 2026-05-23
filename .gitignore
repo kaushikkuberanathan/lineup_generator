@@ -18,3 +18,6 @@ node_modules/
 # Agent recon outputs
 lint-baseline-output.txt
 recon-output.txt
+
+# npm audit snapshots (pre-fix baselines, evidence only)
+**/audit-*.json

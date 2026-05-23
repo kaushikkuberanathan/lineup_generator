@@ -1,7 +1,7 @@
 ﻿// v2.1
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { jsPDF } from "jspdf";
-import { isSupabaseEnabled, dbSaveTeams, dbDeleteTeam,
+import { isSupabaseEnabled, supabase, dbSaveTeams, dbDeleteTeam,
          dbLoadTeams, dbLoadTeamData, dbSaveTeamData,
          dbSnapshotRoster, dbGetRosterSnapshots,
          dbSaveShareLink, dbLoadShareLink } from './supabase.js';
@@ -141,7 +141,7 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.5.18";
+var APP_VERSION = "2.5.19";
 
 function loadJSON(key, def) {
   try {

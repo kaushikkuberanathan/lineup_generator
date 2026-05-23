@@ -51,6 +51,8 @@ New-Label "type:chore"      "FEF2C0" "Refactor, cleanup, dependency bump"
 New-Label "type:governance" "008672" "Docs, test debt, process"
 New-Label "type:hotfix"     "B60205" "Emergency production fix — bypass overnight soak"
 New-Label "type:incident"   "B60205" "Live production incident"
+New-Label "type:docs"       "0052CC" "Documentation changes only"
+New-Label "type:refactor"   "6F42C1" "Code refactor with no behavior change"
 
 # ── AREA ─────────────────────────────────────────────────────────────────────
 Write-Host "`n── Area labels ──────────────────────────────────" -ForegroundColor Yellow
@@ -71,6 +73,7 @@ New-Label "status:blocked"     "B60205" "Cannot proceed — waiting on dependenc
 New-Label "status:in-progress" "0075CA" "Actively being worked"
 New-Label "status:deferred"    "E4E669" "Intentionally pushed to future phase"
 New-Label "status:needs-repro" "FEF2C0" "Bug reported but not yet confirmed"
+New-Label "status:ready-for-review" "0E8A16" "PR is ready for review and merge"
 
 # ── META ─────────────────────────────────────────────────────────────────────
 Write-Host "`n── Meta labels ──────────────────────────────────" -ForegroundColor Yellow

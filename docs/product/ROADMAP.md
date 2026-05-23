@@ -5,6 +5,17 @@
 
 ---
 
+## v2.5.19 — 2026-05-22 — Supabase import fix restores coach feedback; label schema, audit, governance
+
+- Story 83 (P1) resolved — `supabase` client import added to App.jsx; restores silent feedback/bug POSTs (PR #171)
+- npm audit fix — 12 of 15 frontend + all 3 backend vulns resolved; 3 esbuild/vite chain items deferred as dev-only (PR #164); Story 81 (P2) filed for Vite major upgrade
+- CLAUDE.md updated — promote merge strategy (Story 79), worktree pre-pull convention (Story 80), stale pre-push hook description corrected (PR #165)
+- Label schema expanded 28 → 31 — `type:docs`, `type:refactor`, `status:ready-for-review` added; `setup-github-labels.ps1` + 4 doc references synced (PRs #166, #168, Story 78)
+- Stories 83-85 filed from Story 77 no-undef triage — supabase import gap (Story 83, resolved this release), `teamName` undefined in box-score parser (Story 84, P2), SW update ReferenceError (Story 85, P2) (PR #169)
+- Session retrospective 2026-05-22-A logged (PR #170)
+
+---
+
 ## v2.5.18 — 2026-05-21 — Pre-push hook fix, sync-script hardening, lint debt filed
 
 - Story 75 (P1) resolved — Vitest + lint removed from `.husky/pre-push` hook; CI (GitHub Actions) is sole authoritative gate (PR #155)
@@ -2543,6 +2554,218 @@ then errors, then warnings. Enable strict lint gate after debt cleared.
 
 Recommendation: Fix no-undef block first in isolation (15-min triage).
 Remaining errors/warnings in a follow-up pass.
+
+### Story 78 (P2) — Label schema gaps: missing labels blocking PR hygiene <!-- #N -->
+
+Status: Open
+Discovered: May 21, 2026 — PRs #149, #155, #156, #157, #158, #159, #160
+all missing area:, status:ready-for-review, type:fix, type:docs labels
+Target: Next governance pass
+
+Symptom: Labels area:governance, status:ready-for-review, type:fix, type:docs
+do not exist in the repo — cannot be applied to PRs even when correct.
+
+Impact: PR hygiene incomplete across every PR this session. Label filtering
+and triage broken for the prefix:name scheme.
+
+Root cause: Labels were designed in the prefix:name scheme but never created
+in GitHub Settings → Labels. Missing labels silently fail on application.
+
+Proposed fix: One-time creation pass in GitHub Settings → Labels for all
+missing labels in the scheme. ~5 minutes.
+
+Recommendation: Do in one pass next governance session — unblocks all future PRs.
+
+### Story 79 (P2) — Promote PR merge strategy: squash default overrides regular merge convention <!-- #N -->
+
+Status: Open
+Discovered: May 21, 2026 — PR #159 (develop → main promote) landed as squash
+instead of regular merge; same occurred on previous promote. GitHub's default
+is squash; operator must manually switch each time.
+Target: Next governance pass
+
+Symptom: Promote PRs (develop → main) collapse all develop commit history into
+a single squash commit on main. Individual PR commits (#149, #155, #156, #157,
+#158) not visible in main's history.
+
+Impact: Main history loses granularity. Git log on main shows one release commit
+instead of the individual PRs that composed it.
+
+Root cause: GitHub defaults to squash merge. No checklist step enforces
+"Create a merge commit" selection at promote time.
+
+Proposed fix: Add explicit step to promote checklist in CLAUDE.md:
+"On the PR merge dropdown — select Create a merge commit, NOT squash and merge."
+
+Recommendation: One-line CLAUDE.md addition. Do alongside Story 78.
+
+### Story 80 (P3) — Pre-pull branch check: worktree convention missing from CLAUDE.md <!-- #N -->
+
+Status: Open
+Discovered: May 21, 2026 — git pull origin develop in UX worktree created
+accidental merge commit twice (worktree was on feature branch, not develop).
+Recovered via git reset --hard both times.
+Target: Next governance pass
+
+Symptom: Running git pull origin <branch> in a worktree that's checked out
+on a different branch merges the remote branch INTO the feature branch,
+creating an unintended merge commit.
+
+Impact: Feature branch history polluted; requires destructive reset to recover.
+Caught both times but cost ~5 min each.
+
+Root cause: Convention known but not written down in CLAUDE.md. Relies on
+operator memory each session.
+
+Proposed fix: Add to CLAUDE.md worktree operating conventions:
+"Always run git branch --show-current before any git pull in a worktree.
+If not on the target branch, do not pull — use git fetch + git log origin/<branch>
+to inspect instead."
+
+Recommendation: CLAUDE.md one-liner. Pair with Story 79 in same governance PR.
+
+### Story 81 (P2) — Vite major upgrade: resolve 3 deferred esbuild/vite moderate vulns <!-- #N -->
+
+Status: Open
+Discovered: May 21, 2026 — npm audit fix deferred esbuild/vite chain
+during chore/npm-audit-fix session (PR forthcoming)
+Target: Next governance pass
+
+Symptom: 3 moderate vulnerabilities remain in frontend after audit fix —
+esbuild <=0.24.2, vite <=6.4.1, vite-plugin-pwa (various). All dev-only
+build toolchain. Not present in production bundle.
+
+Impact: Low — dev server CORS exposure (GHSA-67mh-4wv8-2f99) during local
+development only. No production exposure. Coaches unaffected.
+
+Root cause: npm audit fix --force required to resolve; upgrades Vite 5/6 → 8
+(breaking major version). Needs scoped upgrade PR with build verification.
+
+Proposed fix: Dedicated chore/vite-upgrade PR — bump vite + vite-plugin-pwa,
+run npm run build, verify dev server, confirm PWA behavior unchanged.
+
+Recommendation: Treat as standalone upgrade story. Do not block other PRs.
+
+### Story 82 (P3) — ParentView token/primitive migration <!-- #N -->
+
+Status: Open
+Discovered: 2026-05-22 — Phase 3 Step 4 recon (UX track)
+Target: after App.jsx parallel work clarifies S/C prop pattern
+
+Symptom: GameDay/ParentView.jsx (86 lines, extracted from App.jsx v1.6.9)
+uses legacy S.* and C.* prop-injected style helpers rather than design
+tokens or ui/* primitives. Zero imports — fully isolated. Purely
+presentational.
+
+Impact: ParentView is the primary parent-facing Game Day surface. It uses
+11 C.* color references, 2 S.* helper references, 9 hardcoded px font
+sizes (2 at WCAG-floor 10px), ~18 spacing literals, and 0.12em
+letterSpacing (2× the app norm). No token references, no primitives.
+
+Root cause: Extracted from App.jsx v1.6.9, predating the design-tokens
+system. S/C props are the legacy theming mechanism — App.jsx injects
+style helpers rather than each component importing tokens.
+
+Gate condition: Migration is blocked until App.jsx parallel work clarifies
+whether S/C props will be deprecated. Once that path is clear, ParentView
+is a clean migration target (zero locked-path adjacency, no game-path
+logic).
+
+Proposed fixes:
+  - (a) Add tokens import directly to ParentView; replace C.navy →
+        tokens.color.brand.navy, C.textMuted → tokens.color.text.secondary
+        (visual drift check needed — #6b7280 vs #64748B). Migrate 9 font
+        sizes to tokens.font.size.* (skip 10px — WCAG floor). Replace
+        S.btn → Button, S.card → Card, raw divs → Text/Stack.
+  - (b) Wait for App.jsx S/C deprecation to be formally scoped, then
+        migrate ParentView as part of that larger sweep.
+
+Decisions needed before migration:
+  - Button primitive: accepts ~12px→13px text size-up and 44px tap-target
+    fix (visual change)?
+  - C.textMuted (#6b7280) → text.secondary (#64748B): acceptable drift
+    after eyeball?
+  - 0.12em letterSpacing: normalize to tokens.font.letterSpacing.wide
+    (0.06em) or leave as documented drift?
+  - 10px font labels: lift to xs (11px) or leave flagged?
+
+Recommendation: (a) — direct token import is cleaner than waiting for a
+broader S/C deprecation that has no firm timeline. Gate on App.jsx
+parallel work clearing first.
+
+### Story 83 (P1) — Silent feedback/bug loss: supabase client not imported in App.jsx <!-- #N -->
+
+Status: Open
+Discovered: May 22, 2026 — Story 77 no-undef triage
+Target: Next fix pass
+
+Symptom: submitFeedback() and submitBug() in App.jsx reference bare supabase
+(lines 2821, 2849) but App.jsx only imports named functions from supabase.js,
+not the client. ReferenceError is swallowed by try/catch — user sees success
+toast but feedback/bug POST never reaches the backend.
+
+Impact: All coach feedback and bug reports silently lost since this code path
+was introduced. localStorage save works; network POST silently fails.
+
+Root cause: supabase IS exported from frontend/src/supabase.js (line 9:
+export var supabase = ...) — confirmed 2026-05-22. The export is just
+missing from App.jsx's named-import list at lines 4-7, which only pulls
+in the helper functions.
+
+Proposed fix: Add supabase to the existing named import block at
+App.jsx:4-7. One-line change — lowest-risk fix in this triage set.
+
+Recommendation: One-line import fix. P1 — silent data loss affecting coaches.
+
+### Story 84 (P2) — teamName undefined in box-score AI parser <!-- #N -->
+
+Status: Open
+Discovered: May 22, 2026 — Story 77 no-undef triage
+Target: Next fix pass
+
+Symptom: parseGameResult() references bare teamName 4 times (lines 2941,
+2951, 2956, 2959) — never declared, parametrized, or imported. ESLint
+no-undef confirms it is genuinely out of scope. AI prompt likely receives
+"Team name is undefined." degrading parse accuracy.
+
+Impact: Box-score parsing (image/PDF/text → batting stats) sends malformed
+prompts to Claude. Accuracy degraded; coaches may see wrong player mappings.
+
+Root cause: teamName was likely intended to be passed as a parameter or
+sourced from activeTeam.name but was never wired up.
+
+Proposed fix: Pass teamName as a parameter to parseGameResult() and update
+callers (1-3 call sites), or replace the 4 references with the correct
+in-scope expression (likely activeTeam?.name or similar).
+
+Recommendation: Read the 1-3 call sites before fixing to confirm parameter
+approach is cleaner than closure reference.
+
+### Story 85 (P2) — ReferenceError on SW update button click <!-- #N -->
+
+Status: Open
+Discovered: May 22, 2026 — Story 77 no-undef triage
+Target: Next fix pass
+
+Symptom: useRegisterSW() return value is discarded at App.jsx:1838 (called
+for side effects only). updateServiceWorker is never destructured. Click
+handlers at lines 3517 and 8632 reference updateServiceWorker(true) — throws
+ReferenceError when the "Update available" button is clicked.
+
+Impact: Low frequency (only fires when a new service worker is detected).
+When triggered, update button silently fails — coach can't apply the update
+without a manual page reload.
+
+Root cause: Refactor stub defined needRefresh and setNeedRefresh manually
+below the useRegisterSW call but omitted updateServiceWorker.
+
+Proposed fix: Destructure from return value:
+const { updateServiceWorker } = useRegisterSW({ onRegistered(r) { ... } });
+Remove the manual stubs for needRefresh/setNeedRefresh if they're also
+sourced from the same hook.
+
+Recommendation: One-line destructure fix. Verify stubs below are also
+removable before committing.
 
 ---
 

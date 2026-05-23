@@ -51,7 +51,7 @@ After running: always review inferred labels and correct misfires in the GitHub 
 
 ## Label Taxonomy
 
-All 28 labels follow `prefix:name` convention — no spaces, colon separator.
+All 31 labels follow `prefix:name` convention — no spaces, colon separator.
 
 ### Priority (required on every issue)
 
@@ -72,6 +72,8 @@ All 28 labels follow `prefix:name` convention — no spaces, colon separator.
 | `type:governance` | Docs, test debt, process |
 | `type:hotfix` | Emergency production fix — bypass overnight soak |
 | `type:incident` | Live production incident |
+| `type:docs` | Documentation changes only |
+| `type:refactor` | Code refactor with no behavior change |
 
 ### Area (strongly recommended)
 
@@ -96,6 +98,7 @@ All 28 labels follow `prefix:name` convention — no spaces, colon separator.
 | `status:in-progress` | Actively being worked |
 | `status:deferred` | Intentionally pushed to a future phase |
 | `status:needs-repro` | Bug reported but not yet confirmed |
+| `status:ready-for-review` | PR is ready for review and merge |
 
 ### Meta
 
@@ -190,7 +193,7 @@ https://github.com/kaushikkuberanathan/lineup_generator/issues/new/choose
 | Script | Location | Purpose |
 |---|---|---|
 | `sync-stories-to-issues.js` | `scripts/` | Parse ROADMAP.md → create GitHub Issues → patch `<!-- #N -->` |
-| `setup-github-labels.ps1` | `scripts/` | Bootstrap / reset all 28 labels |
+| `setup-github-labels.ps1` | `scripts/` | Bootstrap / reset all 31 labels |
 
 Both scripts require `$env:GITHUB_TOKEN` to be set (PAT with `repo` scope).
 
