@@ -2682,6 +2682,80 @@ Recommendation: (a) — direct token import is cleaner than waiting for a
 broader S/C deprecation that has no firm timeline. Gate on App.jsx
 parallel work clearing first.
 
+### Story 83 (P1) — Silent feedback/bug loss: supabase client not imported in App.jsx <!-- #N -->
+
+Status: Open
+Discovered: May 22, 2026 — Story 77 no-undef triage
+Target: Next fix pass
+
+Symptom: submitFeedback() and submitBug() in App.jsx reference bare supabase
+(lines 2821, 2849) but App.jsx only imports named functions from supabase.js,
+not the client. ReferenceError is swallowed by try/catch — user sees success
+toast but feedback/bug POST never reaches the backend.
+
+Impact: All coach feedback and bug reports silently lost since this code path
+was introduced. localStorage save works; network POST silently fails.
+
+Root cause: supabase IS exported from frontend/src/supabase.js (line 9:
+export var supabase = ...) — confirmed 2026-05-22. The export is just
+missing from App.jsx's named-import list at lines 4-7, which only pulls
+in the helper functions.
+
+Proposed fix: Add supabase to the existing named import block at
+App.jsx:4-7. One-line change — lowest-risk fix in this triage set.
+
+Recommendation: One-line import fix. P1 — silent data loss affecting coaches.
+
+### Story 84 (P2) — teamName undefined in box-score AI parser <!-- #N -->
+
+Status: Open
+Discovered: May 22, 2026 — Story 77 no-undef triage
+Target: Next fix pass
+
+Symptom: parseGameResult() references bare teamName 4 times (lines 2941,
+2951, 2956, 2959) — never declared, parametrized, or imported. ESLint
+no-undef confirms it is genuinely out of scope. AI prompt likely receives
+"Team name is undefined." degrading parse accuracy.
+
+Impact: Box-score parsing (image/PDF/text → batting stats) sends malformed
+prompts to Claude. Accuracy degraded; coaches may see wrong player mappings.
+
+Root cause: teamName was likely intended to be passed as a parameter or
+sourced from activeTeam.name but was never wired up.
+
+Proposed fix: Pass teamName as a parameter to parseGameResult() and update
+callers (1-3 call sites), or replace the 4 references with the correct
+in-scope expression (likely activeTeam?.name or similar).
+
+Recommendation: Read the 1-3 call sites before fixing to confirm parameter
+approach is cleaner than closure reference.
+
+### Story 85 (P2) — ReferenceError on SW update button click <!-- #N -->
+
+Status: Open
+Discovered: May 22, 2026 — Story 77 no-undef triage
+Target: Next fix pass
+
+Symptom: useRegisterSW() return value is discarded at App.jsx:1838 (called
+for side effects only). updateServiceWorker is never destructured. Click
+handlers at lines 3517 and 8632 reference updateServiceWorker(true) — throws
+ReferenceError when the "Update available" button is clicked.
+
+Impact: Low frequency (only fires when a new service worker is detected).
+When triggered, update button silently fails — coach can't apply the update
+without a manual page reload.
+
+Root cause: Refactor stub defined needRefresh and setNeedRefresh manually
+below the useRegisterSW call but omitted updateServiceWorker.
+
+Proposed fix: Destructure from return value:
+const { updateServiceWorker } = useRegisterSW({ onRegistered(r) { ... } });
+Remove the manual stubs for needRefresh/setNeedRefresh if they're also
+sourced from the same hook.
+
+Recommendation: One-line destructure fix. Verify stubs below are also
+removable before committing.
+
 ---
 
 ### Automated Score Reporting (County Integration)
