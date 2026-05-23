@@ -1,7 +1,7 @@
 ﻿// v2.1
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { jsPDF } from "jspdf";
-import { isSupabaseEnabled, dbSaveTeams, dbDeleteTeam,
+import { isSupabaseEnabled, supabase, dbSaveTeams, dbDeleteTeam,
          dbLoadTeams, dbLoadTeamData, dbSaveTeamData,
          dbSnapshotRoster, dbGetRosterSnapshots,
          dbSaveShareLink, dbLoadShareLink } from './supabase.js';
