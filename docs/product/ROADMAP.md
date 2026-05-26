@@ -2854,6 +2854,35 @@ Vercel preview before squash-merge to foundation. Block on (b) only if a
 second bottom-sheet call site materializes before this story is picked up,
 which would change the primitive's API surface.
 
+### Story 88 (P2) — sync-stories-to-issues.js: add de-duplication check before creating issues <!-- #N -->
+
+Status: Open
+Discovered: May 26, 2026 — sync script ran twice on different ROADMAP
+snapshots, creating 9 duplicate issues (#192-#200 duplicated #180-#188).
+Closed duplicates manually via GitHub API.
+Target: Next governance pass
+
+Symptom: Script creates a new GitHub issue for any story with a bare
+<!-- #N --> marker, without checking whether an issue with the same
+title already exists on GitHub. Running on a stale branch that hasn't
+pulled recent marker patches causes duplicate issues.
+
+Impact: 9 duplicate issues created in one incident. Manual cleanup
+required via GitHub API. Confusing issue list with doubled entries.
+
+Root cause: Script trusts only the ROADMAP.md file's marker state.
+No GitHub Search API call before issue creation to detect existing
+issues with matching titles.
+
+Proposed fix: Before calling POST /repos/{owner}/{repo}/issues, call
+GET /search/issues?q="{story_title}"+repo:{owner}/{repo}+type:issue
+and skip creation if a matching open issue is found. Log the existing
+issue number and patch the marker with it instead.
+
+Recommendation: Add de-dup check as the first step in the creation
+loop. Idempotency upgrade — script becomes safe to run on any branch
+state without risk of duplication.
+
 ---
 
 ### Story 88 (P2) — Success/warning token family additions <!-- #N -->
