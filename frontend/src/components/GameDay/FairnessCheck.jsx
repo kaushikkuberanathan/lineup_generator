@@ -65,17 +65,17 @@ export function FairnessCheck({ roster, grid, C }) {
   ];
 
   return (
-    <div style={{ background:C.white, borderRadius:"8px", border:"1px solid " + C.border,
-      borderLeft:"4px solid " + (allPass ? "#27ae60" : "#d4a017"),
+    <div style={{ background:tokens.color.surface.card, borderRadius:tokens.radius.md, border:"1px solid " + C.border,
+      borderLeft:"4px solid " + (allPass ? tokens.color.status.success : tokens.color.status.warning),
       padding:"12px 14px", marginBottom:"14px",
       boxShadow:tokens.shadow.subtle }}>
-      <div style={{ fontSize:"13px", fontWeight:"bold", marginBottom:"8px",
-        color: allPass ? "#27ae60" : "#d4a017" }}>
+      <div style={{ fontSize:tokens.font.size.body, fontWeight:tokens.font.weight.bold, marginBottom:tokens.space.sm,
+        color: allPass ? tokens.color.status.success : tokens.color.status.warning }}>
         {allPass ? "✅ Fairness Check Passed" : "⚠️ Fairness Check — " + failCount + " issue" + (failCount !== 1 ? "s" : "")}
       </div>
       {checks.map(function(ch) {
         return (
-          <div key={ch.label} style={{ fontSize:"14px", color: ch.pass ? C.text : C.red, marginBottom:"3px" }}>
+          <div key={ch.label} style={{ fontSize:tokens.font.size.md, color: ch.pass ? C.text : tokens.color.brand.red, marginBottom:"3px" }}>
             {ch.pass ? "✅" : "❌"} {ch.label}
           </div>
         );
