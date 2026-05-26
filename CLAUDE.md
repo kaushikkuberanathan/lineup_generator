@@ -177,7 +177,7 @@ If any answer is "no": stop. Document the gap in DOC_TEST_DEBT.md, then decide w
 7. Stage **specific files by path** — never `git add -A` (risks picking up unrelated untracked files)
 8. [x] loginLimiter: 15min window, max 5 — applied to POST /magic-link ✓
 9. [ ] Confirm `RESEND_DOMAIN_VERIFIED=true` in Render env vars (only after domain verified)
-10. [ ] Run `npm test` — confirm 740 passed / 1 skipped / 0 failed (as of v2.5.18, May 21, 2026)
+10. [ ] Run `npm test` — confirm 751 passed / 0 skipped / 0 failed (as of v2.5.20, May 26, 2026)
 
 ### VERSION_HISTORY Schema
 
@@ -533,8 +533,9 @@ Every other session: open `docs/product/DOC_TEST_DEBT.md` — close P0s, promote
 ---
 
 ## Current Version
-**v2.5.19** — May 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/data/versionHistory.js`.
+**v2.5.20** — May 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/data/versionHistory.js`.
 
+- v2.5.20 (2026-05-26): Story 84 fix, UX Phase 5 token foundation, sync-script governance — box-score AI parser teamName fix (Story 84, PR #178), UX Phase 5 surface.chrome + GameDay/* migrations (PR #179), sync-stories-to-issues.js de-dup check (Story 90, PR #204), Release Ritual post-promote sync convention (Story 86, PR #177), CLAUDE.md Rules 1+7 + item 18 (PR #201), ValidationBanner/OfflineIndicator touch-ups + Stories 87-89+91 filed (PR #202, #209), session retrospective 2026-05-23-A (PR #176), Stories 77-91 issue markers synced (PRs #191, #201, #208).
 - v2.5.19 (2026-05-22): Supabase import fix restores coach feedback; label schema, audit, governance — Story 83 (P1) resolved (PR #171), npm audit 12 of 15 vulns + Story 81 filed (PR #164), CLAUDE.md Stories 79+80 + stale hook description (PR #165), label taxonomy 28→31 (PRs #166, #168), Stories 83-85 filed (PR #169), session retrospective 2026-05-22-A (PR #170).
 - v2.5.18 (2026-05-21): Pre-push hook fix, sync-script hardening, lint debt filed — Story 75 (P1) resolved (PR #155), sync-stories-to-issues.js hardened (PR #156), Stories 72–76 ROADMAP markers patched #150–#154, Story 77 (P2) filed for 132 ESLint problems.
 - v2.5.17 (2026-05-21): Governance pass — SESSION_RETROSPECTIVES.md introduced (#139), CLAUDE.md trim 44.8k→35.4k chars (#143), UX Phase 3 Step 3 token migrations (#144), backend route modularization with ops.js + teamData dual-mount (#145), worktree Husky convention (#148), Stories 70–76 filed, Story 75 (P1 pre-push hook reliability) escalated.
