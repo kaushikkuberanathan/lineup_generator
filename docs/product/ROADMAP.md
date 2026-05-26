@@ -2854,7 +2854,7 @@ Vercel preview before squash-merge to foundation. Block on (b) only if a
 second bottom-sheet call site materializes before this story is picked up,
 which would change the primitive's API surface.
 
-### Story 88 (P2) — sync-stories-to-issues.js: add de-duplication check before creating issues <!-- #N -->
+### Story 90 (P2) — sync-stories-to-issues.js: add de-duplication check before creating issues <!-- #N -->
 
 Status: Open
 Discovered: May 26, 2026 — sync script ran twice on different ROADMAP
