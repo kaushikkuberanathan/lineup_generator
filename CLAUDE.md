@@ -208,6 +208,8 @@ Target: resolved within 10 min of detection.
 >
 > Summary: feature branch (from develop) → PR to develop (draft, CI green, Vercel preview on real device) → 24h soak → PR to main (Ship Gate + docs checklist) → prod smoke test within 10 min → branch cleanup. Never push directly to main. Never cut from main. Never skip the soak (hotfix exemption only).
 
+**Post-promote sync (required):** After every develop → main promote merges, immediately open a `sync/main-into-develop` PR to absorb the merge commit back into develop. Skipping causes 8-file conflict on the next promote. (Story 86, 2026-05-23)
+
 ---
 
 ## Analytics

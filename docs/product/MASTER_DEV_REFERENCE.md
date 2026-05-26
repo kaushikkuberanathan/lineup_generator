@@ -648,9 +648,10 @@ End-to-end ordered sequence for promoting work from develop to production. Follo
 ### Phase 7: Post-deploy cleanup
 
 28. **Sync local main** — `git checkout main && git pull origin main`
-29. **Delete merged branches** — Both local and remote: `git branch -D <feature-branch>` and `git push origin --delete <feature-branch>` if not auto-deleted.
-30. **Log v(N+1) backlog items** — Anything surfaced during deploy that didn't get fixed: stale docs, lint warnings, infra paper cuts.
-31. **Update memory/notes** — Record what worked, what was friction, what's next session's first task.
+29. **Open `sync/main-into-develop` PR (required)** — Immediately after the promote merges: cut a branch from develop, run `git merge --no-ff origin/main`, resolve any conflicts with `--ours` on release-bump files (develop's content is always newer post-promote). Open PR to develop, merge with Create a merge commit. Skipping causes 8-file conflict on the next promote — develop never absorbs the promote merge commit. (Story 86, 2026-05-23)
+30. **Delete merged branches** — Both local and remote: `git branch -D <feature-branch>` and `git push origin --delete <feature-branch>` if not auto-deleted.
+31. **Log v(N+1) backlog items** — Anything surfaced during deploy that didn't get fixed: stale docs, lint warnings, infra paper cuts.
+32. **Update memory/notes** — Record what worked, what was friction, what's next session's first task.
 
 ### Anti-patterns (DO NOT)
 
@@ -660,6 +661,7 @@ End-to-end ordered sequence for promoting work from develop to production. Follo
 - ❌ Skip the 24-hour develop soak unless it's a hotfix (see ## Ship Gate exempt types)
 - ❌ Use `git add -A` for staging — explicit paths only
 - ❌ Promote multiple unrelated versions in one PR without explicit awareness — discovered April 27, 2026 that develop was 12 commits ahead of main, bundling v2.4.0 + v2.5.0 + v2.5.1 in one promotion. This is acceptable in retrospect but should be a deliberate decision, not a discovery.
+- ❌ **Skip the post-promote sync PR** — develop never absorbs the promote merge commit, causing 8-file conflict on the next develop → main PR. Always open sync/main-into-develop within the same session as the promote. (Story 86)
 
 ---
 

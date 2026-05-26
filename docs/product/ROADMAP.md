@@ -2747,14 +2747,20 @@ Status: Open
 Discovered: May 22, 2026 — Story 77 no-undef triage
 Target: Next fix pass
 
-Symptom: useRegisterSW() return value is discarded at App.jsx:1838 (called
-for side effects only). updateServiceWorker is never destructured. Click
-handlers at lines 3517 and 8632 reference updateServiceWorker(true) — throws
-ReferenceError when the "Update available" button is clicked.
+Symptom: useRegisterSW() return value is discarded at App.jsx:1838.
+Three consequences: (1) updateServiceWorker is never destructured —
+click handlers at lines 3517+8617 would throw ReferenceError IF the
+banner rendered; (2) needRefresh is hardcoded false (line 1845 stub)
+— the update banner has NEVER rendered since the stubs were introduced;
+(3) setNeedRefresh is a no-op stub (line 1846). Two duplicate banner
+blocks exist (lines 3511, 8611) — both gated on needRefresh, both
+dead. Coaches have only received updates via PWA close+reopen, not
+the in-app prompt.
 
-Impact: Low frequency (only fires when a new service worker is detected).
-When triggered, update button silently fails — coach can't apply the update
-without a manual page reload.
+Impact: Update prompt has been non-functional since the stubs were
+introduced. Severity: P2 (PWA reload is a workaround) but broader
+than originally filed. Fix will restore visible update UI for coaches
+— needs a userChanges entry when it ships.
 
 Root cause: Refactor stub defined needRefresh and setNeedRefresh manually
 below the useRegisterSW call but omitted updateServiceWorker.
@@ -2766,6 +2772,34 @@ sourced from the same hook.
 
 Recommendation: One-line destructure fix. Verify stubs below are also
 removable before committing.
+
+### Story 86 (P1) — Post-promote sync: add main → develop sync step to Release Ritual <!-- #N -->
+
+Status: Open
+Discovered: May 23, 2026 — promote PR #175 had 8-file conflict
+because post-promote sync was skipped after PR #159
+Target: Next governance pass
+
+Symptom: develop → main promote PR surfaces conflicts on 8 files
+(version bump files, CLAUDE.md, SESSION_RETROSPECTIVES.md) when
+the prior promote's merge commit was never absorbed back into develop.
+
+Impact: Promote requires a sync PR (main → develop) detour before
+the promote can land. Adds ~30 min of conflict resolution work per
+release cycle if skipped.
+
+Root cause: PRODUCT_OPS.md Section 5 documents the symmetric
+main → develop sync step, but it is not enforced anywhere in the
+release workflow. Skipped after PR #159; surfaced during PR #175.
+
+Proposed fix: Add as explicit step in CLAUDE.md Release Ritual
+section + MASTER_DEV_REFERENCE.md Release Ritual phase sequence.
+Rule: "After every develop → main promote, immediately open
+sync/main-into-develop PR to absorb the merge commit."
+
+Recommendation: Add to both CLAUDE.md (one-liner) and
+MASTER_DEV_REFERENCE.md (full rule). Low effort, prevents
+recurring 30-min detour.
 
 ---
 
