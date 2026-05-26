@@ -10,7 +10,9 @@
  *   node scripts/sync-stories-to-issues.js --dry-run   ← preview only
  *   node scripts/sync-stories-to-issues.js              ← create issues
  *
- * Safe to re-run: skips stories already tagged with <!-- #N -->.
+ * Safe to re-run across branches: queries GitHub Search before creating
+ * to skip stories with a matching open issue by title, even when the
+ * local ROADMAP.md marker is stale (Story 90, 2026-05-26).
  * Skips stories with Status: Resolved.
  */
 
@@ -164,6 +166,18 @@ function githubRequest(method, apiPath, body) {
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
+async function findExistingOpenIssue(issueTitle) {
+  const q = `repo:${REPO_OWNER}/${REPO_NAME} type:issue state:open "${issueTitle}"`;
+  try {
+    const res = await githubRequest('GET', `/search/issues?q=${encodeURIComponent(q)}&per_page=5`);
+    if (!res || !res.items) return null;
+    return res.items.find(item => item.title === issueTitle) || null;
+  } catch (err) {
+    console.warn(`  ⚠  Search API error — skipping de-dup check: ${err.message}`);
+    return null;
+  }
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -200,11 +214,25 @@ async function main() {
 
     process.stdout.write(`  Story ${story.num} — ${story.title}... `);
     try {
+      const issueTitle = `Story ${story.num}: ${story.title}`;
+
+      const existing = await findExistingOpenIssue(issueTitle);
+      if (existing) {
+        console.log(`⚠️  existing #${existing.number} found — patching marker, skipping create`);
+        const cleaned = story.originalLine.replace(/\s*<!--\s*#N\s*-->/gi, '');
+        updatedContent = updatedContent.replace(
+          story.originalLine,
+          `${cleaned} <!-- #${existing.number} -->`
+        );
+        await sleep(600);
+        continue;
+      }
+
       const res = await githubRequest(
         'POST',
         `/repos/${REPO_OWNER}/${REPO_NAME}/issues`,
         {
-          title: `Story ${story.num}: ${story.title}`,
+          title: issueTitle,
           body:  `> Auto-created from ROADMAP.md Story ${story.num}. Update this issue as the story progresses.\n\n---\n\n${story.body}`,
           labels,
         }
@@ -216,9 +244,10 @@ async function main() {
       console.log(`✅ #${issueNum}`);
 
       // Patch the heading line in ROADMAP.md
+      const cleaned = story.originalLine.replace(/\s*<!--\s*#N\s*-->/gi, '');
       updatedContent = updatedContent.replace(
         story.originalLine,
-        `${story.originalLine} <!-- #${issueNum} -->`
+        `${cleaned} <!-- #${issueNum} -->`
       );
 
       await sleep(600);
