@@ -2767,6 +2767,34 @@ sourced from the same hook.
 Recommendation: One-line destructure fix. Verify stubs below are also
 removable before committing.
 
+### Story 86 (P1) — Post-promote sync: add main → develop sync step to Release Ritual <!-- #N -->
+
+Status: Open
+Discovered: May 23, 2026 — promote PR #175 had 8-file conflict
+because post-promote sync was skipped after PR #159
+Target: Next governance pass
+
+Symptom: develop → main promote PR surfaces conflicts on 8 files
+(version bump files, CLAUDE.md, SESSION_RETROSPECTIVES.md) when
+the prior promote's merge commit was never absorbed back into develop.
+
+Impact: Promote requires a sync PR (main → develop) detour before
+the promote can land. Adds ~30 min of conflict resolution work per
+release cycle if skipped.
+
+Root cause: PRODUCT_OPS.md Section 5 documents the symmetric
+main → develop sync step, but it is not enforced anywhere in the
+release workflow. Skipped after PR #159; surfaced during PR #175.
+
+Proposed fix: Add as explicit step in CLAUDE.md Release Ritual
+section + MASTER_DEV_REFERENCE.md Release Ritual phase sequence.
+Rule: "After every develop → main promote, immediately open
+sync/main-into-develop PR to absorb the merge commit."
+
+Recommendation: Add to both CLAUDE.md (one-liner) and
+MASTER_DEV_REFERENCE.md (full rule). Low effort, prevents
+recurring 30-min detour.
+
 ---
 
 ### Automated Score Reporting (County Integration)
