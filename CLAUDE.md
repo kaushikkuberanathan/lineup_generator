@@ -408,7 +408,7 @@ Every Story in ROADMAP.md must have a corresponding GitHub Issue. This is non-ne
 
 ### Rules (enforce every session)
 
-1. **New story → GitHub Issue same session.** Use the Story issue template at github.com/kaushikkuberanathan/lineup_generator/issues/new/choose. Never leave a story in ROADMAP.md without a `<!-- #N -->` marker.
+1. **New story → GitHub Issue same session.** Use the Story issue template at github.com/kaushikkuberanathan/lineup_generator/issues/new/choose. Never leave a story in ROADMAP.md with a bare `<!-- #N -->` placeholder — the marker must contain a real issue number before session close. If file-time issue creation isn't done, run `node scripts/sync-stories-to-issues.js` before ending the session.
 
 2. **Batch sync.** When stories accumulate without issues, run:
 $env:GITHUB_TOKEN = $TOKEN
@@ -423,6 +423,8 @@ node scripts/sync-stories-to-issues.js              ← create
 5. **Label discipline.** All issues must carry at minimum one `priority:*` label and one `type:*` label. Area labels are strongly recommended. Labels follow `prefix:name` convention (no spaces). Full taxonomy in `docs/process/ISSUE_TRACKING.md`.
 
 6. **DOC_TEST_DEBT items** also get GitHub Issues using the Governance template. Reference the issue number in the debt ledger entry.
+
+7. **Session-close sync gate.** Before ending any session where ROADMAP.md was modified: run `node scripts/sync-stories-to-issues.js` to patch any remaining `<!-- #N -->` placeholders. Then commit the patched ROADMAP.md. Prevents multi-session marker debt (9 stories accumulated without issue numbers — discovered 2026-05-26).
 
 ### Scripts
 
@@ -504,6 +506,7 @@ Before opening a `develop → main` PR, walk through these items. For each, answ
 15. Vercel preview deployed and phone-smoke-tested on a real device and network (DevTools simulation does not replace this)
 16. Branch protection on `main` enforces CI checks + preview deployment green — no bypass
 17. On the PR merge dropdown — select **Create a merge commit**, not Squash and merge. Promote PRs (develop → main) must preserve the individual develop commit history on main. Squash collapses all develop work into one commit, losing PR-level granularity. (Story 79, 2026-05-21)
+18. Run `node scripts/sync-stories-to-issues.js` — confirm all `<!-- #N -->` markers in ROADMAP.md are patched with real issue numbers before promote. Commit any patches as a docs-only PR to develop first.
 
 If any relevant item is "no" — **stop**. Open a docs patch first. This patch was introduced because v2.3.3 shipped without docs updates, requiring a catch-up hygiene patch (commit `2652ed7`, April 24 2026).
 
