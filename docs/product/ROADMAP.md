@@ -2803,6 +2803,59 @@ recurring 30-min detour.
 
 ---
 
+### Story 87 (P2) — BottomSheet primitive: extract canonical pattern from LockFlow <!-- #N -->
+
+Status: Open
+Discovered: May 26, 2026 — LockFlow.jsx recon (feature/ux-lockflow-recon, STOP 3)
+Target: UX track — Phase 5 follow-up, post-LockFlow token migration
+
+Symptom: LockFlow.jsx (frontend/src/components/GameDay/LockFlow.jsx:166–180)
+implements a full bottom-sheet modal pattern inline — fixed-position
+backdrop + role=dialog shell anchored to bottom + close handle + body slot
++ upward directional shadow. No primitive exists for this pattern, so the
+same shape will be re-implemented every time a future modal/picker/
+confirmation flow needs to slide up from the bottom of the viewport.
+
+Impact: Two design-token migrations are explicitly blocked on this primitive:
+(1) tokens.js line 107 reserves radius.sheet ('16px 16px 0 0') with a
+comment pointing to a future <BottomSheet> primitive using radius.lg
+internally; (2) tokens.js lines 194–195 explicitly exclude LockFlow's
+'0 -4px 24px rgba(0,0,0,0.18)' upward shadow from the tokens.shadow group
+pending the same primitive. Both call sites stay raw (drift) until this
+story lands. Secondary impact: future bottom-sheet surfaces (settings,
+pickers, multi-step confirmations) will re-derive the same DOM shape and
+diverge on a11y wiring.
+
+Root cause: Pattern was extracted from App.jsx v1.6.9 into LockFlow.jsx as
+a single-call-site component before the design-system primitive layer
+existed. tokens.js (built later) anticipated the primitive in two comments
+but the primitive itself was never authored.
+
+Proposed fixes:
+(a) Build BottomSheet primitive + migrate LockFlow in one PR. Primitive
+    lives at frontend/src/components/ui/BottomSheet.jsx, encodes backdrop +
+    role=dialog shell + close handle + radius.lg top + new shadow.sheetTop
+    token. LockFlow shell (lines 166–180) swaps to <BottomSheet>. New test
+    file BottomSheet.test.jsx + existing a11y F6 block (LockFlow dialog
+    role) must still pass.
+(b) Build BottomSheet primitive standalone, no LockFlow migration. Adds
+    the primitive + shadow.sheetTop token, leaves LockFlow inline. Smaller
+    diff, lower risk to game-day Finalize flow, but radius.sheet and
+    shadow.sheetTop deferrals remain unresolved at the LockFlow call site
+    until a follow-up story.
+(c) Defer entirely. Leave LockFlow inline indefinitely. Re-evaluate when
+    a second bottom-sheet call site appears in the codebase.
+
+Recommendation: (a) — single-PR primitive + migration. The migration is
+low-risk (pre-game, ErrorBoundary-wrapped, no live-scoring impact) and
+landing both halves together prevents the radius.sheet / shadow.sheetTop
+deferrals from becoming permanent. Smoke-test the 3-step Finalize flow on
+Vercel preview before squash-merge to foundation. Block on (b) only if a
+second bottom-sheet call site materializes before this story is picked up,
+which would change the primitive's API surface.
+
+---
+
 ### Automated Score Reporting (County Integration)
 **Status:** Architecture finalized, implementation pending
 **Trigger:** Coach taps "Report Score" on a completed game
