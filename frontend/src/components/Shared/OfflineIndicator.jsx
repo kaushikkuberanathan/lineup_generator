@@ -54,7 +54,7 @@ export function OfflineIndicator({ isOnline, hasCache, isLandscape }) {
       <div style={{
         width: "7px",
         height: "7px",
-        borderRadius: "50%",
+        borderRadius: tokens.radius.circle,
         background: dot,
         flexShrink: 0,
       }} />
