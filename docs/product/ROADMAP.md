@@ -2883,6 +2883,32 @@ Recommendation: Add de-dup check as the first step in the creation
 loop. Idempotency upgrade — script becomes safe to run on any branch
 state without risk of duplication.
 
+### Story 91 (P2) — sync-stories-to-issues.js: skip ROADMAP patch on failed POST <!-- #N -->
+
+Status: Open
+Discovered: May 26, 2026 — script patched ROADMAP.md with undefined
+issue numbers after 401 failures (token not set in UX worktree terminal)
+Target: Next governance pass
+
+Symptom: When githubRequest() returns a 401 or other non-2xx error,
+the script still executes the ROADMAP.md marker-patch block. The
+issueNum variable is undefined, producing <!-- #undefined --> markers.
+Script then exits with "ROADMAP.md patched" despite no issues created.
+
+Impact: ROADMAP.md corrupted with bad markers. Requires manual
+git checkout -- docs/product/ROADMAP.md to recover.
+
+Root cause: The patch block runs unconditionally after the catch.
+issueNum is only set inside the successful response path — undefined
+in the error path.
+
+Proposed fix: Guard the patch block with a type check before writing:
+if (typeof issueNum === 'number') { ...patch ROADMAP... }
+One-line change — lower diff than restructuring the try/catch.
+
+Recommendation: Guard approach. Pair with Story 90's remaining
+cleanup if doing a sync-script governance pass.
+
 ---
 
 ### Story 88 (P2) — Success/warning token family additions <!-- #205 -->
