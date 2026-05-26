@@ -5,6 +5,19 @@
 
 ---
 
+## v2.5.20 — 2026-05-26 — Story 84 fix, UX Phase 5 token foundation, sync-script governance
+
+- Story 84 (P2) resolved — box-score AI parser now sends correct team name to LLM; `teamName` undefined ref replaced with `activeTeam.name` closure read (PR #178)
+- UX Phase 5 foundation — `surface.chrome` token + GameDay/* migrations (NowBattingStrip, BattingOrderStrip, Toast, FairnessCheck, LockFlow); zero `#1e3a5f` literals remain in frontend/src/ (PR #179)
+- sync-stories-to-issues.js de-dup check — queries GitHub Search before creating; double-marker patch cleanup (Story 90, PR #204)
+- Release Ritual: post-promote sync convention codified — `sync/main-into-develop` PR required after every develop → main merge (Story 86, PR #177)
+- CLAUDE.md Issue & Backlog Hygiene tightened — Rule 1 reworded, new Rule 7 (session-close sync gate), new item 18 in Pre-release Docs Checklist (PR #201)
+- ValidationBanner + OfflineIndicator token touch-ups (PR #202); Stories 87, 88, 89, 91 filed for future UX/tooling cleanup work
+- Session retrospective 2026-05-23-A logged (PR #176)
+- ROADMAP backlog hygiene — Stories 77-91 synced to GitHub Issues #180-#209; 9 duplicate issues cleaned up after sync-script ran on stale base (PRs #191, #201, #208)
+
+---
+
 ## v2.5.19 — 2026-05-22 — Supabase import fix restores coach feedback; label schema, audit, governance
 
 - Story 83 (P1) resolved — `supabase` client import added to App.jsx; restores silent feedback/bug POSTs (PR #171)

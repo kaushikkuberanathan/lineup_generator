@@ -1,5 +1,23 @@
 ﻿export var VERSION_HISTORY = [
   {
+    version: '2.5.20',
+    date: 'May 2026',
+    headline: 'Story 84 fix, UX Phase 5 token foundation, sync-script governance',
+    techNote: 'Minor fixes and internal improvements',
+    userChanges: [
+      'Box score AI parser now sends the correct team name to the LLM — previously sent the literal string "undefined", silently degrading parse quality (Story 84, PR #178)',
+    ],
+    internalChanges: [
+      'UX Phase 5 foundation — surface.chrome token + GameDay/* migrations (NowBattingStrip, BattingOrderStrip, Toast, FairnessCheck, LockFlow); zero #1e3a5f literals remain in frontend/src/ (PR #179)',
+      'sync-stories-to-issues.js de-dup check — queries GitHub Search before creating; double-marker patch cleanup (Story 90, PR #204)',
+      'Release Ritual: post-promote sync convention codified — sync/main-into-develop PR required after every develop → main merge (Story 86, PR #177, MASTER_DEV_REFERENCE.md Phase 7 step 29)',
+      'CLAUDE.md Issue & Backlog Hygiene tightened — Rule 1 reworded, new Rule 7 (session-close sync gate), new item 18 in Pre-release Docs Checklist (PR #201)',
+      'ValidationBanner + OfflineIndicator token touch-ups (PR #202); Stories 87, 88, 89, 91 filed for future UX/tooling cleanup work',
+      'Session retrospective 2026-05-23-A logged (PR #176)',
+      'ROADMAP backlog hygiene — Stories 77-91 synced to GitHub Issues #180-#209; 9 duplicate issues cleaned up after sync-script ran on stale base (PRs #191, #201, #208)',
+    ],
+  },
+  {
     version: '2.5.19',
     date: 'May 2026',
     headline: 'Supabase import fix restores coach feedback; label schema, audit, governance',
