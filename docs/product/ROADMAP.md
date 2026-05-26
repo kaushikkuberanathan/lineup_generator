@@ -2854,7 +2854,7 @@ Vercel preview before squash-merge to foundation. Block on (b) only if a
 second bottom-sheet call site materializes before this story is picked up,
 which would change the primitive's API surface.
 
-### Story 90 (P2) — sync-stories-to-issues.js: add de-duplication check before creating issues <!-- #N -->
+### Story 90 (P2) — sync-stories-to-issues.js: add de-duplication check before creating issues <!-- #207 -->
 
 Status: Open
 Discovered: May 26, 2026 — sync script ran twice on different ROADMAP
@@ -2885,7 +2885,7 @@ state without risk of duplication.
 
 ---
 
-### Story 88 (P2) — Success/warning token family additions <!-- #N -->
+### Story 88 (P2) — Success/warning token family additions <!-- #205 -->
 
 Status: Open
 Discovered: 2026-05-26 — ValidationBanner.jsx recon
@@ -2936,7 +2936,7 @@ status.* values exist.
 
 ---
 
-### Story 89 (P3) — Alpha-tint token family for brand/status colors <!-- #N -->
+### Story 89 (P3) — Alpha-tint token family for brand/status colors <!-- #206 -->
 
 Status: Open
 Discovered: 2026-05-26 — OfflineIndicator.jsx recon
