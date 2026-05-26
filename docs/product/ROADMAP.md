@@ -2856,6 +2856,110 @@ which would change the primitive's API surface.
 
 ---
 
+### Story 88 (P2) — Success/warning token family additions <!-- #N -->
+
+Status: Open
+Discovered: 2026-05-26 — ValidationBanner.jsx recon
+  (feature/ux-phase-6-foundation)
+Target: UX track — prerequisite for ValidationBanner
+  second-pass migration
+
+Symptom: ValidationBanner.jsx carries 7 orphan color
+values (success-bg, warning-bg, success/warning border
+tints, success-text, warning-text, warning-list-text)
+with no token equivalents. The component is otherwise
+fully migrated (Stack + Text primitives, 2 token subs
+landed in Phase 6). These 7 values block the final
+style-escape cleanup.
+
+Impact: ValidationBanner cannot reach zero inline
+style escapes until these token families exist.
+FairnessCheck.jsx has the same gap (#27ae60 tints).
+LockFlow.jsx carries the same win/red tint gaps.
+All three components' orphan color escapes resolve
+once this token family lands.
+
+Root cause: tokens.js line 50 documents
+successBg as "DROPPED — appears 1x, below 3x
+threshold." The threshold rule was correct at the
+time but the 3x count is now met across
+ValidationBanner + FairnessCheck + LockFlow.
+
+Proposed fixes:
+  (a) Add tokens.color.status family extensions:
+      status.successBg = '#d1fae5' (green-100)
+      status.warningBg = '#fef3c7' (amber-100)
+      status.successBorder = 'rgba(16,185,129,0.3)'
+      status.warningBorder = 'rgba(217,119,6,0.3)'
+      status.successText = '#065f46' (emerald-800)
+      status.warningText = '#92400e' (amber-800)
+      status.warningTextLight = '#78350f' (amber-900)
+      Then migrate 3 call sites: ValidationBanner,
+      FairnessCheck, LockFlow.
+  (b) Add only what's needed for ValidationBanner
+      (successBg + warningBg + text colors) — defer
+      border tints and LockFlow/FairnessCheck sweep.
+
+Recommendation: (a) — all 7 values, all 3 call sites
+in one pass. The 3x threshold is now met and adding
+a partial family creates future confusion about which
+status.* values exist.
+
+---
+
+### Story 89 (P3) — Alpha-tint token family for brand/status colors <!-- #N -->
+
+Status: Open
+Discovered: 2026-05-26 — OfflineIndicator.jsx recon
+  (feature/ux-phase-6-foundation)
+Target: UX track — prerequisite for OfflineIndicator
+  second-pass migration
+
+Symptom: OfflineIndicator.jsx uses 6 alpha-blended
+rgba values derived from existing brand/status tokens:
+brand.red, status.warning, status.success — each at
+0.12, 0.15, 0.30, 0.35 opacity. No pre-mixed alpha
+variants exist in tokens.js. These 6 values block
+the final style-escape cleanup in OfflineIndicator.
+
+Impact: OfflineIndicator cannot reach zero inline
+style escapes without this token family. The component
+is otherwise fully migrated (Phase 3 Step 4 + Phase 6
+dot borderRadius). Other future dark-surface status
+indicators would face the same gap.
+
+Root cause: tokens.js has a tint() helper planned
+(line 51, 84 comments) but never built. The alpha-
+tint system was deferred pending concrete call sites.
+OfflineIndicator provides those call sites.
+
+Proposed fixes:
+  (a) Add pre-mixed alpha tokens to tokens.color.overlay:
+      overlay.redFaint   = 'rgba(200,16,46,0.15)'
+      overlay.redStrong  = 'rgba(200,16,46,0.35)'
+      overlay.warnFaint  = 'rgba(212,160,23,0.15)'
+      overlay.warnStrong = 'rgba(212,160,23,0.35)'
+      overlay.winFaint   = 'rgba(39,174,96,0.12)'
+      overlay.winMid     = 'rgba(39,174,96,0.30)'
+      Then migrate OfflineIndicator bg/border values.
+  (b) Build tint() helper utility that computes
+      rgba() from a hex token + opacity at runtime.
+      No new token constants needed; consumers call
+      tint(tokens.color.brand.red, 0.15) inline.
+
+Recommendation: (a) — pre-mixed tokens are simpler,
+statically analyzable, and consistent with the
+existing overlay.* family (navyWash, navyMedium, etc.).
+The tint() helper (b) is a nicer API long-term but
+adds abstraction for a small number of call sites.
+Gate on the overlay.* family filling out first.
+
+Separate from Story 88 (which covers new base palette
+colors for ValidationBanner — emerald/amber solids,
+not alpha tints of existing tokens).
+
+---
+
 ### Automated Score Reporting (County Integration)
 **Status:** Architecture finalized, implementation pending
 **Trigger:** Coach taps "Report Score" on a completed game
