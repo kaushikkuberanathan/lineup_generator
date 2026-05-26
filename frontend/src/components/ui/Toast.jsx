@@ -63,7 +63,7 @@ export default function Toast({
         alignItems: 'center',
         justifyContent: 'space-between',
         gap: '8px',
-        background: '#1e3a5f',
+        background: tokens.color.surface.chrome,
         border: '1px solid rgba(96,165,250,0.4)',
         borderRadius: '10px',
         padding: '10px 14px',
