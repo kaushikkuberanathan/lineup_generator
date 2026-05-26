@@ -2534,7 +2534,7 @@ instances, prevents future tooling failures. (b) is broader but
 premature without evidence other files are affected. (c) leaves a
 known landmine for the next agent or automation script.
 
-### Story 77 (P2) — Lint debt triage: 132 ESLint problems blocking strict gate <!-- #N -->
+### Story 77 (P2) — Lint debt triage: 132 ESLint problems blocking strict gate <!-- #N --> <!-- #192 -->
 
 Status: Open
 Discovered: May 21, 2026 — surfaced during Story 75 pre-push hook remediation
@@ -2555,7 +2555,7 @@ then errors, then warnings. Enable strict lint gate after debt cleared.
 Recommendation: Fix no-undef block first in isolation (15-min triage).
 Remaining errors/warnings in a follow-up pass.
 
-### Story 78 (P2) — Label schema gaps: missing labels blocking PR hygiene <!-- #N -->
+### Story 78 (P2) — Label schema gaps: missing labels blocking PR hygiene <!-- #N --> <!-- #193 -->
 
 Status: Open
 Discovered: May 21, 2026 — PRs #149, #155, #156, #157, #158, #159, #160
@@ -2576,7 +2576,7 @@ missing labels in the scheme. ~5 minutes.
 
 Recommendation: Do in one pass next governance session — unblocks all future PRs.
 
-### Story 79 (P2) — Promote PR merge strategy: squash default overrides regular merge convention <!-- #N -->
+### Story 79 (P2) — Promote PR merge strategy: squash default overrides regular merge convention <!-- #N --> <!-- #194 -->
 
 Status: Open
 Discovered: May 21, 2026 — PR #159 (develop → main promote) landed as squash
@@ -2599,7 +2599,7 @@ Proposed fix: Add explicit step to promote checklist in CLAUDE.md:
 
 Recommendation: One-line CLAUDE.md addition. Do alongside Story 78.
 
-### Story 80 (P3) — Pre-pull branch check: worktree convention missing from CLAUDE.md <!-- #N -->
+### Story 80 (P3) — Pre-pull branch check: worktree convention missing from CLAUDE.md <!-- #N --> <!-- #195 -->
 
 Status: Open
 Discovered: May 21, 2026 — git pull origin develop in UX worktree created
@@ -2624,7 +2624,7 @@ to inspect instead."
 
 Recommendation: CLAUDE.md one-liner. Pair with Story 79 in same governance PR.
 
-### Story 81 (P2) — Vite major upgrade: resolve 3 deferred esbuild/vite moderate vulns <!-- #N -->
+### Story 81 (P2) — Vite major upgrade: resolve 3 deferred esbuild/vite moderate vulns <!-- #N --> <!-- #196 -->
 
 Status: Open
 Discovered: May 21, 2026 — npm audit fix deferred esbuild/vite chain
@@ -2646,7 +2646,7 @@ run npm run build, verify dev server, confirm PWA behavior unchanged.
 
 Recommendation: Treat as standalone upgrade story. Do not block other PRs.
 
-### Story 82 (P3) — ParentView token/primitive migration <!-- #N -->
+### Story 82 (P3) — ParentView token/primitive migration <!-- #N --> <!-- #197 -->
 
 Status: Open
 Discovered: 2026-05-22 — Phase 3 Step 4 recon (UX track)
@@ -2693,7 +2693,7 @@ Recommendation: (a) — direct token import is cleaner than waiting for a
 broader S/C deprecation that has no firm timeline. Gate on App.jsx
 parallel work clearing first.
 
-### Story 83 (P1) — Silent feedback/bug loss: supabase client not imported in App.jsx <!-- #N -->
+### Story 83 (P1) — Silent feedback/bug loss: supabase client not imported in App.jsx <!-- #N --> <!-- #198 -->
 
 Status: Open
 Discovered: May 22, 2026 — Story 77 no-undef triage
@@ -2717,7 +2717,7 @@ App.jsx:4-7. One-line change — lowest-risk fix in this triage set.
 
 Recommendation: One-line import fix. P1 — silent data loss affecting coaches.
 
-### Story 84 (P2) — teamName undefined in box-score AI parser <!-- #N -->
+### Story 84 (P2) — teamName undefined in box-score AI parser <!-- #N --> <!-- #199 -->
 
 Status: Open
 Discovered: May 22, 2026 — Story 77 no-undef triage
@@ -2741,7 +2741,7 @@ in-scope expression (likely activeTeam?.name or similar).
 Recommendation: Read the 1-3 call sites before fixing to confirm parameter
 approach is cleaner than closure reference.
 
-### Story 85 (P2) — ReferenceError on SW update button click <!-- #N -->
+### Story 85 (P2) — ReferenceError on SW update button click <!-- #N --> <!-- #200 -->
 
 Status: Open
 Discovered: May 22, 2026 — Story 77 no-undef triage
