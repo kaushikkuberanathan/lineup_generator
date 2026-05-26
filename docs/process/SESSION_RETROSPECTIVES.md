@@ -10,6 +10,124 @@
 
 ---
 
+## 2026-05-23-A — v2.5.19 promote with conflict recovery, sync/main-into-develop playbook, Story 83 in production
+
+**Date:** May 23, 2026
+**Session ID:** 2026-05-23-A (Terminal 1)
+**Duration:** ~2 hours
+**Versions shipped to production:** v2.5.19 (PR #175 promote merge `02797e6`)
+**PRs merged:** #171 (Story 83 fix), #172 (v2.5.19 release prep), #174 (sync main → develop), #175 (develop → main promote)
+**Issues filed:** none new this session — Story 86 (post-promote sync convention) deferred to next session
+**Stories closed:** Story 83 (P1) — supabase import fix live on dugoutlineup.com
+
+---
+
+### Starting State
+
+**Main worktree** (`C:\Users\KKUBERANA1\Documents\lineup-generator`)
+- Branch: `main` @ `c37f419` (v2.5.18 promote merge from session 2026-05-21-A)
+- Develop: `e8f884a` — v2.5.19 release prep already staged from 2026-05-22-A session (Stories 78–80 + audit + label sync + Stories 83–85 filed)
+- Production: v2.5.18 — coach feedback + bug reports silently failing since the affected code path was added (Story 83 confirmed root cause)
+
+**UX worktree** (`C:\Users\KKUBERANA1\Documents\lineup-generator-ux`)
+- 2 unpushed local UX commits (`119d73b` NowBattingStrip migration + surface.chrome token; `8df45c2` CLAUDE.md primitive sizing convention) on top of an older develop snapshot
+
+**Production (`main`):** v2.5.18 — Story 83 silent-data-loss bug still active
+
+---
+
+### Ending State
+
+**Main worktree**
+- Branch: `main` @ `02797e6` (v2.5.19 promote merge — PR #175)
+- Develop: `70efa57` — in sync with main via PR #174 merge of `aa255f5`
+- Tree: clean (only `.claude/` untracked, gitignored)
+
+**UX worktree**
+- Branch: `feature/ux-phase-5-foundation` — local-only, rebased onto current develop tip `70efa57`
+- 2 UX commits preserved, tree clean, NOT pushed to remote (KK direction)
+
+**Production (`main`):** v2.5.19 — Story 83 fix confirmed live; feedback POSTs reach backend
+
+---
+
+### What We Did
+
+| # | Work Item | Outcome |
+|---|---|---|
+| 1 | Shipped Story 83 (P1) one-line fix — added `supabase` to App.jsx named-import list, behind locked-file gate phrase | PR #171 merged to develop |
+| 2 | Prepared v2.5.19 release entry — App.jsx APP_VERSION, both package.json files, VERSION_HISTORY, ROADMAP, CLAUDE.md current-version line | PR #172 merged to develop |
+| 3 | Attempted `develop → main` promote — hit merge conflicts on 8 files because c37f419 (v2.5.18 promote merge) was never absorbed back into develop | Promote aborted; recovery playbook engaged |
+| 4 | Executed `sync/main-into-develop` playbook — branched off develop, ran `git merge --no-ff origin/main`, resolved 8 conflicted files | PR #174 merged via `aa255f5` |
+| 5 | Re-ran `develop → main` promote on clean develop tip | PR #175 merged as `02797e6` — v2.5.19 live |
+| 6 | Verified Story 83 fix in production — confirmed feedback POSTs reach Supabase, no silent failures | P1 closed |
+| 7 | Rebased UX worktree (2 local commits) onto current develop tip `70efa57` | Clean linear history preserved; no push per KK direction |
+
+---
+
+### Issues Faced
+
+**Issue 1 — develop → main promote blocked by 8-file conflict (~45 min recovery)**
+The promote PR opened, then immediately surfaced merge conflicts on every release-touched file: `CLAUDE.md`, `backend/package.json`, `docs/process/SESSION_RETROSPECTIVES.md`, `docs/product/ROADMAP.md`, `frontend/package-lock.json`, `frontend/package.json`, `frontend/src/App.jsx`, `frontend/src/data/versionHistory.js`.
+- **Root cause:** After PR #159 (v2.5.18 promote merge `c37f419` to main) shipped in session 2026-05-21-A, no follow-up sync PR brought that merge commit back into develop. Develop diverged from main by one merge commit. Every subsequent release-bump edit on develop touched the same files that c37f419 also modified — guaranteed conflict on the next promote.
+- **Fix:** `sync/main-into-develop` recovery playbook — cut a branch off develop, `git merge --no-ff origin/main` (introduces c37f419 to develop's history via a merge commit), resolve conflicts with `git checkout --ours <file>` for every release-touched file (develop's content is strictly newer for all 8), commit, PR to develop, merge. Promote then proceeded cleanly.
+- **Prevention:** Story 86 (P1) — convention: after every develop → main promote, immediately open a sync/main-into-develop PR. This is the carry-forward.
+
+**Issue 2 — App.jsx multi-stage index unlock ordering (~10 min)**
+`frontend/src/App.jsx` is `skip-worktree`-locked (Bug #11 in CLAUDE.md). During the sync merge, App.jsx ended up in a multi-stage conflict state in the index (stages 1/2/3 for base/ours/theirs). The initial unlock attempt ran `git update-index --no-skip-worktree frontend/src/App.jsx` directly against the multi-stage entry, which git rejected — `update-index` cannot toggle skip-worktree on a path with unresolved stages.
+- **Fix:** Correct sequence is `git checkout --ours frontend/src/App.jsx` → `git add frontend/src/App.jsx` (collapses the multi-stage index to a single resolved stage) → `git update-index --no-skip-worktree frontend/src/App.jsx`. After commit, re-lock with `git update-index --skip-worktree frontend/src/App.jsx`.
+- **Lesson:** The blocker was multi-stage conflict state, not skip-worktree ordering per se. `update-index --no-skip-worktree` only works on single-stage (resolved) paths. The `git add` after `checkout --ours` is the critical step that collapses the stages — without it, `update-index` has nothing to toggle the flag against.
+- **Prevention:** Document this sequence in CLAUDE.md Bug #11 next session (note added to carry-forward, not this PR).
+
+**Issue 3 — UX worktree rebase preserved unpushed work cleanly (no recovery needed, noted for completeness)**
+With develop's tip moving from `e8f884a` (pre-sync) to `70efa57` (post-sync) during this session, the UX worktree's 2 unpushed commits sat on a stale base. Rebased to current develop tip with no conflicts — both commits touched files unrelated to the 8 conflict files in Issue 1.
+- **Why it stayed clean:** UX worktree work (NowBattingStrip migration, CLAUDE.md primitive sizing) touched `frontend/src/components/game-mode/NowBattingStrip.jsx`, design token files, and a documentation section — zero overlap with release-bump files.
+- **Confirmation:** Cross-track parallel work CAN survive a sync-merge promote cycle IF the parallel track stays out of release-bump files. The risk surface is narrow but real — any UX work that touches `frontend/package.json` or `CLAUDE.md` during a release window will conflict.
+
+---
+
+### What Was Accomplished
+
+- ✅ **v2.5.19 live in production** — Story 83 (P1) silent-data-loss bug resolved; coach feedback POSTs now reach the backend
+- ✅ **sync/main-into-develop playbook validated** under real conflict conditions (8 files) — recovery path proven, not just theoretical
+- ✅ **Skip-worktree merge-conflict ordering documented** in this retrospective for next session's CLAUDE.md update (Bug #11 amendment)
+- ✅ **UX worktree integrity preserved** — 2 local commits rebased to current develop tip with zero conflicts; cross-track parallelism survived a sync-merge cycle
+- ✅ **Root cause identified and named** for the conflict event: missing post-promote sync after PR #159 (v2.5.18 promote). Convention to prevent recurrence captured as Story 86.
+
+---
+
+### Key Decisions Made (and Why)
+
+**Resolve all 8 conflicts with `--ours` (develop's side wins).**
+The conflict shape was structural, not semantic: develop had v2.5.19 in every release file (App.jsx APP_VERSION, package.json versions, VERSION_HISTORY entry, ROADMAP release row, CLAUDE.md current-version line); main had v2.5.18. Develop's content was strictly newer in every case — `--ours` was the correct mechanical resolution, not a judgment call. Manual inspection of `package-lock.json` was skipped (it regenerates) but the version-string lines were spot-checked to confirm v2.5.19 won through.
+
+**Sync PR before retry, not in-promote-PR conflict resolution.**
+Two options: (a) resolve the 8 conflicts inside the open develop → main PR, push to main directly, hope branch protection accepts; (b) abort the promote, cut a sync/main-into-develop PR first, merge it to develop, then re-open the promote PR on the cleaned-up develop. Chose (b). Reasoning: option (a) papers over the structural problem (develop missing main's merge commit) and would re-occur on every future promote. Option (b) makes the absorbed merge commit explicit in develop's history and breaks the recurring pattern. The 45-min recovery cost is one-time; option (a) would re-cost on every promote.
+
+**Do not push UX worktree commits this session.**
+KK explicit direction. The 2 UX commits (NowBattingStrip migration, CLAUDE.md primitive sizing) are part of a larger UX Phase 5 foundation track that has its own release cadence. Pushing them mid-session would muddy the v2.5.19 release scope and complicate the UX track's own release-notes coordination. Held local-only per direction; will push when KK signals.
+
+**Defer Story 86 filing to next session.**
+The convention discovery happened during recovery — natural impulse was to file it immediately. Deferred because: (1) this session's branch is docs-only (retrospective), and adding ROADMAP entries + CLAUDE.md checklist edits would broaden scope; (2) Story 86 should land alongside Stories 84 + 85 work (App.jsx gate-phrase edits), making one cohesive next-session PR rather than three small ones.
+
+---
+
+### Carry-Forward to Next Session
+
+**Immediate priorities:**
+- **Story 86 (P1 — file then implement)** — Post-promote sync convention. ROADMAP entry + CLAUDE.md promote-checklist one-liner: *"After every develop → main promote — immediately open a sync/main-into-develop PR to absorb the merge commit back into develop. Skipping this causes conflict on the next promote."*
+- **Story 84 (P2)** — `teamName` undefined in `parseGameResult`. App.jsx is locked — requires *"all clear — App.jsx editing approved"*. Read call sites first; likely fix is passing `activeTeam?.name` as a parameter to `parseGameResult()` and updating callers.
+- **Story 85 (P2)** — `useRegisterSW` destructure fix. Same gate phrase. Verify whether the manual `needRefresh` / `setNeedRefresh` stubs below line 1838 can be removed once destructuring is applied.
+
+**Documentation follow-up:**
+- Amend CLAUDE.md Bug #11 (App.jsx skip-worktree trap) with the merge-conflict ordering rule discovered in Issue 2 — checkout `--ours` / `--theirs` BEFORE toggling skip-worktree. Add as a new bullet under the existing Bug #11 entry.
+
+**Open questions:**
+- Story 81 (Vite major upgrade) still parked — not blocking, but accruing audit-deferred age. Worth scheduling for a focused session.
+- 65 ESLint warnings + 27 non-no-undef errors from Story 77 triage remain unaddressed. Same disciplined approach (sanity-check with project config, code-inspect before false-positive labels) is the model for the next triage pass.
+
+---
+
 ## 2026-05-22-A — Story 77 no-undef triage, label taxonomy sync, governance bug cluster filed
 
 **Date:** May 22, 2026

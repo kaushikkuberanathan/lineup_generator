@@ -2534,7 +2534,7 @@ instances, prevents future tooling failures. (b) is broader but
 premature without evidence other files are affected. (c) leaves a
 known landmine for the next agent or automation script.
 
-### Story 77 (P2) — Lint debt triage: 132 ESLint problems blocking strict gate <!-- #N --> <!-- #192 -->
+### Story 77 (P2) — Lint debt triage: 132 ESLint problems blocking strict gate <!-- #N --> <!-- #180 -->
 
 Status: Open
 Discovered: May 21, 2026 — surfaced during Story 75 pre-push hook remediation
@@ -2555,7 +2555,7 @@ then errors, then warnings. Enable strict lint gate after debt cleared.
 Recommendation: Fix no-undef block first in isolation (15-min triage).
 Remaining errors/warnings in a follow-up pass.
 
-### Story 78 (P2) — Label schema gaps: missing labels blocking PR hygiene <!-- #N --> <!-- #193 -->
+### Story 78 (P2) — Label schema gaps: missing labels blocking PR hygiene <!-- #N --> <!-- #181 -->
 
 Status: Open
 Discovered: May 21, 2026 — PRs #149, #155, #156, #157, #158, #159, #160
@@ -2576,7 +2576,7 @@ missing labels in the scheme. ~5 minutes.
 
 Recommendation: Do in one pass next governance session — unblocks all future PRs.
 
-### Story 79 (P2) — Promote PR merge strategy: squash default overrides regular merge convention <!-- #N --> <!-- #194 -->
+### Story 79 (P2) — Promote PR merge strategy: squash default overrides regular merge convention <!-- #N --> <!-- #182 -->
 
 Status: Open
 Discovered: May 21, 2026 — PR #159 (develop → main promote) landed as squash
@@ -2599,7 +2599,7 @@ Proposed fix: Add explicit step to promote checklist in CLAUDE.md:
 
 Recommendation: One-line CLAUDE.md addition. Do alongside Story 78.
 
-### Story 80 (P3) — Pre-pull branch check: worktree convention missing from CLAUDE.md <!-- #N --> <!-- #195 -->
+### Story 80 (P3) — Pre-pull branch check: worktree convention missing from CLAUDE.md <!-- #N --> <!-- #183 -->
 
 Status: Open
 Discovered: May 21, 2026 — git pull origin develop in UX worktree created
@@ -2624,7 +2624,7 @@ to inspect instead."
 
 Recommendation: CLAUDE.md one-liner. Pair with Story 79 in same governance PR.
 
-### Story 81 (P2) — Vite major upgrade: resolve 3 deferred esbuild/vite moderate vulns <!-- #N --> <!-- #196 -->
+### Story 81 (P2) — Vite major upgrade: resolve 3 deferred esbuild/vite moderate vulns <!-- #N --> <!-- #184 -->
 
 Status: Open
 Discovered: May 21, 2026 — npm audit fix deferred esbuild/vite chain
@@ -2646,7 +2646,7 @@ run npm run build, verify dev server, confirm PWA behavior unchanged.
 
 Recommendation: Treat as standalone upgrade story. Do not block other PRs.
 
-### Story 82 (P3) — ParentView token/primitive migration <!-- #N --> <!-- #197 -->
+### Story 82 (P3) — ParentView token/primitive migration <!-- #N --> <!-- #185 -->
 
 Status: Open
 Discovered: 2026-05-22 — Phase 3 Step 4 recon (UX track)
@@ -2693,7 +2693,7 @@ Recommendation: (a) — direct token import is cleaner than waiting for a
 broader S/C deprecation that has no firm timeline. Gate on App.jsx
 parallel work clearing first.
 
-### Story 83 (P1) — Silent feedback/bug loss: supabase client not imported in App.jsx <!-- #N --> <!-- #198 -->
+### Story 83 (P1) — Silent feedback/bug loss: supabase client not imported in App.jsx <!-- #N --> <!-- #186 -->
 
 Status: Open
 Discovered: May 22, 2026 — Story 77 no-undef triage
@@ -2717,7 +2717,7 @@ App.jsx:4-7. One-line change — lowest-risk fix in this triage set.
 
 Recommendation: One-line import fix. P1 — silent data loss affecting coaches.
 
-### Story 84 (P2) — teamName undefined in box-score AI parser <!-- #N --> <!-- #199 -->
+### Story 84 (P2) — teamName undefined in box-score AI parser <!-- #N --> <!-- #187 -->
 
 Status: Open
 Discovered: May 22, 2026 — Story 77 no-undef triage
@@ -2741,20 +2741,26 @@ in-scope expression (likely activeTeam?.name or similar).
 Recommendation: Read the 1-3 call sites before fixing to confirm parameter
 approach is cleaner than closure reference.
 
-### Story 85 (P2) — ReferenceError on SW update button click <!-- #N --> <!-- #200 -->
+### Story 85 (P2) — ReferenceError on SW update button click <!-- #N --> <!-- #188 -->
 
 Status: Open
 Discovered: May 22, 2026 — Story 77 no-undef triage
 Target: Next fix pass
 
-Symptom: useRegisterSW() return value is discarded at App.jsx:1838 (called
-for side effects only). updateServiceWorker is never destructured. Click
-handlers at lines 3517 and 8632 reference updateServiceWorker(true) — throws
-ReferenceError when the "Update available" button is clicked.
+Symptom: useRegisterSW() return value is discarded at App.jsx:1838.
+Three consequences: (1) updateServiceWorker is never destructured —
+click handlers at lines 3517+8617 would throw ReferenceError IF the
+banner rendered; (2) needRefresh is hardcoded false (line 1845 stub)
+— the update banner has NEVER rendered since the stubs were introduced;
+(3) setNeedRefresh is a no-op stub (line 1846). Two duplicate banner
+blocks exist (lines 3511, 8611) — both gated on needRefresh, both
+dead. Coaches have only received updates via PWA close+reopen, not
+the in-app prompt.
 
-Impact: Low frequency (only fires when a new service worker is detected).
-When triggered, update button silently fails — coach can't apply the update
-without a manual page reload.
+Impact: Update prompt has been non-functional since the stubs were
+introduced. Severity: P2 (PWA reload is a workaround) but broader
+than originally filed. Fix will restore visible update UI for coaches
+— needs a userChanges entry when it ships.
 
 Root cause: Refactor stub defined needRefresh and setNeedRefresh manually
 below the useRegisterSW call but omitted updateServiceWorker.
@@ -2766,6 +2772,87 @@ sourced from the same hook.
 
 Recommendation: One-line destructure fix. Verify stubs below are also
 removable before committing.
+
+### Story 86 (P1) — Post-promote sync: add main → develop sync step to Release Ritual <!-- #N --> <!-- #189 -->
+
+Status: Open
+Discovered: May 23, 2026 — promote PR #175 had 8-file conflict
+because post-promote sync was skipped after PR #159
+Target: Next governance pass
+
+Symptom: develop → main promote PR surfaces conflicts on 8 files
+(version bump files, CLAUDE.md, SESSION_RETROSPECTIVES.md) when
+the prior promote's merge commit was never absorbed back into develop.
+
+Impact: Promote requires a sync PR (main → develop) detour before
+the promote can land. Adds ~30 min of conflict resolution work per
+release cycle if skipped.
+
+Root cause: PRODUCT_OPS.md Section 5 documents the symmetric
+main → develop sync step, but it is not enforced anywhere in the
+release workflow. Skipped after PR #159; surfaced during PR #175.
+
+Proposed fix: Add as explicit step in CLAUDE.md Release Ritual
+section + MASTER_DEV_REFERENCE.md Release Ritual phase sequence.
+Rule: "After every develop → main promote, immediately open
+sync/main-into-develop PR to absorb the merge commit."
+
+Recommendation: Add to both CLAUDE.md (one-liner) and
+MASTER_DEV_REFERENCE.md (full rule). Low effort, prevents
+recurring 30-min detour.
+
+---
+
+### Story 87 (P2) — BottomSheet primitive: extract canonical pattern from LockFlow <!-- #N --> <!-- #190 -->
+
+Status: Open
+Discovered: May 26, 2026 — LockFlow.jsx recon (feature/ux-lockflow-recon, STOP 3)
+Target: UX track — Phase 5 follow-up, post-LockFlow token migration
+
+Symptom: LockFlow.jsx (frontend/src/components/GameDay/LockFlow.jsx:166–180)
+implements a full bottom-sheet modal pattern inline — fixed-position
+backdrop + role=dialog shell anchored to bottom + close handle + body slot
++ upward directional shadow. No primitive exists for this pattern, so the
+same shape will be re-implemented every time a future modal/picker/
+confirmation flow needs to slide up from the bottom of the viewport.
+
+Impact: Two design-token migrations are explicitly blocked on this primitive:
+(1) tokens.js line 107 reserves radius.sheet ('16px 16px 0 0') with a
+comment pointing to a future <BottomSheet> primitive using radius.lg
+internally; (2) tokens.js lines 194–195 explicitly exclude LockFlow's
+'0 -4px 24px rgba(0,0,0,0.18)' upward shadow from the tokens.shadow group
+pending the same primitive. Both call sites stay raw (drift) until this
+story lands. Secondary impact: future bottom-sheet surfaces (settings,
+pickers, multi-step confirmations) will re-derive the same DOM shape and
+diverge on a11y wiring.
+
+Root cause: Pattern was extracted from App.jsx v1.6.9 into LockFlow.jsx as
+a single-call-site component before the design-system primitive layer
+existed. tokens.js (built later) anticipated the primitive in two comments
+but the primitive itself was never authored.
+
+Proposed fixes:
+(a) Build BottomSheet primitive + migrate LockFlow in one PR. Primitive
+    lives at frontend/src/components/ui/BottomSheet.jsx, encodes backdrop +
+    role=dialog shell + close handle + radius.lg top + new shadow.sheetTop
+    token. LockFlow shell (lines 166–180) swaps to <BottomSheet>. New test
+    file BottomSheet.test.jsx + existing a11y F6 block (LockFlow dialog
+    role) must still pass.
+(b) Build BottomSheet primitive standalone, no LockFlow migration. Adds
+    the primitive + shadow.sheetTop token, leaves LockFlow inline. Smaller
+    diff, lower risk to game-day Finalize flow, but radius.sheet and
+    shadow.sheetTop deferrals remain unresolved at the LockFlow call site
+    until a follow-up story.
+(c) Defer entirely. Leave LockFlow inline indefinitely. Re-evaluate when
+    a second bottom-sheet call site appears in the codebase.
+
+Recommendation: (a) — single-PR primitive + migration. The migration is
+low-risk (pre-game, ErrorBoundary-wrapped, no live-scoring impact) and
+landing both halves together prevents the radius.sheet / shadow.sheetTop
+deferrals from becoming permanent. Smoke-test the 3-step Finalize flow on
+Vercel preview before squash-merge to foundation. Block on (b) only if a
+second bottom-sheet call site materializes before this story is picked up,
+which would change the primitive's API surface.
 
 ---
 
