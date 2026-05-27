@@ -2896,7 +2896,7 @@ Recommendation: Add de-dup check as the first step in the creation
 loop. Idempotency upgrade — script becomes safe to run on any branch
 state without risk of duplication.
 
-### Story 91 (P2) — sync-stories-to-issues.js: skip ROADMAP patch on failed POST <!-- #N -->
+### Story 91 (P2) — sync-stories-to-issues.js: skip ROADMAP patch on failed POST <!-- #211 -->
 
 Status: Open
 Discovered: May 26, 2026 — script patched ROADMAP.md with undefined
