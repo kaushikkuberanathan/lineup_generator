@@ -477,6 +477,7 @@ Before opening a `develop → main` PR, walk through these items. For each, answ
 1. `APP_VERSION` bumped in `frontend/src/App.jsx`
 2. `version` bumped in `frontend/package.json` and `backend/package.json`
 3. `VERSION_HISTORY` entry prepended in `frontend/src/data/versionHistory.js` with `userChanges` (coach-readable), `internalChanges` (file-level specificity), and `techNote` (one-line summary)
+   - `techNote` must be one of the four approved strings in `APPROVED_TECH_NOTES` — see `frontend/src/__tests__/versionHistory.test.js`. Free-form techNote values fail CI.
 4. `CLAUDE.md` "Current Version" line updated + changelog bullet added
 
 ### Backlog and roadmap
