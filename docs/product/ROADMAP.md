@@ -3042,7 +3042,8 @@ not alpha tints of existing tokens).
 
 ### Story 92 (P3) — DefenseDiamond Tier A+B token migration <!-- #218 -->
 
-Status: Open
+Status: Resolved
+Resolution: Tier A+B migration complete. 25 raw values migrated in DefenseDiamond.jsx. Added tokens.borderWidth family (hairline/thin/medium) + 4 new Group 10 tests. Shipped as squash commit e5c25c7 on feature/ux-defensediamond.
 Discovered: 2026-05-28 — DefenseDiamond.jsx recon
   (feature/ux-defensediamond)
 Target: UX track — first pass of DefenseDiamond migration
@@ -3179,7 +3180,8 @@ with the v2.6.0 token-family release.
 
 ### Story 94 (P3) — MaintenanceScreen.jsx token migration <!-- #220 -->
 
-Status: Open
+Status: Resolved
+Resolution: Full token migration of MaintenanceScreen.jsx (44 lines). Added overlay.whiteMedium + overlay.whiteHeavy tokens. 13 substitutions, zero raw hex/rgba remain. Shipped as squash commit dd54b7f on feature/ux-defensediamond.
 Discovered: 2026-05-28 — MaintenanceScreen.jsx recon
   (feature/ux-defensediamond)
 Target: UX track — last unaudited Shared/* component
