@@ -241,6 +241,7 @@ async function main() {
       if (res.status !== 201) throw new Error(`HTTP ${res.status}: ${JSON.stringify(res.body)}`);
 
       const issueNum = res.body.number;
+      if (typeof issueNum !== 'number') throw new Error(`GitHub response missing issue number: ${JSON.stringify(res.body)}`);
       console.log(`✅ #${issueNum}`);
 
       // Patch the heading line in ROADMAP.md
