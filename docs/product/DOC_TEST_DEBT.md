@@ -33,7 +33,7 @@
 | **Risk if unfixed** | Silent regression breaks the #1 Strategic North Star ("share link bulletproof"). A future refactor of `shareCurrentLineup` or `SharedView.jsx` could ship with the link returning stale or incomplete data and we would not catch it pre-deploy. |
 | **Proposed test** | `frontend/src/tests/shareLink.test.js` — **file exists, partial coverage**. Still needed: build a lineup fixture, call `shareCurrentLineup`, parse the `share_links.payload` JSONB, assert every expected field is present and correctly filtered. Also a DOM test that `SharedView` renders all sections without errors given the payload. |
 | **Opened** | 2026-04-17 |
-| **Age** | 32 days |
+| **Age** | 40 days |
 | **Target** | v2.6.x |
 
 ### 🟠 P1 — Share-link routing render path (Story 61 follow-up)
@@ -57,8 +57,8 @@
 | **Risk if unfixed** | Silent regression breaks the #2 Strategic North Star ("Game Mode dugout-ready under pressure"). |
 | **Proposed test** | `frontend/src/tests/gameMode.test.js` — render GameModeScreen with fixture lineup, simulate inning advance, simulate QuickSwap tap, assert state transitions and candidate filtering (including absent-player exclusion). |
 | **Opened** | 2026-04-17 |
-| **Age** | 27 days |
-| **Target** | v2.3.4 |
+| **Age** | 40 days |
+| **Target** | v2.6.x |
 
 ### 🟠 P1 — Live Scoring Scorer-Lock Regression
 
@@ -156,6 +156,30 @@
 | **Age** | 20 days |
 | **Target** | v2.6.x |
 
+### 🟡 P2 — SW update banner lifecycle (Story 85 follow-up)
+
+| | |
+|---|---|
+| **Area** | PWA Setup / Service Worker |
+| **Description** | Story 85 (v2.5.21) restored `updateServiceWorker` via `useRegisterSW` destructure. The banner now appears when `needRefresh === true`. No automated test covers the lifecycle: SW activation → `needRefresh` flip → banner render → click → `updateServiceWorker(true)` → page reload. Runtime is jsdom-incompatible (real ServiceWorker required) — needs Playwright/Cypress E2E or a vitest-mock harness for the hook. |
+| **Risk if unfixed** | A future refactor of the SW lifecycle wiring could silently re-introduce the v2.5.21 regression (banner never rendered). Coaches would again revert to PWA close+reopen as the only update path. |
+| **Proposed test** | E2E test with mocked SW registration: simulate `needRefresh: true`, assert banner renders, assert click invokes `updateServiceWorker(true)`. OR vitest unit test that mocks `virtual:pwa-register/react` and verifies destructure shape + click-handler wiring. |
+| **Opened** | 2026-05-27 |
+| **Age** | 0 days |
+| **Target** | v2.6.x |
+
+### 🟡 P2 — sync-stories-to-issues.js: no unit harness for typeof issueNum guard (Story 91 follow-up)
+
+| | |
+|---|---|
+| **Area** | Tooling (governance scripts) |
+| **Description** | Story 91 (v2.5.21) added `typeof issueNum === "number"` guard to skip the ROADMAP patch block when POST fails. The script has no unit test harness at all — neither the guard nor the surrounding logic (issue creation, ROADMAP regex patch, de-dup check from Story 90) is covered. Each fix has been verified manually via dry-run + retroactive ROADMAP inspection. |
+| **Risk if unfixed** | A future refactor (token-handling, error-class change, response-shape drift from GitHub API) could silently break the script. ROADMAP corruption like the `<!-- #undefined -->` symptom would only be caught by post-run inspection. |
+| **Proposed test** | `scripts/__tests__/sync-stories-to-issues.test.js` — mock `fetch`, exercise: (a) happy path creates issue + patches marker, (b) 401 returns failure object — guard prevents ROADMAP write, (c) de-dup check skips on existing issue. Node test runner (node:test) is sufficient — no Vitest pull-in needed for a tools-side test. |
+| **Opened** | 2026-05-27 |
+| **Age** | 0 days |
+| **Target** | v2.6.x |
+
 ### ✅ RESOLVED — D017: ScoreboardRow primitive has no test coverage
 
 - **Discovered:** 2026-05-01 (during Slice 0 / v2.5.4 Pre-release Docs Checklist walk)
@@ -247,7 +271,7 @@
 | **Type** | Doc gap |
 | **Opened** | 2026-05-15 |
 | **Target** | (opportunistic — no version target) |
-| **Summary** | FEATURE_MAP.md Coverage Summary denominators show `/ 27` (lines 59–64) but heading at line 20 reads "Feature Registry (28 features)" and row recount confirms 28. Six summary lines need denominator bump to `/ 28`. Cosmetic number-printing fix — category counts unaffected. Discovered during v2.5.9 GA-state reconciliation patch (commit c97d5ae). |
+| **Summary** | FEATURE_MAP.md Coverage Summary denominators show `/ 27` (lines 60–65) but heading reads "Feature Registry (29 features)" and row recount confirms 29 (row #29 BottomSheet added in v2.5.21). Six summary lines need denominator bump to `/ 29` AND category counts likely need recount across all rows. Cosmetic mismatch but accumulates each release. Discovered during v2.5.9 GA-state reconciliation patch (commit c97d5ae); drift widened by v2.5.21 release-prep. |
 
 ---
 
@@ -359,11 +383,11 @@
 |---|---|---|---|---|
 | 🔴 P0 | 2 | 0 | 0 | **2** |
 | 🟠 P1 | 3 | 2 | 1 | **6** |
-| 🟡 P2 | 5 | 4 | 3 | **12** |
-| **Total** | **10** | **6** | **4** | **20** |
+| 🟡 P2 | 7 | 4 | 3 | **14** |
+| **Total** | **12** | **6** | **4** | **22** |
 
 **Age distribution:**
-- 0–30 days: 20
+- 0–30 days: 22
 - 31–60 days: 0
 - 60+ days: 0
 
@@ -429,3 +453,12 @@
     ValidationBanner.test.jsx (12 tests), OfflineIndicator.test.jsx (14 tests) — new
   - PR #85: FAQSection.test.jsx (4 tests), LegalSection.test.jsx (5 tests) — new
   - Suite count: 654 → 734 passing / 1 skipped / 0 failed
+
+- **v2.12 — May 2026 (v2.5.21 release — SW update banner + BottomSheet primitive + UX token families)**
+  - New test file: `frontend/src/components/ui/BottomSheet.test.jsx` (7 tests, BS1–BS7, colocated with primitive — Story 87)
+  - `theme.tokens.test.js`: 34 → 40 tests (+6 for `radius.sheet` + `shadow.sheetTop` tokens — Story 87)
+  - New P2 test gaps logged: SW update banner integration (Story 85), sync-stories-to-issues script unit harness (Story 91)
+  - D-S31 description refreshed: FEATURE_MAP registry now 29 rows; Coverage Summary still `/ 27` — drift increased from 1 line to 2 (this release added row #29 for BottomSheet)
+  - P0 #1 + P0 #2 ages refreshed to 40 days; P0 #2 target slid v2.3.4 → v2.6.x (stale)
+  - Suite count: 751 (CLAUDE.md baseline) → 759 passing / 1 skipped / 0 failed (Story 87 +13 nominal, net +8 — minor reconciliations elsewhere; the +1 skipped is the long-standing `bench-equity` 2.1 test, baseline doc was stale on that count)
+  - Dashboard updated: P2 test gaps 5 → 7, P2 total 12 → 14, overall total 20 → 22, age distribution 0–30 days 20 → 22
