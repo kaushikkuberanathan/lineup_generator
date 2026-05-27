@@ -75,6 +75,8 @@ export const tokens = {
       navyMedium: 'rgba(15,31,61,0.15)',    // 24x — mid-weight overlays, border tints
       whiteFaint: 'rgba(255,255,255,0.08)', // 32x — lighten elements on dark surfaces
       whiteLight: 'rgba(255,255,255,0.15)', // 16x — on-dark borders, highlights
+      whiteMedium:'rgba(255,255,255,0.25)', // 1x MaintenanceScreen.jsx — dim version chip text on dark navy (Story 94)
+      whiteHeavy: 'rgba(255,255,255,0.6)',  // 1x MaintenanceScreen.jsx — secondary body text on dark navy (Story 94)
       goldTint:   'rgba(245,200,66,0.12)',  // 9x — gold-tinted section backgrounds
       goldStrong: 'rgba(245,200,66,0.40)',  // 9x — gold wash for selected/active states
       backdrop:   'rgba(5,10,25,0.97)',     // — modal/bottom-sheet near-opaque scrim
@@ -133,6 +135,17 @@ export const tokens = {
     lg:     '12px',   // 15x
     pill:   '9999px', // unifies 9999px (4x) + 999px (2x) + 99px (1x)
     circle: '50%',    // 15x — avatar/icon circles
+  },
+
+  // ─── BORDER WIDTH ──────────────────────────────────────────────────────────
+  // INTRODUCED AS CANONICAL — Story 92 (DefenseDiamond Tier B). Resolves the
+  // 1.5px navy pill borders in DefenseDiamond. hairline/medium ship together
+  // so the scale is complete at introduction rather than grown piecemeal.
+
+  borderWidth: {
+    hairline: '1px',
+    thin:     '1.5px',
+    medium:   '2px',
   },
 
   // ─── FONT ───────────────────────────────────────────────────────────────────
