@@ -3163,6 +3163,71 @@ spike on App.jsx grep first — if POS_COLORS values
 appear in App.jsx, escalate to gated work and pair
 with the v2.6.0 token-family release.
 
+### Story 94 (P3) — MaintenanceScreen.jsx token migration <!-- #N -->
+
+Status: Open
+Discovered: 2026-05-28 — MaintenanceScreen.jsx recon
+  (feature/ux-defensediamond)
+Target: UX track — last unaudited Shared/* component
+
+Symptom: MaintenanceScreen.jsx (44 lines) carries 10 raw
+color/spacing values with exact existing token equivalents,
+2 raw rgba alpha values with no token equivalents (white
+overlays at 0.6 and 0.25), and 1 raw font-family string
+that fuzzy-matches an existing token. Smallest of the three
+unaudited components surfaced this session.
+
+Impact: Last GameDay-adjacent component with no structured
+migration story. Shown via MAINTENANCE_MODE flag — low
+runtime frequency but consistent with token contract is
+worth the cleanup. Only `version` prop threaded from
+App.jsx; no styling props from callers.
+
+Root cause: MaintenanceScreen was scoped out of Phase 1c
+shadow-token work and never received a full token audit.
+Smallest scope of any remaining component.
+
+Proposed fix:
+  Step 1 — Tier A drop-in substitutions (~10 sites):
+    "#0f1f3d" bg (L9)             → brand.navy
+    "#f5c842" title color (L17)   → brand.gold
+    "24px" padding (L10)          → space.xl2
+    "16px" marginBottom (L13)     → space.lg
+    "12px" marginBottom (L19)     → space.md
+    "14px" body font (L25)        → font.size.md
+    "1.6" lineHeight (L29)        → font.lineHeight.comfortable
+    "11px" version font (L35)     → font.size.xs
+    "32px" marginTop (L37)        → space.xl3
+    "bold" weight (L16)           → font.weight.bold (700)
+  Step 2 — Tier B token additions:
+    Extend tokens.color.overlay.white* family with:
+      overlay.whiteMedium = 'rgba(255,255,255,0.25)'
+      overlay.whiteHeavy  = 'rgba(255,255,255,0.6)'
+    (Matches the existing whiteFaint:0.08, whiteLight:0.15
+    anchor pattern; aligns with Story 89's overlay extensions.)
+  Step 3 — Tier C drift acceptances (document inline):
+    "Georgia, serif" (L18)        → font.family.serif
+                                    (adds Times fallback;
+                                     visual identical on
+                                     macOS/Windows)
+    "24px" title font (L15)       → font.size.xl2 (22px;
+                                     2px shrink — drift
+                                     comment inline)
+  Defer: "48px" emoji size (L13) — edge case, single
+  decorative emoji; not worth a font-size token addition.
+
+Test impact: No dedicated test file for MaintenanceScreen.
+Visual-only verification: trigger MAINTENANCE_MODE flag
+locally and confirm rendering matches pre-migration.
+
+Cross-cutting: No App.jsx changes. Ungated. No primitive
+adoption — direct token consumption.
+
+Recommendation: Proceed as outlined. Est. ~30 min.
+Could ship same PR as Story 92 (DefenseDiamond Tier A+B)
+since both have the same shape (Tier A drop-ins +
+small overlay extension), or as a standalone P3 quick win.
+
 ---
 
 ### Automated Score Reporting (County Integration)
