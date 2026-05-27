@@ -17,6 +17,7 @@
 
 import { Stack } from '../ui/Stack';
 import { Text } from '../ui/Text';
+import { tokens } from '../../theme/tokens';
 
 export function ValidationBanner({ bannerReady, bannerIssues }) {
   return (
@@ -61,10 +62,10 @@ export function ValidationBanner({ bannerReady, bannerIssues }) {
             <ul style={{
               margin: 0,
               paddingLeft: "18px",
-              // style escapes: dark-on-tint body + 14px + 1.6 line-height all lack tokens
-              fontSize: "14px",
+              // style escape: dark-on-tint body color lacks token
+              fontSize: tokens.font.size.md,
               color: "#78350f",
-              lineHeight: 1.6,
+              lineHeight: tokens.font.lineHeight.comfortable,
             }}>
               {bannerIssues.map(function(msg, idx) {
                 return <li key={idx}>{msg}</li>;

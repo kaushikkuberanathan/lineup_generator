@@ -141,7 +141,7 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.5.19";
+var APP_VERSION = "2.5.20";
 
 function loadJSON(key, def) {
   try {
@@ -2938,7 +2938,7 @@ export default function App() {
     var rosterNames = roster.map(function(r) { return r.name; }).join(", ");
     var systemPrompt = "You are a baseball box score parser. " +
       "Extract game result and individual batting stats. " +
-      "Team name is " + teamName + ". Players to look for: " + rosterNames + ". " +
+      "Team name is " + (activeTeam && activeTeam.name ? activeTeam.name : "") + ". Players to look for: " + rosterNames + ". " +
       "Return ONLY valid JSON with this structure: " +
       '{ "result": "W" or "L" or "T", "ourScore": "7", "theirScore": "3", ' +
       '"battingPerf": { "PlayerName": { "ab": 3, "h": 2, "r": 1, "rbi": 1, "bb": 0 } } }. ' +

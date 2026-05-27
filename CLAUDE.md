@@ -177,7 +177,7 @@ If any answer is "no": stop. Document the gap in DOC_TEST_DEBT.md, then decide w
 7. Stage **specific files by path** — never `git add -A` (risks picking up unrelated untracked files)
 8. [x] loginLimiter: 15min window, max 5 — applied to POST /magic-link ✓
 9. [ ] Confirm `RESEND_DOMAIN_VERIFIED=true` in Render env vars (only after domain verified)
-10. [ ] Run `npm test` — confirm 740 passed / 1 skipped / 0 failed (as of v2.5.18, May 21, 2026)
+10. [ ] Run `npm test` — confirm 751 passed / 0 skipped / 0 failed (as of v2.5.20, May 26, 2026)
 
 ### VERSION_HISTORY Schema
 
@@ -207,6 +207,8 @@ Target: resolved within 10 min of detection.
 > Full 7-phase ordered sequence: see `docs/product/MASTER_DEV_REFERENCE.md` → **## Release Ritual — Develop to Main Promotion**
 >
 > Summary: feature branch (from develop) → PR to develop (draft, CI green, Vercel preview on real device) → 24h soak → PR to main (Ship Gate + docs checklist) → prod smoke test within 10 min → branch cleanup. Never push directly to main. Never cut from main. Never skip the soak (hotfix exemption only).
+
+**Post-promote sync (required):** After every develop → main promote merges, immediately open a `sync/main-into-develop` PR to absorb the merge commit back into develop. Skipping causes 8-file conflict on the next promote. (Story 86, 2026-05-23)
 
 ---
 
@@ -286,6 +288,7 @@ Story 1 (April 22, 2026) was the regression that surfaced this — every batter 
   - Both panels stay mounted; visibility toggled via CSS `display:none` to preserve DefenseDiamond inning-scrub state across at-bat boundaries. See `docs/SOLUTION_DESIGN.md` § dugoutFocusMode state machine for full architectural notes. **Rationale for revision:** v2.5.7 design created a deadlock — coach claimed scorer, `currentAtBat` was null, mode resolved to `'lineup'`, LiveScoringPanel was hidden, no UI to call `scoring.startAtBat()`, mode stuck on `'lineup'` forever. Surfaced as Story 16 ("No batting order set") — the empty-state copy was a misleading downstream symptom of the panel never becoming startable.
 - **Badge context prop** (v2.5.12+) — Use `context="dark"` on `PlayerHandBadge` (or `Badge` directly) for dark surfaces like Game Mode and the scoring strip. Default `context="light"` applies to all light/cream backgrounds. Dark variants are token-driven: `tokens.color.overlay.whiteLight` background + `tokens.color.text.onDark` text. See `frontend/src/components/ui/Badge.jsx`.
 - **Self-styled Support components** (v2.5.14+) — FAQSection, LegalSection, ValidationBanner, OfflineIndicator are self-styled via design tokens. Do not add C or S prop threading to these components. Pattern: import primitives + tokens directly; no external color/style props.
+- **Primitive sizing via prop, not style** (Phase 3+) — Use the primitive's size prop; do not override via style. Example: `<Text size="body">`, not `<Text style={{fontSize:"13px"}}>`. Style-prop overrides bypass the token contract and re-introduce raw px values the design system explicitly enumerates. Anti-pattern caught by F5 regression guard in `FAQSection.test.jsx` (PR #144). See `frontend/src/components/ui/Text.jsx` for available size values.
 
 ---
 
@@ -405,7 +408,7 @@ Every Story in ROADMAP.md must have a corresponding GitHub Issue. This is non-ne
 
 ### Rules (enforce every session)
 
-1. **New story → GitHub Issue same session.** Use the Story issue template at github.com/kaushikkuberanathan/lineup_generator/issues/new/choose. Never leave a story in ROADMAP.md without a `<!-- #N -->` marker.
+1. **New story → GitHub Issue same session.** Use the Story issue template at github.com/kaushikkuberanathan/lineup_generator/issues/new/choose. Never leave a story in ROADMAP.md with a bare `<!-- #N -->` placeholder — the marker must contain a real issue number before session close. If file-time issue creation isn't done, run `node scripts/sync-stories-to-issues.js` before ending the session.
 
 2. **Batch sync.** When stories accumulate without issues, run:
 $env:GITHUB_TOKEN = $TOKEN
@@ -420,6 +423,8 @@ node scripts/sync-stories-to-issues.js              ← create
 5. **Label discipline.** All issues must carry at minimum one `priority:*` label and one `type:*` label. Area labels are strongly recommended. Labels follow `prefix:name` convention (no spaces). Full taxonomy in `docs/process/ISSUE_TRACKING.md`.
 
 6. **DOC_TEST_DEBT items** also get GitHub Issues using the Governance template. Reference the issue number in the debt ledger entry.
+
+7. **Session-close sync gate.** Before ending any session where ROADMAP.md was modified: run `node scripts/sync-stories-to-issues.js` to patch any remaining `<!-- #N -->` placeholders. Then commit the patched ROADMAP.md. Prevents multi-session marker debt (9 stories accumulated without issue numbers — discovered 2026-05-26).
 
 ### Scripts
 
@@ -501,6 +506,7 @@ Before opening a `develop → main` PR, walk through these items. For each, answ
 15. Vercel preview deployed and phone-smoke-tested on a real device and network (DevTools simulation does not replace this)
 16. Branch protection on `main` enforces CI checks + preview deployment green — no bypass
 17. On the PR merge dropdown — select **Create a merge commit**, not Squash and merge. Promote PRs (develop → main) must preserve the individual develop commit history on main. Squash collapses all develop work into one commit, losing PR-level granularity. (Story 79, 2026-05-21)
+18. Run `node scripts/sync-stories-to-issues.js` — confirm all `<!-- #N -->` markers in ROADMAP.md are patched with real issue numbers before promote. Commit any patches as a docs-only PR to develop first.
 
 If any relevant item is "no" — **stop**. Open a docs patch first. This patch was introduced because v2.3.3 shipped without docs updates, requiring a catch-up hygiene patch (commit `2652ed7`, April 24 2026).
 
@@ -527,8 +533,9 @@ Every other session: open `docs/product/DOC_TEST_DEBT.md` — close P0s, promote
 ---
 
 ## Current Version
-**v2.5.19** — May 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/data/versionHistory.js`.
+**v2.5.20** — May 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/data/versionHistory.js`.
 
+- v2.5.20 (2026-05-26): Story 84 fix, UX Phase 5 token foundation, sync-script governance — box-score AI parser teamName fix (Story 84, PR #178), UX Phase 5 surface.chrome + GameDay/* migrations (PR #179), sync-stories-to-issues.js de-dup check (Story 90, PR #204), Release Ritual post-promote sync convention (Story 86, PR #177), CLAUDE.md Rules 1+7 + item 18 (PR #201), ValidationBanner/OfflineIndicator touch-ups + Stories 87-89+91 filed (PR #202, #209), session retrospective 2026-05-23-A (PR #176), Stories 77-91 issue markers synced (PRs #191, #201, #208).
 - v2.5.19 (2026-05-22): Supabase import fix restores coach feedback; label schema, audit, governance — Story 83 (P1) resolved (PR #171), npm audit 12 of 15 vulns + Story 81 filed (PR #164), CLAUDE.md Stories 79+80 + stale hook description (PR #165), label taxonomy 28→31 (PRs #166, #168), Stories 83-85 filed (PR #169), session retrospective 2026-05-22-A (PR #170).
 - v2.5.18 (2026-05-21): Pre-push hook fix, sync-script hardening, lint debt filed — Story 75 (P1) resolved (PR #155), sync-stories-to-issues.js hardened (PR #156), Stories 72–76 ROADMAP markers patched #150–#154, Story 77 (P2) filed for 132 ESLint problems.
 - v2.5.17 (2026-05-21): Governance pass — SESSION_RETROSPECTIVES.md introduced (#139), CLAUDE.md trim 44.8k→35.4k chars (#143), UX Phase 3 Step 3 token migrations (#144), backend route modularization with ops.js + teamData dual-mount (#145), worktree Husky convention (#148), Stories 70–76 filed, Story 75 (P1 pre-push hook reliability) escalated.

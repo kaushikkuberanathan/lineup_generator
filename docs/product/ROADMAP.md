@@ -5,6 +5,19 @@
 
 ---
 
+## v2.5.20 — 2026-05-26 — Story 84 fix, UX Phase 5 token foundation, sync-script governance
+
+- Story 84 (P2) resolved — box-score AI parser now sends correct team name to LLM; `teamName` undefined ref replaced with `activeTeam.name` closure read (PR #178)
+- UX Phase 5 foundation — `surface.chrome` token + GameDay/* migrations (NowBattingStrip, BattingOrderStrip, Toast, FairnessCheck, LockFlow); zero `#1e3a5f` literals remain in frontend/src/ (PR #179)
+- sync-stories-to-issues.js de-dup check — queries GitHub Search before creating; double-marker patch cleanup (Story 90, PR #204)
+- Release Ritual: post-promote sync convention codified — `sync/main-into-develop` PR required after every develop → main merge (Story 86, PR #177)
+- CLAUDE.md Issue & Backlog Hygiene tightened — Rule 1 reworded, new Rule 7 (session-close sync gate), new item 18 in Pre-release Docs Checklist (PR #201)
+- ValidationBanner + OfflineIndicator token touch-ups (PR #202); Stories 87, 88, 89, 91 filed for future UX/tooling cleanup work
+- Session retrospective 2026-05-23-A logged (PR #176)
+- ROADMAP backlog hygiene — Stories 77-91 synced to GitHub Issues #180-#209; 9 duplicate issues cleaned up after sync-script ran on stale base (PRs #191, #201, #208)
+
+---
+
 ## v2.5.19 — 2026-05-22 — Supabase import fix restores coach feedback; label schema, audit, governance
 
 - Story 83 (P1) resolved — `supabase` client import added to App.jsx; restores silent feedback/bug POSTs (PR #171)
@@ -2534,7 +2547,7 @@ instances, prevents future tooling failures. (b) is broader but
 premature without evidence other files are affected. (c) leaves a
 known landmine for the next agent or automation script.
 
-### Story 77 (P2) — Lint debt triage: 132 ESLint problems blocking strict gate <!-- #N -->
+### Story 77 (P2) — Lint debt triage: 132 ESLint problems blocking strict gate <!-- #N --> <!-- #180 -->
 
 Status: Open
 Discovered: May 21, 2026 — surfaced during Story 75 pre-push hook remediation
@@ -2555,7 +2568,7 @@ then errors, then warnings. Enable strict lint gate after debt cleared.
 Recommendation: Fix no-undef block first in isolation (15-min triage).
 Remaining errors/warnings in a follow-up pass.
 
-### Story 78 (P2) — Label schema gaps: missing labels blocking PR hygiene <!-- #N -->
+### Story 78 (P2) — Label schema gaps: missing labels blocking PR hygiene <!-- #N --> <!-- #181 -->
 
 Status: Open
 Discovered: May 21, 2026 — PRs #149, #155, #156, #157, #158, #159, #160
@@ -2576,7 +2589,7 @@ missing labels in the scheme. ~5 minutes.
 
 Recommendation: Do in one pass next governance session — unblocks all future PRs.
 
-### Story 79 (P2) — Promote PR merge strategy: squash default overrides regular merge convention <!-- #N -->
+### Story 79 (P2) — Promote PR merge strategy: squash default overrides regular merge convention <!-- #N --> <!-- #182 -->
 
 Status: Open
 Discovered: May 21, 2026 — PR #159 (develop → main promote) landed as squash
@@ -2599,7 +2612,7 @@ Proposed fix: Add explicit step to promote checklist in CLAUDE.md:
 
 Recommendation: One-line CLAUDE.md addition. Do alongside Story 78.
 
-### Story 80 (P3) — Pre-pull branch check: worktree convention missing from CLAUDE.md <!-- #N -->
+### Story 80 (P3) — Pre-pull branch check: worktree convention missing from CLAUDE.md <!-- #N --> <!-- #183 -->
 
 Status: Open
 Discovered: May 21, 2026 — git pull origin develop in UX worktree created
@@ -2624,7 +2637,7 @@ to inspect instead."
 
 Recommendation: CLAUDE.md one-liner. Pair with Story 79 in same governance PR.
 
-### Story 81 (P2) — Vite major upgrade: resolve 3 deferred esbuild/vite moderate vulns <!-- #N -->
+### Story 81 (P2) — Vite major upgrade: resolve 3 deferred esbuild/vite moderate vulns <!-- #N --> <!-- #184 -->
 
 Status: Open
 Discovered: May 21, 2026 — npm audit fix deferred esbuild/vite chain
@@ -2646,7 +2659,7 @@ run npm run build, verify dev server, confirm PWA behavior unchanged.
 
 Recommendation: Treat as standalone upgrade story. Do not block other PRs.
 
-### Story 82 (P3) — ParentView token/primitive migration <!-- #N -->
+### Story 82 (P3) — ParentView token/primitive migration <!-- #N --> <!-- #185 -->
 
 Status: Open
 Discovered: 2026-05-22 — Phase 3 Step 4 recon (UX track)
@@ -2693,7 +2706,7 @@ Recommendation: (a) — direct token import is cleaner than waiting for a
 broader S/C deprecation that has no firm timeline. Gate on App.jsx
 parallel work clearing first.
 
-### Story 83 (P1) — Silent feedback/bug loss: supabase client not imported in App.jsx <!-- #N -->
+### Story 83 (P1) — Silent feedback/bug loss: supabase client not imported in App.jsx <!-- #N --> <!-- #186 -->
 
 Status: Open
 Discovered: May 22, 2026 — Story 77 no-undef triage
@@ -2717,7 +2730,7 @@ App.jsx:4-7. One-line change — lowest-risk fix in this triage set.
 
 Recommendation: One-line import fix. P1 — silent data loss affecting coaches.
 
-### Story 84 (P2) — teamName undefined in box-score AI parser <!-- #N -->
+### Story 84 (P2) — teamName undefined in box-score AI parser <!-- #N --> <!-- #187 -->
 
 Status: Open
 Discovered: May 22, 2026 — Story 77 no-undef triage
@@ -2741,20 +2754,26 @@ in-scope expression (likely activeTeam?.name or similar).
 Recommendation: Read the 1-3 call sites before fixing to confirm parameter
 approach is cleaner than closure reference.
 
-### Story 85 (P2) — ReferenceError on SW update button click <!-- #N -->
+### Story 85 (P2) — ReferenceError on SW update button click <!-- #N --> <!-- #188 -->
 
 Status: Open
 Discovered: May 22, 2026 — Story 77 no-undef triage
 Target: Next fix pass
 
-Symptom: useRegisterSW() return value is discarded at App.jsx:1838 (called
-for side effects only). updateServiceWorker is never destructured. Click
-handlers at lines 3517 and 8632 reference updateServiceWorker(true) — throws
-ReferenceError when the "Update available" button is clicked.
+Symptom: useRegisterSW() return value is discarded at App.jsx:1838.
+Three consequences: (1) updateServiceWorker is never destructured —
+click handlers at lines 3517+8617 would throw ReferenceError IF the
+banner rendered; (2) needRefresh is hardcoded false (line 1845 stub)
+— the update banner has NEVER rendered since the stubs were introduced;
+(3) setNeedRefresh is a no-op stub (line 1846). Two duplicate banner
+blocks exist (lines 3511, 8611) — both gated on needRefresh, both
+dead. Coaches have only received updates via PWA close+reopen, not
+the in-app prompt.
 
-Impact: Low frequency (only fires when a new service worker is detected).
-When triggered, update button silently fails — coach can't apply the update
-without a manual page reload.
+Impact: Update prompt has been non-functional since the stubs were
+introduced. Severity: P2 (PWA reload is a workaround) but broader
+than originally filed. Fix will restore visible update UI for coaches
+— needs a userChanges entry when it ships.
 
 Root cause: Refactor stub defined needRefresh and setNeedRefresh manually
 below the useRegisterSW call but omitted updateServiceWorker.
@@ -2766,6 +2785,246 @@ sourced from the same hook.
 
 Recommendation: One-line destructure fix. Verify stubs below are also
 removable before committing.
+
+### Story 86 (P1) — Post-promote sync: add main → develop sync step to Release Ritual <!-- #N --> <!-- #189 -->
+
+Status: Open
+Discovered: May 23, 2026 — promote PR #175 had 8-file conflict
+because post-promote sync was skipped after PR #159
+Target: Next governance pass
+
+Symptom: develop → main promote PR surfaces conflicts on 8 files
+(version bump files, CLAUDE.md, SESSION_RETROSPECTIVES.md) when
+the prior promote's merge commit was never absorbed back into develop.
+
+Impact: Promote requires a sync PR (main → develop) detour before
+the promote can land. Adds ~30 min of conflict resolution work per
+release cycle if skipped.
+
+Root cause: PRODUCT_OPS.md Section 5 documents the symmetric
+main → develop sync step, but it is not enforced anywhere in the
+release workflow. Skipped after PR #159; surfaced during PR #175.
+
+Proposed fix: Add as explicit step in CLAUDE.md Release Ritual
+section + MASTER_DEV_REFERENCE.md Release Ritual phase sequence.
+Rule: "After every develop → main promote, immediately open
+sync/main-into-develop PR to absorb the merge commit."
+
+Recommendation: Add to both CLAUDE.md (one-liner) and
+MASTER_DEV_REFERENCE.md (full rule). Low effort, prevents
+recurring 30-min detour.
+
+---
+
+### Story 87 (P2) — BottomSheet primitive: extract canonical pattern from LockFlow <!-- #N --> <!-- #190 -->
+
+Status: Open
+Discovered: May 26, 2026 — LockFlow.jsx recon (feature/ux-lockflow-recon, STOP 3)
+Target: UX track — Phase 5 follow-up, post-LockFlow token migration
+
+Symptom: LockFlow.jsx (frontend/src/components/GameDay/LockFlow.jsx:166–180)
+implements a full bottom-sheet modal pattern inline — fixed-position
+backdrop + role=dialog shell anchored to bottom + close handle + body slot
++ upward directional shadow. No primitive exists for this pattern, so the
+same shape will be re-implemented every time a future modal/picker/
+confirmation flow needs to slide up from the bottom of the viewport.
+
+Impact: Two design-token migrations are explicitly blocked on this primitive:
+(1) tokens.js line 107 reserves radius.sheet ('16px 16px 0 0') with a
+comment pointing to a future <BottomSheet> primitive using radius.lg
+internally; (2) tokens.js lines 194–195 explicitly exclude LockFlow's
+'0 -4px 24px rgba(0,0,0,0.18)' upward shadow from the tokens.shadow group
+pending the same primitive. Both call sites stay raw (drift) until this
+story lands. Secondary impact: future bottom-sheet surfaces (settings,
+pickers, multi-step confirmations) will re-derive the same DOM shape and
+diverge on a11y wiring.
+
+Root cause: Pattern was extracted from App.jsx v1.6.9 into LockFlow.jsx as
+a single-call-site component before the design-system primitive layer
+existed. tokens.js (built later) anticipated the primitive in two comments
+but the primitive itself was never authored.
+
+Proposed fixes:
+(a) Build BottomSheet primitive + migrate LockFlow in one PR. Primitive
+    lives at frontend/src/components/ui/BottomSheet.jsx, encodes backdrop +
+    role=dialog shell + close handle + radius.lg top + new shadow.sheetTop
+    token. LockFlow shell (lines 166–180) swaps to <BottomSheet>. New test
+    file BottomSheet.test.jsx + existing a11y F6 block (LockFlow dialog
+    role) must still pass.
+(b) Build BottomSheet primitive standalone, no LockFlow migration. Adds
+    the primitive + shadow.sheetTop token, leaves LockFlow inline. Smaller
+    diff, lower risk to game-day Finalize flow, but radius.sheet and
+    shadow.sheetTop deferrals remain unresolved at the LockFlow call site
+    until a follow-up story.
+(c) Defer entirely. Leave LockFlow inline indefinitely. Re-evaluate when
+    a second bottom-sheet call site appears in the codebase.
+
+Recommendation: (a) — single-PR primitive + migration. The migration is
+low-risk (pre-game, ErrorBoundary-wrapped, no live-scoring impact) and
+landing both halves together prevents the radius.sheet / shadow.sheetTop
+deferrals from becoming permanent. Smoke-test the 3-step Finalize flow on
+Vercel preview before squash-merge to foundation. Block on (b) only if a
+second bottom-sheet call site materializes before this story is picked up,
+which would change the primitive's API surface.
+
+### Story 90 (P2) — sync-stories-to-issues.js: add de-duplication check before creating issues <!-- #207 -->
+
+Status: Open
+Discovered: May 26, 2026 — sync script ran twice on different ROADMAP
+snapshots, creating 9 duplicate issues (#192-#200 duplicated #180-#188).
+Closed duplicates manually via GitHub API.
+Target: Next governance pass
+
+Symptom: Script creates a new GitHub issue for any story with a bare
+<!-- #N --> marker, without checking whether an issue with the same
+title already exists on GitHub. Running on a stale branch that hasn't
+pulled recent marker patches causes duplicate issues.
+
+Impact: 9 duplicate issues created in one incident. Manual cleanup
+required via GitHub API. Confusing issue list with doubled entries.
+
+Root cause: Script trusts only the ROADMAP.md file's marker state.
+No GitHub Search API call before issue creation to detect existing
+issues with matching titles.
+
+Proposed fix: Before calling POST /repos/{owner}/{repo}/issues, call
+GET /search/issues?q="{story_title}"+repo:{owner}/{repo}+type:issue
+and skip creation if a matching open issue is found. Log the existing
+issue number and patch the marker with it instead.
+
+Recommendation: Add de-dup check as the first step in the creation
+loop. Idempotency upgrade — script becomes safe to run on any branch
+state without risk of duplication.
+
+### Story 91 (P2) — sync-stories-to-issues.js: skip ROADMAP patch on failed POST <!-- #211 -->
+
+Status: Open
+Discovered: May 26, 2026 — script patched ROADMAP.md with undefined
+issue numbers after 401 failures (token not set in UX worktree terminal)
+Target: Next governance pass
+
+Symptom: When githubRequest() returns a 401 or other non-2xx error,
+the script still executes the ROADMAP.md marker-patch block. The
+issueNum variable is undefined, producing <!-- #undefined --> markers.
+Script then exits with "ROADMAP.md patched" despite no issues created.
+
+Impact: ROADMAP.md corrupted with bad markers. Requires manual
+git checkout -- docs/product/ROADMAP.md to recover.
+
+Root cause: The patch block runs unconditionally after the catch.
+issueNum is only set inside the successful response path — undefined
+in the error path.
+
+Proposed fix: Guard the patch block with a type check before writing:
+if (typeof issueNum === 'number') { ...patch ROADMAP... }
+One-line change — lower diff than restructuring the try/catch.
+
+Recommendation: Guard approach. Pair with Story 90's remaining
+cleanup if doing a sync-script governance pass.
+
+---
+
+### Story 88 (P2) — Success/warning token family additions <!-- #205 -->
+
+Status: Open
+Discovered: 2026-05-26 — ValidationBanner.jsx recon
+  (feature/ux-phase-6-foundation)
+Target: UX track — prerequisite for ValidationBanner
+  second-pass migration
+
+Symptom: ValidationBanner.jsx carries 7 orphan color
+values (success-bg, warning-bg, success/warning border
+tints, success-text, warning-text, warning-list-text)
+with no token equivalents. The component is otherwise
+fully migrated (Stack + Text primitives, 2 token subs
+landed in Phase 6). These 7 values block the final
+style-escape cleanup.
+
+Impact: ValidationBanner cannot reach zero inline
+style escapes until these token families exist.
+FairnessCheck.jsx has the same gap (#27ae60 tints).
+LockFlow.jsx carries the same win/red tint gaps.
+All three components' orphan color escapes resolve
+once this token family lands.
+
+Root cause: tokens.js line 50 documents
+successBg as "DROPPED — appears 1x, below 3x
+threshold." The threshold rule was correct at the
+time but the 3x count is now met across
+ValidationBanner + FairnessCheck + LockFlow.
+
+Proposed fixes:
+  (a) Add tokens.color.status family extensions:
+      status.successBg = '#d1fae5' (green-100)
+      status.warningBg = '#fef3c7' (amber-100)
+      status.successBorder = 'rgba(16,185,129,0.3)'
+      status.warningBorder = 'rgba(217,119,6,0.3)'
+      status.successText = '#065f46' (emerald-800)
+      status.warningText = '#92400e' (amber-800)
+      status.warningTextLight = '#78350f' (amber-900)
+      Then migrate 3 call sites: ValidationBanner,
+      FairnessCheck, LockFlow.
+  (b) Add only what's needed for ValidationBanner
+      (successBg + warningBg + text colors) — defer
+      border tints and LockFlow/FairnessCheck sweep.
+
+Recommendation: (a) — all 7 values, all 3 call sites
+in one pass. The 3x threshold is now met and adding
+a partial family creates future confusion about which
+status.* values exist.
+
+---
+
+### Story 89 (P3) — Alpha-tint token family for brand/status colors <!-- #206 -->
+
+Status: Open
+Discovered: 2026-05-26 — OfflineIndicator.jsx recon
+  (feature/ux-phase-6-foundation)
+Target: UX track — prerequisite for OfflineIndicator
+  second-pass migration
+
+Symptom: OfflineIndicator.jsx uses 6 alpha-blended
+rgba values derived from existing brand/status tokens:
+brand.red, status.warning, status.success — each at
+0.12, 0.15, 0.30, 0.35 opacity. No pre-mixed alpha
+variants exist in tokens.js. These 6 values block
+the final style-escape cleanup in OfflineIndicator.
+
+Impact: OfflineIndicator cannot reach zero inline
+style escapes without this token family. The component
+is otherwise fully migrated (Phase 3 Step 4 + Phase 6
+dot borderRadius). Other future dark-surface status
+indicators would face the same gap.
+
+Root cause: tokens.js has a tint() helper planned
+(line 51, 84 comments) but never built. The alpha-
+tint system was deferred pending concrete call sites.
+OfflineIndicator provides those call sites.
+
+Proposed fixes:
+  (a) Add pre-mixed alpha tokens to tokens.color.overlay:
+      overlay.redFaint   = 'rgba(200,16,46,0.15)'
+      overlay.redStrong  = 'rgba(200,16,46,0.35)'
+      overlay.warnFaint  = 'rgba(212,160,23,0.15)'
+      overlay.warnStrong = 'rgba(212,160,23,0.35)'
+      overlay.winFaint   = 'rgba(39,174,96,0.12)'
+      overlay.winMid     = 'rgba(39,174,96,0.30)'
+      Then migrate OfflineIndicator bg/border values.
+  (b) Build tint() helper utility that computes
+      rgba() from a hex token + opacity at runtime.
+      No new token constants needed; consumers call
+      tint(tokens.color.brand.red, 0.15) inline.
+
+Recommendation: (a) — pre-mixed tokens are simpler,
+statically analyzable, and consistent with the
+existing overlay.* family (navyWash, navyMedium, etc.).
+The tint() helper (b) is a nicer API long-term but
+adds abstraction for a small number of call sites.
+Gate on the overlay.* family filling out first.
+
+Separate from Story 88 (which covers new base palette
+colors for ValidationBanner — emerald/amber solids,
+not alpha tints of existing tokens).
 
 ---
 

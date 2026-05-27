@@ -11,6 +11,9 @@
  */
 
 import { PlayerHandBadge } from "../PlayerHandBadge";
+import { tokens } from "../../theme/tokens";
+import { Text } from "../ui/Text";
+import { Stack } from "../ui/Stack";
 
 function firstName(name) {
   if (!name) return name;
@@ -32,8 +35,8 @@ export function NowBattingBar({ battingOrder, currentIndex, onAdvance, onBack, a
 
   var btnStyle = {
     background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.25)',
-    color: '#ffffff', borderRadius: '6px', width: '32px', alignSelf: 'stretch',
-    fontSize: '20px', fontWeight: 'bold', cursor: 'pointer', flexShrink: 0,
+    color: tokens.color.text.onDark, borderRadius: tokens.radius.sm, width: '32px', alignSelf: 'stretch',
+    fontSize: '20px', fontWeight: tokens.font.weight.bold, cursor: 'pointer', flexShrink: 0,
     display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit',
   };
   var pills = [
@@ -44,27 +47,29 @@ export function NowBattingBar({ battingOrder, currentIndex, onAdvance, onBack, a
   var inningLabel = (activeInning !== null && activeInning !== undefined) ? ("INNING " + activeInning) : "INNING —";
   return (
     <div style={{ display:'flex', flexDirection:'column', flexShrink:0, width:'100%' }}>
-      <div style={{ textAlign:'center', fontSize:'11px', letterSpacing:'0.14em', textTransform:'uppercase',
-        color:'rgba(255,255,255,0.4)', background:'#1e3a5f', paddingTop:'5px', paddingBottom:'1px',
-        fontFamily:"Georgia,'Times New Roman',serif" }}>
+      <Text as="div" size="xs" uppercase family="serif" style={{
+        textAlign:'center', letterSpacing:'0.14em',
+        color:'rgba(255,255,255,0.4)',
+        background:tokens.color.surface.chrome,
+        paddingTop:'5px', paddingBottom:'1px',
+      }}>
         {inningLabel}
-      </div>
-    <div style={{
-      background: '#1e3a5f', color: '#ffffff', fontFamily: "Georgia,'Times New Roman',serif",
+      </Text>
+    <Stack direction="row" align="stretch" gap="sm" style={{
+      background: tokens.color.surface.chrome, color: tokens.color.text.onDark, fontFamily: tokens.font.family.serif,
       padding: '8px 10px', width: '100%', boxSizing: 'border-box',
-      display: 'flex', alignItems: 'stretch', gap: '8px',
     }}>
       <button onClick={onBack} aria-label="Previous batter" style={btnStyle}>‹</button>
       {pills.map(function(pill) {
         return (
           <div key={pill.label} style={{
             flex: 1, minWidth: 0, textAlign: 'center',
-            background: pill.active ? 'rgba(245,200,66,0.12)' : 'rgba(255,255,255,0.06)',
-            border: '1px solid ' + (pill.active ? 'rgba(245,200,66,0.4)' : 'rgba(255,255,255,0.12)'),
-            borderRadius: '8px', padding: '6px 8px',
+            background: pill.active ? tokens.color.overlay.goldTint : 'rgba(255,255,255,0.06)',
+            border: '1px solid ' + (pill.active ? tokens.color.overlay.goldStrong : 'rgba(255,255,255,0.12)'),
+            borderRadius: tokens.radius.md, padding: '6px 8px',
           }}>
-            <div style={{ fontSize: '20px', fontWeight: 'bold', lineHeight: 1.1,
-              color: pill.active ? '#f5c842' : 'rgba(255,255,255,0.85)',
+            <div style={{ fontSize: '20px', fontWeight: tokens.font.weight.bold, lineHeight: 1.1,
+              color: pill.active ? tokens.color.brand.gold : 'rgba(255,255,255,0.85)',
               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {firstName(pill.name)}{' '}<PlayerHandBadge hand={pill.hand} context="dark" />
             </div>
@@ -77,7 +82,7 @@ export function NowBattingBar({ battingOrder, currentIndex, onAdvance, onBack, a
         );
       })}
       <button onClick={onAdvance} aria-label="Next batter" style={btnStyle}>›</button>
-    </div>
+    </Stack>
     </div>
   );
 }

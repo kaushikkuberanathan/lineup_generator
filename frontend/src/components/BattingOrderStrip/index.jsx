@@ -1,3 +1,5 @@
+import { tokens } from "../../theme/tokens";
+
 function firstName(name) {
   if (!name) return '';
   return name.split(' ')[0];
@@ -9,7 +11,7 @@ export function BattingOrderStrip({ battingOrder, currentBatterIndex }) {
       <div
         data-testid="bos-empty"
         style={{
-          background: '#1e3a5f', color: 'rgba(255,255,255,0.4)',
+          background: tokens.color.surface.chrome, color: 'rgba(255,255,255,0.4)',
           fontFamily: "Georgia,'Times New Roman',serif",
           padding: '10px 14px', textAlign: 'center',
           fontSize: '12px', letterSpacing: '0.06em',
@@ -58,7 +60,7 @@ export function BattingOrderStrip({ battingOrder, currentBatterIndex }) {
 
   return (
     <div style={{
-      background: '#1e3a5f', color: '#ffffff',
+      background: tokens.color.surface.chrome, color: '#ffffff',
       fontFamily: "Georgia,'Times New Roman',serif",
       padding: '8px 10px', width: '100%', boxSizing: 'border-box',
       display: 'flex', alignItems: 'stretch', gap: '8px',
