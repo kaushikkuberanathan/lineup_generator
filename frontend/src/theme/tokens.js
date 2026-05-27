@@ -47,7 +47,16 @@ export const tokens = {
       error:   '#DC2626',  // 32x — Tailwind red-600, alert/error UI (intentionally ≠ brand.red)
       errorBg: '#FEE2E2',  // 6x — red-50, error chip/alert backgrounds
       info:    '#2563EB',  // 22x — Tailwind blue-600, informational UI
-      // successBg: DROPPED — #DCFCE7 appears 1x, below 3x threshold; compose via tint() in v2.5.0
+
+      // ─── Status surface tints (Story 88 — ValidationBanner family) ─────────
+      successBg:        '#d1fae5',               // 1x ValidationBanner.jsx — green-100 card background
+      warningBg:        '#fef3c7',               // 1x ValidationBanner.jsx — amber-100 card background
+      successBorder:    'rgba(16,185,129,0.3)',  // 1x ValidationBanner.jsx — emerald-500 0.3 card border
+      warningBorder:    'rgba(217,119,6,0.3)',   // 1x ValidationBanner.jsx — amber-600 0.3 card border
+
+      successText:      '#065f46',               // 1x ValidationBanner.jsx — emerald-800 success heading text
+      warningText:      '#92400e',               // 1x ValidationBanner.jsx — amber-800 warning heading text
+      warningTextLight: '#78350f',               // 1x ValidationBanner.jsx — amber-900 warning list item text
     },
 
     border: {

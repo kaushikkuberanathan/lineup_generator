@@ -71,12 +71,13 @@ describe('Group 2 — color sub-groups', function () {
     });
   });
 
-  test('2.5: color.status has correct keys; successBg is absent', function () {
-    ['success', 'warning', 'error', 'errorBg', 'info'].forEach(k => {
+  test('2.5: color.status has correct keys', function () {
+    ['success', 'warning', 'error', 'errorBg', 'info',
+     'successBg', 'warningBg', 'successBorder', 'warningBorder',
+     'successText', 'warningText', 'warningTextLight'].forEach(k => {
       expect(typeof tokens.color.status[k]).toBe('string');
       expect(tokens.color.status[k].length).toBeGreaterThan(0);
     });
-    expect(tokens.color.status).not.toHaveProperty('successBg');
   });
 
   test('2.6: color.border has subtle, default, strong as non-empty strings', function () {
