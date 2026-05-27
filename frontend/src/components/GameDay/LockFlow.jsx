@@ -19,7 +19,6 @@ export function LockFlow({ activeWarnings, nextGame, hasPin, onConfirmLock, onRe
   var _step = useState(1);
   var step = _step[0]; var setStep = _step[1];
 
-  var totalSteps = hasPin ? 3 : 2;
   var stepLabels = hasPin ? ["Review", "Confirm", "Lock"] : ["Review", "Confirm"];
 
   var textMuted = "rgba(15,31,61,0.45)";

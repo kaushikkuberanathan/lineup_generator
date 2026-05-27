@@ -28,8 +28,8 @@ import { truncateTeamName } from '../../utils/formatters';
 var FF = "Georgia,'Times New Roman',serif";
 
 export function DugoutView({
-  teamId, roster, battingOrder, innings, sport,
-  absentTonight, payload, isViewer, onExit,
+  teamId, roster, battingOrder, innings,
+  payload, isViewer, onExit,
   activeTeam, activeTeamId, user, session, schedule,
   currentBatterIndex,
   grid,
