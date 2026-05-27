@@ -1835,15 +1835,16 @@ export default function App() {
     return absentTonight.indexOf(name) < 0;
   });
 
-  useRegisterSW({
+  const { needRefresh: [needRefresh, setNeedRefresh], updateServiceWorker } = useRegisterSW({
+    onNeedRefresh() {
+      setNeedRefresh(true);
+    },
     onRegistered(r) {
       if (r) {
         setInterval(() => r.update(), 60 * 60 * 1000);
       }
     }
   });
-  var needRefresh = false;
-  var setNeedRefresh = function() {};
 
   // Standalone: true when running as installed PWA (no browser chrome)
   var isStandalone = typeof window !== "undefined" && window.matchMedia
