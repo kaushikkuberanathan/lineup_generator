@@ -9,7 +9,6 @@
  *   totalInnings         {number}    total innings in the game
  *   roster               {Array}     player objects with .name, .battingHand
  *   grid                 {object}    player name → position[] per inning
- *   halfInning           {string}    "defense" | "batting" — what the team just finished
  *   battingOrder         {string[]}  ordered player names
  *   currentBatterIndex   {number}    0-based index of current lead-off batter
  *   onConfirm            {function}  called with nextHalf ("batting"|"defense") when coach confirms
@@ -34,7 +33,7 @@ function firstName(name) {
 
 export function InningModal({
   currentInning, totalInnings, roster, grid,
-  halfInning, battingOrder, currentBatterIndex,
+  battingOrder, currentBatterIndex,
   sport,
   onConfirm, onCancel
 }) {

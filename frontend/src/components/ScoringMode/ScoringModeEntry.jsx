@@ -105,7 +105,7 @@ export default function ScoringModeEntry({
                 fontSize: '10px', fontWeight: 'bold', color: '#f5c842',
                 letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '4px',
               }}>
-                Today's Game
+                Today&apos;s Game
               </div>
               <div style={{ fontSize: '16px', fontWeight: 'bold' }}>
                 vs {todayGame.opponent}
@@ -244,7 +244,7 @@ export default function ScoringModeEntry({
             Practice without saving
           </div>
           <div style={{ fontSize: '11px', color: '#475569', marginTop: '2px' }}>
-            Pitches won't be recorded to the scorebook
+            Pitches won&apos;t be recorded to the scorebook
           </div>
         </button>
 

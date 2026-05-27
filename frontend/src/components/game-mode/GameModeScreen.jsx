@@ -30,7 +30,6 @@ import { DefenseDiamond } from "../../components/GameDay/DefenseDiamond";
 import { InningModal }    from "./InningModal";
 import { QuickSwap }      from "./QuickSwap";
 import { isFlagEnabled }  from "../../config/featureFlags";
-import { POSITION_LABELS } from "../../constants/positions";
 
 function firstName(name) {
   if (!name) return name;

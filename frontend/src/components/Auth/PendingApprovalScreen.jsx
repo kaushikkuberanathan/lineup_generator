@@ -26,7 +26,7 @@ export function PendingApprovalScreen({ onTryLogin }) {
         <p style={styles.body}>
           Your access request has been sent to the head coach for review.
           {pendingEmail && (
-            <> You'll receive an email at <strong>{pendingEmail}</strong> once approved.</>
+            <> You&apos;ll receive an email at <strong>{pendingEmail}</strong> once approved.</>
           )}
         </p>
 
@@ -50,7 +50,7 @@ export function PendingApprovalScreen({ onTryLogin }) {
         </div>
 
         <p style={styles.note}>
-          This usually takes a few hours. If you think you've already been
+          This usually takes a few hours. If you think you&apos;ve already been
           approved, try logging in below.
         </p>
 
