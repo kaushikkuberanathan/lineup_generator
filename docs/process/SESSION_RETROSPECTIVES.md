@@ -10,6 +10,49 @@
 
 ---
 
+## 2026-05-27-A — v2.5.21 release ritual, Story 76 \r sweep, CRLF normalization
+
+**Date:** May 27, 2026
+**Session ID:** 2026-05-27-A (Terminal 1)
+**Duration:** ~3 hours
+**Versions shipped to production:** v2.5.21 (PR #222 promote merge `a505180`)
+**PRs merged:** #221 (release prep + techNote fix), #222 (develop → main promote), #223 (sync main → develop)
+**Issues filed:** none new — Stories 76, 85, 87, 88, 89, 91 resolved per release
+
+### What Shipped
+- v2.5.21 promoted to production (PRs #221, #222, #223)
+- 6 stories resolved: 76, 85, 87, 88, 89, 91
+- 11 files changed across docs, version manifests, and code
+
+### What Went Well
+- Agent caught two rule violations before they landed: direct-to-develop commit (branch strategy) and develop checkout in main worktree (permanent pairing rule). Both corrected before any damage.
+- ROADMAP \r sweep: Story 76 closed as a zero-cost side effect of release prep. awk one-liner cleaned all 48 artifacts cleanly.
+- CRLF normalization: staging ROADMAP.md with `-c core.autocrlf=false` preserved CRLF in the index blob and kept the diff at 140 lines (vs a spurious 6,244-line diff without the override). Pattern to repeat on any CRLF-convention file edited on a LF-producing tool.
+- Bug #11 (App.jsx skip-worktree) handled 3 times without incident: clear, edit, verify diff, re-lock post-commit.
+- sync-stories-to-issues.js: dry-run + live both no-op. All 51 stories already linked. Story 76 scope correctly resolved.
+- Worktree pairing convention established: main worktree = main, UX worktree = develop. Agent enforced it when prompt violated it.
+
+### What Didn't Go Well
+- techNote approved-string convention not in CLAUDE.md or Ship Gate — only in the test file. Burned one CI cycle. Memory saved; CLAUDE.md update deferred to next session.
+- Session-starter scope stale: said "Stories 85+91 only" but develop had 5 stories ahead of main. Always run `git log --oneline origin/main..origin/develop` at session start before framing the release scope.
+- Two scope expansions mid-session: (a) BottomSheet already merged, (b) \r corruption was 48 lines not 2. Both legitimate expansions, but added time. Root cause: stale session-starter + incomplete Story 76 scope in ROADMAP.
+
+### Process Learnings
+- CRLF repo convention: use `-c core.autocrlf=false` when staging any file that was edited by a LF-producing tool (awk, Edit tool) and the repo blob has CRLF. Verify with `git diff --cached --stat` before committing.
+- techNote must be one of 4 approved strings. Check `src/__tests__/versionHistory.test.js` `APPROVED_TECH_NOTES` before drafting. Not in CLAUDE.md — only in the test.
+- Permanent worktree pairing: main worktree = main branch, UX worktree = develop branch. Never violate this for convenience.
+- Sync starter: run `git log --oneline origin/main..origin/develop` at the start of every release session to get the actual scope before writing the release entry.
+- `closes #N` go in the promote PR body (develop → main), not in the release-prep commit message.
+
+### Open Carry-Forwards
+- Add techNote convention to CLAUDE.md Pre-release Docs Checklist
+- UX worktree state recovery (Terminal 2 orientation needed)
+- Story 77 — ESLint debt
+- Story 81 — Vite major upgrade
+- FEATURE_MAP Coverage Summary recount (D-S31)
+
+---
+
 ## 2026-05-23-A — v2.5.19 promote with conflict recovery, sync/main-into-develop playbook, Story 83 in production
 
 **Date:** May 23, 2026
