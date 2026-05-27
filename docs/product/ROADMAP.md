@@ -3026,6 +3026,143 @@ Separate from Story 88 (which covers new base palette
 colors for ValidationBanner — emerald/amber solids,
 not alpha tints of existing tokens).
 
+### Story 92 (P3) — DefenseDiamond Tier A+B token migration <!-- #N -->
+
+Status: Open
+Discovered: 2026-05-28 — DefenseDiamond.jsx recon
+  (feature/ux-defensediamond)
+Target: UX track — first pass of DefenseDiamond migration
+
+Symptom: DefenseDiamond.jsx carries ~50+ raw color/spacing
+values. ~15 of these have exact existing token equivalents
+that can be drop-in substituted, and ~5-7 border-width call
+sites are blocked on `tokens.borderWidth.*` not existing.
+The existing TODO at L219-221 already acknowledges the
+borderWidth gap. The component already imports
+`tokens.color.brand.navy` for the inning buttons (lines
+233-250), so consumption is partially established.
+
+Impact: Inconsistent — the only GameDay/* component
+without a structured migration story. Blocks future
+DefenseDiamond a11y/contrast work that wants to reason
+about token contracts. Story 60 (#126) covers EmptyState
+token gaps (15px font + #374151) — neither value appears
+in DefenseDiamond, so this is genuinely new scope.
+
+Root cause: DefenseDiamond was scoped out of Phase 1c
+(which added only shadow tokens) and never received a
+full token audit. Existing tokens cover the easy half
+of the file's raw values.
+
+Proposed fix:
+  Step 1 — Add borderWidth token family:
+    tokens.borderWidth.hairline = '1px'
+    tokens.borderWidth.thin     = '1.5px'
+    tokens.borderWidth.medium   = '2px'
+  Step 2 — Tier A drop-in substitutions (~15 sites):
+    "#c8102e" (red var L30, 3 usages) → brand.red
+    "#dc2626" (4 OUT sites)           → status.error
+    "#f5efe4" (bench thead bg)        → surface.tableHeader
+    "rgba(15,31,61,0.15)" (2 borders) → overlay.navyMedium
+    "#0f1f3d" raw navy (L297)         → brand.navy
+    "11px" font (3 sites)             → font.size.xs
+  Step 3 — Tier B borderWidth substitutions (~5-7 sites):
+    "1.5px" inning buttons (L233,246) → borderWidth.thin
+    "2px" / "1px" bench borders       → borderWidth.medium / hairline
+  Step 4 — Tier C drift acceptances (document inline):
+    "#555" / "#6b7280" textMuted    → text.secondary (lighter; drift comment)
+    "#ccc" empty cell                → text.disabled (darker; drift comment)
+    "rgba(15,31,61,0.06)" border    → overlay.navyFaint (0.08; drift comment)
+    "10px" inning btn radius        → radius.md (8px; drift comment)
+  Step 5 — Close L219-221 TODO comment.
+  Defer: letter-spacing (Story 65), Tier D position/field
+  domain families (Story 93), Tier E SVG fontSize.
+
+Test impact: a11y-component-fixes.test.jsx covers
+F1/F2 (font floors) and F7 (inning pill contrast).
+Tier A/B preserve visuals; Tier C drift accepted with
+inline comments — F7 contrast must remain ≥ WCAG AA.
+
+Cross-cutting: No App.jsx changes — DefenseDiamond
+receives no styling props from callers. Ungated.
+
+Recommendation: Proceed as outlined. Est. ~1hr.
+Tokens.js L14 comment ("Nothing imports from this
+file yet") is already stale and worth a one-line
+update in this PR.
+
+### Story 93 (P3) — DefenseDiamond Tier D domain token families <!-- #N -->
+
+Status: Open
+Discovered: 2026-05-28 — DefenseDiamond.jsx recon
+  (feature/ux-defensediamond)
+Target: UX track — second pass of DefenseDiamond
+  migration. GATED on Story 92 complete.
+
+Symptom: DefenseDiamond.jsx defines three large
+domain-specific color groups inline that have no token
+equivalents:
+  - POS_COLORS (L23-27) — 10 light fill colors for
+    field positions (P, C, 1B, 2B, 3B, SS, LF, LC,
+    RC, RF, Bench)
+  - HDR_COLORS (L65-73) — 6-8 darker header variants
+    for the same positions
+  - Field SVG colors (L113-119) — grass (#2d7a3a,
+    #3a9147), dirt (#b5845a, #c49a6c), mound (#c9a070,
+    #e8d5b0), chalk lines (white at varying opacity)
+  - OUT row tints (L311,312,328,331) — 4 rgba values
+    derived from status.error (#dc2626) at 0.04, 0.05,
+    0.08, 0.30 opacity. Not covered by Story 89's
+    redFaint/redStrong which use brand.red.
+
+Impact: ~30 raw values in DefenseDiamond have no
+token home. Position colors are also used by App.jsx
+position legends (cross-impact verification needed
+before consuming). Field colors are SVG-only and
+DefenseDiamond-only today.
+
+Root cause: Token system to date has prioritized
+chrome/surface palette and brand identity. Domain-
+specific palettes (position rosters, field surfaces)
+weren't tokenized because no other consumer needed
+them. DefenseDiamond is the sole consumer.
+
+Proposed fix:
+  Step 1 — Define tokens.color.position.{P,C,1B,2B,
+    3B,SS,LF,LC,RC,RF,Bench} (10 light fill colors).
+  Step 2 — Define tokens.color.position.header.* for
+    the darker HDR_COLORS variants (6-8 unique values,
+    with some shared across positions per current code).
+  Step 3 — Define tokens.color.field.{grass,grassLight,
+    dirt,dirtLight,mound,moundLight,chalk} (~7 tokens).
+  Step 4 — Extend tokens.color.overlay with:
+    overlay.errorFaintest = 'rgba(220,38,38,0.04)'
+    overlay.errorFaint    = 'rgba(220,38,38,0.05)'
+    overlay.errorSubtle   = 'rgba(220,38,38,0.08)'
+    overlay.errorMedium   = 'rgba(220,38,38,0.30)'
+    (Story 89's redFaint/redStrong use brand.red,
+    not status.error — distinct families.)
+  Step 5 — DefenseDiamond consumes new token families;
+    POS_COLORS, HDR_COLORS, and field SVG values are
+    replaced with token references (~30 substitutions).
+  Step 6 — Grep App.jsx and other components for any
+    other consumers of POS_COLORS-equivalent values;
+    migrate if found.
+
+Test impact: SVG rendering is visually verified —
+no unit tests cover field color values directly.
+a11y-component-fixes.test.jsx F1/F2/F7 preserved.
+
+Cross-cutting: If App.jsx consumes any of POS_COLORS
+(line 23-27 values), this becomes a locked-file
+migration → gate phrase required. Confirm before
+starting.
+
+Recommendation: Defer until Story 92 ships. Then
+spike on App.jsx grep first — if POS_COLORS values
+appear in App.jsx, escalate to gated work and pair
+with the v2.6.0 token-family release.
+
 ---
 
 ### Automated Score Reporting (County Integration)
