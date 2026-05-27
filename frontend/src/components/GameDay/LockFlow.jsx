@@ -13,6 +13,7 @@
 
 import { useState } from "react";
 import { tokens } from "../../theme/tokens";
+import { BottomSheet } from "../ui/BottomSheet";
 
 export function LockFlow({ activeWarnings, nextGame, hasPin, onConfirmLock, onRequestPin, onClose }) {
   var _step = useState(1);
@@ -162,18 +163,15 @@ export function LockFlow({ activeWarnings, nextGame, hasPin, onConfirmLock, onRe
   }
 
   return (
-    <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, background:"rgba(0,0,0,0.55)", zIndex:9000,
-      display:"flex", alignItems:"flex-end", justifyContent:"center" }}
-      onClick={function(e) { if (e.target === e.currentTarget) onClose(); }}>
-      <div role="dialog" aria-modal="true" aria-label="Lock Lineup"
-        style={{ background:tokens.color.surface.card, borderRadius:"16px 16px 0 0", padding:"24px 20px 32px",
-        width:"100%", maxWidth:"520px", maxHeight:"80vh", overflowY:"auto",
-        boxShadow:"0 -4px 24px rgba(0,0,0,0.18)" }}>
-        {/* Close handle */}
-        <div style={{ width:"36px", height:"4px", borderRadius:"2px", background:tokens.color.overlay.navyMedium, margin:"-8px auto 20px" }} />
-        <StepIndicator />
-        {step === 1 ? renderStep1() : renderStep2()}
-      </div>
-    </div>
+    <BottomSheet
+      open={true}
+      onClose={onClose}
+      ariaLabel="Lock Lineup"
+      maxWidth="520px"
+      maxHeight="80vh"
+    >
+      <StepIndicator />
+      {step === 1 ? renderStep1() : renderStep2()}
+    </BottomSheet>
   );
 }

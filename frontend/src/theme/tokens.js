@@ -208,8 +208,8 @@ export const tokens = {
   // semantic clusters. Brand-color tinted shadows (gold/orange button variants,
   // ~4x in App.jsx) not tokenized — call-site-specific; deferred to tint()
   // helper or per-variant button primitive (v2.5.x).
-  // LockFlow.jsx '0 -4px 24px rgba(0,0,0,0.18)' excluded — upward directional
-  // shadow on bottom-sheet footer; deferred to <BottomSheet> primitive (v2.5.0).
+  // LockFlow.jsx '0 -4px 24px rgba(0,0,0,0.18)' — now tokenized as sheetTop
+  // and consumed by the <BottomSheet> primitive (Story 87).
 
   shadow: {
     subtle:   '0 1px 4px rgba(15,31,61,0.06)',                             // 1x FairnessCheck.jsx — navy-tinted minimal lift; consistent with color.overlay family
@@ -219,6 +219,7 @@ export const tokens = {
     // "introduced as canonical" precedent. See DESIGN_AUDIT.md §6.
     elevated: '0 4px 12px rgba(0,0,0,0.12)',                              // App.jsx dropdowns + elevated panels
     overlay:  '0 4px 12px rgba(0,0,0,0.35)',                              // 1x Toast.jsx — heavy float layer; modals, tooltips
+    sheetTop: '0 -4px 24px rgba(0,0,0,0.18)',                             // 1x BottomSheet primitive — upward shadow for bottom-sheet floor (Story 87)
   },
 
   // ─── MOTION ─────────────────────────────────────────────────────────────────
