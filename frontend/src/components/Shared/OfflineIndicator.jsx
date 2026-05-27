@@ -27,13 +27,13 @@ export function OfflineIndicator({ isOnline, hasCache, isLandscape }) {
   var dot, label, bg, border;
   if (!isOnline && !hasCache) {
     dot = tokens.color.brand.red;       label = "No Connection";
-    bg  = "rgba(200,16,46,0.15)";       border = "rgba(200,16,46,0.35)";
+    bg  = tokens.color.overlay.redFaint;   border = tokens.color.overlay.redStrong;
   } else if (!isOnline && hasCache) {
     dot = tokens.color.status.warning;  label = "Offline Mode";
-    bg  = "rgba(212,160,23,0.15)";      border = "rgba(212,160,23,0.35)";
+    bg  = tokens.color.overlay.warnFaint;  border = tokens.color.overlay.warnStrong;
   } else {
     dot = tokens.color.status.success;  label = "Offline Ready";
-    bg  = "rgba(39,174,96,0.12)";       border = "rgba(39,174,96,0.3)";
+    bg  = tokens.color.overlay.winFaint;   border = tokens.color.overlay.winMid;
   }
 
   return (

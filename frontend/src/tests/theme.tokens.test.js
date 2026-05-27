@@ -88,7 +88,8 @@ describe('Group 2 — color sub-groups', function () {
   });
 
   test('2.7: color.overlay has correct keys (navyWash, not navySubtle); all rgba format', function () {
-    const expected = ['navyWash', 'navyFaint', 'navyMedium', 'whiteFaint', 'whiteLight', 'goldTint', 'goldStrong', 'backdrop'];
+    const expected = ['navyWash', 'navyFaint', 'navyMedium', 'whiteFaint', 'whiteLight', 'goldTint', 'goldStrong', 'backdrop',
+                      'redFaint', 'redStrong', 'warnFaint', 'warnStrong', 'winFaint', 'winMid'];
     expected.forEach(k => {
       expect(tokens.color.overlay[k]).toMatch(RGBA_RE);
     });

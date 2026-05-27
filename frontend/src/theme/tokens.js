@@ -78,6 +78,14 @@ export const tokens = {
       goldTint:   'rgba(245,200,66,0.12)',  // 9x — gold-tinted section backgrounds
       goldStrong: 'rgba(245,200,66,0.40)',  // 9x — gold wash for selected/active states
       backdrop:   'rgba(5,10,25,0.97)',     // — modal/bottom-sheet near-opaque scrim
+
+      // ─── Brand/status alpha tints (Story 89 — OfflineIndicator family) ─────
+      redFaint:   'rgba(200,16,46,0.15)',    // 1x OfflineIndicator.jsx — brand.red 0.15 (No Connection bg)
+      redStrong:  'rgba(200,16,46,0.35)',    // 1x OfflineIndicator.jsx — brand.red 0.35 (No Connection border)
+      warnFaint:  'rgba(212,160,23,0.15)',   // 1x OfflineIndicator.jsx — status.warning 0.15 (Offline Mode bg)
+      warnStrong: 'rgba(212,160,23,0.35)',   // 1x OfflineIndicator.jsx — status.warning 0.35 (Offline Mode border)
+      winFaint:   'rgba(39,174,96,0.12)',    // 1x OfflineIndicator.jsx — status.success 0.12 (Offline Ready bg)
+      winMid:     'rgba(39,174,96,0.30)',    // 1x OfflineIndicator.jsx — status.success 0.30 (Offline Ready border)
     },
   },
 
