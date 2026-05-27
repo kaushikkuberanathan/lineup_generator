@@ -17,7 +17,7 @@
 
 ---
 
-## Feature Registry (28 features)
+## Feature Registry (29 features)
 
 | # | Feature | Status | Primary Doc | Doc Status | Test File(s) | Test Status | Debt |
 |---|---------|--------|-------------|------------|--------------|-------------|------|
@@ -49,6 +49,7 @@
 | 21 | **Player profiles (V2 attributes)** | MVP | `SOLUTION_DESIGN.md` § Player Attributes; `PERSONAS.md` § Head Coach | ✅ Current | `scoring.test.js`, `lineupEngineV2-unit.test.js` | ✅ Yes | — |
 | 22 | **Governance infrastructure** | MVP | `CHARTER.md`, `ONE_PAGER.md`, `ROADMAP.md`, `PERSONAS.md`, `faqs.js`, `FEATURE_MAP.md`, `MASTER_DEV_REFERENCE.md`, `CLAUDE.md` | ✅ Current | — | ❌ None | — |
 | 24 | **Toast UI primitive** | MVP | `CLAUDE.md` § UI Primitives | ✅ Current | `src/components/ui/Toast.test.jsx` | ✅ Yes | — |
+| 29 | **BottomSheet UI primitive** | MVP | `CLAUDE.md` § UI Primitives | ✅ Current | `src/components/ui/BottomSheet.test.jsx` (7 tests, BS1–BS7); `theme.tokens.test.js` (+6 tests for `radius.sheet` + `shadow.sheetTop`) | ✅ Yes | LockFlow is the sole consumer today (v2.5.21); future modals/pickers expected to migrate. Pill + ListRow (v2.5.14) and the Phase 2 primitives row (#28) cover other shipped primitives — pre-existing gaps where this map lags shipped primitives. |
 
 ---
 

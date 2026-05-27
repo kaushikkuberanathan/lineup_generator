@@ -141,7 +141,7 @@ var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.5.20";
+var APP_VERSION = "2.5.21";
 
 function loadJSON(key, def) {
   try {
@@ -1835,15 +1835,16 @@ export default function App() {
     return absentTonight.indexOf(name) < 0;
   });
 
-  useRegisterSW({
+  const { needRefresh: [needRefresh, setNeedRefresh], updateServiceWorker } = useRegisterSW({
+    onNeedRefresh() {
+      setNeedRefresh(true);
+    },
     onRegistered(r) {
       if (r) {
         setInterval(() => r.update(), 60 * 60 * 1000);
       }
     }
   });
-  var needRefresh = false;
-  var setNeedRefresh = function() {};
 
   // Standalone: true when running as installed PWA (no browser chrome)
   var isStandalone = typeof window !== "undefined" && window.matchMedia

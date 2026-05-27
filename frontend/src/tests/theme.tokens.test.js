@@ -71,12 +71,13 @@ describe('Group 2 — color sub-groups', function () {
     });
   });
 
-  test('2.5: color.status has correct keys; successBg is absent', function () {
-    ['success', 'warning', 'error', 'errorBg', 'info'].forEach(k => {
+  test('2.5: color.status has correct keys', function () {
+    ['success', 'warning', 'error', 'errorBg', 'info',
+     'successBg', 'warningBg', 'successBorder', 'warningBorder',
+     'successText', 'warningText', 'warningTextLight'].forEach(k => {
       expect(typeof tokens.color.status[k]).toBe('string');
       expect(tokens.color.status[k].length).toBeGreaterThan(0);
     });
-    expect(tokens.color.status).not.toHaveProperty('successBg');
   });
 
   test('2.6: color.border has subtle, default, strong as non-empty strings', function () {
@@ -87,7 +88,8 @@ describe('Group 2 — color sub-groups', function () {
   });
 
   test('2.7: color.overlay has correct keys (navyWash, not navySubtle); all rgba format', function () {
-    const expected = ['navyWash', 'navyFaint', 'navyMedium', 'whiteFaint', 'whiteLight', 'goldTint', 'goldStrong', 'backdrop'];
+    const expected = ['navyWash', 'navyFaint', 'navyMedium', 'whiteFaint', 'whiteLight', 'goldTint', 'goldStrong', 'backdrop',
+                      'redFaint', 'redStrong', 'warnFaint', 'warnStrong', 'winFaint', 'winMid'];
     expected.forEach(k => {
       expect(tokens.color.overlay[k]).toMatch(RGBA_RE);
     });
@@ -240,11 +242,11 @@ describe('Group 8 — shadow tokens', function () {
     expect(typeof tokens.shadow).toBe('object');
   });
 
-  test('8.2: shadow has exactly the four expected keys', function () {
-    ['subtle', 'card', 'elevated', 'overlay'].forEach(function (k) {
+  test('8.2: shadow has exactly the five expected keys', function () {
+    ['subtle', 'card', 'elevated', 'overlay', 'sheetTop'].forEach(function (k) {
       expect(tokens.shadow).toHaveProperty(k);
     });
-    expect(Object.keys(tokens.shadow).length).toBe(4);
+    expect(Object.keys(tokens.shadow).length).toBe(5);
   });
 
   test('8.3: all shadow values are non-empty strings', function () {
@@ -274,6 +276,10 @@ describe('Group 8 — shadow tokens', function () {
   test('8.8: named export shadow from index.js resolves and matches tokens.shadow', function () {
     expect(shadow).toBeDefined();
     expect(shadow.card).toBe(tokens.shadow.card);
+  });
+
+  test('8.9: tokens.shadow.sheetTop has the expected value', function () {
+    expect(tokens.shadow.sheetTop).toBe('0 -4px 24px rgba(0,0,0,0.18)');
   });
 
 });

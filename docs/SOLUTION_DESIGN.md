@@ -505,6 +505,43 @@ The Songs sub-tab in Game Day → Batting filters to tonight's active batting or
 
 ---
 
+## UI Primitives
+
+### Overview
+
+A UI primitive in this codebase is an atomic, token-bound rendering component with no business logic, colocated with its test file in `frontend/src/components/ui/`. Primitives consume design tokens directly (`frontend/src/theme/tokens.js`) — no inline literals for color, spacing, radius, or shadow. Use a primitive at the call site when a recurring visual pattern emerges across 3+ sites; compose ad-hoc with `Stack` + `Text` until then. The pattern exists because `App.jsx` is a ~9,800-line monolith and a future call-site refactor (component split) is only safe once the token contract is enforced and the building blocks are tested in isolation. Primitives are the first layer of that contract.
+
+### Primitive inventory
+
+| Primitive | File | Tests | Introduced | Notes |
+|---|---|---|---|---|
+| Toast | `components/ui/Toast.jsx` | `Toast.test.jsx` | v2.4.x | Test added v2.5.2; top-anchored transient notifications |
+| Badge | `components/ui/Badge.jsx` | `Badge.test.jsx` | v2.5.10 | Gained `context='light' \| 'dark'` prop in v2.5.12 (dark variants are token-driven) |
+| Button | `components/ui/Button.jsx` | `Button.test.jsx` | v2.5.10 | Variants: primary, ghost; 44px touch-target floor |
+| Card | `components/ui/Card.jsx` | `Card.test.jsx` | v2.5.10 | Surface container with token-bound padding + radius |
+| Stack | `components/ui/Stack.jsx` | `Stack.test.jsx` | v2.5.10 | Vertical/horizontal layout via `gap` prop |
+| Text | `components/ui/Text.jsx` | `Text.test.jsx` | v2.5.10 | Use `size` prop, not inline `fontSize` style overrides |
+| Pill | `components/ui/Pill.jsx` | `Pill.test.jsx` | v2.5.14 | Compact toggle-chip; non-44px-floor by design |
+| ListRow | `components/ui/ListRow.jsx` | `ListRow.test.jsx` | v2.5.14 | Full-width tappable row with 44px floor + optional divider |
+| BottomSheet | `components/ui/BottomSheet.jsx` | `BottomSheet.test.jsx` | v2.5.21 | Overlay + focus trap + slide-up; scrim dismiss; LockFlow is first consumer |
+
+### BottomSheet pattern
+
+`BottomSheet` provides a bottom-anchored modal surface with: a full-viewport scrim that dismisses on tap, a slide-up animation on mount, focus trapping within the sheet body, `role="dialog"` with `aria-modal="true"` for screen readers, and a11y F6 compliance (`aria-labelledby` wires to a passed-in heading id). Visual tokens consumed: `tokens.radius.sheet` (top-corner radius), `tokens.shadow.sheetTop` (upward shadow), `tokens.color.overlay.scrim` (backdrop tint). The whole primitive is 80 lines.
+
+Consumer pattern: import the primitive, control its visibility via `isOpen` from parent state, pass an `onClose` callback, and put the sheet body as children. Example: see `frontend/src/components/GameDay/LockFlow.jsx` — the reference implementation. LockFlow used to inline its own modal shell (24 lines of fixed-position + backdrop + animation wiring); it now imports `<BottomSheet>` and passes its content as children. Future modals/pickers (settings sheet, multi-step confirmations) should use this primitive — do not re-derive the pattern.
+
+### Conventions
+
+- All primitives live in `frontend/src/components/ui/`.
+- Each primitive has a colocated `*.test.jsx` (not in `src/tests/`).
+- All color, spacing, radius, and shadow values come from `frontend/src/theme/tokens.js`. No inline literals.
+- No business logic inside a primitive — data flows through props; callbacks bubble up via props.
+- New primitives require: (a) a colocated test file with **named test IDs** (e.g. BS1–BS7, BD1–BD10) so tests can be referenced individually in PRs and DOC_TEST_DEBT; (b) a row in `docs/product/FEATURE_MAP.md`; (c) an entry in this section's inventory table.
+- Before introducing a new primitive, first try composing with `Stack` + `Text` + an existing primitive. Only promote to a new primitive when the same shape recurs at 3+ call sites OR carries a non-trivial a11y / animation contract (BottomSheet qualifies on the second criterion).
+
+---
+
 ## PWA Setup
 
 - **Plugin:** `vite-plugin-pwa` with Workbox

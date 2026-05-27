@@ -30,8 +30,8 @@ export function ValidationBanner({ bannerReady, bannerIssues }) {
         borderRadius: "10px",
         padding: "12px 16px",
         marginBottom: "14px",
-        background: bannerReady ? "#d1fae5" : "#fef3c7",
-        border: "1px solid " + (bannerReady ? "rgba(16,185,129,0.3)" : "rgba(217,119,6,0.3)"),
+        background: bannerReady ? tokens.color.status.successBg : tokens.color.status.warningBg,
+        border: "1px solid " + (bannerReady ? tokens.color.status.successBorder : tokens.color.status.warningBorder),
       }}
     >
       <span style={{ fontSize: "20px", lineHeight: 1, flexShrink: 0 }}>
@@ -43,8 +43,7 @@ export function ValidationBanner({ bannerReady, bannerIssues }) {
             size="lg"
             weight="bold"
             family="serif"
-            // style escape: no success-text token
-            style={{ color: "#065f46", display: "block" }}
+            style={{ color: tokens.color.status.successText, display: "block" }}
           >
             Lineup Ready — All innings valid · Bench rotation balanced
           </Text>
@@ -54,17 +53,15 @@ export function ValidationBanner({ bannerReady, bannerIssues }) {
               size="lg"
               weight="bold"
               family="serif"
-              // style escape: no warning-text token
-              style={{ color: "#92400e", display: "block" }}
+              style={{ color: tokens.color.status.warningText, display: "block" }}
             >
               {"Fix " + bannerIssues.length + (bannerIssues.length === 1 ? " issue" : " issues")}
             </Text>
             <ul style={{
               margin: 0,
               paddingLeft: "18px",
-              // style escape: dark-on-tint body color lacks token
               fontSize: tokens.font.size.md,
-              color: "#78350f",
+              color: tokens.color.status.warningTextLight,
               lineHeight: tokens.font.lineHeight.comfortable,
             }}>
               {bannerIssues.map(function(msg, idx) {
