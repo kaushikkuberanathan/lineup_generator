@@ -2949,15 +2949,15 @@ export default function App() {
     if (sourceType === "image") {
       userContent = [
         { type:"image", source:{ type:"base64", media_type: mediaType || "image/png", data: sourceData } },
-        { type:"text", text:"Parse this box score or game result image. Extract the final score and individual batting stats for " + teamName + " players." }
+        { type:"text", text:"Parse this box score or game result image. Extract the final score and individual batting stats for " + ((activeTeam && activeTeam.name) || "") + " players." }
       ];
     } else if (sourceType === "pdf") {
       userContent = [
         { type:"document", source:{ type:"base64", media_type:"application/pdf", data: sourceData } },
-        { type:"text", text:"Parse this box score or game result PDF. Extract the final score and individual batting stats for " + teamName + " players." }
+        { type:"text", text:"Parse this box score or game result PDF. Extract the final score and individual batting stats for " + ((activeTeam && activeTeam.name) || "") + " players." }
       ];
     } else {
-      userContent = "Parse this game result. Extract final score and batting stats for " + teamName + " players.\n\n" + sourceData;
+      userContent = "Parse this game result. Extract final score and batting stats for " + ((activeTeam && activeTeam.name) || "") + " players.\n\n" + sourceData;
     }
 
     var BACKEND = "https://lineup-generator-backend.onrender.com";
