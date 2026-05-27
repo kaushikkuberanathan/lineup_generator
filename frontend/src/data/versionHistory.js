@@ -3,7 +3,7 @@
     version: '2.5.21',
     date: 'May 2026',
     headline: 'In-app update prompt restored; BottomSheet primitive ships',
-    techNote: 'SW update banner fix (Story 85), BottomSheet primitive + LockFlow migration (Story 87), UX token families (Stories 88, 89), sync-script hardening (Story 91), and ROADMAP byte-corruption sweep (Story 76)',
+    techNote: 'Minor fixes and internal improvements',
     userChanges: [
       'In-app update prompt now appears when a new version is available — previously coaches had to close and reopen the PWA to receive updates (Story 85, PR #188)',
       'Lock confirmation now uses a slide-up sheet with proper focus handling — smoother than the old modal flicker (Story 87, PR #190)',
