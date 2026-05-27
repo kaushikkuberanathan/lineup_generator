@@ -135,6 +135,17 @@ export const tokens = {
     circle: '50%',    // 15x — avatar/icon circles
   },
 
+  // ─── BORDER WIDTH ──────────────────────────────────────────────────────────
+  // INTRODUCED AS CANONICAL — Story 92 (DefenseDiamond Tier B). Resolves the
+  // 1.5px navy pill borders in DefenseDiamond. hairline/medium ship together
+  // so the scale is complete at introduction rather than grown piecemeal.
+
+  borderWidth: {
+    hairline: '1px',
+    thin:     '1.5px',
+    medium:   '2px',
+  },
+
   // ─── FONT ───────────────────────────────────────────────────────────────────
 
   font: {
