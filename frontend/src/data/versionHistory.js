@@ -1,5 +1,25 @@
 ﻿export var VERSION_HISTORY = [
   {
+    version: '2.5.21',
+    date: 'May 2026',
+    headline: 'In-app update prompt restored; BottomSheet primitive ships',
+    techNote: 'Minor fixes and internal improvements',
+    userChanges: [
+      'In-app update prompt now appears when a new version is available — previously coaches had to close and reopen the PWA to receive updates (Story 85, PR #188)',
+      'Lock confirmation now uses a slide-up sheet with proper focus handling — smoother than the old modal flicker (Story 87, PR #190)',
+    ],
+    internalChanges: [
+      'Story 85 — useRegisterSW return now destructured at App.jsx:1838; updateServiceWorker available to both banner click handlers (App.jsx:3518 + 8633); manual needRefresh / setNeedRefresh stubs replaced with hook values (PR #188)',
+      'Story 87 — BottomSheet primitive added at frontend/src/components/ui/BottomSheet.jsx (overlay, focus trap, slide-up animation, scrim dismiss); LockFlow migrated from inline modal to BottomSheet consumer; radius.sheet + shadow.sheetTop tokens added (PR #190 via #217)',
+      'Story 88 (P2) — Status tint token family added (success/warning backgrounds + borders + text variants); ValidationBanner second-pass binds to status tokens instead of literals (PR #215)',
+      'Story 89 (P3) — Overlay alpha-tint token family added (overlay.redFaint/redStrong, overlay.warnFaint/warnStrong, overlay.winFaint/winMid); OfflineIndicator second-pass binds to overlay tokens (PR #215)',
+      'Story 91 — scripts/sync-stories-to-issues.js guards the ROADMAP patch block with typeof issueNum === "number" — failed POST no longer corrupts ROADMAP.md with <!-- #undefined --> markers (PR #211)',
+      'Story 76 — 48 embedded \\r corruption artifacts scrubbed from ROADMAP.md story headings: 16 Variant A (double-marker, Stories 72–87) + 32 Variant B (single-marker, Stories 19–22, 62, 64–65, and others). One-pass awk sweep; zero user-facing change.',
+      'Test suite: 759 passing / 1 skipped / 0 failed (+8 net vs v2.5.20 baseline)',
+      'Release-prep flow: feature/release-v2.5.21 cut from develop; SOLUTION_DESIGN.md gained new ## UI Primitives section; FEATURE_MAP.md added row #29 for BottomSheet',
+    ],
+  },
+  {
     version: '2.5.20',
     date: 'May 2026',
     headline: 'Story 84 fix, UX Phase 5 token foundation, sync-script governance',
