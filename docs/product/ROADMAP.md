@@ -3163,7 +3163,7 @@ spike on App.jsx grep first — if POS_COLORS values
 appear in App.jsx, escalate to gated work and pair
 with the v2.6.0 token-family release.
 
-### Story 94 (P3) — MaintenanceScreen.jsx token migration <!-- #N -->
+### Story 94 (P3) — MaintenanceScreen.jsx token migration <!-- #220 -->
 
 Status: Open
 Discovered: 2026-05-28 — MaintenanceScreen.jsx recon
