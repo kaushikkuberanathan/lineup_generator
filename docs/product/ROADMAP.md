@@ -3026,7 +3026,7 @@ Separate from Story 88 (which covers new base palette
 colors for ValidationBanner — emerald/amber solids,
 not alpha tints of existing tokens).
 
-### Story 92 (P3) — DefenseDiamond Tier A+B token migration <!-- #N -->
+### Story 92 (P3) — DefenseDiamond Tier A+B token migration <!-- #218 -->
 
 Status: Open
 Discovered: 2026-05-28 — DefenseDiamond.jsx recon
@@ -3091,7 +3091,7 @@ Tokens.js L14 comment ("Nothing imports from this
 file yet") is already stale and worth a one-line
 update in this PR.
 
-### Story 93 (P3) — DefenseDiamond Tier D domain token families <!-- #N -->
+### Story 93 (P3) — DefenseDiamond Tier D domain token families <!-- #219 -->
 
 Status: Open
 Discovered: 2026-05-28 — DefenseDiamond.jsx recon
