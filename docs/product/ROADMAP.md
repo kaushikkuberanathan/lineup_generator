@@ -1011,7 +1011,7 @@ Game Mode polish release covering three themes:
 
 ### Story 61 (P0) — Share-link viewer routing broken in prod
 
-**Status:** Resolved — vTBD (version assigned on release branch)
+**Status:** Resolved — v2.5.16 (shipped 2026-05-19)
 **Discovered:** April 30, 2026 during Slice 0 (combined game view) dev test on Vercel preview
 **Resolved:** May 19, 2026 via `fix/story-61-share-viewer-routing`
 
