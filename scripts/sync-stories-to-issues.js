@@ -26,12 +26,6 @@ const ROADMAP_PATH = path.join(__dirname, '..', 'docs', 'product', 'ROADMAP.md')
 const TOKEN   = process.env.GITHUB_TOKEN;
 const DRY_RUN = process.argv.includes('--dry-run');
 
-if (!TOKEN) {
-  console.error('\n❌ GITHUB_TOKEN not set.');
-  console.error('   Run: $env:GITHUB_TOKEN = $TOKEN\n');
-  process.exit(1);
-}
-
 // ── Label inference ───────────────────────────────────────────────────────────
 
 const AREA_RULES = [
@@ -82,9 +76,18 @@ function inferLabels(priority, title, body) {
 
 // ── ROADMAP parser ────────────────────────────────────────────────────────────
 
+// Patch a single Story heading line with its assigned issue number.
+// Pure function — exported for regression tests. CRLF-safe because callers
+// pass `originalLine` from parseStories, which uses `split(/\r?\n/)` and
+// therefore never carries a trailing \r. Story 97 / issue #234.
+function patchHeading(content, originalLine, issueNumber) {
+  const cleaned = originalLine.replace(/\s*<!--\s*#N\s*-->/gi, '');
+  return content.replace(originalLine, `${cleaned} <!-- #${issueNumber} -->`);
+}
+
 function parseStories(content) {
   const stories = [];
-  const lines = content.split('\n');
+  const lines = content.split(/\r?\n/);
   let i = 0;
 
   while (i < lines.length) {
@@ -170,8 +173,8 @@ async function findExistingOpenIssue(issueTitle) {
   const q = `repo:${REPO_OWNER}/${REPO_NAME} type:issue state:open "${issueTitle}"`;
   try {
     const res = await githubRequest('GET', `/search/issues?q=${encodeURIComponent(q)}&per_page=5`);
-    if (!res || !res.items) return null;
-    return res.items.find(item => item.title === issueTitle) || null;
+    if (!res || !res.body || !res.body.items) return null;
+    return res.body.items.find(item => item.title === issueTitle) || null;
   } catch (err) {
     console.warn(`  ⚠  Search API error — skipping de-dup check: ${err.message}`);
     return null;
@@ -181,6 +184,12 @@ async function findExistingOpenIssue(issueTitle) {
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 async function main() {
+  if (!TOKEN) {
+    console.error('\n❌ GITHUB_TOKEN not set.');
+    console.error('   Run: $env:GITHUB_TOKEN = $TOKEN\n');
+    process.exit(1);
+  }
+
   console.log('\n🔍 Reading ROADMAP.md...');
   const content = fs.readFileSync(ROADMAP_PATH, 'utf8');
   const stories = parseStories(content);
@@ -219,11 +228,7 @@ async function main() {
       const existing = await findExistingOpenIssue(issueTitle);
       if (existing) {
         console.log(`⚠️  existing #${existing.number} found — patching marker, skipping create`);
-        const cleaned = story.originalLine.replace(/\s*<!--\s*#N\s*-->/gi, '');
-        updatedContent = updatedContent.replace(
-          story.originalLine,
-          `${cleaned} <!-- #${existing.number} -->`
-        );
+        updatedContent = patchHeading(updatedContent, story.originalLine, existing.number);
         await sleep(600);
         continue;
       }
@@ -245,11 +250,7 @@ async function main() {
       console.log(`✅ #${issueNum}`);
 
       // Patch the heading line in ROADMAP.md
-      const cleaned = story.originalLine.replace(/\s*<!--\s*#N\s*-->/gi, '');
-      updatedContent = updatedContent.replace(
-        story.originalLine,
-        `${cleaned} <!-- #${issueNum} -->`
-      );
+      updatedContent = patchHeading(updatedContent, story.originalLine, issueNum);
 
       await sleep(600);
     } catch (err) {
@@ -263,7 +264,11 @@ async function main() {
   console.log(`🔗 View issues: https://github.com/${REPO_OWNER}/${REPO_NAME}/issues\n`);
 }
 
-main().catch(err => {
-  console.error('\n❌ Fatal error:', err.message);
-  process.exit(1);
-});
+if (require.main === module) {
+  main().catch(err => {
+    console.error('\n❌ Fatal error:', err.message);
+    process.exit(1);
+  });
+}
+
+module.exports = { parseStories, patchHeading };
