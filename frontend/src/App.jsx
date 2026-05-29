@@ -148,7 +148,7 @@ function loadJSON(key, def) {
     var raw = localStorage.getItem(key);
     if (raw) { return JSON.parse(raw); }
   } catch (e) {
-    try { var mv = _mem[key]; if (mv) { return JSON.parse(mv); } } catch (e2) {}
+    try { var mv = _mem[key]; if (mv) { return JSON.parse(mv); } } catch (e2) { /* ignored */ }
   }
   return def;
 }
@@ -405,6 +405,16 @@ function autoAssign(roster, innings) {
     return cnt;
   }
 
+  // Helper: check if a player carries the "benchOnce" protection tag.
+  function hasBenchOnce(pName) {
+    for (var ri = 0; ri < roster.length; ri++) {
+      if (roster[ri].name === pName) {
+        return (roster[ri].tags || []).indexOf("benchOnce") >= 0;
+      }
+    }
+    return false;
+  }
+
   // Identify absent players (tagged "absent") — they sit Out every inning
   var absentSet = {};
   for (var absi = 0; absi < roster.length; absi++) {
@@ -438,14 +448,6 @@ function autoAssign(roster, innings) {
     // They are excluded from candidacy after their first bench inning.
     // Fallback: if not enough non-protected candidates, allow protected players
     // to sit again (unavoidable with very small rosters).
-    function hasBenchOnce(pName) {
-      for (var ri = 0; ri < roster.length; ri++) {
-        if (roster[ri].name === pName) {
-          return (roster[ri].tags || []).indexOf("benchOnce") >= 0;
-        }
-      }
-      return false;
-    }
     var benchCandidates = [];
     for (var bp = 0; bp < activePlayers.length; bp++) {
       var pn = activePlayers[bp];
@@ -1954,7 +1956,7 @@ export default function App() {
     setIgnoredWarnings(function(prev) {
       var next = new Set(prev);
       next.add(warnKey(w));
-      try { localStorage.setItem("ignoredWarnings_" + nextGameDate, JSON.stringify([...next])); } catch(e) {}
+      try { localStorage.setItem("ignoredWarnings_" + nextGameDate, JSON.stringify([...next])); } catch(e) { /* ignored */ }
       return next;
     });
   };
@@ -1963,7 +1965,7 @@ export default function App() {
     setIgnoredWarnings(function(prev) {
       var next = new Set(prev);
       warnings.forEach(function(w) { next.add(warnKey(w)); });
-      try { localStorage.setItem("ignoredWarnings_" + nextGameDate, JSON.stringify([...next])); } catch(e) {}
+      try { localStorage.setItem("ignoredWarnings_" + nextGameDate, JSON.stringify([...next])); } catch(e) { /* ignored */ }
       return next;
     });
   };
@@ -1972,14 +1974,14 @@ export default function App() {
     setIgnoredWarnings(function(prev) {
       var next = new Set(prev);
       next.delete(warnKey(w));
-      try { localStorage.setItem("ignoredWarnings_" + nextGameDate, JSON.stringify([...next])); } catch(e) {}
+      try { localStorage.setItem("ignoredWarnings_" + nextGameDate, JSON.stringify([...next])); } catch(e) { /* ignored */ }
       return next;
     });
   };
 
   var restoreAllWarnings = function() {
     setIgnoredWarnings(new Set());
-    try { localStorage.removeItem("ignoredWarnings_" + nextGameDate); } catch(e) {}
+    try { localStorage.removeItem("ignoredWarnings_" + nextGameDate); } catch(e) { /* ignored */ }
   };
   var players = roster.map(function(r) { return r.name; });
 
@@ -2397,7 +2399,7 @@ export default function App() {
     setLineupLocked(savedLocked);
     setCoachPin(savedPin);
     var _savedAttendance = {};
-    try { _savedAttendance = JSON.parse(localStorage.getItem('attendanceOverrides') || '{}'); } catch(e) {}
+    try { _savedAttendance = JSON.parse(localStorage.getItem('attendanceOverrides') || '{}'); } catch(e) { /* ignored */ }
     setAttendanceOverrides(_savedAttendance);
     setPinSessionUnlocked(false);
     setCurrentBatterIndex(savedBatterIndex);
@@ -2408,7 +2410,7 @@ export default function App() {
     track("load_team", { team_id: team.id, team_name: team.name });
     mixpanel.identify(team.id);
     var coachName = user && user.profile && user.profile.first_name ? user.profile.first_name : null;
-    try { if (coachName) { mixpanel.alias(coachName + "_" + team.id); } } catch(e) {}
+    try { if (coachName) { mixpanel.alias(coachName + "_" + team.id); } } catch(e) { /* ignored */ }
     mixpanel.people.set({
       $name: coachName || team.name,
       coach_name: coachName || null,
@@ -2814,8 +2816,8 @@ export default function App() {
     var appVer = APP_VERSION;
     var entry = { id: Date.now() + "", category: fbCategory, body: fbBody.trim(), changeTypes: fbChangeTypes.slice(), timestamp: Date.now(), appVersion: appVer };
     var existing = [];
-    try { existing = loadJSON("feedback:submissions", []); } catch(e) {}
-    try { saveJSON("feedback:submissions", existing.concat([entry])); } catch(e) {}
+    try { existing = loadJSON("feedback:submissions", []); } catch(e) { /* ignored */ }
+    try { saveJSON("feedback:submissions", existing.concat([entry])); } catch(e) { /* ignored */ }
     (async function() {
       try {
         var BACKEND = "https://lineup-generator-backend.onrender.com";
@@ -2842,8 +2844,8 @@ export default function App() {
     var appVer = APP_VERSION;
     var entry = { id: Date.now() + "", location: bugLocation, body: bugBody.trim(), severity: bugSeverity, timestamp: Date.now(), appVersion: appVer };
     var existing = [];
-    try { existing = loadJSON("feedback:bugs", []); } catch(e) {}
-    try { saveJSON("feedback:bugs", existing.concat([entry])); } catch(e) {}
+    try { existing = loadJSON("feedback:bugs", []); } catch(e) { /* ignored */ }
+    try { saveJSON("feedback:bugs", existing.concat([entry])); } catch(e) { /* ignored */ }
     (async function() {
       try {
         var BACKEND = "https://lineup-generator-backend.onrender.com";
@@ -4505,7 +4507,7 @@ export default function App() {
                 background:"rgba(15,31,61,0.04)", cursor:"pointer", userSelect:"none" }}
             >
               <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
-                <span style={{ fontWeight:700, fontSize:"14px", color:C.navy }}>🏟 Tonight's Attendance</span>
+                <span style={{ fontWeight:700, fontSize:"14px", color:C.navy }}>🏟 Tonight&apos;s Attendance</span>
                 {absentTonight.length > 0 ? (
                   <span style={{ background:"#fee2e2", color:"#dc2626", fontSize:"11px", fontWeight:700, padding:"2px 7px", borderRadius:"10px" }}>
                     {absentTonight.length} out
@@ -6668,7 +6670,7 @@ export default function App() {
       var combined = fbSubs.concat(bugSubs);
       combined.sort(function(a, b) { return b.timestamp - a.timestamp; });
       allSubs = combined.slice(0, 5);
-    } catch(e) {}
+    } catch(e) { /* ignored */ }
 
     return (
       <div>
@@ -6805,8 +6807,8 @@ export default function App() {
                   <button style={{ ...S.btn("ghost"), color:C.red, marginTop:"4px" }}
                     onClick={function() {
                       if (confirm("Clear all saved feedback? This cannot be undone.")) {
-                        try { localStorage.removeItem("feedback:submissions"); } catch(e2) {}
-                        try { localStorage.removeItem("feedback:bugs"); } catch(e2) {}
+                        try { localStorage.removeItem("feedback:submissions"); } catch(e2) { /* ignored */ }
+                        try { localStorage.removeItem("feedback:bugs"); } catch(e2) { /* ignored */ }
                       }
                     }}>
                     Clear All
@@ -7423,7 +7425,7 @@ export default function App() {
             Dugout Lineup is a free tool built for youth baseball and softball coaches. It takes the stress out of game day by helping you build a fair, smart field lineup in seconds — no spreadsheets, no paper charts, no arguments about who played where last game.
           </div>
           <div style={{ fontSize:"13px", color:C.text, lineHeight:"1.7", marginBottom:"10px" }}>
-            Tell it your roster, your players' positions, and how many innings you're playing. Tap Auto-Assign and it rotates every kid fairly — keeping track of bench time, position preferences, and who played where across every inning.
+            Tell it your roster, your players&apos; positions, and how many innings you&apos;re playing. Tap Auto-Assign and it rotates every kid fairly — keeping track of bench time, position preferences, and who played where across every inning.
           </div>
           <div style={{ fontSize:"13px", color:C.text, lineHeight:"1.7", marginBottom:"14px" }}>
             It also tracks your season schedule, batting stats, walk-up songs, and snack duty — everything a volunteer coach needs, right in their pocket.
@@ -7453,7 +7455,7 @@ export default function App() {
               if (navigator.share) {
                 navigator.share({ title: "Dugout Lineup", text: text, url: url }).catch(function() {});
               } else {
-                try { navigator.clipboard.writeText(url); alert("Link copied to clipboard!"); } catch(e) {}
+                try { navigator.clipboard.writeText(url); alert("Link copied to clipboard!"); } catch(e) { /* ignored */ }
               }
             }}>
             Share App Now
@@ -8004,7 +8006,7 @@ export default function App() {
     return (
       <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", minHeight:"100vh", background:"#fdf8f0", gap:"12px" }}>
         <div style={{ fontSize:"32px" }}>😕</div>
-        <div style={{ fontSize:"14px", color:"#6a7a9a", fontFamily:"Georgia,serif" }}>This share link couldn't be found.</div>
+        <div style={{ fontSize:"14px", color:"#6a7a9a", fontFamily:"Georgia,serif" }}>This share link couldn&apos;t be found.</div>
       </div>
     );
   }
@@ -8062,7 +8064,7 @@ export default function App() {
       var isViewer64 = urlParams.get("view") === "true" || urlParams.get("role") === "viewer";
       return <ErrorBoundary fallback="Viewer Mode">{isViewer64 ? <DugoutView payload={payload} isViewer={true} onExit={function() {}} /> : <SharedView payload={payload} renderFieldSVG={renderFieldSVG} />}</ErrorBoundary>;
     }
-  } catch (e) {}
+  } catch (e) { /* ignored */ }
 
   var PRIMARY_TABS = [
     { key:"home",    label:"Home",     icon:"🏠" },
@@ -8541,7 +8543,7 @@ export default function App() {
             {isIOS ? (
               <div style={{ fontSize:11, color:"rgba(255,255,255,0.75)", lineHeight:1.5 }}>
                 Tap <span style={{ fontWeight:700, color:"#f5c842" }}>⎙ Share</span> then tap{" "}
-                <span style={{ fontWeight:700, color:"#f5c842" }}>"Add to Home Screen"</span>
+                <span style={{ fontWeight:700, color:"#f5c842" }}>&quot;Add to Home Screen&quot;</span>
               </div>
             ) : deferredPrompt ? (
               <div style={{ fontSize:11, color:"rgba(255,255,255,0.65)" }}>
@@ -8549,7 +8551,7 @@ export default function App() {
               </div>
             ) : (
               <div style={{ fontSize:11, color:"rgba(255,255,255,0.65)" }}>
-                In Chrome, tap ⋮ menu → "Add to Home Screen"
+                In Chrome, tap ⋮ menu → &quot;Add to Home Screen&quot;
               </div>
             )}
           </div>
