@@ -10,6 +10,160 @@
 
 ---
 
+## 2026-05-29-A — v2.5.22 release ritual + sync-script CRLF fix
+
+**Date:** May 29, 2026  
+**Session ID:** 2026-05-29-A (Terminal 2 — UX Track)  
+**Duration:** ~6 hours (long session)  
+**Versions shipped to production:** v2.5.22 (PR #239 promote merge `fd12805`)  
+**PRs merged:** #233 (Story 96 ROADMAP entry), #236 (Story 97 fix + Story 96 byte cleanup), #238 (v2.5.22 release prep), #239 (develop → main promote), #240 (sync/main-into-develop)  
+**Issues filed:** #232 (Story 96 — P3, resolved same session), #234 (Story 97 — P2, resolved same session), Story 98 (P3 — ci.yml permissions, TBD issue number)
+
+### Overview
+
+Long session covering governance tooling repair, full v2.5.22 release ritual, and production promote. Two self-referential bugs discovered and fixed in the same session they were documented.
+
+### What Was Planned
+
+- Promote develop → main (Stories 92+94 from previous session)
+- File Story 96 (ROADMAP CRLF artifact cleanup)
+- Story 93 spike — DefenseDiamond Tier D (POS_COLORS)
+
+### What Shipped
+
+| PR | Story/Item | Type | Target |
+|---|---|---|---|
+| #233 | Story 96 — ROADMAP CRLF artifact documentation | squash → develop | develop |
+| #236 | Story 97 — sync-script CRLF fix + Story 96 byte cleanup | squash → develop | develop |
+| #238 | v2.5.22 release prep (9 files, version bump + docs) | regular → develop | develop |
+| #239 | v2.5.22 production promote | regular → main | **PRODUCTION** |
+| #240 | sync/main-into-develop post-promote | regular → develop | develop |
+
+### What Didn't Happen
+
+- Story 93 (DefenseDiamond Tier D) — deferred; GATED on App.jsx component split (POS_COLORS map duplicated at App.jsx lines 64-65)
+- Story 61 (P0, share link routing) — deferred again; Terminal 2 scope only, Terminal 1 owns the diagnosis
+
+### Key Events (Chronological)
+
+**1. Version check before promote caught a version gap**
+
+Both develop and main were at v2.5.21 — the Stories 92+94 content had landed on develop WITHOUT a version bump. Agent correctly flagged: promoting as-is would put new code into prod under the same version label. Decision: defer promote, bundle Stories 92+94+96+97 into v2.5.22.
+
+**2. Story 96 self-demonstrated its own bug**
+
+Filed Story 96 (ROADMAP CRLF artifacts) via sync-stories-to-issues.js. The sync script immediately re-introduced the exact artifact pattern Story 96 documented — on Story 96's own heading. Root cause: the script's `content.split('\n')` leaves `\r` on every line in CRLF files, which bleeds into `story.originalLine` and corrupts the patch output.
+
+**3. Story 97 filed and fixed in same session**
+
+The bug that Story 96's filing self-demonstrated was diagnosed (3 lines of source code), fixed (1-line change at line 87: `split('\n')` → `split(/\r?\n/)`), extended (dead-code `findExistingOpenIssue` unwrap fixed, `patchHeading()` extracted, `require.main` guard added), tested (4 regression tests via `node:test`), and gated in CI (new `sync-script` job) — all in the same session. PR #236 merged to develop with 10 checks passing.
+
+**4. Story 96 cleanup shipped in same PR as Story 97 fix**
+
+Story 96's actual byte cleanup (removing `\r` from Stories 92+94 headings) was correctly deferred until Story 97's fix was in place — otherwise the next sync run would have re-corrupted the cleaned headings. Cleanup and fix shipped in one atomic commit (PR #236).
+
+**5. GitHub PAT rotation required mid-session (twice)**
+
+Token expired during sync-script runs. Cause: `[System.Environment]::SetEnvironmentVariable("GITHUB_TOKEN", ...)` with `"User"` scope does NOT affect the current PowerShell session — only new sessions. Pattern confirmed: must also run `$env:GITHUB_TOKEN = "ghp_..."` in the current session. Permanent fix: set as system-level env var so all new sessions inherit it.
+
+**6. Security exposure incident**
+
+KK pasted a live PAT (`ghp_DOLp75...`) in chat. Token was revoked immediately. No exploitable window confirmed (token returned 401 at that time). Rule: never paste live credentials in chat. Use `$env:GITHUB_TOKEN.Substring(0,4)` fingerprint pattern to verify without exposing.
+
+**7. Ship Gate caught a box-score parser test gap**
+
+Gate Q1 (every touched feature has golden-path test) surfaced that the box-score AI parser teamName fix (PR #229) had no regression test. Decision: file as P1 debt in DOC_TEST_DEBT.md, justify deferral (manual validation sufficient for patch, full mock harness deferred to v2.6.0). Documented in new P1 entry targeting v2.6.0 + App.jsx component split.
+
+**8. CodeQL alert on new CI job**
+
+PR #239 (develop → main promote) flagged a CodeQL medium alert: `sync-script` CI job missing explicit `permissions` block. CodeQL was enabled for the first time this morning. Alert is a workflow hardening gap, not an app vulnerability. Decision: merge and file as Story 98 (P3).
+
+**9. Vitest Bug #7 — EmptyState.test.jsx**
+
+Cold-start worker flake hit EmptyState.test.jsx (8 tests dropped). This is the same environmental Bug #7 but targeting a different file than previous sessions. Effective suite count: 759 (755 observed locally). Bug #7 is documented in CLAUDE.md — CI is the authoritative gate.
+
+### What Went Well
+
+- **Self-referential bug discovery was handled correctly.** When Story 96's own filing demonstrated the sync-script bug, the agent stopped, diagnosed the root cause precisely from source code, and proposed a complete fix with tests. No speculation, no guessing — source-level verification before proposing.
+- **RED → GREEN discipline held.** Story 97's 4 regression tests were written to fail (confirmed by mutation) before the implementation was written. The test assertions are strong enough that they would have caught the original bug.
+- **Story 97 fix was immediately validated by the sync script itself.** After the fix landed, the script was run to create Story 97's GitHub issue — and it worked cleanly. The test was live within the same session.
+- **Agent branch-rule enforcement was consistent.** When the agent was on `develop` and asked to commit, it halted and flagged the branch policy violation before staging anything. No accidental direct commits to develop.
+- **Version gap caught before promote.** The agent correctly identified that a promote without a version bump would put new code under a stale version label. The release was deferred and packaged properly.
+- **Ship Gate was walked seriously.** All 4 questions answered with evidence, not assumptions. Two failures surfaced (Q1 box-score parser test, Q3 FEATURE_MAP rows). Both were addressed before the release — one via docs (FEATURE_MAP rows added), one via documented debt (parser test filed as P1).
+- **Full release ritual completed cleanly.** All 16 pre-release checklist items addressed, version bump across all 5 files, docs updated, build clean, smoke test passed on both dev and prod, sync PR opened immediately post-promote.
+- **CRLF-safe binary mode Python writes worked reliably.** Three separate Python one-shot scripts used for ROADMAP surgery — all with pre/post assertion guards, all verified via `od -c` byte dumps. Zero corruption introduced.
+
+### What Didn't Go Well
+
+- **Story 61 deferred again.** This is the 7th+ consecutive session deferral. It is a North Star violation (share link = Priority 1). The session was dominated by governance tooling repair that was urgent, but Story 61 must be the literal first action on Terminal 1 next session.
+- **Terminal 1 / Terminal 2 context bleed.** Multiple times during the session, output from one terminal was pasted in the wrong agent context. Symptoms: ESLint output appearing in UX agent, Story 92 Step 1a confusion, feature/lint-sprint-2 push appearing in Terminal 2 session. Root cause: KK is context-switching between two active agents in one chat interface. Mitigation: add a terminal identifier header to every paste ("This is Terminal 2 — UX worktree").
+- **GitHub PAT rotation blocked progress twice.** The same token went 401 twice in the same session. Pattern: `SetEnvironmentVariable` with `"User"` scope doesn't affect the current shell. Fix documented in memory. Long-term fix: set as machine-level env var or use a PAT with longer expiry.
+- **cmd /c fails silently for npm scripts via Bash tool.** Confirmed twice (npm test, npm run build). Only PowerShell with `Set-Location + & npm` works reliably. Memory updated. Agent prompt templates should always specify the PowerShell pattern.
+- **ROADMAP surgery complexity accumulated.** Three separate Python binary-mode scripts were needed in one session because the sync script was broken, the file has CRLF endings, and multiple stories needed marker patching. This complexity is resolved now that Story 97 is shipped — future sessions can use the sync script directly.
+- **Story 96 caused the very bug it documented.** While this led to the correct diagnosis of Story 97, it also means a session was spent chasing a self-caused regression. The ROADMAP.md file had extra `\r` artifacts introduced by the session's own work before the fix landed. All cleaned up, but worth noting as a "governance debt snowballs" example.
+
+### Key Decisions Made
+
+| Decision | Rationale |
+|---|---|
+| Bundle Stories 92+94+96+97 as v2.5.22 (skip Story 93) | Story 93 GATED on App.jsx component split; thin release without it; cleaner to bundle what's ready |
+| Story 97 fix scope: Option 1+3+4 (split fix + dead-code fix + regression tests) | All three are causally linked; dead-code fix activates de-dup which shares the same bug |
+| Ship Gate Q1 — file debt, proceed | Box-score parser test requires mocking Anthropic API; disproportionate for a patch release; manual validation sufficient |
+| Story 96 cleanup gated on Story 97 | Correct sequencing — cleaning artifacts before fixing the script would have been undone by the next sync run |
+| develop → main: regular merge (not squash) | Per Story 79 retrospective: squash collapses 12 commits, loses PR-level granularity at release boundary |
+| CodeQL alert: merge and file Story 98 | Medium severity = missing workflow hardening, not an app vulnerability; sync-script job is read-only |
+
+### Process Changes / Conventions Confirmed
+
+- **Binary-mode Python for ROADMAP surgery** — always use when editing CRLF files; always include pre/post assertion guards; always verify with `od -c` before committing; always delete temp scripts after use.
+- **Sync script is now safe** — `content.split(/\r?\n/)` is CRLF-agnostic; `findExistingOpenIssue` de-dup path is now live; `patchHeading()` is the single canonical patch site. Re-running sync is non-destructive.
+- **Post-promote sync PR is mandatory and immediate** — Story 86 convention. PR #240 opened and merged same session, same day.
+- **Ship Gate must be walked with evidence, not memory** — grep commands for each gate question, not assumptions. Q3 (FEATURE_MAP) would have been skipped if not explicitly verified this session.
+- **PAT session propagation pattern** — after any `SetEnvironmentVariable`, must also set `$env:GITHUB_TOKEN` in the current shell. Both lines always together.
+
+### Stories Resolved This Session
+
+| Story | Issue | Resolution |
+|---|---|---|
+| Story 92 | #218 | DefenseDiamond Tier A+B token migration — shipped v2.5.22 |
+| Story 94 | #220 | MaintenanceScreen token migration — shipped v2.5.22 |
+| Story 96 | #232 | ROADMAP CRLF artifacts — filed, cleaned, shipped v2.5.22 |
+| Story 97 | #234 | Sync-script CRLF bug — root-caused, fixed, tested, shipped v2.5.22 |
+
+### Stories Filed This Session
+
+| Story | Issue | Priority | Status |
+|---|---|---|---|
+| Story 96 | #232 | P3 | Resolved (same session) |
+| Story 97 | #234 | P2 | Resolved (same session) |
+| Story 98 | TBD | P3 | Open — ci.yml permissions block |
+
+### Carry-Forwards
+
+| Priority | Item | Owner |
+|---|---|---|
+| 🔴 P0 | Story 61 — share link routing broken | Terminal 1 — MUST go first |
+| P2 | Story 95 — techNote checklist in CLAUDE.md | Terminal 1 |
+| P2 | Story 85 — SW update banner fix | Terminal 1 |
+| P3 | Story 98 — ci.yml permissions hardening | Either track |
+| P3 | Story 93 — DefenseDiamond Tier D (GATED) | Terminal 2 |
+| — | Dependabot 3 moderate vulns | Story 69 / #135 |
+
+### Version Shipped
+
+**v2.5.22** — 2026-05-29
+
+- 5 PRs merged (develop + main + sync)
+- 12 files changed in the release commit set
+- 5 new tokens (`borderWidth.{hairline,thin,medium}`, `overlay.{whiteMedium,whiteHeavy}`)
+- 4 regression tests added (`sync-patch.test.js`, `node:test`)
+- 1 new CI job (`sync-script`, runs in 10s on every PR)
+- Production smoke test: passed
+- Post-promote sync: complete
+
+
+---
+
 ## 2026-05-27-A — v2.5.21 release ritual, Story 76 \r sweep, CRLF normalization
 
 **Date:** May 27, 2026
