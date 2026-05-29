@@ -252,7 +252,7 @@ describe('Group 8 — shadow tokens', function () {
   });
 
   test('8.3: all shadow values are non-empty strings', function () {
-    Object.entries(tokens.shadow).forEach(function ([k, v]) {
+    Object.values(tokens.shadow).forEach(function (v) {
       expect(typeof v).toBe('string');
       expect(v.length).toBeGreaterThan(0);
     });

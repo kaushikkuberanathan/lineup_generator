@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { PITCH, OUTCOME } from '../../hooks/useLiveScoring';
 import LiveScoreViewer from './LiveScoreViewer';
 import GameModeGearMenu from './GameModeGearMenu';
@@ -219,8 +219,6 @@ export default function LiveScoringPanel(props) {
   var confirmRunnerAdvancement = props.confirmRunnerAdvancement || function() {};
   var resolveRunnerConflict    = props.resolveRunnerConflict    || function() {};
   var runnerConflict           = props.runnerConflict           || null;
-  var incrementOpponentScore   = props.incrementOpponentScore   || function() {};
-  var addManualRun             = props.addManualRun             || function() {};
   var endHalfInning            = props.endHalfInning            || function() {};
   var undoHalfInning           = props.undoHalfInning           || function() {};
   var endGame                  = props.endGame                  || function() { return Promise.resolve({ ok: true }); };
@@ -230,8 +228,6 @@ export default function LiveScoringPanel(props) {
   var isAdminTestMode = props.isAdminTestMode || false;
   var onExit          = props.onExit    || function() {};
   var onPause         = props.onPause   || function() {};
-  var onSettings      = props.onSettings;
-  var rules           = props.rules;
   var pitchUIConfig   = props.pitchUIConfig;
   var ruleWarnings    = props.ruleWarnings   || [];
   var runsThisHalf    = props.runsThisHalf   || 0;

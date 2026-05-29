@@ -1011,7 +1011,7 @@ Game Mode polish release covering three themes:
 
 ### Story 61 (P0) — Share-link viewer routing broken in prod
 
-**Status:** Resolved — vTBD (version assigned on release branch)
+**Status:** Resolved — v2.5.16 (shipped 2026-05-19)
 **Discovered:** April 30, 2026 during Slice 0 (combined game view) dev test on Vercel preview
 **Resolved:** May 19, 2026 via `fix/story-61-share-viewer-routing`
 
@@ -3393,6 +3393,35 @@ Story 96 remains P3 (cleanup of two already-corrupted headings) but is GATED on 
 
 Could ship as a standalone P2 PR (script + tests + the Story 96 byte cleanup all in one).
 Estimated effort: 1-2 hours. No app code touched; pure governance + tooling.
+
+---
+
+### Story 95 (P2) — Add techNote approved-strings convention to Pre-release Docs Checklist <!-- #225 -->
+
+Status: Open
+Discovered: 2026-05-27 — CI failure during v2.5.21 release prep
+Target: v2.5.22
+
+Symptom: techNote approved-strings are only encoded in
+frontend/src/__tests__/versionHistory.test.js APPROVED_TECH_NOTES.
+Not in CLAUDE.md Pre-release Docs Checklist or Ship Gate.
+Burned a CI cycle during v2.5.21 release (techNote was
+free-form; re-written to approved string in fix commit 4003cb9).
+
+Impact: Every future release risks the same CI failure. The
+release author has no human-facing reminder that techNote is a
+constrained enum.
+
+Root cause: Convention documented only in test assertion, not in
+the human-facing checklist where it would be caught before push.
+
+Proposed fix: Add one bullet to CLAUDE.md Pre-release Docs
+Checklist item 3 (VERSION_HISTORY entry):
+  techNote must be one of the four approved strings in
+  APPROVED_TECH_NOTES (frontend/src/__tests__/versionHistory.test.js)
+
+Recommendation: Single-bullet docs addition. ~5 min. P2 — does
+not block release but prevents recurring CI churn.
 
 ---
 

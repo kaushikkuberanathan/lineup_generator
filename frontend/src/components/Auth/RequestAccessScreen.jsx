@@ -165,7 +165,7 @@ export function RequestAccessScreen({ onBack, requestAccess }) {
         </form>
 
         <p style={styles.note}>
-          The head coach will review your request and you'll receive an email
+          The head coach will review your request and you&apos;ll receive an email
           when approved — usually within a few hours.
         </p>
 
