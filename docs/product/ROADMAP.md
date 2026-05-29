@@ -3244,6 +3244,156 @@ Could ship same PR as Story 92 (DefenseDiamond Tier A+B)
 since both have the same shape (Tier A drop-ins +
 small overlay extension), or as a standalone P3 quick win.
 
+### Story 96 (P3) — ROADMAP CRLF artifacts in Stories 92+94 headings <!-- #232 -->
+
+Status: Open
+Discovered: 2026-05-29 — Terminal 2 session start, audit pass on freshly-merged Stories 92+94 entries
+Target: Next governance pass (bundle with other P3 cleanup)
+
+Symptom: Two ROADMAP.md story headings contain a literal `\r` (carriage
+return, 0x0D) character between the heading title text and the `<!-- #N -->`
+issue marker. Confirmed via `od -c` byte inspection:
+  - Story 92 heading (line 3043): `### Story 92 (P3) — DefenseDiamond Tier A+B token migration\r <!-- #218 -->`
+  - Story 94 heading (line 3181): `### Story 94 (P3) — MaintenanceScreen.jsx token migration\r <!-- #220 -->`
+
+Pattern matches Variant B from Story 76 — single-marker `<title>\r <!-- #X -->`
+corruption, em-dash + comment-marker juxtaposition. Renders correctly in
+Markdown viewers; invisible in editors and `cat -n` output.
+
+Impact: Same failure mode as Story 76 — breaks exact-string matching for
+automated tooling (Edit tool, sed, anchored grep). Future story-status
+updaters or label sync scripts will hit "string not found" silently on
+these two lines. Low severity (only 2 lines, governance-only) but is a
+known landmine carrying forward across sessions.
+
+Root cause: Story 76's v2.5.21 sweep (`awk '{ gsub(/\r/, ""); print }'`)
+ran against the file state at the moment it executed — cleaned 48 artifacts.
+Stories 92 + 94 were filed AFTER the sweep ran, and their headings were
+authored through the same em-dash + `<!--` paste pathway that produces the
+artifact. The sweep was a one-shot fix, not a recurring guard.
+
+Proposed fixes:
+  - (a) **Targeted byte replace** — PowerShell or awk one-liner against
+        the two known lines. Two-character touch, single commit.
+        Verify with `od -c` post-fix.
+  - (b) **Recurring guard** — add a pre-commit hook step that scans
+        ROADMAP.md (or all `.md` files) for embedded `\r` not at line
+        terminators, blocks commit if found. Fixes the recurrence vector
+        but is out of scope for a P3 cleanup.
+  - (c) **Defer until tooling fails again** — accept the two known
+        artifacts; revisit when the next sync-stories-to-issues.js or
+        Edit-tool string-match fails.
+
+Recommendation: (a) — same approach Story 76 took, narrow scope, prevents
+the known landmine for any near-term automation. (b) is the right durable
+fix but warrants its own governance story once a second recurrence happens.
+Track recurrence pattern: if a third batch of artifacts appears in the next
+1–2 sessions, escalate to (b) as a P2 with prevention scope.
+
+Could ship same PR as the next governance docs-only pass, or alongside any
+sync-stories-to-issues.js follow-up work.
+
+### Story 97 (P2) — sync-stories-to-issues.js byte-corrupts CRLF Story headings on marker patch <!-- #N -->
+
+Status: Open
+Discovered: 2026-05-29 — Story 96 self-demonstration: filing Story 96 via the sync script
+introduced the exact artifact pattern Story 96 documents (mid-line `\r` before `<!--`, lost
+trailing `\r` on CRLF terminator).
+Target: Next governance pass — before any further sync script invocation on this CRLF file.
+
+Symptom: Running `node scripts/sync-stories-to-issues.js` against a Story heading with a
+clean `<!-- #N -->\r\n` marker transforms the heading into the corrupted Variant B pattern:
+
+  Before: `### Story 96 ... headings <!-- #N -->\r\n`
+  After:  `### Story 96 ... headings\r <!-- #232 -->\n` (followed by an `\r\n` from the
+          subsequent blank line, producing a mixed-LE neighborhood)
+
+Visible byte transform: leading space before `<!--` was retained from a trailing `\r` left
+on the captured `originalLine`; the original CRLF terminator's `\r` became mid-line; the
+`\n` of the original terminator stayed put.
+
+Impact: The script that exists specifically to enforce ROADMAP/issue hygiene is the
+recurrence vector for the corruption pattern Story 76 swept clean and Story 96 documents.
+Every future sync run will recurse the artifact onto every newly-filed `<!-- #N -->` story.
+This blocks Story 96 recommendation (a) — targeted byte cleanup — because the cleanup
+would be re-corrupted on the next sync.
+
+Root cause (verified from source): The script reads the file with
+`fs.readFileSync(ROADMAP_PATH, 'utf8')` then splits with `content.split('\n')` (line 87).
+On a CRLF file, every resulting `lines[i]` retains a trailing `\r` (split consumes the
+`\n` but leaves the `\r`). That `\r`-suffixed line is stored as `story.originalLine` and
+threaded into BOTH patch sites:
+
+  - **Line 222-226** (de-dup happy path — currently dead code, see Secondary Finding)
+  - **Line 248-252** (POST-success path — the path that ran for Story 96)
+
+Both patch sites do:
+```js
+const cleaned = story.originalLine.replace(/\s*<!--\s*#N\s*-->/gi, '');
+updatedContent = updatedContent.replace(
+  story.originalLine,
+  `${cleaned} <!-- #${issueNum} -->`
+);
+```
+
+The `\r` survives the `.replace(...)` because the regex's leading `\s*` matches the space
+before `<!--`, but the trailing `\r` is already on the LEFT side of `cleaned`, beyond the
+match. The template then appends ` <!-- #${issueNum} -->` AFTER the `\r`, producing the
+artifact.
+
+Secondary finding (separate bug, same script): `findExistingOpenIssue` (line 169-179)
+unwraps the GitHub Search response incorrectly:
+  - `githubRequest` returns `{ status, body }`
+  - Code reads `res.items` instead of `res.body.items`
+  - Result: function always returns `null`
+  - Net effect: the de-dup branch at line 220-228 is dead code
+  - Story 90's de-dup intent was correct, but the implementation never runs
+
+Story 96 was created at GitHub Issues 15:26:49Z 2026-05-29 — confirmed via the POST path,
+not the de-dup path. Both paths have the byte-corruption bug, but today only the POST
+path manifests it. Fixing `findExistingOpenIssue` without also fixing the patch logic
+would just spread the corruption to a second code path.
+
+Proposed fixes (do all three):
+
+  - (a) **Strip `\r` from line terminators at parse time.** Change `content.split('\n')`
+        to `content.split(/\r?\n/)`. Eliminates the root cause at the source. Every
+        downstream consumer of `originalLine` and `lines[i]` becomes CRLF-safe with one
+        edit. This is the canonical Node pattern for line-splitting CRLF-agnostic files.
+
+  - (b) **Re-anchor the patch replacement on a CRLF-safe substring.** Even with (a),
+        belt-and-suspenders: change the patch sites to match `originalLine` PLUS the
+        explicit terminator, and write back with the explicit terminator preserved:
+        ```js
+        updatedContent = updatedContent.replace(
+          originalLine + '\r\n',
+          `${cleaned} <!-- #${issueNum} -->\r\n`
+        );
+        ```
+        Detects the file's terminator empirically (e.g. `content.includes('\r\n') ? '\r\n' : '\n'`).
+
+  - (c) **Fix `findExistingOpenIssue` response unwrapping.** Change `res.items` →
+        `res.body.items`. Currently a separate dormant bug; fix in the same PR since the
+        de-dup branch shares the patch-logic bug being fixed in (a)+(b).
+
+  - (d) **Add a regression test.** Create a small node test that constructs a CRLF
+        ROADMAP fixture with a `<!-- #N -->` story heading, runs the script's patch
+        logic (refactored to an exportable function), and asserts the output bytes are
+        clean `<!-- #N -->\r\n`. Catches recurrence at CI time.
+
+Recommendation: All four. (a) is the minimal-touch fix and would solve the immediate
+problem on its own. (b) hardens against future code changes that re-read or re-write
+`originalLine`. (c) prevents the de-dup branch from spreading the bug once
+`findExistingOpenIssue` is fixed for any other reason. (d) is the durable gate.
+
+Promote Story 96 status: Story 96 recommendation (c) (defer until tooling fails) is no
+longer applicable — tooling has actively failed in the same session Story 96 was filed.
+Story 96 remains P3 (cleanup of two already-corrupted headings) but is GATED on Story 97
+(a)+(b) shipping first. Otherwise the cleanup will be undone on the next sync run.
+
+Could ship as a standalone P2 PR (script + tests + the Story 96 byte cleanup all in one).
+Estimated effort: 1-2 hours. No app code touched; pure governance + tooling.
+
 ---
 
 ### Story 95 (P2) — Add techNote approved-strings convention to Pre-release Docs Checklist <!-- #225 -->
