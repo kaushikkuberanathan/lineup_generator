@@ -1,7 +1,22 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: May 16, 2026 (v2.5.14 — UX Phase 3: Design System Primitives)
+> Last updated: 2026-05-29 (v2.5.22 — DefenseDiamond + MaintenanceScreen token migration; sync-script CRLF fix)
 > MVP launched: March 24, 2026
+
+---
+
+## v2.5.22 — 2026-05-29 — DefenseDiamond + MaintenanceScreen token migration; sync-script CRLF fix
+
+- Story 92 (P3) resolved — DefenseDiamond Tier A+B token migration at `frontend/src/components/GameDay/DefenseDiamond.jsx`; new tokens `borderWidth.{hairline,thin,medium}` added to `frontend/src/theme/tokens.js` (PR #218 → #227)
+- Story 94 (P3) resolved — MaintenanceScreen token migration at `frontend/src/components/Shared/MaintenanceScreen.jsx`; new tokens `color.overlay.{whiteMedium,whiteHeavy}` added (PR #220 → #227)
+- Story 96 (P3) filed — ROADMAP CRLF heading artifact backlog item (PR #233); two known artifacts on Stories 92+94 headings cleaned via binary-mode byte patch this release (PR #236)
+- Story 97 (P2) resolved — `scripts/sync-stories-to-issues.js` byte corruption fixed at line 87 (CRLF-safe split); `findExistingOpenIssue` response unwrap fixed (`res.items` → `res.body.items`, dead-code bug); `patchHeading()` shared function extracted (PR #236)
+- Story 97 (P2) tests — `scripts/__tests__/sync-patch.test.js` with 4 regression tests via `node:test`; new `sync-script` CI job added to `.github/workflows/ci.yml` runs parallel with smoke, does not block deploy (PR #236)
+- PR #229 (Story 84 follow-up) — box-score AI parser `teamName` fix: replaced undefined `teamName` references with `activeTeam.name` in App.jsx
+- PR #228 — ESLint cleanup pass: non-App.jsx `no-unused-vars` and `no-unescaped-entities` resolved
+- PR #230 — Story 61 marked Resolved in v2.5.16 (vTBD label replaced with shipped-version label)
+- PR #226 — techNote approved-strings rule added to Pre-release Docs Checklist (CLAUDE.md governance hardening)
+- Test suite: 759 effective passing / 1 skipped / 0 failed (755 observed today due to Bug #7 EmptyState.test.jsx worker-startup flake — environmental, documented in CLAUDE.md Known Open Bugs)
 
 ---
 
