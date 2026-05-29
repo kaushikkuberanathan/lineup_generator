@@ -1526,6 +1526,7 @@ export default function App() {
   var activeTeamId = _atid[0]; var setActiveTeamId = _atid[1];
   var _liveScoring = useFeatureFlag('live_scoring', activeTeamId);
   var _isAlwaysScoringTeam = (activeTeam && (activeTeam.name === 'Mud Hens' || activeTeam.name === 'Demo All-Stars'));
+  // eslint-disable-next-line no-unused-vars -- hook side-effects must run; value orphaned post-COMBINED_GAMEMODE GA
   var liveScoringEnabled = _isAlwaysScoringTeam ? true : _liveScoring.enabled;
   var _primaryTab = useState("home");
   var primaryTab = _primaryTab[0]; var setPrimaryTab = _primaryTab[1];
@@ -1751,6 +1752,7 @@ export default function App() {
   // at render time; a ref always gives the current value.
   if (!window._bTouchDrag) { window._bTouchDrag = { active:false, name:null, startY:0, currentIdx:null }; }
   var _touchDragRe = useState(0); // integer version counter — increment to force re-render
+  // eslint-disable-next-line no-unused-vars -- useState slot 0 kept for re-render subscription; only setter read
   var touchDragVer = _touchDragRe[0]; var bumpTouchDrag = _touchDragRe[1];
   var touchDrag = window._bTouchDrag;
   function setTouchDrag(val) {
@@ -1807,6 +1809,7 @@ export default function App() {
   });
   var coachPin = _coachPin[0]; var setCoachPin = _coachPin[1];
   var _pinSession = useState(false);
+  // eslint-disable-next-line no-unused-vars -- setter setPinSessionUnlocked still live; value intentionally unread
   var pinSessionUnlocked = _pinSession[0]; var setPinSessionUnlocked = _pinSession[1];
   var _pinModal = useState(null);
   var pinModal = _pinModal[0]; var setPinModal = _pinModal[1];
@@ -1909,6 +1912,7 @@ export default function App() {
   var _newPrac = useState({ date:"", duration:"", focus:"Mixed", attendance:{}, drills:[], notes:"" });
   var newPrac = _newPrac[0]; var setNewPrac = _newPrac[1];
   var _showPrac = useState(false);
+  // eslint-disable-next-line no-unused-vars -- setter setShowPracForm still live; value intentionally unread
   var showPracForm = _showPrac[0]; var setShowPracForm = _showPrac[1];
   var _editPrac = useState(null);
   var editingPrac = _editPrac[0]; var setEditingPrac = _editPrac[1];
