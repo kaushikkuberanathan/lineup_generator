@@ -179,8 +179,8 @@ function migrateTeamData(data, key) {
 function migrateGrid(grid, roster, innings) {
   if (!grid || typeof grid !== "object") { return initGrid(roster, innings); }
   // Remap CF → LC for any grid data saved before the 10-player update
-  for (var pname in grid) {
-    var playerInnings = grid[pname];
+  for (var gridKey in grid) {
+    var playerInnings = grid[gridKey];
     if (!Array.isArray(playerInnings)) continue;
     for (var idx = 0; idx < playerInnings.length; idx++) {
       if (playerInnings[idx] === "CF") {
@@ -501,7 +501,7 @@ function autoAssign(roster, innings) {
         var pName = available[ori];
         var alreadyPlayed = hasPlayedPos(pName, ofPos) ? 1 : 0;
         var totalOF = totalOFCount(pName);
-        var bc = benchCount(pName, inning);
+        bc = benchCount(pName, inning);
         ofRanked.push({ name: pName, score: -alreadyPlayed * 1000 - totalOF * 10 + bc });
       }
       ofRanked.sort(function(a, b) { return b.score - a.score; });
@@ -3613,7 +3613,7 @@ export default function App() {
                 if (!collapsed[roster[i].name]) { allCol = false; break; }
               }
               var next = {};
-              if (!allCol) { for (var i = 0; i < roster.length; i++) { next[roster[i].name] = true; } }
+              if (!allCol) { for (i = 0; i < roster.length; i++) { next[roster[i].name] = true; } }
               setCollapsed(next);
             }}>
               {(function() {
@@ -5365,11 +5365,11 @@ export default function App() {
                         var fb = (roster.find(function(p) { return p.name === b; }) || {});
                         var na = ((fa.firstName || "") + " " + (fa.lastName || "")).toLowerCase().trim() || a.toLowerCase();
                         var nb = ((fb.firstName || "") + " " + (fb.lastName || "")).toLowerCase().trim() || b.toLowerCase();
-                        var cmp = na.localeCompare(nb);
+                        const cmp = na.localeCompare(nb);
                         return statsSortDir === "asc" ? cmp : -cmp;
                       }
                       if (statsSortCol === "r") {
-                        var cmp = sa.r - sb.r;
+                        const cmp = sa.r - sb.r;
                         return statsSortDir === "asc" ? cmp : -cmp;
                       }
                       if (statsSortCol === "avg") {
@@ -5378,7 +5378,7 @@ export default function App() {
                         if (avgA === -1 && avgB === -1) return 0;
                         if (avgA === -1) return 1;
                         if (avgB === -1) return -1;
-                        var cmp = avgA - avgB;
+                        const cmp = avgA - avgB;
                         return statsSortDir === "asc" ? cmp : -cmp;
                       }
                       return 0;
