@@ -190,6 +190,7 @@ export const tokens = {
       tight:  '-0.01em',  // player names, serif display text
       normal: '0',        // body text
       wide:   '0.06em',   // uppercase chrome labels (INNING, BALLS, OUTS, etc.)
+      wider:  '0.08em',   // eyebrows in FAQ/Legal section headings (Story 65)
     },
 
     lineHeight: {

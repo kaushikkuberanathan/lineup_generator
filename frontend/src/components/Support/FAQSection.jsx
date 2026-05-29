@@ -41,7 +41,7 @@ export function FAQSection() {
           weight="bold"
           style={{
             display: "block",
-            letterSpacing: "0.08em",
+            letterSpacing: tokens.font.letterSpacing.wider,
             textTransform: "uppercase",
             color: tokens.color.text.tertiary,
           }}
@@ -101,7 +101,7 @@ export function FAQSection() {
                     weight="semibold"
                     family="serif"
                     color="navy"
-                    style={{ lineHeight: "1.4", flex: 1 }}
+                    style={{ lineHeight: tokens.font.lineHeight.body, flex: 1 }}
                   >
                     {item.q}
                   </Text>
@@ -128,7 +128,7 @@ export function FAQSection() {
                     style={{
                       display: "block",
                       color: "#374151",
-                      lineHeight: "1.75",
+                      lineHeight: tokens.font.lineHeight.loose,
                     }}
                   >
                     {item.a}
@@ -144,7 +144,7 @@ export function FAQSection() {
         <Text
           size="xs"
           color="tertiary"
-          style={{ display: "block", textAlign: "center", lineHeight: "1.6" }}
+          style={{ display: "block", textAlign: "center", lineHeight: tokens.font.lineHeight.comfortable }}
         >
           Still have questions? Use the Feedback tab to ask.
         </Text>

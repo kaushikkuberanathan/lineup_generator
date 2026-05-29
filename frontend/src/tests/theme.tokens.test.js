@@ -184,6 +184,10 @@ describe('Group 5 — font', function () {
     });
   });
 
+  test('5.4b: font.letterSpacing.wider equals 0.08em (Story 65 — eyebrow spread for FAQ/Legal sections)', function () {
+    expect(tokens.font.letterSpacing.wider).toBe('0.08em');
+  });
+
   test('5.5: font.lineHeight has tight, body, comfortable, relaxed, loose as numbers', function () {
     ['tight', 'body', 'comfortable', 'relaxed', 'loose'].forEach(k => {
       expect(typeof tokens.font.lineHeight[k]).toBe('number');

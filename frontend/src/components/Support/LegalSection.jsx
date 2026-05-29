@@ -36,7 +36,7 @@ export function LegalSection() {
           weight="bold"
           style={{
             display: "block",
-            letterSpacing: "0.08em",
+            letterSpacing: tokens.font.letterSpacing.wider,
             textTransform: "uppercase",
             color: tokens.color.text.tertiary,
           }}
@@ -85,7 +85,7 @@ export function LegalSection() {
         <Text
           size="xs"
           color="tertiary"
-          style={{ display: "block", textAlign: "center", lineHeight: "1.6" }}
+          style={{ display: "block", textAlign: "center", lineHeight: tokens.font.lineHeight.comfortable }}
         >
           Last updated April 2026 &middot; Questions? Use the Feedback tab.
         </Text>
@@ -170,7 +170,7 @@ function LegalViewer({ doc, onBack }) {
                   color="primary"
                   style={{
                     display: "block",
-                    lineHeight: "1.7",
+                    lineHeight: tokens.font.lineHeight.relaxed,
                     marginBottom: "10px",
                   }}
                 >
@@ -185,7 +185,7 @@ function LegalViewer({ doc, onBack }) {
                   paddingLeft: tokens.space.xl,
                   fontSize: tokens.font.size.body,
                   color: tokens.color.text.primary,
-                  lineHeight: "1.7",
+                  lineHeight: tokens.font.lineHeight.relaxed,
                 }}>
                   {section.items.map(function(item, i) {
                     return <li key={i} style={{ marginBottom: tokens.space.xs }}>{item}</li>;
