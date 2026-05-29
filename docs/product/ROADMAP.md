@@ -3308,6 +3308,24 @@ Track recurrence pattern: if a third batch of artifacts appears in the next
 Could ship same PR as the next governance docs-only pass, or alongside any
 sync-stories-to-issues.js follow-up work.
 
+### Story 98 (P3) — ci.yml sync-script job missing permissions block <!-- #242 -->
+
+Status: Open
+Discovered: 2026-05-29 — CodeQL medium-severity finding on the sync-script job after PR #236.
+Target: Next governance pass.
+
+Symptom: The `sync-script` job in `.github/workflows/ci.yml` declares no `permissions:` block, so it
+inherits the workflow-level default `GITHUB_TOKEN` scope (write on `contents` and other scopes).
+CodeQL flags this as overly permissive given the job's actual surface (checkout + Node unit tests).
+
+Impact: Posture finding only today — the job has no `gh` calls or write paths. But a default-write
+token is one step away from being a real exfiltration risk if a future change adds an untrusted action.
+
+Fix: Add `permissions: { contents: read }` immediately under the `name:` line of the `sync-script`
+job. Two lines, no other behavior change. Mirrors GitHub Actions least-privilege guidance.
+
+---
+
 ### Story 97 (P2) — sync-stories-to-issues.js byte-corrupts CRLF Story headings on marker patch <!-- #234 -->
 
 Status: Open
