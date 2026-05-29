@@ -177,7 +177,7 @@ If any answer is "no": stop. Document the gap in DOC_TEST_DEBT.md, then decide w
 7. Stage **specific files by path** — never `git add -A` (risks picking up unrelated untracked files)
 8. [x] loginLimiter: 15min window, max 5 — applied to POST /magic-link ✓
 9. [ ] Confirm `RESEND_DOMAIN_VERIFIED=true` in Render env vars (only after domain verified)
-10. [ ] Run `npm test` — confirm 759 passed / 1 skipped / 0 failed (as of v2.5.21, May 27, 2026)
+10. [ ] Run `npm test` — confirm 759 effective passed / 1 skipped / 0 failed (as of v2.5.22, 2026-05-29). Note: Bug #7 EmptyState.test.jsx cold-start worker flake may show 755 observed locally on Windows; environmental, not a regression.
 
 ### VERSION_HISTORY Schema
 
@@ -218,7 +218,7 @@ Target: resolved within 10 min of detection.
 ---
 
 ## Test Suite
-Changes to `lineupEngineV2.js`, `scoringEngine.js`, or `playerMapper.js` → must pass frontend `npm test` (Vitest, 654 tests passing / 1 skipped).
+Changes to `lineupEngineV2.js`, `scoringEngine.js`, or `playerMapper.js` → must pass frontend `npm test` (Vitest, 759 effective passing / 1 skipped — 755 observed locally on Windows due to Bug #7 cold-start flake).
 Changes to `featureFlags.js` or `positions.js` → must pass frontend `npm test`.
 Changes to backend code → must pass backend custom runner (`backend/scripts/tests/test-runner.js`, 13 suites).
 > Full suite detail: see `frontend/CLAUDE.md` → **## Test Suite** and `backend/CLAUDE.md` → **## Test Suite**
@@ -477,6 +477,7 @@ Before opening a `develop → main` PR, walk through these items. For each, answ
 1. `APP_VERSION` bumped in `frontend/src/App.jsx`
 2. `version` bumped in `frontend/package.json` and `backend/package.json`
 3. `VERSION_HISTORY` entry prepended in `frontend/src/data/versionHistory.js` with `userChanges` (coach-readable), `internalChanges` (file-level specificity), and `techNote` (one-line summary)
+   - `techNote` must be one of the four approved strings in `APPROVED_TECH_NOTES` — see `frontend/src/__tests__/versionHistory.test.js`. Free-form techNote values fail CI.
 4. `CLAUDE.md` "Current Version" line updated + changelog bullet added
 
 ### Backlog and roadmap
@@ -533,8 +534,9 @@ Every other session: open `docs/product/DOC_TEST_DEBT.md` — close P0s, promote
 ---
 
 ## Current Version
-**v2.5.21** — May 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/data/versionHistory.js`.
+**v2.5.22** — May 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/data/versionHistory.js`.
 
+- v2.5.22 (2026-05-29): Stability and performance update — DefenseDiamond Tier A+B token migration with new `borderWidth.{hairline,thin,medium}` tokens (Story 92, PR #218 → #227), MaintenanceScreen token migration with new `color.overlay.{whiteMedium,whiteHeavy}` tokens (Story 94, PR #220 → #227), Story 96 ROADMAP CRLF cleanup + filing (PRs #233, #236), Story 97 sync-stories-to-issues.js CRLF byte-corruption fix + 4 regression tests via node:test + new sync-script CI job (PR #236), box-score AI parser teamName fix (PR #229), ESLint cleanup pass (PR #228), techNote approved-strings rule (PR #226).
 - v2.5.21 (2026-05-27): SW update banner restored; BottomSheet primitive ships — useRegisterSW destructure restores in-app update prompt (Story 85, PR #188), BottomSheet primitive + LockFlow migration with radius.sheet/shadow.sheetTop tokens (Story 87, PR #190 → #217), status tint tokens + ValidationBanner second-pass (Story 88, PR #215), overlay alpha-tint tokens + OfflineIndicator second-pass (Story 89, PR #215), sync-stories-to-issues typeof issueNum guard (Story 91, PR #211), 48 embedded \r corruption artifacts scrubbed from ROADMAP.md headings via awk sweep (Story 76, this release). New `## UI Primitives` section added to SOLUTION_DESIGN.md.
 - v2.5.20 (2026-05-26): Story 84 fix, UX Phase 5 token foundation, sync-script governance — box-score AI parser teamName fix (Story 84, PR #178), UX Phase 5 surface.chrome + GameDay/* migrations (PR #179), sync-stories-to-issues.js de-dup check (Story 90, PR #204), Release Ritual post-promote sync convention (Story 86, PR #177), CLAUDE.md Rules 1+7 + item 18 (PR #201), ValidationBanner/OfflineIndicator touch-ups + Stories 87-89+91 filed (PR #202, #209), session retrospective 2026-05-23-A (PR #176), Stories 77-91 issue markers synced (PRs #191, #201, #208).
 - v2.5.19 (2026-05-22): Supabase import fix restores coach feedback; label schema, audit, governance — Story 83 (P1) resolved (PR #171), npm audit 12 of 15 vulns + Story 81 filed (PR #164), CLAUDE.md Stories 79+80 + stale hook description (PR #165), label taxonomy 28→31 (PRs #166, #168), Stories 83-85 filed (PR #169), session retrospective 2026-05-22-A (PR #170).

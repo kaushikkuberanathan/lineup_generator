@@ -1,8 +1,7 @@
 import React from 'react';
 import { describe, test, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, fireEvent } from '@testing-library/react';
 import { Button } from './Button';
-import { tokens } from '../../theme/tokens';
 
 // ============================================================================
 // Phase 2 — Button primitive contract tests

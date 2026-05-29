@@ -13,7 +13,7 @@
  * Run: cd frontend && npm test -- theme.tokens
  */
 
-import { tokens, color, opacity, space, radius, font, zIndex, shadow } from '../theme';
+import { tokens, color, opacity, space, radius, borderWidth, font, zIndex, shadow } from '../theme';
 
 const HEX_RE  = /^#([0-9A-Fa-f]{6}|[0-9A-Fa-f]{3})$/;
 const RGBA_RE = /^rgba\(\d+,\d+,\d+,[\d.]+\)$/;
@@ -33,6 +33,7 @@ describe('Group 1 — top-level structure', function () {
     expect(tokens).toHaveProperty('opacity');
     expect(tokens).toHaveProperty('space');
     expect(tokens).toHaveProperty('radius');
+    expect(tokens).toHaveProperty('borderWidth');
     expect(tokens).toHaveProperty('font');
     expect(tokens).toHaveProperty('zIndex');
     expect(tokens).toHaveProperty('shadow');
@@ -88,7 +89,7 @@ describe('Group 2 — color sub-groups', function () {
   });
 
   test('2.7: color.overlay has correct keys (navyWash, not navySubtle); all rgba format', function () {
-    const expected = ['navyWash', 'navyFaint', 'navyMedium', 'whiteFaint', 'whiteLight', 'goldTint', 'goldStrong', 'backdrop',
+    const expected = ['navyWash', 'navyFaint', 'navyMedium', 'whiteFaint', 'whiteLight', 'whiteMedium', 'whiteHeavy', 'goldTint', 'goldStrong', 'backdrop',
                       'redFaint', 'redStrong', 'warnFaint', 'warnStrong', 'winFaint', 'winMid'];
     expected.forEach(k => {
       expect(tokens.color.overlay[k]).toMatch(RGBA_RE);
@@ -222,10 +223,11 @@ describe('Group 7 — barrel exports (theme/index.js)', function () {
     expect(tokens.color.brand.navy).toBe(color.brand.navy);
   });
 
-  test('7.3: other named exports resolve (opacity, space, radius, font, zIndex)', function () {
+  test('7.3: other named exports resolve (opacity, space, radius, borderWidth, font, zIndex)', function () {
     expect(opacity).toBeDefined();
     expect(space).toBeDefined();
     expect(radius).toBeDefined();
+    expect(borderWidth).toBeDefined();
     expect(font).toBeDefined();
     expect(zIndex).toBeDefined();
   });
@@ -250,7 +252,7 @@ describe('Group 8 — shadow tokens', function () {
   });
 
   test('8.3: all shadow values are non-empty strings', function () {
-    Object.entries(tokens.shadow).forEach(function ([k, v]) {
+    Object.values(tokens.shadow).forEach(function (v) {
       expect(typeof v).toBe('string');
       expect(v.length).toBeGreaterThan(0);
     });
@@ -307,6 +309,37 @@ describe('Group 9 — motion tokens', function () {
   test('9.4: motion.easing.standard is a non-empty string', function () {
     expect(typeof tokens.motion.easing.standard).toBe('string');
     expect(tokens.motion.easing.standard.length).toBeGreaterThan(0);
+  });
+
+});
+
+// ─── Group 10 — borderWidth tokens ────────────────────────────────────────────
+
+describe('Group 10 — borderWidth tokens', function () {
+
+  test('10.1: tokens.borderWidth is a defined, non-null object', function () {
+    expect(tokens.borderWidth).toBeDefined();
+    expect(tokens.borderWidth).not.toBeNull();
+    expect(typeof tokens.borderWidth).toBe('object');
+  });
+
+  test('10.2: borderWidth has hairline, thin, medium keys', function () {
+    ['hairline', 'thin', 'medium'].forEach(function (k) {
+      expect(tokens.borderWidth).toHaveProperty(k);
+    });
+  });
+
+  test('10.3: all borderWidth values are non-empty strings ending in px', function () {
+    Object.values(tokens.borderWidth).forEach(function (v) {
+      expect(typeof v).toBe('string');
+      expect(v.length).toBeGreaterThan(0);
+      expect(v).toMatch(/px$/);
+    });
+  });
+
+  test('10.4: values are ordered hairline < thin < medium', function () {
+    expect(parseFloat(tokens.borderWidth.hairline)).toBeLessThan(parseFloat(tokens.borderWidth.thin));
+    expect(parseFloat(tokens.borderWidth.thin)).toBeLessThan(parseFloat(tokens.borderWidth.medium));
   });
 
 });

@@ -6,9 +6,6 @@ import {
   getRulesForTeam,
   processPitch,
   getPitchUIConfig,
-  validateSteal,
-  isRunLimitReached,
-  PITCH_TYPE,
   AT_BAT_RESULT,
 } from '../utils/leagueRules';
 
@@ -99,21 +96,6 @@ export function countFromPitches(pitches) {
     // CONTACT: no count change
   }
   return { balls: balls, strikes: strikes };
-}
-
-// Advance every runner forward by `bases`. Returns { remaining, runsScored }.
-function advanceAll(runners, bases) {
-  var remaining  = [];
-  var runsScored = 0;
-  for (var i = 0; i < runners.length; i++) {
-    var next = runners[i].base + bases;
-    if (next >= 4) {
-      runsScored++;
-    } else {
-      remaining.push({ runnerId: runners[i].runnerId, base: next });
-    }
-  }
-  return { remaining: remaining, runsScored: runsScored };
 }
 
 // Advance runners for a hit. Back-to-front (3B→2B→1B) prevents any base collision.

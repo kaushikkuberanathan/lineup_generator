@@ -2,7 +2,6 @@ import React from 'react';
 import { describe, test, expect, vi } from 'vitest';
 import { render, fireEvent } from '@testing-library/react';
 import { ListRow } from './ListRow';
-import { tokens } from '../../theme/tokens';
 
 // ============================================================================
 // Phase 3 Step 3 — ListRow primitive contract tests

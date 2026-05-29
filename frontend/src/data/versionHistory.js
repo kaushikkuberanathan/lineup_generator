@@ -1,5 +1,26 @@
 ﻿export var VERSION_HISTORY = [
   {
+    version: '2.5.22',
+    date: '2026-05-29',
+    headline: 'Stability and performance update',
+    techNote: 'Minor fixes and internal improvements',
+    userChanges: [],
+    internalChanges: [
+      'Story 92 — DefenseDiamond Tier A+B token migration at frontend/src/components/GameDay/DefenseDiamond.jsx; new tokens borderWidth.{hairline,thin,medium} added to frontend/src/theme/tokens.js (PR #218 → #227)',
+      'Story 94 — MaintenanceScreen token migration at frontend/src/components/Shared/MaintenanceScreen.jsx; new tokens color.overlay.{whiteMedium,whiteHeavy} added (PR #220 → #227)',
+      'Story 96 — Filed ROADMAP CRLF heading artifact backlog item (PR #233); two known artifacts on Stories 92+94 headings cleaned via binary-mode byte patch (PR #236)',
+      'Story 97 — Fixed sync-stories-to-issues.js byte corruption at scripts/sync-stories-to-issues.js:87 (split call changed from LF-only to CRLF-safe regex); fixed findExistingOpenIssue response unwrap at lines 173-174 (res.items → res.body.items, dead-code bug); extracted patchHeading() shared function collapsing two identical patch sites; CLI guard via require.main; module.exports for testability (PR #236)',
+      'Story 97 — Added scripts/__tests__/sync-patch.test.js with 4 regression tests via node:test (parseStories CRLF, patchHeading marker replace, idempotency, byte-level CRLF integrity); new sync-script job added to .github/workflows/ci.yml runs parallel with smoke, does not block deploy (PR #236)',
+      'PR #229 (Story 84 follow-up) — Box-score AI parser teamName fix: replaced undefined teamName references with activeTeam.name in App.jsx',
+      'PR #228 — ESLint cleanup pass: non-App.jsx no-unused-vars and no-unescaped-entities resolved',
+      'PR #230 — Story 61 marked Resolved in v2.5.16 (vTBD label replaced with shipped-version label)',
+      'PR #226 — techNote approved-strings rule added to Pre-release Docs Checklist (CLAUDE.md governance hardening)',
+      'Session retrospective 2026-05-27-A logged for v2.5.21 release ritual (PR #224)',
+      'Docs (this release): SOLUTION_DESIGN.md gained v2.5.22 token additions note; FEATURE_MAP.md added rows #30 (DefenseDiamond), #31 (MaintenanceScreen), #32 (sync-stories-to-issues.js); DOC_TEST_DEBT.md gained P1 entry for box-score parser test coverage (deferred to v2.6.0 with justification)',
+      'Test suite: 759 effective passing / 1 skipped / 0 failed (755 observed today due to Bug #7 EmptyState.test.jsx worker-startup flake — environmental, documented in CLAUDE.md Known Open Bugs)',
+    ],
+  },
+  {
     version: '2.5.21',
     date: 'May 2026',
     headline: 'In-app update prompt restored; BottomSheet primitive ships',

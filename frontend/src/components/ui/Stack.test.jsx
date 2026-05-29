@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, test, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render } from '@testing-library/react';
 import { Stack } from './Stack';
 import { tokens } from '../../theme/tokens';
 
