@@ -503,6 +503,8 @@ The Songs sub-tab in Game Day → Batting filters to tonight's active batting or
 
 `frontend/src/theme/tokens.js` defines the semantic design token foundation: color palette, font sizes, spacing scale, z-index values, and border radii — all as a plain JS object. `theme/index.js` re-exports the token map as the barrel entry point. In Phase 1a there are zero consumers — the module tree-shakes out of the production bundle entirely and carries no runtime cost. Phase 1b (tracked in `docs/product/UX_REFACTOR_ROADMAP.md`) will wire tokens into components using CSS custom properties or inline style references. The token contract shape (top-level groups, palette structure, required keys) is enforced by `theme.tokens.test.js` (27 tests) so any structural regression is caught before it reaches consumers.
 
+**v2.5.22 additions** (Stories 92+94, DefenseDiamond Tier A+B + MaintenanceScreen token migration): adds `tokens.borderWidth` (3 values: `hairline: '1px'`, `thin: '1.5px'`, `medium: '2px'`) and extends `tokens.color.overlay` with two alpha-tint values (`whiteMedium: 'rgba(255,255,255,0.25)'`, `whiteHeavy: 'rgba(255,255,255,0.6)'`). `theme.tokens.test.js` extended to cover the new shapes.
+
 ---
 
 ## UI Primitives
