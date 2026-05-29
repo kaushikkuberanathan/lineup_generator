@@ -3244,6 +3244,55 @@ Could ship same PR as Story 92 (DefenseDiamond Tier A+B)
 since both have the same shape (Tier A drop-ins +
 small overlay extension), or as a standalone P3 quick win.
 
+### Story 96 (P3) — ROADMAP CRLF artifacts in Stories 92+94 headings <!-- #232 -->
+
+Status: Open
+Discovered: 2026-05-29 — Terminal 2 session start, audit pass on freshly-merged Stories 92+94 entries
+Target: Next governance pass (bundle with other P3 cleanup)
+
+Symptom: Two ROADMAP.md story headings contain a literal `\r` (carriage
+return, 0x0D) character between the heading title text and the `<!-- #N -->`
+issue marker. Confirmed via `od -c` byte inspection:
+  - Story 92 heading (line 3043): `### Story 92 (P3) — DefenseDiamond Tier A+B token migration\r <!-- #218 -->`
+  - Story 94 heading (line 3181): `### Story 94 (P3) — MaintenanceScreen.jsx token migration\r <!-- #220 -->`
+
+Pattern matches Variant B from Story 76 — single-marker `<title>\r <!-- #X -->`
+corruption, em-dash + comment-marker juxtaposition. Renders correctly in
+Markdown viewers; invisible in editors and `cat -n` output.
+
+Impact: Same failure mode as Story 76 — breaks exact-string matching for
+automated tooling (Edit tool, sed, anchored grep). Future story-status
+updaters or label sync scripts will hit "string not found" silently on
+these two lines. Low severity (only 2 lines, governance-only) but is a
+known landmine carrying forward across sessions.
+
+Root cause: Story 76's v2.5.21 sweep (`awk '{ gsub(/\r/, ""); print }'`)
+ran against the file state at the moment it executed — cleaned 48 artifacts.
+Stories 92 + 94 were filed AFTER the sweep ran, and their headings were
+authored through the same em-dash + `<!--` paste pathway that produces the
+artifact. The sweep was a one-shot fix, not a recurring guard.
+
+Proposed fixes:
+  - (a) **Targeted byte replace** — PowerShell or awk one-liner against
+        the two known lines. Two-character touch, single commit.
+        Verify with `od -c` post-fix.
+  - (b) **Recurring guard** — add a pre-commit hook step that scans
+        ROADMAP.md (or all `.md` files) for embedded `\r` not at line
+        terminators, blocks commit if found. Fixes the recurrence vector
+        but is out of scope for a P3 cleanup.
+  - (c) **Defer until tooling fails again** — accept the two known
+        artifacts; revisit when the next sync-stories-to-issues.js or
+        Edit-tool string-match fails.
+
+Recommendation: (a) — same approach Story 76 took, narrow scope, prevents
+the known landmine for any near-term automation. (b) is the right durable
+fix but warrants its own governance story once a second recurrence happens.
+Track recurrence pattern: if a third batch of artifacts appears in the next
+1–2 sessions, escalate to (b) as a P2 with prevention scope.
+
+Could ship same PR as the next governance docs-only pass, or alongside any
+sync-stories-to-issues.js follow-up work.
+
 ---
 
 ### Automated Score Reporting (County Integration)
