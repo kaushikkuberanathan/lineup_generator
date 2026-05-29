@@ -1,4 +1,6 @@
-﻿export function MaintenanceScreen({ version }) {
+import { tokens } from "../../theme/tokens";
+
+export function MaintenanceScreen({ version }) {
   return (
     <div style={{
       display: "flex",
@@ -6,35 +8,35 @@
       alignItems: "center",
       justifyContent: "center",
       minHeight: "100vh",
-      background: "#0f1f3d",
-      padding: "24px",
+      background: tokens.color.brand.navy,
+      padding: tokens.space.xl2,
       boxSizing: "border-box",
     }}>
-      <div style={{ fontSize: "48px", marginBottom: "16px" }}>⚾</div>
+      <div style={{ fontSize: "48px", marginBottom: tokens.space.lg }}>⚾</div>
       <div style={{
-        fontSize: "24px",
+        fontSize: tokens.font.size.xl2, // drift: font.size.xl2 (22px; -2px)
         fontWeight: "bold",
-        color: "#f5c842",
-        fontFamily: "Georgia, serif",
-        marginBottom: "12px",
+        color: tokens.color.brand.gold,
+        fontFamily: tokens.font.family.serif,
+        marginBottom: tokens.space.md,
         textAlign: "center",
       }}>
         We’ll be right back
       </div>
       <div style={{
-        fontSize: "14px",
-        color: "rgba(255,255,255,0.6)",
+        fontSize: tokens.font.size.md,
+        color: tokens.color.overlay.whiteHeavy,
         textAlign: "center",
         maxWidth: "280px",
-        lineHeight: "1.6",
+        lineHeight: tokens.font.lineHeight.comfortable,
       }}>
         Lineup Generator is getting an update. Check back in a few minutes.
       </div>
       {version && (
         <div style={{
-          fontSize: "11px",
-          color: "rgba(255,255,255,0.25)",
-          marginTop: "32px",
+          fontSize: tokens.font.size.xs,
+          color: tokens.color.overlay.whiteMedium,
+          marginTop: tokens.space.xl3,
         }}>
           v{version}
         </div>

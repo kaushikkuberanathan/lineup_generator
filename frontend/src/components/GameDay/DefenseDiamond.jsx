@@ -26,8 +26,8 @@ var POS_COLORS = {
   RC:"#8e44ad", RF:"#239b56", Bench:"#555555"
 };
 
-var textMuted = "#6b7280";
-var red       = "#c8102e";
+var textMuted = "#6b7280"; // drift: text.secondary (#64748b)
+var red       = tokens.color.brand.red;
 
 function firstName(name) {
   if (!name) return name;
@@ -166,7 +166,7 @@ export function DefenseDiamond({ roster, grid, innings, selectedInning, onSelect
                       {outNames.map(function(n, idx) {
                         return (
                           <text key={"out-" + n} x={cx} y={slot.y + 34 + ((benchNames.length + idx) * 16)} textAnchor="middle"
-                            fontSize="11" fontWeight="700" fill="#dc2626"
+                            fontSize="11" fontWeight="700" fill={tokens.color.status.error}
                             fontFamily="system-ui,sans-serif">
                             {"OUT " + firstName(n)}
                           </text>
@@ -217,7 +217,6 @@ export function DefenseDiamond({ roster, grid, innings, selectedInning, onSelect
   var benchInnLabels = diamondInning !== null ? [diamondInning] : innArr;
 
   // TODO(v2.5.x): align to design tokens
-  //   - Replace raw '1.5px' border-width with a token when tokens.borderWidth.thin is added
   //   - Add tokens.color.semantic.interactiveBorder for navy interactive borders
   return (
     <div>
@@ -225,14 +224,14 @@ export function DefenseDiamond({ roster, grid, innings, selectedInning, onSelect
       {/* ── Inning selector — single scrollable row ────── */}
       <div style={{ display:"flex", flexWrap:"nowrap", gap:"4px", alignItems:"center",
         marginBottom:"12px", overflowX:"auto", WebkitOverflowScrolling:"touch", paddingBottom:"2px" }}>
-        <span style={{ fontSize:"11px", color:textMuted, fontWeight:"bold",
+        <span style={{ fontSize:tokens.font.size.xs, color:textMuted, fontWeight:"bold",
           textTransform:"uppercase", letterSpacing:"0.08em", flexShrink:0 }}>Inn</span>
         <button
           onClick={function() { setDiamondInning(null); }}
-          style={{ padding:"3px 8px", borderRadius:"10px",
-            border: "1.5px solid " + tokens.color.brand.navy,
+          style={{ padding:"3px 8px", borderRadius:"10px", // drift: radius.md (8px)
+            border: tokens.borderWidth.thin + " solid " + tokens.color.brand.navy,
             cursor:"pointer",
-            fontSize:"11px", fontWeight:"bold", fontFamily:"inherit", flexShrink:0,
+            fontSize:tokens.font.size.xs, fontWeight:"bold", fontFamily:"inherit", flexShrink:0,
             background: diamondInning === null ? tokens.color.brand.navy : "transparent",
             color: diamondInning === null ? "#fff" : tokens.color.brand.navy }}>
           All
@@ -242,10 +241,10 @@ export function DefenseDiamond({ roster, grid, innings, selectedInning, onSelect
           return (
             <button key={i}
               onClick={function(idx) { return function() { setDiamondInning(idx); }; }(i)}
-              style={{ padding:"3px 8px", borderRadius:"10px",
-                border: active ? "1.5px solid " + red : "1.5px solid " + tokens.color.brand.navy,
+              style={{ padding:"3px 8px", borderRadius:"10px", // drift: radius.md (8px)
+                border: active ? tokens.borderWidth.thin + " solid " + red : tokens.borderWidth.thin + " solid " + tokens.color.brand.navy,
                 cursor:"pointer",
-                fontSize:"11px", fontWeight:"bold", fontFamily:"inherit", flexShrink:0,
+                fontSize:tokens.font.size.xs, fontWeight:"bold", fontFamily:"inherit", flexShrink:0,
                 background: active ? red : "transparent",
                 color: active ? "#fff" : tokens.color.brand.navy }}>
               {i + 1}
@@ -257,18 +256,18 @@ export function DefenseDiamond({ roster, grid, innings, selectedInning, onSelect
       {renderFieldSVG(getGridPlayerFn, diamondInning, innArr)}
 
       {/* ── Bench strip ─────────────────────────────── */}
-      <div style={{ borderTop:"2px solid rgba(15,31,61,0.15)", paddingTop:"10px" }}>
+      <div style={{ borderTop:tokens.borderWidth.medium + " solid " + tokens.color.overlay.navyMedium, paddingTop:"10px" }}>
         <div style={{ fontSize:"10px", fontWeight:"bold", color:"#555",
           textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"6px" }}>Bench</div>
         <div style={{ overflowX:"auto" }}>
-          <table style={{ borderCollapse:"collapse", fontSize:"11px", width:"100%" }}>
+          <table style={{ borderCollapse:"collapse", fontSize:tokens.font.size.xs, width:"100%" }}>
             <thead>
-              <tr style={{ background:"#f5efe4" }}>
+              <tr style={{ background:tokens.color.surface.tableHeader }}>
                 {benchInnLabels.map(function(i) {
                   return (
                     <th key={i} style={{ padding:"4px 10px", textAlign:"center", fontSize:"10px",
                       color:"#555", fontWeight:"bold", letterSpacing:"0.08em",
-                      borderBottom:"2px solid rgba(15,31,61,0.15)", minWidth:"52px" }}>
+                      borderBottom:tokens.borderWidth.medium + " solid " + tokens.color.overlay.navyMedium, minWidth:"52px" }}>
                       Inn {i + 1}
                     </th>
                   );
@@ -293,8 +292,8 @@ export function DefenseDiamond({ roster, grid, innings, selectedInning, onSelect
                         var pname = benchDisplay[ci][r] || "";
                         return (
                           <td key={i} style={{ padding:"4px 10px", textAlign:"center",
-                            borderBottom:"1px solid rgba(15,31,61,0.06)",
-                            fontWeight:"bold", color: pname ? "#0f1f3d" : "#ccc" }}>
+                            borderBottom:tokens.borderWidth.hairline + " solid rgba(15,31,61,0.06)", // drift: overlay.navyFaint (0.08)
+                            fontWeight:"bold", color: pname ? tokens.color.brand.navy : "#ccc" /* drift: text.disabled */ }}>
                             {pname ? firstName(pname) : "-"}
                           </td>
                         );
@@ -308,9 +307,9 @@ export function DefenseDiamond({ roster, grid, innings, selectedInning, onSelect
                       {benchInnLabels.map(function(i) {
                         return (
                           <td key={i} style={{ padding:"3px 10px", textAlign:"center",
-                            borderTop:"2px solid rgba(220,38,38,0.3)",
+                            borderTop:tokens.borderWidth.medium + " solid rgba(220,38,38,0.3)",
                             background:"rgba(220,38,38,0.05)",
-                            fontSize:"11px", fontWeight:"bold", color:"#dc2626",
+                            fontSize:tokens.font.size.xs, fontWeight:"bold", color:tokens.color.status.error,
                             letterSpacing:"0.08em", textTransform:"uppercase" }}>
                             Out
                           </td>
@@ -325,9 +324,9 @@ export function DefenseDiamond({ roster, grid, innings, selectedInning, onSelect
                           var pname = outDisplay[ci][or] || "";
                           return (
                             <td key={i} style={{ padding:"4px 10px", textAlign:"center",
-                              borderBottom:"1px solid rgba(220,38,38,0.08)",
+                              borderBottom:tokens.borderWidth.hairline + " solid rgba(220,38,38,0.08)",
                               fontWeight:"bold",
-                              color: pname ? "#dc2626" : "#ccc",
+                              color: pname ? tokens.color.status.error : "#ccc", // drift: text.disabled
                               background:"rgba(220,38,38,0.04)" }}>
                               {pname ? firstName(pname) : "-"}
                             </td>
