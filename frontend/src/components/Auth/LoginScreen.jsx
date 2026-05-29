@@ -58,7 +58,7 @@ export function LoginScreen({ onRequestAccess, sendMagicLink }) {
               Tap the link in that email to sign in.
             </p>
             <p style={styles.sentNote}>
-              The link expires in 1 hour. Check your spam folder if you don't see it.
+              The link expires in 1 hour. Check your spam folder if you don&apos;t see it.
             </p>
           </div>
           <button style={styles.linkBtn} onClick={() => setSent(false)}>
@@ -94,7 +94,7 @@ export function LoginScreen({ onRequestAccess, sendMagicLink }) {
             {loading ? 'Sending…' : 'Send me a login link'}
           </button>
           <button type="button" style={styles.linkBtn} onClick={onRequestAccess}>
-            Don't have access? Request it here
+            Don&apos;t have access? Request it here
           </button>
         </form>
       </div>
