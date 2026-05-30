@@ -3482,6 +3482,49 @@ not block release but prevents recurring CI churn.
 
 ---
 
+### Story 99 (P1) — Backend test suite re-authoring <!-- #N -->
+
+Status: Open
+Discovered: 2026-04-24 — backend suite obsolete against
+v2.3.3+ (rate limiter removed, routes restructured)
+Target: v2.6.x (prerequisite for Phase 4C auth gate)
+
+Symptom: backend/scripts/tests/ references removed routes.
+CI does not run backend tests. Zero automated coverage.
+
+Impact: Any backend route change is unprotected. Phase 4C
+cannot ship safely without backend test coverage.
+
+Root cause: Suite written against v2.3.x; multiple breaking
+changes since. Never re-authored.
+
+Proposed fix: audit stale tests → re-author against current
+routes → add to CI as required check. Cover: /ping,
+/api/auth/magic-link, /api/team/:id, /api/ai parse.
+
+---
+
+### Story 100 (P3) — Backend qs transitive patch bump <!-- #N -->
+
+Status: Open
+Discovered: 2026-05-30 — Dependabot /21 (moderate)
+Target: v2.5.24 or next chore batch
+
+Symptom: qs@6.15.0 in backend lockfile, vuln range
+>=6.11.1 <=6.15.1, fix at 6.15.2 (patch only).
+
+Impact: Low real-world risk — vuln is in qs.stringify
+with encodeValuesOnly; Express uses qs.parse only.
+No stringify call sites in our backend code.
+
+Root cause: Express 5.2.1 lockfile pins qs@6.15.0;
+npm audit fix would bump transitive to 6.15.2.
+
+Proposed fix: npm audit fix in backend/ — lockfile-only
+change, no package.json edit needed.
+
+---
+
 ### Automated Score Reporting (County Integration)
 **Status:** Architecture finalized, implementation pending
 **Trigger:** Coach taps "Report Score" on a completed game
