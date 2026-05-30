@@ -28,6 +28,7 @@ import { MaintenanceScreen } from './components/Shared/MaintenanceScreen';
 import { DefenseDiamond }  from './components/GameDay/DefenseDiamond';
 import { GameModeScreen }  from './components/game-mode/GameModeScreen';
 import { DugoutView }      from './components/game-mode/DugoutView';
+import { tokens }          from './theme/tokens';
 import { LegalSection }       from './components/Support/LegalSection';
 import { FAQSection }         from './components/Support/FAQSection';
 import { BattingHandSelector } from './components/BattingHandSelector';
@@ -55,12 +56,6 @@ var ALL_POSITIONS    = ["P","C","1B","2B","3B","SS","LF","LC","RC","RF","Bench"]
 var FIELD_POSITIONS  = ["P","C","1B","2B","3B","SS","LF","LC","RC","RF"];
 var INFIELD          = ["P","C","1B","2B","3B","SS"];
 var OUTFIELD         = ["LF","LC","RC","RF"];
-
-var POS_COLORS = {
-  P:"#e05c2a", C:"#7f3f3f", "1B":"#2471a3", "2B":"#2980b9",
-  "3B":"#6c3483", SS:"#8e44ad", LF:"#1e8449", LC:"#2980b9",
-  RC:"#8e44ad", RF:"#239b56", Bench:"#555555"
-};
 
 // Skill badges - fielding only
 // ── FIELDING SKILLS (ability) ──────────────────────────────────────────────
@@ -743,7 +738,7 @@ var S = {
     return {
       display:"inline-block", padding:"2px 6px", borderRadius:"4px",
       fontSize:"10px", fontWeight:"bold", margin:"1px",
-      background:(POS_COLORS[pos] || "#0f1f3d") + "cc", color:"#fff"
+      background:(tokens.color.position[pos] || tokens.color.brand.navy) + "cc", color:"#fff"
     };
   },
   input: {
@@ -1025,7 +1020,7 @@ function SharedView({ payload, renderFieldSVG }) {
                               {pos === "Out" ? (
                                 <span style={{ display:"inline-block", padding:"2px 5px", borderRadius:"4px", fontWeight:"bold", fontSize:"11px", background:"#fee2e2", color:"#dc2626" }}>OUT</span>
                               ) : pos ? (
-                                <span style={{ display:"inline-block", padding:"2px 5px", borderRadius:"4px", fontWeight:"bold", fontSize:"11px", background:(POS_COLORS[pos]||"#555")+"cc", color:"#fff" }}>{pos}</span>
+                                <span style={{ display:"inline-block", padding:"2px 5px", borderRadius:"4px", fontWeight:"bold", fontSize:"11px", background:(tokens.color.position[pos]||tokens.color.position.Bench)+"cc", color:"#fff" }}>{pos}</span>
                               ) : (
                                 <span style={{ color:"#ccc" }}>-</span>
                               )}
@@ -3701,7 +3696,7 @@ export default function App() {
                         return <span key={key} style={{ fontSize:"9px", padding:"1px 5px", borderRadius:"8px", background:s.color+"22", color:s.color, fontWeight:"bold" }}>{s.label}</span>;
                       })}
                       {pr.map(function(pos, i) {
-                        return <span key={pos} style={{ fontSize:"9px", padding:"1px 5px", borderRadius:"4px", background:POS_COLORS[pos]+"cc", color:"#fff", fontWeight:"bold" }}>{i===0?"1.":"2."}{pos}</span>;
+                        return <span key={pos} style={{ fontSize:"9px", padding:"1px 5px", borderRadius:"4px", background:tokens.color.position[pos]+"cc", color:"#fff", fontWeight:"bold" }}>{i===0?"1.":"2."}{pos}</span>;
                       })}
                     </div>
                   ) : null}
@@ -3793,9 +3788,9 @@ export default function App() {
                               return (
                                 <span key={pos} onClick={function(p) { return function() { setPrefs(info.name, p, pr); }; }(pos)}
                                   style={{ display:"inline-block", padding:"3px 8px", margin:"2px", borderRadius:"6px", fontSize:"10px", fontWeight:"bold", cursor:"pointer",
-                                    background: active ? POS_COLORS[pos] + opacity : POS_COLORS[pos]+"18",
-                                    color: active ? "#fff" : POS_COLORS[pos],
-                                    border:"1px solid " + POS_COLORS[pos] + (active ? "ff" : "44") }}>
+                                    background: active ? tokens.color.position[pos] + opacity : tokens.color.position[pos]+"18",
+                                    color: active ? "#fff" : tokens.color.position[pos],
+                                    border:"1px solid " + tokens.color.position[pos] + (active ? "ff" : "44") }}>
                                   {active ? (rank + 1) + "." : ""}{pos}
                                 </span>
                               );
@@ -3807,7 +3802,7 @@ export default function App() {
                               {pr.map(function(pos, ri) {
                                 return (
                                   <span key={pos} style={{ fontSize:"10px", padding:"1px 6px", borderRadius:"4px",
-                                    background: POS_COLORS[pos] + "cc", color:"#fff", fontWeight:"bold" }}>
+                                    background: tokens.color.position[pos] + "cc", color:"#fff", fontWeight:"bold" }}>
                                     {ri + 1}. {pos}
                                   </span>
                                 );
@@ -4137,14 +4132,6 @@ export default function App() {
   // ============================================================
   function renderFieldSVG(getPlayerFn, selectedInning, localInnArr) {
     var isSingle = selectedInning !== null && selectedInning !== undefined;
-    var HDR_COLORS = {
-      "LF":"#1a6e3a", "RF":"#1a6e3a",
-      "LC":"#1a5580",
-      "RC":"#5c2878",
-      "SS":"#8a4a0a", "2B":"#8a4a0a",
-      "3B":"#7a1a10", "P":"#7a1a10", "1B":"#7a1a10",
-      "C":"#14406e"
-    };
     var BOX_H = isSingle ? 54 : (30 + (localInnArr.length * 11) + 4);
     var outPlayers = isSingle ? (function() {
       var out = [];
@@ -4183,13 +4170,13 @@ export default function App() {
     return (
       <div style={{ position:"relative", width:"100%", maxWidth:"680px", margin:"0 auto", marginBottom:"10px" }}>
         <svg viewBox={"0 0 680 " + VB_H} width="100%" style={{ display:"block" }}>
-          <rect x="0" y="0" width="680" height={VB_H} rx="8" fill="#2d7a3a"/>
-          <path d="M 60 580 Q 340 30 620 580 Z" fill="#3a9147" fillOpacity="0.5" stroke="#3a9147" strokeOpacity="0.18" strokeWidth="1"/>
-          <line x1="340" y1="565" x2="60" y2="580" stroke="white" strokeOpacity="0.3" strokeDasharray="6,4" strokeWidth="1.5"/>
-          <line x1="340" y1="565" x2="620" y2="580" stroke="white" strokeOpacity="0.3" strokeDasharray="6,4" strokeWidth="1.5"/>
-          <ellipse cx="340" cy="430" rx="170" ry="140" fill="#b5845a" fillOpacity="0.85"/>
-          <polygon points="340,555 490,415 340,275 190,415" fill="#c49a6c" fillOpacity="0.6" stroke="#e8d5b0" strokeOpacity="0.8" strokeWidth="2"/>
-          <circle cx="340" cy="435" r="18" fill="#c9a070" fillOpacity="0.9"/>
+          <rect x="0" y="0" width="680" height={VB_H} rx="8" fill={tokens.color.field.grass}/>
+          <path d="M 60 580 Q 340 30 620 580 Z" fill={tokens.color.field.grassLight} fillOpacity="0.5" stroke={tokens.color.field.grassLight} strokeOpacity="0.18" strokeWidth="1"/>
+          <line x1="340" y1="565" x2="60" y2="580" stroke={tokens.color.field.chalk} strokeOpacity="0.3" strokeDasharray="6,4" strokeWidth="1.5"/>
+          <line x1="340" y1="565" x2="620" y2="580" stroke={tokens.color.field.chalk} strokeOpacity="0.3" strokeDasharray="6,4" strokeWidth="1.5"/>
+          <ellipse cx="340" cy="430" rx="170" ry="140" fill={tokens.color.field.dirt} fillOpacity="0.85"/>
+          <polygon points="340,555 490,415 340,275 190,415" fill={tokens.color.field.dirtLight} fillOpacity="0.6" stroke={tokens.color.field.moundLight} strokeOpacity="0.8" strokeWidth="2"/>
+          <circle cx="340" cy="435" r="18" fill={tokens.color.field.mound} fillOpacity="0.9"/>
           {isSingle && (
             <g>
               <rect x="300" y="8" width="80" height="22" rx="11" fill="rgba(0,0,0,0.35)"/>
@@ -4199,8 +4186,8 @@ export default function App() {
             </g>
           )}
           {SVG_POSITIONS.map(function(slot) {
-            var pc = POS_COLORS[slot.pos] || "#555555";
-            var hc = HDR_COLORS[slot.pos] || "#2a2a2a";
+            var pc = tokens.color.position[slot.pos] || tokens.color.position.Bench;
+            var hc = tokens.color.position.header[slot.pos] || tokens.color.position.header.Bench;
             var cx = slot.x + slot.w / 2;
             var hdrFs = isSingle ? "10" : "8.5";
             return (
@@ -4816,7 +4803,7 @@ export default function App() {
                               disabled={lineupLocked}
                               onChange={function(player, inning) { return function(e) { setPos(player, inning, e.target.value); }; }(info.name, i)}
                               style={{ width:"64px", padding:"4px 2px", borderRadius:"5px", fontSize:"11px", fontWeight:"bold",
-                                background: pos ? (POS_COLORS[pos] + (lineupLocked ? "99" : "cc")) : "#f8f4ee",
+                                background: pos ? (tokens.color.position[pos] + (lineupLocked ? "99" : "cc")) : "#f8f4ee",
                                 color: pos ? "#fff" : "#9aaaaa",
                                 border: hasViol ? "2px solid " + C.red : "1px solid " + (pos ? "rgba(255,255,255,0.3)" : "rgba(15,31,61,0.1)"),
                                 cursor: lineupLocked ? "default" : "pointer", outline:"none", fontFamily:"inherit", textAlign:"center",
@@ -4856,7 +4843,7 @@ export default function App() {
               <tbody>
                 {ALL_POSITIONS.map(function(pos, ri) {
                   var rowBg = ri % 2 === 0 ? "#fff" : "#faf8f5";
-                  var posColor = POS_COLORS[pos] || "#555";
+                  var posColor = tokens.color.position[pos] || tokens.color.position.Bench;
                   return (
                     <tr key={pos}>
                       <td style={{ padding:"6px 12px", fontWeight:"bold", fontSize:"12px", position:"sticky", left:0, background:rowBg, zIndex:1, borderBottom:"1px solid rgba(15,31,61,0.04)" }}>
@@ -5293,7 +5280,7 @@ export default function App() {
 
                 <div style={{ display:"flex", gap:"2px", flexShrink:0 }}>
                   {fieldPositions.slice(0, 3).map(function(pos, fi) {
-                    return <span key={fi} style={{ fontSize:"9px", padding:"1px 4px", borderRadius:"3px", background:POS_COLORS[pos]+"cc", color:"#fff", opacity: fi === 0 ? 1 : 0.6 }}>{pos}</span>;
+                    return <span key={fi} style={{ fontSize:"9px", padding:"1px 4px", borderRadius:"3px", background:tokens.color.position[pos]+"cc", color:"#fff", opacity: fi === 0 ? 1 : 0.6 }}>{pos}</span>;
                   })}
                 </div>
 
@@ -6672,7 +6659,7 @@ export default function App() {
 
             for (var pli2 = 0; pli2 < posLayoutPDF.length; pli2++) {
               var pl2 = posLayoutPDF[pli2];
-              var pc3 = POS_COLORS[pl2.pos] || "#555";
+              var pc3 = tokens.color.position[pl2.pos] || tokens.color.position.Bench;
               var pc3safe = pc3.length === 4 ? "#" + pc3[1]+pc3[1]+pc3[2]+pc3[2]+pc3[3]+pc3[3] : pc3;
               var rgb3 = [parseInt(pc3safe.slice(1,3),16)||85, parseInt(pc3safe.slice(3,5),16)||85, parseInt(pc3safe.slice(5,7),16)||85];
               var pBoxH2 = pHeaderH + innings * pLineH + 2;
@@ -6846,7 +6833,7 @@ export default function App() {
                 doc.text("OUT", cx, y + 5.4, { align:"center" });
               } else if (pos2 && pos2 !== "") {
                 // Color pill per position
-                var pc = POS_COLORS[pos2] || "#555";
+                var pc = tokens.color.position[pos2] || tokens.color.position.Bench;
                 var pcsafe = pc.length === 4 ? "#" + pc[1]+pc[1]+pc[2]+pc[2]+pc[3]+pc[3] : pc;
                 var rgb = [parseInt(pcsafe.slice(1,3),16)||85, parseInt(pcsafe.slice(3,5),16)||85, parseInt(pcsafe.slice(5,7),16)||85];
                 doc.setFillColor(rgb[0], rgb[1], rgb[2]);
@@ -7678,7 +7665,6 @@ export default function App() {
               setSelectedParentPlayer={setSelectedParentPlayer}
               S={S}
               C={C}
-              POS_COLORS={POS_COLORS}
             />
           ) : null}
         </ErrorBoundary>
