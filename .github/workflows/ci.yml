@@ -99,6 +99,8 @@ jobs:
 
   sync-script:
     name: Sync-script unit tests (node:test)
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     needs: [frontend, backend]
     steps:
