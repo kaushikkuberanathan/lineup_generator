@@ -46,7 +46,7 @@ describe('Group 1 — top-level structure', function () {
 describe('Group 2 — color sub-groups', function () {
 
   test('2.1: color has all required sub-groups', function () {
-    ['brand', 'surface', 'text', 'status', 'border', 'overlay'].forEach(k => {
+    ['brand', 'surface', 'text', 'status', 'border', 'overlay', 'position', 'field'].forEach(k => {
       expect(tokens.color).toHaveProperty(k);
     });
   });
@@ -94,11 +94,37 @@ describe('Group 2 — color sub-groups', function () {
 
   test('2.7: color.overlay has correct keys (navyWash, not navySubtle); all rgba format', function () {
     const expected = ['navyWash', 'navyFaint', 'navyMedium', 'whiteFaint', 'whiteLight', 'whiteMedium', 'whiteHeavy', 'goldTint', 'goldStrong', 'backdrop',
-                      'redFaint', 'redStrong', 'warnFaint', 'warnStrong', 'winFaint', 'winMid'];
+                      'redFaint', 'redStrong', 'warnFaint', 'warnStrong', 'winFaint', 'winMid',
+                      'errorFaintest', 'errorFaint', 'errorSubtle', 'errorMedium'];
     expected.forEach(k => {
       expect(tokens.color.overlay[k]).toMatch(RGBA_RE);
     });
     expect(tokens.color.overlay).not.toHaveProperty('navySubtle');
+  });
+
+  test('2.8: color.position has 11 position keys + header object', function () {
+    ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'LC', 'RC', 'RF', 'Bench'].forEach(k => {
+      expect(typeof tokens.color.position[k]).toBe('string');
+      expect(tokens.color.position[k].length).toBeGreaterThan(0);
+    });
+    expect(tokens.color.position).toHaveProperty('header');
+    expect(typeof tokens.color.position.header).toBe('object');
+  });
+
+  test('2.9: color.position.header has all 11 position keys including Bench', function () {
+    ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'LC', 'RC', 'RF', 'Bench'].forEach(k => {
+      expect(typeof tokens.color.position.header[k]).toBe('string');
+      expect(tokens.color.position.header[k].length).toBeGreaterThan(0);
+    });
+  });
+
+  test('2.10: color.field has exactly 7 keys', function () {
+    const expected = ['grass', 'grassLight', 'dirt', 'dirtLight', 'mound', 'moundLight', 'chalk'];
+    expected.forEach(k => {
+      expect(typeof tokens.color.field[k]).toBe('string');
+      expect(tokens.color.field[k].length).toBeGreaterThan(0);
+    });
+    expect(Object.keys(tokens.color.field).length).toBe(7);
   });
 
 });
@@ -125,6 +151,20 @@ describe('Group 3 — value format checks', function () {
 
   test('3.5: all color.overlay values match rgba format', function () {
     Object.values(tokens.color.overlay).forEach(v => expect(v).toMatch(RGBA_RE));
+  });
+
+  test('3.6: all color.position fill values match hex format (header key excluded)', function () {
+    Object.keys(tokens.color.position).filter(k => k !== 'header').forEach(k => {
+      expect(tokens.color.position[k]).toMatch(HEX_RE);
+    });
+  });
+
+  test('3.7: all color.position.header values match hex format', function () {
+    Object.values(tokens.color.position.header).forEach(v => expect(v).toMatch(HEX_RE));
+  });
+
+  test('3.8: all color.field values match hex format', function () {
+    Object.values(tokens.color.field).forEach(v => expect(v).toMatch(HEX_RE));
   });
 
 });

@@ -10,8 +10,9 @@
  *   setSelectedParentPlayer {function}   setter for selectedParentPlayer
  *   S                      {object}       style helpers (S.btn, S.card)
  *   C                      {object}       color constants (C.navy, C.textMuted, etc.)
- *   POS_COLORS             {object}       position → hex color map
  */
+
+import { tokens } from '../../theme/tokens';
 
 function firstName(name) {
   if (!name) return name;
@@ -24,7 +25,7 @@ var POS_FULL = {
   RC:"Right Center", RF:"Right Field", Bench:"Bench"
 };
 
-export function ParentView({ roster, battingOrder, grid, selectedParentPlayer, setSelectedParentPlayer, S, C, POS_COLORS }) {
+export function ParentView({ roster, battingOrder, grid, selectedParentPlayer, setSelectedParentPlayer, S, C }) {
   var batPos = selectedParentPlayer ? battingOrder.indexOf(selectedParentPlayer) : -1;
   var assignments = selectedParentPlayer ? (grid[selectedParentPlayer] || []) : [];
 
@@ -62,7 +63,7 @@ export function ParentView({ roster, battingOrder, grid, selectedParentPlayer, s
           <div>
             <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:"8px" }}>Positions This Game</div>
             {assignments.length > 0 ? assignments.map(function(pos, i) {
-              var pc = POS_COLORS[pos] || "#555";
+              var pc = tokens.color.position[pos] || tokens.color.position.Bench;
               var isBench = pos === "Bench";
               return (
                 <div key={i} style={{ display:"flex", alignItems:"center", gap:"12px",

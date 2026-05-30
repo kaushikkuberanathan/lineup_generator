@@ -89,6 +89,50 @@ export const tokens = {
       warnStrong: 'rgba(212,160,23,0.35)',   // 1x OfflineIndicator.jsx — status.warning 0.35 (Offline Mode border)
       winFaint:   'rgba(39,174,96,0.12)',    // 1x OfflineIndicator.jsx — status.success 0.12 (Offline Ready bg)
       winMid:     'rgba(39,174,96,0.30)',    // 1x OfflineIndicator.jsx — status.success 0.30 (Offline Ready border)
+
+      // ─── Error-status alpha tints (Story 93 — DefenseDiamond OUT row family) ─
+      errorFaintest: 'rgba(220,38,38,0.04)',  // OUT row striping — App.jsx + DefenseDiamond
+      errorFaint:    'rgba(220,38,38,0.05)',  // OUT row alternate stripe
+      errorSubtle:   'rgba(220,38,38,0.08)',  // OUT row hover/highlight
+      errorMedium:   'rgba(220,38,38,0.30)',  // OUT row border / emphasis
+    },
+
+    // ─── Position fills (Story 93 — DefenseDiamond + App.jsx renderFieldSVG + ParentView) ─
+    // 11 light fills for field positions. Keys use position abbreviations (bracket
+    // notation required for '1B'/'2B'/'3B'). header sub-group holds the darker
+    // top-band variants used in DefenseDiamond and renderFieldSVG slot headers.
+    position: {
+      P:     '#e05c2a',
+      C:     '#7f3f3f',
+      '1B':  '#2471a3',
+      '2B':  '#2980b9',
+      '3B':  '#6c3483',
+      SS:    '#8e44ad',
+      LF:    '#1e8449',
+      LC:    '#2980b9',
+      RC:    '#8e44ad',
+      RF:    '#239b56',
+      Bench: '#555555',
+      header: {
+        P:     '#7a1a10', C:     '#14406e',
+        '1B':  '#7a1a10', '2B':  '#8a4a0a',
+        '3B':  '#7a1a10', SS:    '#8a4a0a',
+        LF:    '#1a6e3a', LC:    '#1a5580',
+        RC:    '#5c2878', RF:    '#1a6e3a',
+        Bench: '#2a2a2a',
+      },
+    },
+
+    // ─── Field SVG palette (Story 93 — DefenseDiamond + App.jsx renderFieldSVG) ─
+    // 7 colors for the field diamond SVG. Named by role, not appearance.
+    field: {
+      grass:      '#2d7a3a',  // SVG base rectangle fill
+      grassLight: '#3a9147',  // foul-line zone arc fill
+      dirt:       '#b5845a',  // infield ellipse
+      dirtLight:  '#c49a6c',  // base path / inner diamond polygon
+      mound:      '#c9a070',  // pitcher's mound circle
+      moundLight: '#e8d5b0',  // chalk on base path
+      chalk:      '#ffffff',  // foul-line stroke (white at varying opacity)
     },
   },
 
