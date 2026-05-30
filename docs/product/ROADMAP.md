@@ -1,7 +1,23 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: 2026-05-29 (v2.5.22 — DefenseDiamond + MaintenanceScreen token migration; sync-script CRLF fix)
+> Last updated: 2026-05-30 (v2.5.23 — ESLint zero, Vite 6, token cleanup)
 > MVP launched: March 24, 2026
+
+---
+
+## v2.5.23 — 2026-05-30 — ESLint zero, Vite 6, token cleanup
+
+- Story 77 (P2) resolved — ESLint debt fully cleared: 0 warnings
+  0 errors across entire codebase after 5 phases (A–E). App.jsx
+  reduced by ~650 net lines of dead code and lint fixes.
+- Story 81 (P2) resolved — Vite ^5.1→^6.4.2 + vite-plugin-pwa
+  ^0.19→^1.0. Clears 3 Dependabot moderate vulnerabilities.
+  Shipped in v2.5.22 (PR #235); ROADMAP flip retroactive.
+- Story 98 (P3) resolved — ci.yml sync-script job gained
+  permissions: {contents: read} block (CodeQL compliance).
+- Stories 60, 64, 65 (P3/P2) resolved — UX token cleanup bundle:
+  LegalSection Card drift, shadow.subtleCard, related migrations
+  (PR #247). Shipped v2.5.22/v2.5.23 cycle.
 
 ---
 
@@ -2141,7 +2157,9 @@ ceremony, and the Phase 3 Step 2 PR is contextually adjacent (same
 components directory).
 
 ### Story 60 (P3) — Token coverage gaps surfaced in EmptyState migration <!-- #126 -->
-Status: Open
+Status: Resolved
+Resolved: 2026-05-29 — PR #247
+Resolution: Added font.size.mdLg (15px) and color.text.body (#374151) tokens; extended Text primitive's SIZE_MAP and COLOR_MAP; migrated EmptyState title and FAQSection answer body to token references.
 Discovered: 2026-05-13 — Phase 3 Step 2 PR #68 EmptyState migration
 Target: future R-track patch or theme-extension story
 Symptom: EmptyState.jsx title styling uses raw passthrough values
@@ -2211,7 +2229,9 @@ off develop; RED integration test at the real-parent-path level (not
 the synthetic-roster level the existing guard uses).
 
 ### Story 64 (P3) — S.card remediation <!-- #129 -->
-Status: Open
+Status: Resolved
+Resolved: 2026-05-29 — PR #247
+Resolution: Added shadow.subtleCard token; LegalSection Card now consumes the token for box-shadow, accepts radius drift to radius.md (8px) via explicit radius prop, and the parent wrapper absorbs the marginBottom that was leaking into the Card style escape; asymmetric padding 16px 18px stays raw with drift comment pending an App.jsx-unlock session to design the full Card variant API.
 Discovered: 2026-05-15 — Phase 3 Step 3 LegalSection migration; reinforced 2026-05-20 — Phase 3 Step 3 PR #144 confirmed LegalSection.jsx L130-137 retains the full style escape post-migration (Tier 1 scope didn't touch Card properties); 5 properties documented: borderRadius 10px, padding 16px 18px, boxShadow 0 2px 8px rgba(15,31,61,0.06), marginBottom 14px, border 1px solid border.default
 Target: v2.6.x
 Symptom: `S.card` (App.jsx:741-745) uses `borderRadius: '10px'` (in
@@ -2250,7 +2270,9 @@ Recommendation: (a) — a bordered Card variant with shadow support
   LegalViewer.
 
 ### Story 65 (P2) — Token gap batch: style escapes from Phase 3 migrations <!-- #130 -->
-Status: Open
+Status: Resolved
+Resolved: 2026-05-29 — PR #247
+Resolution: Added font.letterSpacing.wider (0.08em) token; migrated FAQSection and LegalSection eyebrow letterSpacing and four lineHeight literals to existing tokens (body, comfortable, relaxed, loose); ValidationBanner/OfflineIndicator status-tint and rgba work deferred per ROADMAP recommendation.
 Discovered: 2026-05-15 — Phase 3 Steps 3-4 migrations; reinforced 2026-05-20 — Phase 3 Step 3 PR #144 surfaced lineHeight 1.4/1.6/1.75 in FAQSection (L104, L147, L131) and 1.6/1.7/1.7 in LegalSection (L88, L173, L188)
 Target: v2.6.x
 Symptom: Multiple style escapes documented inline across
@@ -2580,9 +2602,9 @@ known landmine for the next agent or automation script.
 
 ### Story 77 (P2) — Lint debt triage: 132 ESLint problems blocking strict gate <!-- #180 -->
 
-Status: Open
+Status: Resolved (v2.5.23 / 2026-05-30)
+Resolution: ESLint debt eliminated across all 5 phases (A–E); App.jsx reduced ~650 net lines. PRs #237 #244 #245 via feature/lint-sprint-2.
 Discovered: May 21, 2026 — surfaced during Story 75 pre-push hook remediation
-Target: Next governance pass
 
 Symptom: npm run lint exits 1 with 45 errors + 87 warnings. --max-warnings 0
 means lint cannot be used as a push gate until debt is cleared.
@@ -2670,10 +2692,10 @@ Recommendation: CLAUDE.md one-liner. Pair with Story 79 in same governance PR.
 
 ### Story 81 (P2) — Vite major upgrade: resolve 3 deferred esbuild/vite moderate vulns <!-- #184 -->
 
-Status: Open
+Status: Resolved (v2.5.22 / 2026-05-27)
+Resolution: Vite ^5→^6.4.2 + vite-plugin-pwa ^0.19→^1.0 via PR #235. Clears 3 Dependabot moderate vulns.
 Discovered: May 21, 2026 — npm audit fix deferred esbuild/vite chain
 during chore/npm-audit-fix session (PR forthcoming)
-Target: Next governance pass
 
 Symptom: 3 moderate vulnerabilities remain in frontend after audit fix —
 esbuild <=0.24.2, vite <=6.4.1, vite-plugin-pwa (various). All dev-only
@@ -3307,6 +3329,26 @@ Track recurrence pattern: if a third batch of artifacts appears in the next
 
 Could ship same PR as the next governance docs-only pass, or alongside any
 sync-stories-to-issues.js follow-up work.
+
+### Story 98 (P3) — ci.yml sync-script job missing permissions block <!-- #242 -->
+
+Status: Resolved
+Resolved: 2026-05-29 — PR #243
+Resolution: Added permissions: { contents: read } block to the sync-script job in .github/workflows/ci.yml, restricting GITHUB_TOKEN to read-only for that job (least-privilege per CodeQL guidance).
+Discovered: 2026-05-29 — CodeQL medium-severity finding on the sync-script job after PR #236.
+Target: Next governance pass.
+
+Symptom: The `sync-script` job in `.github/workflows/ci.yml` declares no `permissions:` block, so it
+inherits the workflow-level default `GITHUB_TOKEN` scope (write on `contents` and other scopes).
+CodeQL flags this as overly permissive given the job's actual surface (checkout + Node unit tests).
+
+Impact: Posture finding only today — the job has no `gh` calls or write paths. But a default-write
+token is one step away from being a real exfiltration risk if a future change adds an untrusted action.
+
+Fix: Add `permissions: { contents: read }` immediately under the `name:` line of the `sync-script`
+job. Two lines, no other behavior change. Mirrors GitHub Actions least-privilege guidance.
+
+---
 
 ### Story 97 (P2) — sync-stories-to-issues.js byte-corrupts CRLF Story headings on marker patch <!-- #234 -->
 

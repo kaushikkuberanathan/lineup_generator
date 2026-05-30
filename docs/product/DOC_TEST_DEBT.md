@@ -33,7 +33,7 @@
 | **Risk if unfixed** | Silent regression breaks the #1 Strategic North Star ("share link bulletproof"). A future refactor of `shareCurrentLineup` or `SharedView.jsx` could ship with the link returning stale or incomplete data and we would not catch it pre-deploy. |
 | **Proposed test** | `frontend/src/tests/shareLink.test.js` — **file exists, partial coverage**. Still needed: build a lineup fixture, call `shareCurrentLineup`, parse the `share_links.payload` JSONB, assert every expected field is present and correctly filtered. Also a DOM test that `SharedView` renders all sections without errors given the payload. |
 | **Opened** | 2026-04-17 |
-| **Age** | 40 days |
+| **Age** | 43 days |
 | **Target** | v2.6.x |
 
 ### 🟠 P1 — Share-link routing render path (Story 61 follow-up)
@@ -45,7 +45,7 @@
 | **Risk if unfixed** | Silent regression on Strategic North Star #1 ("share link bulletproof"). Bug B is a two-character JSX conditional; the next refactor could re-introduce it without anyone noticing until a parent reports a broken link. |
 | **Proposed test** | Render-path integration test in `frontend/src/tests/` — render `<App />` (or extract the share-link branch into a small testable surface) with `window.location.search` stubbed for `?s=abc`, `?s=abc&view=true`, and `?share=<base64>` variants. Assert routing lands on `SharedView` vs `DugoutView` per URL. Requires standing up an `App.jsx` render-test harness for the first time — explicit cost the v2.5.16 PR opted not to pay. |
 | **Opened** | 2026-05-19 |
-| **Age** | 0 days |
+| **Age** | 11 days |
 | **Target** | v2.6.x |
 
 ### 🔴 P0 — Game Mode Rendering + State
@@ -57,7 +57,7 @@
 | **Risk if unfixed** | Silent regression breaks the #2 Strategic North Star ("Game Mode dugout-ready under pressure"). |
 | **Proposed test** | `frontend/src/tests/gameMode.test.js` — render GameModeScreen with fixture lineup, simulate inning advance, simulate QuickSwap tap, assert state transitions and candidate filtering (including absent-player exclusion). |
 | **Opened** | 2026-04-17 |
-| **Age** | 40 days |
+| **Age** | 43 days |
 | **Target** | v2.6.x |
 
 ### 🟠 P1 — Live Scoring Scorer-Lock Regression
@@ -69,8 +69,8 @@
 | **Risk if unfixed** | Scoring users silently unable to claim the role with no surfaced error — exactly what v2.2.29 had to fix in prod. |
 | **Proposed test** | Add to `frontend/src/tests/scoring.test.js` — assert `claimScorerLock` rejects null `scorer_user_id` before issuing the upsert, OR assert that the shim fallback produces a non-null value in all code paths. |
 | **Opened** | 2026-04-17 |
-| **Age** | 27 days |
-| **Target** | v2.3.4 |
+| **Age** | 43 days |
+| **Target** | v2.6.x |
 
 ### 🟠 P1 — Auth Flow End-to-End (Magic Link + Google OAuth)
 
@@ -81,7 +81,7 @@
 | **Risk if unfixed** | Phase 2 auth cutover (planned) cannot ship safely without regression coverage. An auth-gate re-activation that silently blocks unauthenticated viewers would reproduce the v2.2.22 hotfix scenario. |
 | **Proposed test** | `frontend/src/tests/auth.test.js` — mock Supabase client, simulate magic link flow, assert `useAuth` state transitions correctly through `pending → authenticated`. Also test: share link renders when `authState === unauthenticated`. |
 | **Opened** | 2026-04-17 |
-| **Age** | 27 days |
+| **Age** | 43 days |
 | **Target** | Before Phase 2 auth cutover (not version-pinned) |
 
 ### 🟠 P1 — Roster-Wipe Guard + Recovery Endpoint
@@ -93,8 +93,8 @@
 | **Risk if unfixed** | Two roster-wipe incidents already happened (Jan, Feb 2026). The guard is the primary prevention; if it silently stops working, we're back to paper recovery. |
 | **Proposed test** | `backend/src/tests/teamData.test.js` — test the guard returns 409, test force-override returns 200, test history endpoint rejects without ADMIN_KEY, test history endpoint returns snapshots with ADMIN_KEY. |
 | **Opened** | 2026-04-17 |
-| **Age** | 27 days |
-| **Target** | v2.3.4 |
+| **Age** | 43 days |
+| **Target** | v2.6.x |
 
 ### 🟡 P2 — Walk-Up Song Navigation
 
@@ -105,7 +105,7 @@
 | **Risk if unfixed** | A future refactor of `activeBattingOrder` filtering could silently unfilter Songs view — would go unnoticed until a DJ parent complains about absent kids in the playlist. |
 | **Proposed test** | Add to existing test or new `frontend/src/tests/songs.test.js` — assert Songs renders only `activeBattingOrder` players, assert Play button's href matches `player.walkUpSong.url`. |
 | **Opened** | 2026-04-17 |
-| **Age** | 27 days |
+| **Age** | 43 days |
 | **Target** | v2.4.0 |
 
 ### 🟡 P2 — PWA Install Prompt Logic
@@ -117,7 +117,7 @@
 | **Risk if unfixed** | Platform-specific install UX regressions; user confusion on a non-critical path. |
 | **Proposed test** | `frontend/src/tests/pwaInstall.test.js` — mock `window.navigator.standalone`, `window.matchMedia("(display-mode: standalone)")`, and `beforeinstallprompt` event, assert correct banner variant renders. |
 | **Opened** | 2026-04-17 |
-| **Age** | 27 days |
+| **Age** | 43 days |
 | **Target** | v2.4.0 |
 
 ### 🟡 P2 — Analytics track() Wrapper + SSR Guards
@@ -129,7 +129,7 @@
 | **Risk if unfixed** | A future refactor could remove the guard and break CI if any test environment lacks window/navigator. |
 | **Proposed test** | Add to existing fixtures — assert `track()` is a no-op when window is undefined, assert `getDeviceContext()` returns safe defaults in SSR-like env. |
 | **Opened** | 2026-04-17 |
-| **Age** | 27 days |
+| **Age** | 43 days |
 | **Target** | v2.4.0 |
 
 ### 🟡 P2 — AI Photo Import End-to-End
@@ -141,7 +141,7 @@
 | **Risk if unfixed** | The v2.2.4 bug (large phone photos exceeding 5MB after base64) was a real prod incident; no regression test was added with the fix. |
 | **Proposed test** | `backend/src/tests/aiProxy.test.js` — mock Anthropic API, test POST /api/ai with oversize payload returns 413, test valid payload returns parsed structure. |
 | **Opened** | 2026-04-17 |
-| **Age** | 27 days |
+| **Age** | 43 days |
 | **Target** | v2.4.0 |
 
 ### 🟡 P2 — D-S30: isFlagEnabled has no DB-read path (Story 30)
@@ -153,7 +153,7 @@
 | **Risk if unfixed** | Any ops flag-flip procedure documented as "flip the DB row" is silently ineffective. Risk of mis-communication and delayed rollbacks. |
 | **Proposed fix** | Extend `flagBootstrap.js` to fetch Supabase `feature_flags` table at app boot and merge into a runtime registry. `isFlagEnabled()` stays synchronous at call sites — async fetch happens once in the bootstrap path. Recommend (B) from Story 30 write-up in ROADMAP.md. |
 | **Opened** | 2026-04-24 |
-| **Age** | 20 days |
+| **Age** | 36 days |
 | **Target** | v2.6.x |
 
 ### 🟡 P2 — SW update banner lifecycle (Story 85 follow-up)
@@ -165,7 +165,7 @@
 | **Risk if unfixed** | A future refactor of the SW lifecycle wiring could silently re-introduce the v2.5.21 regression (banner never rendered). Coaches would again revert to PWA close+reopen as the only update path. |
 | **Proposed test** | E2E test with mocked SW registration: simulate `needRefresh: true`, assert banner renders, assert click invokes `updateServiceWorker(true)`. OR vitest unit test that mocks `virtual:pwa-register/react` and verifies destructure shape + click-handler wiring. |
 | **Opened** | 2026-05-27 |
-| **Age** | 0 days |
+| **Age** | 3 days |
 | **Target** | v2.6.x |
 
 ### 🟡 P2 — sync-stories-to-issues.js: no unit harness for typeof issueNum guard (Story 91 follow-up)
@@ -177,7 +177,7 @@
 | **Risk if unfixed** | A future refactor (token-handling, error-class change, response-shape drift from GitHub API) could silently break the script. ROADMAP corruption like the `<!-- #undefined -->` symptom would only be caught by post-run inspection. |
 | **Proposed test** | `scripts/__tests__/sync-stories-to-issues.test.js` — mock `fetch`, exercise: (a) happy path creates issue + patches marker, (b) 401 returns failure object — guard prevents ROADMAP write, (c) de-dup check skips on existing issue. Node test runner (node:test) is sufficient — no Vitest pull-in needed for a tools-side test. |
 | **Opened** | 2026-05-27 |
-| **Age** | 0 days |
+| **Age** | 3 days |
 | **Target** | v2.6.x |
 
 ### ✅ RESOLVED — D017: ScoreboardRow primitive has no test coverage
@@ -471,3 +471,10 @@
   - P0 #1 + P0 #2 ages refreshed to 40 days; P0 #2 target slid v2.3.4 → v2.6.x (stale)
   - Suite count: 751 (CLAUDE.md baseline) → 759 passing / 1 skipped / 0 failed (Story 87 +13 nominal, net +8 — minor reconciliations elsewhere; the +1 skipped is the long-standing `bench-equity` 2.1 test, baseline doc was stale on that count)
   - Dashboard updated: P2 test gaps 5 → 7, P2 total 12 → 14, overall total 20 → 22, age distribution 0–30 days 20 → 22
+
+- **v2.13 — May 2026 (v2.5.22 + v2.5.23 release pass)**
+  - New test file (v2.5.22): `scripts/__tests__/sync-patch.test.js` — 4 regression tests via `node:test` runner covering CRLF-safe split, dead-code unwrap fix, and `patchHeading()` extraction (Story 97, PR #236). Runs in new CI `sync-script` job.
+  - v2.5.23 ROADMAP cleanup: Story 77 (P2) flipped Resolved — App.jsx ESLint debt fully cleared across 5 phases (PRs #237 #244 #245). Story 81 (P2) retroactively flipped Resolved — Vite ^5→^6.4.2 upgrade shipped in v2.5.22 PR #235. Story 98 (P3) Resolved — ci.yml sync-script job gained `permissions: { contents: read }` (PR #243).
+  - Age sweep: items opened 2026-04-17 refreshed 27/40 → 43 days; D-S30 (2026-04-24) refreshed 20 → 36 days; Story 61 follow-up (2026-05-19) 0 → 11 days; SW banner + sync-stories follow-ups (2026-05-27) 0 → 3 days.
+  - Stale target retargets: P1 Scorer-Lock and P1 Roster-Wipe both slid v2.3.4 → v2.6.x.
+  - Dashboard impact: no new debt items opened or resolved in DOC_TEST_DEBT (resolutions tracked in ROADMAP for Stories 77/81/98). Age distribution shifts: 0–30 days bucket drops to 4 (Story 61 + 2 SW/sync + D-S30 partial), 31–60 days bucket grows to 18 (was 0). Dashboard table at L398–401 not edited this pass — flagged as drift for a follow-up touch.

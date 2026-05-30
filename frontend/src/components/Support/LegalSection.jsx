@@ -36,7 +36,7 @@ export function LegalSection() {
           weight="bold"
           style={{
             display: "block",
-            letterSpacing: "0.08em",
+            letterSpacing: tokens.font.letterSpacing.wider,
             textTransform: "uppercase",
             color: tokens.color.text.tertiary,
           }}
@@ -85,7 +85,7 @@ export function LegalSection() {
         <Text
           size="xs"
           color="tertiary"
-          style={{ display: "block", textAlign: "center", lineHeight: "1.6" }}
+          style={{ display: "block", textAlign: "center", lineHeight: tokens.font.lineHeight.comfortable }}
         >
           Last updated April 2026 &middot; Questions? Use the Feedback tab.
         </Text>
@@ -124,15 +124,18 @@ function LegalViewer({ doc, onBack }) {
       </div>
 
       {/* Document body */}
-      <div style={{ margin: "12px 12px 4px" }}>
-        {/* style escape: S.card has no Card token equivalent
-            (10px radius, asymmetric padding, custom shadow) — file remediation story */}
+      <div style={{ margin: "12px 12px 4px", marginBottom: "14px" /* drift: no space token */ }}>
+        {/* Story 64: shadow tokenized as shadow.subtleCard; radius drifts to
+            radius.md (8px, was 10px); padding 16px 18px stays raw (drift —
+            no asymmetric Card padding token). Full S.card remediation deferred
+            to App.jsx-unlock session per Story 64 recommendation (a). */}
         <Card
+          radius="md"
+          shadow={false}
           style={{
-            borderRadius: "10px",
+            // padding drift: 16px (tokens.space.lg) vertical, 18px raw horizontal — no asymmetric token
             padding: "16px 18px",
-            boxShadow: "0 2px 8px rgba(15,31,61,0.06)",
-            marginBottom: "14px",
+            boxShadow: tokens.shadow.subtleCard,
             border: "1px solid " + tokens.color.border.default,
           }}
         >
@@ -170,7 +173,7 @@ function LegalViewer({ doc, onBack }) {
                   color="primary"
                   style={{
                     display: "block",
-                    lineHeight: "1.7",
+                    lineHeight: tokens.font.lineHeight.relaxed,
                     marginBottom: "10px",
                   }}
                 >
@@ -185,7 +188,7 @@ function LegalViewer({ doc, onBack }) {
                   paddingLeft: tokens.space.xl,
                   fontSize: tokens.font.size.body,
                   color: tokens.color.text.primary,
-                  lineHeight: "1.7",
+                  lineHeight: tokens.font.lineHeight.relaxed,
                 }}>
                   {section.items.map(function(item, i) {
                     return <li key={i} style={{ marginBottom: tokens.space.xs }}>{item}</li>;

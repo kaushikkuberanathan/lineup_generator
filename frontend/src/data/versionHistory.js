@@ -1,5 +1,20 @@
 ﻿export var VERSION_HISTORY = [
   {
+    version: '2.5.23',
+    date: '2026-05-30',
+    headline: 'Internal stability improvements — ESLint, Vite 6, token cleanup',
+    techNote: 'Under-the-hood stability improvements',
+    userChanges: [],
+    internalChanges: [
+      'Story 77 — ESLint debt eliminated: 0 warnings 0 errors across entire codebase after 5-phase cleanup (Phases A–E). App.jsx reduced ~650 net lines of dead code (PRs #237 #244 #245)',
+      'Story 81 — Vite upgraded ^5.1→^6.4.2, vite-plugin-pwa ^0.19→^1.0. Clears 3 Dependabot moderate vulnerabilities (PR #235, shipped v2.5.22)',
+      'Story 98 — ci.yml sync-script CI job gained permissions: {contents: read} block for CodeQL compliance (PR #243)',
+      'Stories 60/64/65 — UX token cleanup: shadow.subtleCard, LegalSection Card drift, related token migrations (PR #247)',
+      'Test suite: 767 passing / 1 skipped / 0 failed (+8 net vs v2.5.22 baseline)',
+      'Session retrospective 2026-05-30-A — lint-sprint-2 promote, v2.5.23 release ritual',
+    ],
+  },
+  {
     version: '2.5.22',
     date: '2026-05-29',
     headline: 'Stability and performance update',

@@ -1,12 +1,12 @@
 ﻿// v2.1
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { jsPDF } from "jspdf";
 import { isSupabaseEnabled, supabase, dbSaveTeams, dbDeleteTeam,
          dbLoadTeams, dbLoadTeamData, dbSaveTeamData,
          dbSnapshotRoster, dbGetRosterSnapshots,
          dbSaveShareLink, dbLoadShareLink } from './supabase.js';
 import { track, mixpanel, deviceContext } from '@/utils/analytics';
-import { inject, track as vaTrack } from '@vercel/analytics';
+import { track as vaTrack } from '@vercel/analytics';
 import { FEATURE_FLAGS } from '@/config/featureFlags';
 import { generateLineupV2 } from '@/utils/lineupEngineV2';
 import { normalizeBattingHand } from '@/utils/playerUtils';
@@ -33,9 +33,6 @@ import { FAQSection }         from './components/Support/FAQSection';
 import { BattingHandSelector } from './components/BattingHandSelector';
 import { PlayerHandBadge }     from './components/PlayerHandBadge';
 import { useAuth } from './hooks/useAuth';
-import { LoginScreen } from './components/Auth/LoginScreen';
-import { RequestAccessScreen } from './components/Auth/RequestAccessScreen';
-import { PendingApprovalScreen } from './components/Auth/PendingApprovalScreen';
 import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 import { VERSION_HISTORY } from './data/versionHistory';
 
@@ -137,18 +134,17 @@ var DEFAULT_ROSTER = [];
 
 // Storage: localStorage with in-memory fallback
 var _mem = {};
-var SCHEMA_VERSION = 2;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.5.22";
+var APP_VERSION = "2.5.23";
 
 function loadJSON(key, def) {
   try {
     var raw = localStorage.getItem(key);
     if (raw) { return JSON.parse(raw); }
   } catch (e) {
-    try { var mv = _mem[key]; if (mv) { return JSON.parse(mv); } } catch (e2) {}
+    try { var mv = _mem[key]; if (mv) { return JSON.parse(mv); } } catch (e2) { /* ignored */ }
   }
   return def;
 }
@@ -158,29 +154,13 @@ function saveJSON(key, val) {
   try { localStorage.setItem(key, str); } catch (e) { _mem[key] = str; }
 }
 
-function removeJSON(key) {
-  try { localStorage.removeItem(key); } catch (e) { delete _mem[key]; }
-}
-
-// Schema migration: run on every load, safe to call repeatedly
-function migrateTeamData(data, key) {
-  if (!data || typeof data !== "object") { return data; }
-  var version = data.schemaVersion || 0;
-  // v0 -> v1: add schemaVersion field to all team sub-objects
-  if (version < 1) {
-    data = Object.assign({}, data, { schemaVersion: 1 });
-    saveJSON(key, data);
-  }
-  return data;
-}
-
 // migrateRoster, migrateSchedule, migrateBattingPerf — imported from @/utils/migrations
 
 function migrateGrid(grid, roster, innings) {
   if (!grid || typeof grid !== "object") { return initGrid(roster, innings); }
   // Remap CF → LC for any grid data saved before the 10-player update
-  for (var pname in grid) {
-    var playerInnings = grid[pname];
+  for (var gridKey in grid) {
+    var playerInnings = grid[gridKey];
     if (!Array.isArray(playerInnings)) continue;
     for (var idx = 0; idx < playerInnings.length; idx++) {
       if (playerInnings[idx] === "CF") {
@@ -373,7 +353,6 @@ function scorePosition(playerName, pos, inning, grid, roster) {
 
 function autoAssign(roster, innings) {
   var players = roster.map(function(r) { return r.name; });
-  var n = players.length;
   var grid = {};
   for (var pi = 0; pi < players.length; pi++) {
     grid[players[pi]] = [];
@@ -403,6 +382,16 @@ function autoAssign(roster, innings) {
     var cnt = 0;
     for (var i = 0; i < upToInning; i++) { if (pg[i] === "Bench") { cnt++; } }
     return cnt;
+  }
+
+  // Helper: check if a player carries the "benchOnce" protection tag.
+  function hasBenchOnce(pName) {
+    for (var ri = 0; ri < roster.length; ri++) {
+      if (roster[ri].name === pName) {
+        return (roster[ri].tags || []).indexOf("benchOnce") >= 0;
+      }
+    }
+    return false;
   }
 
   // Identify absent players (tagged "absent") — they sit Out every inning
@@ -438,14 +427,6 @@ function autoAssign(roster, innings) {
     // They are excluded from candidacy after their first bench inning.
     // Fallback: if not enough non-protected candidates, allow protected players
     // to sit again (unavoidable with very small rosters).
-    function hasBenchOnce(pName) {
-      for (var ri = 0; ri < roster.length; ri++) {
-        if (roster[ri].name === pName) {
-          return (roster[ri].tags || []).indexOf("benchOnce") >= 0;
-        }
-      }
-      return false;
-    }
     var benchCandidates = [];
     for (var bp = 0; bp < activePlayers.length; bp++) {
       var pn = activePlayers[bp];
@@ -499,7 +480,7 @@ function autoAssign(roster, innings) {
         var pName = available[ori];
         var alreadyPlayed = hasPlayedPos(pName, ofPos) ? 1 : 0;
         var totalOF = totalOFCount(pName);
-        var bc = benchCount(pName, inning);
+        bc = benchCount(pName, inning);
         ofRanked.push({ name: pName, score: -alreadyPlayed * 1000 - totalOF * 10 + bc });
       }
       ofRanked.sort(function(a, b) { return b.score - a.score; });
@@ -628,9 +609,6 @@ function autoAssignWithRetryFallback(roster, innings) {
   };
 }
 
-// Backward-compatible alias so any direct autoAssignWithFallback calls still work
-var autoAssignWithFallback = autoAssignWithRetryFallback;
-
 function validateGrid(grid, roster, innings) {
   var warnings = [];
   var players = roster.map(function(r) { return r.name; });
@@ -706,8 +684,6 @@ var C = {
   overlayBg: "rgba(0,0,0,0.5)", subtleBg: "#f8fafc",
   subtleBorder: "rgba(0,0,0,0.04)", subtleText: "#9ca3af"
 };
-
-function ss(obj) { return obj; }
 
 var S = {
   app: { minHeight:"100vh", background:C.cream, fontFamily:"Georgia,'Times New Roman',serif", color:C.text },
@@ -855,47 +831,6 @@ function SharedView({ payload, renderFieldSVG }) {
   var _svPlayer = useState(null);
   var svPlayer = _svPlayer[0]; var setSvPlayer = _svPlayer[1];
 
-  // Build position box from payload.grid (no live React state here)
-  function sharedPosBox(pos) {
-    var pc = POS_COLORS[pos] || "#555";
-    var isSingle = svInn !== null;
-    var innPlayers = [];
-    for (var ii = 0; ii < innCount; ii++) {
-      if (isSingle && ii !== svInn) { continue; }
-      var found = "";
-      for (var pi = 0; pi < rosterNames.length; pi++) {
-        if ((payload.grid[rosterNames[pi]] || [])[ii] === pos) { found = rosterNames[pi]; break; }
-      }
-      innPlayers.push({ inn: ii + 1, name: found });
-    }
-    var hasSelectedPlayer = svPlayer && innPlayers.some(function(row) { return row.name === svPlayer; });
-    return (
-      <div style={{ background: hasSelectedPlayer ? "rgba(245,166,35,0.10)" : "rgba(255,255,255,0.97)",
-        border: "2px solid " + (hasSelectedPlayer ? "#f5a623" : pc), borderRadius:"7px",
-        padding: isSingle ? "5px 8px" : "3px 5px", width:"100%", boxSizing:"border-box",
-        boxShadow:"0 1px 5px rgba(0,0,0,0.14)", overflow:"hidden", minWidth:0 }}>
-        <div style={{ fontSize:"9px", fontWeight:"bold", color:pc, textAlign:"center",
-          borderBottom:"1px solid "+pc+"44", paddingBottom:"2px", marginBottom: isSingle ? "4px" : "2px" }}>{pos}</div>
-        {innPlayers.map(function(row) {
-          var isHighlighted = svPlayer && row.name === svPlayer;
-          return isSingle ? (
-            <div key={row.inn} style={{ fontSize:"12px", fontWeight: row.name ? "bold" : "normal",
-              color: isHighlighted ? "#b45309" : (row.name ? C.navy : "#bbb"), textAlign:"center", padding:"1px 0",
-              overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-              {row.name ? firstName(row.name) : "-"}
-            </div>
-          ) : (
-            <div key={row.inn} style={{ display:"flex", gap:"2px", alignItems:"baseline", fontSize:"9.5px", lineHeight:"1.5", overflow:"hidden" }}>
-              <span style={{ color:"#aaa", fontSize:"7.5px", minWidth:"8px", textAlign:"right", flexShrink:0 }}>{row.inn}</span>
-              <span style={{ fontWeight: (row.name ? "bold" : "normal"), color: isHighlighted ? "#b45309" : (row.name ? C.navy : "#ccc"),
-                overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", minWidth:0, flex:1 }}>{row.name ? firstName(row.name) : "-"}</span>
-            </div>
-          );
-        })}
-      </div>
-    );
-  }
-
   // Bench for selected inning(s)
   var benchByInning = innArr.map(function(ii) {
     return rosterNames.filter(function(n) { return (payload.grid[n] || [])[ii] === "Bench"; });
@@ -914,8 +849,6 @@ function SharedView({ payload, renderFieldSVG }) {
   }
 
   var teamInitial = payload.team ? payload.team.charAt(0).toUpperCase() : "L";
-  var IF_POSITIONS = ["3B","SS","P","2B","1B"];
-  var OF_POSITIONS = ["LF","LC","RC","RF"];
 
   return (
     <div style={{ minHeight:"100vh", background:C.cream, fontFamily:"Georgia,'Times New Roman',serif", color:C.text }}>
@@ -1524,18 +1457,15 @@ export default function App() {
   var activeTeamId = _atid[0]; var setActiveTeamId = _atid[1];
   var _liveScoring = useFeatureFlag('live_scoring', activeTeamId);
   var _isAlwaysScoringTeam = (activeTeam && (activeTeam.name === 'Mud Hens' || activeTeam.name === 'Demo All-Stars'));
+  // eslint-disable-next-line no-unused-vars -- hook side-effects must run; value orphaned post-COMBINED_GAMEMODE GA
   var liveScoringEnabled = _isAlwaysScoringTeam ? true : _liveScoring.enabled;
   var _primaryTab = useState("home");
   var primaryTab = _primaryTab[0]; var setPrimaryTab = _primaryTab[1];
-  var _rosterTab = useState("players");
-  var rosterTab = _rosterTab[0]; var setRosterTab = _rosterTab[1];
   var _gameDayTab = useState("lineups");
   var gameDayTab = _gameDayTab[0]; var setGameDayTab = _gameDayTab[1];
   var _lineupsSubTab = useState("defense");
   var lineupsSubTab = _lineupsSubTab[0];
   var setLineupsSubTab = _lineupsSubTab[1];
-  var _seasonTab = useState("schedule");
-  var seasonTab = _seasonTab[0]; var setSeasonTab = _seasonTab[1];
   var _teamSubTab = useState("roster");
   var teamSubTab = _teamSubTab[0]; var setTeamSubTab = _teamSubTab[1];
   var _statsSortCol = useState("name");
@@ -1568,17 +1498,9 @@ export default function App() {
   var shareLoading = _shareLoading[0]; var setShareLoading = _shareLoading[1];
 
   const {
-    authState, setAuthState,
     session,
     user,
-    membership,
-    role,
-    sendMagicLink,
-    requestAccess,
-    logout,
   } = useAuth();
-
-  const [authScreen, setAuthScreen] = useState('login');
 
   // Online/offline detection
   useEffect(function() {
@@ -1590,7 +1512,7 @@ export default function App() {
       window.removeEventListener("online",  goOnline);
       window.removeEventListener("offline", goOffline);
     };
-  }, []);
+  }, [setIsOnline]);
 
   // Feature flag URL bootstrap — ?enable_flag=<name> sets localStorage and reloads
   // ?disable_flag=<name> clears it. Allows per-user flag activation via a shared link.
@@ -1645,7 +1567,7 @@ export default function App() {
       track("share_link_view_failed", { error: "fetch_failed" });
       setShareLoading(false);
     });
-  }, []);
+  }, [setShareLoading, setSharePayload]);
 
   // Analytics: app opened — fires once on mount; teams is synchronously initialized from localStorage
   useEffect(function() {
@@ -1687,14 +1609,14 @@ export default function App() {
     return function() {
       window.removeEventListener("beforeinstallprompt", handler);
     };
-  }, [isStandalone]);
+  }, [isStandalone, isIOS, setDeferredPrompt, setShowInstallBanner]);
 
   // iOS install banner — Safari doesn't fire beforeinstallprompt; show immediately if not standalone
   useEffect(function() {
     if (!isIOS || isStandalone) return;
     setShowInstallBanner(true);
     track("pwa_banner_shown", { platform: "ios", prompt_ready: false, browser: "safari" });
-  }, [isIOS, isStandalone]);
+  }, [isIOS, isStandalone, setShowInstallBanner]);
 
   var _ros = useState(initRoster);
   var roster = _ros[0]; var setRoster = _ros[1];
@@ -1749,20 +1671,15 @@ export default function App() {
   // at render time; a ref always gives the current value.
   if (!window._bTouchDrag) { window._bTouchDrag = { active:false, name:null, startY:0, currentIdx:null }; }
   var _touchDragRe = useState(0); // integer version counter — increment to force re-render
+  // eslint-disable-next-line no-unused-vars -- useState slot 0 kept for re-render subscription; only setter read
   var touchDragVer = _touchDragRe[0]; var bumpTouchDrag = _touchDragRe[1];
   var touchDrag = window._bTouchDrag;
-  function setTouchDrag(val) {
-    window._bTouchDrag = val;
-    bumpTouchDrag(function(v) { return v + 1; });
-  }
   var _inlineScore = useState(null);
   var inlineScoreGame = _inlineScore[0]; var setInlineScoreGame = _inlineScore[1];
   var _col = useState({});
   var collapsed = _col[0]; var setCollapsed = _col[1];
   var _v2sec = useState({});
   var v2SectionOpen = _v2sec[0]; var setV2SectionOpen = _v2sec[1];
-  var _vhOpen = useState({});
-  var vhOpen = _vhOpen[0]; var setVhOpen = _vhOpen[1];
   var _hm = useState("welcome");
   var homeMode = _hm[0]; var setHomeMode = _hm[1];
   var _teamSearch = useState("");
@@ -1778,15 +1695,13 @@ export default function App() {
   var _import = useState({ mode:null, text:"", image:null, loading:false, error:"", preview:[] });
   var importState = _import[0]; var setImportState = _import[1];
   var _printOpt = useState("both");
+  // eslint-disable-next-line no-unused-vars -- printOpt value still read; setter orphaned post-renderPrint deletion
   var printOpt = _printOpt[0]; var setPrintOpt = _printOpt[1];
   var _printDefView = useState("grid");
+  // eslint-disable-next-line no-unused-vars -- printDefView value still read; setter orphaned post-renderPrint deletion
   var printDefView = _printDefView[0]; var setPrintDefView = _printDefView[1];
   var _showShareSheet = useState(false);
   var showShareSheet = _showShareSheet[0]; var setShowShareSheet = _showShareSheet[1];
-  var _viewOptsExpanded = useState(false);
-  var viewOptsExpanded = _viewOptsExpanded[0]; var setViewOptsExpanded = _viewOptsExpanded[1];
-  var _printDiamondInning = useState(null);
-  var printDiamondInning = _printDiamondInning[0]; var setPrintDiamondInning = _printDiamondInning[1];
   var _pdfLoading = useState(false);
   var pdfLoading = _pdfLoading[0]; var setPdfLoading = _pdfLoading[1];
   var _pdfSharing = useState(false);
@@ -1805,6 +1720,7 @@ export default function App() {
   });
   var coachPin = _coachPin[0]; var setCoachPin = _coachPin[1];
   var _pinSession = useState(false);
+  // eslint-disable-next-line no-unused-vars -- setter setPinSessionUnlocked still live; value intentionally unread
   var pinSessionUnlocked = _pinSession[0]; var setPinSessionUnlocked = _pinSession[1];
   var _pinModal = useState(null);
   var pinModal = _pinModal[0]; var setPinModal = _pinModal[1];
@@ -1866,8 +1782,6 @@ export default function App() {
     else if (_mql.addListener) { _mql.addListener(_orientFn); }
   }
 
-  var _printNotes = useState("");
-  var printNotes = _printNotes[0]; var setPrintNotes = _printNotes[1];
   var _songsView = useState("display");
   var songsView = _songsView[0]; var setSongsView = _songsView[1];
   var _newGame = useState({ date:"", time:"", location:"", opponent:"", result:"", ourScore:"", theirScore:"", battingPerf:{}, snackDuty:"", gameBall:[], gameBallSearch:"", scoreReported:false, usScore:null, oppScore:null, gameStatus:'scheduled', finalizedAt:null });
@@ -1904,12 +1818,6 @@ export default function App() {
   var diamondInning = _diamondInning[0]; var setDiamondInning = _diamondInning[1];
   var _showDiamond = useState(false);
   var showDiamond = _showDiamond[0]; var setShowDiamond = _showDiamond[1];
-  var _newPrac = useState({ date:"", duration:"", focus:"Mixed", attendance:{}, drills:[], notes:"" });
-  var newPrac = _newPrac[0]; var setNewPrac = _newPrac[1];
-  var _showPrac = useState(false);
-  var showPracForm = _showPrac[0]; var setShowPracForm = _showPrac[1];
-  var _editPrac = useState(null);
-  var editingPrac = _editPrac[0]; var setEditingPrac = _editPrac[1];
 
   var _fbCategory = useState("General");
   var fbCategory = _fbCategory[0]; var setFbCategory = _fbCategory[1];
@@ -1929,8 +1837,6 @@ export default function App() {
   var bugConfirm = _bugConfirm[0]; var setBugConfirm = _bugConfirm[1];
   var _fbHistoryOpen = useState(false);
   var fbHistoryOpen = _fbHistoryOpen[0]; var setFbHistoryOpen = _fbHistoryOpen[1];
-  var _showOnboarding = useState(false);
-  var showOnboarding = _showOnboarding[0]; var setShowOnboarding = _showOnboarding[1];
   var _aboutGuideOpen = useState(false);
   var aboutGuideOpen = _aboutGuideOpen[0]; var setAboutGuideOpen = _aboutGuideOpen[1];
   var _expandedVersion = useState(APP_VERSION);
@@ -1954,7 +1860,7 @@ export default function App() {
     setIgnoredWarnings(function(prev) {
       var next = new Set(prev);
       next.add(warnKey(w));
-      try { localStorage.setItem("ignoredWarnings_" + nextGameDate, JSON.stringify([...next])); } catch(e) {}
+      try { localStorage.setItem("ignoredWarnings_" + nextGameDate, JSON.stringify([...next])); } catch(e) { /* ignored */ }
       return next;
     });
   };
@@ -1963,7 +1869,7 @@ export default function App() {
     setIgnoredWarnings(function(prev) {
       var next = new Set(prev);
       warnings.forEach(function(w) { next.add(warnKey(w)); });
-      try { localStorage.setItem("ignoredWarnings_" + nextGameDate, JSON.stringify([...next])); } catch(e) {}
+      try { localStorage.setItem("ignoredWarnings_" + nextGameDate, JSON.stringify([...next])); } catch(e) { /* ignored */ }
       return next;
     });
   };
@@ -1972,14 +1878,14 @@ export default function App() {
     setIgnoredWarnings(function(prev) {
       var next = new Set(prev);
       next.delete(warnKey(w));
-      try { localStorage.setItem("ignoredWarnings_" + nextGameDate, JSON.stringify([...next])); } catch(e) {}
+      try { localStorage.setItem("ignoredWarnings_" + nextGameDate, JSON.stringify([...next])); } catch(e) { /* ignored */ }
       return next;
     });
   };
 
   var restoreAllWarnings = function() {
     setIgnoredWarnings(new Set());
-    try { localStorage.removeItem("ignoredWarnings_" + nextGameDate); } catch(e) {}
+    try { localStorage.removeItem("ignoredWarnings_" + nextGameDate); } catch(e) { /* ignored */ }
   };
   var players = roster.map(function(r) { return r.name; });
 
@@ -2108,18 +2014,6 @@ export default function App() {
       return Object.assign({}, g, { snackDuty: "", snackNote: "" });
     });
     persistSchedule(next);
-  }
-
-  function persistPractices(next) {
-    window._lastLocalWrite = Date.now();
-    setPractices(next);
-    if (activeTeamId) {
-      saveJSON("team:" + activeTeamId + ":practices", next);
-      dbSync(function() { return dbSaveTeamData(activeTeamId, {
-        roster: roster, schedule: schedule, practices: next,
-        battingOrder: battingOrder, grid: grid, innings: innings, locked: lineupLocked
-      }); });
-    }
   }
 
   function persistBatting(next) {
@@ -2301,7 +2195,7 @@ export default function App() {
   }
 
   function promptCopy(text) {
-    var box = prompt("Copy this link:", text);
+    prompt("Copy this link:", text);
   }
 
   function exportTeamData(teamObj) {
@@ -2397,7 +2291,7 @@ export default function App() {
     setLineupLocked(savedLocked);
     setCoachPin(savedPin);
     var _savedAttendance = {};
-    try { _savedAttendance = JSON.parse(localStorage.getItem('attendanceOverrides') || '{}'); } catch(e) {}
+    try { _savedAttendance = JSON.parse(localStorage.getItem('attendanceOverrides') || '{}'); } catch(e) { /* ignored */ }
     setAttendanceOverrides(_savedAttendance);
     setPinSessionUnlocked(false);
     setCurrentBatterIndex(savedBatterIndex);
@@ -2408,7 +2302,7 @@ export default function App() {
     track("load_team", { team_id: team.id, team_name: team.name });
     mixpanel.identify(team.id);
     var coachName = user && user.profile && user.profile.first_name ? user.profile.first_name : null;
-    try { if (coachName) { mixpanel.alias(coachName + "_" + team.id); } } catch(e) {}
+    try { if (coachName) { mixpanel.alias(coachName + "_" + team.id); } } catch(e) { /* ignored */ }
     mixpanel.people.set({
       $name: coachName || team.name,
       coach_name: coachName || null,
@@ -2756,17 +2650,6 @@ export default function App() {
     setDragPlayer(null);
   }
 
-  function moveBatter(name, dir) {
-    var order = battingOrder.slice();
-    var idx = order.indexOf(name);
-    var next = idx + dir;
-    if (next < 0 || next >= order.length) { return; }
-    var tmp = order[idx];
-    order[idx] = order[next];
-    order[next] = tmp;
-    persistBatting(order);
-  }
-
   // --- Schedule helpers ---
   function saveGameForm() {
     if (!newGame.date || !newGame.opponent) { return; }
@@ -2791,31 +2674,14 @@ export default function App() {
     persistSchedule(schedule.filter(function(g) { return g.id !== id; }));
   }
 
-  // --- Practice helpers ---
-  function savePracForm() {
-    if (!newPrac.date) { return; }
-    var p = {};
-    for (var k in newPrac) { p[k] = newPrac[k]; }
-    if (editingPrac) {
-      p.id = editingPrac.id;
-      persistPractices(practices.map(function(x) { return x.id === editingPrac.id ? p : x; }));
-    } else {
-      p.id = Date.now() + "";
-      persistPractices(practices.concat([p]));
-    }
-    setNewPrac({ date:"", duration:"", focus:"Mixed", attendance:{}, drills:[], notes:"" });
-    setEditingPrac(null);
-    setShowPracForm(false);
-  }
-
   // --- Feedback helpers ---
   function submitFeedback() {
     if (!fbBody.trim()) { return; }
     var appVer = APP_VERSION;
     var entry = { id: Date.now() + "", category: fbCategory, body: fbBody.trim(), changeTypes: fbChangeTypes.slice(), timestamp: Date.now(), appVersion: appVer };
     var existing = [];
-    try { existing = loadJSON("feedback:submissions", []); } catch(e) {}
-    try { saveJSON("feedback:submissions", existing.concat([entry])); } catch(e) {}
+    try { existing = loadJSON("feedback:submissions", []); } catch(e) { /* ignored */ }
+    try { saveJSON("feedback:submissions", existing.concat([entry])); } catch(e) { /* ignored */ }
     (async function() {
       try {
         var BACKEND = "https://lineup-generator-backend.onrender.com";
@@ -2842,8 +2708,8 @@ export default function App() {
     var appVer = APP_VERSION;
     var entry = { id: Date.now() + "", location: bugLocation, body: bugBody.trim(), severity: bugSeverity, timestamp: Date.now(), appVersion: appVer };
     var existing = [];
-    try { existing = loadJSON("feedback:bugs", []); } catch(e) {}
-    try { saveJSON("feedback:bugs", existing.concat([entry])); } catch(e) {}
+    try { existing = loadJSON("feedback:bugs", []); } catch(e) { /* ignored */ }
+    try { saveJSON("feedback:bugs", existing.concat([entry])); } catch(e) { /* ignored */ }
     (async function() {
       try {
         var BACKEND = "https://lineup-generator-backend.onrender.com";
@@ -3072,22 +2938,7 @@ export default function App() {
       return { game: upcoming[0].game, days: days };
     }
 
-    function getNextPractice(team) {
-      var today = new Date(); today.setHours(0,0,0,0);
-      var pracs = (team.id === activeTeamId) ? practices : loadJSON("team:" + team.id + ":practices", []);
-      var upcoming = [];
-      for (var i = 0; i < pracs.length; i++) {
-        if (pracs[i].date) {
-          var d = new Date(pracs[i].date + "T12:00:00");
-          if (d >= today) { upcoming.push(d); }
-        }
-      }
-      upcoming.sort(function(a,b) { return a-b; });
-      if (!upcoming.length) { return null; }
-      return Math.round((upcoming[0] - today) / 86400000);
-    }
-
-    // TODO: extract — deferred (TeamCard depends on getNextGame/getNextPractice inner functions and loadTeam handler — extract after renderHome is refactored)
+    // TODO: extract — deferred (TeamCard depends on getNextGame inner function and loadTeam handler — extract after renderHome is refactored)
     function TeamCard(props) {
       var team = props.team;
 
@@ -3130,32 +2981,7 @@ export default function App() {
         teamRoster = loadJSON("team:" + team.id + ":roster", []);
         teamSched  = loadJSON("team:" + team.id + ":schedule", []);
       }
-      var wins = 0; var losses = 0; var played = 0;
-      for (var i = 0; i < teamSched.length; i++) {
-        if (teamSched[i].result === "W") { wins++; played++; }
-        else if (teamSched[i].result === "L") { losses++; played++; }
-        else if (teamSched[i].result === "T") { played++; }
-        // result "X" = canceled, not counted
-      }
-      var remaining = teamSched.length - played;
       var nextGame     = getNextGame(team);
-      var nextPracDays = getNextPractice(team);
-      var hasRoster    = teamRoster.length > 0;
-      var hasSched     = teamSched.length > 0;
-
-      var alertText = null;
-      var alertColor = "rgba(255,255,255,0.45)";
-      if (nextGame && nextGame.days === 0) {
-        alertText = "GAME DAY \u2022 vs " + nextGame.game.opponent + (nextGame.game.time ? " at " + nextGame.game.time : "");
-        alertColor = "#c8102e";
-      } else if (nextGame && nextGame.days === 1) {
-        alertText = "Game TOMORROW \u2022 vs " + nextGame.game.opponent;
-        alertColor = "#b8860b";
-      } else if (nextGame) {
-        var gameDate = new Date(nextGame.game.date + "T12:00:00").toLocaleDateString("en-US", { weekday:"short", month:"short", day:"numeric" });
-        alertText = "Next game " + gameDate + " \u2022 vs " + nextGame.game.opponent;
-        alertColor = "#6b7280";
-      }
 
       var statusBadge = null;
       var statusColor = null;
@@ -3331,7 +3157,6 @@ export default function App() {
                 }
                 if (!nextGameGlobal || !nextGameTeam) { return null; }
                 var ngDays = nextGameGlobal.days;
-                var ngAccent = ngDays === 0 ? "#c8102e" : ngDays === 1 ? "#b8860b" : C.navy;
                 return (
                   <div style={{ background:"linear-gradient(135deg,#0f1f3d 0%,#1a3260 100%)", borderRadius:"14px", padding:"18px 18px 16px", marginBottom:"22px", boxShadow:"0 6px 24px rgba(15,31,61,0.18)", border:"1px solid rgba(255,255,255,0.08)" }}>
                     {/* Label + urgency badge */}
@@ -3378,10 +3203,10 @@ export default function App() {
                       return (
                         <div style={{ display:"flex", flexDirection:"column", gap:"10px" }}>
                           <button
-                            onClick={function(ngt, ngg) { return function() {
+                            onClick={function(ngt) { return function() {
                               loadTeam(ngt);
                               setTimeout(function() { setPrimaryTab("gameday"); setGameDayTab("lineups"); setTimeout(generateLineup, 100); }, 300);
-                            }; }(nextGameTeam, nextGameGlobal)}
+                            }; }(nextGameTeam)}
                             style={{ background:"linear-gradient(135deg,#f5c842,#e6a817)", color:"#0f1f3d", border:"none", borderRadius:"10px", padding:"14px 20px", fontSize:"15px", fontWeight:"bold", cursor:"pointer", width:"100%", fontFamily:"Georgia,serif", letterSpacing:"0.02em", boxShadow:"0 3px 12px rgba(245,200,66,0.35)" }}>
                             ⚡ Generate Lineup
                           </button>
@@ -3531,9 +3356,6 @@ export default function App() {
   // ROSTER TAB
   // ============================================================
   function renderRoster() {
-    var skillKeys   = Object.keys(SKILLS);
-    var tagKeys     = Object.keys(TAGS);
-    var batKeys     = Object.keys(BAT_SKILLS);
     var sortedRoster = roster.slice().sort(function(a, b) {
       var nameA = (a.firstName || a.name || '').toLowerCase();
       var nameB = (b.firstName || b.name || '').toLowerCase();
@@ -3611,7 +3433,7 @@ export default function App() {
                 if (!collapsed[roster[i].name]) { allCol = false; break; }
               }
               var next = {};
-              if (!allCol) { for (var i = 0; i < roster.length; i++) { next[roster[i].name] = true; } }
+              if (!allCol) { for (i = 0; i < roster.length; i++) { next[roster[i].name] = true; } }
               setCollapsed(next);
             }}>
               {(function() {
@@ -3752,7 +3574,7 @@ export default function App() {
                           <td style={{ padding:"4px 6px", fontWeight:"600", textAlign:"left" }}>{firstName(info.name)}</td>
                           <td style={{ padding:"4px 6px", maxWidth:"80px", wordBreak:"break-word", verticalAlign:"top" }}>
                             {(info.prefs || []).length > 0
-                              ? (info.prefs || []).map(function(pos, idx) {
+                              ? (info.prefs || []).map(function(pos) {
                                   return <div key={pos} style={{ fontSize:"9px", color:"rgba(15,31,61,0.6)" }}>{pos}</div>;
                                 })
                               : <span style={{ fontSize:"9px", color:"#ccc" }}>—</span>}
@@ -3858,7 +3680,6 @@ export default function App() {
             var tg = info.tags || [];
             var dl = info.dislikes || [];
             var pr = info.prefs || [];
-            var bs = info.batSkills || [];
 
             return (
               <div key={info.name} style={{ ...S.card, padding:"14px" }}>
@@ -4311,47 +4132,6 @@ export default function App() {
     );
   }
 
-  // ── Shared diamond position box renderer ─────────────────────────────
-  // Used by both grid tab (Diamond view) and print tab (Defense > Diamond format).
-  // inningFilter: null = show all innings; number = show only that inning (0-based).
-  function renderPosBox(pos, label, inningFilter) {
-    var innPlayers = [];
-    for (var i = 0; i < innings; i++) {
-      if (inningFilter !== null && inningFilter !== undefined && i !== inningFilter) { continue; }
-      var found = "";
-      for (var pi = 0; pi < roster.length; pi++) {
-        if ((grid[roster[pi].name] || [])[i] === pos) { found = roster[pi].name; break; }
-      }
-      innPlayers.push({ inn: i + 1, name: found });
-    }
-    var pc = POS_COLORS[pos] || "#555";
-    var isSingle = inningFilter !== null && inningFilter !== undefined;
-    return (
-      <div style={{ background:"rgba(255,255,255,0.97)", border:"2px solid " + pc, borderRadius:"7px",
-        padding: isSingle ? "5px 8px" : "3px 5px", width:"100%", boxSizing:"border-box",
-        boxShadow:"0 1px 5px rgba(0,0,0,0.14)", overflow:"hidden", minWidth:0 }}>
-        <div style={{ fontSize:"9px", fontWeight:"bold", color:pc, letterSpacing:"0.05em",
-          marginBottom: isSingle ? "4px" : "2px", textAlign:"center",
-          borderBottom:"1px solid "+pc+"44", paddingBottom:"2px" }}>{label || pos}</div>
-        {innPlayers.map(function(row) {
-          return isSingle ? (
-            <div key={row.inn} style={{ fontSize:"12px", fontWeight: row.name ? "bold" : "normal",
-              color: row.name ? "#0f1f3d" : "#bbb", textAlign:"center", padding:"1px 0",
-              overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-              {row.name ? firstName(row.name) : "-"}
-            </div>
-          ) : (
-            <div key={row.inn} style={{ display:"flex", gap:"2px", alignItems:"baseline", fontSize:"9.5px", lineHeight:"1.5", overflow:"hidden" }}>
-              <span style={{ color:"#aaa", fontSize:"7.5px", minWidth:"8px", textAlign:"right", flexShrink:0 }}>{row.inn}</span>
-              <span style={{ fontWeight: row.name ? "bold" : "normal", color: row.name ? "#0f1f3d" : "#ccc",
-                overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", minWidth:0, flex:1 }}>{row.name ? firstName(row.name) : "-"}</span>
-            </div>
-          );
-        })}
-      </div>
-    );
-  }
-
   // ============================================================
   // FIELD SVG DIAMOND (shared by grid tab, print tab, share link)
   // ============================================================
@@ -4505,7 +4285,7 @@ export default function App() {
                 background:"rgba(15,31,61,0.04)", cursor:"pointer", userSelect:"none" }}
             >
               <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
-                <span style={{ fontWeight:700, fontSize:"14px", color:C.navy }}>🏟 Tonight's Attendance</span>
+                <span style={{ fontWeight:700, fontSize:"14px", color:C.navy }}>🏟 Tonight&apos;s Attendance</span>
                 {absentTonight.length > 0 ? (
                   <span style={{ background:"#fee2e2", color:"#dc2626", fontSize:"11px", fontWeight:700, padding:"2px 7px", borderRadius:"10px" }}>
                     {absentTonight.length} out
@@ -5363,11 +5143,11 @@ export default function App() {
                         var fb = (roster.find(function(p) { return p.name === b; }) || {});
                         var na = ((fa.firstName || "") + " " + (fa.lastName || "")).toLowerCase().trim() || a.toLowerCase();
                         var nb = ((fb.firstName || "") + " " + (fb.lastName || "")).toLowerCase().trim() || b.toLowerCase();
-                        var cmp = na.localeCompare(nb);
+                        const cmp = na.localeCompare(nb);
                         return statsSortDir === "asc" ? cmp : -cmp;
                       }
                       if (statsSortCol === "r") {
-                        var cmp = sa.r - sb.r;
+                        const cmp = sa.r - sb.r;
                         return statsSortDir === "asc" ? cmp : -cmp;
                       }
                       if (statsSortCol === "avg") {
@@ -5376,7 +5156,7 @@ export default function App() {
                         if (avgA === -1 && avgB === -1) return 0;
                         if (avgA === -1) return 1;
                         if (avgB === -1) return -1;
-                        var cmp = avgA - avgB;
+                        const cmp = avgA - avgB;
                         return statsSortDir === "asc" ? cmp : -cmp;
                       }
                       return 0;
@@ -6668,7 +6448,7 @@ export default function App() {
       var combined = fbSubs.concat(bugSubs);
       combined.sort(function(a, b) { return b.timestamp - a.timestamp; });
       allSubs = combined.slice(0, 5);
-    } catch(e) {}
+    } catch(e) { /* ignored */ }
 
     return (
       <div>
@@ -6805,8 +6585,8 @@ export default function App() {
                   <button style={{ ...S.btn("ghost"), color:C.red, marginTop:"4px" }}
                     onClick={function() {
                       if (confirm("Clear all saved feedback? This cannot be undone.")) {
-                        try { localStorage.removeItem("feedback:submissions"); } catch(e2) {}
-                        try { localStorage.removeItem("feedback:bugs"); } catch(e2) {}
+                        try { localStorage.removeItem("feedback:submissions"); } catch(e2) { /* ignored */ }
+                        try { localStorage.removeItem("feedback:bugs"); } catch(e2) { /* ignored */ }
                       }
                     }}>
                     Clear All
@@ -7423,7 +7203,7 @@ export default function App() {
             Dugout Lineup is a free tool built for youth baseball and softball coaches. It takes the stress out of game day by helping you build a fair, smart field lineup in seconds — no spreadsheets, no paper charts, no arguments about who played where last game.
           </div>
           <div style={{ fontSize:"13px", color:C.text, lineHeight:"1.7", marginBottom:"10px" }}>
-            Tell it your roster, your players' positions, and how many innings you're playing. Tap Auto-Assign and it rotates every kid fairly — keeping track of bench time, position preferences, and who played where across every inning.
+            Tell it your roster, your players&apos; positions, and how many innings you&apos;re playing. Tap Auto-Assign and it rotates every kid fairly — keeping track of bench time, position preferences, and who played where across every inning.
           </div>
           <div style={{ fontSize:"13px", color:C.text, lineHeight:"1.7", marginBottom:"14px" }}>
             It also tracks your season schedule, batting stats, walk-up songs, and snack duty — everything a volunteer coach needs, right in their pocket.
@@ -7453,7 +7233,7 @@ export default function App() {
               if (navigator.share) {
                 navigator.share({ title: "Dugout Lineup", text: text, url: url }).catch(function() {});
               } else {
-                try { navigator.clipboard.writeText(url); alert("Link copied to clipboard!"); } catch(e) {}
+                try { navigator.clipboard.writeText(url); alert("Link copied to clipboard!"); } catch(e) { /* ignored */ }
               }
             }}>
             Share App Now
@@ -7613,353 +7393,6 @@ export default function App() {
     );
   }
 
-  // ============================================================
-  // PRINT TAB
-  // ============================================================
-  // ─────────────────────────────────────────────────────────────────
-  // ORPHAN — Story 67 (2026-05-18)
-  // renderPrint() was disconnected from the tab tree in a prior refactor.
-  // Its Share CTA was lifted into renderLineups() on 2026-05-18.
-  // This function has zero call sites and is intentionally not invoked.
-  // Delete in a dedicated cleanup commit after Story 67 is verified in prod.
-  // ─────────────────────────────────────────────────────────────────
-  function renderPrint() {
-    var teamName = activeTeam ? activeTeam.name : "My Team";
-    var today = new Date().toLocaleDateString("en-US", { weekday:"long", month:"long", day:"numeric", year:"numeric" });
-    var innArr = [];
-    for (var i = 0; i < innings; i++) { innArr.push(i); }
-
-    return (
-      <div>
-        {/* ── Share bottom sheet ─────────────────────────────────── */}
-        {showShareSheet ? (
-          <>
-            <div onClick={function() { setShowShareSheet(false); }}
-              style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.45)", zIndex:10000 }} />
-            <div style={{ position:"fixed", bottom:0, left:0, right:0, zIndex:10001,
-              background:"#fff", borderRadius:"16px 16px 0 0",
-              padding:"20px 20px 36px", maxWidth:"500px", margin:"0 auto" }}>
-              <div style={{ fontSize:"13px", fontWeight:"bold", color:C.navy, letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:"16px", textAlign:"center" }}>
-                Share Lineup
-              </div>
-              {(backendHealth.status === 'slow' || backendHealth.status === 'down') ? (
-                <div style={{ fontSize:"11px", color:"#92400e", background:"rgba(180,83,9,0.07)", border:"1px solid rgba(180,83,9,0.2)", borderRadius:"8px", padding:"8px 10px" }}>
-                  ⏳ Server is warming up — sharing may take up to 30 seconds
-                </div>
-              ) : null}
-              <div style={{ display:"flex", flexDirection:"column", gap:"10px" }}>
-                <button style={{ ...S.btn("ghost"), border:"1px solid rgba(15,31,61,0.2)", padding:"13px", fontSize:"14px", textAlign:"left" }}
-                  onClick={function() { setShowShareSheet(false); shareCurrentLineup(); }}>
-                  🔗 Share as Link
-                </button>
-                {(runtimeFlags.VIEWER_MODE || localStorage.getItem("flag:viewer_mode") === "1") ? (
-                  <button style={{ ...S.btn("ghost"), border:"1px solid rgba(15,31,61,0.2)", padding:"13px", fontSize:"14px", textAlign:"left" }}
-                    onClick={function() { setShowShareSheet(false); shareViewerLink(); }}>
-                    👁 Share Viewer Link
-                  </button>
-                ) : null}
-                <button style={{ ...S.btn("ghost"), border:"1px solid rgba(15,31,61,0.2)", padding:"13px", fontSize:"14px", textAlign:"left" }}
-                  onClick={function() { setShowShareSheet(false); generatePDF("share"); }} disabled={pdfLoading || pdfSharing}>
-                  📤 {pdfSharing ? "Preparing..." : "Share as PDF"}
-                </button>
-                <button style={{ ...S.btn("gold"), padding:"13px", fontSize:"14px" }}
-                  onClick={function() { setShowShareSheet(false); generatePDF("download"); }} disabled={pdfLoading || pdfSharing}>
-                  ⬇ {pdfLoading ? "Generating..." : "Download PDF"}
-                </button>
-                <button style={{ ...S.btn("ghost"), padding:"11px", fontSize:"13px", color:C.textMuted }}
-                  onClick={function() { setShowShareSheet(false); }}>
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </>
-        ) : null}
-
-        {/* ── Primary action bar ─────────────────────────────────── */}
-        <div style={{ marginBottom:"12px" }}>
-          <div style={{ display:"flex", gap:"8px", alignItems:"center", flexWrap:"wrap" }}>
-            {/* Share Lineup — opens bottom sheet */}
-            <button style={{ ...S.btn("primary"), display:"flex", alignItems:"center", gap:"6px" }}
-              onClick={function() { setShowShareSheet(true); }}>
-              <span>📤</span> Share Lineup
-            </button>
-            {/* Edit Lineup — jumps to Lineups tab */}
-            <button style={{ ...S.btn("gold"), display:"flex", alignItems:"center", gap:"6px" }}
-              onClick={function() { setGameDayTab("lineups"); }}>
-              <span>✏️</span> Edit Lineup
-            </button>
-            {/* Finalize — only when unlocked */}
-            {!lineupLocked ? (
-              <button
-                style={{ ...S.btn("ghost"), color:C.win, border:"1px solid rgba(39,174,96,0.35)" }}
-                onClick={function() { setLockFlowOpen(true); }}>
-                ✓ Finalize
-              </button>
-            ) : null}
-            {/* View Options toggle */}
-            <button
-              onClick={function() { setViewOptsExpanded(!viewOptsExpanded); }}
-              style={{ ...S.btn("ghost"), marginLeft:"auto", display:"flex", alignItems:"center", gap:"4px", fontSize:"11px", color:C.textMuted, border:"1px solid rgba(15,31,61,0.15)" }}>
-              View Options {viewOptsExpanded ? "▲" : "▼"}
-            </button>
-          </div>
-
-          {/* Secondary controls — collapsed by default */}
-          {viewOptsExpanded ? (
-            <div style={{ display:"flex", gap:"8px", alignItems:"center", flexWrap:"wrap", marginTop:"10px",
-              padding:"10px 12px", background:"rgba(15,31,61,0.04)", borderRadius:"8px", border:"1px solid rgba(15,31,61,0.08)" }}>
-              {/* Both / Defense / Batting */}
-              <div style={{ display:"flex", gap:"4px" }}>
-                {[["Both","both"],["Defense","defense"],["Batting","batting"]].map(function(row) {
-                  var active = printOpt === row[1];
-                  return (
-                    <button key={row[1]} onClick={function(v) { return function() { setPrintOpt(v); }; }(row[1])}
-                      style={{ ...S.btn(active ? "primary" : "ghost"), padding:"5px 12px", fontSize:"11px" }}>
-                      {row[0]}
-                    </button>
-                  );
-                })}
-              </div>
-              {/* Grid / Diamond */}
-              {(printOpt === "both" || printOpt === "defense") ? (
-                <div style={{ display:"flex", gap:"4px", background:"rgba(15,31,61,0.06)", borderRadius:"8px", padding:"3px", width:"fit-content" }}>
-                  {[["Grid","grid"],["Diamond","diamond"]].map(function(opt) {
-                    var active = printDefView === opt[1];
-                    return (
-                      <button key={opt[1]}
-                        onClick={function(v) { return function() { setPrintDefView(v); if (v !== "diamond") { setPrintDiamondInning(null); } }; }(opt[1])}
-                        style={{ padding:"4px 14px", borderRadius:"6px", border:"none", cursor:"pointer", fontSize:"11px", fontWeight:"bold", fontFamily:"inherit",
-                          background: active ? C.white : "transparent",
-                          color: active ? C.navy : C.textMuted,
-                          boxShadow: active ? "0 1px 3px rgba(0,0,0,0.1)" : "none" }}>
-                        {opt[0]}
-                      </button>
-                    );
-                  })}
-                </div>
-              ) : null}
-            </div>
-          ) : null}
-        </div>
-
-        {/* ── PIN Protection ── */}
-        <div style={{ display:"flex", alignItems:"center", gap:"10px", padding:"10px 14px", marginBottom:"14px", background:"rgba(15,31,61,0.03)", borderRadius:"8px", border:"1px solid rgba(15,31,61,0.08)" }}>
-          <span style={{ fontSize:"14px" }}>🔐</span>
-          <div style={{ flex:1 }}>
-            <span style={{ fontSize:"12px", fontWeight:"600", color:C.navy }}>Lineup PIN </span>
-            <span style={{ fontSize:"11px", color:C.textMuted }}>{coachPin ? "Active — required to unlock" : "Not set — anyone can unlock"}</span>
-          </div>
-          {!coachPin ? (
-            <button style={{ ...S.btn("ghost"), fontSize:"11px" }}
-              onClick={function() { setPinModal("setup"); setPinInput(""); setPinConfirm(""); setPinError(""); }}>
-              Set PIN
-            </button>
-          ) : (
-            <div style={{ display:"flex", gap:"6px" }}>
-              <button style={{ ...S.btn("ghost"), fontSize:"11px" }}
-                onClick={function() { setPinModal("change1"); setPinInput(""); setPinConfirm(""); setPinError(""); }}>
-                Change
-              </button>
-              <button style={{ ...S.btn("ghost"), fontSize:"11px", color:C.red, border:"1px solid rgba(200,16,46,0.25)" }}
-                onClick={function() { setPinModal("remove"); setPinInput(""); setPinError(""); }}>
-                Remove
-              </button>
-            </div>
-          )}
-        </div>
-
-        <div id="print-card" style={{ background:"#fff", border:"2px solid #0f1f3d", borderRadius:"10px", padding:"20px", maxWidth:"800px" }}>
-          <div style={{ textAlign:"center", borderBottom:"2px solid #0f1f3d", paddingBottom:"12px", marginBottom:"16px" }}>
-            <div style={{ fontSize:"22px", fontWeight:"bold", color:"#0f1f3d" }}>{teamName} - Game Day Lineup</div>
-            <div style={{ fontSize:"13px", color:"#6a7a9a", marginTop:"4px" }}>{today}</div>
-          </div>
-
-          {printOpt === "both" || printOpt === "defense" ? (
-            <div style={{ marginBottom: printOpt === "both" ? "20px" : 0 }}>
-              <div style={{ fontSize:"12px", fontWeight:"bold", color:"#0f1f3d", letterSpacing:"0.12em", textTransform:"uppercase", marginBottom:"10px" }}>
-                Defensive Assignments
-              </div>
-              {printDefView === "diamond" ? (
-                (function() {
-                  // posBoxP delegates to shared renderPosBox with print-tab inning filter
-                  function posBoxP(pos, label) { return renderPosBox(pos, label, printDiamondInning); }
-                  function getPrintPlayerFn(pos, inn) {
-                    for (var pi = 0; pi < roster.length; pi++) {
-                      if ((grid[roster[pi].name] || [])[inn] === pos) { return roster[pi].name; }
-                    }
-                    return "";
-                  }
-                  var benchByInningP = [];
-                  for (var bip = 0; bip < innings; bip++) {
-                    benchByInningP.push(roster.filter(function(r){ return (grid[r.name]||[])[bip] === "Bench"; }).map(function(r){ return r.name; }));
-                  }
-                  return (
-                    <div>
-                      {/* ── Inning selector — single scrollable row ─── */}
-                      <div style={{ display:"flex", flexWrap:"nowrap", gap:"4px", alignItems:"center", marginBottom:"10px", overflowX:"auto", WebkitOverflowScrolling:"touch", paddingBottom:"2px" }}>
-                        <span style={{ fontSize:"9px", color:"#6a7a9a", fontWeight:"bold", textTransform:"uppercase", letterSpacing:"0.08em", flexShrink:0 }}>Inn</span>
-                        <button onClick={function() { setPrintDiamondInning(null); }}
-                          style={{ padding:"3px 8px", borderRadius:"10px", border:"none", cursor:"pointer", fontSize:"11px", fontWeight:"bold", fontFamily:"inherit", flexShrink:0,
-                            background: printDiamondInning === null ? "#0f1f3d" : "rgba(15,31,61,0.07)",
-                            color: printDiamondInning === null ? "#fff" : "#6a7a9a" }}>All</button>
-                        {innArr.map(function(i) {
-                          var active = printDiamondInning === i;
-                          return (
-                            <button key={i} onClick={function(idx) { return function() { setPrintDiamondInning(idx); }; }(i)}
-                              style={{ padding:"3px 8px", borderRadius:"10px", border:"none", cursor:"pointer", fontSize:"11px", fontWeight:"bold", fontFamily:"inherit", flexShrink:0,
-                                background: active ? "#c8102e" : "rgba(15,31,61,0.07)",
-                                color: active ? "#fff" : "#6a7a9a" }}>
-                              {i + 1}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    {renderFieldSVG(getPrintPlayerFn, printDiamondInning, innArr)}
-                    <div style={{ marginTop:"8px", borderTop:"2px solid rgba(15,31,61,0.15)", paddingTop:"10px" }}>
-                        <div style={{ fontSize:"10px", fontWeight:"bold", color:"#555", textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"6px" }}>Bench</div>
-                        {(function() {
-                          var pbDisplay = printDiamondInning !== null ? [benchByInningP[printDiamondInning] || []] : benchByInningP;
-                          var pbLabels  = printDiamondInning !== null ? [printDiamondInning] : innArr;
-                          return (
-                            <div style={{ overflowX:"auto" }}>
-                              <table style={{ borderCollapse:"collapse", fontSize:"11px", width:"100%" }}>
-                                <thead>
-                                  <tr style={{ background:"#f5efe4" }}>
-                                    {pbLabels.map(function(i) { return <th key={i} style={{ padding:"4px 10px", textAlign:"center", fontSize:"10px", color:"#555", fontWeight:"bold", borderBottom:"2px solid rgba(15,31,61,0.15)", minWidth:"60px" }}>Inn {i+1}</th>; })}
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {(function() {
-                                    var maxB = 0;
-                                    for (var di = 0; di < pbDisplay.length; di++) { if (pbDisplay[di].length > maxB) maxB = pbDisplay[di].length; }
-                                    var rows = [];
-                                    for (var r = 0; r < maxB; r++) {
-                                      rows.push(<tr key={r}>{pbLabels.map(function(lbl, ci) { var pn = pbDisplay[ci][r] || ""; return <td key={lbl} style={{ padding:"4px 10px", textAlign:"center", borderBottom:"1px solid rgba(15,31,61,0.06)", fontWeight:"bold", color:pn?"#0f1f3d":"#ccc" }}>{pn ? firstName(pn) : "-"}</td>; })}</tr>);
-                                    }
-                                    return rows;
-                                  })()}
-                                </tbody>
-                              </table>
-                            </div>
-                          );
-                        })()}
-                      </div>
-                    </div>
-                  );
-                })()
-              ) : (
-              <table style={{ width:"100%", borderCollapse:"collapse", fontSize:"11px" }}>
-                <thead>
-                  <tr style={{ background:"#f5efe4" }}>
-                    <th style={{ padding:"6px 10px", textAlign:"left", borderBottom:"2px solid #0f1f3d", fontSize:"10px", textTransform:"uppercase", letterSpacing:"0.08em" }}>Player</th>
-                    {innArr.map(function(i) {
-                      return <th key={i} style={{ padding:"6px 8px", textAlign:"center", borderBottom:"2px solid #0f1f3d", fontSize:"10px", textTransform:"uppercase", letterSpacing:"0.08em" }}>Inn {i+1}</th>;
-                    })}
-                  </tr>
-                </thead>
-                <tbody>
-                  {roster.map(function(info, ri) {
-                    return (
-                      <tr key={info.name} style={{ background: ri % 2 === 0 ? "#fff" : "#faf8f5" }}>
-                        <td style={{ padding:"6px 10px", fontWeight:"bold", borderBottom:"1px solid rgba(15,31,61,0.06)" }}>
-                          {firstName(info.name)}
-                        </td>
-                        {innArr.map(function(i) {
-                          var pos = (grid[info.name] || [])[i] || "";
-                          return (
-                            <td key={i} style={{ padding:"5px 6px", textAlign:"center", borderBottom:"1px solid rgba(15,31,61,0.06)" }}>
-                              {pos === "Bench" ? (
-                                <span style={{ display:"inline-block", padding:"2px 6px", borderRadius:"4px", fontWeight:"bold", fontSize:"11px", background:"#888", color:"#fff" }}>X</span>
-                              ) : pos ? (
-                                <span style={{ display:"inline-block", padding:"2px 6px", borderRadius:"4px", fontWeight:"bold", fontSize:"11px",
-                                  background: (POS_COLORS[pos] || "#555") + "cc", color:"#fff" }}>
-                                  {pos}
-                                </span>
-                              ) : (
-                                <span style={{ color:"#ccc" }}>-</span>
-                              )}
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-              )}
-              {/* Position legend */}
-              <div style={{ marginTop:"10px", paddingTop:"8px", borderTop:"1px solid rgba(15,31,61,0.1)", display:"flex", flexWrap:"wrap", gap:"6px 14px" }}>
-                {[["P","Pitcher"],["C","Catcher"],["1B","First Base"],["2B","Second Base"],["3B","Third Base"],["SS","Shortstop"],["LF","Left Field"],["LC","Left Center"],["RC","Right Center"],["RF","Right Field"],["X","Bench"]].map(function(pair) {
-                  return (
-                    <span key={pair[0]} style={{ fontSize:"9px", color:"#6a7a9a", whiteSpace:"nowrap" }}>
-                      <strong style={{ color:"#0f1f3d" }}>{pair[0]}</strong> = {pair[1]}
-                    </span>
-                  );
-                })}
-              </div>
-            </div>
-          ) : null}
-
-          {printOpt === "both" || printOpt === "batting" ? (
-            <div>
-              <div style={{ fontSize:"12px", fontWeight:"bold", color:"#0f1f3d", letterSpacing:"0.12em", textTransform:"uppercase", marginBottom:"4px" }}>
-                Batting Order
-              </div>
-              <div style={{ fontSize:"10px", color:"#64748b", fontStyle:"italic", marginBottom:"10px" }}>
-                Players are listed in batting order. To change the order, update the Batting tab first.
-              </div>
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))", gap:"6px" }}>
-                {activeBattingOrder.map(function(name, idx) {
-                  var info = null;
-                  for (var ri = 0; ri < roster.length; ri++) { if (roster[ri].name === name) { info = roster[ri]; break; } }
-                  var fieldPos = [];
-                  for (var ii = 0; ii < innings; ii++) {
-                    var pos = (grid[name] || [])[ii];
-                    if (!pos || pos === "") {
-                      fieldPos.push("-");
-                    } else if (pos === "Bench") {
-                      fieldPos.push("–");
-                    } else {
-                      fieldPos.push(pos);
-                    }
-                  }
-                  return (
-                    <div key={name} style={{ display:"flex", alignItems:"center", gap:"8px", padding:"6px 10px", border:"1px solid rgba(15,31,61,0.1)", borderRadius:"6px", background:"#fff" }}>
-                      <div style={{ width:"20px", height:"20px", borderRadius:"50%", background:"#0f1f3d", color:"#fff", fontSize:"10px", fontWeight:"bold", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                        {idx + 1}
-                      </div>
-                      <div style={{ flex:1 }}>
-                        <div style={{ fontWeight:"bold", fontSize:"12px" }}>{firstName(name)}</div>
-                        {fieldPos.length > 0 ? (
-                          <div style={{ fontSize:"9px", color:"#8a9aaa" }}>{fieldPos.join(", ")}</div>
-                        ) : null}
-                        {(function() {
-                          var p = roster.find(function(r) { return r.name === name; });
-                          if (!p || (!p.walkUpSong && !p.walkUpArtist)) return null;
-                          return (
-                            <div style={{ marginTop:"4px", paddingTop:"4px", borderTop:"1px solid rgba(15,31,61,0.08)" }}>
-                              {p.walkUpSong && <div style={{ fontSize:"10px", fontWeight:"600", color:"#1e293b" }}>🎵 {p.walkUpSong}</div>}
-                              {p.walkUpArtist && <div style={{ fontSize:"9px", color:"#64748b" }}>🎤 {p.walkUpArtist}</div>}
-                              {p.walkUpStart && p.walkUpEnd && <div style={{ fontSize:"9px", color:"#94a3b8" }}>⏱ {p.walkUpStart} → {p.walkUpEnd}</div>}
-                            </div>
-                          );
-                        })()}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-              {absentTonight.length > 0 ? (
-                <div style={{ marginTop:"10px", paddingTop:"8px", borderTop:"1px solid rgba(15,31,61,0.08)", fontSize:"10px", color:"#94a3b8", fontStyle:"italic" }}>
-                  Not playing tonight: {absentTonight.map(function(n) { return n.split(" ")[0]; }).join(", ")}
-                </div>
-              ) : null}
-            </div>
-          ) : null}
-        </div>
-      </div>
-    );
-  }
 
   // ============================================================
   // SHARED LINEUP VIEW (read-only, opened via share link)
@@ -8004,7 +7437,7 @@ export default function App() {
     return (
       <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", minHeight:"100vh", background:"#fdf8f0", gap:"12px" }}>
         <div style={{ fontSize:"32px" }}>😕</div>
-        <div style={{ fontSize:"14px", color:"#6a7a9a", fontFamily:"Georgia,serif" }}>This share link couldn't be found.</div>
+        <div style={{ fontSize:"14px", color:"#6a7a9a", fontFamily:"Georgia,serif" }}>This share link couldn&apos;t be found.</div>
       </div>
     );
   }
@@ -8062,7 +7495,7 @@ export default function App() {
       var isViewer64 = urlParams.get("view") === "true" || urlParams.get("role") === "viewer";
       return <ErrorBoundary fallback="Viewer Mode">{isViewer64 ? <DugoutView payload={payload} isViewer={true} onExit={function() {}} /> : <SharedView payload={payload} renderFieldSVG={renderFieldSVG} />}</ErrorBoundary>;
     }
-  } catch (e) {}
+  } catch (e) { /* ignored */ }
 
   var PRIMARY_TABS = [
     { key:"home",    label:"Home",     icon:"🏠" },
@@ -8070,19 +7503,11 @@ export default function App() {
     { key:"gameday", label:"Game Day", icon:"🏟" },
     { key:"more",    label:"Support",  icon:"⚙️" },
   ].filter(Boolean);
-  var ROSTER_SUBTABS = [
-    { key:"players", label:"Players" },
-    { key:"songs",   label:"Songs"   },
-  ];
   var GAMEDAY_SUBTABS = [
     { key:"lineups",  label:"Lineups"             },
     { key:"songs",    label:"Songs"               },
     { key:"dugout", label:"DUGOUT VIEW", launcher:true },
   ].filter(Boolean);
-  var SEASON_SUBTABS = [
-    { key:"schedule", label:"Schedule" },
-    { key:"snack",    label:"Snacks"   },
-  ];
   var MORE_SUBTABS = [
     { key:"faq",      label:"FAQ"      },
     { key:"feedback", label:"Feedback" },
@@ -8541,7 +7966,7 @@ export default function App() {
             {isIOS ? (
               <div style={{ fontSize:11, color:"rgba(255,255,255,0.75)", lineHeight:1.5 }}>
                 Tap <span style={{ fontWeight:700, color:"#f5c842" }}>⎙ Share</span> then tap{" "}
-                <span style={{ fontWeight:700, color:"#f5c842" }}>"Add to Home Screen"</span>
+                <span style={{ fontWeight:700, color:"#f5c842" }}>&quot;Add to Home Screen&quot;</span>
               </div>
             ) : deferredPrompt ? (
               <div style={{ fontSize:11, color:"rgba(255,255,255,0.65)" }}>
@@ -8549,7 +7974,7 @@ export default function App() {
               </div>
             ) : (
               <div style={{ fontSize:11, color:"rgba(255,255,255,0.65)" }}>
-                In Chrome, tap ⋮ menu → "Add to Home Screen"
+                In Chrome, tap ⋮ menu → &quot;Add to Home Screen&quot;
               </div>
             )}
           </div>
