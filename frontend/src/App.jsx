@@ -33,9 +33,6 @@ import { FAQSection }         from './components/Support/FAQSection';
 import { BattingHandSelector } from './components/BattingHandSelector';
 import { PlayerHandBadge }     from './components/PlayerHandBadge';
 import { useAuth } from './hooks/useAuth';
-import { LoginScreen } from './components/Auth/LoginScreen';
-import { RequestAccessScreen } from './components/Auth/RequestAccessScreen';
-import { PendingApprovalScreen } from './components/Auth/PendingApprovalScreen';
 import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 import { VERSION_HISTORY } from './data/versionHistory';
 
@@ -1501,17 +1498,9 @@ export default function App() {
   var shareLoading = _shareLoading[0]; var setShareLoading = _shareLoading[1];
 
   const {
-    authState, setAuthState,
     session,
     user,
-    membership,
-    role,
-    sendMagicLink,
-    requestAccess,
-    logout,
   } = useAuth();
-
-  const [authScreen, setAuthScreen] = useState('login');
 
   // Online/offline detection
   useEffect(function() {
@@ -1706,15 +1695,13 @@ export default function App() {
   var _import = useState({ mode:null, text:"", image:null, loading:false, error:"", preview:[] });
   var importState = _import[0]; var setImportState = _import[1];
   var _printOpt = useState("both");
+  // eslint-disable-next-line no-unused-vars -- printOpt value still read; setter orphaned post-renderPrint deletion
   var printOpt = _printOpt[0]; var setPrintOpt = _printOpt[1];
   var _printDefView = useState("grid");
+  // eslint-disable-next-line no-unused-vars -- printDefView value still read; setter orphaned post-renderPrint deletion
   var printDefView = _printDefView[0]; var setPrintDefView = _printDefView[1];
   var _showShareSheet = useState(false);
   var showShareSheet = _showShareSheet[0]; var setShowShareSheet = _showShareSheet[1];
-  var _viewOptsExpanded = useState(false);
-  var viewOptsExpanded = _viewOptsExpanded[0]; var setViewOptsExpanded = _viewOptsExpanded[1];
-  var _printDiamondInning = useState(null);
-  var printDiamondInning = _printDiamondInning[0]; var setPrintDiamondInning = _printDiamondInning[1];
   var _pdfLoading = useState(false);
   var pdfLoading = _pdfLoading[0]; var setPdfLoading = _pdfLoading[1];
   var _pdfSharing = useState(false);
@@ -2027,18 +2014,6 @@ export default function App() {
       return Object.assign({}, g, { snackDuty: "", snackNote: "" });
     });
     persistSchedule(next);
-  }
-
-  function persistPractices(next) {
-    window._lastLocalWrite = Date.now();
-    setPractices(next);
-    if (activeTeamId) {
-      saveJSON("team:" + activeTeamId + ":practices", next);
-      dbSync(function() { return dbSaveTeamData(activeTeamId, {
-        roster: roster, schedule: schedule, practices: next,
-        battingOrder: battingOrder, grid: grid, innings: innings, locked: lineupLocked
-      }); });
-    }
   }
 
   function persistBatting(next) {
@@ -2963,22 +2938,7 @@ export default function App() {
       return { game: upcoming[0].game, days: days };
     }
 
-    function getNextPractice(team) {
-      var today = new Date(); today.setHours(0,0,0,0);
-      var pracs = (team.id === activeTeamId) ? practices : loadJSON("team:" + team.id + ":practices", []);
-      var upcoming = [];
-      for (var i = 0; i < pracs.length; i++) {
-        if (pracs[i].date) {
-          var d = new Date(pracs[i].date + "T12:00:00");
-          if (d >= today) { upcoming.push(d); }
-        }
-      }
-      upcoming.sort(function(a,b) { return a-b; });
-      if (!upcoming.length) { return null; }
-      return Math.round((upcoming[0] - today) / 86400000);
-    }
-
-    // TODO: extract — deferred (TeamCard depends on getNextGame/getNextPractice inner functions and loadTeam handler — extract after renderHome is refactored)
+    // TODO: extract — deferred (TeamCard depends on getNextGame inner function and loadTeam handler — extract after renderHome is refactored)
     function TeamCard(props) {
       var team = props.team;
 
@@ -4168,47 +4128,6 @@ export default function App() {
             }
           }}>Reset Roster</button>
         </div>
-      </div>
-    );
-  }
-
-  // ── Shared diamond position box renderer ─────────────────────────────
-  // Used by both grid tab (Diamond view) and print tab (Defense > Diamond format).
-  // inningFilter: null = show all innings; number = show only that inning (0-based).
-  function renderPosBox(pos, label, inningFilter) {
-    var innPlayers = [];
-    for (var i = 0; i < innings; i++) {
-      if (inningFilter !== null && inningFilter !== undefined && i !== inningFilter) { continue; }
-      var found = "";
-      for (var pi = 0; pi < roster.length; pi++) {
-        if ((grid[roster[pi].name] || [])[i] === pos) { found = roster[pi].name; break; }
-      }
-      innPlayers.push({ inn: i + 1, name: found });
-    }
-    var pc = POS_COLORS[pos] || "#555";
-    var isSingle = inningFilter !== null && inningFilter !== undefined;
-    return (
-      <div style={{ background:"rgba(255,255,255,0.97)", border:"2px solid " + pc, borderRadius:"7px",
-        padding: isSingle ? "5px 8px" : "3px 5px", width:"100%", boxSizing:"border-box",
-        boxShadow:"0 1px 5px rgba(0,0,0,0.14)", overflow:"hidden", minWidth:0 }}>
-        <div style={{ fontSize:"9px", fontWeight:"bold", color:pc, letterSpacing:"0.05em",
-          marginBottom: isSingle ? "4px" : "2px", textAlign:"center",
-          borderBottom:"1px solid "+pc+"44", paddingBottom:"2px" }}>{label || pos}</div>
-        {innPlayers.map(function(row) {
-          return isSingle ? (
-            <div key={row.inn} style={{ fontSize:"12px", fontWeight: row.name ? "bold" : "normal",
-              color: row.name ? "#0f1f3d" : "#bbb", textAlign:"center", padding:"1px 0",
-              overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-              {row.name ? firstName(row.name) : "-"}
-            </div>
-          ) : (
-            <div key={row.inn} style={{ display:"flex", gap:"2px", alignItems:"baseline", fontSize:"9.5px", lineHeight:"1.5", overflow:"hidden" }}>
-              <span style={{ color:"#aaa", fontSize:"7.5px", minWidth:"8px", textAlign:"right", flexShrink:0 }}>{row.inn}</span>
-              <span style={{ fontWeight: row.name ? "bold" : "normal", color: row.name ? "#0f1f3d" : "#ccc",
-                overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", minWidth:0, flex:1 }}>{row.name ? firstName(row.name) : "-"}</span>
-            </div>
-          );
-        })}
       </div>
     );
   }
