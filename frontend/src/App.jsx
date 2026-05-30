@@ -1512,7 +1512,7 @@ export default function App() {
       window.removeEventListener("online",  goOnline);
       window.removeEventListener("offline", goOffline);
     };
-  }, []);
+  }, [setIsOnline]);
 
   // Feature flag URL bootstrap — ?enable_flag=<name> sets localStorage and reloads
   // ?disable_flag=<name> clears it. Allows per-user flag activation via a shared link.
@@ -1567,7 +1567,7 @@ export default function App() {
       track("share_link_view_failed", { error: "fetch_failed" });
       setShareLoading(false);
     });
-  }, []);
+  }, [setShareLoading, setSharePayload]);
 
   // Analytics: app opened — fires once on mount; teams is synchronously initialized from localStorage
   useEffect(function() {
@@ -1609,14 +1609,14 @@ export default function App() {
     return function() {
       window.removeEventListener("beforeinstallprompt", handler);
     };
-  }, [isStandalone]);
+  }, [isStandalone, isIOS, setDeferredPrompt, setShowInstallBanner]);
 
   // iOS install banner — Safari doesn't fire beforeinstallprompt; show immediately if not standalone
   useEffect(function() {
     if (!isIOS || isStandalone) return;
     setShowInstallBanner(true);
     track("pwa_banner_shown", { platform: "ios", prompt_ready: false, browser: "safari" });
-  }, [isIOS, isStandalone]);
+  }, [isIOS, isStandalone, setShowInstallBanner]);
 
   var _ros = useState(initRoster);
   var roster = _ros[0]; var setRoster = _ros[1];
