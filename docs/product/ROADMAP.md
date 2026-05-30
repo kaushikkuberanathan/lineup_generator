@@ -1,7 +1,23 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: 2026-05-29 (v2.5.22 — DefenseDiamond + MaintenanceScreen token migration; sync-script CRLF fix)
+> Last updated: 2026-05-30 (v2.5.23 — ESLint zero, Vite 6, token cleanup)
 > MVP launched: March 24, 2026
+
+---
+
+## v2.5.23 — 2026-05-30 — ESLint zero, Vite 6, token cleanup
+
+- Story 77 (P2) resolved — ESLint debt fully cleared: 0 warnings
+  0 errors across entire codebase after 5 phases (A–E). App.jsx
+  reduced by ~650 net lines of dead code and lint fixes.
+- Story 81 (P2) resolved — Vite ^5.1→^6.4.2 + vite-plugin-pwa
+  ^0.19→^1.0. Clears 3 Dependabot moderate vulnerabilities.
+  Shipped in v2.5.22 (PR #235); ROADMAP flip retroactive.
+- Story 98 (P3) resolved — ci.yml sync-script job gained
+  permissions: {contents: read} block (CodeQL compliance).
+- Stories 60, 64, 65 (P3/P2) resolved — UX token cleanup bundle:
+  LegalSection Card drift, shadow.subtleCard, related migrations
+  (PR #247). Shipped v2.5.22/v2.5.23 cycle.
 
 ---
 
@@ -2586,9 +2602,9 @@ known landmine for the next agent or automation script.
 
 ### Story 77 (P2) — Lint debt triage: 132 ESLint problems blocking strict gate <!-- #180 -->
 
-Status: Open
+Status: Resolved (v2.5.23 / 2026-05-30)
+Resolution: ESLint debt eliminated across all 5 phases (A–E); App.jsx reduced ~650 net lines. PRs #237 #244 #245 via feature/lint-sprint-2.
 Discovered: May 21, 2026 — surfaced during Story 75 pre-push hook remediation
-Target: Next governance pass
 
 Symptom: npm run lint exits 1 with 45 errors + 87 warnings. --max-warnings 0
 means lint cannot be used as a push gate until debt is cleared.
@@ -2676,10 +2692,10 @@ Recommendation: CLAUDE.md one-liner. Pair with Story 79 in same governance PR.
 
 ### Story 81 (P2) — Vite major upgrade: resolve 3 deferred esbuild/vite moderate vulns <!-- #184 -->
 
-Status: Open
+Status: Resolved (v2.5.22 / 2026-05-27)
+Resolution: Vite ^5→^6.4.2 + vite-plugin-pwa ^0.19→^1.0 via PR #235. Clears 3 Dependabot moderate vulns.
 Discovered: May 21, 2026 — npm audit fix deferred esbuild/vite chain
 during chore/npm-audit-fix session (PR forthcoming)
-Target: Next governance pass
 
 Symptom: 3 moderate vulnerabilities remain in frontend after audit fix —
 esbuild <=0.24.2, vite <=6.4.1, vite-plugin-pwa (various). All dev-only
