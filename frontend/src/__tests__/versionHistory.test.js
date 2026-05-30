@@ -56,4 +56,22 @@ describe("VERSION_HISTORY content rules", () => {
       ).toBe(true);
     }
   });
+
+  it("every entry date matches a recognized format", () => {
+    // TODO: normalize all entries to MonthYear format once
+    // App.jsx date rendering is confirmed (App.jsx locked to T2).
+    // New entries should use MonthYear format.
+    const formats = [
+      /^\d{4}-\d{2}-\d{2}$/,           // ISO: 2026-05-30
+      /^[A-Z][a-z]+ \d{4}$/,           // MonthYear: May 2026
+      /^[A-Z][a-z]+ \d{1,2}, \d{4}$/,  // LongDate: March 31, 2026
+    ];
+    for (const v of VERSION_HISTORY) {
+      const matches = formats.some(re => re.test(v.date || ""));
+      expect(
+        matches,
+        `${v.version} date format unrecognized: "${v.date}"`
+      ).toBe(true);
+    }
+  });
 });
