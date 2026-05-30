@@ -35,6 +35,7 @@ export const tokens = {
 
     text: {
       primary:   '#0F1F3D',  // alias of brand.navy — primary text on light surfaces
+      body:      '#374151',  // gray-700 — body copy on light surfaces (Story 60; FAQ answer body, EmptyState title)
       secondary: '#64748B',  // 46x — slate-500, muted body text
       tertiary:  '#94A3B8',  // 58x — slate-400, placeholder/caption
       onDark:    '#FFFFFF',  // all #FFF on dark surfaces
@@ -172,6 +173,7 @@ export const tokens = {
       sm:      '12px',  // 127x — small body
       body:    '13px',  // 105x — primary body text
       md:      '14px',  //  79x — readable body, form labels
+      mdLg:    '15px',  // scale step between md and lg (Story 60; EmptyState title, sprinkled across modals/screens)
       lg:      '16px',  //  29x — section headers
       xl:      '18px',  //  26x — card titles
       xl2:     '22px',  //  13x — screen titles (2xl → xl2 for dot-access)

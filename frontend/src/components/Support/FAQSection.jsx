@@ -127,7 +127,7 @@ export function FAQSection() {
                     size="body"
                     style={{
                       display: "block",
-                      color: "#374151",
+                      color: tokens.color.text.body,
                       lineHeight: tokens.font.lineHeight.loose,
                     }}
                   >

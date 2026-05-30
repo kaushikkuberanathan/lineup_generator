@@ -72,6 +72,10 @@ describe('Group 2 — color sub-groups', function () {
     });
   });
 
+  test('2.4b: color.text.body equals #374151 (Story 60 — body text dark gray on light surfaces)', function () {
+    expect(tokens.color.text.body).toBe('#374151');
+  });
+
   test('2.5: color.status has correct keys', function () {
     ['success', 'warning', 'error', 'errorBg', 'info',
      'successBg', 'warningBg', 'successBorder', 'warningBorder',
@@ -170,6 +174,10 @@ describe('Group 5 — font', function () {
     ['xs', 'sm', 'body', 'md', 'lg', 'xl', 'xl2', 'xl3', 'display'].forEach(k => {
       expect(tokens.font.size[k]).toMatch(/px$/);
     });
+  });
+
+  test('5.2b: font.size.mdLg equals 15px (Story 60 — scale step between md and lg)', function () {
+    expect(tokens.font.size.mdLg).toBe('15px');
   });
 
   test('5.3: font.weight has regular, medium, semibold, bold as numbers', function () {
