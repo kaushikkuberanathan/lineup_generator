@@ -35,6 +35,7 @@ export const tokens = {
 
     text: {
       primary:   '#0F1F3D',  // alias of brand.navy — primary text on light surfaces
+      body:      '#374151',  // gray-700 — body copy on light surfaces (Story 60; FAQ answer body, EmptyState title)
       secondary: '#64748B',  // 46x — slate-500, muted body text
       tertiary:  '#94A3B8',  // 58x — slate-400, placeholder/caption
       onDark:    '#FFFFFF',  // all #FFF on dark surfaces
@@ -172,6 +173,7 @@ export const tokens = {
       sm:      '12px',  // 127x — small body
       body:    '13px',  // 105x — primary body text
       md:      '14px',  //  79x — readable body, form labels
+      mdLg:    '15px',  // scale step between md and lg (Story 60; EmptyState title, sprinkled across modals/screens)
       lg:      '16px',  //  29x — section headers
       xl:      '18px',  //  26x — card titles
       xl2:     '22px',  //  13x — screen titles (2xl → xl2 for dot-access)
@@ -190,6 +192,7 @@ export const tokens = {
       tight:  '-0.01em',  // player names, serif display text
       normal: '0',        // body text
       wide:   '0.06em',   // uppercase chrome labels (INNING, BALLS, OUTS, etc.)
+      wider:  '0.08em',   // eyebrows in FAQ/Legal section headings (Story 65)
     },
 
     lineHeight: {
@@ -225,8 +228,9 @@ export const tokens = {
   // and consumed by the <BottomSheet> primitive (Story 87).
 
   shadow: {
-    subtle:   '0 1px 4px rgba(15,31,61,0.06)',                             // 1x FairnessCheck.jsx — navy-tinted minimal lift; consistent with color.overlay family
-    card:     '0 1px 3px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06)', // 3x auth screens (identical) — compound two-layer; primary card surface elevation
+    subtle:     '0 1px 4px rgba(15,31,61,0.06)',                             // 1x FairnessCheck.jsx — navy-tinted minimal lift; consistent with color.overlay family
+    subtleCard: '0 2px 8px rgba(15,31,61,0.06)',                             // 1x LegalSection.jsx — navy-tinted single-layer card lift (Story 64)
+    card:       '0 1px 3px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06)', // 3x auth screens (identical) — compound two-layer; primary card surface elevation
     // RESERVED — App.jsx call sites (locked); migration deferred to v2.5.x.
     // No in-scope component uses this value today. Parallel to font.family.sans
     // "introduced as canonical" precedent. See DESIGN_AUDIT.md §6.

@@ -5,6 +5,7 @@ var SIZE_MAP = {
   sm: tokens.font.size.sm,
   body: tokens.font.size.body,
   md: tokens.font.size.md,
+  mdLg: tokens.font.size.mdLg,
   lg: tokens.font.size.lg,
   xl: tokens.font.size.xl,
   xl2: tokens.font.size.xl2,
@@ -12,6 +13,7 @@ var SIZE_MAP = {
 
 var COLOR_MAP = {
   primary: tokens.color.text.primary,
+  body: tokens.color.text.body,
   secondary: tokens.color.text.secondary,
   tertiary: tokens.color.text.tertiary,
   disabled: tokens.color.text.disabled,
