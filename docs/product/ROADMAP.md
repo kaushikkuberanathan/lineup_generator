@@ -3482,7 +3482,7 @@ not block release but prevents recurring CI churn.
 
 ---
 
-### Story 99 (P1) — Backend test suite re-authoring <!-- #N -->
+### Story 99 (P1) — Backend test suite re-authoring <!-- #252 -->
 
 Status: Open
 Discovered: 2026-04-24 — backend suite obsolete against
@@ -3504,7 +3504,7 @@ routes → add to CI as required check. Cover: /ping,
 
 ---
 
-### Story 100 (P3) — Backend qs transitive patch bump <!-- #N -->
+### Story 100 (P3) — Backend qs transitive patch bump <!-- #253 -->
 
 Status: Open
 Discovered: 2026-05-30 — Dependabot /21 (moderate)
