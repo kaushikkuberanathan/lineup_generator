@@ -256,11 +256,11 @@ describe('Group 8 — shadow tokens', function () {
     expect(typeof tokens.shadow).toBe('object');
   });
 
-  test('8.2: shadow has exactly the five expected keys', function () {
-    ['subtle', 'card', 'elevated', 'overlay', 'sheetTop'].forEach(function (k) {
+  test('8.2: shadow has exactly the six expected keys', function () {
+    ['subtle', 'subtleCard', 'card', 'elevated', 'overlay', 'sheetTop'].forEach(function (k) {
       expect(tokens.shadow).toHaveProperty(k);
     });
-    expect(Object.keys(tokens.shadow).length).toBe(5);
+    expect(Object.keys(tokens.shadow).length).toBe(6);
   });
 
   test('8.3: all shadow values are non-empty strings', function () {
@@ -294,6 +294,10 @@ describe('Group 8 — shadow tokens', function () {
 
   test('8.9: tokens.shadow.sheetTop has the expected value', function () {
     expect(tokens.shadow.sheetTop).toBe('0 -4px 24px rgba(0,0,0,0.18)');
+  });
+
+  test('8.10: tokens.shadow.subtleCard has the expected value (Story 64 — LegalSection Card)', function () {
+    expect(tokens.shadow.subtleCard).toBe('0 2px 8px rgba(15,31,61,0.06)');
   });
 
 });

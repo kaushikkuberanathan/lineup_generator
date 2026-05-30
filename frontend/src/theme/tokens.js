@@ -228,8 +228,9 @@ export const tokens = {
   // and consumed by the <BottomSheet> primitive (Story 87).
 
   shadow: {
-    subtle:   '0 1px 4px rgba(15,31,61,0.06)',                             // 1x FairnessCheck.jsx — navy-tinted minimal lift; consistent with color.overlay family
-    card:     '0 1px 3px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06)', // 3x auth screens (identical) — compound two-layer; primary card surface elevation
+    subtle:     '0 1px 4px rgba(15,31,61,0.06)',                             // 1x FairnessCheck.jsx — navy-tinted minimal lift; consistent with color.overlay family
+    subtleCard: '0 2px 8px rgba(15,31,61,0.06)',                             // 1x LegalSection.jsx — navy-tinted single-layer card lift (Story 64)
+    card:       '0 1px 3px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06)', // 3x auth screens (identical) — compound two-layer; primary card surface elevation
     // RESERVED — App.jsx call sites (locked); migration deferred to v2.5.x.
     // No in-scope component uses this value today. Parallel to font.family.sans
     // "introduced as canonical" precedent. See DESIGN_AUDIT.md §6.
