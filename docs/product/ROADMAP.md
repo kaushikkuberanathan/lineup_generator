@@ -2141,7 +2141,9 @@ ceremony, and the Phase 3 Step 2 PR is contextually adjacent (same
 components directory).
 
 ### Story 60 (P3) — Token coverage gaps surfaced in EmptyState migration <!-- #126 -->
-Status: Open
+Status: Resolved
+Resolved: 2026-05-29 — PR #247
+Resolution: Added font.size.mdLg (15px) and color.text.body (#374151) tokens; extended Text primitive's SIZE_MAP and COLOR_MAP; migrated EmptyState title and FAQSection answer body to token references.
 Discovered: 2026-05-13 — Phase 3 Step 2 PR #68 EmptyState migration
 Target: future R-track patch or theme-extension story
 Symptom: EmptyState.jsx title styling uses raw passthrough values
@@ -2211,7 +2213,9 @@ off develop; RED integration test at the real-parent-path level (not
 the synthetic-roster level the existing guard uses).
 
 ### Story 64 (P3) — S.card remediation <!-- #129 -->
-Status: Open
+Status: Resolved
+Resolved: 2026-05-29 — PR #247
+Resolution: Added shadow.subtleCard token; LegalSection Card now consumes the token for box-shadow, accepts radius drift to radius.md (8px) via explicit radius prop, and the parent wrapper absorbs the marginBottom that was leaking into the Card style escape; asymmetric padding 16px 18px stays raw with drift comment pending an App.jsx-unlock session to design the full Card variant API.
 Discovered: 2026-05-15 — Phase 3 Step 3 LegalSection migration; reinforced 2026-05-20 — Phase 3 Step 3 PR #144 confirmed LegalSection.jsx L130-137 retains the full style escape post-migration (Tier 1 scope didn't touch Card properties); 5 properties documented: borderRadius 10px, padding 16px 18px, boxShadow 0 2px 8px rgba(15,31,61,0.06), marginBottom 14px, border 1px solid border.default
 Target: v2.6.x
 Symptom: `S.card` (App.jsx:741-745) uses `borderRadius: '10px'` (in
@@ -2250,7 +2254,9 @@ Recommendation: (a) — a bordered Card variant with shadow support
   LegalViewer.
 
 ### Story 65 (P2) — Token gap batch: style escapes from Phase 3 migrations <!-- #130 -->
-Status: Open
+Status: Resolved
+Resolved: 2026-05-29 — PR #247
+Resolution: Added font.letterSpacing.wider (0.08em) token; migrated FAQSection and LegalSection eyebrow letterSpacing and four lineHeight literals to existing tokens (body, comfortable, relaxed, loose); ValidationBanner/OfflineIndicator status-tint and rgba work deferred per ROADMAP recommendation.
 Discovered: 2026-05-15 — Phase 3 Steps 3-4 migrations; reinforced 2026-05-20 — Phase 3 Step 3 PR #144 surfaced lineHeight 1.4/1.6/1.75 in FAQSection (L104, L147, L131) and 1.6/1.7/1.7 in LegalSection (L88, L173, L188)
 Target: v2.6.x
 Symptom: Multiple style escapes documented inline across
@@ -3310,7 +3316,9 @@ sync-stories-to-issues.js follow-up work.
 
 ### Story 98 (P3) — ci.yml sync-script job missing permissions block <!-- #242 -->
 
-Status: Open
+Status: Resolved
+Resolved: 2026-05-29 — PR #243
+Resolution: Added permissions: { contents: read } block to the sync-script job in .github/workflows/ci.yml, restricting GITHUB_TOKEN to read-only for that job (least-privilege per CodeQL guidance).
 Discovered: 2026-05-29 — CodeQL medium-severity finding on the sync-script job after PR #236.
 Target: Next governance pass.
 
