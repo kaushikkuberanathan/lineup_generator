@@ -3525,6 +3525,30 @@ change, no package.json edit needed.
 
 ---
 
+### Story 101 (P3) — Version history v1.x era audit <!-- #256 -->
+
+Status: Open
+Discovered: 2026-05-30 — Groups 1–4 audit fixed v2.0+ entries;
+v1.x era (~35 entries) left untouched
+Target: v2.6.x
+
+Symptom: v1.x entries use "Stability and performance update"
+headline with empty userChanges despite having coach-visible
+changes (UI redesigns, new features, bug fixes).
+
+Impact: Coaches reading changelog see generic stubs for 35+
+releases. Low urgency — most coaches never scroll that far back.
+
+Root cause: Coach-language standard wasn't established until
+the v2.5.x era audit session 2026-05-30.
+
+Proposed fix: read internalChanges for each v1.x entry,
+populate userChanges where coach-visible changes happened,
+leave genuinely infra-only entries as-is. ~10 entries
+estimated to need work out of 35.
+
+---
+
 ### Automated Score Reporting (County Integration)
 **Status:** Architecture finalized, implementation pending
 **Trigger:** Coach taps "Report Score" on a completed game
