@@ -965,8 +965,8 @@ function SharedView({ payload, renderFieldSVG }) {
                             {benchLabels.map(function(lbl) {
                               return (
                                 <td key={lbl} style={{ padding:"3px 10px", textAlign:"center",
-                                  borderTop:"2px solid rgba(220,38,38,0.3)",
-                                  background:"rgba(220,38,38,0.05)",
+                                  borderTop:"2px solid " + tokens.color.overlay.errorMedium,
+                                  background:tokens.color.overlay.errorFaint,
                                   fontSize:"9px", fontWeight:"bold", color:"#dc2626",
                                   letterSpacing:"0.08em", textTransform:"uppercase" }}>
                                   Out
@@ -980,7 +980,7 @@ function SharedView({ payload, renderFieldSVG }) {
                             <tr key={"out-" + or}>
                               {benchLabels.map(function(lbl, ci) {
                                 var pn = outDisplay[ci][or] || "";
-                                return <td key={lbl} style={{ padding:"4px 10px", textAlign:"center", borderBottom:"1px solid rgba(220,38,38,0.08)", fontWeight:"bold", color: pn ? "#dc2626" : "#ccc", background:"rgba(220,38,38,0.04)" }}>{pn ? firstName(pn) : "-"}</td>;
+                                return <td key={lbl} style={{ padding:"4px 10px", textAlign:"center", borderBottom:"1px solid " + tokens.color.overlay.errorSubtle, fontWeight:"bold", color: pn ? "#dc2626" : "#ccc", background:tokens.color.overlay.errorFaintest }}>{pn ? firstName(pn) : "-"}</td>;
                               })}
                             </tr>
                           );
@@ -4884,7 +4884,7 @@ export default function App() {
                                     }),
                                     outP.map(function(op) {
                                       return (
-                                        <div key={"out-" + op} style={{ fontSize:"11px", color:"#dc2626", fontWeight:"bold", padding:"2px 6px", borderRadius:"4px", background:"rgba(220,38,38,0.12)", marginBottom:"2px", textAlign:"center" }}>{"OUT " + firstName(op)}</div>
+                                        <div key={"out-" + op} style={{ fontSize:"11px", color:"#dc2626", fontWeight:"bold", padding:"2px 6px", borderRadius:"4px", background:tokens.color.overlay.errorMid, marginBottom:"2px", textAlign:"center" }}>{"OUT " + firstName(op)}</div>
                                       );
                                     }),
                                   ];

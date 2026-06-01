@@ -99,7 +99,7 @@ describe('Group 2 — color sub-groups', function () {
   test('2.7: color.overlay has correct keys (navyWash, not navySubtle); all rgba format', function () {
     const expected = ['navyWash', 'navyFaint', 'navyMedium', 'whiteFaint', 'whiteLight', 'whiteMedium', 'whiteHeavy', 'goldTint', 'goldStrong', 'backdrop',
                       'redFaint', 'redStrong', 'warnFaint', 'warnStrong', 'winFaint', 'winMid',
-                      'errorFaintest', 'errorFaint', 'errorSubtle', 'errorMedium', 'benchWash'];
+                      'errorFaintest', 'errorFaint', 'errorSubtle', 'errorMid', 'errorMedium', 'benchWash'];
     expected.forEach(k => {
       expect(tokens.color.overlay[k]).toMatch(RGBA_RE);
     });
@@ -108,6 +108,10 @@ describe('Group 2 — color sub-groups', function () {
 
   test('2.7b: color.overlay.benchWash equals rgba(85,85,85,0.06) (Story 82 — Bench row wash)', function () {
     expect(tokens.color.overlay.benchWash).toBe('rgba(85,85,85,0.06)');
+  });
+
+  test('2.7c: color.overlay.errorMid equals rgba(220,38,38,0.12) (Story 102 — OUT-row 0.12 tint)', function () {
+    expect(tokens.color.overlay.errorMid).toBe('rgba(220,38,38,0.12)');
   });
 
   test('2.8: color.position has 11 position keys + header object', function () {
