@@ -1,5 +1,19 @@
 ﻿export var VERSION_HISTORY = [
   {
+    version: '2.5.24',
+    date: 'May 2026',
+    headline: 'Reliability and consistency improvements',
+    techNote: 'Under-the-hood stability improvements',
+    userChanges: [],
+    internalChanges: [
+      'Story 93 — DefenseDiamond Tier D: position and field colors unified to design token system across DefenseDiamond, App.jsx renderFieldSVG, and ParentView. Zero visible color changes (PR #259)',
+      'Story 100 — Backend qs 6.15.0→6.15.2 lockfile patch. Clears Dependabot moderate vuln (PR #254)',
+      'Version history: 16 historical entries rewritten to coach language; 4 CI tests enforce standards going forward (no PR/Story refs in userChanges, headline required, date format validated) (PRs #255 #257 #258)',
+      'Test suite: 771 passing / 1 skipped / 0 failed',
+      'Session retrospective 2026-05-31-A — v2.5.24 release ritual',
+    ],
+  },
+  {
     version: '2.5.23',
     date: '2026-05-30',
     headline: 'Reliability and security improvements',
