@@ -3143,7 +3143,7 @@ Tokens.js L14 comment ("Nothing imports from this
 file yet") is already stale and worth a one-line
 update in this PR.
 
-### Story 99 (P3) — App.jsx OUT-row error tint migration + errorMid token <!-- #261 -->
+### Story 102 (P3) — App.jsx OUT-row error tint migration + errorMid token <!-- #261 -->
 
 Status: Open
 Discovered: 2026-05-31 — Story 93 sanity grep surfaced 4 residual
