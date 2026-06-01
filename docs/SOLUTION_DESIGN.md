@@ -505,6 +505,8 @@ The Songs sub-tab in Game Day → Batting filters to tonight's active batting or
 
 **v2.5.22 additions** (Stories 92+94, DefenseDiamond Tier A+B + MaintenanceScreen token migration): adds `tokens.borderWidth` (3 values: `hairline: '1px'`, `thin: '1.5px'`, `medium: '2px'`) and extends `tokens.color.overlay` with two alpha-tint values (`whiteMedium: 'rgba(255,255,255,0.25)'`, `whiteHeavy: 'rgba(255,255,255,0.6)'`). `theme.tokens.test.js` extended to cover the new shapes.
 
+**v2.5.24 additions** (Story 93, DefenseDiamond Tier D + App.jsx POS_COLORS migration, PR #259): adds `tokens.color.position.*` (22 keys — 11 position fills + 11 header shades sub-group), `tokens.color.field.*` (7 keys — `grass`, `grassLight`, `dirt`, `dirtLight`, `mound`, `moundLight`, `chalk`), and extends `tokens.color.overlay` with 4 error-tint variants (`errorFaintest: 'rgba(220,38,38,0.04)'`, `errorFaint: 'rgba(220,38,38,0.05)'`, `errorSubtle: 'rgba(220,38,38,0.08)'`, `errorMedium: 'rgba(220,38,38,0.30)'`). POS_COLORS map and prop drilling removed from App.jsx → ParentView; DefenseDiamond, App.jsx renderFieldSVG, and ParentView unified on identical token contract. Single source of truth for position and field colors across all rendering surfaces. `theme.tokens.test.js` extended to cover the new shapes.
+
 ---
 
 ## UI Primitives

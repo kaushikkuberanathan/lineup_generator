@@ -8,8 +8,9 @@ Root project rules (branch strategy, Ship Gate, auth principle, deployment, git 
 ## Commands
 
 ```bash
-node index.js        # Start Express server (port from PORT in .env; .env.example default: 3000)
-npm test             # Run full integration suite (13 suites via test-runner.js; requires server running)
+node index.js        # Start Express server (5-line boot; requires ./app.js). Port from PORT in .env; .env.example default: 3000
+npm test             # Integration suite (13 suites via test-runner.js; requires a running server + .env)
+npm run test:unit    # In-process unit tests (node:test + supertest, src/__tests__/*.test.js; no server, no live DB)
 npm run test:auth    # Auth flow tests only
 npm run test:admin   # Admin flow tests only
 ```
@@ -38,23 +39,32 @@ Set in `backend/.env`. See `backend/.env.example` for a template.
 
 ## Routes
 
-Existing routes in `index.js` (do not modify — additive only):
+**Entry point:** `index.js` is a 5-line boot that does `require('./app')` and `listen()`. The Express app — middleware, root routes, router mounts, and the error handler — lives in **`app.js`** (split out in Story 99 so the app is import-safe for supertest; `node index.js` boot behavior is unchanged). Handlers live in `src/routes/`.
+
+Root routes (in `app.js` — additive only, do not modify):
 - `GET /health` — health check (async DB connectivity check; 503 on DB failure)
 - `GET /ping` — uptime ping (UptimeRobot monitor #802733786, every 5 min)
 - `POST /api/ai` — Claude API proxy (`claude-sonnet-4-6`, max 1000 tokens, 30s timeout)
+- `POST /generate-lineup` — shuffle helper
 
-Auth routes (additive only — do not modify existing handlers):
-- `POST /api/v1/auth/*` — auth routes (`src/routes/auth.js`)
-- `GET/POST /api/v1/admin/*` — admin routes (`src/routes/admin.js`)
+Router mounts (in `app.js`):
+- `/api/v1/auth` → `src/routes/auth.js`
+- `/api/v1/ops` → `src/routes/ops.js`
+- `/api/v1/teams` (+ legacy `/api/teams`) → `src/routes/teamData.js`
+- `/api/v1` → `src/routes/admin.js` **and** `src/routes/feedback.js`
+
+**⚠️ Admin route paths are NOT under `/api/v1/admin/`.** admin.js mounts bare at `/api/v1`, so its protected handlers are `/api/v1/requests`, `/api/v1/members`, `/api/v1/approve`, `/api/v1/reject`, `/api/v1/update-role` (POST), `/api/v1/reset-access`, `/api/v1/suspend`. Only the two public 1-tap email links carry `/admin`: `GET /api/v1/admin/approve-link`, `GET /api/v1/admin/deny-link`. A router-level `router.use(requireAuth, requireAdmin)` (admin.js:172) sits **after** the public links and **before** the protected handlers; it is path/method-agnostic, so it 401s any unmatched path under the router too. (This is why the legacy `suite-admin.js` "passed" against non-existent `/api/v1/admin/*` paths — it hit the catch-all, not the real routes. See Story 99.)
 
 ---
 
 ## Zero-Downtime Constraint (CRITICAL)
 
 Until Phase 4 cutover, all backend changes are **additive only**:
-- Do NOT modify existing route handlers in `index.js`
+- Do NOT modify existing route handlers in `app.js` or `src/routes/`
 - Do NOT add middleware to existing routes
 - Do NOT alter existing tables or columns
+
+The Story 99 app/server split (extracting `app.js` out of `index.js`) is the one sanctioned exception — it relocated existing handlers verbatim with no behavior change, boot-verified (same `/ping`, `/`, and startup log line). "Additive only" still governs the handlers in their new home.
 
 ---
 
@@ -92,6 +102,21 @@ Three guards in place:
 | `suite-feedback.js` | `POST /api/v1/feedback` |
 | `suite-team-data.js` | `POST /api/teams/:teamId/data` and `GET /api/teams/:teamId/history` |
 | `suite-regression.js` | Health, ping, lineup generation, AI proxy type validation (REG-05/06) — no regressions |
+
+#### Unit suite (in-process, Story 99 — #252)
+
+A second, hermetic test system runs alongside the integration runner:
+
+- **Invocation**: `npm run test:unit` (`node --test src/__tests__/*.test.js`) — node:test + supertest, **no running server, no live DB**.
+- **How**: imports the Express app via `require('./app')` (enabled by the app/server split) and drives it with `request(app)` — no port bound.
+- **Env**: still needs `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` / `SUPABASE_ANON_KEY` set, because `src/lib/env.js` + `src/lib/supabase.js` throw at import. Tests never *call* Supabase (auth-rejection short-circuits in `requireAuth.js`), so dummy non-empty values work anywhere.
+- **File convention**: specs live in `src/__tests__/*.test.js` (the `test:unit` glob) — use this path, **not** `src/tests/`.
+
+| Spec | Covers |
+|------|--------|
+| `admin.auth.test.js` (9) | Admin routes reject no-token requests with **401** at their real bare `/api/v1/*` paths (requests/members/approve/reject/update-role/reset-access/suspend); public `/api/v1/admin/{approve,deny}-link` return 400, never 401. Closes the legacy "green-but-vacuous" gap. |
+
+**CI**: the `backend-unit` job in `.github/workflows/ci.yml` runs `npm run test:unit` on every push/PR — hermetic, no Render dependency (unlike the integration `backend` job that polls prod). It gates the sync-script and main-deploy (smoke) jobs.
 
 ---
 

@@ -177,7 +177,7 @@ If any answer is "no": stop. Document the gap in DOC_TEST_DEBT.md, then decide w
 7. Stage **specific files by path** — never `git add -A` (risks picking up unrelated untracked files)
 8. [x] loginLimiter: 15min window, max 5 — applied to POST /magic-link ✓
 9. [ ] Confirm `RESEND_DOMAIN_VERIFIED=true` in Render env vars (only after domain verified)
-10. [ ] Run `npm test` — confirm 759 effective passed / 1 skipped / 0 failed (as of v2.5.22, 2026-05-29). Note: Bug #7 EmptyState.test.jsx cold-start worker flake may show 755 observed locally on Windows; environmental, not a regression.
+10. [ ] Run `npm test` — confirm 771 passed / 1 skipped / 0 failed (as of v2.5.24, 2026-05-31). Note: Bug #7 EmptyState.test.jsx cold-start worker flake may show 755 observed locally on Windows; environmental, not a regression.
 
 ### VERSION_HISTORY Schema
 
@@ -218,9 +218,9 @@ Target: resolved within 10 min of detection.
 ---
 
 ## Test Suite
-Changes to `lineupEngineV2.js`, `scoringEngine.js`, or `playerMapper.js` → must pass frontend `npm test` (Vitest, 759 effective passing / 1 skipped — 755 observed locally on Windows due to Bug #7 cold-start flake).
+Changes to `lineupEngineV2.js`, `scoringEngine.js`, or `playerMapper.js` → must pass frontend `npm test` (Vitest, 771 passing / 1 skipped — 755 observed locally on Windows due to Bug #7 cold-start flake).
 Changes to `featureFlags.js` or `positions.js` → must pass frontend `npm test`.
-Changes to backend code → must pass backend custom runner (`backend/scripts/tests/test-runner.js`, 13 suites).
+Changes to backend code → must pass **both** backend test systems: the custom integration runner (`backend/scripts/tests/test-runner.js`, 13 suites, requires a running server) and the in-process unit suite (`npm run test:unit` — node:test + supertest, `backend/src/__tests__/*.test.js`, no server). The unit suite is enforced in CI by the `backend-unit` job; the integration suite by the `backend` job (CI_SAFE, prod read-only).
 > Full suite detail: see `frontend/CLAUDE.md` → **## Test Suite** and `backend/CLAUDE.md` → **## Test Suite**
 
 ---
