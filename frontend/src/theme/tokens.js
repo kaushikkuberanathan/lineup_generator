@@ -98,6 +98,7 @@ export const tokens = {
       errorFaintest: 'rgba(220,38,38,0.04)',  // OUT row striping — App.jsx + DefenseDiamond
       errorFaint:    'rgba(220,38,38,0.05)',  // OUT row alternate stripe
       errorSubtle:   'rgba(220,38,38,0.08)',  // OUT row hover/highlight
+      errorMid:      'rgba(220,38,38,0.12)',  // 1x App.jsx — scoring-surface OUT chip bg (Story 102)
       errorMedium:   'rgba(220,38,38,0.30)',  // OUT row border / emphasis
     },
 
