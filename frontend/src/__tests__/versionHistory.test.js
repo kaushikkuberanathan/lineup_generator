@@ -26,9 +26,52 @@ describe("VERSION_HISTORY content rules", () => {
     }
   });
 
-  it("internalChanges and changes fields are never rendered (sanity)", () => {
-    // Document-only test — render component must not reference these.
-    // Passes by convention; review on render component change.
-    expect(true).toBe(true);
+  it("no userChanges bullet contains PR/Story references", () => {
+    const pattern = /PR #\d+|Story #?\d+|closes #\d+/i;
+    for (const v of VERSION_HISTORY) {
+      if (!Array.isArray(v.userChanges)) continue;
+      for (const bullet of v.userChanges) {
+        expect(
+          pattern.test(bullet),
+          `${v.version} userChanges bullet contains PR/Story reference: "${bullet}"`
+        ).toBe(false);
+      }
+    }
+  });
+
+  it("no entry uses 'title' field instead of 'headline'", () => {
+    for (const v of VERSION_HISTORY) {
+      expect(
+        v.title,
+        `${v.version} uses 'title' field — rename to 'headline'`
+      ).toBeUndefined();
+    }
+  });
+
+  it("every entry has a non-empty headline string", () => {
+    for (const v of VERSION_HISTORY) {
+      expect(
+        typeof v.headline === "string" && v.headline.length > 0,
+        `${v.version} missing or empty headline`
+      ).toBe(true);
+    }
+  });
+
+  it("every entry date matches a recognized format", () => {
+    // TODO: normalize all entries to MonthYear format once
+    // App.jsx date rendering is confirmed (App.jsx locked to T2).
+    // New entries should use MonthYear format.
+    const formats = [
+      /^\d{4}-\d{2}-\d{2}$/,           // ISO: 2026-05-30
+      /^[A-Z][a-z]+ \d{4}$/,           // MonthYear: May 2026
+      /^[A-Z][a-z]+ \d{1,2}, \d{4}$/,  // LongDate: March 31, 2026
+    ];
+    for (const v of VERSION_HISTORY) {
+      const matches = formats.some(re => re.test(v.date || ""));
+      expect(
+        matches,
+        `${v.version} date format unrecognized: "${v.date}"`
+      ).toBe(true);
+    }
   });
 });
