@@ -8,11 +8,11 @@
  *   grid                   {object}       player name → position[] per inning
  *   selectedParentPlayer   {string|null}  currently selected player name
  *   setSelectedParentPlayer {function}   setter for selectedParentPlayer
- *   S                      {object}       style helpers (S.btn, S.card)
- *   C                      {object}       color constants (C.navy, C.textMuted, etc.)
  */
 
 import { tokens } from '../../theme/tokens';
+import { Button } from '../ui/Button';
+import { Card } from '../ui/Card';
 
 function firstName(name) {
   if (!name) return name;
@@ -25,7 +25,7 @@ var POS_FULL = {
   RC:"Right Center", RF:"Right Field", Bench:"Bench"
 };
 
-export function ParentView({ roster, battingOrder, grid, selectedParentPlayer, setSelectedParentPlayer, S, C }) {
+export function ParentView({ roster, battingOrder, grid, selectedParentPlayer, setSelectedParentPlayer }) {
   var batPos = selectedParentPlayer ? battingOrder.indexOf(selectedParentPlayer) : -1;
   var assignments = selectedParentPlayer ? (grid[selectedParentPlayer] || []) : [];
 
@@ -38,51 +38,59 @@ export function ParentView({ roster, battingOrder, grid, selectedParentPlayer, s
           var fn = firstName(p.name);
           var sel = selectedParentPlayer === p.name;
           return (
-            <button key={p.name}
+            <Button key={p.name}
+              variant={sel ? "primary" : "ghost"}
+              size="sm"
               onClick={function(n, s) { return function() { setSelectedParentPlayer(s ? null : n); }; }(p.name, sel)}
-              style={{ ...S.btn(sel ? "primary" : "ghost"), flexShrink:0, padding:"6px 14px", fontSize:"12px" }}>
+              style={{ flexShrink:0 }}>
               {fn}
-            </button>
+            </Button>
           );
         })}
       </div>
       {selectedParentPlayer ? (
-        <div style={{ ...S.card, borderTop:"4px solid " + C.navy }}>
+        <Card padding="lg" style={{
+          borderTop:    tokens.borderWidth.heavy + " solid " + tokens.color.brand.navy,
+          border:       tokens.borderWidth.hairline + " solid " + tokens.color.border.subtle,
+          borderRadius: tokens.radius.lg,
+          boxShadow:    tokens.shadow.subtleCard,
+          marginBottom: "14px",
+        }}>
           {/* Player name */}
-          <div style={{ fontSize:"22px", fontWeight:"bold", color:C.navy, marginBottom:"16px" }}>
+          <div style={{ fontSize:"22px", fontWeight:"bold", color:tokens.color.brand.navy, marginBottom:"16px" }}>
             👤 {firstName(selectedParentPlayer)}
           </div>
           {/* Batting position */}
           <div style={{ marginBottom:"16px" }}>
-            <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:"4px" }}>Batting Order</div>
-            <div style={{ fontSize:"20px", fontWeight:"bold", color: batPos >= 0 ? C.navy : C.textMuted }}>
+            <div style={{ fontSize:"10px", color:tokens.color.text.muted, textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:"4px" }}>Batting Order</div>
+            <div style={{ fontSize:"20px", fontWeight:"bold", color: batPos >= 0 ? tokens.color.brand.navy : tokens.color.text.muted }}>
               {batPos >= 0 ? "#" + (batPos + 1) + " of " + battingOrder.length : "Not in order"}
             </div>
           </div>
           {/* Positions per inning */}
           <div>
-            <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:"8px" }}>Positions This Game</div>
+            <div style={{ fontSize:"10px", color:tokens.color.text.muted, textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:"8px" }}>Positions This Game</div>
             {assignments.length > 0 ? assignments.map(function(pos, i) {
               var pc = tokens.color.position[pos] || tokens.color.position.Bench;
               var isBench = pos === "Bench";
               return (
                 <div key={i} style={{ display:"flex", alignItems:"center", gap:"12px",
                   padding:"8px 10px", marginBottom:"4px", borderRadius:"6px",
-                  background: isBench ? "rgba(85,85,85,0.06)" : "rgba(15,31,61,0.04)",
-                  borderLeft:"3px solid " + pc }}>
-                  <div style={{ fontSize:"11px", color:C.textMuted, minWidth:"40px" }}>Inn {i+1}</div>
-                  <div style={{ fontSize:"18px", fontWeight:"bold", color: isBench ? C.textMuted : C.navy }}>
+                  background: isBench ? tokens.color.overlay.benchWash : tokens.color.overlay.navyWash,
+                  borderLeft: tokens.borderWidth.thick + " solid " + pc }}>
+                  <div style={{ fontSize:"11px", color:tokens.color.text.muted, minWidth:"40px" }}>Inn {i+1}</div>
+                  <div style={{ fontSize:"18px", fontWeight:"bold", color: isBench ? tokens.color.text.muted : tokens.color.brand.navy }}>
                     {POS_FULL[pos] || pos}
                   </div>
                 </div>
               );
             }) : (
-              <div style={{ fontSize:"13px", color:C.textMuted }}>No assignments found</div>
+              <div style={{ fontSize:"13px", color:tokens.color.text.muted }}>No assignments found</div>
             )}
           </div>
-        </div>
+        </Card>
       ) : (
-        <div style={{ padding:"40px 0", textAlign:"center", color:C.textMuted, fontSize:"13px" }}>
+        <div style={{ padding:"40px 0", textAlign:"center", color:tokens.color.text.muted, fontSize:"13px" }}>
           Select a player above to view their game day info
         </div>
       )}

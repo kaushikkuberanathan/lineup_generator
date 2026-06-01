@@ -7,8 +7,9 @@ import { ParentView } from './ParentView';
 // ParentView smoke tests (PV1–PV5)
 //
 // ParentView is the parent-facing Game Day surface — extracted from App.jsx
-// v1.6.9, fully presentational, zero imports. These tests are the regression
-// net before Story 81 token/primitive migration touches the file.
+// v1.6.9, fully presentational. Imports design tokens + Button/Card primitives.
+// Story 82 migrated the legacy S/C style props to tokens; these tests are the
+// regression net around that migration.
 //
 // Prop contract (per JSDoc header):
 //   roster                  Array<{name:string}>
@@ -16,32 +17,15 @@ import { ParentView } from './ParentView';
 //   grid                    { playerName: string[] }  position codes per inning
 //   selectedParentPlayer    string | null
 //   setSelectedParentPlayer (name|null) => void
-//   S                       { btn(variant), card }    legacy style helpers
-//   C                       { navy, textMuted, ... }  legacy color constants
-//   POS_COLORS              { POS_CODE: hex }         position → color map
 //
 // grid[playerName] is an array of BARE POSITION CODE STRINGS — "P", "SS",
 // "Bench", etc. — NOT objects. POS_FULL inside ParentView maps codes to
 // display names ("P" → "Pitcher", "SS" → "Shortstop").
 // ============================================================================
 
-// Minimal prop fixtures — legacy S/C/POS_COLORS shape, mocked just enough
-// to let the component render. These mocks deliberately match the App.jsx
-// runtime shape (S.btn is a factory; S.card is an object spread).
-var mockS = {
-  btn: function () { return {}; },
-  card: {},
-};
-var mockC = {
-  navy:      '#0f1f3d',
-  textMuted: '#6b7280',
-};
-var mockPosColors = {
-  P:  '#ff0000',
-  C:  '#0000ff',
-  SS: '#00ff00',
-};
-
+// Minimal prop fixture. Story 82 removed the legacy S/C/POS_COLORS props —
+// ParentView is now fully token-driven, so the fixture supplies only the
+// real prop contract.
 function renderParentView(overrides) {
   var props = Object.assign({
     roster:                 [{ name: 'Aiden' }, { name: 'Benji' }],
@@ -49,9 +33,6 @@ function renderParentView(overrides) {
     grid:                   { Aiden: ['P', 'SS'] },
     selectedParentPlayer:   null,
     setSelectedParentPlayer: function () {},
-    S:                      mockS,
-    C:                      mockC,
-    POS_COLORS:             mockPosColors,
   }, overrides || {});
   return render(<ParentView {...props} />);
 }
@@ -103,6 +84,42 @@ describe('ParentView — smoke', function () {
     // Per-inning labels — "Inn 1", "Inn 2" rendered at line 72.
     expect(screen.getByText(/Inn 1/i)).toBeTruthy();
     expect(screen.getByText(/Inn 2/i)).toBeTruthy();
+  });
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // PV6–PV7 (Story 82) — S/C prop migration contract.
+  // ParentView must render fully token-driven, with NO S/C props supplied.
+  // RED until ParentView.jsx drops S.btn/S.card/C.* in favour of tokens.
+  // ──────────────────────────────────────────────────────────────────────────
+
+  test('PV6: renders picker + empty state with no S/C props (token-driven)', function () {
+    // Deliberately NO S, C, POS_COLORS — exercises the picker (S.btn) and
+    // empty-state (C.textMuted) paths without the legacy style props.
+    var props = {
+      roster:                  [{ name: 'Aiden' }, { name: 'Benji' }],
+      battingOrder:            ['Aiden', 'Benji'],
+      grid:                    {},
+      selectedParentPlayer:    null,
+      setSelectedParentPlayer: function () {},
+    };
+    render(<ParentView {...props} />);
+    expect(screen.getByText('Aiden')).toBeTruthy();
+    expect(screen.getByText(/Select a player above to view their game day info/i)).toBeTruthy();
+  });
+
+  test('PV7: renders selected player card + Bench row with no S/C props', function () {
+    // Selected-player branch exercises S.card spread + C.navy and the bench
+    // wash. Must render token-driven with S/C absent.
+    var props = {
+      roster:                  [{ name: 'Aiden' }],
+      battingOrder:            ['Aiden'],
+      grid:                    { Aiden: ['P', 'Bench'] },
+      selectedParentPlayer:    'Aiden',
+      setSelectedParentPlayer: function () {},
+    };
+    render(<ParentView {...props} />);
+    expect(screen.getByText('Pitcher')).toBeTruthy();
+    expect(screen.getByText('Bench')).toBeTruthy();  // POS_FULL['Bench'] === 'Bench'
   });
 
 });
