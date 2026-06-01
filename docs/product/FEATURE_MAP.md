@@ -2,7 +2,7 @@
 
 > Authoritative mapping of every shipped feature to its documentation and test coverage.
 > Update this file whenever a feature ships, changes behavior, or gains new tests.
-> Owner: KK | Last updated: 2026-06-01 (v2.5.24 — DefenseDiamond Tier D migration completion (row #30 update))
+> Owner: KK | Last updated: 2026-06-01 (Story 99 backend test foundation — row #33 added; PR #272)
 
 ---
 
@@ -17,7 +17,7 @@
 
 ---
 
-## Feature Registry (32 features)
+## Feature Registry (33 features)
 
 | # | Feature | Status | Primary Doc | Doc Status | Test File(s) | Test Status | Debt |
 |---|---------|--------|-------------|------------|--------------|-------------|------|
@@ -53,6 +53,7 @@
 | 30 | **DefenseDiamond — Game Day diamond view** | MVP | `ROADMAP.md` §§ Stories 92, 93; `SOLUTION_DESIGN.md` § Design Tokens (v2.5.22 + v2.5.24 additions) | ✅ Current | None at component level; token contract covered by `theme.tokens.test.js` | ❌ None | Tier A+B token migration shipped v2.5.22 (Story 92, PR #218). Tier D shipped v2.5.24 (Story 93, PR #259): position.* (22 keys), field.* (7 keys), overlay.error* (4 tints); POS_COLORS prop drilling removed from App.jsx → ParentView; DefenseDiamond, App.jsx renderFieldSVG, and ParentView unified on identical token contract. |
 | 31 | **MaintenanceScreen — error / maintenance surface** | MVP | `ROADMAP.md` § Story 94; `SOLUTION_DESIGN.md` § Design Tokens (v2.5.22 additions) | ✅ Current | None at component level | ❌ None | Token migration shipped v2.5.22 (Story 94, PR #220). Self-styled via design tokens — see CLAUDE.md § Self-styled Support components convention. |
 | 32 | **sync-stories-to-issues.js — ROADMAP → GitHub Issues automation** | MVP | `ROADMAP.md` § Story 97; `CLAUDE.md` § Issue & Backlog Hygiene | ✅ Current | `scripts/__tests__/sync-patch.test.js` (4 tests: parseStories CRLF, patchHeading marker replace, idempotency, byte-level CRLF integrity) | ✅ Yes | CRLF byte-corruption fix shipped v2.5.22 (Story 97, PR #234). Both patch sites collapsed to shared `patchHeading()`; `findExistingOpenIssue` dead-code bug fixed. CI guard via `sync-script` job. |
+| 33 | **Backend test foundation** | In Progress | `ROADMAP.md` §§ Story 99; `backend/CLAUDE.md` § Test Suite | ⚠ Partial | `backend/src/__tests__/admin.auth.test.js` (9) | ⚠ Partial — admin auth rejection only; teamData/aiProxy pending | Green-but-vacuous gap in suite-admin.js closed. Remaining: teamData wipe-guard, AI proxy, auth happy-path. |
 
 ---
 

@@ -3525,23 +3525,36 @@ not block release but prevents recurring CI churn.
 
 ### Story 99 (P1) — Backend test suite re-authoring <!-- #252 -->
 
-Status: Open
+Status: In Progress — foundation shipped (PR #272, 2026-06-01); route coverage follow-up open
 Discovered: 2026-04-24 — backend suite obsolete against
-v2.3.3+ (rate limiter removed, routes restructured)
+v2.3.3+ (routes restructured into src/routes/ at v2.5.17)
 Target: v2.6.x (prerequisite for Phase 4C auth gate)
 
-Symptom: backend/scripts/tests/ references removed routes.
-CI does not run backend tests. Zero automated coverage.
+Symptom: backend/scripts/tests/suite-admin.js asserted 401 against
+/api/v1/admin/* paths that have no handlers — those 401s came from
+the path-agnostic requireAuth catch-all (admin.js:172), so the real
+admin routes had zero meaningful coverage ("green but vacuous").
 
 Impact: Any backend route change is unprotected. Phase 4C
 cannot ship safely without backend test coverage.
 
-Root cause: Suite written against v2.3.x; multiple breaking
-changes since. Never re-authored.
+Root cause: Suite written against v2.3.x; multiple breaking changes
+since (route modularization in v2.5.17). Never re-authored.
 
-Proposed fix: audit stale tests → re-author against current
-routes → add to CI as required check. Cover: /ping,
-/api/auth/magic-link, /api/team/:id, /api/ai parse.
+Shipped (PR #272):
+- supertest devDependency added
+- app/server split — import-safe app.js extracted from index.js (5-line
+  boot wrapper); boot-verified, behavior preserved
+- admin.auth.test.js — 9 passing in-process tests asserting 401 at the
+  REAL bare /api/v1/* admin paths, and 400 (never 401) for the public
+  approve-link/deny-link
+- npm run test:unit (node:test + supertest) + hermetic backend-unit CI
+  job gating sync-script and main deploy
+
+Remaining (follow-up coverage):
+- /api/teams/:teamId/data wipe-guard (409) + history X-Admin-Key (teamData.test.js — see DOC_TEST_DEBT)
+- /api/ai parse (413, structure) (aiProxy.test.js — see DOC_TEST_DEBT)
+- auth happy-path + malformed-token + requireAdmin (valid non-admin) rejection specs
 
 ---
 
