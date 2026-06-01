@@ -1,7 +1,22 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: 2026-05-30 (v2.5.23 — ESLint zero, Vite 6, token cleanup)
+> Last updated: 2026-05-31 (v2.5.24 — Token consistency, qs patch, version history enforcement)
 > MVP launched: March 24, 2026
+
+---
+
+## v2.5.24 — 2026-05-31 — Token consistency, qs patch, version history enforcement
+
+- Story 93 (P3) resolved — DefenseDiamond Tier D: all position and
+  field colors now use design tokens. App.jsx POS_COLORS migrated
+  to token system. Zero visible color changes; single source of truth
+  for future theming.
+- Story 100 (P3) resolved — Backend qs 6.15.0→6.15.2 patch bump
+  (Dependabot /21 cleared).
+- Version history standards enforced — 16 historical entries
+  rewritten to coach language; 4 CI tests added to prevent
+  regression (no PR/Story refs in userChanges, headline required,
+  date format validated).
 
 ---
 
@@ -3143,9 +3158,35 @@ Tokens.js L14 comment ("Nothing imports from this
 file yet") is already stale and worth a one-line
 update in this PR.
 
-### Story 93 (P3) — DefenseDiamond Tier D domain token families <!-- #219 -->
+### Story 102 (P3) — App.jsx OUT-row error tint migration + errorMid token <!-- #261 -->
 
 Status: Open
+Discovered: 2026-05-31 — Story 93 sanity grep surfaced 4 residual
+  rgba(220,38,38,*) sites outside the renderFieldSVG scope
+Target: v2.5.24 or next UX pass
+
+Symptom: App.jsx carries 4 raw rgba(220,38,38,*) inline literals at
+  L968, L969, L983, L4887 — the OUT-row table renders in the scoring
+  surface, not DefenseDiamond. Story 93 scoped only DefenseDiamond's
+  OUT-row tints. Also: 0.12 alpha variant at L4887 has no token
+  equivalent (Story 93 added 0.04/0.05/0.08/0.30 only).
+
+Fix:
+  Step 1 — Add tokens.color.overlay.errorMid: 'rgba(220,38,38,0.12)'
+  Step 2 — Migrate L968, L969, L983 to existing error* tokens
+  Step 3 — Migrate L4887 to new errorMid token
+
+Ungated — App.jsx now imports tokens (added in Story 93 Step 3).
+
+### Story 93 (P3) — DefenseDiamond Tier D domain token families <!-- #219 -->
+
+Status: Resolved
+Resolved: 2026-05-31 — PR #259
+Resolution: Domain token families shipped — tokens.color.position.*
+  (22 keys), tokens.color.field.* (7 keys), tokens.color.overlay.error*
+  (4 tints). DefenseDiamond, App.jsx renderFieldSVG, and ParentView
+  unified on identical token contract. POS_COLORS prop drilling removed.
+  773/774 tests green.
 Discovered: 2026-05-28 — DefenseDiamond.jsx recon
   (feature/ux-defensediamond)
 Target: UX track — second pass of DefenseDiamond
@@ -3479,6 +3520,73 @@ Checklist item 3 (VERSION_HISTORY entry):
 
 Recommendation: Single-bullet docs addition. ~5 min. P2 — does
 not block release but prevents recurring CI churn.
+
+---
+
+### Story 99 (P1) — Backend test suite re-authoring <!-- #252 -->
+
+Status: Open
+Discovered: 2026-04-24 — backend suite obsolete against
+v2.3.3+ (rate limiter removed, routes restructured)
+Target: v2.6.x (prerequisite for Phase 4C auth gate)
+
+Symptom: backend/scripts/tests/ references removed routes.
+CI does not run backend tests. Zero automated coverage.
+
+Impact: Any backend route change is unprotected. Phase 4C
+cannot ship safely without backend test coverage.
+
+Root cause: Suite written against v2.3.x; multiple breaking
+changes since. Never re-authored.
+
+Proposed fix: audit stale tests → re-author against current
+routes → add to CI as required check. Cover: /ping,
+/api/auth/magic-link, /api/team/:id, /api/ai parse.
+
+---
+
+### Story 100 (P3) — Backend qs transitive patch bump <!-- #253 -->
+
+Status: Open
+Discovered: 2026-05-30 — Dependabot /21 (moderate)
+Target: v2.5.24 or next chore batch
+
+Symptom: qs@6.15.0 in backend lockfile, vuln range
+>=6.11.1 <=6.15.1, fix at 6.15.2 (patch only).
+
+Impact: Low real-world risk — vuln is in qs.stringify
+with encodeValuesOnly; Express uses qs.parse only.
+No stringify call sites in our backend code.
+
+Root cause: Express 5.2.1 lockfile pins qs@6.15.0;
+npm audit fix would bump transitive to 6.15.2.
+
+Proposed fix: npm audit fix in backend/ — lockfile-only
+change, no package.json edit needed.
+
+---
+
+### Story 101 (P3) — Version history v1.x era audit <!-- #256 -->
+
+Status: Open
+Discovered: 2026-05-30 — Groups 1–4 audit fixed v2.0+ entries;
+v1.x era (~35 entries) left untouched
+Target: v2.6.x
+
+Symptom: v1.x entries use "Stability and performance update"
+headline with empty userChanges despite having coach-visible
+changes (UI redesigns, new features, bug fixes).
+
+Impact: Coaches reading changelog see generic stubs for 35+
+releases. Low urgency — most coaches never scroll that far back.
+
+Root cause: Coach-language standard wasn't established until
+the v2.5.x era audit session 2026-05-30.
+
+Proposed fix: read internalChanges for each v1.x entry,
+populate userChanges where coach-visible changes happened,
+leave genuinely infra-only entries as-is. ~10 entries
+estimated to need work out of 35.
 
 ---
 

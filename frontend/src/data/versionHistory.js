@@ -1,8 +1,22 @@
 ﻿export var VERSION_HISTORY = [
   {
+    version: '2.5.24',
+    date: 'May 2026',
+    headline: 'Reliability and consistency improvements',
+    techNote: 'Under-the-hood stability improvements',
+    userChanges: [],
+    internalChanges: [
+      'Story 93 — DefenseDiamond Tier D: position and field colors unified to design token system across DefenseDiamond, App.jsx renderFieldSVG, and ParentView. Zero visible color changes (PR #259)',
+      'Story 100 — Backend qs 6.15.0→6.15.2 lockfile patch. Clears Dependabot moderate vuln (PR #254)',
+      'Version history: 16 historical entries rewritten to coach language; 4 CI tests enforce standards going forward (no PR/Story refs in userChanges, headline required, date format validated) (PRs #255 #257 #258)',
+      'Test suite: 771 passing / 1 skipped / 0 failed',
+      'Session retrospective 2026-05-31-A — v2.5.24 release ritual',
+    ],
+  },
+  {
     version: '2.5.23',
     date: '2026-05-30',
-    headline: 'Internal stability improvements — ESLint, Vite 6, token cleanup',
+    headline: 'Reliability and security improvements',
     techNote: 'Under-the-hood stability improvements',
     userChanges: [],
     internalChanges: [
@@ -41,8 +55,8 @@
     headline: 'In-app update prompt restored; BottomSheet primitive ships',
     techNote: 'Minor fixes and internal improvements',
     userChanges: [
-      'In-app update prompt now appears when a new version is available — previously coaches had to close and reopen the PWA to receive updates (Story 85, PR #188)',
-      'Lock confirmation now uses a slide-up sheet with proper focus handling — smoother than the old modal flicker (Story 87, PR #190)',
+      'In-app update prompt now appears when a new version is available — no more closing and reopening the app to get the latest',
+      'Lock confirmation now uses a smoother slide-up sheet instead of the old modal flicker',
     ],
     internalChanges: [
       'Story 85 — useRegisterSW return now destructured at App.jsx:1838; updateServiceWorker available to both banner click handlers (App.jsx:3518 + 8633); manual needRefresh / setNeedRefresh stubs replaced with hook values (PR #188)',
@@ -58,10 +72,10 @@
   {
     version: '2.5.20',
     date: 'May 2026',
-    headline: 'Story 84 fix, UX Phase 5 token foundation, sync-script governance',
+    headline: 'Box score AI now uses your team name correctly',
     techNote: 'Minor fixes and internal improvements',
     userChanges: [
-      'Box score AI parser now sends the correct team name to the LLM — previously sent the literal string "undefined", silently degrading parse quality (Story 84, PR #178)',
+      'Box score AI now parses your team name correctly — previously the team name was missing, hurting parse accuracy',
     ],
     internalChanges: [
       'UX Phase 5 foundation — surface.chrome token + GameDay/* migrations (NowBattingStrip, BattingOrderStrip, Toast, FairnessCheck, LockFlow); zero #1e3a5f literals remain in frontend/src/ (PR #179)',
@@ -76,10 +90,10 @@
   {
     version: '2.5.19',
     date: 'May 2026',
-    headline: 'Supabase import fix restores coach feedback; label schema, audit, governance',
+    headline: 'Feedback and bug reports now reach the team',
     techNote: 'Minor fixes and internal improvements',
     userChanges: [
-      'Coach feedback and bug reports now reach the backend — supabase client import was missing from App.jsx, causing all feedback POSTs to fail silently (Story 83, PR #171)',
+      'Coach feedback and bug reports now reach the team — feedback submissions were silently failing before this release',
     ],
     internalChanges: [
       'npm audit fix — 12 of 15 frontend + all 3 backend vulns resolved; esbuild/vite chain deferred as dev-only (PR #164, Story 81)',
@@ -93,7 +107,7 @@
   {
     version: '2.5.18',
     date: 'May 2026',
-    headline: 'Pre-push hook fix, sync-script hardening, lint debt filed',
+    headline: 'Internal tooling improvements',
     techNote: 'Minor fixes and internal improvements',
     userChanges: [],
     internalChanges: [
@@ -153,7 +167,7 @@
   {
     version: '2.5.14',
     date: '2026-05-16',
-    title: 'UX Phase 3 — Design System Primitives',
+    headline: 'Visual polish — cleaner buttons, text, and cards throughout the app',
     userChanges: [
       'Support tab visual consistency improved — FAQ, Legal, offline banner, and validation notices now use the app\'s design system throughout',
     ],
@@ -168,14 +182,18 @@
   {
     version: '2.5.13',
     date: '2026-05-15',
-    title: 'Scoring restoration — leagueRules crash + DugoutView deadlock',
-    changes: [
-      'Fixed: getRules no longer throws on unrecognized age group keys (e.g. "10U") — normalizes aliases, falls back to canonical profile with console.warn',
-      'Fixed: dugoutFocusMode deadlock — LiveScoringPanel now visible when scorer enters Practice Mode or claims a real game',
-      'Updated: DugoutView tests assert v2.5.13 dugoutFocusMode contract',
-      'Docs: CLAUDE.md dugoutFocusMode entry updated; Story 48 named as follow-up for in-session defense toggle',
-    ],
+    headline: 'Scoring now works on 10U teams and in Practice mode',
     techNote: 'Bug fixes and performance improvements',
+    userChanges: [
+      'Fix: Scoring no longer crashes on 10U or other newer age groups',
+      'Fix: Live Scoring panel now appears when entering Practice mode or claiming scorer',
+    ],
+    internalChanges: [
+      'getRules() normalizes unrecognized age group aliases (e.g. "10U") and falls back to the canonical profile with console.warn',
+      'dugoutFocusMode deadlock resolved — LiveScoringPanel renders when scorerClaimed is true but currentAtBat is null',
+      'DugoutView tests assert v2.5.13 dugoutFocusMode contract',
+      'CLAUDE.md dugoutFocusMode entry updated; Story 48 named as follow-up for in-session defense toggle',
+    ],
   },
   {
     version: '2.5.12',
@@ -243,7 +261,7 @@
   {
     version: '2.5.8',
     date: 'May 2026',
-    headline: 'Infrastructure stability — test gate restored, hook fixes',
+    headline: 'Stability improvements',
     userChanges: [
       'Bug fixes and reliability improvements',
     ],
@@ -284,7 +302,7 @@
   {
     version: '2.5.6',
     date: '2026-05-03',
-    headline: 'UX track Phase 1a — accessibility GA, design tokens scaffolding, and tooling foundation',
+    headline: 'Larger text and bigger buttons across the app',
     userChanges: [
       'Larger, more readable text across Game Mode and lineup screens',
       'Bigger, easier-to-tap buttons throughout Game Mode',
@@ -640,7 +658,7 @@
   {
     version: '2.2.40',
     date: 'April 2026',
-    headline: "Fix: Live scoring rules load correctly — team prop wired to useLiveScoring",
+    headline: "Fix: Scoring screen no longer stuck on Loading",
     userChanges: [],
     techNote: "Bug fixes and performance improvements",
     internalChanges: [
@@ -788,7 +806,7 @@
   {
     version: '2.2.29',
     date: 'April 2026',
-    headline: "Fix: Claim Scorer now works — auth shim ID applied to scorer lock write",
+    headline: "Fix: Claim Scorer button now works",
     userChanges: [
       "Scoring tab now available for Mud Hens and Demo All-Stars",
     ],
@@ -805,7 +823,7 @@
   {
     version: '2.2.28',
     date: 'April 2026',
-    headline: "Live scoring auth shim + Supabase team boot merge",
+    headline: "Teams sync across devices; live scoring usable",
     userChanges: [
       "Teams added directly to the database now appear automatically on all devices",
       "Live scoring works without login during pre-auth testing phase",
@@ -882,7 +900,10 @@
     version: '2.2.22',
     date: 'April 2026',
     headline: "Hotfix — auth gate removed from prod, app accessible to all users",
-    userChanges: [],
+    userChanges: [
+      'Login no longer required — open the app and start using it immediately',
+      'Sign-in flow temporarily disabled while we finalize the access approval process',
+    ],
     techNote: "Bug fixes and performance improvements",
     internalChanges: [
       "Auth gate block (if !_authBypassed + all three authState branches) wrapped in /* */ block comment",
@@ -1209,7 +1230,9 @@
     version: '2.1.9',
     date: '2026-04-03',
     headline: "Stability and performance update",
-    userChanges: [],
+    userChanges: [
+      'Fix: Add Result button now visible on game day — previously hidden the day of the game',
+    ],
     techNote: "Bug fixes and performance improvements",
     internalChanges: [
       'Fix: admin console magic link now redirects back to /admin.html after email click',
@@ -1255,7 +1278,11 @@
     version: '2.1.5',
     date: '2026-04-02',
     headline: "Stability and performance update",
-    userChanges: [],
+    userChanges: [
+      'Maintenance screen now appears during app updates instead of a broken page',
+      'New features can now be turned on for your team without waiting for an app update',
+      'All app links and shares now use the new dugoutlineup.com domain',
+    ],
     techNote: "Bug fixes and performance improvements",
     internalChanges: [
       'Feat: Supabase-backed runtime feature flags — all flags now toggle from dashboard without a deploy',
@@ -2074,25 +2101,25 @@
   {
     version: "1.0.0",
     date: "March 24, 2026",
-    headline: "Stability and performance update",
-    userChanges: [],
-    techNote: "Bug fixes and performance improvements",
+    headline: "Dugout Lineup is live — your first season starts here",
+    techNote: "Performance and reliability improvements",
+    userChanges: [
+      "Auto-generate a fair lineup for up to 10 players across all field positions",
+      "Drag and drop to override any spot — issues flagged automatically with one-tap Auto-Fix",
+      "Batting order with Suggest Order based on player stats",
+      "Track AB, H, R, RBI, and AVG across the season — color-coded for quick scan",
+      "AI-powered schedule import from a photo or text",
+      "Share a read-only lineup link with parents — no account needed to view",
+      "Download as PDF or print Defense / Batting / Both",
+      "Works offline — your data syncs back when you reconnect",
+      "Installable on iPhone and Android as a home-screen app",
+    ],
     internalChanges: [
-      "MVP launch — Dugout Lineup live on Vercel",
-      "11-constraint auto-assign engine with retry fallback",
-      "10-player defensive grid (P, C, 1B, 2B, 3B, SS, LF, LC, RC, RF)",
-      "Manual cell overrides with issue detection and Auto-Fix All",
-      "Batting order with stats-driven Suggest Order",
-      "Season stats tracking (AB, H, R, RBI, AVG with color coding)",
-      "Schedule management with AI photo and text import",
-      "Game result logging with per-player batting stats",
-      "View-only share link (URL-encoded snapshot)",
-      "PDF export via bundled jsPDF",
-      "Print tab with Defense / Batting / Both toggle",
-      "Supabase cloud sync with localStorage offline fallback",
-      "PWA — installable on iOS and Android, offline-capable",
-      "Export / Import JSON backup",
-      "UptimeRobot keep-warm ping on Render backend"
-    ]
+      "Auto-assign engine — 11 fairness constraints with retry fallback",
+      "Storage: Supabase cloud sync + localStorage offline cache",
+      "PWA shell installable from iOS Safari and Android Chrome",
+      "Render backend with UptimeRobot keep-warm ping",
+      "Vercel frontend hosting",
+    ],
   }
 ];
