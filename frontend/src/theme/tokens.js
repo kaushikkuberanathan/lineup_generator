@@ -36,6 +36,7 @@ export const tokens = {
     text: {
       primary:   '#0F1F3D',  // alias of brand.navy — primary text on light surfaces
       body:      '#374151',  // gray-700 — body copy on light surfaces (Story 60; FAQ answer body, EmptyState title)
+      muted:     '#6b7280',  // gray-500 — ParentView muted labels/captions (Story 82)
       secondary: '#64748B',  // 46x — slate-500, muted body text
       tertiary:  '#94A3B8',  // 58x — slate-400, placeholder/caption
       onDark:    '#FFFFFF',  // all #FFF on dark surfaces
@@ -90,10 +91,14 @@ export const tokens = {
       winFaint:   'rgba(39,174,96,0.12)',    // 1x OfflineIndicator.jsx — status.success 0.12 (Offline Ready bg)
       winMid:     'rgba(39,174,96,0.30)',    // 1x OfflineIndicator.jsx — status.success 0.30 (Offline Ready border)
 
+      // ─── Bench-row wash (Story 82 — ParentView Bench inning rows) ──────────
+      benchWash:  'rgba(85,85,85,0.06)',  // 1x ParentView.jsx — Bench assignment row bg; pairs with navyWash (position.Bench = #555555)
+
       // ─── Error-status alpha tints (Story 93 — DefenseDiamond OUT row family) ─
       errorFaintest: 'rgba(220,38,38,0.04)',  // OUT row striping — App.jsx + DefenseDiamond
       errorFaint:    'rgba(220,38,38,0.05)',  // OUT row alternate stripe
       errorSubtle:   'rgba(220,38,38,0.08)',  // OUT row hover/highlight
+      errorMid:      'rgba(220,38,38,0.12)',  // 1x App.jsx — scoring-surface OUT chip bg (Story 102)
       errorMedium:   'rgba(220,38,38,0.30)',  // OUT row border / emphasis
     },
 
@@ -186,11 +191,15 @@ export const tokens = {
   // INTRODUCED AS CANONICAL — Story 92 (DefenseDiamond Tier B). Resolves the
   // 1.5px navy pill borders in DefenseDiamond. hairline/medium ship together
   // so the scale is complete at introduction rather than grown piecemeal.
+  // Story 82 (ParentView Tier) extends with thick/heavy for the 3px position
+  // stripe and 4px card top-border accents.
 
   borderWidth: {
     hairline: '1px',
     thin:     '1.5px',
     medium:   '2px',
+    thick:    '3px',    // ParentView position-stripe borderLeft (Story 82)
+    heavy:    '4px',    // ParentView card top-border accent (Story 82)
   },
 
   // ─── FONT ───────────────────────────────────────────────────────────────────
