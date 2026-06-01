@@ -2,7 +2,7 @@
 
 > Authoritative mapping of every shipped feature to its documentation and test coverage.
 > Update this file whenever a feature ships, changes behavior, or gains new tests.
-> Owner: KK | Last updated: 2026-05-29 (v2.5.22 — DefenseDiamond / MaintenanceScreen token migration (rows #30, #31); sync-stories-to-issues.js coverage (#32))
+> Owner: KK | Last updated: 2026-06-01 (v2.5.24 — DefenseDiamond Tier D migration completion (row #30 update))
 
 ---
 
@@ -50,7 +50,7 @@
 | 22 | **Governance infrastructure** | MVP | `CHARTER.md`, `ONE_PAGER.md`, `ROADMAP.md`, `PERSONAS.md`, `faqs.js`, `FEATURE_MAP.md`, `MASTER_DEV_REFERENCE.md`, `CLAUDE.md` | ✅ Current | — | ❌ None | — |
 | 24 | **Toast UI primitive** | MVP | `CLAUDE.md` § UI Primitives | ✅ Current | `src/components/ui/Toast.test.jsx` | ✅ Yes | — |
 | 29 | **BottomSheet UI primitive** | MVP | `CLAUDE.md` § UI Primitives | ✅ Current | `src/components/ui/BottomSheet.test.jsx` (7 tests, BS1–BS7); `theme.tokens.test.js` (+6 tests for `radius.sheet` + `shadow.sheetTop`) | ✅ Yes | LockFlow is the sole consumer today (v2.5.21); future modals/pickers expected to migrate. Pill + ListRow (v2.5.14) and the Phase 2 primitives row (#28) cover other shipped primitives — pre-existing gaps where this map lags shipped primitives. |
-| 30 | **DefenseDiamond — Game Day diamond view** | MVP | `ROADMAP.md` § Story 92; `SOLUTION_DESIGN.md` § Design Tokens (v2.5.22 additions) | ✅ Current | None at component level; token contract covered by `theme.tokens.test.js` | ❌ None | Tier A+B token migration shipped v2.5.22 (Story 92, PR #218). Tier C+D follow-ups deferred — Story 93 GATED on App.jsx component split (POS_COLORS map duplicated in App.jsx lines 64–65). |
+| 30 | **DefenseDiamond — Game Day diamond view** | MVP | `ROADMAP.md` §§ Stories 92, 93; `SOLUTION_DESIGN.md` § Design Tokens (v2.5.22 + v2.5.24 additions) | ✅ Current | None at component level; token contract covered by `theme.tokens.test.js` | ❌ None | Tier A+B token migration shipped v2.5.22 (Story 92, PR #218). Tier D shipped v2.5.24 (Story 93, PR #259): position.* (22 keys), field.* (7 keys), overlay.error* (4 tints); POS_COLORS prop drilling removed from App.jsx → ParentView; DefenseDiamond, App.jsx renderFieldSVG, and ParentView unified on identical token contract. |
 | 31 | **MaintenanceScreen — error / maintenance surface** | MVP | `ROADMAP.md` § Story 94; `SOLUTION_DESIGN.md` § Design Tokens (v2.5.22 additions) | ✅ Current | None at component level | ❌ None | Token migration shipped v2.5.22 (Story 94, PR #220). Self-styled via design tokens — see CLAUDE.md § Self-styled Support components convention. |
 | 32 | **sync-stories-to-issues.js — ROADMAP → GitHub Issues automation** | MVP | `ROADMAP.md` § Story 97; `CLAUDE.md` § Issue & Backlog Hygiene | ✅ Current | `scripts/__tests__/sync-patch.test.js` (4 tests: parseStories CRLF, patchHeading marker replace, idempotency, byte-level CRLF integrity) | ✅ Yes | CRLF byte-corruption fix shipped v2.5.22 (Story 97, PR #234). Both patch sites collapsed to shared `patchHeading()`; `findExistingOpenIssue` dead-code bug fixed. CI guard via `sync-script` job. |
 
