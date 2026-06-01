@@ -3590,6 +3590,29 @@ estimated to need work out of 35.
 
 ---
 
+### Story 103 (P3) — Mixpanel before_identify race condition <!-- #266 -->
+
+Status: Open
+Discovered: 2026-05-31 — v2.5.24 smoke test on dev preview
+Target: v2.5.x or next chore batch
+
+Symptom: console TypeError on mixpanel.identify() when user
+loads a team — before_identify hook undefined.
+
+Impact: analytics event may be missed on first team load;
+no user-visible effect. Analytics-quality risk: coach team_id
+may not attach to Mixpanel profile on the affected session.
+Pre-existing on v2.5.23 main — not introduced by v2.5.24.
+
+Root cause: identify() called before Mixpanel SDK hook system
+fully initializes. App.jsx:2303 fires on team load; init in
+utils/analytics.js may not have completed by that point.
+
+Proposed fix: guard mixpanel.identify() with init() callback,
+OR check initialized state before calling identify(),
+OR defer identify until next tick after init completes.
+
+---
 ### Automated Score Reporting (County Integration)
 **Status:** Architecture finalized, implementation pending
 **Trigger:** Coach taps "Report Score" on a completed game
