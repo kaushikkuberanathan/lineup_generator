@@ -20,12 +20,6 @@
 import { useState } from "react";
 import { tokens } from "../../theme/tokens";
 
-var POS_COLORS = {
-  P:"#e05c2a", C:"#7f3f3f", "1B":"#2471a3", "2B":"#2980b9",
-  "3B":"#6c3483", SS:"#8e44ad", LF:"#1e8449", LC:"#2980b9",
-  RC:"#8e44ad", RF:"#239b56", Bench:"#555555"
-};
-
 var textMuted = "#6b7280"; // drift: text.secondary (#64748b)
 var red       = tokens.color.brand.red;
 
@@ -62,15 +56,6 @@ export function DefenseDiamond({ roster, grid, innings, selectedInning, onSelect
 
   function renderFieldSVG(getPlayerFn, innFilter, localInnArr) {
     var isSingle = innFilter !== null && innFilter !== undefined;
-    var HDR_COLORS = {
-      "LF":"#1a6e3a", "RF":"#1a6e3a",
-      "LC":"#1a5580",
-      "RC":"#5c2878",
-      "SS":"#8a4a0a", "2B":"#8a4a0a",
-      "3B":"#7a1a10", "P":"#7a1a10", "1B":"#7a1a10",
-      "C":"#14406e",
-      "Bench":"#2a2a2a"
-    };
     var BOX_H = isSingle ? 54 : (30 + (localInnArr.length * 11) + 4);
     // For Bench box in single-inning mode, grow height to fit all bench players
     var benchNames = (isSingle && innFilter !== null && innFilter !== undefined)
@@ -110,13 +95,13 @@ export function DefenseDiamond({ roster, grid, innings, selectedInning, onSelect
     return (
       <div style={{ position:"relative", width:"100%", maxWidth:"680px", margin:"0 auto", marginBottom:"10px" }}>
         <svg viewBox={"0 0 680 " + VB_H} width="100%" style={{ display:"block" }}>
-          <rect x="0" y="0" width="680" height={VB_H} rx="8" fill="#2d7a3a"/>
-          <path d="M 60 580 Q 340 30 620 580 Z" fill="#3a9147" fillOpacity="0.5" stroke="#3a9147" strokeOpacity="0.18" strokeWidth="1"/>
-          <line x1="340" y1="565" x2="60" y2="580" stroke="white" strokeOpacity="0.3" strokeDasharray="6,4" strokeWidth="1.5"/>
-          <line x1="340" y1="565" x2="620" y2="580" stroke="white" strokeOpacity="0.3" strokeDasharray="6,4" strokeWidth="1.5"/>
-          <ellipse cx="340" cy="430" rx="170" ry="140" fill="#b5845a" fillOpacity="0.85"/>
-          <polygon points="340,555 490,415 340,275 190,415" fill="#c49a6c" fillOpacity="0.6" stroke="#e8d5b0" strokeOpacity="0.8" strokeWidth="2"/>
-          <circle cx="340" cy="435" r="18" fill="#c9a070" fillOpacity="0.9"/>
+          <rect x="0" y="0" width="680" height={VB_H} rx="8" fill={tokens.color.field.grass}/>
+          <path d="M 60 580 Q 340 30 620 580 Z" fill={tokens.color.field.grassLight} fillOpacity="0.5" stroke={tokens.color.field.grassLight} strokeOpacity="0.18" strokeWidth="1"/>
+          <line x1="340" y1="565" x2="60" y2="580" stroke={tokens.color.field.chalk} strokeOpacity="0.3" strokeDasharray="6,4" strokeWidth="1.5"/>
+          <line x1="340" y1="565" x2="620" y2="580" stroke={tokens.color.field.chalk} strokeOpacity="0.3" strokeDasharray="6,4" strokeWidth="1.5"/>
+          <ellipse cx="340" cy="430" rx="170" ry="140" fill={tokens.color.field.dirt} fillOpacity="0.85"/>
+          <polygon points="340,555 490,415 340,275 190,415" fill={tokens.color.field.dirtLight} fillOpacity="0.6" stroke={tokens.color.field.moundLight} strokeOpacity="0.8" strokeWidth="2"/>
+          <circle cx="340" cy="435" r="18" fill={tokens.color.field.mound} fillOpacity="0.9"/>
           {isSingle && (
             <g>
               <rect x="300" y="8" width="80" height="22" rx="11" fill="rgba(0,0,0,0.35)"/>
@@ -126,8 +111,8 @@ export function DefenseDiamond({ roster, grid, innings, selectedInning, onSelect
             </g>
           )}
           {SVG_POSITIONS.map(function(slot) {
-            var pc = POS_COLORS[slot.pos] || "#555555";
-            var hc = HDR_COLORS[slot.pos] || "#2a2a2a";
+            var pc = tokens.color.position[slot.pos] || tokens.color.position.Bench;
+            var hc = tokens.color.position.header[slot.pos] || tokens.color.position.header.Bench;
             var cx = slot.x + slot.w / 2;
             var hdrFs = isSingle ? "10" : "8.5";
             return (
@@ -307,8 +292,8 @@ export function DefenseDiamond({ roster, grid, innings, selectedInning, onSelect
                       {benchInnLabels.map(function(i) {
                         return (
                           <td key={i} style={{ padding:"3px 10px", textAlign:"center",
-                            borderTop:tokens.borderWidth.medium + " solid rgba(220,38,38,0.3)",
-                            background:"rgba(220,38,38,0.05)",
+                            borderTop:tokens.borderWidth.medium + " solid " + tokens.color.overlay.errorMedium,
+                            background:tokens.color.overlay.errorFaint,
                             fontSize:tokens.font.size.xs, fontWeight:"bold", color:tokens.color.status.error,
                             letterSpacing:"0.08em", textTransform:"uppercase" }}>
                             Out
@@ -324,10 +309,10 @@ export function DefenseDiamond({ roster, grid, innings, selectedInning, onSelect
                           var pname = outDisplay[ci][or] || "";
                           return (
                             <td key={i} style={{ padding:"4px 10px", textAlign:"center",
-                              borderBottom:tokens.borderWidth.hairline + " solid rgba(220,38,38,0.08)",
+                              borderBottom:tokens.borderWidth.hairline + " solid " + tokens.color.overlay.errorSubtle,
                               fontWeight:"bold",
                               color: pname ? tokens.color.status.error : "#ccc", // drift: text.disabled
-                              background:"rgba(220,38,38,0.04)" }}>
+                              background:tokens.color.overlay.errorFaintest }}>
                               {pname ? firstName(pname) : "-"}
                             </td>
                           );
