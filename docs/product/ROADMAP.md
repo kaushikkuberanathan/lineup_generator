@@ -1,7 +1,24 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: 2026-05-31 (v2.5.24 — Token consistency, qs patch, version history enforcement)
+> Last updated: 2026-06-01 (v2.5.25 — backend test foundation, OUT-row error tint token migration)
 > MVP launched: March 24, 2026
+
+---
+
+## v2.5.25 — 2026-06-01 — Backend test foundation + OUT-row error tint tokens
+
+- Story 99 (P1) — Backend test foundation (In Progress): supertest devDep,
+  app/server split (app.js extracted from index.js, import-safe for supertest),
+  admin.auth.test.js (9 in-process tests closing the green-but-vacuous admin
+  auth coverage gap), test:unit script, and a hermetic backend-unit CI job
+  gating deploy. Remaining route coverage (teamData wipe-guard, AI proxy,
+  auth happy-path) tracked in #252.
+- Story 102 (P3) resolved — App.jsx OUT-row error tint migrated to
+  tokens.color.overlay.error* tokens; errorMid token added
+  (rgba(220,38,38,0.12)). Zero visible color changes (PR #271).
+- Docs: backend/CLAUDE.md routes section corrected (admin paths are bare
+  /api/v1, not /api/v1/admin/*); FEATURE_MAP row #33 added; backend test
+  count reconciled (771 frontend + 9 backend supertest).
 
 ---
 
