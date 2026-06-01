@@ -2729,7 +2729,12 @@ Recommendation: Treat as standalone upgrade story. Do not block other PRs.
 
 ### Story 82 (P3) — ParentView token/primitive migration <!-- #185 -->
 
-Status: Open
+Status: Resolved
+Resolved: 2026-05-31 — PR #268
+Resolution: ParentView S/C prop dependency removed. Four new tokens
+  (text.muted, overlay.benchWash, borderWidth.thick/heavy). S.btn →
+  Button primitive, S.card → Card primitive. All C.* refs migrated to
+  tokens. App.jsx call site cleaned. PV6+PV7 RED→GREEN. 781/782 suite.
 Discovered: 2026-05-22 — Phase 3 Step 4 recon (UX track)
 Target: after App.jsx parallel work clarifies S/C prop pattern
 
