@@ -1,5 +1,17 @@
 ﻿export var VERSION_HISTORY = [
   {
+    version: '2.5.25',
+    date: 'June 2026',
+    headline: 'Reliability and consistency improvements',
+    techNote: 'Under-the-hood stability improvements',
+    userChanges: [],
+    internalChanges: [
+      'Story 102 — App.jsx OUT-row error tint: 3 rgba(220,38,38,X) literals replaced with tokens.color.overlay.error* tokens; errorMid token added (rgba(220,38,38,0.12)). Zero visible color changes (PR #271)',
+      'Story 99 — Backend test foundation: supertest devDep, app/server split (app.js import-safe), admin.auth.test.js (9 tests closing green-but-vacuous admin auth coverage gap), test:unit script, hermetic backend-unit CI job (PR #272)',
+      'Test suite: 771 frontend (Vitest) + 9 backend supertest passing / 1 skipped / 0 failed',
+    ],
+  },
+  {
     version: '2.5.24',
     date: 'May 2026',
     headline: 'Reliability and consistency improvements',
