@@ -1,7 +1,22 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: 2026-05-30 (v2.5.23 — ESLint zero, Vite 6, token cleanup)
+> Last updated: 2026-05-31 (v2.5.24 — Token consistency, qs patch, version history enforcement)
 > MVP launched: March 24, 2026
+
+---
+
+## v2.5.24 — 2026-05-31 — Token consistency, qs patch, version history enforcement
+
+- Story 93 (P3) resolved — DefenseDiamond Tier D: all position and
+  field colors now use design tokens. App.jsx POS_COLORS migrated
+  to token system. Zero visible color changes; single source of truth
+  for future theming.
+- Story 100 (P3) resolved — Backend qs 6.15.0→6.15.2 patch bump
+  (Dependabot /21 cleared).
+- Version history standards enforced — 16 historical entries
+  rewritten to coach language; 4 CI tests added to prevent
+  regression (no PR/Story refs in userChanges, headline required,
+  date format validated).
 
 ---
 
@@ -3143,7 +3158,7 @@ Tokens.js L14 comment ("Nothing imports from this
 file yet") is already stale and worth a one-line
 update in this PR.
 
-### Story 99 (P3) — App.jsx OUT-row error tint migration + errorMid token <!-- #261 -->
+### Story 102 (P3) — App.jsx OUT-row error tint migration + errorMid token <!-- #261 -->
 
 Status: Open
 Discovered: 2026-05-31 — Story 93 sanity grep surfaced 4 residual
