@@ -76,6 +76,10 @@ describe('Group 2 — color sub-groups', function () {
     expect(tokens.color.text.body).toBe('#374151');
   });
 
+  test('2.4c: color.text.muted equals #6b7280 (Story 82 — ParentView S/C migration)', function () {
+    expect(tokens.color.text.muted).toBe('#6b7280');
+  });
+
   test('2.5: color.status has correct keys', function () {
     ['success', 'warning', 'error', 'errorBg', 'info',
      'successBg', 'warningBg', 'successBorder', 'warningBorder',
@@ -95,11 +99,15 @@ describe('Group 2 — color sub-groups', function () {
   test('2.7: color.overlay has correct keys (navyWash, not navySubtle); all rgba format', function () {
     const expected = ['navyWash', 'navyFaint', 'navyMedium', 'whiteFaint', 'whiteLight', 'whiteMedium', 'whiteHeavy', 'goldTint', 'goldStrong', 'backdrop',
                       'redFaint', 'redStrong', 'warnFaint', 'warnStrong', 'winFaint', 'winMid',
-                      'errorFaintest', 'errorFaint', 'errorSubtle', 'errorMedium'];
+                      'errorFaintest', 'errorFaint', 'errorSubtle', 'errorMedium', 'benchWash'];
     expected.forEach(k => {
       expect(tokens.color.overlay[k]).toMatch(RGBA_RE);
     });
     expect(tokens.color.overlay).not.toHaveProperty('navySubtle');
+  });
+
+  test('2.7b: color.overlay.benchWash equals rgba(85,85,85,0.06) (Story 82 — Bench row wash)', function () {
+    expect(tokens.color.overlay.benchWash).toBe('rgba(85,85,85,0.06)');
   });
 
   test('2.8: color.position has 11 position keys + header object', function () {
@@ -379,8 +387,8 @@ describe('Group 10 — borderWidth tokens', function () {
     expect(typeof tokens.borderWidth).toBe('object');
   });
 
-  test('10.2: borderWidth has hairline, thin, medium keys', function () {
-    ['hairline', 'thin', 'medium'].forEach(function (k) {
+  test('10.2: borderWidth has hairline, thin, medium, thick, heavy keys', function () {
+    ['hairline', 'thin', 'medium', 'thick', 'heavy'].forEach(function (k) {
       expect(tokens.borderWidth).toHaveProperty(k);
     });
   });
@@ -393,9 +401,16 @@ describe('Group 10 — borderWidth tokens', function () {
     });
   });
 
-  test('10.4: values are ordered hairline < thin < medium', function () {
+  test('10.4: values are ordered hairline < thin < medium < thick < heavy', function () {
     expect(parseFloat(tokens.borderWidth.hairline)).toBeLessThan(parseFloat(tokens.borderWidth.thin));
     expect(parseFloat(tokens.borderWidth.thin)).toBeLessThan(parseFloat(tokens.borderWidth.medium));
+    expect(parseFloat(tokens.borderWidth.medium)).toBeLessThan(parseFloat(tokens.borderWidth.thick));
+    expect(parseFloat(tokens.borderWidth.thick)).toBeLessThan(parseFloat(tokens.borderWidth.heavy));
+  });
+
+  test('10.5: borderWidth.thick is 3px and heavy is 4px (Story 82)', function () {
+    expect(tokens.borderWidth.thick).toBe('3px');
+    expect(tokens.borderWidth.heavy).toBe('4px');
   });
 
 });

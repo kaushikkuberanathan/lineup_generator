@@ -7663,8 +7663,6 @@ export default function App() {
               grid={grid}
               selectedParentPlayer={selectedParentPlayer}
               setSelectedParentPlayer={setSelectedParentPlayer}
-              S={S}
-              C={C}
             />
           ) : null}
         </ErrorBoundary>
