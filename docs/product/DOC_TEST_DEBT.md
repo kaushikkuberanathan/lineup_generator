@@ -396,8 +396,8 @@
 | **Total** | **12** | **6** | **4** | **22** |
 
 **Age distribution:**
-- 0–30 days: 22
-- 31–60 days: 0
+- 0–30 days: 4
+- 31–60 days: 18
 - 60+ days: 0
 
 **Ship blockers:**
@@ -478,3 +478,10 @@
   - Age sweep: items opened 2026-04-17 refreshed 27/40 → 43 days; D-S30 (2026-04-24) refreshed 20 → 36 days; Story 61 follow-up (2026-05-19) 0 → 11 days; SW banner + sync-stories follow-ups (2026-05-27) 0 → 3 days.
   - Stale target retargets: P1 Scorer-Lock and P1 Roster-Wipe both slid v2.3.4 → v2.6.x.
   - Dashboard impact: no new debt items opened or resolved in DOC_TEST_DEBT (resolutions tracked in ROADMAP for Stories 77/81/98). Age distribution shifts: 0–30 days bucket drops to 4 (Story 61 + 2 SW/sync + D-S30 partial), 31–60 days bucket grows to 18 (was 0). Dashboard table at L398–401 not edited this pass — flagged as drift for a follow-up touch.
+
+- **v2.14 — May 2026 (v2.5.24 release pass)**
+  - versionHistory.test.js: 6 tests now (2 original + 4 new enforcement rules via PRs #257 #258). Tests enforce: techNote approved-strings, no PR/Story refs in userChanges, headline required (not title), date format recognized (ISO/MonthYear/LongDate).
+  - DefenseDiamond FEATURE_MAP row #30: updated to reflect Story 93 Tier D shipped v2.5.24 (PR #259).
+  - CLAUDE.md test count corrected: 759 → 771 (as of v2.5.24).
+  - Age sweep: all items reflect 2026-05-31 as current date.
+  - Dashboard table at L398–401 corrected to match v2.13 drift note (0–30: 4, 31–60: 18).
