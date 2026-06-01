@@ -3143,9 +3143,35 @@ Tokens.js L14 comment ("Nothing imports from this
 file yet") is already stale and worth a one-line
 update in this PR.
 
-### Story 93 (P3) — DefenseDiamond Tier D domain token families <!-- #219 -->
+### Story 99 (P3) — App.jsx OUT-row error tint migration + errorMid token <!-- #261 -->
 
 Status: Open
+Discovered: 2026-05-31 — Story 93 sanity grep surfaced 4 residual
+  rgba(220,38,38,*) sites outside the renderFieldSVG scope
+Target: v2.5.24 or next UX pass
+
+Symptom: App.jsx carries 4 raw rgba(220,38,38,*) inline literals at
+  L968, L969, L983, L4887 — the OUT-row table renders in the scoring
+  surface, not DefenseDiamond. Story 93 scoped only DefenseDiamond's
+  OUT-row tints. Also: 0.12 alpha variant at L4887 has no token
+  equivalent (Story 93 added 0.04/0.05/0.08/0.30 only).
+
+Fix:
+  Step 1 — Add tokens.color.overlay.errorMid: 'rgba(220,38,38,0.12)'
+  Step 2 — Migrate L968, L969, L983 to existing error* tokens
+  Step 3 — Migrate L4887 to new errorMid token
+
+Ungated — App.jsx now imports tokens (added in Story 93 Step 3).
+
+### Story 93 (P3) — DefenseDiamond Tier D domain token families <!-- #219 -->
+
+Status: Resolved
+Resolved: 2026-05-31 — PR #259
+Resolution: Domain token families shipped — tokens.color.position.*
+  (22 keys), tokens.color.field.* (7 keys), tokens.color.overlay.error*
+  (4 tints). DefenseDiamond, App.jsx renderFieldSVG, and ParentView
+  unified on identical token contract. POS_COLORS prop drilling removed.
+  773/774 tests green.
 Discovered: 2026-05-28 — DefenseDiamond.jsx recon
   (feature/ux-defensediamond)
 Target: UX track — second pass of DefenseDiamond
