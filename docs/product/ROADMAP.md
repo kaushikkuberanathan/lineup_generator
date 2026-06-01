@@ -3165,7 +3165,11 @@ update in this PR.
 
 ### Story 102 (P3) — App.jsx OUT-row error tint migration + errorMid token <!-- #261 -->
 
-Status: Open
+Status: Resolved
+Resolved: 2026-06-01 — PR #271
+Resolution: Added overlay.errorMid ('rgba(220,38,38,0.12)'). Migrated 4
+  App.jsx OUT-row raw rgba literals to overlay.error* token family. Zero
+  raw rgba(220,38,38,*) remain in App.jsx. 782/783 suite green.
 Discovered: 2026-05-31 — Story 93 sanity grep surfaced 4 residual
   rgba(220,38,38,*) sites outside the renderFieldSVG scope
 Target: v2.5.24 or next UX pass
