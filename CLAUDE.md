@@ -220,7 +220,7 @@ Target: resolved within 10 min of detection.
 ## Test Suite
 Changes to `lineupEngineV2.js`, `scoringEngine.js`, or `playerMapper.js` → must pass frontend `npm test` (Vitest, 771 passing / 1 skipped — 755 observed locally on Windows due to Bug #7 cold-start flake).
 Changes to `featureFlags.js` or `positions.js` → must pass frontend `npm test`.
-Changes to backend code → must pass backend custom runner (`backend/scripts/tests/test-runner.js`, 13 suites).
+Changes to backend code → must pass **both** backend test systems: the custom integration runner (`backend/scripts/tests/test-runner.js`, 13 suites, requires a running server) and the in-process unit suite (`npm run test:unit` — node:test + supertest, `backend/src/__tests__/*.test.js`, no server). The unit suite is enforced in CI by the `backend-unit` job; the integration suite by the `backend` job (CI_SAFE, prod read-only).
 > Full suite detail: see `frontend/CLAUDE.md` → **## Test Suite** and `backend/CLAUDE.md` → **## Test Suite**
 
 ---
