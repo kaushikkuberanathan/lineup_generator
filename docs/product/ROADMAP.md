@@ -1,7 +1,24 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: 2026-05-31 (v2.5.24 — Token consistency, qs patch, version history enforcement)
+> Last updated: 2026-06-01 (v2.5.25 — backend test foundation, OUT-row error tint token migration)
 > MVP launched: March 24, 2026
+
+---
+
+## v2.5.25 — 2026-06-01 — Backend test foundation + OUT-row error tint tokens
+
+- Story 99 (P1) — Backend test foundation (In Progress): supertest devDep,
+  app/server split (app.js extracted from index.js, import-safe for supertest),
+  admin.auth.test.js (9 in-process tests closing the green-but-vacuous admin
+  auth coverage gap), test:unit script, and a hermetic backend-unit CI job
+  gating deploy. Remaining route coverage (teamData wipe-guard, AI proxy,
+  auth happy-path) tracked in #252.
+- Story 102 (P3) resolved — App.jsx OUT-row error tint migrated to
+  tokens.color.overlay.error* tokens; errorMid token added
+  (rgba(220,38,38,0.12)). Zero visible color changes (PR #271).
+- Docs: backend/CLAUDE.md routes section corrected (admin paths are bare
+  /api/v1, not /api/v1/admin/*); FEATURE_MAP row #33 added; backend test
+  count reconciled (771 frontend + 9 backend supertest).
 
 ---
 
@@ -2729,7 +2746,12 @@ Recommendation: Treat as standalone upgrade story. Do not block other PRs.
 
 ### Story 82 (P3) — ParentView token/primitive migration <!-- #185 -->
 
-Status: Open
+Status: Resolved
+Resolved: 2026-05-31 — PR #268
+Resolution: ParentView S/C prop dependency removed. Four new tokens
+  (text.muted, overlay.benchWash, borderWidth.thick/heavy). S.btn →
+  Button primitive, S.card → Card primitive. All C.* refs migrated to
+  tokens. App.jsx call site cleaned. PV6+PV7 RED→GREEN. 781/782 suite.
 Discovered: 2026-05-22 — Phase 3 Step 4 recon (UX track)
 Target: after App.jsx parallel work clarifies S/C prop pattern
 
@@ -3160,7 +3182,11 @@ update in this PR.
 
 ### Story 102 (P3) — App.jsx OUT-row error tint migration + errorMid token <!-- #261 -->
 
-Status: Open
+Status: Resolved
+Resolved: 2026-06-01 — PR #271
+Resolution: Added overlay.errorMid ('rgba(220,38,38,0.12)'). Migrated 4
+  App.jsx OUT-row raw rgba literals to overlay.error* token family. Zero
+  raw rgba(220,38,38,*) remain in App.jsx. 782/783 suite green.
 Discovered: 2026-05-31 — Story 93 sanity grep surfaced 4 residual
   rgba(220,38,38,*) sites outside the renderFieldSVG scope
 Target: v2.5.24 or next UX pass
@@ -3525,23 +3551,36 @@ not block release but prevents recurring CI churn.
 
 ### Story 99 (P1) — Backend test suite re-authoring <!-- #252 -->
 
-Status: Open
+Status: In Progress — foundation shipped (PR #272, 2026-06-01); route coverage follow-up open
 Discovered: 2026-04-24 — backend suite obsolete against
-v2.3.3+ (rate limiter removed, routes restructured)
+v2.3.3+ (routes restructured into src/routes/ at v2.5.17)
 Target: v2.6.x (prerequisite for Phase 4C auth gate)
 
-Symptom: backend/scripts/tests/ references removed routes.
-CI does not run backend tests. Zero automated coverage.
+Symptom: backend/scripts/tests/suite-admin.js asserted 401 against
+/api/v1/admin/* paths that have no handlers — those 401s came from
+the path-agnostic requireAuth catch-all (admin.js:172), so the real
+admin routes had zero meaningful coverage ("green but vacuous").
 
 Impact: Any backend route change is unprotected. Phase 4C
 cannot ship safely without backend test coverage.
 
-Root cause: Suite written against v2.3.x; multiple breaking
-changes since. Never re-authored.
+Root cause: Suite written against v2.3.x; multiple breaking changes
+since (route modularization in v2.5.17). Never re-authored.
 
-Proposed fix: audit stale tests → re-author against current
-routes → add to CI as required check. Cover: /ping,
-/api/auth/magic-link, /api/team/:id, /api/ai parse.
+Shipped (PR #272):
+- supertest devDependency added
+- app/server split — import-safe app.js extracted from index.js (5-line
+  boot wrapper); boot-verified, behavior preserved
+- admin.auth.test.js — 9 passing in-process tests asserting 401 at the
+  REAL bare /api/v1/* admin paths, and 400 (never 401) for the public
+  approve-link/deny-link
+- npm run test:unit (node:test + supertest) + hermetic backend-unit CI
+  job gating sync-script and main deploy
+
+Remaining (follow-up coverage):
+- /api/teams/:teamId/data wipe-guard (409) + history X-Admin-Key (teamData.test.js — see DOC_TEST_DEBT)
+- /api/ai parse (413, structure) (aiProxy.test.js — see DOC_TEST_DEBT)
+- auth happy-path + malformed-token + requireAdmin (valid non-admin) rejection specs
 
 ---
 
@@ -3590,6 +3629,29 @@ estimated to need work out of 35.
 
 ---
 
+### Story 103 (P3) — Mixpanel before_identify race condition <!-- #266 -->
+
+Status: Open
+Discovered: 2026-05-31 — v2.5.24 smoke test on dev preview
+Target: v2.5.x or next chore batch
+
+Symptom: console TypeError on mixpanel.identify() when user
+loads a team — before_identify hook undefined.
+
+Impact: analytics event may be missed on first team load;
+no user-visible effect. Analytics-quality risk: coach team_id
+may not attach to Mixpanel profile on the affected session.
+Pre-existing on v2.5.23 main — not introduced by v2.5.24.
+
+Root cause: identify() called before Mixpanel SDK hook system
+fully initializes. App.jsx:2303 fires on team load; init in
+utils/analytics.js may not have completed by that point.
+
+Proposed fix: guard mixpanel.identify() with init() callback,
+OR check initialized state before calling identify(),
+OR defer identify until next tick after init completes.
+
+---
 ### Automated Score Reporting (County Integration)
 **Status:** Architecture finalized, implementation pending
 **Trigger:** Coach taps "Report Score" on a completed game

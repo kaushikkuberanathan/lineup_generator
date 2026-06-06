@@ -91,7 +91,7 @@
 | **Area** | Roster backup/restore |
 | **Description** | The backend `POST /api/teams/:teamId/data` has a wipe-guard (409 on empty roster over existing). The `GET /api/teams/:teamId/history` has `X-Admin-Key` auth. Neither path is tested. |
 | **Risk if unfixed** | Two roster-wipe incidents already happened (Jan, Feb 2026). The guard is the primary prevention; if it silently stops working, we're back to paper recovery. |
-| **Proposed test** | `backend/src/tests/teamData.test.js` — test the guard returns 409, test force-override returns 200, test history endpoint rejects without ADMIN_KEY, test history endpoint returns snapshots with ADMIN_KEY. |
+| **Proposed test** | `backend/src/__tests__/teamData.test.js` — test the guard returns 409, test force-override returns 200, test history endpoint rejects without ADMIN_KEY, test history endpoint returns snapshots with ADMIN_KEY. |
 | **Opened** | 2026-04-17 |
 | **Age** | 43 days |
 | **Target** | v2.6.x |
@@ -139,7 +139,7 @@
 | **Area** | Schedule management + AI import |
 | **Description** | The Claude API proxy path (schedule import, score card parse) has no integration test covering request body size limit (10mb), client-side canvas resize, or error handling. |
 | **Risk if unfixed** | The v2.2.4 bug (large phone photos exceeding 5MB after base64) was a real prod incident; no regression test was added with the fix. |
-| **Proposed test** | `backend/src/tests/aiProxy.test.js` — mock Anthropic API, test POST /api/ai with oversize payload returns 413, test valid payload returns parsed structure. |
+| **Proposed test** | `backend/src/__tests__/aiProxy.test.js` — mock Anthropic API, test POST /api/ai with oversize payload returns 413, test valid payload returns parsed structure. |
 | **Opened** | 2026-04-17 |
 | **Age** | 43 days |
 | **Target** | v2.4.0 |
@@ -219,7 +219,7 @@
 | | |
 |---|---|
 | **Area** | Governance |
-| **Description** | 306 tests existed when this item was opened; suite is now 395 across frontend + backend. There is still no doc-side map of what each test file covers. |
+| **Description** | 306 tests existed when this item was opened; the suite is now 771 frontend (Vitest), plus a separate backend layer counted independently: 13 integration suites (custom runner, `test-runner.js`) and 9 in-process unit tests (`backend/src/__tests__/admin.auth.test.js`, node:test + supertest). There is still no doc-side map of what each test file covers. |
 | **Proposed action** | Add a §Test Suite Inventory section listing test files and what each covers; cross-reference FEATURE_MAP.md. |
 | **Opened** | 2026-04-17 |
 | **Target** | v2.4.0 |
@@ -347,6 +347,7 @@
 - **Decisions needed:** Should CI hit a dev/preview backend, or is prod read-only correct? If prod read-only is correct, rename variable for clarity.
 - **Target:** v2.6.0 P2
 - **Source:** Audited during v2.5.1 deploy, April 27, 2026.
+- **Partial mitigation (Story 99, PR #272):** the new `backend-unit` CI job runs in-process supertest tests with no `BACKEND_URL` / prod dependency — admin auth-rejection coverage is now prod-URL-free. The hardcoded-prod-URL concern remains only for the live integration `backend` job and the smoke job.
 
 ### 🟡 P2 — `snack_duty` column drop blocked on codebase audit
 
@@ -396,8 +397,8 @@
 | **Total** | **12** | **6** | **4** | **22** |
 
 **Age distribution:**
-- 0–30 days: 22
-- 31–60 days: 0
+- 0–30 days: 4
+- 31–60 days: 18
 - 60+ days: 0
 
 **Ship blockers:**
@@ -478,3 +479,19 @@
   - Age sweep: items opened 2026-04-17 refreshed 27/40 → 43 days; D-S30 (2026-04-24) refreshed 20 → 36 days; Story 61 follow-up (2026-05-19) 0 → 11 days; SW banner + sync-stories follow-ups (2026-05-27) 0 → 3 days.
   - Stale target retargets: P1 Scorer-Lock and P1 Roster-Wipe both slid v2.3.4 → v2.6.x.
   - Dashboard impact: no new debt items opened or resolved in DOC_TEST_DEBT (resolutions tracked in ROADMAP for Stories 77/81/98). Age distribution shifts: 0–30 days bucket drops to 4 (Story 61 + 2 SW/sync + D-S30 partial), 31–60 days bucket grows to 18 (was 0). Dashboard table at L398–401 not edited this pass — flagged as drift for a follow-up touch.
+
+- **v2.14 — May 2026 (v2.5.24 release pass)**
+  - versionHistory.test.js: 6 tests now (2 original + 4 new enforcement rules via PRs #257 #258). Tests enforce: techNote approved-strings, no PR/Story refs in userChanges, headline required (not title), date format recognized (ISO/MonthYear/LongDate).
+  - DefenseDiamond FEATURE_MAP row #30: updated to reflect Story 93 Tier D shipped v2.5.24 (PR #259).
+  - CLAUDE.md test count corrected: 759 → 771 (as of v2.5.24).
+  - Age sweep: all items reflect 2026-05-31 as current date.
+  - Dashboard table at L398–401 corrected to match v2.13 drift note (0–30: 4, 31–60: 18).
+
+- **v2.15 — June 2026 (Story 99 backend test foundation, PR #272)**
+  - Story 99 foundation shipped: supertest devDep, app/server split (`app.js` extracted from `index.js`, 5-line boot), `admin.auth.test.js` (9 in-process tests), `npm run test:unit`, hermetic `backend-unit` CI job.
+  - Test inventory: backend now has TWO systems — 13 integration suites (custom runner) + 9 supertest unit tests (`admin.auth.test.js`). Frontend 771 (Vitest) unchanged. L222 count line updated to note all three separately.
+  - Path convention fixed: backend specs live in `src/__tests__/` (was `src/tests/` in the teamData + aiProxy proposed-test entries — corrected this pass to match the `test:unit` glob).
+  - Story 99 ROADMAP entry corrected: removed 3 false premises (rate limiter removed / CI doesn't run backend tests / zero coverage); status Open → In Progress.
+  - backend/CLAUDE.md: documented app/server split, `test:unit`, `backend-unit` job; corrected the `/api/v1/admin/*` route-path doc bug that had reinforced the vacuous suite.
+  - FEATURE_MAP row #33 added (Backend test foundation).
+  - CI `BACKEND_URL` audit item: noted `backend-unit` as partial prod-URL-free mitigation.
