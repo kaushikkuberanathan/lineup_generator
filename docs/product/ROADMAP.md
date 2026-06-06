@@ -3652,7 +3652,7 @@ OR check initialized state before calling identify(),
 OR defer identify until next tick after init completes.
 
 ---
-### Story 104 (P3) — UX Phase 4: App.jsx decomposition (low-risk extraction tranche) <!-- #N -->
+### Story 104 (P3) — UX Phase 4: App.jsx decomposition (low-risk extraction tranche) <!-- #279 -->
 
 Status: Open
 Discovered: 2026-06-02 — UX Phase 4 planning session (Terminal 2)
