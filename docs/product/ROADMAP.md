@@ -3652,6 +3652,43 @@ OR check initialized state before calling identify(),
 OR defer identify until next tick after init completes.
 
 ---
+### Story 104 (P3) — UX Phase 4: App.jsx decomposition (low-risk extraction tranche) <!-- #279 -->
+
+Status: Open
+Discovered: 2026-06-02 — UX Phase 4 planning session (Terminal 2)
+Target: v2.6.x (per-slice soak; incremental)
+
+Context: App.jsx is 8,140 lines; nearly the entire app lives in one
+export default function App() (~7,000 lines). UX roadmap Phase 4 breaks
+it into per-tab components with App.jsx reduced to a router/shell. Full
+plan: docs/product/APPJSX_DECOMPOSITION_PLAN.md.
+
+Scope (this story — low-risk tranche only, slices 4.0–4.4):
+  4.0 — loadJSON/saveJSON → utils/storage.js
+  4.1 — PlayerFilterToggle → screens/Roster/
+  4.2 — V1 lineup engine (scorePosition/autoAssign/
+        autoAssignWithRetryFallback/validateGrid/initGrid) →
+        utils/lineupEngineLegacy.js. NOTE: live V1/fallback path,
+        not dead code — characterization tests first.
+  4.3 — SharedView → screens/Share/. P0 share-link: real-device
+        unauthenticated smoke required before promote.
+  4.4 — near-static tabs (About/Updates/Links) → screens/Support/
+
+Out of scope (deferred to later stories): TeamDataContext (slice 4.5),
+heavy stateful tabs Roster/Grid/Batting/Schedule/Feedback (4.6+),
+router/shell finalization (4.7), game-mode/ScoringMode (Dugout track),
+migrations.js/formatters.js (parallel-session locked utils).
+
+Discipline: extract-first (verbatim move, zero logic change);
+characterization tests before each extraction; each slice = one PR +
+24h soak; App.jsx gate phrase + T1 handoff + Bug #11 skip-worktree
+check required for every App.jsx-touching slice.
+
+Dependencies: Phase 3 call-site migrations substantially complete.
+Slices 4.0–4.4 have no inter-dependencies; table order minimizes
+cumulative risk.
+
+---
 ### Automated Score Reporting (County Integration)
 **Status:** Architecture finalized, implementation pending
 **Trigger:** Coach taps "Report Score" on a completed game
