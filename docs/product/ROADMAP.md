@@ -3578,9 +3578,14 @@ Shipped (PR #272):
   job gating sync-script and main deploy
 
 Remaining (follow-up coverage):
-- /api/teams/:teamId/data wipe-guard (409) + history X-Admin-Key (teamData.test.js — see DOC_TEST_DEBT)
 - /api/ai parse (413, structure) (aiProxy.test.js — see DOC_TEST_DEBT)
 - auth happy-path + malformed-token + requireAdmin (valid non-admin) rejection specs
+- 2026-06-07: Phase 2 tranche 1 — teamData coverage shipped on
+  issue/252-teamdata-wipe-guard (commit 95d6fb6): rosterWipeGuard
+  unit suite (7), isAdminRequest truth table (5, via new export),
+  route-level 409/force/dual-mount/history specs (6), production-mode
+  FORBIDDEN_TEST_DATA spec (2). Unit suite 9 → 29. Remaining Phase 2
+  candidates: aiProxy 413, malformed-token 401, requireAdmin rejection.
 
 ---
 
