@@ -3694,6 +3694,46 @@ Slices 4.0–4.4 have no inter-dependencies; table order minimizes
 cumulative risk.
 
 ---
+### Story 106 (P3) — AboutTab golden-path smoke test <!-- #284 -->
+
+Status: Open
+Discovered: 2026-06-07 — Story 105 Ship Gate Q1 debt
+Target: Before develop → main promote
+
+Symptom: AboutTab.jsx has no unit test. Pure display component —
+needs render smoke test covering 5-card structure, share button,
+collapsible toggle.
+
+Fix: Create frontend/src/components/Support/AboutTab.test.jsx
+
+---
+### Story 107 (P3) — Support tab reorder (ABOUT first) <!-- #285 -->
+
+Status: Open
+Discovered: 2026-06-07 — UX critique on Story 105
+Target: Next App.jsx session
+
+Symptom: Support tab order is random (FAQ/FEEDBACK/LINKS/ABOUT/
+UPDATES). Recommended order: ABOUT → FAQ → UPDATES → FEEDBACK →
+LINKS → LEGAL. Requires App.jsx tab registry edit (~L7500).
+
+Fix: Reorder tab array in App.jsx + set default moreTab to "about"
+on Support open.
+
+---
+### Story 108 (P3) — ROADMAP + FEATURE_MAP docs for Story 105 <!-- #286 -->
+
+Status: Open
+Discovered: 2026-06-07 — pre-release docs checklist debt
+Target: Before develop → main promote
+
+Symptom: Story 105 has no ROADMAP entry, no FEATURE_MAP row for
+About tab extraction + Builder profile.
+
+Fix: Patch ROADMAP (Story 105 entry + <!-- #281 --> marker), add
+FEATURE_MAP row.
+
+---
 ### Automated Score Reporting (County Integration)
 **Status:** Architecture finalized, implementation pending
 **Trigger:** Coach taps "Report Score" on a completed game
