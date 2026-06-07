@@ -211,3 +211,4 @@ router.get('/:teamId/history', async (req, res) => {
 
 module.exports = router;
 module.exports.rosterWipeGuard = rosterWipeGuard;
+module.exports.isAdminRequest = isAdminRequest;
