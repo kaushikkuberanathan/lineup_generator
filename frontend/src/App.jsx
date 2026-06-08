@@ -31,6 +31,7 @@ import { DugoutView }      from './components/game-mode/DugoutView';
 import { tokens }          from './theme/tokens';
 import { LegalSection }       from './components/Support/LegalSection';
 import { FAQSection }         from './components/Support/FAQSection';
+import { AboutTab }           from './components/Support/AboutTab';
 import { BattingHandSelector } from './components/BattingHandSelector';
 import { PlayerHandBadge }     from './components/PlayerHandBadge';
 import { useAuth } from './hooks/useAuth';
@@ -132,7 +133,7 @@ var _mem = {};
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.5.25";
+var APP_VERSION = "2.5.26";
 
 function loadJSON(key, def) {
   try {
@@ -7146,110 +7147,9 @@ export default function App() {
   // ABOUT TAB
   // ============================================================
   function renderAbout() {
-    var onboardingSteps = [
-      {
-        title: "Step 1 \u2014 Install the App",
-        body: "iOS: Tap the Share button in Safari, then \u201cAdd to Home Screen.\u201d Android: Tap \u22ee in Chrome, then \u201cAdd to Home Screen\u201d or \u201cInstall App.\u201d The app works offline after first load \u2014 no signal needed at the field."
-      },
-      {
-        title: "Step 2 \u2014 Create Your Team",
-        body: "From the Home screen, tap \u201cCreate New Team.\u201d Enter your team name, age group, and season year. Tap the team card to open it."
-      },
-      {
-        title: "Step 3 \u2014 Build Your Roster",
-        body: "Go to the Roster tab. Tap \u201cAdd Player\u201d for each player. Expand each player card to set fielding attributes, batting attributes, running, and preferred positions. The more you fill in, the better the auto-assign engine performs."
-      },
-      {
-        title: "Step 4 \u2014 Add Your Schedule",
-        body: "Go to the Team tab, then the Schedule sub-tab. Tap \u201cAdd Game\u201d to enter games manually, or use AI Photo Import to photograph your printed schedule \u2014 it parses automatically in seconds."
-      },
-      {
-        title: "Step 5 \u2014 Generate a Lineup",
-        body: "Go to the Game Day tab, then Defense. Set your innings (4, 5, or 6). Tap \u201cAuto-Assign.\u201d The engine places 10 players per inning with 1 on bench, rotating fairly across all positions."
-      },
-      {
-        title: "Step 6 \u2014 Set the Batting Order",
-        body: "Go to the Game Day tab, then Batting. Tap \u201cSuggest Order\u201d for a stats-driven recommendation. Use the up/down arrows to reorder on mobile, or drag cards on desktop."
-      },
-      {
-        title: "Step 7 \u2014 Share With Your Team",
-        body: "Go to the Team tab, then Schedule. Tap a game then \u201cShare Lineup.\u201d Send the link to parents and scorekeepers \u2014 no account needed to view."
-      },
-      {
-        title: "Step 8 \u2014 Back Up Your Data",
-        body: "Tap \u00b7\u00b7\u00b7 on any team card to Download Backup and save a JSON file. To restore, go to the Roster tab \u2014 if your roster is empty, tap \u201cRestore from backup file.\u201d Back up after every few games."
-      }
-    ];
-
-    return (
-      <div>
-        {/* ── Section 0: What Is This App ─────────────────────── */}
-        <div style={S.card}>
-          <div style={{ fontSize:"15px", fontWeight:"bold", color:C.navy, marginBottom:"10px" }}>What is Dugout Lineup?</div>
-          <div style={{ fontSize:"13px", color:C.text, lineHeight:"1.7", marginBottom:"10px" }}>
-            Dugout Lineup is a free tool built for youth baseball and softball coaches. It takes the stress out of game day by helping you build a fair, smart field lineup in seconds — no spreadsheets, no paper charts, no arguments about who played where last game.
-          </div>
-          <div style={{ fontSize:"13px", color:C.text, lineHeight:"1.7", marginBottom:"10px" }}>
-            Tell it your roster, your players&apos; positions, and how many innings you&apos;re playing. Tap Auto-Assign and it rotates every kid fairly — keeping track of bench time, position preferences, and who played where across every inning.
-          </div>
-          <div style={{ fontSize:"13px", color:C.text, lineHeight:"1.7", marginBottom:"14px" }}>
-            It also tracks your season schedule, batting stats, walk-up songs, and snack duty — everything a volunteer coach needs, right in their pocket.
-          </div>
-          <div style={{ display:"flex", flexWrap:"wrap", gap:"8px" }}>
-            {["Free forever","Works offline","No account needed","iOS + Android"].map(function(tag) {
-              return (
-                <span key={tag} style={{ fontSize:"11px", padding:"3px 10px", borderRadius:"10px", background:"rgba(15,31,61,0.07)", color:C.navy, fontWeight:"bold" }}>{tag}</span>
-              );
-            })}
-          </div>
-        </div>
-        {/* ── Section 1: App Info ──────────────────────────────── */}
-        <div style={S.card}>
-          <div style={{ fontSize:"20px", fontWeight:"bold", color:C.navy, marginBottom:"4px" }}>Dugout Lineup &#x26be; <span style={{ fontSize:"13px", fontWeight:"normal", color:C.textMuted }}>v{APP_VERSION}</span></div>
-          <div style={{ fontSize:"12px", color:C.textMuted, marginBottom:"12px" }}>Built for youth baseball coaches. Runs at the field.</div>
-          <div style={{ marginBottom:"14px" }}>
-            <a href="https://dugoutlineup.com" target="_blank" rel="noopener noreferrer"
-              style={{ fontSize:"12px", color:C.red, fontWeight:"bold", textDecoration:"none" }}>
-              Open in Browser ↗
-            </a>
-          </div>
-          <button style={S.btn("primary")}
-            onClick={function() {
-              var url = "https://dugoutlineup.com";
-              var text = "Dugout Lineup — free lineup tool for youth baseball coaches. Runs at the field, works offline.";
-              if (navigator.share) {
-                navigator.share({ title: "Dugout Lineup", text: text, url: url }).catch(function() {});
-              } else {
-                try { navigator.clipboard.writeText(url); alert("Link copied to clipboard!"); } catch(e) { /* ignored */ }
-              }
-            }}>
-            Share App Now
-          </button>
-        </div>
-
-        {/* ── Section 2: How to Use (collapsible) ─────────────── */}
-        <div style={S.card}>
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", cursor:"pointer" }}
-            onClick={function() { setAboutGuideOpen(!aboutGuideOpen); }}>
-            <div style={S.sectionTitle}>How to Use This App</div>
-            <span style={{ fontSize:"12px", color:C.textMuted, marginBottom:"14px" }}>{aboutGuideOpen ? "\u25b2" : "\u25bc"}</span>
-          </div>
-          {aboutGuideOpen ? (
-            <div>
-              {onboardingSteps.map(function(step, si) {
-                return (
-                  <div key={si} style={{ marginBottom:"14px", paddingBottom:"14px", borderBottom: si < onboardingSteps.length - 1 ? "1px solid rgba(15,31,61,0.07)" : "none" }}>
-                    <div style={{ fontSize:"12px", fontWeight:"bold", color:C.navy, marginBottom:"4px" }}>{step.title}</div>
-                    <div style={{ fontSize:"12px", color:C.text, lineHeight:"1.6" }}>{step.body}</div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : null}
-        </div>
-
-      </div>
-    );
+    return <AboutTab aboutGuideOpen={aboutGuideOpen}
+      setAboutGuideOpen={setAboutGuideOpen}
+      APP_VERSION={APP_VERSION} C={C} S={S} />;
   }
 
   function renderUpdates() {

@@ -1,5 +1,23 @@
 ﻿export var VERSION_HISTORY = [
   {
+    version: '2.5.26',
+    date: 'June 2026',
+    headline: 'New About tab — meet the builder behind Dugout Lineup',
+    techNote: 'Minor fixes and internal improvements',
+    userChanges: [
+      'New About tab — meet the builder, partnership opportunities, and ways to get in touch.',
+    ],
+    internalChanges: [
+      'Story 105 — AboutTab extracted from App.jsx to frontend/src/components/Support/AboutTab.jsx: builder profile, feature bullets, partnership CTA, email/LinkedIn contact links (PR #283)',
+      'Story 106 — AboutTab.test.jsx golden-path coverage: 13 tests (AT1–AT13) across all five cards including the collapsible How-to-Use toggle (PR #290)',
+      'Story 99 — Backend teamData tests (Phase 2 tranche 1): wipe-guard, envGuard, isAdminRequest coverage (PR #282)',
+      'Story 83 — Regression guard appImports.test.js: 3 tests asserting the supabase named import is present in App.jsx so feedback and bug submission cannot fail silently; Stories 83/84 marked Resolved (PR #289)',
+      'Story 104 — UX Phase 4 App.jsx decomposition planning doc (PR #280)',
+      'Stories 106/107/108 filed (PR #287)',
+      'Test suite: 815 passing / 1 skipped — 786 frontend (Vitest) + 29 backend (supertest); adds AboutTab.test.jsx (13) + appImports.test.js (3) this release',
+    ],
+  },
+  {
     version: '2.5.25',
     date: 'June 2026',
     headline: 'Reliability and consistency improvements',

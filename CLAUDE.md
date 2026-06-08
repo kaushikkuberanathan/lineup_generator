@@ -177,7 +177,7 @@ If any answer is "no": stop. Document the gap in DOC_TEST_DEBT.md, then decide w
 7. Stage **specific files by path** — never `git add -A` (risks picking up unrelated untracked files)
 8. [x] loginLimiter: 15min window, max 5 — applied to POST /magic-link ✓
 9. [ ] Confirm `RESEND_DOMAIN_VERIFIED=true` in Render env vars (only after domain verified)
-10. [ ] Run `npm test` — confirm 771 passed / 1 skipped / 0 failed (as of v2.5.24, 2026-05-31). Note: Bug #7 EmptyState.test.jsx cold-start worker flake may show 755 observed locally on Windows; environmental, not a regression.
+10. [ ] Run `npm test` — confirm 786 passed / 1 skipped / 0 failed (as of v2.5.26, 2026-06-08; 815 total incl. 29 backend supertest). Note: Bug #7 EmptyState.test.jsx cold-start worker flake may show 755 observed locally on Windows; environmental, not a regression.
 
 ### VERSION_HISTORY Schema
 
@@ -218,7 +218,7 @@ Target: resolved within 10 min of detection.
 ---
 
 ## Test Suite
-Changes to `lineupEngineV2.js`, `scoringEngine.js`, or `playerMapper.js` → must pass frontend `npm test` (Vitest, 771 passing / 1 skipped — 755 observed locally on Windows due to Bug #7 cold-start flake).
+Changes to `lineupEngineV2.js`, `scoringEngine.js`, or `playerMapper.js` → must pass frontend `npm test` (Vitest, 786 passing / 1 skipped — fewer may be observed locally on Windows due to Bug #7 cold-start flake).
 Changes to `featureFlags.js` or `positions.js` → must pass frontend `npm test`.
 Changes to backend code → must pass **both** backend test systems: the custom integration runner (`backend/scripts/tests/test-runner.js`, 13 suites, requires a running server) and the in-process unit suite (`npm run test:unit` — node:test + supertest, `backend/src/__tests__/*.test.js`, no server). The unit suite is enforced in CI by the `backend-unit` job; the integration suite by the `backend` job (CI_SAFE, prod read-only).
 > Full suite detail: see `frontend/CLAUDE.md` → **## Test Suite** and `backend/CLAUDE.md` → **## Test Suite**
@@ -534,8 +534,9 @@ Every other session: open `docs/product/DOC_TEST_DEBT.md` — close P0s, promote
 ---
 
 ## Current Version
-**v2.5.25** — June 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/data/versionHistory.js`.
+**v2.5.26** — June 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/data/versionHistory.js`.
 
+- v2.5.26 (2026-06-08): New About tab — builder profile, partnership CTA, and contact links (Story 105, PR #283). AboutTab.test.jsx golden-path 13 tests (Story 106, PR #290), backend teamData tests Story 99 Phase 2 tranche 1 (PR #282), Story 83 regression guard appImports.test.js + Stories 83/84 resolved (PR #289), UX Phase 4 App.jsx decomposition planning doc (Story 104, PR #280), Stories 106/107/108 filed (PR #287). Test suite 815 passing / 1 skipped — 786 frontend + 29 backend (pre-promote run).
 - v2.5.25 (2026-06-01): Reliability and consistency improvements — Story 99 backend test foundation (supertest + app/server split + admin.auth.test.js 9 tests + hermetic backend-unit CI job, PR #272; In Progress, remaining coverage in #252), Story 102 App.jsx OUT-row error tint token migration with new errorMid token (zero visible change, PR #271), backend/CLAUDE.md routes-doc correction + FEATURE_MAP row #33. Test suite 771 frontend + 9 backend supertest passing / 1 skipped.
 - v2.5.24 (2026-05-31): Reliability and consistency improvements — Story 93 DefenseDiamond Tier D token unification (zero visible color changes, PR #259), Story 100 backend qs 6.15.0→6.15.2 patch (Dependabot /21 cleared, PR #254), version history coach-language audit (16 entries rewritten) + 4 CI rules enforced (PRs #255 #257 #258). Test suite 771 passing / 1 skipped.
 - v2.5.23 (2026-05-30): Internal stability improvements — Story 77 ESLint debt eliminated (0 warnings/0 errors after 5-phase cleanup, App.jsx ~650 net lines reduced, PRs #237 #244 #245), Story 81 Vite ^5.1→^6.4.2 + vite-plugin-pwa ^0.19→^1.0 (3 Dependabot moderate vulns cleared, PR #235 retroactive flip), Story 98 ci.yml sync-script CodeQL permissions block (PR #243), Stories 60/64/65 UX token cleanup with shadow.subtleCard + LegalSection Card drift (PR #247). Test suite 767 passing / 1 skipped (+8 net vs v2.5.22).

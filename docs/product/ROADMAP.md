@@ -1,7 +1,26 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: 2026-06-01 (v2.5.25 — backend test foundation, OUT-row error tint token migration)
+> Last updated: 2026-06-08 (v2.5.26 — New About tab: builder profile, partnership CTA, contact links)
 > MVP launched: March 24, 2026
+
+---
+
+## v2.5.26 — 2026-06-08 — New About tab (builder profile + partnership CTA)
+
+- Story 105 (P2) resolved — About tab overhaul: AboutTab extracted from
+  App.jsx to `frontend/src/components/Support/AboutTab.jsx`. Builder profile,
+  feature bullets, partnership CTA, and email/LinkedIn contact links (PR #283).
+- Story 106 (P2) resolved — `AboutTab.test.jsx` golden-path coverage: 13
+  tests (AT1–AT13) across all five cards including the collapsible
+  How-to-Use toggle (PR #290).
+- Story 99 (P1, In Progress) — Backend teamData tests (Phase 2 tranche 1):
+  wipe-guard, envGuard, isAdminRequest coverage (PR #282).
+- Story 83 (P1) resolved — Regression guard `appImports.test.js` (3 tests)
+  asserts the `supabase` named import is present in App.jsx so feedback and
+  bug submission cannot fail silently; Stories 83/84 marked Resolved (PR #289).
+- Story 104 — UX Phase 4 App.jsx decomposition planning doc (PR #280).
+- Stories 106/107/108 filed (PR #287).
+- Test suite: 815 passing / 1 skipped — 786 frontend + 29 backend (pre-promote run).
 
 ---
 
@@ -2798,7 +2817,8 @@ parallel work clearing first.
 
 ### Story 83 (P1) — Silent feedback/bug loss: supabase client not imported in App.jsx <!-- #186 -->
 
-Status: Open
+Status: ✅ Resolved — fixed in commit 24e144a (PR #171)
+Resolved: 2026-06-07 (ROADMAP catch-up — fix predates this date). Symptom verified absent: `supabase` is present in App.jsx's named import block. Regression guard added in commit 9570a15 (frontend/src/__tests__/appImports.test.js).
 Discovered: May 22, 2026 — Story 77 no-undef triage
 Target: Next fix pass
 
@@ -2822,7 +2842,8 @@ Recommendation: One-line import fix. P1 — silent data loss affecting coaches.
 
 ### Story 84 (P2) — teamName undefined in box-score AI parser <!-- #187 -->
 
-Status: Open
+Status: ✅ Resolved — v2.5.20 (commit 47b0522, PR #178)
+Resolved: 2026-06-07 (ROADMAP catch-up). Symptom verified absent: parseGameResult uses activeTeam.name; no bare `teamName` remains in the parser range.
 Discovered: May 22, 2026 — Story 77 no-undef triage
 Target: Next fix pass
 
@@ -3578,9 +3599,14 @@ Shipped (PR #272):
   job gating sync-script and main deploy
 
 Remaining (follow-up coverage):
-- /api/teams/:teamId/data wipe-guard (409) + history X-Admin-Key (teamData.test.js — see DOC_TEST_DEBT)
 - /api/ai parse (413, structure) (aiProxy.test.js — see DOC_TEST_DEBT)
 - auth happy-path + malformed-token + requireAdmin (valid non-admin) rejection specs
+- 2026-06-07: Phase 2 tranche 1 — teamData coverage shipped on
+  issue/252-teamdata-wipe-guard (commit 95d6fb6): rosterWipeGuard
+  unit suite (7), isAdminRequest truth table (5, via new export),
+  route-level 409/force/dual-mount/history specs (6), production-mode
+  FORBIDDEN_TEST_DATA spec (2). Unit suite 9 → 29. Remaining Phase 2
+  candidates: aiProxy 413, malformed-token 401, requireAdmin rejection.
 
 ---
 
@@ -3650,6 +3676,96 @@ utils/analytics.js may not have completed by that point.
 Proposed fix: guard mixpanel.identify() with init() callback,
 OR check initialized state before calling identify(),
 OR defer identify until next tick after init completes.
+
+---
+### Story 104 (P3) — UX Phase 4: App.jsx decomposition (low-risk extraction tranche) <!-- #279 -->
+
+Status: Open
+Discovered: 2026-06-02 — UX Phase 4 planning session (Terminal 2)
+Target: v2.6.x (per-slice soak; incremental)
+
+Context: App.jsx is 8,140 lines; nearly the entire app lives in one
+export default function App() (~7,000 lines). UX roadmap Phase 4 breaks
+it into per-tab components with App.jsx reduced to a router/shell. Full
+plan: docs/product/APPJSX_DECOMPOSITION_PLAN.md.
+
+Scope (this story — low-risk tranche only, slices 4.0–4.4):
+  4.0 — loadJSON/saveJSON → utils/storage.js
+  4.1 — PlayerFilterToggle → screens/Roster/
+  4.2 — V1 lineup engine (scorePosition/autoAssign/
+        autoAssignWithRetryFallback/validateGrid/initGrid) →
+        utils/lineupEngineLegacy.js. NOTE: live V1/fallback path,
+        not dead code — characterization tests first.
+  4.3 — SharedView → screens/Share/. P0 share-link: real-device
+        unauthenticated smoke required before promote.
+  4.4 — near-static tabs (About/Updates/Links) → screens/Support/
+
+Out of scope (deferred to later stories): TeamDataContext (slice 4.5),
+heavy stateful tabs Roster/Grid/Batting/Schedule/Feedback (4.6+),
+router/shell finalization (4.7), game-mode/ScoringMode (Dugout track),
+migrations.js/formatters.js (parallel-session locked utils).
+
+Discipline: extract-first (verbatim move, zero logic change);
+characterization tests before each extraction; each slice = one PR +
+24h soak; App.jsx gate phrase + T1 handoff + Bug #11 skip-worktree
+check required for every App.jsx-touching slice.
+
+Dependencies: Phase 3 call-site migrations substantially complete.
+Slices 4.0–4.4 have no inter-dependencies; table order minimizes
+cumulative risk.
+
+---
+### Story 105 (P3) — About tab Builder profile + AboutTab extraction <!-- #281 -->
+
+Status: Resolved
+Resolved: 2026-06-07 — PR #283
+Resolution: Extracted renderAbout() from App.jsx into standalone
+AboutTab.jsx (Phase 4 slice 0, ~105 lines removed). Added 5-card
+About tab: feature bullet list, Builder profile with bio +
+partnership CTA, branded LinkedIn/Gmail SVG contact buttons.
+Token-driven (Cards 1-3). Build clean, 782/783 suite passing.
+Discovered: 2026-06-07 — UX track session
+Target: v2.5.26
+
+---
+### Story 106 (P3) — AboutTab golden-path smoke test <!-- #284 -->
+
+Status: Open
+Discovered: 2026-06-07 — Story 105 Ship Gate Q1 debt
+Target: Before develop → main promote
+
+Symptom: AboutTab.jsx has no unit test. Pure display component —
+needs render smoke test covering 5-card structure, share button,
+collapsible toggle.
+
+Fix: Create frontend/src/components/Support/AboutTab.test.jsx
+
+---
+### Story 107 (P3) — Support tab reorder (ABOUT first) <!-- #285 -->
+
+Status: Open
+Discovered: 2026-06-07 — UX critique on Story 105
+Target: Next App.jsx session
+
+Symptom: Support tab order is random (FAQ/FEEDBACK/LINKS/ABOUT/
+UPDATES). Recommended order: ABOUT → FAQ → UPDATES → FEEDBACK →
+LINKS → LEGAL. Requires App.jsx tab registry edit (~L7500).
+
+Fix: Reorder tab array in App.jsx + set default moreTab to "about"
+on Support open.
+
+---
+### Story 108 (P3) — ROADMAP + FEATURE_MAP docs for Story 105 <!-- #286 -->
+
+Status: Open
+Discovered: 2026-06-07 — pre-release docs checklist debt
+Target: Before develop → main promote
+
+Symptom: Story 105 has no ROADMAP entry, no FEATURE_MAP row for
+About tab extraction + Builder profile.
+
+Fix: Patch ROADMAP (Story 105 entry + <!-- #281 --> marker), add
+FEATURE_MAP row.
 
 ---
 ### Automated Score Reporting (County Integration)

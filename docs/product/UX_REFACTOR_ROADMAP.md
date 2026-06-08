@@ -93,6 +93,8 @@ You cannot replace an inline style with a primitive call that doesn't exist yet.
 
 ### Phase 4 — App.jsx Decomposition (v2.6.0)
 
+> **Detailed plan:** [docs/product/APPJSX_DECOMPOSITION_PLAN.md](APPJSX_DECOMPOSITION_PLAN.md) — full structural map, architecture decisions, and incremental slice sequence. Story 104 covers the low-risk tranche (slices 4.0–4.4).
+
 **Goal:** Break the 9,800-line App.jsx into feature modules. Each tab
 (Roster, GameDay, Season, More) becomes an independently importable component.
 App.jsx becomes a router/shell only.
