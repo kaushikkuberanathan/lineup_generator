@@ -2798,7 +2798,8 @@ parallel work clearing first.
 
 ### Story 83 (P1) — Silent feedback/bug loss: supabase client not imported in App.jsx <!-- #186 -->
 
-Status: Open
+Status: ✅ Resolved — fixed in commit 24e144a (PR #171)
+Resolved: 2026-06-07 (ROADMAP catch-up — fix predates this date). Symptom verified absent: `supabase` is present in App.jsx's named import block. Regression guard added in commit 9570a15 (frontend/src/__tests__/appImports.test.js).
 Discovered: May 22, 2026 — Story 77 no-undef triage
 Target: Next fix pass
 
@@ -2822,7 +2823,8 @@ Recommendation: One-line import fix. P1 — silent data loss affecting coaches.
 
 ### Story 84 (P2) — teamName undefined in box-score AI parser <!-- #187 -->
 
-Status: Open
+Status: ✅ Resolved — v2.5.20 (commit 47b0522, PR #178)
+Resolved: 2026-06-07 (ROADMAP catch-up). Symptom verified absent: parseGameResult uses activeTeam.name; no bare `teamName` remains in the parser range.
 Discovered: May 22, 2026 — Story 77 no-undef triage
 Target: Next fix pass
 
