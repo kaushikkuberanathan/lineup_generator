@@ -54,6 +54,7 @@
 | 31 | **MaintenanceScreen — error / maintenance surface** | MVP | `ROADMAP.md` § Story 94; `SOLUTION_DESIGN.md` § Design Tokens (v2.5.22 additions) | ✅ Current | None at component level | ❌ None | Token migration shipped v2.5.22 (Story 94, PR #220). Self-styled via design tokens — see CLAUDE.md § Self-styled Support components convention. |
 | 32 | **sync-stories-to-issues.js — ROADMAP → GitHub Issues automation** | MVP | `ROADMAP.md` § Story 97; `CLAUDE.md` § Issue & Backlog Hygiene | ✅ Current | `scripts/__tests__/sync-patch.test.js` (4 tests: parseStories CRLF, patchHeading marker replace, idempotency, byte-level CRLF integrity) | ✅ Yes | CRLF byte-corruption fix shipped v2.5.22 (Story 97, PR #234). Both patch sites collapsed to shared `patchHeading()`; `findExistingOpenIssue` dead-code bug fixed. CI guard via `sync-script` job. |
 | 33 | **Backend test foundation** | In Progress | `ROADMAP.md` §§ Story 99; `backend/CLAUDE.md` § Test Suite | ⚠ Partial | `backend/src/__tests__/admin.auth.test.js` (9) | ⚠ Partial — admin auth rejection only; teamData/aiProxy pending | Green-but-vacuous gap in suite-admin.js closed. Remaining: teamData wipe-guard, AI proxy, auth happy-path. |
+| 34 | **About tab (Builder profile + AboutTab extraction)** | MVP | `ROADMAP.md` § Story 105 | ✅ Current | None | ❌ None | `AboutTab.test.jsx` pending (#284 / Story 106); `status.warning` eyebrow contrast ~3.4:1 documented debt; Support tab reorder pending (#285 / Story 107) |
 
 ---
 
@@ -61,12 +62,12 @@
 
 | Status | Count |
 |--------|-------|
-| ✅ Doc Current | 23 / 27 |
-| ⚠ Doc Stale | 4 / 27 |
-| ❌ Doc Missing | 0 / 27 |
-| ✅ Tests Exist | 5 / 27 |
-| ⚠ Tests Partial | 11 / 27 |
-| ❌ No Tests | 11 / 27 |
+| ✅ Doc Current | 29 / 34 |
+| ⚠ Doc Stale | 5 / 34 |
+| ❌ Doc Missing | 0 / 34 |
+| ✅ Tests Exist | 7 / 34 |
+| ⚠ Tests Partial | 13 / 34 |
+| ❌ No Tests | 14 / 34 |
 
 > The test gap is large but expected — the engine is the highest-risk surface and is well-covered. Features with no test are all UI-layer or integration paths with no engine logic.
 

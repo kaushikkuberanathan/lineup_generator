@@ -3694,6 +3694,19 @@ Slices 4.0–4.4 have no inter-dependencies; table order minimizes
 cumulative risk.
 
 ---
+### Story 105 (P3) — About tab Builder profile + AboutTab extraction <!-- #281 -->
+
+Status: Resolved
+Resolved: 2026-06-07 — PR #283
+Resolution: Extracted renderAbout() from App.jsx into standalone
+AboutTab.jsx (Phase 4 slice 0, ~105 lines removed). Added 5-card
+About tab: feature bullet list, Builder profile with bio +
+partnership CTA, branded LinkedIn/Gmail SVG contact buttons.
+Token-driven (Cards 1-3). Build clean, 782/783 suite passing.
+Discovered: 2026-06-07 — UX track session
+Target: v2.5.26
+
+---
 ### Story 106 (P3) — AboutTab golden-path smoke test <!-- #284 -->
 
 Status: Open
