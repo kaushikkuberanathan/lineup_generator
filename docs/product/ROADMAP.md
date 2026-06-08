@@ -1,7 +1,26 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: 2026-06-01 (v2.5.25 — backend test foundation, OUT-row error tint token migration)
+> Last updated: 2026-06-08 (v2.5.26 — New About tab: builder profile, partnership CTA, contact links)
 > MVP launched: March 24, 2026
+
+---
+
+## v2.5.26 — 2026-06-08 — New About tab (builder profile + partnership CTA)
+
+- Story 105 (P2) resolved — About tab overhaul: AboutTab extracted from
+  App.jsx to `frontend/src/components/Support/AboutTab.jsx`. Builder profile,
+  feature bullets, partnership CTA, and email/LinkedIn contact links (PR #283).
+- Story 106 (P2) resolved — `AboutTab.test.jsx` golden-path coverage: 13
+  tests (AT1–AT13) across all five cards including the collapsible
+  How-to-Use toggle (PR #290).
+- Story 99 (P1, In Progress) — Backend teamData tests (Phase 2 tranche 1):
+  wipe-guard, envGuard, isAdminRequest coverage (PR #282).
+- Story 83 (P1) resolved — Regression guard `appImports.test.js` (3 tests)
+  asserts the `supabase` named import is present in App.jsx so feedback and
+  bug submission cannot fail silently; Stories 83/84 marked Resolved (PR #289).
+- Story 104 — UX Phase 4 App.jsx decomposition planning doc (PR #280).
+- Stories 106/107/108 filed (PR #287).
+- Test suite: 815 passing / 1 skipped — 786 frontend + 29 backend (pre-promote run).
 
 ---
 
