@@ -3696,6 +3696,59 @@ Slices 4.0–4.4 have no inter-dependencies; table order minimizes
 cumulative risk.
 
 ---
+### Story 105 (P3) — About tab Builder profile + AboutTab extraction <!-- #281 -->
+
+Status: Resolved
+Resolved: 2026-06-07 — PR #283
+Resolution: Extracted renderAbout() from App.jsx into standalone
+AboutTab.jsx (Phase 4 slice 0, ~105 lines removed). Added 5-card
+About tab: feature bullet list, Builder profile with bio +
+partnership CTA, branded LinkedIn/Gmail SVG contact buttons.
+Token-driven (Cards 1-3). Build clean, 782/783 suite passing.
+Discovered: 2026-06-07 — UX track session
+Target: v2.5.26
+
+---
+### Story 106 (P3) — AboutTab golden-path smoke test <!-- #284 -->
+
+Status: Open
+Discovered: 2026-06-07 — Story 105 Ship Gate Q1 debt
+Target: Before develop → main promote
+
+Symptom: AboutTab.jsx has no unit test. Pure display component —
+needs render smoke test covering 5-card structure, share button,
+collapsible toggle.
+
+Fix: Create frontend/src/components/Support/AboutTab.test.jsx
+
+---
+### Story 107 (P3) — Support tab reorder (ABOUT first) <!-- #285 -->
+
+Status: Open
+Discovered: 2026-06-07 — UX critique on Story 105
+Target: Next App.jsx session
+
+Symptom: Support tab order is random (FAQ/FEEDBACK/LINKS/ABOUT/
+UPDATES). Recommended order: ABOUT → FAQ → UPDATES → FEEDBACK →
+LINKS → LEGAL. Requires App.jsx tab registry edit (~L7500).
+
+Fix: Reorder tab array in App.jsx + set default moreTab to "about"
+on Support open.
+
+---
+### Story 108 (P3) — ROADMAP + FEATURE_MAP docs for Story 105 <!-- #286 -->
+
+Status: Open
+Discovered: 2026-06-07 — pre-release docs checklist debt
+Target: Before develop → main promote
+
+Symptom: Story 105 has no ROADMAP entry, no FEATURE_MAP row for
+About tab extraction + Builder profile.
+
+Fix: Patch ROADMAP (Story 105 entry + <!-- #281 --> marker), add
+FEATURE_MAP row.
+
+---
 ### Automated Score Reporting (County Integration)
 **Status:** Architecture finalized, implementation pending
 **Trigger:** Coach taps "Report Score" on a completed game
