@@ -3768,6 +3768,45 @@ Fix: Patch ROADMAP (Story 105 entry + <!-- #281 --> marker), add
 FEATURE_MAP row.
 
 ---
+### Story 109 (P2) - Color token foundation: legacy C disposition <!-- #294 -->
+Status: Resolved
+Discovered: 2026-06-08 - T2 UX track, design-token migration kickoff
+Target: v2.5.27
+Symptom: App.jsx flat `var C` color object (20 keys, 437 call sites) predates
+theme/tokens.js and was never migrated. No disposition recorded for the eventual sweep.
+Impact: Blocked any principled C-to-token migration; no decision artifact existed.
+Root cause: Known - C authored before the nested token system; App.jsx call sites
+explicitly deferred in tokens.js (primitives-first sequencing).
+Resolution: DESIGN_AUDIT.md "Legacy C Object Disposition" section added - per-key
+ADOPT/DIVERGENT/ORPHAN table + multi-branch migration shape. Docs-only, no source
+change. Shipped via PR #295.
+
+---
+### Story 110 (P2) - Resolve DIVERGENT/ORPHAN token decisions (blocks C migration) <!-- #296 -->
+Status: Open
+Discovered: 2026-06-08 - Story 109 recon
+Target: v2.5.x
+Symptom: 8 C keys do not map cleanly to tokens.js. DIVERGENT (visual change on migrate):
+border, subtleBorder, overlayBg, text, greenField. ORPHAN (no token): navyLight, redDark, canceled.
+Impact: Until resolved, no App.jsx color slice can claim visual equivalence. Gating
+decision for the whole multi-branch sweep.
+Root cause: Known - documented in DESIGN_AUDIT.md Legacy C Object Disposition.
+Proposed fix: Per-key mint-a-token / accept-shift / retire decision; update tokens.js
+with provenance. No App.jsx edits in this Story.
+
+---
+### Story 111 (P3) - LockFlow.jsx local colors diverge from canonical tokens <!-- #297 -->
+Status: Open
+Discovered: 2026-06-08 - Story 109 recon
+Target: v2.5.x
+Symptom: LockFlow.jsx re-declares local color vars; gold (#b8860b) and textMuted
+(rgba(15,31,61,0.45)) differ from brand.gold (#F5C842) and text.muted (#6b7280).
+Impact: Duplicated hex sync hazard; lock modal renders different gold/muted than rest of app.
+Root cause: Known - component extracted from App.jsx before the token system.
+Proposed fix: Decide preserve-as-new-tokens vs align-to-canonical, then migrate with
+RED-to-GREEN asserting intended final colors. Low priority - single isolated component.
+
+---
 ### Automated Score Reporting (County Integration)
 **Status:** Architecture finalized, implementation pending
 **Trigger:** Coach taps "Report Score" on a completed game

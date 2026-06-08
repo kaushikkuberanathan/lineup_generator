@@ -712,7 +712,7 @@ The shape tests intentionally do not assert specific values. `tokens.color.brand
 
 Specific values are anchored in this document (§7, Token Mapping Table). The combination of shape tests + this audit doc provides the full contract: tests guarantee the shape exists; the audit doc provides the provenance for the values.
 
-## Legacy `C` Object — App.jsx Disposition (Story 106 / Issue #294)
+## Legacy `C` Object — App.jsx Disposition (Story 109 / Issue #294)
 
 **Recon date:** 2026-06-08 (T2 UX track)
 **Status:** Decision recorded — migration deferred, multi-branch.
