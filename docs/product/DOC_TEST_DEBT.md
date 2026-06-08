@@ -495,3 +495,11 @@
   - backend/CLAUDE.md: documented app/server split, `test:unit`, `backend-unit` job; corrected the `/api/v1/admin/*` route-path doc bug that had reinforced the vacuous suite.
   - FEATURE_MAP row #33 added (Backend test foundation).
   - CI `BACKEND_URL` audit item: noted `backend-unit` as partial prod-URL-free mitigation.
+
+- **v2.16 — June 2026 (v2.5.26 release — About tab + regression guards)**
+  - New test file: `frontend/src/components/Support/AboutTab.test.jsx` — 13 tests (AT1–AT13) covering all five About cards: smoke render, Card 1 headline + 6 feature bullets + Share button, Card 2 eyebrow/headline/credential, Card 3 email + LinkedIn hrefs, Card 4 APP_VERSION prop, Card 5 collapsible toggle behavior (Story 106, PR #290).
+  - New test file: `frontend/src/__tests__/appImports.test.js` — 3 tests (Story 83 regression guard): asserts the `supabase` named import is present in App.jsx so submitFeedback()/submitBug() cannot throw a swallowed ReferenceError; includes a negative detector test proving the assertion is not vacuous (PR #289).
+  - FEATURE_MAP row #34 updated: About tab Test File(s) None → `AboutTab.test.jsx` (13 tests); Test Status ❌ None → ✅ Yes. Registry count 33 → 34.
+  - Backend teamData coverage expanded via Story 99 Phase 2 tranche 1 (PR #282): wipe-guard, envGuard, isAdminRequest.
+  - Suite count: 815 passing / 1 skipped — 786 frontend (Vitest) + 29 backend (supertest); +16 frontend this release — AboutTab 13 + appImports 3.
+  - Dashboard impact: no new debt items opened. About tab `AboutTab.test.jsx` pending debt (row #34) resolved.
