@@ -132,18 +132,6 @@
 | **Age** | 43 days |
 | **Target** | v2.4.0 |
 
-### 🟡 P2 — AI Photo Import End-to-End
-
-| | |
-|---|---|
-| **Area** | Schedule management + AI import |
-| **Description** | The Claude API proxy path (schedule import, score card parse) has no integration test covering request body size limit (10mb), client-side canvas resize, or error handling. |
-| **Risk if unfixed** | The v2.2.4 bug (large phone photos exceeding 5MB after base64) was a real prod incident; no regression test was added with the fix. |
-| **Proposed test** | `backend/src/__tests__/aiProxy.test.js` — mock Anthropic API, test POST /api/ai with oversize payload returns 413, test valid payload returns parsed structure. |
-| **Opened** | 2026-04-17 |
-| **Age** | 43 days |
-| **Target** | v2.4.0 |
-
 ### 🟡 P2 — D-S30: isFlagEnabled has no DB-read path (Story 30)
 
 | | |
@@ -362,7 +350,11 @@
 
 *(Items move here once shipped. Format: date, version, original description summary, resolution commit.)*
 
-- **2026-04-17 (v2.2.38)** — **SOLUTION_DESIGN.md §Feature Flag System: `feature_flags` table schema (columns, RLS posture, evaluation priority) added.** Previously missing from the doc.
+### June 12, 2026 — Story 99 Phase 2 tranche 2 (#252)
+
+- ✅ **P2 — AI Photo Import End-to-End** — Resolved. `backend/src/__tests__/aiProxy.test.js` (6 tests, AI-1–AI-6) covers `POST /api/ai`: 503 unconfigured, **413 oversize body (the v2.2.4 regression guard)**, 400 invalid type, 200 happy-path with upstream status/body relay + call-shape assertions (model `claude-sonnet-4-6`, max_tokens, content forwarded), 504 AbortError timeout, 502 upstream-unreachable. Hermetic — `global.fetch` stubbed, `ANTHROPIC_API_KEY` save/override/restore; never bills Anthropic on a rejected request. (Story 99 / #252)
+
+: `feature_flags` table schema (columns, RLS posture, evaluation priority) added.** Previously missing from the doc.
 - **2026-04-17 (v2.2.38)** — **SOLUTION_DESIGN.md §Analytics Architecture: identity model, super properties, SSR guards, and pointer to ANALYTICS.md added.** Previously not documented architecturally.
 - **2026-04-17 (v2.2.38)** — **SOLUTION_DESIGN.md §CI/CD Pipeline: branch strategy, GitHub Actions workflows, Husky pre-push hook, smoke test scope, Dev environment URLs added.** Previously marked "No CI/CD pipeline" in Known Tradeoffs despite infrastructure being live.
 - **2026-04-17 (v2.2.38)** — **SOLUTION_DESIGN.md §Live Scoring Framework: Tier 1/2/3 breakdown, scorer lock rationale, non-goals documented.** Previously undocumented.
@@ -393,12 +385,12 @@
 |---|---|---|---|---|
 | 🔴 P0 | 2 | 0 | 0 | **2** |
 | 🟠 P1 | 3 | 2 | 1 | **6** |
-| 🟡 P2 | 7 | 4 | 3 | **14** |
-| **Total** | **12** | **6** | **4** | **22** |
+| 🟡 P2 | 6 | 4 | 3 | **13** |
+| **Total** | **11** | **6** | **4** | **21** |
 
 **Age distribution:**
 - 0–30 days: 4
-- 31–60 days: 18
+- 31–60 days: 17
 - 60+ days: 0
 
 **Ship blockers:**
@@ -503,3 +495,9 @@
   - Backend teamData coverage expanded via Story 99 Phase 2 tranche 1 (PR #282): wipe-guard, envGuard, isAdminRequest.
   - Suite count: 815 passing / 1 skipped — 786 frontend (Vitest) + 29 backend (supertest); +16 frontend this release — AboutTab 13 + appImports 3.
   - Dashboard impact: no new debt items opened. About tab `AboutTab.test.jsx` pending debt (row #34) resolved.
+
+- **v2.17 — June 2026 (Story 99 Phase 2 tranche 2, #252)**
+  - New test file: `backend/src/__tests__/aiProxy.test.js` — 6 tests (AI-1–AI-6) covering `POST /api/ai`. Closes the P2 "AI Photo Import End-to-End" debt (moved to Resolved); the 413 oversize-body case is the missing v2.2.4 regression guard.
+  - New test file: `backend/src/__tests__/auth.happy.test.js` — 4 tests (AUTH-1–AUTH-4) covering the `request-access` (201/409) and `magic-link` (200/403) primary paths. Hermetic via shared-`supabaseAdmin` singleton patch (also intercepts `logAuthEvent`), `signInWithOtp` stub, and `global.fetch` stub for the Resend send. Closes the "auth happy-path" half of #252.
+  - #252 coverage now complete: wipe-guard (tranche 1) + AI proxy + auth happy-path.
+  - Backend unit suite: 29 → 39 (+10). Dashboard: P2 test gaps 7 → 6, total open 22 → 21.

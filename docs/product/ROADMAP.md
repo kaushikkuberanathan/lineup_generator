@@ -3598,15 +3598,23 @@ Shipped (PR #272):
 - npm run test:unit (node:test + supertest) + hermetic backend-unit CI
   job gating sync-script and main deploy
 
-Remaining (follow-up coverage):
-- /api/ai parse (413, structure) (aiProxy.test.js — see DOC_TEST_DEBT)
-- auth happy-path + malformed-token + requireAdmin (valid non-admin) rejection specs
+Progress (follow-up coverage):
 - 2026-06-07: Phase 2 tranche 1 — teamData coverage shipped on
   issue/252-teamdata-wipe-guard (commit 95d6fb6): rosterWipeGuard
   unit suite (7), isAdminRequest truth table (5, via new export),
   route-level 409/force/dual-mount/history specs (6), production-mode
-  FORBIDDEN_TEST_DATA spec (2). Unit suite 9 → 29. Remaining Phase 2
-  candidates: aiProxy 413, malformed-token 401, requireAdmin rejection.
+  FORBIDDEN_TEST_DATA spec (2). Unit suite 9 → 29.
+- 2026-06-12: Phase 2 tranche 2 — AI proxy + auth happy-path on
+  feature/backend-analytics-hardening: aiProxy.test.js (6 — 503/413/
+  400/200-relay/504/502; 413 is the v2.2.4 regression guard) and
+  auth.happy.test.js (4 — request-access 201/409, magic-link 200/403).
+  Hermetic (global.fetch + supabaseAdmin singleton + signInWithOtp
+  stubs). Unit suite 29 → 39. Closes the AI-proxy + auth-happy-path
+  items; DOC_TEST_DEBT "AI Photo Import E2E" P2 → Resolved.
+
+Remaining Phase 2 candidates:
+- malformed/expired-token 401 (requireAuth) spec
+- requireAdmin rejection with a valid non-admin token
 
 ---
 
