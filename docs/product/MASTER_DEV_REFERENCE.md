@@ -158,8 +158,12 @@ If build has errors, stop and report them. Do not proceed.
 Chunk size warnings are acceptable. Actual errors are not.
 Report "Build clean" before proceeding.
 STEP 4 — Commit and push (only after confirmed clean build):
-git add -A
-git commit -m "[TYPE]: [short description] (v[NEW_VERSION])"
+# Stage specific files by path -- never `git add -A` or `git add .` (see ## Git Staging Discipline)
+git add <file1> <file2> [...]
+# Commit via temp file, not -m, to avoid PowerShell BOM/here-string artifacts:
+$msg = "[TYPE]: [short description] (v[NEW_VERSION])"
+[System.IO.File]::WriteAllText("$env:TEMP\commitmsg.txt", $msg, [System.Text.UTF8Encoding]::new($false))
+git commit -F "$env:TEMP\commitmsg.txt"
 git push origin main
 STEP 5 — Confirm:
 Show full build output, git commit hash, and confirm push
