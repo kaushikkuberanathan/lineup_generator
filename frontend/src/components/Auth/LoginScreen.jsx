@@ -48,7 +48,9 @@ export function LoginScreen({ onRequestAccess, sendMagicLink }) {
       <div style={styles.container}>
         <div style={styles.card}>
           <div style={styles.header}>
-            <div style={styles.logoMark}>⚾</div>
+            <div style={styles.logoMark}>
+              <img src="/pwa-192x192.png" alt="Dugout Lineup" width="56" height="56" />
+            </div>
             <h1 style={styles.title}>Check your email</h1>
             <p style={styles.subtitle}>Mud Hens · Dugout Lineup</p>
           </div>
@@ -73,7 +75,9 @@ export function LoginScreen({ onRequestAccess, sendMagicLink }) {
     <div style={styles.container}>
       <div style={styles.card}>
         <div style={styles.header}>
-          <div style={styles.logoMark}>⚾</div>
+          <div style={styles.logoMark}>
+            <img src="/pwa-192x192.png" alt="Dugout Lineup" width="56" height="56" />
+          </div>
           <h1 style={styles.title}>Dugout Lineup</h1>
           <p style={styles.subtitle}>Mud Hens</p>
         </div>
@@ -114,7 +118,7 @@ const styles = {
     boxShadow: tokens.shadow.card,
   },
   header: { textAlign: 'center', marginBottom: '28px' },
-  logoMark: { fontSize: '36px', marginBottom: '8px' },
+  logoMark: { marginBottom: '8px' },
   title: { margin: 0, fontSize: '22px', fontWeight: '600', color: '#0f172a' },
   subtitle: { margin: '4px 0 0', fontSize: '14px', color: '#64748b' },
   form: { display: 'flex', flexDirection: 'column', gap: '12px' },
