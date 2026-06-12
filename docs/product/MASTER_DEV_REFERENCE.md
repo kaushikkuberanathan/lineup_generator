@@ -53,6 +53,13 @@ Rules:
 
 ## Development Rules
 
+### Test-First (RED -> GREEN)
+Before changing code, write a failing test that captures the expected behavior.
+- Run it first and confirm it FAILS (RED) -- proves the test actually exercises the change.
+- Implement the fix until the test PASSES (GREEN).
+- Commit tests + fix together, or tests first -- never fix-only.
+- Applies to logic/data changes and bug fixes; UI-only state changes use the manual state checklist below.
+
 ### Logic Changes
 - Enumerate all edge cases before writing code
 - Call out regression risk explicitly
