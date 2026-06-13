@@ -1,4 +1,4 @@
-﻿// v2.1
+// v2.1
 import { useState, useMemo, useEffect } from "react";
 import { jsPDF } from "jspdf";
 import { isSupabaseEnabled, supabase, dbSaveTeams, dbDeleteTeam,
@@ -17,6 +17,7 @@ import { useBackendHealth } from '@/hooks/useBackendHealth';
 import { useFeatureFlags } from '@/hooks/useFeatureFlags';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { ErrorBoundary } from './components/Shared/ErrorBoundary';
+import { BrandMark } from './components/BrandMark';
 import { NowBattingBar } from './components/GameDay/NowBattingStrip';
 import { LockFlow } from './components/GameDay/LockFlow';
 import { FairnessCheck } from './components/GameDay/FairnessCheck';
@@ -133,7 +134,7 @@ var _mem = {};
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.5.26";
+var APP_VERSION = "2.5.28";
 
 function loadJSON(key, def) {
   try {
@@ -852,8 +853,9 @@ function SharedView({ payload, renderFieldSVG }) {
       {/* ── Header ─────────────────────────────────────────────── */}
       <div style={{ background:"linear-gradient(135deg,#0f1f3d,#1a3260)", borderBottom:"4px solid " + C.red, padding:"14px 20px" }}>
         <div style={{ maxWidth:"800px", margin:"0 auto", display:"flex", alignItems:"center", gap:"12px" }}>
-          <div style={{ width:"42px", height:"42px", borderRadius:"50%", background:C.red, border:"2.5px solid "+C.gold,
-            display:"flex", alignItems:"center", justifyContent:"center", fontSize:"18px", fontWeight:"bold", color:C.gold, flexShrink:0 }}>
+          <BrandMark size={42} />
+          <div style={{ width:"30px", height:"30px", borderRadius:"50%", background:C.navy, border:"2px solid "+C.gold,
+            display:"flex", alignItems:"center", justifyContent:"center", fontSize:"13px", fontWeight:"bold", color:C.gold, flexShrink:0 }}>
             {teamInitial}
           </div>
           <div style={{ flex:1, minWidth:0 }}>
@@ -6619,7 +6621,7 @@ export default function App() {
         doc.setTextColor(gold[0], gold[1], gold[2]);
         doc.setFontSize(10);
         doc.setFont("helvetica","bold");
-        doc.text("M", margin + 7, 16.5, { align:"center" });
+        doc.text(teamName.charAt(0).toUpperCase(), margin + 7, 16.5, { align:"center" });
         // Title
         doc.setTextColor(255,255,255);
         doc.setFontSize(16);
@@ -7797,7 +7799,10 @@ export default function App() {
           if (primaryTab === "team" || primaryTab === "gameday") { setShowExitSheet(true); return; }
           setScreen("home"); setPrimaryTab("home"); setHomeMode("welcome");
         }}>
-          <div style={Object.assign({}, S.logoCircle, isLandscape ? { width:"30px", height:"30px", fontSize:"13px" } : {})}>{screen === "app" && primaryTab !== "more" && activeTeam ? activeTeam.name.charAt(0).toUpperCase() : "L"}</div>
+          <BrandMark size={isLandscape ? 30 : 42} />
+          {screen === "app" && primaryTab !== "more" && activeTeam ? (
+            <div style={Object.assign({}, S.logoCircle, { background:C.navy, border:"2px solid "+C.gold }, isLandscape ? { width:"24px", height:"24px", fontSize:"11px" } : { width:"30px", height:"30px", fontSize:"14px" })}>{activeTeam.name.charAt(0).toUpperCase()}</div>
+          ) : null}
           <div>
             <div style={Object.assign({}, S.logoTitle, isLandscape ? { fontSize:"14px" } : {})}>{screen === "app" && primaryTab !== "more" && activeTeam ? activeTeam.name : "Dugout Lineup"}</div>
             {!isLandscape && <div style={S.logoSub}>{screen === "app" && primaryTab !== "more" && activeTeam ? (activeTeam.ageGroup || "") + " " + (activeTeam.year || "") + "  ⌂" : "Youth Baseball & Softball"}</div>}
