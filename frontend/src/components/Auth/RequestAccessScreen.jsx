@@ -78,7 +78,9 @@ export function RequestAccessScreen({ onBack, requestAccess }) {
       <div style={styles.card}>
 
         <div style={styles.header}>
-          <div style={styles.logoMark}>⚾</div>
+          <div style={styles.logoMark}>
+            <img src="/pwa-192x192.png" alt="Dugout Lineup" width="56" height="56" />
+          </div>
           <h1 style={styles.title}>Request Access</h1>
           <p style={styles.subtitle}>Mud Hens · Dugout Lineup</p>
         </div>
@@ -199,7 +201,6 @@ const styles = {
     marginBottom: '24px',
   },
   logoMark: {
-    fontSize: '32px',
     marginBottom: '8px',
   },
   title: {
