@@ -1,4 +1,19 @@
-﻿export var VERSION_HISTORY = [
+export var VERSION_HISTORY = [
+  {
+    version: '2.5.28',
+    date: 'June 2026',
+    headline: 'Consistent Dugout Lineup branding across the app',
+    techNote: 'Minor fixes and internal improvements',
+    userChanges: [
+      'The Dugout Lineup badge now appears in the app header and on shared lineup pages, with your team shown alongside it.',
+      'Printed and shared PDF lineups now show your team\'s initial instead of a fixed letter.',
+    ],
+    internalChanges: [
+      'Story 319 - BrandMark.jsx inline-SVG component; always-present brand mark in app header + SharedView, team initial demoted to secondary badge (PR #320)',
+      'Story 319 - generatePDF hardcoded M replaced with teamName.charAt(0).toUpperCase() - fixes per-team PDF header initial (PR #320)',
+      'APP_VERSION bumped 2.5.26 to 2.5.28, resolving stale constant drift',
+    ],
+  },
   {
     version: '2.5.27',
     date: 'June 2026',

@@ -134,7 +134,7 @@ var _mem = {};
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.5.26";
+var APP_VERSION = "2.5.28";
 
 function loadJSON(key, def) {
   try {
