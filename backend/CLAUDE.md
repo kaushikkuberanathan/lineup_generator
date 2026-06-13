@@ -109,12 +109,19 @@ A second, hermetic test system runs alongside the integration runner:
 
 - **Invocation**: `npm run test:unit` (`node --test src/__tests__/*.test.js`) — node:test + supertest, **no running server, no live DB**.
 - **How**: imports the Express app via `require('./app')` (enabled by the app/server split) and drives it with `request(app)` — no port bound.
-- **Env**: still needs `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` / `SUPABASE_ANON_KEY` set, because `src/lib/env.js` + `src/lib/supabase.js` throw at import. Tests never *call* Supabase (auth-rejection short-circuits in `requireAuth.js`), so dummy non-empty values work anywhere.
+- **Env**: still needs `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` / `SUPABASE_ANON_KEY` set, because `src/lib/env.js` + `src/lib/supabase.js` throw at import. Tests never make a real Supabase or network call — they either short-circuit before the client (auth-rejection in `requireAuth.js`) or monkey-patch the seams (`supabaseAdmin.from` / `supabaseAdmin.rpc` / `supabaseAnon.auth.signInWithOtp` / `global.fetch`). `supabaseAdmin` is a shared singleton, so patching `.from` also intercepts `logAuthEvent`'s `auth_events` write. Dummy non-empty values work anywhere.
 - **File convention**: specs live in `src/__tests__/*.test.js` (the `test:unit` glob) — use this path, **not** `src/tests/`.
+
+Unit suite total: **39** (Story 99 Phase 2 complete for #252 route coverage).
 
 | Spec | Covers |
 |------|--------|
 | `admin.auth.test.js` (9) | Admin routes reject no-token requests with **401** at their real bare `/api/v1/*` paths (requests/members/approve/reject/update-role/reset-access/suspend); public `/api/v1/admin/{approve,deny}-link` return 400, never 401. Closes the legacy "green-but-vacuous" gap. |
+| `teamData.guard.test.js` (12) | `rosterWipeGuard` unit suite + `isAdminRequest` truth table — direct unit tests (the route-level 403 is unreachable in-process; see `teamData.routes.test.js` header). |
+| `teamData.envGuard.test.js` (2) | Production-mode `FORBIDDEN_TEST_DATA` rejection for test team IDs on POST + GET. |
+| `teamData.routes.test.js` (6) | Route-level `POST/GET /api/v1/teams/:id` (+ legacy `/api/teams`): 409 wipe-guard, `force` override, dual-mount smoke, DB-error 500, history limit clamp. `supabaseAdmin.from`/`.rpc` monkey-patched. |
+| `aiProxy.test.js` (6) | `POST /api/ai`: 503 unconfigured, **413 oversize (v2.2.4 regression guard)**, 400 bad type, 200 upstream status/body relay + call-shape (`claude-sonnet-4-6`, max_tokens, content), 504 AbortError, 502 unreachable. `global.fetch` stubbed; `ANTHROPIC_API_KEY` save/restore. |
+| `auth.happy.test.js` (4) | `POST /request-access` 201/409 + `POST /magic-link` 200/403. Hermetic via shared-`supabaseAdmin` patch (also covers `logAuthEvent`), `signInWithOtp` stub, and `global.fetch` stub for the Resend send. |
 
 **CI**: the `backend-unit` job in `.github/workflows/ci.yml` runs `npm run test:unit` on every push/PR — hermetic, no Render dependency (unlike the integration `backend` job that polls prod). It gates the sync-script and main-deploy (smoke) jobs.
 

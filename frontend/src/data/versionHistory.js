@@ -1,5 +1,24 @@
 ﻿export var VERSION_HISTORY = [
   {
+    version: '2.5.27',
+    date: 'June 2026',
+    headline: 'Fresh new look — updated app icon and share previews',
+    techNote: 'Minor fixes and internal improvements',
+    userChanges: [
+      'New app icon — the Dugout Lineup baseball-diamond badge now appears on your home screen, browser tab, and when you install the app.',
+      'Shared lineup links now show a preview image — recipients see the Dugout Lineup badge and tagline.',
+      'Refreshed login and access screens with the new badge.',
+    ],
+    internalChanges: [
+      'Story 304 — Badge icon set: favicon, apple-touch, pwa-192/512, and new maskable-512 replace placeholder SVGs; vite.config maskable-split (pwa-512 purpose any, dedicated maskable-512 purpose maskable) (PR #305)',
+      'Story 306 — Removed 4 orphaned .svg icon sources from public/ after the raster icon swap (PR #309)',
+      'Story 307 — OG + Twitter Card share-link meta tags + 1200x630 og-image.png (PR #310); baseball emoji replaced with badge img on LoginScreen + RequestAccessScreen (PR #311)',
+      'Story 99 — Backend test coverage: aiProxy + auth happy-path specs (PR #299)',
+      'Governance — color-token disposition audit, MASTER staging discipline + RED-GREEN workflow (#298-#303)',
+      'Infra — dev.dugoutlineup.com confirmed tracking develop (#308 closed, caching false alarm); Vercel Deployment Protection disabled for dev soak (#314)',
+    ],
+  },
+  {
     version: '2.5.26',
     date: 'June 2026',
     headline: 'New About tab — meet the builder behind Dugout Lineup',

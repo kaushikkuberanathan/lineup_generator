@@ -711,3 +711,48 @@ The approved barrel assertions (#20, #21) only verified `color` and `tokens.colo
 The shape tests intentionally do not assert specific values. `tokens.color.brand.navy` could change from `#0F1F3D` to any other hex string and all 27 tests would still pass. This is correct behavior — the token system's value is in the semantics (the name), not the specific hex. Value changes are a `DESIGN_AUDIT.md` update, not a code regression.
 
 Specific values are anchored in this document (§7, Token Mapping Table). The combination of shape tests + this audit doc provides the full contract: tests guarantee the shape exists; the audit doc provides the provenance for the values.
+
+## Legacy `C` Object — App.jsx Disposition (Story 109 / Issue #294)
+
+**Recon date:** 2026-06-08 (T2 UX track)
+**Status:** Decision recorded — migration deferred, multi-branch.
+**Scope:** The flat `var C = {...}` color object defined in App.jsx (STYLES section). 20 keys, 437 `C.` reference sites in App.jsx. This predates the semantic token system in `theme/tokens.js` and was never migrated when the nested tokens landed. This section records the per-key disposition so the eventual sweep is mechanical, not investigative.
+
+### Why this is deferred, not done now
+
+- **437 call sites** in a single 5,000+ line file. This is the migration backlog the token authors parked, not a slice. One PR cannot soak-test 437 visual touch points against Game Mode / share-link surfaces safely.
+- **Primitives-first sequencing.** `tokens.js` header states consumers arrive via primitives (v2.5.0+), not by App.jsx reaching directly into `tokens.color.*`. `shadow.elevated` is explicitly tagged "App.jsx call sites (locked); migration deferred to v2.5.x." Migrating `C` direct-to-token would violate that intended consumer path.
+- **Values genuinely diverge.** Several `C` keys have no token equivalent or differ from the nearest token (see table). Migration is therefore a design decision per orphan key, not a rename.
+
+### Per-key disposition
+
+| `C` key | value | nearest token | disposition |
+|---|---|---|---|
+| navy | #0f1f3d | color.brand.navy #0F1F3D | **ADOPT** (case-only diff) |
+| red | #c8102e | color.brand.red #C8102E | **ADOPT** |
+| gold | #f5c842 | color.brand.gold #F5C842 | **ADOPT** |
+| white | #ffffff | color.surface.card / text.onDark | **ADOPT** (context-dependent) |
+| cardBg | #ffffff | color.surface.card #FFFFFF | **ADOPT** |
+| subtleBg | #f8fafc | color.surface.page #F8FAFC | **ADOPT** |
+| textMuted | #6b7280 | color.text.muted #6b7280 | **ADOPT** (exact) |
+| subtleText | #9ca3af | color.text.disabled #9CA3AF | **ADOPT** |
+| win | #27ae60 | color.status.success #27AE60 | **ADOPT** |
+| loss | #c8102e | color.brand.red #C8102E | **ADOPT** (loss==brand.red, not status.error) |
+| tie | #d4a017 | color.status.warning #D4A017 | **ADOPT** |
+| border | rgba(0,0,0,0.06) | color.border.subtle rgba(15,31,61,0.08) | **DIVERGENT** — black vs navy tint; migration is a visual change. Decide: adopt border.subtle (navy) or mint a neutral-black border token. |
+| subtleBorder | rgba(0,0,0,0.04) | overlay.navyWash rgba(15,31,61,0.04) | **DIVERGENT** — same opacity, black vs navy hue. Same decision as border. |
+| overlayBg | rgba(0,0,0,0.5) | overlay.backdrop rgba(5,10,25,0.97) | **DIVERGENT** — different opacity and hue; C.overlayBg is a lighter scrim. Decide: mint overlay.scrimLight or adopt backdrop (visual change). |
+| navyLight | #1a3260 | none (chrome is #1E3A5F) | **ORPHAN** — no token. Used in header gradient. Mint brand.navyLight or map to surface.chrome (visual change). |
+| redDark | #9b0c22 | none | **ORPHAN** — darker brand red. Mint brand.redDark or retire if unused post-audit. |
+| text | #1a1a2e | text.primary #0F1F3D | **DIVERGENT** — near-black vs navy. C.text is the body-text default; mapping to text.primary (navy) shifts all default text. Decide: mint text.ink (#1a1a2e) or accept navy shift. |
+| canceled | #7f8c8d | none | **ORPHAN** — game-canceled gray. Mint status.neutral; text.tertiary (slate #94A3B8) differs. |
+| greenField | #2e7d32 | field.grass #2d7a3a | **DIVERGENT** — close but not equal green. Decide: adopt field.grass (slight shift) or mint. |
+
+### Recommended migration shape (future, multi-branch)
+
+1. **Resolve the 6 DIVERGENT/ORPHAN decisions first** (own Story): mint or retire each, update `tokens.js` with provenance. No App.jsx edits.
+2. **Migrate ADOPT keys by surface, not all at once** — one App.jsx region per branch (header, schedule, roster grid, scoring), each RED→GREEN with a snapshot pinning pre/post hex equivalence, each soaked overnight.
+3. **Retire `var C`** only after the last consumer is migrated; a keys-present guard catches stray references.
+4. Sequence behind App.jsx Phase 4 decomposition where possible — migrating a region is cheaper once it is a component consuming tokens via props/primitive.
+
+**This Story (#294) ships this disposition table only. No source code changes.**
