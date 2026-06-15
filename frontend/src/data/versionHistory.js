@@ -1,5 +1,19 @@
 export var VERSION_HISTORY = [
   {
+    version: '2.5.29',
+    date: 'June 2026',
+    headline: 'Brand mark now on the About tab and printed lineups',
+    techNote: 'Minor fixes and internal improvements',
+    userChanges: [
+      'The Dugout Lineup badge now appears on the About tab and in the header of printed and shared PDF lineups, matching the rest of the app.',
+    ],
+    internalChanges: [
+      'Story 325 - AboutTab.jsx: replaced baseball emoji with inline BrandMark beside the app name/version (PR #326)',
+      'Story 325 - generatePDF: replaced legacy red team-initial circle with brand mark via jsPDF vector primitives + navy/gold team-initial badge matching SharedView; title/date offsets shifted (PR #326)',
+      'Patch bump 2.5.28 to 2.5.29',
+    ],
+  },
+  {
     version: '2.5.28',
     date: 'June 2026',
     headline: 'Consistent Dugout Lineup branding across the app',

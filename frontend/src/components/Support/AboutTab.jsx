@@ -4,6 +4,7 @@
 // Search App.jsx for "AUTH GATE — parked" to find the block.
 // Story 105 / issue #281.
 import { tokens } from "../../theme/tokens";
+import { BrandMark } from "../BrandMark";
 
 /**
  * AboutTab
@@ -257,7 +258,7 @@ export function AboutTab({ aboutGuideOpen, setAboutGuideOpen, APP_VERSION, C, S 
 
       {/* ── Card 4: App Info (verbatim from original; Share button removed) ── */}
       <div style={S.card}>
-        <div style={{ fontSize:"20px", fontWeight:"bold", color:C.navy, marginBottom:"4px" }}>Dugout Lineup &#x26be; <span style={{ fontSize:"13px", fontWeight:"normal", color:C.textMuted }}>v{APP_VERSION}</span></div>
+        <div style={{ fontSize:"20px", fontWeight:"bold", color:C.navy, marginBottom:"4px" }}>Dugout Lineup <span style={{ display:"inline-block", verticalAlign:"middle", margin:"0 4px" }}><BrandMark size={18} /></span><span style={{ fontSize:"13px", fontWeight:"normal", color:C.textMuted }}>v{APP_VERSION}</span></div>
         <div style={{ fontSize:"12px", color:C.textMuted, marginBottom:"12px" }}>Built for youth baseball coaches. Runs at the field.</div>
         <div>
           <a href="https://dugoutlineup.com" target="_blank" rel="noopener noreferrer"
