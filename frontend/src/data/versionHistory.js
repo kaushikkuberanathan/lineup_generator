@@ -1,5 +1,19 @@
 export var VERSION_HISTORY = [
   {
+    version: '2.5.30',
+    date: 'June 2026',
+    headline: 'New Demo All-Stars team — a full team to explore the app',
+    techNote: 'Minor fixes and internal improvements',
+    userChanges: [
+      'The Try Demo Team button now loads a complete, ready-to-explore team — full roster, defensive lineup, schedule, and walk-up songs — so you can try every feature instantly.',
+      'If you tried an earlier demo team, opening the demo again upgrades it to the new richer version.',
+    ],
+    internalChanges: [
+      'Story 332 — loadDemoTeam() now seeds from frontend/src/data/demoSeed.js (clone of real team data, all names remapped to demo names); added grid persistence + 8U age group (PR #333)',
+      'Story 332 — demoSeedVersion gate: older/unversioned demos are cleared and rebuilt on next open; clears all per-team keys to avoid orphans',
+    ],
+  },
+  {
     version: '2.5.29',
     date: 'June 2026',
     headline: 'Brand mark now on the About tab and printed lineups',

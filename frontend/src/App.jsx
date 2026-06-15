@@ -13,6 +13,7 @@ import { normalizeBattingHand } from '@/utils/playerUtils';
 import { outboundLinkProps, CAMPAIGNS, CONTENT } from './utils/trackingUrl';
 import { migrateRoster, migrateSchedule, migrateBattingPerf, mergeLocalScheduleFields } from '@/utils/migrations';
 import { fmtAvg, fmtStat } from '@/utils/formatters';
+import { DEMO_ROSTER, DEMO_SCHEDULE, DEMO_GRID, DEMO_INNINGS, DEMO_AGE_GROUP, DEMO_SEED_VERSION } from "./data/demoSeed";
 import { useBackendHealth } from '@/hooks/useBackendHealth';
 import { useFeatureFlags } from '@/hooks/useFeatureFlags';
 import { useRegisterSW } from 'virtual:pwa-register/react';
@@ -134,7 +135,7 @@ var _mem = {};
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.5.29";
+var APP_VERSION = "2.5.30";
 
 function loadJSON(key, def) {
   try {
@@ -2413,56 +2414,26 @@ export default function App() {
   function loadDemoTeam() {
     // Don't create a second demo team if one already exists
     var existingDemo = teams.find(function(t) { return t.name === "Demo All-Stars"; });
-    if (existingDemo) { loadTeam(existingDemo); return; }
+    if (existingDemo) {
+      var existingVer = existingDemo.demoSeedVersion || 1;
+      if (existingVer >= DEMO_SEED_VERSION) { loadTeam(existingDemo); return; }
+      var oldId = existingDemo.id;
+      ["roster","schedule","grid","batting","innings","locked","practices","pin","batterIndex","gameModeInning"].forEach(function(k){ localStorage.removeItem("team:" + oldId + ":" + k); });
+      deleteTeam(oldId);
+    }
     var tid = "demo_" + Date.now();
-    var t = { id: tid, name: "Demo All-Stars", ageGroup: "10U", sport: "baseball", year: new Date().getFullYear() };
+    var t = { id: tid, name: "Demo All-Stars", ageGroup: DEMO_AGE_GROUP, sport: "baseball", year: new Date().getFullYear(), demoSeedVersion: DEMO_SEED_VERSION };
 
-    var today = new Date();
-    var fmtDate = function(d) { var x = new Date(d); return x.toISOString().slice(0, 10); };
-    var addDays = function(n) { var x = new Date(today); x.setDate(today.getDate() + n); return x; };
-
-    var demoRoster = [
-      { firstName:"Jake",  lastName:"Martinez",  name:"Jake Martinez",  skills:["strongArm","gameAware"], tags:[], prefs:["P","SS"],  dislikes:["C"],  batSkills:[], battingHand:"R", skipBench:false, outThisGame:false },
-      { firstName:"Mia",   lastName:"Chen",      name:"Mia Chen",       skills:["naturalCatcher"],        tags:[], prefs:["C","1B"],  dislikes:[],     batSkills:[], battingHand:"R", skipBench:false, outThisGame:false },
-      { firstName:"Luca",  lastName:"Thompson",  name:"Luca Thompson",  skills:["developing"],            tags:[], prefs:["2B","3B"], dislikes:[],     batSkills:[], battingHand:"L", skipBench:false, outThisGame:false },
-      { firstName:"Sofia", lastName:"Williams",  name:"Sofia Williams", skills:["goodGlove","hustles"],   tags:[], prefs:["SS","2B"], dislikes:[],     batSkills:[], battingHand:"R", skipBench:false, outThisGame:false },
-      { firstName:"Owen",  lastName:"Davis",     name:"Owen Davis",     skills:["bigKid"],                tags:[], prefs:["1B","3B"], dislikes:["P"],  batSkills:[], battingHand:"R", skipBench:false, outThisGame:false },
-      { firstName:"Lily",  lastName:"Rodriguez", name:"Lily Rodriguez", skills:["fastRunner"],            tags:[], prefs:["LC","CF"], dislikes:[],     batSkills:[], battingHand:"L", skipBench:false, outThisGame:false },
-      { firstName:"Ethan", lastName:"Kim",       name:"Ethan Kim",      skills:["goodGlove","callsForBall"],tags:[],prefs:["CF","RC"],dislikes:[],     batSkills:[], battingHand:"R", skipBench:false, outThisGame:false },
-      { firstName:"Chloe", lastName:"Johnson",   name:"Chloe Johnson",  skills:["developing"],            tags:[], prefs:["RF","LF"], dislikes:[],     batSkills:[], battingHand:"R", skipBench:false, outThisGame:false },
-      { firstName:"Noah",  lastName:"Patel",     name:"Noah Patel",     skills:["accurateThrower"],       tags:[], prefs:["3B","SS"], dislikes:[],     batSkills:[], battingHand:"L", skipBench:false, outThisGame:false },
-      { firstName:"Emma",  lastName:"Brown",     name:"Emma Brown",     skills:["developing"],            tags:[], prefs:["2B","1B"], dislikes:[],     batSkills:[], battingHand:"R", skipBench:false, outThisGame:false },
-      { firstName:"Aiden", lastName:"Garcia",    name:"Aiden Garcia",   skills:["strongArm","highEnergy"],tags:[], prefs:["P","3B"],  dislikes:[],     batSkills:[], battingHand:"R", skipBench:false, outThisGame:false },
-      { firstName:"Zoe",   lastName:"Wilson",    name:"Zoe Wilson",     skills:["developing"],            tags:[], prefs:["C","1B"],  dislikes:[],     batSkills:[], battingHand:"L", skipBench:false, outThisGame:false },
-    ].map(function(p) {
-      return Object.assign({
-        reliability:"average", reaction:"average", armStrength:"average", ballType:"developing",
-        knowsWhereToThrow:false, callsForBall:false, backsUpPlays:false, anticipatesPlays:false,
-        contact:"medium", power:"low", swingDiscipline:"free_swinger",
-        tracksBallWell:false, patientAtPlate:false, confidentHitter:false,
-        speed:"average", runsThroughFirst:false, listensToCoaches:false, awareOnBases:false,
-        effort:null, developmentFocus:"balanced", lastUpdated:null,
-        walkUpSong:null, walkUpArtist:null, walkUpStart:null, walkUpEnd:null, walkUpNotes:null, walkUpLink:null,
-      }, p);
-    });
-
-    var demoSchedule = [
-      { id:"demo_g_1", date:fmtDate(addDays(-7)),  time:"10:00", location:"Riverside Park", opponent:"Tigers", result:"W", ourScore:"8", theirScore:"3", home:true,  snackDuty:"",           snackNote:"", gameBall:["Jake Martinez"], battingPerf:{} },
-      { id:"demo_g_2", date:fmtDate(addDays(5)),   time:"10:00", location:"Memorial Field", opponent:"Sharks", result:"",  ourScore:"",  theirScore:"",  home:false, snackDuty:"Mia Chen",   snackNote:"", gameBall:"", battingPerf:{} },
-      { id:"demo_g_3", date:fmtDate(addDays(19)),  time:"14:00", location:"Riverside Park", opponent:"Eagles", result:"",  ourScore:"",  theirScore:"",  home:true,  snackDuty:"",           snackNote:"", gameBall:"", battingPerf:{} },
-    ];
-
-    saveJSON("team:" + tid + ":roster",    demoRoster);
-    saveJSON("team:" + tid + ":schedule",  demoSchedule);
+    saveJSON("team:" + tid + ":roster",    DEMO_ROSTER);
+    saveJSON("team:" + tid + ":schedule",  DEMO_SCHEDULE);
+    saveJSON("team:" + tid + ":grid",      DEMO_GRID);
     saveJSON("team:" + tid + ":practices", []);
-    saveJSON("team:" + tid + ":batting",   demoRoster.map(function(p) { return p.name; }));
-    saveJSON("team:" + tid + ":innings",   6);
+    saveJSON("team:" + tid + ":batting",   DEMO_ROSTER.map(function(p) { return p.name; }));
+    saveJSON("team:" + tid + ":innings",   DEMO_INNINGS);
     saveJSON("team:" + tid + ":locked",    false);
 
-    var next = teams.concat([t]);
-    setTeams(next);
-    saveJSON("app:teams", next);
-    loadTeam(t);
+    var next = teams.filter(function(x){ return x.name !== "Demo All-Stars"; }).concat([t]);
+    setTeams(next); saveJSON("app:teams", next); loadTeam(t);
   }
 
   function saveTeamEdits() {
