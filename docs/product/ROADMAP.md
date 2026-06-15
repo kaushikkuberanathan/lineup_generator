@@ -1,10 +1,17 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: 2026-06-08 (v2.5.26 — New About tab: builder profile, partnership CTA, contact links)
+> Last updated: 2026-06-13 (v2.5.28 — New About tab: builder profile, partnership CTA, contact links)
 > MVP launched: March 24, 2026
 
 ---
 
+## v2.5.28 - 2026-06-13 - Dugout Lineup brand mark across app + share surfaces
+- Story 319 (P2) resolved - BrandMark.jsx inline-SVG diamond glyph added as always-present brand identity in the app header and the public SharedView share page; team initial demoted to a secondary badge beside the team name (PR #320). <!-- #319 -->
+- Story 319 (P2) - PDF export: hardcoded M in generatePDF replaced with teamName.charAt(0).toUpperCase() - every team PDF header now shows its own initial (was always M) (PR #320).
+- Release: APP_VERSION 2.5.26 to 2.5.28 and package.json 2.5.27 to 2.5.28, resolving the stale App.jsx constant left by the 2.5.27 icon/OG release.
+- Note: 2.5.27 (icons, OG/Twitter meta, maskable-split) shipped via PRs #305/#309/#310/#311 but was never logged here - captured in versionHistory.js only.
+- Deferred fast-follow: DugoutView viewer-path brand mark (flag-off); maskable-512 re-export (current PROD asset reads black-bg, 0% safe-zone); brand-mark image in PDF via addImage.
+---
 ## v2.5.26 — 2026-06-08 — New About tab (builder profile + partnership CTA)
 
 - Story 105 (P2) resolved — About tab overhaul: AboutTab extracted from
