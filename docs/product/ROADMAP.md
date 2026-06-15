@@ -6,7 +6,7 @@
 ---
 
 ## v2.5.30 - 2026-06-15 - New Demo All-Stars team (full clone of real team data)
-- Story 332 (P2) resolved - Demo All-Stars: loadDemoTeam() seeds from frontend/src/data/demoSeed.js, a frozen clone of the Mud Hens team data (full roster with skills/walk-up songs/profiles, defensive grid, 11-game schedule) with all player and opponent names remapped to demo names; added grid persistence + 8U age group (PR #TBD). <!-- #332 -->
+- Story 332 (P2) resolved - Demo All-Stars: loadDemoTeam() seeds from frontend/src/data/demoSeed.js, a frozen clone of the Mud Hens team data (full roster with skills/walk-up songs/profiles, defensive grid, 11-game schedule) with all player and opponent names remapped to demo names; added grid persistence + 8U age group (PR #333). <!-- #332 -->
 - Per-user copy model: the demo is created locally per device (local-only, never synced to Supabase); the "Try Demo Team" button + dedup guard unchanged.
 - Seed-version upgrade path: the new team object is stamped with demoSeedVersion; older/unversioned demos are cleared (all per-team keys removed) and rebuilt on next open.
 - Patch bump 2.5.29 to 2.5.30.

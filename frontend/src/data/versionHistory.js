@@ -9,7 +9,7 @@ export var VERSION_HISTORY = [
       'If you tried an earlier demo team, opening the demo again upgrades it to the new richer version.',
     ],
     internalChanges: [
-      'Story 332 — loadDemoTeam() now seeds from frontend/src/data/demoSeed.js (clone of real team data, all names remapped to demo names); added grid persistence + 8U age group (PR #TBD)',
+      'Story 332 — loadDemoTeam() now seeds from frontend/src/data/demoSeed.js (clone of real team data, all names remapped to demo names); added grid persistence + 8U age group (PR #333)',
       'Story 332 — demoSeedVersion gate: older/unversioned demos are cleared and rebuilt on next open; clears all per-team keys to avoid orphans',
     ],
   },
