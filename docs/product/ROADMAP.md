@@ -1,10 +1,16 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: 2026-06-14 (v2.5.29 — New About tab: builder profile, partnership CTA, contact links)
+> Last updated: 2026-06-15 (v2.5.30 — New Demo All-Stars team: full clone of real team data with remapped demo names)
 > MVP launched: March 24, 2026
 
 ---
 
+## v2.5.30 - 2026-06-15 - New Demo All-Stars team (full clone of real team data)
+- Story 332 (P2) resolved - Demo All-Stars: loadDemoTeam() seeds from frontend/src/data/demoSeed.js, a frozen clone of the Mud Hens team data (full roster with skills/walk-up songs/profiles, defensive grid, 11-game schedule) with all player and opponent names remapped to demo names; added grid persistence + 8U age group (PR #TBD). <!-- #332 -->
+- Per-user copy model: the demo is created locally per device (local-only, never synced to Supabase); the "Try Demo Team" button + dedup guard unchanged.
+- Seed-version upgrade path: the new team object is stamped with demoSeedVersion; older/unversioned demos are cleared (all per-team keys removed) and rebuilt on next open.
+- Patch bump 2.5.29 to 2.5.30.
+---
 ## v2.5.29 - 2026-06-14 - Brand mark on About tab + printed lineups
 - Story 325 (P2) resolved - AboutTab.jsx: replaced baseball emoji with inline BrandMark beside app name/version (PR #326). <!-- #325 -->
 - Story 325 (P2) - generatePDF: legacy red team-initial circle replaced with brand mark via jsPDF vector primitives + navy/gold team-initial badge matching the SharedView header; title/date offsets shifted to clear the wider header (PR #326).

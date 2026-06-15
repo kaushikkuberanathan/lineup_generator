@@ -21,3 +21,6 @@ recon-output.txt
 
 # npm audit snapshots (pre-fix baselines, evidence only)
 **/audit-*.json
+
+# Demo All-Stars seed (local-only raw player data, never committed)
+.demo-seed/

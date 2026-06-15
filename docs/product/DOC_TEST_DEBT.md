@@ -168,6 +168,18 @@
 | **Age** | 3 days |
 | **Target** | v2.6.x |
 
+### 🟡 P2 — D-S332: Demo team seeding + seed-version upgrade (loadDemoTeam)
+
+| | |
+|---|---|
+| **Area** | Demo team seeding + seed-version upgrade (`loadDemoTeam`) |
+| **Description** | `loadDemoTeam()` now seeds from `demoSeed.js` and has a `demoSeedVersion` upgrade path (older/unversioned demos cleared + rebuilt on next open). NO automated test covers: (a) fresh demo creation builds 11-player roster + grid + 11-game schedule correctly, (b) the upgrade path clears old per-team keys + `deleteTeam` + rebuilds as v2 without duplicating the team, (c) the dedup guard still prevents double-create at the same version. Verified manually in dev (fresh-create path only; upgrade path reviewed but not runtime-tested). |
+| **Risk if unfixed** | A refactor of `loadDemoTeam` could silently break demo onboarding (Strategic North Star #4: frictionless onboarding) or, worse, the upgrade path could clobber/duplicate teams for existing users. The upgrade branch is the least-exercised code and hits every existing demo user. |
+| **Proposed test** | `frontend/src/tests/demoTeam.test.js` — assert fresh load creates correct roster/grid/schedule counts + `demoSeedVersion` stamp; assert upgrade path (seed a v1 demo → `loadDemoTeam` → old keys cleared, single team, v2 stamp); assert dedup no-op at current version. |
+| **Opened** | 2026-06-15 |
+| **Age** | 0 days |
+| **Target** | v2.6.x |
+
 ### ✅ RESOLVED — D017: ScoreboardRow primitive has no test coverage
 
 - **Discovered:** 2026-05-01 (during Slice 0 / v2.5.4 Pre-release Docs Checklist walk)
