@@ -1,10 +1,16 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: 2026-06-13 (v2.5.28 — New About tab: builder profile, partnership CTA, contact links)
+> Last updated: 2026-06-14 (v2.5.29 — New About tab: builder profile, partnership CTA, contact links)
 > MVP launched: March 24, 2026
 
 ---
 
+## v2.5.29 - 2026-06-14 - Brand mark on About tab + printed lineups
+- Story 325 (P2) resolved - AboutTab.jsx: replaced baseball emoji with inline BrandMark beside app name/version (PR #326). <!-- #325 -->
+- Story 325 (P2) - generatePDF: legacy red team-initial circle replaced with brand mark via jsPDF vector primitives + navy/gold team-initial badge matching the SharedView header; title/date offsets shifted to clear the wider header (PR #326).
+- Closes the two remaining surfaces that still showed legacy/placeholder branding after v2.5.28.
+- Patch bump 2.5.28 to 2.5.29.
+---
 ## v2.5.28 - 2026-06-13 - Dugout Lineup brand mark across app + share surfaces
 - Story 319 (P2) resolved - BrandMark.jsx inline-SVG diamond glyph added as always-present brand identity in the app header and the public SharedView share page; team initial demoted to a secondary badge beside the team name (PR #320). <!-- #319 -->
 - Story 319 (P2) - PDF export: hardcoded M in generatePDF replaced with teamName.charAt(0).toUpperCase() - every team PDF header now shows its own initial (was always M) (PR #320).
