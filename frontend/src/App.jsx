@@ -134,7 +134,7 @@ var _mem = {};
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.5.28";
+var APP_VERSION = "2.5.29";
 
 function loadJSON(key, def) {
   try {
@@ -6615,21 +6615,37 @@ export default function App() {
         // ── Header ─────────────────────────────────────────────
         doc.setFillColor(navy[0], navy[1], navy[2]);
         doc.rect(0, 0, W, 28, "F");
-        // M circle
+        // Brand mark (vector primitives) + team initial badge
+        doc.setFillColor(15, 31, 61);
+        doc.roundedRect(margin + 1, 6, 16, 16, 3, 3, "F");
+        doc.setDrawColor(245, 200, 66);
+        doc.setLineWidth(0.5);
+        doc.roundedRect(margin + 1, 6, 16, 16, 3, 3, "S");
+        doc.setFillColor(245, 200, 66);
+        doc.triangle(margin + 9, 9, margin + 4, 14, margin + 14, 14, "F");
+        doc.triangle(margin + 4, 14, margin + 14, 14, margin + 9, 19, "F");
+        doc.setFillColor(255, 255, 255);
+        doc.circle(margin + 9, 13.2, 2.3, "F");
         doc.setFillColor(200, 16, 46);
-        doc.circle(margin + 7, 14, 6, "F");
+        doc.triangle(margin + 7.5, 16.5, margin + 10.5, 16.5, margin + 9, 18.5, "F");
+        // team initial badge
+        doc.setFillColor(15, 31, 61);
+        doc.circle(margin + 24, 14, 6.5, "F");
+        doc.setDrawColor(245, 200, 66);
+        doc.setLineWidth(0.6);
+        doc.circle(margin + 24, 14, 6.5, "S");
         doc.setTextColor(gold[0], gold[1], gold[2]);
-        doc.setFontSize(10);
+        doc.setFontSize(11);
         doc.setFont("helvetica","bold");
-        doc.text(teamName.charAt(0).toUpperCase(), margin + 7, 16.5, { align:"center" });
+        doc.text(teamName.charAt(0).toUpperCase(), margin + 24, 16.5, { align:"center" });
         // Title
         doc.setTextColor(255,255,255);
         doc.setFontSize(16);
-        doc.text(teamName + " - Game Day Lineup", margin + 18, 13);
+        doc.text(teamName + " - Game Day Lineup", margin + 34, 13);
         doc.setFontSize(9);
         doc.setFont("helvetica","normal");
         doc.setTextColor(180,200,220);
-        doc.text(today, margin + 18, 20);
+        doc.text(today, margin + 34, 20);
         y = 36;
 
         var innArr2 = [];
