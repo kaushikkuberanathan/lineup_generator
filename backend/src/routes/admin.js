@@ -4,6 +4,7 @@ const { supabaseAdmin } = require('../lib/supabase');
 const requireAuth = require('../middleware/requireAuth');
 const requireAdmin = require('../middleware/requireAdmin');
 const { sendApprovalEmail, sendDenialEmail } = require('../lib/email');
+const { normalizeRole } = require('../lib/normalizeRole');
 
 const router = Router();
 
@@ -37,6 +38,29 @@ router.get('/admin/approve-link', async (req, res) => {
         `This request has already been ${accessRequest.status}.`));
     }
 
+    // Normalize the requested role to a canonical team_memberships value.
+    // WS-1 (#336): request-access accepts team_admin/coordinator/parent, but the
+    // team_memberships CHECK constraint only permits admin/coach/scorekeeper/
+    // viewer. Inserting the raw requested_role threw a CHECK violation.
+    // No silent fallback - an unrecognized role must surface, not become a coach.
+    let role;
+    try {
+      role = normalizeRole(accessRequest.requested_role);
+    } catch (roleErr) {
+      console.error('[approve-link] role normalization failed:',
+        roleErr.code, roleErr.message, '| raw:', accessRequest.requested_role);
+
+      if (roleErr.code === 'ROLE_FORBIDDEN') {
+        return res.status(400).send(htmlPage('Invalid Role',
+          'This request asks for a platform-level role, which cannot be granted '
+          + 'as a team membership. Please review it in the admin panel.'));
+      }
+
+      return res.status(400).send(htmlPage('Invalid Role',
+        'This request has an unrecognized role and cannot be approved from this '
+        + 'link. Please approve it via the admin panel.'));
+    }
+
     // Create team membership
     const { error: membershipError } = await supabaseAdmin
       .from('team_memberships')
@@ -44,7 +68,7 @@ router.get('/admin/approve-link', async (req, res) => {
         team_id:      String(teamId),
         email:        accessRequest.email ?? null,
         phone_e164:   accessRequest.phone_e164 ?? null,
-        role:         accessRequest.requested_role ?? 'coach',
+        role,
         status:       'active',
         invited_at:   new Date().toISOString(),
         activated_at: new Date().toISOString(),
@@ -74,13 +98,13 @@ router.get('/admin/approve-link', async (req, res) => {
     await sendApprovalEmail({
       firstName: accessRequest.first_name,
       email:     accessRequest.email ?? accessRequest.phone_e164,
-      role:      accessRequest.requested_role ?? 'coach',
+      role,
       teamName:  teamNameLink,
       teamId:    String(teamId),
     });
 
     return res.status(200).send(htmlPage('Approved!',
-      `${accessRequest.first_name} ${accessRequest.last_name} has been approved as ${accessRequest.requested_role}. They will receive a login email shortly.`));
+      `${accessRequest.first_name} ${accessRequest.last_name} has been approved as ${role}. They will receive a login email shortly.`));
 
   } catch (err) {
     console.error('[approve-link]', err.message);
