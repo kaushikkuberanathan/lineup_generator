@@ -4,7 +4,7 @@ const { supabaseAdmin } = require('../lib/supabase');
 const requireAuth = require('../middleware/requireAuth');
 const requireAdmin = require('../middleware/requireAdmin');
 const { sendApprovalEmail, sendDenialEmail } = require('../lib/email');
-const { normalizeRole } = require('../lib/normalizeRole');
+const { normalizeRole, CANONICAL_ROLES } = require('../lib/normalizeRole');
 
 const router = Router();
 
@@ -238,7 +238,7 @@ router.post(
   [
     body('requestId').isUUID(),
     body('teamId').notEmpty().trim(),
-    body('role').isIn(['coach', 'scorekeeper', 'viewer']),
+    body('role').isIn(CANONICAL_ROLES),
   ],
   async (req, res) => {
     if (validationGuard(req, res)) return;
@@ -427,7 +427,7 @@ router.post(
   '/update-role',
   [
     body('membershipId').isUUID(),
-    body('role').isIn(['admin', 'coach', 'scorekeeper', 'viewer']),
+    body('role').isIn(CANONICAL_ROLES),
   ],
   async (req, res) => {
     if (validationGuard(req, res)) return;
