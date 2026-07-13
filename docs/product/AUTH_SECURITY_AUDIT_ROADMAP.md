@@ -99,7 +99,7 @@ weaken the contract.
 |----|-------|---------|------|----------|--------|
 | WS-1 | Role vocabulary normalization | *(new)* | A | T1 | **DONE** (#336) |
 | WS-2 | Approve-link HMAC + `reviewed_by` | SF-1.11 | A | T1 | Open (#337) |
-| WS-3 | `requireAuth` cutover + RLS 004 | Charter P2 | B (spine) | T1 | Not started |
+| WS-3 | `requireAuth` cutover + RLS 004 | Charter P2 | B (spine) | T1 | **P0 - REMEDIATION, NOT A ROADMAP ITEM.** Six teams' rosters are readable and destructible with the public anon key RIGHT NOW (#342). Four backdoors let anyone rewrite the Mud Hens' live score (#355). **Neither is fixable without this.** |
 | WS-4 | FK restore + WHO/WHEN columns | SF-2.1-adj | rides B | T1 | Not started |
 | WS-5 | Agreement gate (backend + UI) | *(new)* | C | T1 + T2 | Not started |
 | WS-6 | Ownership-check middleware | SF-1.2 | rides B | T1 | Not started |
@@ -187,6 +187,24 @@ but the request stays `pending` - a silent inconsistency, unlogged.
 | #337 | WS-2 Approve-link HMAC + reviewed_by | P1 |
 | #338 | admin.html writes directly to team_memberships, bypassing all backend guards | P1 |
 | #339 | Test suites pollute production team_memberships and access_requests | P2 |
+| #340 | OG meta duplicate | P3 |
+| **#342** | **P0: RLS DISABLED on core tables - rosters publicly readable and destructible** | **P0** |
+| #346 | Real access requests buried under ~593 test rows in the admin panel | P1 |
+| #347 | Missing FK broke the Coaches tab - no test caught it | P2 |
+| **#348** | **No test exercises RLS as an authenticated user - three P0/P1s hid behind a green suite** | **P1** |
+| #350 | Docs are stale or false; admin panel undocumented | P1 |
+| **#351** | **The repo and the production database have never been in sync** | **P1** |
+| #353 | Pitcher rest eligibility (future feature, design preserved) | P3 |
+| **#355** | **Four hardcoded anon backdoors are live on the Mud Hens' scoring tables** | **P1** |
+| #358 | docs/db/ has four overlapping artifacts that will drift | P2 |
+
+**Migrations applied to prod 2026-07-13 (005-012):** RLS lock on `auth_events` and
+`team_data_history`; recursive-policy fix; missing FK; the CHECK widening that
+**unbroke the signup form**; view RLS-bypass fix; SECURITY DEFINER `search_path` pins
++ a dead vulnerable function dropped.
+
+**Ground truth is now `docs/db/schema.sql`.** Debugging gotchas are in
+`docs/TROUBLESHOOTING.md`.
 
 **#338 is the significant discovery.** `frontend/public/admin.html` writes membership
 rows straight to Supabase via the client SDK - a FOURTH write path into

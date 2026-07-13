@@ -243,11 +243,32 @@ team_data  (team_id, roster, schedule, practices, batting_order, grid, innings, 
 
 ### Data Protection
 
-Three independent guards prevent roster wipe:
+> **!! CORRECTED 2026-07-13. THIS SECTION PREVIOUSLY CLAIMED THREE GUARDS PREVENT
+> ROSTER WIPE. THEY DO NOT COVER THE ACTUAL WRITE PATH.**
+>
+> **All three guards live in the BACKEND.** The React app does not use the backend
+> for roster writes - it writes `team_data` **directly to Supabase with the anon
+> key** (`frontend/src/supabase.js:71`). It goes around **all three**.
+>
+> And RLS is **DISABLED** on `team_data`. The anon key ships in the frontend bundle.
+> Anyone can read every roster, overwrite any roster, or **`TRUNCATE` the table**.
+> `TRUNCATE` is granted to `anon` and RLS would not restrict it anyway.
+>
+> **This is #342. It cannot be fixed until WS-3** moves roster writes behind the
+> backend - at which point these three guards start actually guarding.
 
-1. **Postgres trigger** — every write to `team_data` snapshotted in `team_data_history` (last 20 per team). Applied via `backend/migrations/002_team_data_history.sql`.
-2. **Backend write guard** — `POST /api/teams/:teamId/data` returns `409 ROSTER_WIPE_GUARD` if incoming roster is empty and DB row has players. Override requires explicit `force: true` (logged).
-3. **Recovery endpoint** — `GET /api/teams/:teamId/history?limit=5&full=true` (localhost or `X-Admin-Key` header required).
+Three guards exist. **They protect the backend path, which the app does not use:**
+
+1. **Postgres trigger** — every write to `team_data` is snapshotted into
+   `team_data_history` (last 20 per team). **This one DOES fire** on anon writes -
+   it is attached to the table, not the route. It is the only guard currently doing
+   anything. (It must be `SECURITY DEFINER` or it breaks; see `docs/TROUBLESHOOTING.md`.)
+2. **Backend write guard** — `POST /api/teams/:teamId/data` returns
+   `409 ROSTER_WIPE_GUARD` on an empty-roster write. **The app never calls this route.**
+3. **Recovery endpoint** — `GET /api/teams/:teamId/history`. Works, but it is recovery
+   after the fact, not prevention.
+
+**Net: one of three guards is live. Recovery is possible; prevention is not.**
 
 ### Feature Flags
 
@@ -306,7 +327,7 @@ Multi-coach invite, role-based access (Coach / Assistant / Viewer), season-long 
 
 | # | Risk | Likelihood | Impact | Mitigation |
 |---|------|-----------|--------|-----------|
-| 1 | Roster wipe due to empty write | Low | Critical | Three-layer guard: Postgres trigger + backend 409 + recovery endpoint |
+| 1 | Roster wipe due to empty write | **HIGH** | Critical | **!! THE GUARD DOES NOT COVER THE ACTUAL PATH. See Data Protection below. RLS is OFF on `team_data`; the public anon key can TRUNCATE it. (#342)** |
 | 2 | Share link blocked by auth | Medium | High | Auth principle enforced in code: share/Game Mode paths never check session |
 | 3 | Backend availability during game day | Low | High | Resolved by Render Starter plan upgrade (April 27, 2026); UptimeRobot pings `/ping` every 5 min with email + push notification alerting; coach bypass URL for maintenance window |
 | 4 | localStorage vs Supabase state drift | Medium | Medium | Additive merge on boot: Supabase teams not in localStorage are appended, never overwrite |
