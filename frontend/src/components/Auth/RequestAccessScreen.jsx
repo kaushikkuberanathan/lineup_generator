@@ -16,17 +16,21 @@ import { tokens } from "../../theme/tokens";
 
 const TEAM_ID = import.meta.env.VITE_DEFAULT_TEAM_ID || '1774297491626';
 
+// Label layer (WS-1 #336): what the coach SEES is richer than what we STORE.
+// `value` is the canonical team_memberships role written to the DB; `id` is
+// the React key + URL-param token, because two labels legitimately map to the
+// same canonical role (a Coordinator is coach-tier in authz terms).
 const ROLE_OPTIONS = [
-  { value: 'team_admin',  label: 'Head Coach' },
-  { value: 'coach',       label: 'Assistant Coach' },
-  { value: 'coordinator', label: 'Team Coordinator' },
+  { id: 'head_coach',      value: 'admin', label: 'Head Coach' },
+  { id: 'assistant_coach', value: 'coach', label: 'Assistant Coach' },
+  { id: 'coordinator',     value: 'coach', label: 'Team Coordinator' },
 ];
 
 export function RequestAccessScreen({ onBack, requestAccess }) {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName]   = useState('');
   const [email, setEmail]         = useState('');
-  const [role, setRole]           = useState('coach');
+  const [roleId, setRoleId]       = useState('assistant_coach');
   const [teamId, setTeamId]       = useState('');
   const [loading, setLoading]     = useState(false);
   const [error, setError]         = useState('');
@@ -35,8 +39,8 @@ export function RequestAccessScreen({ onBack, requestAccess }) {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const roleParam = params.get('role');
-    if (roleParam && ROLE_OPTIONS.find(r => r.value === roleParam)) {
-      setRole(roleParam);
+    if (roleParam && ROLE_OPTIONS.find(r => r.id === roleParam)) {
+      setRoleId(roleParam);
     }
   }, []);
 
@@ -51,11 +55,12 @@ export function RequestAccessScreen({ onBack, requestAccess }) {
     setError('');
     setLoading(true);
 
+    const selectedRole = ROLE_OPTIONS.find(r => r.id === roleId);
     const result = await requestAccess({
       firstName: firstName.trim(),
       lastName:  lastName.trim(),
       email:     email.trim().toLowerCase(),
-      role,
+      role:      selectedRole.value,
       tid:       teamId.trim() || TEAM_ID,
     });
 
@@ -143,13 +148,13 @@ export function RequestAccessScreen({ onBack, requestAccess }) {
           <div>
             <label style={styles.label}>Your role</label>
             <select
-              value={role}
-              onChange={e => setRole(e.target.value)}
+              value={roleId}
+              onChange={e => setRoleId(e.target.value)}
               style={styles.select}
               disabled={loading}
             >
               {ROLE_OPTIONS.map(r => (
-                <option key={r.value} value={r.value}>{r.label}</option>
+                <option key={r.id} value={r.id}>{r.label}</option>
               ))}
             </select>
           </div>

@@ -379,7 +379,7 @@
             <div class="form-row">
               <div class="form-group">
                 <label>Role</label>
-                <select id="coach-role"><option value="coach">Coach</option><option value="coordinator">Coordinator</option></select>
+                <select id="coach-role"><option value="coach">Coach</option><option value="coach">Coordinator</option><option value="admin">Head Coach</option><option value="scorekeeper">Scorekeeper</option><option value="viewer">Viewer</option></select>
               </div>
               <div class="form-group">
                 <label>Team</label>
@@ -886,7 +886,7 @@
         '</div>' +
         '<div class="approve-form" id="approve-form-' + esc(r.id) + '">' +
           '<div class="form-row">' +
-            '<div class="form-group"><label>Role</label><select id="approve-role-' + esc(r.id) + '"><option value="coach">Coach</option><option value="coordinator">Coordinator</option></select></div>' +
+            '<div class="form-group"><label>Role</label><select id="approve-role-' + esc(r.id) + '"><option value="coach">Coach</option><option value="coach">Coordinator</option><option value="admin">Head Coach</option><option value="scorekeeper">Scorekeeper</option><option value="viewer">Viewer</option></select></div>' +
             '<div class="form-group"><label>Team</label><select id="approve-team-' + esc(r.id) + '"><option value="">— select team —</option>' +
               _teams.map(function(t) { return '<option value="' + esc(t.id) + '">' + esc(t.name) + '</option>'; }).join('') +
             '</select></div>' +
