@@ -1,0 +1,149 @@
+-- Migration 011: P1 FIX - a VIEW was bypassing the RLS lock on team_data_history
+--
+-- APPLIED TO PRODUCTION: 2026-07-13 (Supabase ledger 20260713193315)
+-- Repo record of a migration applied directly to prod.
+--
+-- Numbering note: 010 is taken by docs/db/future/010_pitcher_rest_eligibility.sql
+-- (a preserved design, NOT APPLIED, deliberately outside the migrations tree).
+-- Skipping to 011 rather than reusing the number.
+--
+-- Idempotent: safe to re-run.
+--
+-- ─────────────────────────────────────────────────────────────────────────────
+-- THE HOLE - and I put it there
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Migration 006 (2026-07-13) enabled RLS on team_data_history and revoked anon's
+-- grants. It was verified at the time: anon -> "permission denied for table".
+--
+-- But team_data_history_latest - a VIEW created back in 002_team_data_history.sql -
+-- selects from that table. Views run with the VIEW OWNER's privileges by default
+-- (security_invoker = false, the Postgres 15 default). The owner is postgres. So anon
+-- read the base table THROUGH the view, sailing straight past the lock.
+--
+-- Probed as the anon role, before this fix:
+--
+--   team_data_history        (base table) -> BLOCKED: permission denied
+--   team_data_history_latest (view)       -> LEAK: read 11 rows
+--
+-- The REVOKE hit the table. The view was a second, unrevoked door.
+--
+-- ─────────────────────────────────────────────────────────────────────────────
+-- WHY IT WAS MISSED - the same mistake, a third time
+-- ─────────────────────────────────────────────────────────────────────────────
+-- 006 locked a table without asking what else SELECTed from it.
+--
+-- This is the third instance of one failure mode in a single week:
+--
+--   004_rls_fixes.sql  - trusted a comment claiming the snapshot trigger was
+--                        SECURITY DEFINER. It was not. Running it would have broken
+--                        every roster save.
+--   WS-1 (#336)        - trusted the repo's CHECK constraint instead of querying
+--                        prod's. The resulting normalization BROKE THE SIGNUP FORM
+--                        (see migration 009).
+--   006 (this)         - assumed locking a table locks its data. A view bypassed it.
+--
+-- Every time: secured or built against a DESCRIPTION, not the DATABASE.
+--
+-- The schema baseline missed it too. docs/db/PROD_SCHEMA_BASELINE.md inventories
+-- tables, FKs, triggers, functions and RLS - but had NO VIEWS SECTION. You cannot
+-- detect drift in objects you never enumerate. That gap is now closed in the baseline.
+--
+-- ─────────────────────────────────────────────────────────────────────────────
+-- BLAST RADIUS (limited - metadata, not rosters)
+-- ─────────────────────────────────────────────────────────────────────────────
+-- team_data_history_latest exposes only: team_id, roster_count, written_at,
+-- write_source.
+--
+-- It leaked METADATA - how many players each team has, when rosters were last edited.
+-- NOT the roster snapshots themselves. No children's names went through this door.
+-- Real, but not the P0 the base table was.
+--
+-- ─────────────────────────────────────────────────────────────────────────────
+-- THE SLEEPER - fixed here so it does not become a P0 on cutover day
+-- ─────────────────────────────────────────────────────────────────────────────
+-- roster_snapshots_latest has the identical shape. Its base table (roster_snapshots)
+-- is still RLS-OFF with full anon grants, so TODAY the view leaks nothing the base
+-- table does not already.
+--
+-- But the INSTANT WS-3 locks roster_snapshots, this view becomes exactly the bypass
+-- team_data_history_latest just was. Fixing it now means the lock lands cleanly rather
+-- than surfacing a fresh P0 the same day.
+--
+-- ─────────────────────────────────────────────────────────────────────────────
+-- THE FIX
+-- ─────────────────────────────────────────────────────────────────────────────
+-- security_invoker = true makes a view execute with the CALLER's privileges and
+-- respect the caller's RLS. The view then inherits the base table's protection
+-- automatically - now, and for any future lock.
+--
+-- This is the correct default. Postgres's actual default (invoker = false) is the
+-- surprising one, and is precisely how this hole opened.
+--
+-- ─────────────────────────────────────────────────────────────────────────────
+-- SAFETY - both views are ORPHANS
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Verified across frontend/, backend/, scripts/, tests/, migrations and docs:
+-- ZERO consumers. No .from('team_data_history_latest'), no
+-- .from('roster_snapshots_latest') anywhere. The only hits are their own CREATE
+-- statements and documentation.
+--
+-- The real consumers query the BASE TABLES directly:
+--   backend/src/routes/teamData.js:192  reads team_data_history via supabaseAdmin
+--                                       (service_role bypasses RLS - unaffected)
+--   frontend/src/supabase.js:110,126    reads roster_snapshots via the anon key
+--                                       (base table still RLS-OFF - unaffected)
+--
+-- So this change cannot break anything that exists. Verified post-apply: the
+-- roster_snapshots base table is still readable by anon (33 rows) - the app is fine.
+--
+-- ─────────────────────────────────────────────────────────────────────────────
+-- ROLLBACK (WARNING: re-opens the bypass)
+-- ─────────────────────────────────────────────────────────────────────────────
+--   ALTER VIEW public.team_data_history_latest SET (security_invoker = false);
+--   ALTER VIEW public.roster_snapshots_latest  SET (security_invoker = false);
+--   GRANT SELECT ON public.team_data_history_latest TO anon, authenticated;
+--
+-- Related: #342, #351, migrations 006 and 009
+
+
+ALTER VIEW public.team_data_history_latest SET (security_invoker = true);
+ALTER VIEW public.roster_snapshots_latest  SET (security_invoker = true);
+
+-- Defence in depth: the views have no consumers, so anon has no reason to hold grants
+-- on them. security_invoker already closes the hole; revoking makes it belt AND braces,
+-- so a future security_invoker=false cannot silently re-open it.
+REVOKE ALL ON public.team_data_history_latest FROM anon;
+REVOKE ALL ON public.team_data_history_latest FROM authenticated;
+
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- VERIFICATION (run after applying)
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Expect:
+--   team_data_history_latest  -> BLOCKED (was leaking 11 rows)
+--   team_data_history         -> BLOCKED (006's lock still holds)
+--   roster_snapshots          -> READABLE, 33 rows  <- CONTROL. If this breaks, the
+--                                                      frontend breaks. It must pass.
+--   roster_snapshots_latest   -> readable (inherits the lock when WS-3 lands)
+--
+--   CREATE OR REPLACE FUNCTION public.__tmp_view_probe()
+--   RETURNS TABLE(target text, anon_result text) LANGUAGE plpgsql AS $$
+--   DECLARE n int;
+--   BEGIN
+--     SET LOCAL ROLE anon;
+--     BEGIN
+--       SELECT count(*) INTO n FROM public.team_data_history_latest;
+--       target := 'view'; anon_result := 'STILL LEAKING - '||n; RETURN NEXT;
+--     EXCEPTION WHEN others THEN
+--       target := 'view'; anon_result := 'BLOCKED'; RETURN NEXT;
+--     END;
+--     BEGIN
+--       SELECT count(*) INTO n FROM public.roster_snapshots;
+--       target := 'roster_snapshots CONTROL'; anon_result := 'OK - '||n||' rows'; RETURN NEXT;
+--     EXCEPTION WHEN others THEN
+--       target := 'roster_snapshots CONTROL'; anon_result := 'BROKEN - APP DOWN'; RETURN NEXT;
+--     END;
+--     RESET ROLE;
+--   END $$;
+--   SELECT * FROM public.__tmp_view_probe();
+--   DROP FUNCTION public.__tmp_view_probe();
