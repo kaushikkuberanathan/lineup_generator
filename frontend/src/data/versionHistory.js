@@ -1,5 +1,21 @@
 export var VERSION_HISTORY = [
   {
+    version: '2.5.31',
+    date: 'July 2026',
+    headline: 'Security and reliability hardening',
+    techNote: 'Under-the-hood stability improvements',
+    userChanges: [
+      'Behind-the-scenes security and data-protection improvements. No changes to how the app works.',
+    ],
+    internalChanges: [
+      'WS-1 (#336) - role vocabulary normalization: normalizeRole() as single source of truth; closed a live CHECK-constraint violation in /admin/approve-link that made Head Coach approvals throw; added admin to the /approve validator (admins previously could not approve a Head Coach at all); ingestion canonicalizes at the source; clients send canonical roles via a label layer (PR #341)',
+      'P0 (#342) - RLS hardening: enabled Row Level Security and revoked anon grants on auth_events and team_data_history, which were fully exposed to the public anon key; made snapshot_team_data() and prune_team_data_history() SECURITY DEFINER with pinned search_path so the roster-snapshot trigger survives the lock (PR #343)',
+      'Corrected a false SECURITY DEFINER claim in 004_rls_fixes.sql that would have broken every roster save if the migration were run as written',
+      'Backend unit suite: 93 tests, 0 fail',
+      'Patch bump 2.5.30 to 2.5.31',
+    ],
+  },
+  {
     version: '2.5.30',
     date: 'June 2026',
     headline: 'New Demo All-Stars team — a full team to explore the app',

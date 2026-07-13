@@ -1,0 +1,66 @@
+-- Migration 005: P0 SECURITY FIX - lock auth_events
+--
+-- APPLIED TO PRODUCTION: 2026-07-13 (Supabase ledger version 20260713143900)
+-- This file is the repo record of a migration that was applied directly to prod
+-- under an active security exposure. It is committed AFTER the fact so the repo,
+-- the DEV project, and any future rebuild stay in sync.
+--
+-- Idempotent: safe to re-run.
+--
+-- ---------------------------------------------------------------------------
+-- WHAT WAS WRONG
+-- ---------------------------------------------------------------------------
+-- auth_events had:
+--   RLS: DISABLED
+--   Grants to anon: SELECT, INSERT, UPDATE, DELETE, TRUNCATE
+--
+-- The Supabase anon key is public by design - it ships in the frontend bundle
+-- (VITE_SUPABASE_ANON_KEY) and is hardcoded in frontend/public/admin.html.
+-- RLS is the ONLY thing that makes that safe. RLS was not enabled.
+--
+-- Result: anyone who viewed source on dugoutlineup.com could read, forge, or
+-- TRUNCATE the entire auth audit log (560 rows at time of discovery).
+--
+-- ---------------------------------------------------------------------------
+-- WHY THIS IS SAFE TO ENABLE WITH NO POLICIES
+-- ---------------------------------------------------------------------------
+-- auth_events is written ONLY by the backend's logAuthEvent() helper, which uses
+-- supabaseAdmin (the service_role key). service_role BYPASSES RLS entirely.
+--
+-- Verified before applying: zero occurrences of auth_events in frontend/src or
+-- frontend/public/admin.html. The client never touches this table.
+--
+-- With RLS enabled and no policies:
+--   anon          -> denied (no matching policy)
+--   authenticated -> denied (no matching policy)
+--   service_role  -> bypasses RLS (backend unchanged)
+--
+-- ---------------------------------------------------------------------------
+-- ROLLBACK
+-- ---------------------------------------------------------------------------
+--   ALTER TABLE public.auth_events DISABLE ROW LEVEL SECURITY;
+--   GRANT SELECT, INSERT, UPDATE, DELETE ON public.auth_events TO anon, authenticated;
+--
+-- Related: GitHub #342
+
+ALTER TABLE public.auth_events ENABLE ROW LEVEL SECURITY;
+
+-- Defence in depth: revoke the grants outright. Even if a permissive policy is
+-- ever added by mistake, the roles have no table privileges to exercise.
+REVOKE ALL ON public.auth_events FROM anon;
+REVOKE ALL ON public.auth_events FROM authenticated;
+
+-- ---------------------------------------------------------------------------
+-- VERIFICATION (run after applying)
+-- ---------------------------------------------------------------------------
+-- Expect: rls_enabled = true, policy_count = 0, anon_grants = NONE
+--
+--   SELECT c.relrowsecurity AS rls_enabled,
+--          (SELECT count(*) FROM pg_policies p
+--            WHERE p.schemaname='public' AND p.tablename='auth_events') AS policy_count,
+--          COALESCE((SELECT string_agg(DISTINCT g.grantee, ',')
+--                    FROM information_schema.role_table_grants g
+--                    WHERE g.table_schema='public' AND g.table_name='auth_events'
+--                      AND g.grantee IN ('anon','authenticated')), 'NONE') AS anon_grants
+--   FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+--   WHERE n.nspname='public' AND c.relname='auth_events';

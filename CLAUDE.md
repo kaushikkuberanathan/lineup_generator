@@ -60,7 +60,7 @@ Default base for new work: develop.
 ### Multi-team design (Phase 5)
 - One Supabase auth.users record per person regardless of how many teams
 - One team_memberships row per (user, team) combination
-- `team_admin` is team-scoped; `platform_admin` is global (KK only)
+- Two axes, never conflated. `platform_admin` is a GLOBAL capability and is NEVER written to `team_memberships` (normalizeRole throws ROLE_FORBIDDEN). Team roles are four canonical strings, enforced by the CHECK constraint: `admin` | `coach` | `scorekeeper` | `viewer`. Richer concepts (Head Coach, Team Coordinator) are LABELS on top of these strings. Full role model: docs/product/AUTH_SECURITY_AUDIT_ROADMAP.md
 - Phase 4 MVP: platform_admin manually creates teams in Supabase
 - Approval routing: ALL requests → platform_admin (icoachyouthball@gmail.com)
 
@@ -113,7 +113,8 @@ All `team_data` columns are JSONB — structure matches localStorage exactly, no
 Viewing lineup and share links must **never** require login. Auth must never block Game Mode or share link rendering.
 
 ### Current Users in team_memberships
-- Kaushik K: kaushik.kuberanathan@gmail.com, user_id: `951f66cc-afec-41b2-8c1a-58fc61f1b847`, role=platform_admin, team=Mud Hens (1774297491626), status=active
+- Kaushik K: kaushik.kuberanathan@gmail.com, user_id: `951f66cc-afec-41b2-8c1a-58fc61f1b847`, role=admin, team=Mud Hens (1774297491626), status=active
+- NOTE: `platform_admin` is NOT a valid team_memberships value - the CHECK constraint forbids it. DB-verified 2026-07-13: three `admin` rows exist for KK across three email identities (kaushik.kuberanathan@, kaushikkuberanathan@ without the dot, icoachyouthball@).
 - Stan Hoover: role=coach, team=Mud Hens (1774297491626), status=invited → set active before Phase 4 cutover
 
 ### Phase 4 Cutover (parked)
@@ -534,7 +535,7 @@ Every other session: open `docs/product/DOC_TEST_DEBT.md` — close P0s, promote
 ---
 
 ## Current Version
-**v2.5.26** — June 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/data/versionHistory.js`.
+**v2.5.31** — July 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/data/versionHistory.js`.
 
 - v2.5.26 (2026-06-08): New About tab — builder profile, partnership CTA, and contact links (Story 105, PR #283). AboutTab.test.jsx golden-path 13 tests (Story 106, PR #290), backend teamData tests Story 99 Phase 2 tranche 1 (PR #282), Story 83 regression guard appImports.test.js + Stories 83/84 resolved (PR #289), UX Phase 4 App.jsx decomposition planning doc (Story 104, PR #280), Stories 106/107/108 filed (PR #287). Test suite 815 passing / 1 skipped — 786 frontend + 29 backend (pre-promote run).
 - v2.5.25 (2026-06-01): Reliability and consistency improvements — Story 99 backend test foundation (supertest + app/server split + admin.auth.test.js 9 tests + hermetic backend-unit CI job, PR #272; In Progress, remaining coverage in #252), Story 102 App.jsx OUT-row error tint token migration with new errorMid token (zero visible change, PR #271), backend/CLAUDE.md routes-doc correction + FEATURE_MAP row #33. Test suite 771 frontend + 9 backend supertest passing / 1 skipped.
