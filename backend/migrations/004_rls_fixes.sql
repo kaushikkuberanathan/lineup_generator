@@ -276,8 +276,25 @@ CREATE POLICY "roster_snapshots_auth_insert"
 -- 5. team_data_history   (S6)
 -- ═══════════════════════════════════════════════════════════════════════════
 -- Design: append-only audit log. No anon reads. No authenticated-role reads
--- via REST API. Writes happen only via the snapshot_team_data() trigger which
--- runs as SECURITY DEFINER (table owner context) — bypasses RLS for trigger writes.
+-- via REST API.
+-- !! CORRECTED 2026-07-13 (#342): the claim that this trigger is SECURITY DEFINER
+-- !! was FALSE, and acting on it would have broken every roster save.
+-- !!
+-- !! snapshot_team_data() was NOT SECURITY DEFINER (verified against prod:
+-- !! pg_proc.prosecdef = false). A non-DEFINER trigger runs as the INVOKER, and
+-- !! coaches save team_data with the ANON key (the frontend writes Supabase
+-- !! directly - it does NOT use the backend teamData route). So the trigger's
+-- !! insert into team_data_history executed AS ANON. Enabling RLS here with no
+-- !! policies would have BLOCKED that insert, failing the trigger and therefore
+-- !! failing the coach's roster save.
+-- !!
+-- !! FIXED in migration 006, which makes snapshot_team_data() and
+-- !! prune_team_data_history() SECURITY DEFINER with a pinned search_path.
+-- !! RLS on team_data_history is ALREADY ENABLED in prod as of 006, so this
+-- !! section is now a no-op. Read 006 before re-applying anything here.
+--
+-- Writes happen only via the snapshot_team_data() trigger, which (as of migration
+-- 006) runs as SECURITY DEFINER in table-owner context and bypasses RLS.
 -- service_role (backend supabaseAdmin) bypasses RLS entirely for recovery reads.
 --
 -- With RLS enabled and NO policies added:
