@@ -1413,13 +1413,12 @@ Story numbers 17, 18, 25, and 52 were never allocated. No entries exist in this 
 ### Phase 5A — Self-service team creation
 - Head coaches can create their own team without platform_admin involvement
 - Team creation flow: name, age group, sport, division
-- Auto-assigns creator as team_admin of the new team
+- Auto-assigns creator as `admin` of the new team (labeled "Head Coach")
 
 ### Phase 5B — Delegated approval
-- team_admin can approve coach/coordinator requests for their own team
-- platform_admin only receives and approves team_admin requests
-- Notification routing: team_admin requests → platform_admin, 
-  coach/coordinator requests → team_admin of that team
+- Team `admin` can approve coach-tier requests for their own team
+- `platform_admin` (global, not a membership row) receives and approves requests for the team `admin` seat
+- Notification routing: requests for the `admin` seat -> platform_admin; coach-tier requests -> the team's `admin`
 
 ### Phase 5C — Team switcher UI
 - Multi-team users see team switcher on home screen
@@ -1430,12 +1429,12 @@ Story numbers 17, 18, 25, and 52 were never allocated. No entries exist in this 
 ### Phase 5D — Team join links
 - Head coach generates QR code / shareable link for their team
 - Pre-fills team ID and role in RequestAccessScreen
-- Separate links per role (head coach link, assistant link, coordinator link)
+- Separate links per role. NOTE: as of WS-1 (#336) the `?role=` param matches on the option ID, not the stored value. Valid tokens are `head_coach`, `assistant_coach`, `coordinator` - NOT `team_admin`/`coach`/`viewer`.
 
 ### Phase 5E — Head coach onboarding flow (replaces manual Supabase creation)
 - Platform admin sends "Create your team" invite link to new head coach
 - Head coach fills out team details + their own profile
-- Team is created, head coach gets team_admin membership automatically
+- Team is created, head coach gets an `admin` membership automatically
 
 ---
 
