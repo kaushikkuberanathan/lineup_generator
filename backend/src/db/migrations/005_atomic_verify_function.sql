@@ -1,3 +1,24 @@
+-- ############################################################################
+-- !! DO NOT RUN. THIS FUNCTION WAS DROPPED FROM PRODUCTION ON 2026-07-13.
+-- !!
+-- !! activate_membership() was dropped in backend/migrations/012 because it was:
+-- !!
+-- !!   DEAD      - zero callers. No .rpc('activate_membership') anywhere in the repo.
+-- !!   OBSOLETE  - built for phone-only auth. Phone/SMS auth was PERMANENTLY REMOVED.
+-- !!               Its lookup key is phone_e164; the live UI collects no phone field.
+-- !!   BROKEN    - it declares RETURNS TABLE(..., team_id UUID, ...) but
+-- !!               team_memberships.team_id is TEXT in production. It would ERROR on
+-- !!               the first returned row. It has likely never executed successfully.
+-- !!   UNSAFE    - SECURITY DEFINER with NO pinned search_path: a privilege-escalation
+-- !!               vector. A caller could shadow an unqualified table name and have a
+-- !!               postgres-privileged function operate on THEIR table.
+-- !!
+-- !! Running this file re-creates a broken, vulnerable, uncalled function.
+-- !!
+-- !! The real membership activation path is a direct .update() in
+-- !! backend/src/routes/auth.js. See docs/product/ROADMAP.md:1324.
+-- ############################################################################
+
 -- Migration 005: atomic function to activate a membership on first OTP login
 -- Additive only — no existing tables are modified.
 
