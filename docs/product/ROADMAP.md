@@ -1,10 +1,18 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: 2026-06-15 (v2.5.30 — New Demo All-Stars team: full clone of real team data with remapped demo names)
+> Last updated: 2026-07-13 (v2.5.31 - Security hardening: role normalization + RLS lock on exposed tables)
 > MVP launched: March 24, 2026
 
 ---
 
+## v2.5.31 - 2026-07-13 - Security hardening: role normalization + RLS lock
+- WS-1 (P1) resolved - Role vocabulary normalization: three layers disagreed on role strings; /admin/approve-link inserted requested_role verbatim, so approving a Head Coach threw a CHECK violation (a live prod row was in exactly that state). POST /admin/approve separately omitted admin from its validator, so admins could not approve a Head Coach at all. normalizeRole() is now the single source of truth; all write boundaries canonicalize. 93 backend tests (PR #341). <!-- #336 -->
+- P0 (P0) resolved - RLS was DISABLED on five core tables with anon holding full CRUD + TRUNCATE. auth_events (560 rows) and team_data_history (2,811 rows - every roster edit ever made) are now locked: RLS enabled, anon grants revoked. Verified anon gets permission denied; roster saves proven still working (PR #343). <!-- #342 -->
+- Corrected a false SECURITY DEFINER claim in 004_rls_fixes.sql. snapshot_team_data() was NOT SECURITY DEFINER; running 004 as written would have blocked the trigger's insert and failed every coach's roster save. Both trigger functions are now SECURITY DEFINER with a pinned search_path.
+- STILL EXPOSED: team_data, teams, roster_snapshots cannot be locked until the requireAuth cutover (WS-3). The React app writes all three directly with the anon key, so any auth.uid() policy breaks roster saves today.
+- Issues filed: #337 (approve-link HMAC), #338 (admin.html bypasses all backend guards), #339 (test suites pollute prod), #340 (OG meta duplicate), #342 (the P0).
+- Patch bump 2.5.30 to 2.5.31.
+---
 ## v2.5.30 - 2026-06-15 - New Demo All-Stars team (full clone of real team data)
 - Story 332 (P2) resolved - Demo All-Stars: loadDemoTeam() seeds from frontend/src/data/demoSeed.js, a frozen clone of the Mud Hens team data (full roster with skills/walk-up songs/profiles, defensive grid, 11-game schedule) with all player and opponent names remapped to demo names; added grid persistence + 8U age group (PR #333). <!-- #332 -->
 - Per-user copy model: the demo is created locally per device (local-only, never synced to Supabase); the "Try Demo Team" button + dedup guard unchanged.
