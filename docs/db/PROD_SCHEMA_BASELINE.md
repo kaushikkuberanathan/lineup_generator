@@ -10,6 +10,18 @@ invisibly. See #351.
 files in `backend/migrations/` or `backend/src/db/migrations/` disagree with it, the
 migration files are wrong.
 
+> **!! READ `PROD_SCHEMA_BASELINE_ADDENDUM_1.md` ALONGSIDE THIS FILE.**
+> This document is INCOMPLETE. It enumerates tables, constraints, indexes, triggers,
+> functions and RLS state - but **no views, no grants, no RLS policies, no sequences**.
+>
+> That gap hid a live security hole: a VIEW was bypassing the RLS lock on
+> `team_data_history` (fixed, migration 011), and four hardcoded `*_anon_test`
+> backdoors grant `anon` full write on the real team's scoring tables (#355, still open).
+>
+> It also states 14 tables. **There are 15.** Corrected in the addendum.
+>
+> You cannot detect drift in objects you never enumerate.
+
 ---
 
 ## DRIFT FOUND (repo says X, prod says Y)
