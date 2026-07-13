@@ -60,7 +60,7 @@ Default base for new work: develop.
 ### Multi-team design (Phase 5)
 - One Supabase auth.users record per person regardless of how many teams
 - One team_memberships row per (user, team) combination
-- `team_admin` is team-scoped; `platform_admin` is global (KK only)
+- Two axes, never conflated. `platform_admin` is a GLOBAL capability and is NEVER written to `team_memberships` (normalizeRole throws ROLE_FORBIDDEN). Team roles are four canonical strings, enforced by the CHECK constraint: `admin` | `coach` | `scorekeeper` | `viewer`. Richer concepts (Head Coach, Team Coordinator) are LABELS on top of these strings. Full role model: docs/product/AUTH_SECURITY_AUDIT_ROADMAP.md
 - Phase 4 MVP: platform_admin manually creates teams in Supabase
 - Approval routing: ALL requests → platform_admin (icoachyouthball@gmail.com)
 
@@ -113,7 +113,8 @@ All `team_data` columns are JSONB — structure matches localStorage exactly, no
 Viewing lineup and share links must **never** require login. Auth must never block Game Mode or share link rendering.
 
 ### Current Users in team_memberships
-- Kaushik K: kaushik.kuberanathan@gmail.com, user_id: `951f66cc-afec-41b2-8c1a-58fc61f1b847`, role=platform_admin, team=Mud Hens (1774297491626), status=active
+- Kaushik K: kaushik.kuberanathan@gmail.com, user_id: `951f66cc-afec-41b2-8c1a-58fc61f1b847`, role=admin, team=Mud Hens (1774297491626), status=active
+- NOTE: `platform_admin` is NOT a valid team_memberships value - the CHECK constraint forbids it. DB-verified 2026-07-13: three `admin` rows exist for KK across three email identities (kaushik.kuberanathan@, kaushikkuberanathan@ without the dot, icoachyouthball@).
 - Stan Hoover: role=coach, team=Mud Hens (1774297491626), status=invited → set active before Phase 4 cutover
 
 ### Phase 4 Cutover (parked)

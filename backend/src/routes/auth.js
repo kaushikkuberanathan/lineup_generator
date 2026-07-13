@@ -29,6 +29,7 @@ const { supabaseAdmin, supabaseAnon } = require('../lib/supabase');
 const requireAuth = require('../middleware/requireAuth');
 const { logAuthEvent } = require('../lib/authEvents');
 const { sendAdminNotification } = require('../lib/email');
+const { normalizeRole } = require('../lib/normalizeRole');
 
 const router = express.Router();
 
@@ -100,6 +101,26 @@ router.post(
 
     const { email, phone } = normalizeContact(req.body, channel);
 
+    // Normalize the requested role to a canonical team_memberships value before
+    // it is persisted. WS-1 (#336): access_requests.requested_role was written
+    // verbatim, so team_admin/coordinator/parent landed in the DB - values the
+    // team_memberships CHECK constraint rejects. That is why approve-link had to
+    // transform on read.
+    //
+    // The validator above still ACCEPTS legacy labels: this is a public form and
+    // the frontend sends team_admin/coordinator today. Accept, then translate.
+    let canonicalRole;
+    try {
+      canonicalRole = normalizeRole(requestedRole);
+    } catch (roleErr) {
+      console.error('[auth/request-access] role normalization failed:',
+        roleErr.code, roleErr.message, '| raw:', requestedRole);
+      return res.status(400).json({
+        error: 'VALIDATION_ERROR',
+        message: 'Unrecognized role.',
+      });
+    }
+
     try {
       // Check for duplicate pending request for this team + contact
       const contactFilter = channel === 'email'
@@ -135,7 +156,7 @@ router.post(
           email:          email ?? null,
           phone_e164:     phone ?? null,
           team_id:        String(teamId),
-          requested_role: requestedRole,
+          requested_role: canonicalRole,
           status:         'pending',
           // Device context
           platform:        deviceContext?.platform        ?? null,
@@ -174,7 +195,7 @@ router.post(
         firstName,
         lastName,
         email:         email ?? null,
-        requestedRole,
+        requestedRole: canonicalRole,
         teamId:        String(teamId),
         teamName,
         platform:      deviceContext?.platform    ?? 'unknown',
