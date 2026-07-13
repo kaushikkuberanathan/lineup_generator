@@ -7,6 +7,19 @@
 --             Every statement below was read from the running database, not from a
 --             migration file or a doc.
 --
+--  !! FIXED 2026-07-13: this file DID NOT RUN. Two columns were rendered as
+--  !! DEFAULT expressions when they are actually STORED GENERATED columns. Postgres
+--  !! rejects a DEFAULT that references another column, so the whole transaction
+--  !! aborted.
+--  !!
+--  !! The irony is the point: this file's entire thesis is "stop trusting
+--  !! descriptions, query the database" - and it contained a wrong description,
+--  !! because the introspection read pg_attrdef and never checked
+--  !! pg_attribute.attgenerated.
+--  !!
+--  !! It was caught by RUNNING it (the DEV rebuild), not by reading it. Any future
+--  !! change to this file must be executed against DEV before being trusted.
+--
 --  WHY THIS FILE EXISTS
 --    Until now there was no source of truth to diff production against. The
 --    consequences, all found in one week:
@@ -96,7 +109,10 @@ CREATE TABLE IF NOT EXISTS public.team_data_history (
   id           bigint                   NOT NULL DEFAULT nextval('team_data_history_id_seq'::regclass),
   team_id      text                     NOT NULL,
   snapshot     jsonb                    NOT NULL,
-  roster_count integer                  DEFAULT jsonb_array_length(COALESCE((snapshot -> 'roster'::text), '[]'::jsonb)),
+  -- STORED GENERATED, not a DEFAULT. Postgres cannot reference another column in a
+  -- DEFAULT expression - schema.sql would not run. (Fixed 2026-07-13; caught by the
+  -- DEV rebuild actually executing this file.)
+  roster_count integer                  GENERATED ALWAYS AS (jsonb_array_length(COALESCE((snapshot -> 'roster'::text), '[]'::jsonb))) STORED,
   written_at   timestamp with time zone DEFAULT now(),
   write_source text,
   CONSTRAINT team_data_history_pkey PRIMARY KEY (id)
@@ -109,7 +125,8 @@ CREATE TABLE IF NOT EXISTS public.roster_snapshots (
   team_id       text                     NOT NULL,
   team_name     text,
   roster        jsonb                    NOT NULL,
-  player_count  integer                  DEFAULT jsonb_array_length(roster),
+  -- STORED GENERATED, not a DEFAULT. See the note on team_data_history.roster_count.
+  player_count  integer                  GENERATED ALWAYS AS (jsonb_array_length(roster)) STORED,
   snapshot_at   timestamp with time zone NOT NULL DEFAULT now(),
   trigger_event text                     NOT NULL DEFAULT 'manual'::text,
   CONSTRAINT roster_snapshots_pkey PRIMARY KEY (id),
