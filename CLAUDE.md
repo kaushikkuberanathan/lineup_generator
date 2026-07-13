@@ -60,7 +60,11 @@ Default base for new work: develop.
 ### Multi-team design (Phase 5)
 - One Supabase auth.users record per person regardless of how many teams
 - One team_memberships row per (user, team) combination
-- Two axes, never conflated. `platform_admin` is a GLOBAL capability and is NEVER written to `team_memberships` (normalizeRole throws ROLE_FORBIDDEN). Team roles are four canonical strings, enforced by the CHECK constraint: `admin` | `coach` | `scorekeeper` | `viewer`. Richer concepts (Head Coach, Team Coordinator) are LABELS on top of these strings. Full role model: docs/product/AUTH_SECURITY_AUDIT_ROADMAP.md
+- **!! CORRECTED 2026-07-13. The previous version of this line said the CHECK constraint enforces FOUR canonical roles. IT DOES NOT. Prod enforces SEVEN.** Building on the four-role claim **broke the public signup form** - WS-1's ingestion normalization wrote `admin` and `viewer` to `access_requests`, values the live CHECK **rejected**. Head Coach and Parent signups returned 500 until migration 009 widened it.
+- **What prod ACTUALLY enforces** (verified by query, see `docs/db/schema.sql`): `team_memberships.role` CHECK allows **SEVEN** values - `admin`, `viewer`, `team_admin`, `coordinator`, `coach`, `scorekeeper`, `parent`. `access_requests.requested_role` allows the same seven (widened by migration 009).
+- **The four-role model is the TARGET, enforced in CODE** by `normalizeRole()` - not by the database. The DB tolerates legacy values because 596 existing rows hold them. Tightening the CHECK is a data migration, not a doc edit.
+- `platform_admin` is a GLOBAL capability and is NEVER written to `team_memberships` (`normalizeRole` throws `ROLE_FORBIDDEN`). Richer concepts (Head Coach, Team Coordinator) are LABELS on top of the canonical strings.
+- **Never trust a role constraint written in a doc or a migration file. Query the database.** Full role model: `docs/product/AUTH_SECURITY_AUDIT_ROADMAP.md`. Ground truth: `docs/db/schema.sql`.
 - Phase 4 MVP: platform_admin manually creates teams in Supabase
 - Approval routing: ALL requests → platform_admin (icoachyouthball@gmail.com)
 

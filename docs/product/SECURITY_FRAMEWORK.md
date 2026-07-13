@@ -32,7 +32,20 @@ Each item is structured for direct conversion into a Claude Code paste prompt or
 
 ## Threat Model Summary
 
+> **!! CORRECTED 2026-07-13.** This model did not include the failure that **actually
+> happened**, so it is added as #0. A threat model that omits "the control is simply
+> not enabled" is not modelling the real world.
+
 The risks we are defending against, in priority order:
+
+0. **A SECURITY CONTROL IS SIMPLY NOT ENABLED** — not bypassed, not misconfigured:
+   **absent**. RLS was **DISABLED** on five tables for months, with `TRUNCATE` granted
+   to the public `anon` key (#342). A recursive policy made every authenticated read
+   of `team_memberships` **throw** - the admin panel's gate had **never** worked. A
+   VIEW read straight through an RLS lock that had been verified working the day
+   before. **Nothing detected any of it, because nothing was comparing the database to
+   an expected state.** Mitigation: `docs/db/schema.sql` (ground truth, read from the
+   live DB) + a drift-detection check (#351).
 
 1. **Account takeover** — stolen tokens, weak passwords, no MFA → attacker edits/exfiltrates rosters
 2. **Share link enumeration** — guessable IDs let strangers find rosters
@@ -306,6 +319,16 @@ When K picks an item from this doc:
 
 | Phase | Item | Status | Shipped Version | Date |
 |---|---|---|---|---|
+> **!! STALE. This tracker says all 33 items are "Not started". Several are done, and
+> it is missing everything found in July 2026.** See
+> `docs/product/AUTH_SECURITY_AUDIT_ROADMAP.md` and the issue list below.
+>
+> **Done since this table was written:** 1.11 (approve-link HMAC → #337, still open
+> but scoped), 2.1-adjacent (audit columns → WS-4). **Newly found and NOT in this
+> table at all:** RLS disabled (#342), recursive RLS policy, view RLS bypass,
+> SECURITY DEFINER search_path vectors, four `*_anon_test` backdoors (#355), tests
+> writing to prod (#339), zero RLS test coverage (#348), repo/DB never in sync (#351).
+
 | 0.1 | Share-link ID audit | ☐ Not started | — | — |
 | 0.2 | CORS lockdown | ☐ Not started | — | — |
 | 0.3 | Helmet middleware | ☐ Not started | — | — |
