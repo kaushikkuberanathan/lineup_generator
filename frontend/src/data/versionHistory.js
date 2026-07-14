@@ -1,5 +1,25 @@
 export var VERSION_HISTORY = [
   {
+    version: '2.5.32',
+    date: 'July 2026',
+    headline: 'Security hardening and internal tooling',
+    techNote: 'Under-the-hood stability improvements',
+    userChanges: [
+      'Behind-the-scenes security improvements. No changes to how the app works.',
+    ],
+    internalChanges: [
+      'SECURITY: a live production Supabase service_role key was found committed in backend/.env.example. It had been in a PUBLIC repo since 2026-03-23 - 113 days. service_role bypasses RLS on every table. Remediated 2026-07-14: new keys generated, all consumers updated (Render, Vercel, GitHub Actions), legacy keys DISABLED. The leaked value is dead. It remains in git history (31b8d38, a79d1af, a72d37b) - rotation is what killed it, not deletion. No evidence of compromise (no unknown teams, admins, or auth users), but service_role reads leave no trace and Supabase retains 24h of logs, so 113 days is unauditable.',
+      'admin.html had the anon key HARDCODED (static file in frontend/public/, so Vite cannot inject an env var). The admin panel broke the moment the legacy keys were disabled. Replaced with the new publishable key. It was the only hardcoded key in the repo.',
+      'Migrations 011-012: a VIEW (team_data_history_latest) was bypassing the RLS lock on team_data_history - views run with the OWNER privileges by default and read straight through. Both views set security_invoker=true. Also pinned search_path on all SECURITY DEFINER functions (an unpinned one is a privilege-escalation vector) and dropped activate_membership() - dead, phone-era, and it declared team_id UUID against a TEXT column.',
+      'docs/db/schema.sql - the first EXECUTABLE ground truth this project has had, read from pg_catalog on the live database. Every object count verified by execution: 15 tables, 21 policies, 28 indexes, 7 functions, 7 triggers, 2 views.',
+      'DEV rebuilt as a true mirror of prod (docs/db/dev_rebuild.sql). It was never a mirror - it was a FORK, with a table prod lacks, a six-role CHECK containing values that exist nowhere else, and an event trigger that auto-enabled RLS. A migration rehearsed against it proved nothing.',
+      'docs/TROUBLESHOOTING.md - the gotchas that cost real time. 7 of 8 feature flags are read from the BUNDLED JS, not the database. An access request that will not approve is probably a UNIQUE INDEX on (team_id, email), not a role problem.',
+      'Eight governing docs corrected. CHARTER.md claimed three guards prevent roster wipe - all three live in the backend, and the app writes team_data directly with the anon key. One of three is actually live.',
+      'STILL OPEN: RLS is OFF on team_data, teams and roster_snapshots (#342). Four *_anon_test backdoors grant anon full write on the live scoring tables (#355). Neither is fixable without the requireAuth cutover (WS-3).',
+      'Patch bump 2.5.31 to 2.5.32.',
+    ],
+  },
+  {
     version: '2.5.31',
     date: 'July 2026',
     headline: 'Security and reliability hardening',

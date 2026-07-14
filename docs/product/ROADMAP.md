@@ -1,10 +1,23 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: 2026-07-13 (v2.5.31 - Security hardening: role normalization + RLS lock on exposed tables)
+> Last updated: 2026-07-14 (v2.5.32 - Leaked service_role key rotated; view RLS bypass closed; DEV rebuilt as a true mirror of prod)
 > MVP launched: March 24, 2026
 
 ---
 
+## v2.5.32 - 2026-07-14 - Leaked service_role key rotated; view RLS bypass closed
+- **!! SECURITY INCIDENT.** A live PRODUCTION Supabase `service_role` key was found committed in `backend/.env.example`. It had been in a **PUBLIC repo since 2026-03-23 - 113 days**. `service_role` bypasses RLS on every table: rosters, children's names, memberships, auth. Remediated 2026-07-14 - new keys generated, all consumers updated, **legacy keys DISABLED**. The leaked value is dead. It remains in git history (`31b8d38`, `a79d1af`, `a72d37b`); rotation is what killed it, deletion would not have.
+- No evidence of compromise: no unknown teams, admins, or auth users. **But `service_role` reads leave no trace and Supabase retains 24h of logs. 113 days is unauditable.** Absence of evidence is not evidence of absence.
+- Found by ACCIDENT - the agent noticed real-looking JWTs in `.env.example` while reconning CI secrets for the drift-detection script (#351). Nobody was looking for it.
+- `admin.html` had the anon key HARDCODED (a static file - Vite cannot inject env vars there), so the admin panel broke the moment the legacy keys were disabled. Fixed with the new publishable key. It was the ONLY hardcoded key in the repo.
+- Migration 011 - a **VIEW was bypassing the RLS lock** on `team_data_history`. Views run with the OWNER's privileges by default and read straight through a lock verified working the day before. Both views now `security_invoker = true`.
+- Migration 012 - pinned `search_path` on every SECURITY DEFINER function (an unpinned one is a privilege-escalation vector, and one is called from the client). Dropped `activate_membership()` - dead, phone-era, and it declared `team_id UUID` against a `TEXT` column, so it could never have worked.
+- `docs/db/schema.sql` - the first **executable** ground truth this project has had, read from `pg_catalog` and **verified by execution**: 15 tables, 21 policies, 28 indexes, 7 functions, 7 triggers, 2 views.
+- **DEV rebuilt as a true mirror of prod.** It was never a mirror - it was a fork, with a table prod lacks, a six-role CHECK containing values that exist nowhere else, and an event trigger that auto-enabled RLS. A migration rehearsed against it proved nothing. WS-3 finally has a rehearsal environment it can trust.
+- `docs/TROUBLESHOOTING.md` added. Eight governing docs corrected - `CHARTER.md` claimed three guards prevent roster wipe; all three live in the backend, and the app writes `team_data` directly with the anon key.
+- STILL OPEN: RLS is OFF on `team_data`, `teams`, `roster_snapshots` (#342). Four `*_anon_test` backdoors grant `anon` full write on the live scoring tables (#355). Neither is fixable without WS-3.
+- Patch bump 2.5.31 to 2.5.32.
+---
 ## v2.5.31 - 2026-07-13 - Security hardening: role normalization + RLS lock
 - WS-1 (P1) resolved - Role vocabulary normalization: three layers disagreed on role strings. normalizeRole() is now the single source of truth; all write boundaries canonicalize. POST /admin/approve had omitted `admin` from its validator, so admins genuinely could not approve a Head Coach. 93 backend tests (PR #341). <!-- #336 -->
 - **!! CORRECTION (2026-07-13, same day): the original entry claimed /admin/approve-link "threw a CHECK violation". IT COULD NOT HAVE.** Prod's CHECK allows SEVEN roles including `team_admin` - the four-role constraint we built against exists only in the repo, never in the database. **The real reason three access requests had been stuck since April is a UNIQUE INDEX on `(team_id, email)`** - two of the three were for emails that already had an active membership. It was a duplicate-membership violation, not a role problem. See `docs/TROUBLESHOOTING.md`.
