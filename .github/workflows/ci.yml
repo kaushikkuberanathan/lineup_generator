@@ -92,9 +92,14 @@ jobs:
           ADMIN_KEY:                 ${{ secrets.ADMIN_KEY }}
 
   # ── Job 2b: Backend Unit Tests (supertest, in-process) ─────────────────────
-  # In-process tests — no live server, no prod DB, no Render dependency.
-  # Requires env vars only to satisfy app.js import (env.js + supabase.js
-  # throw at require-time if missing). Tests never reach Supabase at runtime.
+  # Hermetic. No live server, no live DB, no Render dependency, NO REAL
+  # CREDENTIALS. Env vars are dummy values that exist only to satisfy
+  # require-time checks in env.js / supabase.js. If a spec reaches for the
+  # network it will fail against an unresolvable .invalid host — by design.
+  #
+  # Collection: `node --test src/__tests__/*.test.js` — shell-expanded, does
+  # NOT recurse. Specs needing a live DB live in src/__tests__/rls/ and run
+  # via a separate script that this job never invokes.
 
   backend-unit:
     name: Backend Unit Tests (supertest)
@@ -118,9 +123,26 @@ jobs:
         run: npm run test:unit
         working-directory: backend
         env:
-          SUPABASE_URL:              ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          SUPABASE_ANON_KEY:         ${{ secrets.SUPABASE_ANON_KEY }}
+          # DUMMY VALUES, NOT SECRETS — deliberate.
+          #
+          # These exist ONLY to satisfy require-time truthiness checks in
+          # env.js / supabase.js, which throw if the vars are absent. They are
+          # never dialled. The .invalid TLD (RFC 2606) cannot resolve, so if a
+          # spec ever DOES attempt a live call, it fails loudly here instead of
+          # silently succeeding against production.
+          #
+          # This job previously carried secrets.SUPABASE_SERVICE_ROLE_KEY — the
+          # PROD service-role key, which bypasses RLS entirely. The job's own
+          # comment asserted "tests never reach Supabase at runtime"; the env
+          # block granted the capability to do exactly that. The assertion is
+          # now enforced by construction rather than by convention.
+          #
+          # If a future test genuinely needs a live Supabase, it does NOT belong
+          # in this job. See backend/src/__tests__/rls/ for the pattern: a
+          # separate script, a separate credential file, and a project-ref fence.
+          SUPABASE_URL:              https://ci-hermetic.invalid
+          SUPABASE_SERVICE_ROLE_KEY: ci-dummy-not-a-real-key
+          SUPABASE_ANON_KEY:         ci-dummy-not-a-real-key
 
   # ── Job 3: Sync-script unit tests ──────────────────────────────────────────
   # Tests scripts/sync-stories-to-issues.js patch logic (Story 97 regression
