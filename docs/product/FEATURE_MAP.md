@@ -2,7 +2,7 @@
 
 > Authoritative mapping of every shipped feature to its documentation and test coverage.
 > Update this file whenever a feature ships, changes behavior, or gains new tests.
-> Owner: KK | Last updated: 2026-06-15 (Story 332 / v2.5.30 — row #35 Demo All-Stars team added)
+> Owner: KK | Last updated: 2026-07-14 (v2.5.32 - row #17 Admin UI doc status -> Stale; #338 documented)
 
 ---
 
@@ -42,7 +42,7 @@
 | 15 | **Feature flag system** | MVP | `CLAUDE.md` § Feature Flags; `SOLUTION_DESIGN.md` § Feature Flag System | ✅ Current | `flagBootstrap.test.js`, `accessibility.v1.test.js`, `scoringSheetV2.test.js` | ⚠ Partial | D-S30 |
 | 23 | **Scoring outcome sheet (SCORING_SHEET_V2)** | Pilot | `ROADMAP.md` § v2.5.0; `CLAUDE.md` § Current Version | ✅ Current | `scoringSheetV2.test.js` | ⚠ Partial | D-S30 |
 | 16 | **Auth system (magic link + Google OAuth)** | Phase 2 | `SOLUTION_DESIGN.md` § Auth Architecture; `CLAUDE.md` § Auth Strategy | ✅ Current | None | ❌ None | D003 |
-| 17 | **Admin UI (admin.html)** | MVP | `SOLUTION_DESIGN.md` § Admin UI; `PERSONAS.md` § Administrator | ✅ Current | None | ❌ None | D007 |
+| 17 | **Admin UI (admin.html)** | MVP | `SOLUTION_DESIGN.md` § Admin UI; `PERSONAS.md` § Administrator | ⚠ Stale | None | ❌ None | D007; #338: !! admin.html writes DIRECTLY to Supabase via the client SDK. It bypasses normalizeRole, requireAuth, requireAdmin, reviewed_by attribution, and auth-event logging. A fix to a backend route DOES NOT FIX THE PANEL. |
 | 18 | **Roster backup/restore** | MVP | `SOLUTION_DESIGN.md` § Data Protection | ✅ Current | None | ❌ None | D013 |
 | 19 | **Multi-team support** | MVP | `CLAUDE.md` § Architecture | ✅ Current | `migrations.test.js` (partial — migration only) | ⚠ Partial | D014 |
 | 20 | **Fairness Check + violation warnings** | MVP | `SOLUTION_DESIGN.md` § Scoring Engine | ✅ Current | `engine.v2.test.js` (violations surfaced) | ⚠ Partial | D012 |
