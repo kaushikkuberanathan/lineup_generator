@@ -6,6 +6,7 @@
   "scripts": {
     "test": "node scripts/tests/test-runner.js",
     "test:unit": "node --test src/__tests__/*.test.js",
+    "test:rls": "node --test src/__tests__/rls/*.test.js",
     "test:auth": "node scripts/test-auth-flow.js",
     "test:admin": "node scripts/test-admin-flow.js",
     "seed:admin": "node scripts/seed-admin.js",
