@@ -50,7 +50,17 @@ The risks we are defending against, in priority order:
 1. **Account takeover** — stolen tokens, weak passwords, no MFA → attacker edits/exfiltrates rosters
 2. **Share link enumeration** — guessable IDs let strangers find rosters
 3. **Authorization gaps** — authenticated user A modifies user B's lineup via direct API call (BOLA / IDOR)
-4. **Secrets leakage** — `.env`, JWT keys, or DB creds in git history or CI logs
+4. **Secrets leakage** — `.env`, JWT keys, or DB creds in git history or CI logs.
+   **!! THIS MATERIALIZED. 2026-03-23 to 2026-07-14.** A live PRODUCTION
+   `service_role` key was committed to `backend/.env.example` and sat in a **PUBLIC
+   GitHub repo for 113 days**. `service_role` bypasses RLS on every table - it is the
+   master key. Rotated and legacy keys disabled 2026-07-14; the value is dead, but it
+   **remains in git history** (`31b8d38`, `a79d1af`, `a72d37b`).
+   **It was found by accident**, while reconning CI secrets for something else. Nothing
+   was scanning for it.
+   **Mitigation, still to do:** secret scanning in CI (gitleaks - item 0.4, still "Not
+   started"), a pre-commit hook, and a history rewrite. **A `.env.example` must never
+   hold a real value; a placeholder costs nothing.**
 5. **Dependency vulnerabilities** — npm supply-chain attack
 6. **XSS / injection** — unsanitized roster names render as executable HTML on share pages
 7. **Abuse / scraping** — no rate limits enable brute-force or roster scraping
