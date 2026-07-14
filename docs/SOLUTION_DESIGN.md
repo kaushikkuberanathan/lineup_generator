@@ -379,9 +379,28 @@ Login via Google OAuth or email magic link. Checks `/me` for `memberships[0].rol
 
 ### RLS Policy Map (Phase 4 target state)
 
-All frontend data calls use the anon Supabase key. Until Phase 4 cutover, RLS on
-team data tables is permissive (or disabled) to allow unauthenticated writes. After
-cutover, `004_rls_fixes.sql` applies the following policy set:
+> **!! CORRECTED 2026-07-13.** "Permissive (or disabled)" reads like a bounded,
+> deliberate choice. **It was neither.**
+>
+> RLS was **fully DISABLED** on five tables, with `anon` holding
+> `SELECT, INSERT, UPDATE, DELETE, **TRUNCATE**`. The anon key ships in the frontend
+> bundle. Anyone who viewed source could read every child's name on every roster,
+> overwrite any roster, delete any team, or empty the tables outright. (#342)
+>
+> `auth_events` and `team_data_history` are now **locked** (migrations 005, 006).
+> `team_data`, `teams` and `roster_snapshots` **remain exposed** - they cannot be
+> locked until WS-3, because the app writes them directly with the anon key.
+>
+> **Also: `004_rls_fixes.sql` cannot be run as written.** It claimed
+> `snapshot_team_data()` was `SECURITY DEFINER`. **It was not.** Running it would have
+> blocked the trigger's insert and **failed every coach's roster save.** Fixed in
+> migration 006; the file now carries a correction.
+>
+> **Ground truth for the CURRENT policy set is `docs/db/schema.sql`**, read from the
+> live database. The table below is the Phase 4 TARGET, not what exists.
+
+All frontend data calls use the anon Supabase key. After the WS-3 cutover,
+`004_rls_fixes.sql` (corrected) applies the following target policy set:
 
 | Table | anon SELECT | anon INSERT | auth SELECT | auth INSERT/UPDATE | Notes |
 |-------|-------------|-------------|-------------|---------------------|-------|

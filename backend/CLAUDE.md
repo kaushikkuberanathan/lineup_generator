@@ -129,10 +129,48 @@ Unit suite total: **39** (Story 99 Phase 2 complete for #252 route coverage).
 
 ## Migration Notes
 
-- Canonical migration directory: `backend/src/db/migrations/` only — no new files in `backend/migrations/`
-- Two files share the `004_` prefix in different dirs — do not confuse:
-  - `backend/src/db/migrations/004_rls_policies.sql` — already applied
-  - `backend/migrations/004_rls_fixes.sql` — parked until Phase 4 cutover
+> **!! CORRECTED 2026-07-13.** This section previously named
+> `backend/src/db/migrations/` as canonical and said "no new files in
+> `backend/migrations/`". That was stale and contradicted reality: every migration
+> applied to production in July 2026 (005-012) went into `backend/migrations/`.
+> A governing doc asserting the opposite of what we actually do is exactly the class
+> of error that caused the incidents in #342, #351 and #355.
+
+- **Canonical migration directory: `backend/migrations/`.** New migrations go here.
+- `backend/src/db/migrations/` is the ORIGINAL tree (001-007). It is historical.
+  Do not add to it. Do not rebuild from it without reading the warnings below.
+
+### !! FIVE NUMERIC COLLISIONS ACROSS THE TWO TREES !!
+
+The same number means different migrations depending on the tree. "Run migration 007"
+is ambiguous. Always give the full path.
+
+| # | `backend/migrations/` | `backend/src/db/migrations/` |
+|---|---|---|
+| 002 | `002_team_data_history.sql` | `002_create_profiles.sql` |
+| 004 | `004_rls_fixes.sql` (see warning) | `004_rls_policies.sql` |
+| 005 | `005_p0_lock_auth_events.sql` | `005_atomic_verify_function.sql` (**STALE - see below**) |
+| 006 | `006_p0_lock_team_data_history.sql` | `006_create_feedback.sql` |
+| 007 | `007_p1_fix_recursive_rls_policy.sql` | `007_add_coach_pin.sql` |
+
+### !! TWO FILES IN THE OLD TREE ARE DANGEROUS !!
+
+- **`backend/src/db/migrations/005_atomic_verify_function.sql`** defines
+  `activate_membership()`. That function was **DROPPED in production**
+  (migration 012) - it was dead code (zero callers), phone-era residue (phone auth
+  was permanently removed), it declared `team_id UUID` when the column is `TEXT`
+  (so it would error on the first returned row), and it was `SECURITY DEFINER` with
+  no pinned `search_path` - a privilege-escalation vector.
+  **Rebuilding from this file re-creates a broken, vulnerable, uncalled function.**
+
+- **`backend/src/db/migrations/004_rls_policies.sql`** contains the recursive
+  `team_memberships` policy that made **every authenticated read of that table throw**
+  (`infinite recursion detected`). The admin panel's gate had never worked. Fixed in
+  `backend/migrations/007_p1_fix_recursive_rls_policy.sql`.
+  **Rebuilding from this file re-breaks the admin panel.**
+
+**Ground truth is `docs/db/PROD_SCHEMA_BASELINE.md` + `PROD_SCHEMA_BASELINE_ADDENDUM_1.md`,
+not either migration tree.** Both trees describe databases that do not exist.
 
 ---
 
