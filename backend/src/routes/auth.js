@@ -305,23 +305,40 @@ router.post(
 router.get('/me', requireAuth, async (req, res) => {
   try {
     const userId = req.user.id;
+    const userEmail = req.user.email;
 
     const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
       .select('id, first_name, last_name, email, phone_e164, created_at')
       .eq('id', userId)
-      .single();
+      .maybeSingle();
 
+    // maybeSingle() returns null (not an error) when no profile row exists.
+    // A real query failure still throws; a missing profile does not — a valid
+    // coach with a membership must still hydrate even if their profile row is
+    // absent (Piece 1's trigger provisions new users; this guards the rest).
     if (profileError) throw profileError;
 
     // Fixed: now includes `id` on team_memberships (was missing — known bug)
     const { data: memberships, error: membershipError } = await supabaseAdmin
       .from('team_memberships')
-      .select('id, team_id, role, status, activated_at')
-      .eq('user_id', userId)
+      .select('id, user_id, team_id, role, status, activated_at')
+      .or(`user_id.eq.${userId},email.eq.${userEmail}`)
       .eq('status', 'active');
 
     if (membershipError) throw membershipError;
+
+    // Back-fill user_id on memberships matched by email (written before the
+    // coach signed up, so user_id was NULL). Links them to the auth user so
+    // future lookups hit the user_id path. Guarded to only fill NULLs.
+    const unlinked = (memberships ?? []).filter((m) => !m.user_id);
+    if (unlinked.length > 0) {
+      await supabaseAdmin
+        .from('team_memberships')
+        .update({ user_id: userId })
+        .in('id', unlinked.map((m) => m.id))
+        .is('user_id', null);
+    }
 
     // Log session resume
     const primaryMembership = memberships?.[0];

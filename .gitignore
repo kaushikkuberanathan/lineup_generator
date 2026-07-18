@@ -32,3 +32,4 @@ spike-*.js
 backend/spike-*.js
 .claude/
 !.claude/settings.json
+docs/private/
