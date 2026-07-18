@@ -36,6 +36,9 @@ import { FAQSection }         from './components/Support/FAQSection';
 import { AboutTab }           from './components/Support/AboutTab';
 import { BattingHandSelector } from './components/BattingHandSelector';
 import { PlayerHandBadge }     from './components/PlayerHandBadge';
+import { LoginScreen }           from './components/Auth/LoginScreen';
+import { RequestAccessScreen }   from './components/Auth/RequestAccessScreen';
+import { PendingApprovalScreen } from './components/Auth/PendingApprovalScreen';
 import { useAuth } from './hooks/useAuth';
 import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 import { VERSION_HISTORY } from './data/versionHistory';
@@ -1499,7 +1502,15 @@ export default function App() {
   const {
     session,
     user,
+    authState,
+    setAuthState,
+    sendMagicLink,
+    requestAccess,
   } = useAuth();
+
+  // Which auth screen is showing when unauthenticated. Local UI state, not
+  // auth state - useAuth owns "am I authenticated", App owns "which form".
+  const [authScreen, setAuthScreen] = useState('login');
 
   // Online/offline detection
   useEffect(function() {
@@ -7330,9 +7341,8 @@ export default function App() {
     }
   } catch (e) { /* ignored */ }
 
-  // AUTH GATE — parked. Not active in prod until Phase 4C cutover is confirmed.
-  // Do NOT uncomment without explicit Phase 4C sign-off.
-  /*
+  // AUTH GATE — LIVE as of #342 cutover. Editing requires a session;
+  // viewing does not (both share viewers return above this block).
   // AUTH GATE
   // Dev-only bypass: in browser console run `localStorage.setItem('auth_bypass','1')`
   // then reload. `import.meta.env.DEV` is false in production builds — Vite removes this.
@@ -7373,7 +7383,6 @@ export default function App() {
       );
     }
   }
-  */
 
   var PRIMARY_TABS = [
     { key:"home",    label:"Home",     icon:"🏠" },
