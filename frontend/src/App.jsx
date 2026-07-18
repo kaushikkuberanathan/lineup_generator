@@ -7318,6 +7318,18 @@ export default function App() {
     );
   }
 
+  // Legacy ?share= viewer — MUST stay above the auth gate (Principle #2:
+  // auth never blocks viewing). Moved here in #369 cutover prep.
+  try {
+    var urlParams = new URLSearchParams(window.location.search);
+    var shareParam = urlParams.get("share");
+    if (shareParam) {
+      var payload = JSON.parse(decodeURIComponent(escape(atob(shareParam))));
+      var isViewer64 = urlParams.get("view") === "true" || urlParams.get("role") === "viewer";
+      return <ErrorBoundary fallback="Viewer Mode">{isViewer64 ? <DugoutView payload={payload} isViewer={true} onExit={function() {}} /> : <SharedView payload={payload} renderFieldSVG={renderFieldSVG} />}</ErrorBoundary>;
+    }
+  } catch (e) { /* ignored */ }
+
   // AUTH GATE — parked. Not active in prod until Phase 4C cutover is confirmed.
   // Do NOT uncomment without explicit Phase 4C sign-off.
   /*
@@ -7362,16 +7374,6 @@ export default function App() {
     }
   }
   */
-
-  try {
-    var urlParams = new URLSearchParams(window.location.search);
-    var shareParam = urlParams.get("share");
-    if (shareParam) {
-      var payload = JSON.parse(decodeURIComponent(escape(atob(shareParam))));
-      var isViewer64 = urlParams.get("view") === "true" || urlParams.get("role") === "viewer";
-      return <ErrorBoundary fallback="Viewer Mode">{isViewer64 ? <DugoutView payload={payload} isViewer={true} onExit={function() {}} /> : <SharedView payload={payload} renderFieldSVG={renderFieldSVG} />}</ErrorBoundary>;
-    }
-  } catch (e) { /* ignored */ }
 
   var PRIMARY_TABS = [
     { key:"home",    label:"Home",     icon:"🏠" },
