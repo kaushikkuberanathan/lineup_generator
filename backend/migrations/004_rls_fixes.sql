@@ -1,3 +1,4 @@
+-- !!!! STOP: do NOT run against prod until the auth gate is LIVE IN MAIN. Every policy here targets TO authenticated; prod writes as anon until then, and running this early breaks every coach save. See RUN TIMING below.
 -- Migration 004: RLS hardening for Phase 4 auth cutover
 -- Purpose: Lock down Supabase Row Level Security so Phase 4 (adding requireAuth
 --          to existing routes) does not break viewer mode, share links, or coach
