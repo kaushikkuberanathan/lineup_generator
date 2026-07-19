@@ -10,19 +10,21 @@
 //   what docs/db/schema.sql section 8 SHOULD be, not what the landmine
 //   migration 004_rls_fixes.sql claims.
 //
-//   Five scenarios are RED today, on purpose. They reproduce the live exposure
-//   (#342) from a test runner using the anon key that ships in the frontend
-//   bundle. Landing them red, with the failures in the PR body, is the proof
-//   that WS-3 is necessary. WS-3 turns them green.
+//   All nine scenarios are GREEN as of WS-3 (004_rls_fixes.sql applied to DEV
+//   2026-07-19). Four of them — S1b, S3, S4a, S4b — once reproduced the live
+//   #342 exposure from a test runner using the anon key that ships in the
+//   frontend bundle; they were committed RED on purpose, and WS-3 turned them
+//   green. They now stand as regression guards: if a change re-opens the
+//   exposure, they go red again.
 //
-//   Four scenarios are GREEN today. They are regression guards on last week's
-//   emergency fixes (migrations 005, 006, 011). If a future change re-breaks
-//   any of them, this suite catches it.
+//   The other five — S1a, S3-control, S6a, S6b, S6c — guard viewer-mode access
+//   (Principle #2) and last week's emergency fixes (migrations 005, 006, 011).
+//   If a future change re-breaks any of them, this suite catches it.
 //
 // HOW TO READ A FAILURE
-//   A red S1b/S3/S4a/S4b/S6-anything is EXPECTED until WS-3 lands. The suite
-//   is designed to be committed red. Do not "fix" the tests to make them pass —
-//   fix the DATABASE (WS-3), and they pass on their own.
+//   Every test here should be GREEN. A red S1b/S3/S4a/S4b means the WS-3 RLS
+//   lockdown has regressed in DEV — fix the DATABASE, not the test. A red
+//   S6-anything means an emergency-fix migration (005/006/011) regressed.
 
 const { test, describe, before, after } = require('node:test');
 const assert = require('node:assert/strict');
@@ -75,9 +77,10 @@ describe('S1 — anon viewer access', () => {
     assert.equal(res.data.length, 1, 'the seeded share link must be readable by anon');
   });
 
-  // RED today: RLS is OFF on team_data, so anon reads every team's roster.
-  // This is the #342 exposure. Turns green when WS-3 enables RLS on team_data.
-  test('S1b: anon CANNOT read team_data [RED until WS-3]', async () => {
+  // GREEN post-WS-3: RLS is now ON for team_data, so anon reads are filtered or
+  // denied. This once reproduced the #342 exposure (anon reading every team's
+  // roster); it now guards against RLS being disabled on team_data again.
+  test('S1b: anon CANNOT read team_data', async () => {
     const res = await anon.from('team_data').select('team_id').eq('team_id', TEAM_A);
     // Post-WS-3, anon gets either a grant denial (42501) or an empty RLS filter.
     // Either is a pass. Rows coming back is the breach.
@@ -95,11 +98,11 @@ describe('S1 — anon viewer access', () => {
 // ═════════════════════════════════════════════════════════════════════════════
 describe('S3 — cross-team isolation', () => {
 
-  // GREEN today only because RLS is off — coach A reads team B trivially, which
-  // is ALSO the breach. The assertion is written for the POST-WS-3 world: coach
-  // A must NOT see team B. So it is RED today (coach A can see team B) and green
-  // after WS-3. The seeded team B row guarantees the filter is what's tested.
-  test('S3: coach A CANNOT read team B team_data [RED until WS-3]', async () => {
+  // GREEN post-WS-3: cross-team isolation is enforced — coach A cannot see team
+  // B. Before WS-3 this was the breach (RLS off, coach A read team B trivially).
+  // It now guards against the cross-team policy regressing. The seeded team B
+  // row guarantees the filter is what's tested, never an empty table.
+  test('S3: coach A CANNOT read team B team_data', async () => {
     const res = await coachA.from('team_data').select('team_id').eq('team_id', TEAM_B);
     assert.ok(
       !returnedRows(res),
@@ -125,9 +128,11 @@ describe('S3 — cross-team isolation', () => {
 // ═════════════════════════════════════════════════════════════════════════════
 describe('S4 — anon write protection', () => {
 
-  // RED today: RLS off + full grant means anon can UPDATE any roster.
-  // We attempt a no-op-shaped update on the seeded team and assert it is rejected.
-  test('S4a: anon CANNOT update team_data [RED until WS-3]', async () => {
+  // GREEN post-WS-3: anon UPDATE on team_data is now rejected by RLS. Before
+  // WS-3 (RLS off + full grant) anon could UPDATE any roster. It now guards
+  // against write protection regressing. We attempt a no-op-shaped update on
+  // the seeded team and assert it is rejected.
+  test('S4a: anon CANNOT update team_data', async () => {
     const res = await anon
       .from('team_data')
       .update({ innings: 7 })
@@ -145,19 +150,26 @@ describe('S4 — anon write protection', () => {
     }
   });
 
-  // RED today — and the single most important test in this file.
+  // GREEN after WS-3 (004_rls_fixes.sql applied to DEV) — and the single most
+  // important test in this file.
   //
   // PostgREST has no TRUNCATE verb, so supabase-js cannot ISSUE a truncate.
   // But TRUNCATE bypasses RLS entirely: enabling RLS in WS-3 does NOTHING to
-  // stop it. The only defense is revoking the grant. schema.sql defect #4:
-  // TRUNCATE is granted to anon on 14 tables.
+  // stop it. The only defense is revoking the grant. This asserts the GRANTs
+  // are gone, not that a truncate fails. It turns green ONLY when WS-3 does
+  // BOTH halves: enable RLS *and* REVOKE the anon grants. An RLS-only cutover
+  // would leave this red while every other test goes green — the incomplete
+  // fix we are guarding against.
   //
-  // This asserts the GRANT is gone, not that a truncate fails. It is RED today
-  // (anon holds the grant) and turns green ONLY when WS-3 does BOTH halves:
-  // enable RLS *and* REVOKE the anon grants. An RLS-only cutover leaves this red
-  // while every other test goes green — which is exactly the incomplete fix we
-  // are guarding against.
-  test('S4b: anon holds NO TRUNCATE/DELETE grant on exposed tables [RED until WS-3]', async () => {
+  // #380 EXCEPTION — DO NOT "fix" this back: anon KEEPS its DELETE grant on
+  // `teams`. dbDeleteTeam() (frontend/src/supabase.js:38) deletes teams
+  // direct-to-Supabase and supabase.js:40 swallows the error to console.warn,
+  // so revoking DELETE would break delete-team SILENTLY. teams_auth_delete
+  // already scopes DELETE to team admins (the correct control). #380 tracks
+  // routing delete-team through a backend service_role endpoint, after which
+  // DELETE on teams gets revoked too. Until then, anon:DELETE on teams is an
+  // allowed, deliberate exception — every OTHER TRUNCATE/DELETE grant must be gone.
+  test('S4b: anon holds no ungoverned TRUNCATE/DELETE grant on exposed tables', async () => {
     const admin = adminClient();
     const exposed = ['team_data', 'teams', 'roster_snapshots'];
 
@@ -167,14 +179,20 @@ describe('S4 — anon write protection', () => {
 
     assert.equal(error, null, 'grant introspection RPC must not error');
 
-    const offending = (data || []).map(
-      (r) => `anon:${r.privilege_type} on ${r.table_name}`
-    );
+    const offending = (data || [])
+      .map((r) => `anon:${r.privilege_type} on ${r.table_name}`)
+      // #380 exception: anon:DELETE on teams is intentional and documented.
+      // dbDeleteTeam() writes direct-to-Supabase; teams_auth_delete scopes it
+      // to team admins. Revoking it before the backend delete route exists would
+      // break delete-team silently. Filtered out so it is not flagged.
+      .filter((g) => g !== 'anon:DELETE on teams');
+
     assert.deepEqual(
       offending,
       [],
-      'EXPOSURE: anon holds TRUNCATE/DELETE on exposed tables. ' +
-      'TRUNCATE bypasses RLS — an RLS-only WS-3 does not close this. ' +
+      'EXPOSURE: anon holds an ungoverned TRUNCATE/DELETE grant on an exposed ' +
+      'table. TRUNCATE bypasses RLS — an RLS-only WS-3 does not close it. ' +
+      '(anon:DELETE on teams is the one allowed exception — see #380.) ' +
       'Found: ' + offending.join(', ')
     );
   });
