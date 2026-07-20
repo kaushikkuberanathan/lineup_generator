@@ -1,5 +1,6 @@
 # Dugout Lineup — Release Notes
 
+- v2.7.0 (2026-07-21): Google sign-in for coaches; a new Account tab showing your teams with tap-to-switch and a way to sign out; and database-level protection against an accidental roster wipe.
 - v2.6.0 (2026-07-20): Sign-in required for editing; RLS enabled in production on team_data, teams and roster_snapshots, closing the publishable-key exposure. Write failures now surface instead of failing silently.
 
 ## Archive (v2.5.1 – v2.5.14)

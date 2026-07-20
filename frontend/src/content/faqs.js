@@ -231,6 +231,10 @@ export var FAQ_CATEGORIES = [
         a: "Not for viewing. Anyone can open a share link without an account — parents, base coaches, scorekeepers — full read-only access. Coaches editing the team can sign in with a Google account or an email magic link to sync their data across devices. Accounts are required only for editing."
       },
       {
+        q: "How do I sign out, or switch between my teams?",
+        a: "Tap Support, then Account. You'll see the email you're signed in as and every team you coach - tap any team to jump straight to it. Sign out from there, or from the link on the Home screen. Your teams and lineups stay saved on this device, so signing back in brings everything back."
+      },
+      {
         q: "How do I install this on my phone so it works at the field without Wi-Fi?",
         a: "Dugout Lineup prompts you automatically. Look for the Install banner at the bottom of every tab (above the nav). On Android: tap Install to add it to your home screen in one step. On iPhone: the banner shows Share → Add to Home Screen instructions — follow them in Safari. Once installed, the app works offline — no signal needed at the field."
       },

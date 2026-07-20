@@ -1,5 +1,25 @@
 export var VERSION_HISTORY = [
   {
+    version: '2.7.0',
+    date: 'July 2026',
+    headline: 'Sign in with Google, see and switch your teams, and stronger protection for your roster',
+    techNote: 'Performance and reliability improvements',
+    userChanges: [
+      'You can now sign in with Google, in addition to the email link. One tap and you are in.',
+      'A new Account area shows which email you are signed in as and every team you coach. Tap a team to jump straight to it.',
+      'You can now sign out - from the home screen or the Account area. Your teams and lineups stay saved on this device.',
+      'Your roster is now protected from being wiped by accident. If something tries to clear it, the app stops it.',
+    ],
+    internalChanges: [
+      'Google OAuth sign-in for coaches (#394), built gate-first: a memberless session (Google OR magic link) is routed to a NoMembershipScreen instead of the app. signInWithOAuth bypasses the backend pre-send membership check, so the gate moved to a post-session check in useAuth - RLS is the real enforcement, the gate is clean UX.',
+      'Fixed a pre-existing request-access validator (#397) that hardcoded a stale role allowlist and rejected canonical roles - "Head Coach" 400d. Now uses normalizeRole/isNormalizableRole, the single source of truth.',
+      'Session visibility (#395): home Sign-out link, a Support > Account sub-tab showing signed-in email and one card per membership, tapping a card calls loadTeam to switch team and navigate. Logout intentionally keeps local data (post-RLS a signed-out user cannot re-fetch).',
+      'Roster-wipe guard (#386): a BEFORE UPDATE trigger (migration 015, already applied to prod) blocks an empty roster over a non-empty one for every client, since the frontend writes direct to PostgREST and bypassed the backend route guard. Fixed a migration .catch that wrote roster:[] on a failed read; removed a mislabeled Reset Roster button that emptied the roster.',
+      'Removed two dead variables (membership, DEFAULT_ROSTER) that failed the lint gate (#400).',
+      'Minor bump 2.6.0 to 2.7.0.',
+    ],
+  },
+  {
     version: '2.6.0',
     date: 'July 2026',
     headline: 'Sign-in required for editing, and your team data is now locked to your team',

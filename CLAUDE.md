@@ -539,8 +539,9 @@ Every other session: open `docs/product/DOC_TEST_DEBT.md` — close P0s, promote
 ---
 
 ## Current Version
-**v2.6.0** — July 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/data/versionHistory.js`.
+**v2.7.0** — July 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/data/versionHistory.js`.
 
+- v2.7.0 (2026-07-21): Google sign-in (#394, gate-first - memberless sessions route to NoMembershipScreen). Session visibility (#395): home sign-out + Account tab with per-team cards and tap-to-switch. Roster-wipe DB guard (#386, migration 015 live in prod). Request-access validator fix (#397). See also #400 (lint).
 - v2.6.0 (2026-07-20): Auth gate live in prod - editing requires a session, viewing does not. WS-3 RLS enabled on team_data/teams/roster_snapshots/share_links with membership-scoped policies; TRUNCATE revoked from anon and authenticated. Write failures now surface to the user. See #342, #377, #381.
 - v2.5.32 (2026-07-14): **SECURITY.** A live production `service_role` key was found committed in `backend/.env.example` - **public repo, 113 days**. Rotated; legacy keys disabled. `admin.html` (the only hardcoded key) fixed. A VIEW was bypassing the RLS lock on `team_data_history` (migration 011). All SECURITY DEFINER functions now have a pinned `search_path` (012). `docs/db/schema.sql` - first executable ground truth. DEV rebuilt as a true mirror of prod. `docs/TROUBLESHOOTING.md` added; eight governing docs corrected.
 - **NOTE: this changelog has a GAP.** v2.5.27 through v2.5.31 have no bullets. Not backfilled. See `frontend/src/data/versionHistory.js` for the complete history.

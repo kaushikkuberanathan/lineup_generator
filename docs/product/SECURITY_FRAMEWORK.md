@@ -373,6 +373,9 @@ When K picks an item from this doc:
 | 3.6 | Incident response runbook | ☐ Not started | — | — |
 | 3.7 | Data minimization review | ☐ Not started | — | — |
 | 4 | RLS on team_data / teams / roster_snapshots (WS-3, #342) | ✅ Shipped | v2.6.0 | 2026-07-20 |
+| 4 | Roster-wipe DB guard - BEFORE UPDATE trigger on team_data (#386) | ✅ Shipped | v2.7.0 | 2026-07-21 |
+| 4 | OAuth membership gate - post-session check routes memberless logins to NoMembershipScreen (#394) | ✅ Shipped | v2.7.0 | 2026-07-21 |
+| 4 | request-access role validator uses normalizeRole single source of truth (#397) | ✅ Shipped | v2.7.0 | 2026-07-21 |
 
 ---
 

@@ -1,7 +1,16 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: 2026-07-20 (v2.6.0 - Sign-in required for editing; RLS live in production)
+> Last updated: 2026-07-21 (v2.7.0 - Google sign-in, session visibility, roster-wipe protection)
 > MVP launched: March 24, 2026
+
+---
+
+## v2.7.0 - 2026-07-21 - Google sign-in, session visibility, and roster-wipe protection
+- **Google sign-in (#394)**: coaches can sign in with Google as well as the email link. Built gate-first - a memberless session (Google or magic link) routes to a NoMembershipScreen, not the app; RLS is the enforcement, the gate is UX. Fixed a pre-existing request-access validator (#397) that rejected canonical roles.
+- **Session visibility (#395)**: a home Sign-out link and a Support > Account tab showing the signed-in email and one tappable card per team (tap to switch team and open it). Logout keeps local data.
+- **Roster-wipe protection (#386)**: a database-level trigger (migration 015, already live in prod) blocks an empty roster overwriting a populated one for every client. Fixed a migration error-path that wrote an empty roster on a failed read; removed a mislabeled "Reset Roster" button.
+- Removed two dead variables blocking the lint gate (#400).
+- Minor bump 2.6.0 to 2.7.0.
 
 ---
 
