@@ -129,9 +129,6 @@ var BAT_SKILLS = {
 
 var DISLIKE_PENALTY = -50;
 
-// Default roster
-var DEFAULT_ROSTER = [];
-
 // ============================================================
 // STORAGE - localStorage with in-memory fallback
 // ============================================================
@@ -1519,7 +1516,6 @@ export default function App() {
     sendMagicLink,
     requestAccess,
     logout,
-    membership,
     memberships,
   } = useAuth();
 
