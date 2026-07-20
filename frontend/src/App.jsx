@@ -1399,15 +1399,15 @@ export default function App() {
               }
               // Stamp migration version so this never runs again for this team
               saveJSON(migKey2, MIGRATION_VERSION);
-            }).catch(function() {
-              // On error, still seed schedule but leave roster untouched
-              dbSaveTeamData(ct.id, {
-                roster: [], schedule: ct.schedule, practices: [],
-                battingOrder: [], grid: {}, innings: 6, locked: false
-              });
-              saveJSON("team:" + ct.id + ":schedule", ct.schedule);
-              saveJSON("team:" + ct.id + ":roster", []);
-              saveJSON(migKey2, MIGRATION_VERSION);
+            }).catch(function (e) {
+              // A read failure tells us NOTHING about what is on the server.
+              // Writing anything here risks clobbering a live roster - which is
+              // exactly what the old comment claimed to avoid while doing the
+              // opposite. Do not write to Supabase; do not touch the local
+              // roster; do not stamp the migration version, so this retries on
+              // the next load once reads recover. See #386.
+              console.warn('[migration] team data read failed for ' + ct.id +
+                ' - skipping seed, will retry next load:', e);
             });
           })(toCreate[ci]);
         }
@@ -4116,15 +4116,6 @@ export default function App() {
               </div>
             );
           })}
-        </div>
-        <div style={{ marginTop:"24px", paddingTop:"16px", borderTop:"1px solid rgba(15,31,61,0.08)" }}>
-          <button style={{ ...S.btn("ghost"), color:"#b0a0a0", fontSize:"11px" }} onClick={function() {
-            if (confirm("Reset roster to default players for " + (activeTeam ? activeTeam.name : "this team") + "?")) {
-              persistRoster(DEFAULT_ROSTER);
-              persistBatting(DEFAULT_ROSTER.map(function(r) { return r.name; }));
-              persistGrid(initGrid(DEFAULT_ROSTER, innings));
-            }
-          }}>Reset Roster</button>
         </div>
       </div>
     );
