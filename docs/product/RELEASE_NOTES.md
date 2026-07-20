@@ -1,5 +1,7 @@
 # Dugout Lineup — Release Notes
 
+- v2.6.0 (2026-07-20): Sign-in required for editing; RLS enabled in production on team_data, teams and roster_snapshots, closing the publishable-key exposure. Write failures now surface instead of failing silently.
+
 ## Archive (v2.5.1 – v2.5.14)
 
 - v2.5.14 (2026-05-16): UX Phase 3 primitives — Pill, ListRow, 4 component migrations, 80 new tests.

@@ -1,5 +1,28 @@
 export var VERSION_HISTORY = [
   {
+    version: '2.6.0',
+    date: 'July 2026',
+    headline: 'Sign-in required for editing, and your team data is now locked to your team',
+    techNote: 'Under-the-hood stability improvements',
+    userChanges: [
+      'You now sign in to edit your team. Enter your email, tap the link we send you, and you are in - no password to remember.',
+      'Share links still work exactly as before. Anyone you send one to can view the lineup without signing in or creating anything.',
+      'Your team data is now private to your team. Previously it was technically possible for someone outside your team to reach it.',
+      'If a change does not save, the app now tells you. It used to fail quietly and look like it had worked.',
+    ],
+    internalChanges: [
+      'AUTH GATE LIVE: the gate in App.jsx had been commented out for months against an older auth surface. Uncommenting it crashed the app - it referenced six variables that no longer existed and three components that were never imported. Repaired the useAuth destructure, added the missing authScreen state, and wired the named imports for LoginScreen/RequestAccessScreen/PendingApprovalScreen.',
+      'Both share viewers now sit ABOVE the gate. The legacy ?share= handler was below it and would have shown a login screen to anyone holding an old link.',
+      'RLS ENABLED IN PRODUCTION on team_data, teams, roster_snapshots and share_links, with membership-scoped policies. This closes the exposure that has been open since launch: the publishable key that ships in the bundle could previously read, write and TRUNCATE every teams roster.',
+      'The migration originally had every policy and NO grant revocations. TRUNCATE bypasses RLS entirely, so running it as-is would have closed the read hole and left the destruction hole open. Added REVOKE TRUNCATE/DELETE for both anon and authenticated; teams keeps DELETE deliberately until delete-team routes through the backend.',
+      'Supabase write errors now reject instead of resolving. Previously a failed write logged a warning, resolved, and the sync indicator turned GREEN - the app displayed success for writes that never happened. Failures now surface a toast.',
+      'Prod auth prerequisites: migration 014 profile trigger applied, five missing profile rows backfilled (5 of 6 users had none, including the primary admin), ten stale val-suite test memberships removed.',
+      'Incident during cutover: prod login failed for ~15 minutes. The Render backend held a legacy JWT in SUPABASE_ANON_KEY while prod has legacy keys disabled. Service-role had been migrated; the anon key was missed.',
+      'RLS verified 9/9 against the DEV policy suite before prod apply, then verified in prod: coaches read and write their own team, share links render unauthenticated, no ungoverned TRUNCATE grants remain.',
+      'Minor bump 2.5.32 to 2.6.0.',
+    ],
+  },
+  {
     version: '2.5.32',
     date: 'July 2026',
     headline: 'Security hardening and internal tooling',
