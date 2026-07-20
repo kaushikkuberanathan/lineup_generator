@@ -613,6 +613,29 @@ END;
 $$;
 
 
+-- handle_new_user (migration 014): auto-provision a profiles row on signup.
+-- SECURITY DEFINER + pinned search_path. Applied to DEV 2026-07-15; NOT yet
+-- prod (WS-3 cutover). Fixes /me 500 (missing profiles row -> PGRST116).
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  INSERT INTO public.profiles (id, email, first_name, last_name)
+  VALUES (
+    NEW.id,
+    NEW.email,
+    COALESCE(NEW.raw_user_meta_data ->> 'given_name',  NEW.raw_user_meta_data ->> 'first_name', ''),
+    COALESCE(NEW.raw_user_meta_data ->> 'family_name', NEW.raw_user_meta_data ->> 'last_name',  '')
+  )
+  ON CONFLICT (id) DO NOTHING;
+  RETURN NEW;
+END;
+$$;
+
+
 -- ============================================================================
 -- 6. TRIGGERS
 -- ============================================================================
@@ -643,6 +666,13 @@ CREATE TRIGGER at_bats_updated_at BEFORE UPDATE ON public.at_bats
 DROP TRIGGER IF EXISTS live_game_state_updated_at ON public.live_game_state;
 CREATE TRIGGER live_game_state_updated_at BEFORE UPDATE ON public.live_game_state
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+-- migration 014: fires on new auth user -> provisions profiles row.
+-- NOTE: trigger is ON auth.users (Supabase-managed schema), not public.
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
 
 -- ============================================================================

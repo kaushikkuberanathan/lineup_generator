@@ -29,7 +29,14 @@ export function dbSaveTeams(teams) {
     }),
     { onConflict: 'id' }
   ).then(function(r) {
-    if (r.error) { console.warn('[DB] saveTeams error:', r.error.message); }
+    if (r.error) {
+      console.warn('[DB] saveTeams error:', r.error);
+      var err = new Error(r.error.message || 'write failed');
+      err.code = r.error.code;
+      err.operation = 'dbSaveTeams';
+      throw err;
+    }
+    return r;
   });
 }
 
@@ -37,7 +44,14 @@ export function dbDeleteTeam(teamId) {
   if (!supabase) { return Promise.resolve(); }
   return supabase.from('teams').delete().eq('id', teamId)
     .then(function(r) {
-      if (r.error) { console.warn('[DB] deleteTeam error:', r.error.message); }
+      if (r.error) {
+        console.warn('[DB] deleteTeam error:', r.error);
+        var err = new Error(r.error.message || 'write failed');
+        err.code = r.error.code;
+        err.operation = 'dbDeleteTeam';
+        throw err;
+      }
+      return r;
     });
 }
 
@@ -70,7 +84,14 @@ export function dbSaveTeamData(teamId, data) {
   if (data.attendanceOverrides !== undefined) { upsertObj.attendance_overrides = data.attendanceOverrides; }
   return supabase.from('team_data').upsert(upsertObj, { onConflict: 'team_id' })
   .then(function(r) {
-    if (r.error) { console.warn('[DB] saveTeamData error:', r.error.message); }
+    if (r.error) {
+      console.warn('[DB] saveTeamData error:', r.error);
+      var err = new Error(r.error.message || 'write failed');
+      err.code = r.error.code;
+      err.operation = 'dbSaveTeamData';
+      throw err;
+    }
+    return r;
   });
 }
 
@@ -138,7 +159,14 @@ export function dbSaveShareLink(id, payload) {
   if (!supabase) { return Promise.resolve(); }
   return supabase.from('share_links').insert({ id: id, payload: payload })
     .then(function(r) {
-      if (r.error) { console.warn('[DB] saveShareLink error:', r.error.message); }
+      if (r.error) {
+        console.warn('[DB] saveShareLink error:', r.error);
+        var err = new Error(r.error.message || 'write failed');
+        err.code = r.error.code;
+        err.operation = 'dbSaveShareLink';
+        throw err;
+      }
+      return r;
     });
 }
 

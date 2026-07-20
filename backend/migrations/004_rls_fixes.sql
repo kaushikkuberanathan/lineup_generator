@@ -1,12 +1,28 @@
+-- !!!! STOP: do NOT run against prod until the auth gate is LIVE IN MAIN. Every policy here targets TO authenticated; prod writes as anon until then, and running this early breaks every coach save. See RUN TIMING below.
 -- Migration 004: RLS hardening for Phase 4 auth cutover
 -- Purpose: Lock down Supabase Row Level Security so Phase 4 (adding requireAuth
 --          to existing routes) does not break viewer mode, share links, or coach
 --          data access — while blocking cross-team reads and unauthenticated writes.
 --
--- !! RUN TIMING: Run this AT OR JUST BEFORE Phase 4 cutover. Running before cutover
---    will break the app because today's coaches write team_data with the anon key
---    (unauthenticated). Only run after requireAuth is added to existing index.js routes
---    and coaches have been onboarded via OTP.
+-- !! RUN TIMING: every policy below targets TO authenticated. Today's prod
+--    frontend writes team_data with the PUBLISHABLE key, which resolves to the
+--    `anon` Postgres role (verified against prod 2026-07-17). Running this
+--    before the auth gate is LIVE IN PROD will break every coach save.
+--
+--    PRECONDITION: the auth gate must be merged to main and deployed to prod,
+--    so coaches are authenticated and their writes arrive as `authenticated`.
+--    As of 2026-07-19 the gate is on develop (904abb5) but NOT promoted to
+--    main. Do not run this against prod until it is.
+--
+--    Order: gate to prod -> verify a coach can log in and save -> then this.
+--
+-- STATUS: unapplied in prod as of 2026-07-19. team_data, teams and
+--    roster_snapshots have NO RLS in prod (confirmed via probe: anon reads
+--    team_data OK). Nothing here is partially applied.
+--
+-- ACCEPTANCE: backend/src/__tests__/rls/policies.test.js (npm run test:rls,
+--    DEV only). Currently 4 red / 5 green BY DESIGN - the reds reproduce the
+--    live exposure. All 9 must be green after this migration.
 --
 -- Run in: Supabase Dashboard → SQL Editor
 -- Idempotent: DROP POLICY IF EXISTS guards make this safe to re-run.
@@ -273,48 +289,59 @@ CREATE POLICY "roster_snapshots_auth_insert"
 
 
 -- ═══════════════════════════════════════════════════════════════════════════
--- 5. team_data_history   (S6)
+-- 5. REVOKE TRUNCATE + DELETE  (the half RLS cannot cover)
 -- ═══════════════════════════════════════════════════════════════════════════
--- Design: append-only audit log. No anon reads. No authenticated-role reads
--- via REST API.
--- !! CORRECTED 2026-07-13 (#342): the claim that this trigger is SECURITY DEFINER
--- !! was FALSE, and acting on it would have broken every roster save.
--- !!
--- !! snapshot_team_data() was NOT SECURITY DEFINER (verified against prod:
--- !! pg_proc.prosecdef = false). A non-DEFINER trigger runs as the INVOKER, and
--- !! coaches save team_data with the ANON key (the frontend writes Supabase
--- !! directly - it does NOT use the backend teamData route). So the trigger's
--- !! insert into team_data_history executed AS ANON. Enabling RLS here with no
--- !! policies would have BLOCKED that insert, failing the trigger and therefore
--- !! failing the coach's roster save.
--- !!
--- !! FIXED in migration 006, which makes snapshot_team_data() and
--- !! prune_team_data_history() SECURITY DEFINER with a pinned search_path.
--- !! RLS on team_data_history is ALREADY ENABLED in prod as of 006, so this
--- !! section is now a no-op. Read 006 before re-applying anything here.
+-- TRUNCATE BYPASSES RLS ENTIRELY. No policy can stop it. A role holding the
+-- TRUNCATE grant can empty a table regardless of every policy above. The only
+-- defence is revoking the grant.
 --
--- Writes happen only via the snapshot_team_data() trigger, which (as of migration
--- 006) runs as SECURITY DEFINER in table-owner context and bypasses RLS.
--- service_role (backend supabaseAdmin) bypasses RLS entirely for recovery reads.
+-- Verified in DEV 2026-07-19 (information_schema.role_table_grants):
+--   BOTH anon AND authenticated hold the full grant set on all three tables:
+--   DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
 --
--- With RLS enabled and NO policies added:
---   - anon role        → blocked (no matching policy)
---   - authenticated    → blocked (no matching policy)
---   - service_role     → bypasses RLS (Supabase default behavior)
---   - trigger function → SECURITY DEFINER, runs as owner → bypasses RLS
-
-ALTER TABLE public.team_data_history ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "Allow all"                 ON public.team_data_history;
-DROP POLICY IF EXISTS "team_data_history_open"    ON public.team_data_history;
-
--- INTENTIONALLY NO POLICIES — all REST API access is denied.
--- Only the Postgres trigger (SECURITY DEFINER) and service_role can write/read.
+-- So this must revoke from BOTH roles, not just anon. Post-cutover every
+-- logged-in coach is `authenticated`; without this, any coach could TRUNCATE
+-- team_data and wipe EVERY team's data, with all policies above still intact.
 --
--- Emergency rollback if trigger breaks (open temporarily):
---   CREATE POLICY "temp_open_for_recovery" ON public.team_data_history FOR ALL USING (true);
--- Then fix and re-enable:
---   DROP POLICY "temp_open_for_recovery" ON public.team_data_history;
+-- SELECT/INSERT/UPDATE are deliberately KEPT for both roles - those are the
+-- statements the policies above govern. Revoking them would break every save.
+-- REFERENCES/TRIGGER are schema-level, harmless for data access, left alone.
+--
+-- DELETE: revoked on team_data and roster_snapshots - neither has a DELETE
+-- policy, so RLS blocks it anyway; revoking makes the intent explicit rather
+-- than relying on a policy's absence, and no frontend path deletes them
+-- directly. NOT revoked on teams - see the note below the REVOKEs.
+--
+-- Acceptance test: backend/src/__tests__/rls/policies.test.js, scenario S4b.
+-- That test asserts anon cannot TRUNCATE. It is currently RED by design and
+-- must go GREEN after this migration.
+
+REVOKE TRUNCATE, DELETE ON public.team_data          FROM anon, authenticated;
+REVOKE TRUNCATE          ON public.teams             FROM anon, authenticated;
+REVOKE TRUNCATE, DELETE  ON public.roster_snapshots  FROM anon, authenticated;
+
+-- teams keeps its DELETE grant DELIBERATELY, for now. dbDeleteTeam() writes
+-- direct-to-Supabase (frontend/src/supabase.js:38), so revoking DELETE would
+-- break delete-team - and supabase.js:40 swallows the error to console.warn,
+-- so it would fail SILENTLY: the team disappears from local state while
+-- surviving in the database, then reappears on the next device.
+-- teams_auth_delete (section 2) already scopes DELETE to admins of that team,
+-- which is the correct control. TRUNCATE is the privilege RLS cannot govern,
+-- so that is what gets revoked here.
+--
+-- END STATE (tracked separately): route delete-team through a backend
+-- service_role endpoint, THEN revoke DELETE on teams. Both halves must land
+-- together - revoking first leaves a window where delete-team silently fails.
+
+-- Rollback (only if a legitimate path needs these back - it should not):
+--   GRANT DELETE ON public.team_data TO authenticated;
+--
+-- NOTE ON team_data_history: this section previously enabled RLS on that
+-- table. That is now a NO-OP - migration 006 already enabled RLS there in
+-- prod AND made snapshot_team_data() / prune_team_data_history() SECURITY
+-- DEFINER with a pinned search_path. Verified 2026-07-17: team_data_history
+-- returns 42501 to both anon and authenticated in prod. Read 006 before
+-- touching that table.
 
 
 -- ═══════════════════════════════════════════════════════════════════════════

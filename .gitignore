@@ -24,3 +24,12 @@ recon-output.txt
 
 # Demo All-Stars seed (local-only raw player data, never committed)
 .demo-seed/
+.env*
+!.env.example
+spike-*.js
+backend/spike-*.js
+spike-*.js
+backend/spike-*.js
+.claude/
+!.claude/settings.json
+docs/private/

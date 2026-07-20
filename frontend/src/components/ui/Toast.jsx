@@ -22,6 +22,7 @@ export default function Toast({
   onAction,
   onDismiss,
   durationMs = 10000,
+  topOffset = 8,
 }) {
   const timerRef = useRef(null);
   const [paused, setPaused] = useState(false);
@@ -55,10 +56,14 @@ export default function Toast({
       onBlur={() => setPaused(false)}
       style={{
         position: 'fixed',
-        top: 'calc(env(safe-area-inset-top, 0px) + 8px)',
+        // topOffset lets a consumer clear fixed chrome above it. Default 8 suits
+        // a full-screen surface (game mode). App.jsx passes 68 to clear the
+        // sticky app header (top:0, ~56px, zIndex 100) - at equal z-index and
+        // offset the toast rendered clipped under the header band. See #381.
+        top: 'calc(env(safe-area-inset-top, 0px) + ' + topOffset + 'px)',
         left: '16px',
         right: '16px',
-        zIndex: 100,
+        zIndex: 200,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
