@@ -39,6 +39,7 @@ import { PlayerHandBadge }     from './components/PlayerHandBadge';
 import { LoginScreen }           from './components/Auth/LoginScreen';
 import { RequestAccessScreen }   from './components/Auth/RequestAccessScreen';
 import { PendingApprovalScreen } from './components/Auth/PendingApprovalScreen';
+import { NoMembershipScreen }    from './components/Auth/NoMembershipScreen';
 import Toast from './components/ui/Toast';
 import { useAuth } from './hooks/useAuth';
 import { useFeatureFlag } from '@/hooks/useFeatureFlag';
@@ -1516,6 +1517,7 @@ export default function App() {
     setAuthState,
     sendMagicLink,
     requestAccess,
+    logout,
   } = useAuth();
 
   // Which auth screen is showing when unauthenticated. Local UI state, not
@@ -7392,6 +7394,23 @@ export default function App() {
       return (
         <PendingApprovalScreen
           onTryLogin={() => setAuthState('unauthenticated')}
+        />
+      );
+    }
+    if (authState === 'no_membership') {
+      if (authScreen === 'request') {
+        return (
+          <RequestAccessScreen
+            onBack={() => setAuthScreen(null)}
+            requestAccess={requestAccess}
+          />
+        );
+      }
+      return (
+        <NoMembershipScreen
+          email={session?.user?.email}
+          onRequestAccess={() => setAuthScreen('request')}
+          onSignOut={logout}
         />
       );
     }

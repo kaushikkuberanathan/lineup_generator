@@ -81,7 +81,16 @@ export function useAuth() {
         const memberships = data.user.memberships ?? [];
         setMemberships(memberships);
         setMembership(memberships[0] ?? null);
-        setAuthState('authenticated');
+        if (memberships.length === 0) {
+          // Signed in, but not a member of any team. Happens when a session
+          // exists without a membership - e.g. a Google sign-in (no pre-send
+          // membership check like magic link has), or a membership revoked
+          // between link-send and click. RLS shows this user nothing anyway;
+          // we route them to an honest screen rather than an empty app. #394
+          setAuthState('no_membership');
+        } else {
+          setAuthState('authenticated');
+        }
 
       } catch {
         setAuthState('unauthenticated');
@@ -109,7 +118,16 @@ export function useAuth() {
               const memberships = data.user.memberships ?? [];
               setMemberships(memberships);
               setMembership(memberships[0] ?? null);
-              setAuthState('authenticated');
+              if (memberships.length === 0) {
+                // Signed in, but not a member of any team. Happens when a session
+                // exists without a membership - e.g. a Google sign-in (no pre-send
+                // membership check like magic link has), or a membership revoked
+                // between link-send and click. RLS shows this user nothing anyway;
+                // we route them to an honest screen rather than an empty app. #394
+                setAuthState('no_membership');
+              } else {
+                setAuthState('authenticated');
+              }
               // Clear hash from URL
               if (window.location.hash) {
                 window.history.replaceState(null, '', window.location.pathname);
