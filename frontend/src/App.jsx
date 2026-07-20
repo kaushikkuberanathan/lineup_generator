@@ -39,6 +39,7 @@ import { PlayerHandBadge }     from './components/PlayerHandBadge';
 import { LoginScreen }           from './components/Auth/LoginScreen';
 import { RequestAccessScreen }   from './components/Auth/RequestAccessScreen';
 import { PendingApprovalScreen } from './components/Auth/PendingApprovalScreen';
+import Toast from './components/ui/Toast';
 import { useAuth } from './hooks/useAuth';
 import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 import { VERSION_HISTORY } from './data/versionHistory';
@@ -1144,6 +1145,9 @@ export default function App() {
   var _syncStatus = useState("idle");
   var syncStatus = _syncStatus[0]; var setSyncStatus = _syncStatus[1];
 
+  var _toast = useState({ open: false, message: '' });
+  var toast = _toast[0]; var setToast = _toast[1];
+
   function dbSync(fn) {
     window._lastLocalWrite = Date.now();
     setSyncStatus("syncing");
@@ -1153,6 +1157,12 @@ export default function App() {
     }).catch(function(e) {
       setSyncStatus("error");
       console.warn("[DB] sync error:", e);
+      setToast({
+        open: true,
+        message: e && e.code === '42501'
+          ? "Couldn't save - you may not have permission for this team. Try signing in again."
+          : "Couldn't save to the server. Your changes are saved on this device only."
+      });
     });
   }
 
@@ -2149,7 +2159,11 @@ export default function App() {
     var url;
     if (isSupabaseEnabled) {
       var id = generateShareId();
-      dbSaveShareLink(id, payload);
+      dbSaveShareLink(id, payload)
+        .catch(function(e) {
+          console.warn('[share] link save failed:', e);
+          setToast({ open: true, message: "Couldn't create the share link. Try again." });
+        });
       url = base + "?s=" + id;
     } else {
       // Local dev fallback — embed payload in URL via base64
@@ -2179,7 +2193,11 @@ export default function App() {
     var url;
     if (isSupabaseEnabled) {
       var id = generateShareId();
-      dbSaveShareLink(id, payload);
+      dbSaveShareLink(id, payload)
+        .catch(function(e) {
+          console.warn('[share] link save failed:', e);
+          setToast({ open: true, message: "Couldn't create the share link. Try again." });
+        });
       url = base + "?s=" + id + "&view=true";
     } else {
       // Local dev fallback — embed payload in URL via base64
@@ -5711,7 +5729,11 @@ export default function App() {
       };
       var id = generateShareId();
       // Fire-and-forget — save completes well before recipient opens the link
-      dbSaveShareLink(id, payload);
+      dbSaveShareLink(id, payload)
+        .catch(function(e) {
+          console.warn('[share] link save failed:', e);
+          setToast({ open: true, message: "Couldn't create the share link. Try again." });
+        });
       return window.location.href.split("?")[0] + "?s=" + id;
     }
 
@@ -7792,6 +7814,12 @@ export default function App() {
   // TODO: extract — deferred (Header depends on syncStatus, isLandscape, screen, activeTeam, isOnline, activeTeamId — extract after OfflineIndicator is stable and state prop drilling pattern is established)
   return (
     <div style={{ height: isStandalone ? "100dvh" : "100svh", display:"flex", flexDirection:"column", overflow:"hidden", background: primaryTab === "more" ? "linear-gradient(160deg,#0f1f3d 0%,#1a3260 55%,#2a0a0a 100%)" : C.cream, fontFamily:"Georgia,'Times New Roman',serif", color:C.text }}>
+      <Toast
+        open={toast.open}
+        message={toast.message}
+        topOffset={68}
+        onDismiss={function () { setToast({ open: false, message: '' }); }}
+      />
       <div style={Object.assign({}, S.header, isLandscape ? { padding:"5px 16px" } : {})}>
         <div style={S.logoWrap} onClick={function() {
           if (primaryTab === "team" || primaryTab === "gameday") { setShowExitSheet(true); return; }
