@@ -40,6 +40,7 @@ import { LoginScreen }           from './components/Auth/LoginScreen';
 import { RequestAccessScreen }   from './components/Auth/RequestAccessScreen';
 import { PendingApprovalScreen } from './components/Auth/PendingApprovalScreen';
 import { NoMembershipScreen }    from './components/Auth/NoMembershipScreen';
+import { roleLabel } from './utils/roleLabels';
 import Toast from './components/ui/Toast';
 import { useAuth } from './hooks/useAuth';
 import { useFeatureFlag } from '@/hooks/useFeatureFlag';
@@ -1518,6 +1519,8 @@ export default function App() {
     sendMagicLink,
     requestAccess,
     logout,
+    membership,
+    memberships,
   } = useAuth();
 
   // Which auth screen is showing when unauthenticated. Local UI state, not
@@ -3137,6 +3140,12 @@ export default function App() {
                       Connecting...
                     </span>
                   ) : null}
+                  <button
+                    onClick={logout}
+                    style={{ background:'none', border:'none', color:'#2f6bff',
+                      fontSize:'12px', fontWeight:600, cursor:'pointer',
+                      padding:'4px 2px', whiteSpace:'nowrap' }}
+                  >Sign out</button>
                 </div>
                 <div style={{ fontSize:"11px", color:"#9ca3af", marginTop:"2px" }}>
                   {now.toLocaleDateString("en-US", { timeZone:"America/New_York", weekday:"long", month:"long", day:"numeric" })}
@@ -7167,6 +7176,72 @@ export default function App() {
       APP_VERSION={APP_VERSION} C={C} S={S} />;
   }
 
+  function renderAccount() {
+    var _email = session && session.user && session.user.email ? session.user.email : "—";
+    var _memberships = memberships || [];
+    var _rolePill = {
+      fontSize:"10px", fontWeight:"700", letterSpacing:"0.05em", textTransform:"uppercase",
+      padding:"3px 9px", borderRadius:"10px", background:C.navy + "12", color:C.navy,
+      border:"1px solid " + C.navy + "22", whiteSpace:"nowrap", flexShrink:0
+    };
+    return (
+      <div style={S.card}>
+        <div style={S.sectionTitle}>Your Account</div>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline", gap:"12px", padding:"9px 0", borderBottom:"1px solid " + C.border, marginBottom:"14px" }}>
+          <span style={{ fontSize:"11px", letterSpacing:"0.08em", textTransform:"uppercase", color:C.textMuted, whiteSpace:"nowrap" }}>Signed in as</span>
+          <span style={{ fontSize:"13px", color:C.text, fontWeight:"600", textAlign:"right", wordBreak:"break-word" }}>{_email}</span>
+        </div>
+
+        <div style={{ fontSize:"11px", letterSpacing:"0.08em", textTransform:"uppercase", color:C.textMuted, marginBottom:"8px" }}>Your teams</div>
+
+        {_memberships.length === 0 ? (
+          <div style={{ fontSize:"13px", color:C.textMuted, fontStyle:"italic", padding:"4px 0 8px" }}>Not on any team yet</div>
+        ) : _memberships.map(function(m) {
+          var _t = teams.find(function(t) { return t.id === m.team_id; });
+          var _role = roleLabel(m.role);
+          if (_t) {
+            var _meta = [_t.ageGroup, _t.year].filter(Boolean).join(" ");
+            return (
+              <div key={m.id} onClick={function() { loadTeam(_t); }}
+                style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:"12px",
+                  padding:"12px 14px", marginBottom:"8px", borderRadius:"10px",
+                  border:"1px solid " + C.border, background:C.white, cursor:"pointer",
+                  boxShadow:"0 1px 3px rgba(15,31,61,0.05)" }}>
+                <div style={{ minWidth:0 }}>
+                  <div style={{ fontSize:"14px", fontWeight:"700", color:C.navy, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{_t.name}</div>
+                  {_meta ? <div style={{ fontSize:"11px", color:C.textMuted, marginTop:"2px" }}>{_meta}</div> : null}
+                </div>
+                <div style={{ display:"flex", alignItems:"center", gap:"10px", flexShrink:0 }}>
+                  <span style={_rolePill}>{_role}</span>
+                  <span aria-hidden="true" style={{ fontSize:"20px", color:C.textMuted, lineHeight:1 }}>›</span>
+                </div>
+              </div>
+            );
+          }
+          return (
+            <div key={m.id}
+              style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:"12px",
+                padding:"12px 14px", marginBottom:"8px", borderRadius:"10px",
+                border:"1px dashed " + C.border, background:"rgba(15,31,61,0.03)" }}>
+              <div style={{ minWidth:0 }}>
+                <div style={{ fontSize:"14px", fontWeight:"600", color:C.textMuted, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{"Team " + m.team_id}</div>
+                <div style={{ fontSize:"11px", color:C.textMuted, marginTop:"2px", fontStyle:"italic" }}>Not loaded</div>
+              </div>
+              <span style={Object.assign({}, _rolePill, { background:"rgba(15,31,61,0.06)", color:C.textMuted, border:"1px solid " + C.border })}>{_role}</span>
+            </div>
+          );
+        })}
+
+        <button style={Object.assign({}, S.btn("danger"), { marginTop:"16px", width:"100%" })} onClick={logout}>
+          Sign out
+        </button>
+        <div style={{ fontSize:"11px", color:C.textMuted, marginTop:"12px", lineHeight:"1.5", textAlign:"center" }}>
+          Your teams and lineups stay saved on this device. You&apos;ll need to sign in again to make changes.
+        </div>
+      </div>
+    );
+  }
+
   function renderUpdates() {
     return (
       <div style={S.card}>
@@ -7428,6 +7503,7 @@ export default function App() {
     { key:"dugout", label:"DUGOUT VIEW", launcher:true },
   ].filter(Boolean);
   var MORE_SUBTABS = [
+    { key:"account",  label:"Account"  },
     { key:"faq",      label:"FAQ"      },
     { key:"feedback", label:"Feedback" },
     { key:"links",    label:"Links"    },
@@ -7601,6 +7677,7 @@ export default function App() {
         {primaryTab === "gameday" && !parentViewActive && gameDayTab === "lineups" ? renderLineups() : null}
         {primaryTab === "gameday" && !parentViewActive && gameDayTab === "songs"   ? renderSongs()   : null}
       </ErrorBoundary>
+      {primaryTab === "more" && moreTab === "account"  ? renderAccount()  : null}
       {primaryTab === "more" && moreTab === "feedback" ? renderFeedback() : null}
       {primaryTab === "more" && moreTab === "links"    ? renderLinks()    : null}
       {primaryTab === "more" && moreTab === "about"    ? renderAbout()    : null}
