@@ -372,6 +372,7 @@ When K picks an item from this doc:
 | 3.5 | Pen test | ☐ Not started | — | — |
 | 3.6 | Incident response runbook | ☐ Not started | — | — |
 | 3.7 | Data minimization review | ☐ Not started | — | — |
+| 4 | RLS on team_data / teams / roster_snapshots (WS-3, #342) | ✅ Shipped | v2.6.0 | 2026-07-20 |
 
 ---
 

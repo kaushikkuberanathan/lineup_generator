@@ -1,7 +1,17 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: 2026-07-14 (v2.5.32 - Leaked service_role key rotated; view RLS bypass closed; DEV rebuilt as a true mirror of prod)
+> Last updated: 2026-07-20 (v2.6.0 - Sign-in required for editing; RLS live in production)
 > MVP launched: March 24, 2026
+
+---
+
+## v2.6.0 - 2026-07-20 - Sign-in required for editing; RLS live in production
+- **Auth gate live (#377)**: editing requires a session. Both share viewers (?s= and legacy ?share=) return above the gate, so viewing never requires an account.
+- **WS-3 complete (#342)**: RLS enabled in production on team_data, teams, roster_snapshots and share_links with membership-scoped policies. TRUNCATE revoked from anon and authenticated on all three; DELETE revoked except on teams (deferred to #380). Closes the exposure where the publishable key could read, write and TRUNCATE every team's data.
+- **Write failures surface (#381)**: Supabase write errors now reject and show a toast. Previously they resolved and the sync indicator turned green on a failed write.
+- Prod prerequisites: migration 014 profile trigger applied, five missing profile rows backfilled, ten stale val-suite test memberships removed.
+- Incident (#387): prod login was broken ~15 minutes after cutover - the Render backend held a legacy SUPABASE_ANON_KEY against a project with legacy keys disabled.
+- Minor bump 2.5.32 to 2.6.0.
 
 ---
 
