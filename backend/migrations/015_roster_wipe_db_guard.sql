@@ -1,7 +1,7 @@
 -- Migration 015: database-layer roster-wipe guard on team_data
 --
 -- APPLIED TO DEV: 2026-07-20 (psqvzppphdedqkpmarwx) - verified: blocks empty-over-nonempty on Mud Hens and Bananas, allows normal saves.
--- NOT YET APPLIED TO PROD (hzaajccyurlyeweekvma).
+-- APPLIED TO PROD: 2026-07-20 (hzaajccyurlyeweekvma) - verified: blocks empty-over-nonempty (11 players on Mud Hens), allows non-empty writes.
 --
 -- Repo record of a trigger to be created DEV-first, committed after
 -- verification. Same convention as migrations 005-014.
