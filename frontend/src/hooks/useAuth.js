@@ -257,6 +257,52 @@ export function useAuth() {
     setAuthState('unauthenticated');
   }, [session, teamId]);
 
+  // ─── Update Profile Name ────────────────────────────────────────────────────────
+  // PATCH /me with the signed-in user's name (#405), then re-fetch /me and set
+  // `user` from that response — the re-fetch IS the state update (no optimistic
+  // in-place patch). Token comes from the current session, never a caller arg.
+  // Every failure path leaves existing `user` state untouched.
+
+  const updateProfileName = useCallback(async (firstName, lastName) => {
+    if (!session) return { success: false, error: 'Not signed in' };
+
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/v1/auth/me`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ firstName, lastName }),
+      });
+
+      if (!res.ok) {
+        let message = 'Could not save your name. Please try again.';
+        try {
+          const data = await res.json();
+          message = data.message || data.error || message;
+        } catch { /* non-JSON error body — keep default message */ }
+        return { success: false, error: message };
+      }
+
+      // Re-fetch /me and set user from that response (mirrors the read path in
+      // checkSession / onAuthStateChange). Do NOT extract or touch those sites.
+      const meRes = await fetch(`${BACKEND_URL}/api/v1/auth/me`, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (!meRes.ok) {
+        return { success: false, error: 'Saved, but could not refresh — reload to see the change.' };
+      }
+      const data = await meRes.json();
+      setUser(data.user);
+
+      return { success: true };
+
+    } catch {
+      return { success: false, error: 'Network error — check your connection' };
+    }
+  }, [session]);
+
   return {
     authState, setAuthState,
     session,
@@ -269,5 +315,6 @@ export function useAuth() {
     sendMagicLink,
     requestAccess,
     logout,
+    updateProfileName,
   };
 }
