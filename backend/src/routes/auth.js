@@ -29,7 +29,7 @@ const { supabaseAdmin, supabaseAnon } = require('../lib/supabase');
 const requireAuth = require('../middleware/requireAuth');
 const { logAuthEvent } = require('../lib/authEvents');
 const { sendAdminNotification } = require('../lib/email');
-const { normalizeRole } = require('../lib/normalizeRole');
+const { normalizeRole, isNormalizableRole } = require('../lib/normalizeRole');
 
 const router = express.Router();
 
@@ -78,9 +78,9 @@ router.post(
     body('firstName').notEmpty().trim().escape(),
     body('lastName').notEmpty().trim().escape(),
     body('teamId').notEmpty().trim(),
-    body('requestedRole').notEmpty().isIn([
-      'team_admin', 'coordinator', 'coach', 'scorekeeper', 'parent',
-    ]),
+    body('requestedRole').notEmpty()
+      .custom((v) => isNormalizableRole(v))
+      .withMessage('requestedRole must be a recognized role'),
     // At least one contact method required — validated below
   ],
   async (req, res) => {

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { track } from '@/utils/analytics';
 import { tokens } from "../../theme/tokens";
+import { supabase } from '../../supabase';
 
 const TEAM_ID = import.meta.env.VITE_DEFAULT_TEAM_ID || '1774297491626';
 
@@ -41,6 +42,21 @@ export function LoginScreen({ onRequestAccess, sendMagicLink }) {
 
     track("login_succeeded", { method: "magic_link" });
     setSent(true);
+  }
+
+  async function handleGoogleSignIn() {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: window.location.origin }
+      });
+      if (error) {
+        setError('Google sign-in failed. Try the email link instead.');
+      }
+      // on success the browser redirects to Google; nothing else to do here
+    } catch (e) {
+      setError('Google sign-in failed. Try the email link instead.');
+    }
   }
 
   if (sent) {
@@ -97,6 +113,20 @@ export function LoginScreen({ onRequestAccess, sendMagicLink }) {
           <button type="submit" style={styles.primaryBtn} disabled={loading}>
             {loading ? 'Sending…' : 'Send me a login link'}
           </button>
+          <div style={styles.divider} aria-hidden="true">
+            <span style={styles.dividerLine}></span>
+            <span style={styles.dividerText}>or</span>
+            <span style={styles.dividerLine}></span>
+          </div>
+          <button
+            type="button"
+            style={styles.googleBtn}
+            onClick={handleGoogleSignIn}
+            disabled={loading}
+          >
+            <span style={styles.googleG} aria-hidden="true">G</span>
+            Continue with Google
+          </button>
           <button type="button" style={styles.linkBtn} onClick={onRequestAccess}>
             Don&apos;t have access? Request it here
           </button>
@@ -136,6 +166,21 @@ const styles = {
   linkBtn: {
     background: 'none', border: 'none', color: '#2563eb',
     fontSize: '14px', cursor: 'pointer', padding: '4px 0', textAlign: 'center',
+  },
+  divider: {
+    display: 'flex', alignItems: 'center', gap: '10px', margin: '4px 0',
+  },
+  dividerLine: { flex: 1, height: '1px', backgroundColor: '#e2e8f0' },
+  dividerText: { fontSize: '12px', color: '#94a3b8', fontWeight: '500' },
+  googleBtn: {
+    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+    padding: '13px', fontSize: '15px', fontWeight: '600',
+    backgroundColor: '#ffffff', color: '#374151',
+    border: '1.5px solid #e2e8f0', borderRadius: '10px', cursor: 'pointer',
+  },
+  googleG: {
+    fontSize: '16px', fontWeight: '700', color: '#4285f4',
+    fontFamily: 'Arial, sans-serif', lineHeight: 1,
   },
   sentBox: {
     backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0',
