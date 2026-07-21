@@ -1,7 +1,7 @@
 -- Migration 016: resolve profile names from auth metadata (fix trigger + backfill)
 --
 -- APPLIED TO DEV: 2026-07-21 (psqvzppphdedqkpmarwx) - verified: split_full_name handles two-word/three-word/single-word/empty; backfill populated the full_name account, left the metadata-less one empty; trigger installed.
--- NOT YET APPLIED TO PROD (hzaajccyurlyeweekvma).
+-- APPLIED TO PROD: 2026-07-21 (hzaajccyurlyeweekvma) - verified: both functions created, split correct on prod data, 3 Google accounts backfilled (incl. three-word name), 2 magic-link accounts + null-email orphan left empty. Installed the handle_new_user trigger prod previously lacked.
 --
 -- Repo record of a function/trigger change to be applied DEV-first, committed
 -- after verification. Same convention as migrations 005-015.
