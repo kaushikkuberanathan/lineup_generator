@@ -1,5 +1,21 @@
 export var VERSION_HISTORY = [
   {
+    version: '2.8.0',
+    date: 'July 2026',
+    headline: 'Add your name so teammates and parents know who you are',
+    techNote: 'Minor fixes and internal improvements',
+    userChanges: [
+      'Set your name in the Account tab so teammates and parents see who you are instead of an email address.',
+      'A friendly reminder appears on your home screen until you add your name — dismissible any time.',
+    ],
+    internalChanges: [
+      'Added PATCH /me endpoint for self-scoped profile-name updates (id from verified token, never the body).',
+      'Added updateProfileName to useAuth with a 5-case unit spec; name field and home nudge wired into the Account and Home surfaces.',
+      'Removed 12 fake-green dead-path admin auth assertions from the backend test suites; real coverage confirmed via mutation check.',
+      'Minor bump 2.7.0 to 2.8.0.',
+    ],
+  },
+  {
     version: '2.7.0',
     date: 'July 2026',
     headline: 'Sign in with Google, see and switch your teams, and stronger protection for your roster',
