@@ -539,8 +539,9 @@ Every other session: open `docs/product/DOC_TEST_DEBT.md` — close P0s, promote
 ---
 
 ## Current Version
-**v2.7.0** — July 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/data/versionHistory.js`.
+**v2.8.0** — July 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/data/versionHistory.js`.
 
+- v2.8.0 (2026-07-23): Set your name (#405) - self-scoped `PATCH /me` endpoint (id from verified token, never the body), `updateProfileName` in useAuth with a 5-case spec, Account-tab name field and dismissible home nudge (`first_name === ''`). Extraction + golden-path tests for the two App.jsx render surfaces tracked in #407. Excised 12 fake-green dead-path admin auth assertions from the backend suites (#410, #412) - real coverage confirmed via mutation check. Test-health survey passes 1-2 filed (#406, #410, #411).
 - v2.7.0 (2026-07-21): Google sign-in (#394, gate-first - memberless sessions route to NoMembershipScreen). Session visibility (#395): home sign-out + Account tab with per-team cards and tap-to-switch. Roster-wipe DB guard (#386, migration 015 live in prod). Request-access validator fix (#397). See also #400 (lint).
 - v2.6.0 (2026-07-20): Auth gate live in prod - editing requires a session, viewing does not. WS-3 RLS enabled on team_data/teams/roster_snapshots/share_links with membership-scoped policies; TRUNCATE revoked from anon and authenticated. Write failures now surface to the user. See #342, #377, #381.
 - v2.5.32 (2026-07-14): **SECURITY.** A live production `service_role` key was found committed in `backend/.env.example` - **public repo, 113 days**. Rotated; legacy keys disabled. `admin.html` (the only hardcoded key) fixed. A VIEW was bypassing the RLS lock on `team_data_history` (migration 011). All SECURITY DEFINER functions now have a pinned `search_path` (012). `docs/db/schema.sql` - first executable ground truth. DEV rebuilt as a true mirror of prod. `docs/TROUBLESHOOTING.md` added; eight governing docs corrected.
