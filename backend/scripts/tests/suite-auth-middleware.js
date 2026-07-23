@@ -6,10 +6,6 @@
  * Endpoints under test:
  *   GET  /api/v1/auth/me              (requireAuth in auth.js)
  *   POST /api/v1/auth/logout          (requireAuth in auth.js)
- *   GET  /api/v1/admin/requests       (requireAuth + requireAdmin in admin.js)
- *   POST /api/v1/admin/approve        (requireAuth + requireAdmin in admin.js)
- *   POST /api/v1/admin/reject         (requireAuth + requireAdmin in admin.js)
- *   GET  /api/v1/admin/members        (requireAuth + requireAdmin in admin.js)
  */
 
 async function get(BASE_URL, path, token) {
@@ -80,53 +76,11 @@ async function run(test, BASE_URL, state) {
     };
   });
 
-  // ─── /admin/requests — no token ──────────────────────────────────────────────
-
-  await test('AUTH-MW-05', 'GET /admin/requests — no token → 401 UNAUTHORIZED', async () => {
-    const res = await get(BASE_URL, '/api/v1/admin/requests');
-    const data = await res.json().catch(() => ({}));
-    return {
-      pass: res.status === 401 && data.error === 'UNAUTHORIZED',
-      expected: '401 UNAUTHORIZED',
-      actual: `${res.status} ${data.error || '(no error field)'}`,
-    };
-  });
-
-  // ─── /admin/approve — no token ───────────────────────────────────────────────
-
-  await test('AUTH-MW-06', 'POST /admin/approve — no token → 401 UNAUTHORIZED', async () => {
-    const res = await post(BASE_URL, '/api/v1/admin/approve', { requestId: '00000000-0000-0000-0000-000000000000', teamId: '1774297491626', role: 'coach' });
-    const data = await res.json().catch(() => ({}));
-    return {
-      pass: res.status === 401 && data.error === 'UNAUTHORIZED',
-      expected: '401 UNAUTHORIZED',
-      actual: `${res.status} ${data.error || '(no error field)'}`,
-    };
-  });
-
-  // ─── /admin/reject — no token ────────────────────────────────────────────────
-
-  await test('AUTH-MW-07', 'POST /admin/reject — no token → 401 UNAUTHORIZED', async () => {
-    const res = await post(BASE_URL, '/api/v1/admin/reject', { requestId: '00000000-0000-0000-0000-000000000000' });
-    const data = await res.json().catch(() => ({}));
-    return {
-      pass: res.status === 401 && data.error === 'UNAUTHORIZED',
-      expected: '401 UNAUTHORIZED',
-      actual: `${res.status} ${data.error || '(no error field)'}`,
-    };
-  });
-
-  // ─── /admin/members — no token ───────────────────────────────────────────────
-
-  await test('AUTH-MW-08', 'GET /admin/members — no token → 401 UNAUTHORIZED', async () => {
-    const res = await get(BASE_URL, '/api/v1/admin/members');
-    const data = await res.json().catch(() => ({}));
-    return {
-      pass: res.status === 401 && data.error === 'UNAUTHORIZED',
-      expected: '401 UNAUTHORIZED',
-      actual: `${res.status} ${data.error || '(no error field)'}`,
-    };
-  });
+  // Admin-route auth boundary (401 no-token) is covered at the real bare
+  // paths by admin.auth.test.js (unit). Prior dead-path /api/v1/admin/*
+  // assertions removed as fake-green (#410): they 401'd via the router
+  // catch-all, not the real guards. Malformed-token coverage on admin
+  // routes logged as a gap in #410.
 
 }
 

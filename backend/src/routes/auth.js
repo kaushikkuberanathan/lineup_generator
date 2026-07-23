@@ -365,6 +365,61 @@ router.get('/me', requireAuth, async (req, res) => {
   }
 });
 
+// ─── PATCH /me ──────────────────────────────────────────────────────────────────
+// Update the signed-in user's profile name (#405). Self-scoped: the row is
+// always keyed by req.user.id from the verified token, NEVER from the body —
+// supabaseAdmin bypasses RLS, so this .eq scope is the only thing preventing a
+// user from writing another user's row.
+//
+// No .escape() on the name fields: React escapes on render, so storing HTML
+// entities here would double-encode names like O'Brien. lastName is optional
+// (single-word names) and defaults to '' — profiles.last_name is NOT NULL.
+
+router.patch(
+  '/me',
+  requireAuth,
+  [
+    body('firstName').isString().trim().notEmpty().isLength({ max: 100 }),
+    body('lastName').optional({ values: 'falsy' }).isString().trim().isLength({ max: 100 }),
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ error: 'VALIDATION_ERROR', details: errors.array() });
+    }
+
+    try {
+      const { firstName, lastName } = req.body;
+
+      const { data: profile, error: updateError } = await supabaseAdmin
+        .from('profiles')
+        .update({
+          first_name: firstName,
+          last_name:  lastName ?? '',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', req.user.id)
+        .select()
+        .maybeSingle();
+
+      if (updateError) throw updateError;
+
+      // Updating a nonexistent row affects nothing → maybeSingle() returns null.
+      // A signed-in user should always have a profiles row post-#402 trigger,
+      // but a pre-trigger magic-link user might not.
+      if (!profile) {
+        return res.status(404).json({ error: 'PROFILE_NOT_FOUND' });
+      }
+
+      return res.status(200).json({ success: true, profile });
+
+    } catch (err) {
+      console.error('[auth/me-patch]', err.message);
+      return res.status(500).json({ error: 'INTERNAL_ERROR' });
+    }
+  }
+);
+
 // ─── POST /logout ─────────────────────────────────────────────────────────────
 
 router.post('/logout', requireAuth, async (req, res) => {
