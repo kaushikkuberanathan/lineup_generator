@@ -34,6 +34,8 @@ import { tokens }          from './theme/tokens';
 import { LegalSection }       from './components/Support/LegalSection';
 import { FAQSection }         from './components/Support/FAQSection';
 import { AboutTab }           from './components/Support/AboutTab';
+import { HomeNameNudge }      from './components/Home/HomeNameNudge';
+import { AccountNameField }   from './components/Account/AccountNameField';
 import { BattingHandSelector } from './components/BattingHandSelector';
 import { PlayerHandBadge }     from './components/PlayerHandBadge';
 import { LoginScreen }           from './components/Auth/LoginScreen';
@@ -1523,48 +1525,6 @@ export default function App() {
   // Which auth screen is showing when unauthenticated. Local UI state, not
   // auth state - useAuth owns "am I authenticated", App owns "which form".
   const [authScreen, setAuthScreen] = useState('login');
-
-  // ─── #405 Set-your-name — Account tab editor + Home nudge (local UI state) ─────
-  // useAuth owns the PATCH (updateProfileName); App owns the form fields, the
-  // saving/feedback UI, and the nudge-dismissed flag. No new top-level store.
-  const [accountFirstName, setAccountFirstName] = useState('');
-  const [accountLastName, setAccountLastName] = useState('');
-  const [accountNameSaving, setAccountNameSaving] = useState(false);
-  const [accountNameFeedback, setAccountNameFeedback] = useState(null); // { kind:'success'|'refresh'|'error', text }
-  const [nameNudgeDismissed, setNameNudgeDismissed] = useState(function() {
-    return !!loadJSON('lg_name_nudge_dismissed', false);
-  });
-
-  // Keep the name inputs in sync with the loaded/refreshed profile — fires on
-  // mount hydration and again after a successful save's /me re-fetch.
-  useEffect(function() {
-    if (user && user.profile) {
-      setAccountFirstName(user.profile.first_name || '');
-      setAccountLastName(user.profile.last_name || '');
-    }
-  }, [user && user.profile && user.profile.first_name, user && user.profile && user.profile.last_name]);
-
-  async function handleSaveAccountName() {
-    if (accountNameSaving || !accountFirstName.trim()) { return; }
-    setAccountNameSaving(true);
-    setAccountNameFeedback(null);
-    var res = await updateProfileName(accountFirstName.trim(), accountLastName.trim());
-    setAccountNameSaving(false);
-    if (res && res.success) {
-      setAccountNameFeedback({ kind: 'success', text: 'Saved' });
-      return;
-    }
-    // updateProfileName's "saved but couldn't refresh" copy — the write DID
-    // land, so surface it as-is (neutral), never as a generic lost-save error.
-    var msg = (res && res.error) ? res.error : 'Could not save. Please try again.';
-    var savedButStale = msg.indexOf('could not refresh') !== -1;
-    setAccountNameFeedback({ kind: savedButStale ? 'refresh' : 'error', text: msg });
-  }
-
-  function dismissNameNudge() {
-    saveJSON('lg_name_nudge_dismissed', true);
-    setNameNudgeDismissed(true);
-  }
 
   // Online/offline detection
   useEffect(function() {
@@ -3190,21 +3150,12 @@ export default function App() {
                   {now.toLocaleDateString("en-US", { timeZone:"America/New_York", weekday:"long", month:"long", day:"numeric" })}
                 </div>
               </div>
-              {/* #405 — name nudge: signed-in only, EXACT empty-string check (not
-                  !first_name, which would flash during /me load). Never gates viewing. */}
-              {authState === 'authenticated' && user && user.profile && user.profile.first_name === '' && !nameNudgeDismissed ? (
-                <div style={{ background:'#d1fae5', border:'1px solid #6ee7b7', borderRadius:'8px', padding:'10px 14px', marginBottom:'12px', fontSize:'13px', color:'#065f46', display:'flex', justifyContent:'space-between', alignItems:'center', gap:'10px' }}>
-                  <span
-                    onClick={function() { setPrimaryTab("more"); setMoreTab("account"); }}
-                    style={{ cursor:'pointer', flex:1 }}>
-                    &#x1F44B; Add your name so we can greet you by it &rsaquo;
-                  </span>
-                  <button
-                    onClick={dismissNameNudge}
-                    aria-label="Dismiss"
-                    style={{ background:'none', border:'none', cursor:'pointer', fontSize:'16px', color:'#065f46', flexShrink:0 }}>&#xd7;</button>
-                </div>
-              ) : null}
+              {/* #405 — name nudge, extracted #407. `show` carries the auth+empty-name
+                  gate; the component owns its own dismissal. Never gates viewing. */}
+              <HomeNameNudge
+                show={authState === 'authenticated' && user && user.profile && user.profile.first_name === ''}
+                onOpenAccount={function() { setPrimaryTab("more"); setMoreTab("account"); }}
+              />
               {(function() {
                 var nextGameGlobal = null;
                 var nextGameTeam = null;
@@ -7242,38 +7193,14 @@ export default function App() {
       <div style={S.card}>
         <div style={S.sectionTitle}>Your Account</div>
 
-        {/* #405 — editable name (wired to useAuth.updateProfileName) */}
-        <div style={{ paddingBottom:"14px", borderBottom:"1px solid " + C.border, marginBottom:"14px" }}>
-          <div style={{ fontSize:"11px", letterSpacing:"0.08em", textTransform:"uppercase", color:C.textMuted, marginBottom:"8px" }}>Your name</div>
-          <div style={{ display:"flex", gap:"8px", flexWrap:"wrap", marginBottom:"8px" }}>
-            <input
-              value={accountFirstName}
-              onChange={function(e) { setAccountFirstName(e.target.value); if (accountNameFeedback) { setAccountNameFeedback(null); } }}
-              placeholder="First name*" maxLength={100}
-              style={{ ...S.input, flex:"1 1 120px" }} />
-            <input
-              value={accountLastName}
-              onChange={function(e) { setAccountLastName(e.target.value); if (accountNameFeedback) { setAccountNameFeedback(null); } }}
-              placeholder="Last name" maxLength={100}
-              style={{ ...S.input, flex:"1 1 120px" }} />
-          </div>
-          <button
-            onClick={handleSaveAccountName}
-            disabled={accountNameSaving || !accountFirstName.trim()}
-            style={{ ...S.btn("primary"), width:"100%",
-              opacity: (accountNameSaving || !accountFirstName.trim()) ? 0.5 : 1,
-              cursor:  (accountNameSaving || !accountFirstName.trim()) ? "default" : "pointer" }}>
-            {accountNameSaving ? "Saving…" : "Save"}
-          </button>
-          {accountNameFeedback ? (
-            <div style={{ marginTop:"8px", fontSize:"12px", fontWeight:"600",
-              color: accountNameFeedback.kind === 'success' ? "#065f46"
-                   : accountNameFeedback.kind === 'refresh' ? "#92620a"
-                   : C.red }}>
-              {accountNameFeedback.kind === 'success' ? "✓ " : ""}{accountNameFeedback.text}
-            </div>
-          ) : null}
-        </div>
+        {/* #405 — editable name, extracted #407 (component owns its state). */}
+        <AccountNameField
+          updateProfileName={updateProfileName}
+          initialFirstName={user && user.profile ? user.profile.first_name : ''}
+          initialLastName={user && user.profile ? user.profile.last_name : ''}
+          C={C}
+          S={S}
+        />
 
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline", gap:"12px", padding:"9px 0", borderBottom:"1px solid " + C.border, marginBottom:"14px" }}>
           <span style={{ fontSize:"11px", letterSpacing:"0.08em", textTransform:"uppercase", color:C.textMuted, whiteSpace:"nowrap" }}>Signed in as</span>
