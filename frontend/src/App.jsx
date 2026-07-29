@@ -13,6 +13,7 @@ import { normalizeBattingHand } from '@/utils/playerUtils';
 import { outboundLinkProps, CAMPAIGNS, CONTENT } from './utils/trackingUrl';
 import { migrateRoster, migrateSchedule, migrateBattingPerf, mergeLocalScheduleFields } from '@/utils/migrations';
 import { fmtAvg, fmtStat } from '@/utils/formatters';
+import { loadJSON, saveJSON } from './utils/storage';
 import { DEMO_ROSTER, DEMO_SCHEDULE, DEMO_GRID, DEMO_INNINGS, DEMO_AGE_GROUP, DEMO_SEED_VERSION } from "./data/demoSeed";
 import { useBackendHealth } from '@/hooks/useBackendHealth';
 import { useFeatureFlags } from '@/hooks/useFeatureFlags';
@@ -135,27 +136,12 @@ var DISLIKE_PENALTY = -50;
 // STORAGE - localStorage with in-memory fallback
 // ============================================================
 
-// Storage: localStorage with in-memory fallback
-var _mem = {};
-
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.8.0";
+var APP_VERSION = "2.8.1";
 
-function loadJSON(key, def) {
-  try {
-    var raw = localStorage.getItem(key);
-    if (raw) { return JSON.parse(raw); }
-  } catch (e) {
-    try { var mv = _mem[key]; if (mv) { return JSON.parse(mv); } } catch (e2) { /* ignored */ }
-  }
-  return def;
-}
-
-function saveJSON(key, val) {
-  var str = JSON.stringify(val);
-  try { localStorage.setItem(key, str); } catch (e) { _mem[key] = str; }
-}
+// loadJSON / saveJSON — localStorage with in-memory (_mem) fallback — moved to
+// ./utils/storage (#416). Imported above; call sites unchanged.
 
 // migrateRoster, migrateSchedule, migrateBattingPerf — imported from @/utils/migrations
 

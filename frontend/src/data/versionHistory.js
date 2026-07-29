@@ -1,5 +1,21 @@
 export var VERSION_HISTORY = [
   {
+    version: '2.8.1',
+    date: 'July 2026',
+    headline: 'Under-the-hood improvements to reliability and code quality',
+    techNote: 'Minor fixes and internal improvements',
+    userChanges: [
+      'Behind-the-scenes reliability and stability improvements. No changes to how the app works for you.',
+    ],
+    internalChanges: [
+      'Extracted the home name-nudge and Account name field into standalone tested components.',
+      'Added test coverage for the save-failure path so a failed write surfaces instead of silently succeeding.',
+      'Consolidated the local-storage helpers into a single shared module.',
+      'Removed placeholder test assertions that provided no real coverage.',
+      'Minor bump 2.8.0 to 2.8.1.',
+    ],
+  },
+  {
     version: '2.8.0',
     date: 'July 2026',
     headline: 'Add your name so teammates and parents know who you are',
