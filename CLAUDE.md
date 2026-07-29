@@ -539,8 +539,9 @@ Every other session: open `docs/product/DOC_TEST_DEBT.md` — close P0s, promote
 ---
 
 ## Current Version
-**v2.8.0** — July 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/data/versionHistory.js`.
+**v2.8.1** — July 2026. Full version history in `VERSION_HISTORY` constant in `frontend/src/data/versionHistory.js`.
 
+- v2.8.1 (2026-07-28): Internal only, no user-facing change. Extracted the home name-nudge and Account name field out of App.jsx into standalone tested components (#407). Added the write-error reject-path test for dbSaveTeamData (#418). Migrated App.jsx's loadJSON/saveJSON to the shared utils/storage.js (#416, App.jsx half; finalizeSchedule half tracked in #420). Excised fake-green admin-auth assertions (#412).
 - v2.8.0 (2026-07-23): Set your name (#405) - self-scoped `PATCH /me` endpoint (id from verified token, never the body), `updateProfileName` in useAuth with a 5-case spec, Account-tab name field and dismissible home nudge (`first_name === ''`). Extraction + golden-path tests for the two App.jsx render surfaces tracked in #407. Excised 12 fake-green dead-path admin auth assertions from the backend suites (#410, #412) - real coverage confirmed via mutation check. Test-health survey passes 1-2 filed (#406, #410, #411).
 - v2.7.0 (2026-07-21): Google sign-in (#394, gate-first - memberless sessions route to NoMembershipScreen). Session visibility (#395): home sign-out + Account tab with per-team cards and tap-to-switch. Roster-wipe DB guard (#386, migration 015 live in prod). Request-access validator fix (#397). See also #400 (lint).
 - v2.6.0 (2026-07-20): Auth gate live in prod - editing requires a session, viewing does not. WS-3 RLS enabled on team_data/teams/roster_snapshots/share_links with membership-scoped policies; TRUNCATE revoked from anon and authenticated. Write failures now surface to the user. See #342, #377, #381.
