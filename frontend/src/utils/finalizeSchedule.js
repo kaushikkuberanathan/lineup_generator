@@ -1,15 +1,9 @@
 import { supabase } from '../supabase';
-
-function loadJSON(key, fallback) {
-  try {
-    var raw = localStorage.getItem(key);
-    return raw !== null ? JSON.parse(raw) : fallback;
-  } catch(e) { return fallback; }
-}
-
-function saveJSON(key, value) {
-  try { localStorage.setItem(key, JSON.stringify(value)); } catch(_) { /* quota or blocked storage; primary persistence is Supabase */ }
-}
+// #420: migrated off a private loadJSON/saveJSON onto the shared storage.js
+// helpers. Behavior change (intentional, not a no-op): gains the _mem
+// in-session recovery fallback storage.js has for quota-blocked/unavailable
+// localStorage, which the old private copy lacked.
+import { loadJSON, saveJSON } from './storage';
 
 // Writes usScore/oppScore/gameStatus/finalizedAt to the game object in
 // team_data.schedule. Idempotent — re-calling on an already-final game is a no-op.
