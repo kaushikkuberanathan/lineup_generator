@@ -133,6 +133,10 @@ export function classifyPullRequest(pr) {
   return 'other';
 }
 
+function releaseNote(pr) {
+  return { number: pr.number, title: pr.title, url: pr.html_url };
+}
+
 export function aggregateActivity({ pullRequests, commits, months }) {
   const byMonth = new Map(
     months.map((month) => [
@@ -146,6 +150,7 @@ export function aggregateActivity({ pullRequests, commits, months }) {
         qualityImprovements: 0,
         developmentCommits: 0,
         otherPullRequests: 0,
+        releaseNotes: [],
         highlights: [],
       },
     ]),
@@ -157,6 +162,8 @@ export function aggregateActivity({ pullRequests, commits, months }) {
     return rightTime - leftTime;
   });
 
+  const latestReleaseNotes = [];
+
   for (const pr of sortedPullRequests) {
     if (!pr.merged_at) continue;
     const bucket = byMonth.get(monthKey(pr.merged_at));
@@ -165,14 +172,18 @@ export function aggregateActivity({ pullRequests, commits, months }) {
     bucket.mergedPullRequests += 1;
     const classification = classifyPullRequest(pr);
 
-    if (classification === 'productionRelease') bucket.productionReleases += 1;
-    else if (classification === 'productImprovement') bucket.productImprovements += 1;
+    if (classification === 'productionRelease') {
+      bucket.productionReleases += 1;
+      const note = releaseNote(pr);
+      if (bucket.releaseNotes.length < 3) {
+        bucket.releaseNotes.push(note);
+        // Backward-compatible alias for portfolio versions that still read highlights.
+        bucket.highlights.push(note);
+      }
+      if (latestReleaseNotes.length < 3) latestReleaseNotes.push(note);
+    } else if (classification === 'productImprovement') bucket.productImprovements += 1;
     else if (classification === 'qualityImprovement') bucket.qualityImprovements += 1;
     else bucket.otherPullRequests += 1;
-
-    if (classification === 'productImprovement' && bucket.highlights.length < 3) {
-      bucket.highlights.push({ number: pr.number, title: pr.title, url: pr.html_url });
-    }
   }
 
   for (const commit of commits) {
@@ -210,7 +221,7 @@ export function aggregateActivity({ pullRequests, commits, months }) {
     },
   );
 
-  return { months: monthRows, totals, currentMonth: monthRows.at(-1) };
+  return { months: monthRows, totals, currentMonth: monthRows.at(-1), latestReleaseNotes };
 }
 
 async function githubRequest(url, token) {
@@ -308,6 +319,7 @@ export async function runGenerator(options = {}) {
       productionReleases: 'Release or promotion PRs merged into main.',
       qualityImprovements: 'Merged PRs focused on fixes, testing, security, reliability, accessibility, documentation, refactoring, technical debt, or internal activity tooling.',
       developmentCommits: 'Non-merge, non-bot commits on the source branch. Generated activity commits are excluded.',
+      latestReleaseNotes: 'The three most recent production promotion pull requests in the reporting window.',
     },
     ...activity,
   };
