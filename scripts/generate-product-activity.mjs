@@ -133,8 +133,42 @@ export function classifyPullRequest(pr) {
   return 'other';
 }
 
+function releaseVersion(pr) {
+  const match = String(pr.title || '').match(/\brelease\s+v?(\d+(?:\.\d+)+)/i);
+  return match ? match[1] : '';
+}
+
+function releaseShippingSummary(pr) {
+  const lines = String(pr.body || '').replace(/\r\n/g, '\n').split('\n');
+  const headingIndex = lines.findIndex((line) => /^##\s+(?:what['’]?s\s+shipping|shipping)\s*$/i.test(line.trim()));
+  if (headingIndex < 0) return '';
+
+  for (let index = headingIndex + 1; index < lines.length; index += 1) {
+    const line = lines[index].trim();
+    if (/^##\s+/.test(line)) break;
+    if (!/^[-*]\s+/.test(line)) continue;
+
+    const bullet = line.replace(/^[-*]\s+/, '');
+    const boldLabel = bullet.match(/^\*\*([^*]+)\*\*/);
+    const rawLabel = boldLabel ? boldLabel[1] : bullet.split(/\s+(?:—|-)\s+/)[0];
+    return rawLabel
+      .replace(/`/g, '')
+      .replace(/\s*\(#\d+(?:\s*\/\s*#\d+)*\)/g, '')
+      .replace(/\s+#\d+(?:\s*\/\s*#\d+)*/g, '')
+      .trim();
+  }
+
+  return '';
+}
+
 function releaseNote(pr) {
-  return { number: pr.number, title: pr.title, url: pr.html_url };
+  const body = normalize(pr.body);
+  if (body.includes('internal-only release') || body.includes('no user-facing change')) return null;
+
+  const version = releaseVersion(pr);
+  const summary = releaseShippingSummary(pr);
+  const title = version && summary ? `Release ${version} — ${summary}` : pr.title;
+  return { number: pr.number, title, url: pr.html_url };
 }
 
 export function aggregateActivity({ pullRequests, commits, months }) {
@@ -175,12 +209,12 @@ export function aggregateActivity({ pullRequests, commits, months }) {
     if (classification === 'productionRelease') {
       bucket.productionReleases += 1;
       const note = releaseNote(pr);
-      if (bucket.releaseNotes.length < 3) {
+      if (note && bucket.releaseNotes.length < 3) {
         bucket.releaseNotes.push(note);
         // Backward-compatible alias for portfolio versions that still read highlights.
         bucket.highlights.push(note);
       }
-      if (latestReleaseNotes.length < 3) latestReleaseNotes.push(note);
+      if (note && latestReleaseNotes.length < 3) latestReleaseNotes.push(note);
     } else if (classification === 'productImprovement') bucket.productImprovements += 1;
     else if (classification === 'qualityImprovement') bucket.qualityImprovements += 1;
     else bucket.otherPullRequests += 1;
@@ -319,7 +353,7 @@ export async function runGenerator(options = {}) {
       productionReleases: 'Release or promotion PRs merged into main.',
       qualityImprovements: 'Merged PRs focused on fixes, testing, security, reliability, accessibility, documentation, refactoring, technical debt, or internal activity tooling.',
       developmentCommits: 'Non-merge, non-bot commits on the source branch. Generated activity commits are excluded.',
-      latestReleaseNotes: 'The three most recent production promotion pull requests in the reporting window.',
+      latestReleaseNotes: 'The three most recent user-facing production releases, summarized from the first Shipping bullet; internal-only releases are excluded.',
     },
     ...activity,
   };
