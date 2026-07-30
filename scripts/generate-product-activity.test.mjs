@@ -49,6 +49,27 @@ test('feature and quality classifications are mutually exclusive', () => {
   assert.equal(classifyPullRequest(pr({ title: 'Update dependency metadata' })), 'other');
 });
 
+test('release-management PRs are not product or quality improvements', () => {
+  assert.equal(
+    classifyPullRequest(
+      pr({
+        title: 'chore(release): 2.8.1 — internal-only',
+        body: "## What's shipping\n- extraction and coverage work",
+      }),
+    ),
+    'other',
+  );
+  assert.equal(
+    classifyPullRequest(
+      pr({
+        title: 'Release v2.5.3: version history and branch enforcement',
+        body: "## What's shipping\n- release administration",
+      }),
+    ),
+    'other',
+  );
+});
+
 test('aggregation excludes merge, bot, and generated activity commits', () => {
   const months = rollingMonths(2, new Date('2026-07-29T12:00:00Z'));
   const result = aggregateActivity({
