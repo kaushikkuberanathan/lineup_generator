@@ -24,6 +24,15 @@ function pr(overrides = {}) {
   };
 }
 
+function releasePr(overrides = {}) {
+  return pr({
+    title: 'Release 2.8.0 — develop → main promotion',
+    base: { ref: 'main' },
+    head: { ref: 'develop' },
+    ...overrides,
+  });
+}
+
 function commit(overrides = {}) {
   return {
     commit: { author: { date: '2026-07-12T12:00:00Z' }, message: 'feat: work' },
@@ -34,11 +43,7 @@ function commit(overrides = {}) {
 }
 
 test('production release requires a main promotion signal', () => {
-  const release = pr({
-    title: 'Release 2.8.0 — develop → main promotion',
-    base: { ref: 'main' },
-    head: { ref: 'develop' },
-  });
+  const release = releasePr();
   assert.equal(isProductionRelease(release), true);
   assert.equal(classifyPullRequest(release), 'productionRelease');
 });
@@ -90,12 +95,7 @@ test('aggregation excludes merge, bot, and generated activity commits', () => {
     pullRequests: [
       pr({ number: 1 }),
       pr({ number: 2, title: 'fix(storage): preserve pending sync' }),
-      pr({
-        number: 3,
-        title: 'Release 2.8.0 — develop → main promotion',
-        base: { ref: 'main' },
-        head: { ref: 'develop' },
-      }),
+      releasePr({ number: 3 }),
     ],
     commits: [
       commit(),
@@ -110,23 +110,30 @@ test('aggregation excludes merge, bot, and generated activity commits', () => {
   assert.equal(result.currentMonth.qualityImprovements, 1);
   assert.equal(result.currentMonth.productionReleases, 1);
   assert.equal(result.currentMonth.developmentCommits, 1);
-  assert.equal(result.currentMonth.highlights.length, 1);
+  assert.equal(result.currentMonth.releaseNotes.length, 1);
+  assert.equal(result.currentMonth.highlights[0].number, 3);
+  assert.equal(result.latestReleaseNotes[0].number, 3);
 });
 
-test('highlights are ordered by merge date even when API results are not', () => {
+test('latest release notes are ordered by merge date and exclude story PRs', () => {
   const months = rollingMonths(1, new Date('2026-07-29T12:00:00Z'));
   const result = aggregateActivity({
     months,
     pullRequests: [
-      pr({ number: 10, title: 'feat: older improvement', merged_at: '2026-07-02T12:00:00Z' }),
-      pr({ number: 11, title: 'feat: newest improvement', merged_at: '2026-07-27T12:00:00Z' }),
-      pr({ number: 12, title: 'feat: middle improvement', merged_at: '2026-07-14T12:00:00Z' }),
+      releasePr({ number: 10, title: 'Release 2.7.0', merged_at: '2026-07-02T12:00:00Z' }),
+      pr({ number: 99, title: 'feat: newest story', merged_at: '2026-07-28T12:00:00Z' }),
+      releasePr({ number: 11, title: 'Release 2.9.0', merged_at: '2026-07-27T12:00:00Z' }),
+      releasePr({ number: 12, title: 'Release 2.8.0', merged_at: '2026-07-14T12:00:00Z' }),
     ],
     commits: [],
   });
 
   assert.deepEqual(
-    result.currentMonth.highlights.map((highlight) => highlight.number),
+    result.latestReleaseNotes.map((note) => note.number),
+    [11, 12, 10],
+  );
+  assert.deepEqual(
+    result.currentMonth.releaseNotes.map((note) => note.number),
     [11, 12, 10],
   );
 });
