@@ -185,7 +185,7 @@ The automated feed reports:
 - Quality, reliability, security, testing, and technical-debt improvements
 - Non-merge development commits on `develop`
 
-The workflow runs weekly and can also be triggered manually:
+The workflow runs weekly, whenever the activity tooling changes on `develop`, and can also be triggered manually:
 
 - Workflow: [`.github/workflows/update-product-activity.yml`](.github/workflows/update-product-activity.yml)
 - Generator: [`scripts/generate-product-activity.mjs`](scripts/generate-product-activity.mjs)

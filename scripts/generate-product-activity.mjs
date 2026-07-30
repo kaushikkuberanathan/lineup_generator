@@ -134,7 +134,13 @@ export function aggregateActivity({ pullRequests, commits, months }) {
     ]),
   );
 
-  for (const pr of pullRequests) {
+  const sortedPullRequests = [...pullRequests].sort((left, right) => {
+    const leftTime = left.merged_at ? new Date(left.merged_at).getTime() : 0;
+    const rightTime = right.merged_at ? new Date(right.merged_at).getTime() : 0;
+    return rightTime - leftTime;
+  });
+
+  for (const pr of sortedPullRequests) {
     if (!pr.merged_at) continue;
     const bucket = byMonth.get(monthKey(pr.merged_at));
     if (!bucket) continue;
@@ -208,20 +214,21 @@ async function githubRequest(url, token) {
   return response.json();
 }
 
-async function fetchMergedPullRequests({ repository, token, startDate }) {
+export async function fetchMergedPullRequests({ repository, token, startDate }) {
   const results = [];
   for (let page = 1; page <= 20; page += 1) {
     const url = `https://api.github.com/repos/${repository}/pulls?state=closed&sort=updated&direction=desc&per_page=100&page=${page}`;
     const batch = await githubRequest(url, token);
     if (!batch.length) break;
 
-    let reachedWindowStart = false;
     for (const pr of batch) {
       if (pr.merged_at && new Date(pr.merged_at) >= startDate) results.push(pr);
-      if (new Date(pr.updated_at) < startDate) reachedWindowStart = true;
     }
 
-    if (reachedWindowStart || batch.length < 100) break;
+    // GitHub's REST pull-request ordering is not guaranteed to be globally
+    // monotonic across pages. Fetch every available page, then filter and sort
+    // client-side so a stale updated_at value cannot truncate the activity window.
+    if (batch.length < 100) break;
   }
   return results;
 }

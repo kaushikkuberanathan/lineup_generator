@@ -1,6 +1,12 @@
 name: Refresh public product activity
 
 on:
+  push:
+    branches: [develop]
+    paths:
+      - '.github/workflows/update-product-activity.yml'
+      - 'scripts/generate-product-activity.mjs'
+      - 'scripts/generate-product-activity.test.mjs'
   schedule:
     # Weekly is enough for a portfolio trend and avoids noisy generated commits.
     - cron: '17 11 * * 1'
