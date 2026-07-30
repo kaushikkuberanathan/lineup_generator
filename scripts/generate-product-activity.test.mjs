@@ -27,6 +27,7 @@ function pr(overrides = {}) {
 function releasePr(overrides = {}) {
   return pr({
     title: 'Release 2.8.0 — develop → main promotion',
+    body: "## What's shipping\n\n- **Set your name (#405 / #408)** - coaches can set a display name.",
     base: { ref: 'main' },
     head: { ref: 'develop' },
     ...overrides,
@@ -113,6 +114,7 @@ test('aggregation excludes merge, bot, and generated activity commits', () => {
   assert.equal(result.currentMonth.releaseNotes.length, 1);
   assert.equal(result.currentMonth.highlights[0].number, 3);
   assert.equal(result.latestReleaseNotes[0].number, 3);
+  assert.equal(result.latestReleaseNotes[0].title, 'Release 2.8.0 — Set your name');
 });
 
 test('latest release notes are ordered by merge date and exclude story PRs', () => {
@@ -120,10 +122,31 @@ test('latest release notes are ordered by merge date and exclude story PRs', () 
   const result = aggregateActivity({
     months,
     pullRequests: [
-      releasePr({ number: 10, title: 'Release 2.7.0', merged_at: '2026-07-02T12:00:00Z' }),
+      releasePr({
+        number: 10,
+        title: 'Release 2.7.0',
+        body: "## Shipping\n\n- **Older capability (#10)** - details",
+        merged_at: '2026-07-02T12:00:00Z',
+      }),
       pr({ number: 99, title: 'feat: newest story', merged_at: '2026-07-28T12:00:00Z' }),
-      releasePr({ number: 11, title: 'Release 2.9.0', merged_at: '2026-07-27T12:00:00Z' }),
-      releasePr({ number: 12, title: 'Release 2.8.0', merged_at: '2026-07-14T12:00:00Z' }),
+      releasePr({
+        number: 13,
+        title: 'Release 2.10.0',
+        body: 'Internal-only release. No user-facing change.\n\n## Shipping\n\n- **Internal refactor** - details',
+        merged_at: '2026-07-28T12:00:00Z',
+      }),
+      releasePr({
+        number: 11,
+        title: 'Release 2.9.0',
+        body: "## What's shipping\n\n- **Newest capability (#11 / #12)** - details",
+        merged_at: '2026-07-27T12:00:00Z',
+      }),
+      releasePr({
+        number: 12,
+        title: 'Release 2.8.0',
+        body: "## Shipping\n\n- **Middle capability** - details",
+        merged_at: '2026-07-14T12:00:00Z',
+      }),
     ],
     commits: [],
   });
@@ -135,6 +158,10 @@ test('latest release notes are ordered by merge date and exclude story PRs', () 
   assert.deepEqual(
     result.currentMonth.releaseNotes.map((note) => note.number),
     [11, 12, 10],
+  );
+  assert.deepEqual(
+    result.latestReleaseNotes.map((note) => note.title),
+    ['Release 2.9.0 — Newest capability', 'Release 2.8.0 — Middle capability', 'Release 2.7.0 — Older capability'],
   );
 });
 

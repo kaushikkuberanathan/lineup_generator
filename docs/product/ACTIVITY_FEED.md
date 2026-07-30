@@ -12,9 +12,11 @@ The public portfolio reads a generated six-month activity summary from `product-
 
 ## Release notes
 
-The feed publishes `latestReleaseNotes`, containing the three most recent production-promotion pull requests in the reporting window. Story and feature pull requests remain part of the monthly product-improvement count, but they are not used as public release-note links.
+The feed publishes `latestReleaseNotes`, containing the three most recent user-facing production releases in the reporting window. Each public title combines the release version with the first bullet under the release PR's `Shipping` or `What's shipping` section.
 
-For backward compatibility, each month's `highlights` field mirrors that month's production release notes while portfolio clients transition to `latestReleaseNotes`.
+Story and feature PRs remain part of the monthly product-improvement count, but they are not used as release-note links. Release PRs explicitly marked `Internal-only release` or `No user-facing change` are excluded from the public list.
+
+For backward compatibility, each month's `highlights` field mirrors that month's summarized production release notes while portfolio clients transition to `latestReleaseNotes`.
 
 ## Refresh behavior
 
