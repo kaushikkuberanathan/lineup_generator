@@ -4,8 +4,10 @@
 //
 // Values are VERBATIM from the seed - players are already full 38-key shape, so do NOT
 // add defaults or modify. Schedule preserves scoreReported / gameBall arrays / mixed
-// battingPerf value types exactly. Grid rows are left untruncated (migrateGrid reshapes
-// to innings on read). team.id is generated at runtime (not here); coachPin omitted (empty).
+// battingPerf value types exactly. Grid rows are exactly DEMO_INNINGS (6) long, matching
+// what's actually used - migrateGrid's per-inning reshape is defensive for future drift,
+// not a signal that raw rows are expected to overshoot. team.id is generated at runtime
+// (not here); coachPin omitted (empty).
 
 export var DEMO_AGE_GROUP = "8U";
 export var DEMO_INNINGS = 6;
@@ -1179,8 +1181,7 @@ export var DEMO_GRID = {
     "RF",
     "SS",
     "1B",
-    "LF",
-    "2B"
+    "LF"
   ],
   "Aquaman Pebbles": [
     "P",
@@ -1188,8 +1189,7 @@ export var DEMO_GRID = {
     "LC",
     "P",
     "RF",
-    "1B",
-    "3B"
+    "1B"
   ],
   "Panther Roadrunner": [
     "2B",
@@ -1197,8 +1197,7 @@ export var DEMO_GRID = {
     "LF",
     "2B",
     "3B",
-    "RC",
-    "C"
+    "RC"
   ],
   "Wolverine Bunny": [
     "RF",
@@ -1206,8 +1205,7 @@ export var DEMO_GRID = {
     "2B",
     "LF",
     "Bench",
-    "3B",
-    "LC"
+    "3B"
   ],
   "Wonder Squarepants": [
     "1B",
@@ -1215,8 +1213,7 @@ export var DEMO_GRID = {
     "RC",
     "1B",
     "2B",
-    "LC",
-    "RF"
+    "LC"
   ],
   "Superman Mouse": [
     "C",
@@ -1224,8 +1221,7 @@ export var DEMO_GRID = {
     "C",
     "3B",
     "RC",
-    "C",
-    "Bench"
+    "C"
   ],
   "Spiderman Rubble": [
     "RC",
@@ -1233,8 +1229,7 @@ export var DEMO_GRID = {
     "Bench",
     "LC",
     "SS",
-    "P",
-    "LF"
+    "P"
   ],
   "Batman Sponge": [
     "SS",
@@ -1242,8 +1237,7 @@ export var DEMO_GRID = {
     "SS",
     "RF",
     "C",
-    "Bench",
-    "P"
+    "Bench"
   ],
   "Flash Duck": [
     "3B",
@@ -1251,8 +1245,7 @@ export var DEMO_GRID = {
     "3B",
     "C",
     "LF",
-    "2B",
-    "SS"
+    "2B"
   ],
   "Hulk Jetson": [
     "LC",
@@ -1260,8 +1253,7 @@ export var DEMO_GRID = {
     "P",
     "RC",
     "P",
-    "RF",
-    "1B"
+    "RF"
   ],
   "Thor Scooby": [
     "LF",
@@ -1269,7 +1261,6 @@ export var DEMO_GRID = {
     "1B",
     "Bench",
     "LC",
-    "SS",
-    "RC"
+    "SS"
   ]
 };
