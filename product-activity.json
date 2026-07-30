@@ -1,10 +1,9 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-07-30T22:05:00Z",
+  "generatedAt": "2026-07-30T22:05:49.963Z",
   "repository": "kaushikkuberanathan/lineup_generator",
   "sourceBranch": "develop",
   "windowMonths": 6,
-  "bootstrapPlaceholder": true,
   "definitions": {
     "mergedPullRequests": "Pull requests merged during the calendar month.",
     "productImprovements": "Merged, non-release PRs identified by feature/story labels or user-facing feature signals.",
@@ -13,13 +12,164 @@
     "developmentCommits": "Non-merge, non-bot commits on the source branch. Generated activity commits are excluded."
   },
   "months": [
-    {"key":"2026-02","label":"Feb 2026","mergedPullRequests":0,"productImprovements":0,"productionReleases":0,"qualityImprovements":0,"developmentCommits":0,"otherPullRequests":0,"highlights":[]},
-    {"key":"2026-03","label":"Mar 2026","mergedPullRequests":0,"productImprovements":0,"productionReleases":0,"qualityImprovements":0,"developmentCommits":0,"otherPullRequests":0,"highlights":[]},
-    {"key":"2026-04","label":"Apr 2026","mergedPullRequests":0,"productImprovements":0,"productionReleases":0,"qualityImprovements":0,"developmentCommits":0,"otherPullRequests":0,"highlights":[]},
-    {"key":"2026-05","label":"May 2026","mergedPullRequests":0,"productImprovements":0,"productionReleases":0,"qualityImprovements":0,"developmentCommits":0,"otherPullRequests":0,"highlights":[]},
-    {"key":"2026-06","label":"Jun 2026","mergedPullRequests":0,"productImprovements":0,"productionReleases":0,"qualityImprovements":0,"developmentCommits":0,"otherPullRequests":0,"highlights":[]},
-    {"key":"2026-07","label":"Jul 2026","mergedPullRequests":0,"productImprovements":0,"productionReleases":0,"qualityImprovements":0,"developmentCommits":0,"otherPullRequests":0,"highlights":[]}
+    {
+      "key": "2026-02",
+      "label": "Feb 2026",
+      "mergedPullRequests": 0,
+      "productImprovements": 0,
+      "productionReleases": 0,
+      "qualityImprovements": 0,
+      "developmentCommits": 0,
+      "otherPullRequests": 0,
+      "highlights": []
+    },
+    {
+      "key": "2026-03",
+      "label": "Mar 2026",
+      "mergedPullRequests": 0,
+      "productImprovements": 0,
+      "productionReleases": 0,
+      "qualityImprovements": 0,
+      "developmentCommits": 222,
+      "otherPullRequests": 0,
+      "highlights": []
+    },
+    {
+      "key": "2026-04",
+      "label": "Apr 2026",
+      "mergedPullRequests": 25,
+      "productImprovements": 2,
+      "productionReleases": 9,
+      "qualityImprovements": 9,
+      "developmentCommits": 171,
+      "otherPullRequests": 5,
+      "highlights": [
+        {
+          "number": 30,
+          "title": "Release v2.5.3: VERSION_HISTORY extraction + techNote test + branch enforcement + rate limiter docs",
+          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/30"
+        },
+        {
+          "number": 7,
+          "title": "feat(scoring): opponent pitch tracking + persistence (v2.3.2)",
+          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/7"
+        }
+      ]
+    },
+    {
+      "key": "2026-05",
+      "label": "May 2026",
+      "mergedPullRequests": 150,
+      "productImprovements": 30,
+      "productionReleases": 21,
+      "qualityImprovements": 90,
+      "developmentCommits": 156,
+      "otherPullRequests": 9,
+      "highlights": [
+        {
+          "number": 259,
+          "title": "feat: Story 93 — DefenseDiamond Tier D + App.jsx POS_COLORS domain token migration (#219)",
+          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/259"
+        },
+        {
+          "number": 247,
+          "title": "feat: Stories 60+64+65 — token gap cleanup (letterSpacing, font size, body text, shadow)",
+          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/247"
+        },
+        {
+          "number": 227,
+          "title": "feat: Stories 92+94 — DefenseDiamond Tier A+B + MaintenanceScreen token migration",
+          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/227"
+        }
+      ]
+    },
+    {
+      "key": "2026-06",
+      "label": "Jun 2026",
+      "mergedPullRequests": 47,
+      "productImprovements": 10,
+      "productionReleases": 7,
+      "qualityImprovements": 30,
+      "developmentCommits": 38,
+      "otherPullRequests": 0,
+      "highlights": [
+        {
+          "number": 333,
+          "title": "feat(demo): Demo All-Stars team seeded from Mud Hens clone (v2.5.30)",
+          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/333"
+        },
+        {
+          "number": 326,
+          "title": "feat(branding): brand mark on About tab + PDF header (v2.5.29)",
+          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/326"
+        },
+        {
+          "number": 320,
+          "title": "feat(branding): Dugout Lineup brand mark across app + share headers; per-team PDF initial fix",
+          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/320"
+        }
+      ]
+    },
+    {
+      "key": "2026-07",
+      "label": "Jul 2026",
+      "mergedPullRequests": 52,
+      "productImprovements": 12,
+      "productionReleases": 8,
+      "qualityImprovements": 26,
+      "developmentCommits": 69,
+      "otherPullRequests": 6,
+      "highlights": [
+        {
+          "number": 421,
+          "title": "chore(release): 2.8.1 — internal-only (extraction + storage consolidation + coverage)",
+          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/421"
+        },
+        {
+          "number": 417,
+          "title": "feat(account): extract HomeNameNudge + AccountNameField into tested components (#407)",
+          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/417"
+        },
+        {
+          "number": 408,
+          "title": "feat: Set your name - profile name editing (#405)",
+          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/408"
+        }
+      ]
+    }
   ],
-  "totals": {"mergedPullRequests":0,"productImprovements":0,"productionReleases":0,"qualityImprovements":0,"developmentCommits":0},
-  "currentMonth": {"key":"2026-07","label":"Jul 2026","mergedPullRequests":0,"productImprovements":0,"productionReleases":0,"qualityImprovements":0,"developmentCommits":0,"otherPullRequests":0,"highlights":[]}
+  "totals": {
+    "mergedPullRequests": 274,
+    "productImprovements": 54,
+    "productionReleases": 45,
+    "qualityImprovements": 155,
+    "developmentCommits": 656
+  },
+  "currentMonth": {
+    "key": "2026-07",
+    "label": "Jul 2026",
+    "mergedPullRequests": 52,
+    "productImprovements": 12,
+    "productionReleases": 8,
+    "qualityImprovements": 26,
+    "developmentCommits": 69,
+    "otherPullRequests": 6,
+    "highlights": [
+      {
+        "number": 421,
+        "title": "chore(release): 2.8.1 — internal-only (extraction + storage consolidation + coverage)",
+        "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/421"
+      },
+      {
+        "number": 417,
+        "title": "feat(account): extract HomeNameNudge + AccountNameField into tested components (#407)",
+        "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/417"
+      },
+      {
+        "number": 408,
+        "title": "feat: Set your name - profile name editing (#405)",
+        "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/408"
+      }
+    ]
+  }
 }
