@@ -43,8 +43,19 @@ export function isReleaseManagement(pr) {
   return /^(chore\(release\)|release)(\b|:)/.test(title);
 }
 
+export function isActivityTooling(pr) {
+  const title = normalize(pr.title);
+  const head = normalize(pr.head?.ref);
+  return (
+    title.includes('product activity') ||
+    title.includes('activity-data') ||
+    head.includes('product-activity') ||
+    head.includes('activity-data')
+  );
+}
+
 export function isProductImprovement(pr) {
-  if (isProductionRelease(pr) || isReleaseManagement(pr)) return false;
+  if (isProductionRelease(pr) || isReleaseManagement(pr) || isActivityTooling(pr)) return false;
 
   const labels = labelNames(pr);
   const title = normalize(pr.title);
@@ -66,6 +77,7 @@ export function isProductImprovement(pr) {
 
 export function isQualityImprovement(pr) {
   if (isProductionRelease(pr) || isReleaseManagement(pr) || isProductImprovement(pr)) return false;
+  if (isActivityTooling(pr)) return true;
 
   const labels = labelNames(pr);
   const title = normalize(pr.title);
@@ -292,9 +304,9 @@ export async function runGenerator(options = {}) {
     windowMonths: months.length,
     definitions: {
       mergedPullRequests: 'Pull requests merged during the calendar month.',
-      productImprovements: 'Merged, non-release-management PRs identified by feature/story labels or user-facing feature signals.',
+      productImprovements: 'Merged customer-facing PRs, excluding release management and internal activity tooling.',
       productionReleases: 'Release or promotion PRs merged into main.',
-      qualityImprovements: 'Merged, non-feature PRs focused on fixes, testing, security, reliability, accessibility, documentation, refactoring, or technical debt.',
+      qualityImprovements: 'Merged PRs focused on fixes, testing, security, reliability, accessibility, documentation, refactoring, technical debt, or internal activity tooling.',
       developmentCommits: 'Non-merge, non-bot commits on the source branch. Generated activity commits are excluded.',
     },
     ...activity,

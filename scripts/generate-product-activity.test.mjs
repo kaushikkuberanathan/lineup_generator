@@ -70,6 +70,19 @@ test('release-management PRs are not product or quality improvements', () => {
   );
 });
 
+test('internal activity tooling is quality work even when feature-labeled', () => {
+  assert.equal(
+    classifyPullRequest(
+      pr({
+        title: 'Exclude release management from product activity metrics',
+        labels: [{ name: 'type: feature' }],
+        head: { ref: 'fix/product-activity-release-classification' },
+      }),
+    ),
+    'qualityImprovement',
+  );
+});
+
 test('aggregation excludes merge, bot, and generated activity commits', () => {
   const months = rollingMonths(2, new Date('2026-07-29T12:00:00Z'));
   const result = aggregateActivity({
