@@ -126,4 +126,33 @@ describe('dbSaveTeamData — write-error reject path (#418)', function() {
     await expect(mod.dbLoadTeamData('team-1')).resolves.toBeNull();
   });
 
+  // ── Case 5: guard — no supabase client (#431) ──────────────────────────
+  describe('guard: no supabase client (env forced empty)', function() {
+    beforeEach(function() {
+      // frontend/.env carries real (anon, non-secret) Supabase credentials that
+      // Vite's loadEnv supplies by default — merely relying on the absence of
+      // an explicit stubEnv call does NOT guarantee a null client (#431). Force
+      // both vars to '' explicitly so supabaseUrl && supabaseKey is falsy
+      // regardless of what real .env files are present on this machine.
+      vi.stubEnv('VITE_SUPABASE_URL', '');
+      vi.stubEnv('VITE_SUPABASE_ANON_KEY', '');
+      vi.resetModules();
+      upsertSpy.mockClear();
+      fakeUpsertRef.current = null;
+      fakeSingleRef.current = null;
+    });
+
+    afterEach(function() {
+      vi.unstubAllEnvs();
+    });
+
+    it('5: env forced empty → supabase is null, dbSaveTeamData resolves undefined and NEVER calls upsert', async function() {
+      var mod = await import('../supabase.js');
+
+      var r = await mod.dbSaveTeamData('team-1', { roster: [] });
+      expect(r).toBeUndefined();
+      expect(upsertSpy).not.toHaveBeenCalled();
+    });
+  });
+
 });
