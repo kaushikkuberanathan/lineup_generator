@@ -1,6 +1,7 @@
 name: Refresh public product activity
 
 on:
+  # Refresh immediately when the activity pipeline itself changes on develop.
   push:
     branches: [develop]
     paths:
@@ -8,7 +9,7 @@ on:
       - 'scripts/generate-product-activity.mjs'
       - 'scripts/generate-product-activity.test.mjs'
   schedule:
-    # Weekly is enough for a portfolio trend and avoids noisy generated commits.
+    # Weekly refreshes keep the public portfolio trend current without noisy daily commits.
     - cron: '17 11 * * 1'
   workflow_dispatch:
 
