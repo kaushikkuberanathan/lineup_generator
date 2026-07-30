@@ -30,14 +30,17 @@ export function isProductionRelease(pr) {
   const titleAndBody = `${pr.title || ''} ${pr.body || ''}`;
   const base = normalize(pr.base?.ref);
   const head = normalize(pr.head?.ref);
+
   const releaseSignal =
     hasAnyLabel(labels, ['release', 'release: production', 'production']) ||
     hasAnyText(titleAndBody, ['production promotion', 'promotes', 'develop → main', 'develop -> main', 'release']);
+
   return base === 'main' && (head === 'develop' || releaseSignal) && releaseSignal;
 }
 
 export function isReleaseManagement(pr) {
-  return /^(chore\(release\)|release)(\b|:)/.test(normalize(pr.title));
+  const title = normalize(pr.title);
+  return /^(chore\(release\)|release)(\b|:)/.test(title);
 }
 
 export function isActivityTooling(pr) {
@@ -53,11 +56,20 @@ export function isActivityTooling(pr) {
 
 export function isProductImprovement(pr) {
   if (isProductionRelease(pr) || isReleaseManagement(pr) || isActivityTooling(pr)) return false;
+
   const labels = labelNames(pr);
   const title = normalize(pr.title);
   const body = normalize(pr.body);
+
   return (
-    hasAnyLabel(labels, ['type: story', 'type: feature', 'feature', 'enhancement', 'user-facing', 'product improvement']) ||
+    hasAnyLabel(labels, [
+      'type: story',
+      'type: feature',
+      'feature',
+      'enhancement',
+      'user-facing',
+      'product improvement',
+    ]) ||
     /^(feat|feature)(\(.+\))?:/.test(title) ||
     hasAnyText(body, ['user-facing change', 'customer-facing change', "what's shipping"])
   );
@@ -66,13 +78,27 @@ export function isProductImprovement(pr) {
 export function isQualityImprovement(pr) {
   if (isProductionRelease(pr) || isReleaseManagement(pr) || isProductImprovement(pr)) return false;
   if (isActivityTooling(pr)) return true;
+
   const labels = labelNames(pr);
   const title = normalize(pr.title);
+
   return (
     hasAnyLabel(labels, [
-      'type: bug', 'type: tech debt', 'type: tech-debt', 'bug', 'fix', 'test', 'quality',
-      'security', 'reliability', 'performance', 'accessibility', 'documentation', 'tech debt',
-      'tech-debt', 'refactor',
+      'type: bug',
+      'type: tech debt',
+      'type: tech-debt',
+      'bug',
+      'fix',
+      'test',
+      'quality',
+      'security',
+      'reliability',
+      'performance',
+      'accessibility',
+      'documentation',
+      'tech debt',
+      'tech-debt',
+      'refactor',
     ]) ||
     /^(fix|test|refactor|perf|security|docs|chore)(\(.+\))?:/.test(title)
   );
@@ -89,8 +115,9 @@ export function rollingMonths(count = DEFAULT_MONTHS, now = new Date()) {
   const anchor = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
   for (let offset = count - 1; offset >= 0; offset -= 1) {
     const date = new Date(Date.UTC(anchor.getUTCFullYear(), anchor.getUTCMonth() - offset, 1));
+    const key = monthKey(date);
     months.push({
-      key: monthKey(date),
+      key,
       label: date.toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' }),
       start: date.toISOString(),
       end: new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1)).toISOString(),
@@ -107,11 +134,22 @@ export function classifyPullRequest(pr) {
 }
 
 export function aggregateActivity({ pullRequests, commits, months }) {
-  const byMonth = new Map(months.map((month) => [month.key, {
-    key: month.key, label: month.label, mergedPullRequests: 0, productImprovements: 0,
-    productionReleases: 0, qualityImprovements: 0, developmentCommits: 0,
-    otherPullRequests: 0, highlights: [],
-  }]));
+  const byMonth = new Map(
+    months.map((month) => [
+      month.key,
+      {
+        key: month.key,
+        label: month.label,
+        mergedPullRequests: 0,
+        productImprovements: 0,
+        productionReleases: 0,
+        qualityImprovements: 0,
+        developmentCommits: 0,
+        otherPullRequests: 0,
+        highlights: [],
+      },
+    ]),
+  );
 
   const sortedPullRequests = [...pullRequests].sort((left, right) => {
     const leftTime = left.merged_at ? new Date(left.merged_at).getTime() : 0;
@@ -123,12 +161,15 @@ export function aggregateActivity({ pullRequests, commits, months }) {
     if (!pr.merged_at) continue;
     const bucket = byMonth.get(monthKey(pr.merged_at));
     if (!bucket) continue;
+
     bucket.mergedPullRequests += 1;
     const classification = classifyPullRequest(pr);
+
     if (classification === 'productionRelease') bucket.productionReleases += 1;
     else if (classification === 'productImprovement') bucket.productImprovements += 1;
     else if (classification === 'qualityImprovement') bucket.qualityImprovements += 1;
     else bucket.otherPullRequests += 1;
+
     if (classification === 'productImprovement' && bucket.highlights.length < 3) {
       bucket.highlights.push({ number: pr.number, title: pr.title, url: pr.html_url });
     }
@@ -139,34 +180,54 @@ export function aggregateActivity({ pullRequests, commits, months }) {
     if (!authoredAt) continue;
     const bucket = byMonth.get(monthKey(authoredAt));
     if (!bucket) continue;
+
     const isMerge = Array.isArray(commit.parents) && commit.parents.length > 1;
     const authorLogin = normalize(commit.author?.login || commit.committer?.login);
     const message = normalize(commit.commit?.message);
     const isGeneratedActivityCommit = message.startsWith('chore(activity):');
     const isBot = authorLogin.endsWith('[bot]') || authorLogin === 'github-actions';
-    if (!isMerge && !isGeneratedActivityCommit && !isBot) bucket.developmentCommits += 1;
+
+    if (!isMerge && !isGeneratedActivityCommit && !isBot) {
+      bucket.developmentCommits += 1;
+    }
   }
 
   const monthRows = months.map((month) => byMonth.get(month.key));
-  const totals = monthRows.reduce((sum, row) => ({
-    mergedPullRequests: sum.mergedPullRequests + row.mergedPullRequests,
-    productImprovements: sum.productImprovements + row.productImprovements,
-    productionReleases: sum.productionReleases + row.productionReleases,
-    qualityImprovements: sum.qualityImprovements + row.qualityImprovements,
-    developmentCommits: sum.developmentCommits + row.developmentCommits,
-  }), { mergedPullRequests: 0, productImprovements: 0, productionReleases: 0, qualityImprovements: 0, developmentCommits: 0 });
+  const totals = monthRows.reduce(
+    (sum, row) => ({
+      mergedPullRequests: sum.mergedPullRequests + row.mergedPullRequests,
+      productImprovements: sum.productImprovements + row.productImprovements,
+      productionReleases: sum.productionReleases + row.productionReleases,
+      qualityImprovements: sum.qualityImprovements + row.qualityImprovements,
+      developmentCommits: sum.developmentCommits + row.developmentCommits,
+    }),
+    {
+      mergedPullRequests: 0,
+      productImprovements: 0,
+      productionReleases: 0,
+      qualityImprovements: 0,
+      developmentCommits: 0,
+    },
+  );
+
   return { months: monthRows, totals, currentMonth: monthRows.at(-1) };
 }
 
 async function githubRequest(url, token) {
-  const response = await fetch(url, { headers: {
-    Accept: 'application/vnd.github+json', Authorization: `Bearer ${token}`,
-    'X-GitHub-Api-Version': '2022-11-28', 'User-Agent': 'product-activity-generator',
-  }});
+  const response = await fetch(url, {
+    headers: {
+      Accept: 'application/vnd.github+json',
+      Authorization: `Bearer ${token}`,
+      'X-GitHub-Api-Version': '2022-11-28',
+      'User-Agent': 'product-activity-generator',
+    },
+  });
+
   if (!response.ok) {
     const body = await response.text();
     throw new Error(`GitHub API ${response.status} for ${url}: ${body.slice(0, 500)}`);
   }
+
   return response.json();
 }
 
@@ -176,7 +237,14 @@ export async function fetchMergedPullRequests({ repository, token, startDate }) 
     const url = `https://api.github.com/repos/${repository}/pulls?state=closed&sort=updated&direction=desc&per_page=100&page=${page}`;
     const batch = await githubRequest(url, token);
     if (!batch.length) break;
-    for (const pr of batch) if (pr.merged_at && new Date(pr.merged_at) >= startDate) results.push(pr);
+
+    for (const pr of batch) {
+      if (pr.merged_at && new Date(pr.merged_at) >= startDate) results.push(pr);
+    }
+
+    // GitHub's REST pull-request ordering is not guaranteed to be globally
+    // monotonic across pages. Fetch every available page, then filter and sort
+    // client-side so a stale updated_at value cannot truncate the activity window.
     if (batch.length < 100) break;
   }
   return results;
@@ -185,8 +253,15 @@ export async function fetchMergedPullRequests({ repository, token, startDate }) 
 async function fetchCommits({ repository, token, branch, startDate, endDate }) {
   const results = [];
   for (let page = 1; page <= 30; page += 1) {
-    const params = new URLSearchParams({ sha: branch, since: startDate.toISOString(), until: endDate.toISOString(), per_page: '100', page: String(page) });
-    const batch = await githubRequest(`https://api.github.com/repos/${repository}/commits?${params.toString()}`, token);
+    const params = new URLSearchParams({
+      sha: branch,
+      since: startDate.toISOString(),
+      until: endDate.toISOString(),
+      per_page: '100',
+      page: String(page),
+    });
+    const url = `https://api.github.com/repos/${repository}/commits?${params.toString()}`;
+    const batch = await githubRequest(url, token);
     results.push(...batch);
     if (batch.length < 100) break;
   }
@@ -208,18 +283,24 @@ function parseArgs(argv) {
 export async function runGenerator(options = {}) {
   const token = options.token || process.env.GITHUB_TOKEN;
   if (!token) throw new Error('GITHUB_TOKEN is required.');
+
   const repository = options.repository || process.env.GITHUB_REPOSITORY || DEFAULT_REPOSITORY;
   const branch = options.branch || process.env.ACTIVITY_SOURCE_BRANCH || 'develop';
   const months = rollingMonths(options.months || DEFAULT_MONTHS, options.now || new Date());
   const startDate = new Date(months[0].start);
   const endDate = options.now || new Date();
+
   const [pullRequests, commits] = await Promise.all([
     fetchMergedPullRequests({ repository, token, startDate }),
     fetchCommits({ repository, token, branch, startDate, endDate }),
   ]);
+
   const activity = aggregateActivity({ pullRequests, commits, months });
   return {
-    schemaVersion: 1, generatedAt: new Date().toISOString(), repository, sourceBranch: branch,
+    schemaVersion: 1,
+    generatedAt: new Date().toISOString(),
+    repository,
+    sourceBranch: branch,
     windowMonths: months.length,
     definitions: {
       mergedPullRequests: 'Pull requests merged during the calendar month.',
@@ -244,5 +325,8 @@ async function main() {
 
 const currentFile = fileURLToPath(import.meta.url);
 if (process.argv[1] && path.resolve(process.argv[1]) === currentFile) {
-  main().catch((error) => { console.error(error); process.exitCode = 1; });
+  main().catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  });
 }
