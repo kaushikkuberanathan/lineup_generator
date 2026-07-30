@@ -1,12 +1,12 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-07-30T22:06:52.050Z",
+  "generatedAt": "2026-07-30T22:12:36.054Z",
   "repository": "kaushikkuberanathan/lineup_generator",
   "sourceBranch": "develop",
   "windowMonths": 6,
   "definitions": {
     "mergedPullRequests": "Pull requests merged during the calendar month.",
-    "productImprovements": "Merged, non-release PRs identified by feature/story labels or user-facing feature signals.",
+    "productImprovements": "Merged, non-release-management PRs identified by feature/story labels or user-facing feature signals.",
     "productionReleases": "Release or promotion PRs merged into main.",
     "qualityImprovements": "Merged, non-feature PRs focused on fixes, testing, security, reliability, accessibility, documentation, refactoring, or technical debt.",
     "developmentCommits": "Non-merge, non-bot commits on the source branch. Generated activity commits are excluded."
@@ -38,17 +38,12 @@
       "key": "2026-04",
       "label": "Apr 2026",
       "mergedPullRequests": 25,
-      "productImprovements": 2,
+      "productImprovements": 1,
       "productionReleases": 9,
-      "qualityImprovements": 9,
+      "qualityImprovements": 8,
       "developmentCommits": 171,
-      "otherPullRequests": 5,
+      "otherPullRequests": 7,
       "highlights": [
-        {
-          "number": 30,
-          "title": "Release v2.5.3: VERSION_HISTORY extraction + techNote test + branch enforcement + rate limiter docs",
-          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/30"
-        },
         {
           "number": 7,
           "title": "feat(scoring): opponent pitch tracking + persistence (v2.3.2)",
@@ -62,9 +57,9 @@
       "mergedPullRequests": 150,
       "productImprovements": 30,
       "productionReleases": 21,
-      "qualityImprovements": 90,
+      "qualityImprovements": 89,
       "developmentCommits": 156,
-      "otherPullRequests": 9,
+      "otherPullRequests": 10,
       "highlights": [
         {
           "number": 259,
@@ -87,11 +82,11 @@
       "key": "2026-06",
       "label": "Jun 2026",
       "mergedPullRequests": 47,
-      "productImprovements": 10,
+      "productImprovements": 9,
       "productionReleases": 7,
       "qualityImprovements": 30,
       "developmentCommits": 38,
-      "otherPullRequests": 0,
+      "otherPullRequests": 1,
       "highlights": [
         {
           "number": 333,
@@ -113,17 +108,17 @@
     {
       "key": "2026-07",
       "label": "Jul 2026",
-      "mergedPullRequests": 53,
-      "productImprovements": 12,
+      "mergedPullRequests": 54,
+      "productImprovements": 9,
       "productionReleases": 8,
-      "qualityImprovements": 26,
-      "developmentCommits": 70,
-      "otherPullRequests": 7,
+      "qualityImprovements": 24,
+      "developmentCommits": 72,
+      "otherPullRequests": 13,
       "highlights": [
         {
-          "number": 421,
-          "title": "chore(release): 2.8.1 — internal-only (extraction + storage consolidation + coverage)",
-          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/421"
+          "number": 440,
+          "title": "Exclude release management from product activity metrics",
+          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/440"
         },
         {
           "number": 417,
@@ -139,26 +134,26 @@
     }
   ],
   "totals": {
-    "mergedPullRequests": 275,
-    "productImprovements": 54,
+    "mergedPullRequests": 276,
+    "productImprovements": 49,
     "productionReleases": 45,
-    "qualityImprovements": 155,
-    "developmentCommits": 657
+    "qualityImprovements": 151,
+    "developmentCommits": 659
   },
   "currentMonth": {
     "key": "2026-07",
     "label": "Jul 2026",
-    "mergedPullRequests": 53,
-    "productImprovements": 12,
+    "mergedPullRequests": 54,
+    "productImprovements": 9,
     "productionReleases": 8,
-    "qualityImprovements": 26,
-    "developmentCommits": 70,
-    "otherPullRequests": 7,
+    "qualityImprovements": 24,
+    "developmentCommits": 72,
+    "otherPullRequests": 13,
     "highlights": [
       {
-        "number": 421,
-        "title": "chore(release): 2.8.1 — internal-only (extraction + storage consolidation + coverage)",
-        "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/421"
+        "number": 440,
+        "title": "Exclude release management from product activity metrics",
+        "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/440"
       },
       {
         "number": 417,
