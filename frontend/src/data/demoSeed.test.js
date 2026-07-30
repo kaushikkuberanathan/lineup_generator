@@ -76,12 +76,13 @@ describe('demoSeed - shape', function () {
     });
   });
 
-  test('DS8: every DEMO_GRID position-per-inning array covers at least DEMO_INNINGS entries', function () {
+  test('DS8: every DEMO_GRID position-per-inning array matches DEMO_INNINGS entries', function () {
     Object.keys(DEMO_GRID).forEach(function (name) {
-      // >= not === : App.jsx only ever reads grid[name][0..DEMO_INNINGS-1] (see
-    // App.jsx:399/410/454/477/520/527/619). A longer array is harmless unused
-    // trailing data; a SHORTER one would break those lookups. See #425.
-    expect(DEMO_GRID[name].length).toBeGreaterThanOrEqual(DEMO_INNINGS);
+      // === not >= : source data was trimmed to exactly DEMO_INNINGS entries
+      // (#425, fixed in this PR). App.jsx only ever reads grid[name][0..DEMO_INNINGS-1]
+      // (see App.jsx:399/410/454/477/520/527/619); migrateGrid's reshape remains
+      // defensive for future drift, not an expected correction of raw seed data.
+      expect(DEMO_GRID[name].length).toBe(DEMO_INNINGS);
     });
   });
 
