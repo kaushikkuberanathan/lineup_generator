@@ -173,6 +173,28 @@ The **Soak** column maps to the overnight soak rule — no PR moves to Ready to 
 
 ---
 
+## Public Product Activity Feed
+
+This repository publishes a rolling six-month product-delivery summary for the public product portfolio.
+
+The automated feed reports:
+
+- Merged pull requests
+- User-facing product improvements
+- Production releases
+- Quality, reliability, security, testing, and technical-debt improvements
+- Non-merge development commits on `develop`
+
+The workflow runs weekly and can also be triggered manually:
+
+- Workflow: [`.github/workflows/update-product-activity.yml`](.github/workflows/update-product-activity.yml)
+- Generator: [`scripts/generate-product-activity.mjs`](scripts/generate-product-activity.mjs)
+- Generated output: `product-activity.json` on the dedicated `activity-data` branch
+
+Generated refresh commits never modify `develop`. Classification is intentionally conservative and improves as issues and pull requests use consistent type, release, and quality labels.
+
+---
+
 ## Quick Start (Local)
 
 ```bash
