@@ -169,6 +169,17 @@ is ambiguous. Always give the full path.
   `backend/migrations/007_p1_fix_recursive_rls_policy.sql`.
   **Rebuilding from this file re-breaks the admin panel.**
 
+### !! versionHistory.js CAN CITE OLD-TREE NUMBERS THAT LOOK CANONICAL !!
+
+`versionHistory.js` v2.1.0 cites "migrations 008-012: email support" (April 2026).
+The canonical `backend/migrations/` 008-012 are unrelated July 2026 RLS/schema
+work (FK fix, role CHECK widen, view RLS bypass fix, search_path pin). The old
+tree never had files numbered 008+ — the versionHistory citation refers to work
+that was never committed as a numbered file in either tree, or was tracked
+differently. **Never map a versionHistory migration-number citation onto
+`backend/migrations/` by number.** Verify actual schema state against the
+ground truth below, not migration numbers or version-history prose.
+
 **Ground truth is `docs/db/PROD_SCHEMA_BASELINE.md` + `PROD_SCHEMA_BASELINE_ADDENDUM_1.md`,
 not either migration tree.** Both trees describe databases that do not exist.
 
