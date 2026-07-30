@@ -58,8 +58,10 @@ jobs:
             git fetch origin activity-data
             git switch --force-create activity-data origin/activity-data
           else
+            # `git switch --orphan` clears tracked files. Clean any remaining
+            # untracked or ignored files without failing on an empty worktree.
             git switch --orphan activity-data
-            git rm -rf .
+            git clean -fdx
           fi
 
           cp /tmp/product-activity.json product-activity.json
