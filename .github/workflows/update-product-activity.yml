@@ -54,6 +54,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
+          # Prefer the stable update path once the generated branch exists.
           if git ls-remote --exit-code --heads origin activity-data >/dev/null 2>&1; then
             git fetch origin activity-data
             git switch --force-create activity-data origin/activity-data
