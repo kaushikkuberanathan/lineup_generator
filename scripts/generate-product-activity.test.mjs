@@ -34,7 +34,11 @@ function commit(overrides = {}) {
 }
 
 test('production release requires a main promotion signal', () => {
-  const release = pr({ title: 'Release 2.8.0 — develop → main promotion', base: { ref: 'main' }, head: { ref: 'develop' } });
+  const release = pr({
+    title: 'Release 2.8.0 — develop → main promotion',
+    base: { ref: 'main' },
+    head: { ref: 'develop' },
+  });
   assert.equal(isProductionRelease(release), true);
   assert.equal(classifyPullRequest(release), 'productionRelease');
 });
@@ -46,17 +50,35 @@ test('feature and quality classifications are mutually exclusive', () => {
 });
 
 test('release-management PRs are not product or quality improvements', () => {
-  assert.equal(classifyPullRequest(pr({ title: 'chore(release): 2.8.1 — internal-only', body: "## What's shipping\n- extraction and coverage work" })), 'other');
-  assert.equal(classifyPullRequest(pr({ title: 'Release v2.5.3: version history and branch enforcement', body: "## What's shipping\n- release administration" })), 'other');
+  assert.equal(
+    classifyPullRequest(
+      pr({
+        title: 'chore(release): 2.8.1 — internal-only',
+        body: "## What's shipping\n- extraction and coverage work",
+      }),
+    ),
+    'other',
+  );
+  assert.equal(
+    classifyPullRequest(
+      pr({
+        title: 'Release v2.5.3: version history and branch enforcement',
+        body: "## What's shipping\n- release administration",
+      }),
+    ),
+    'other',
+  );
 });
 
 test('internal activity tooling is quality work even when feature-labeled', () => {
   assert.equal(
-    classifyPullRequest(pr({
-      title: 'Exclude release management from product activity metrics',
-      labels: [{ name: 'type: feature' }],
-      head: { ref: 'fix/product-activity-release-classification' },
-    })),
+    classifyPullRequest(
+      pr({
+        title: 'Exclude release management from product activity metrics',
+        labels: [{ name: 'type: feature' }],
+        head: { ref: 'fix/product-activity-release-classification' },
+      }),
+    ),
     'qualityImprovement',
   );
 });
@@ -68,7 +90,12 @@ test('aggregation excludes merge, bot, and generated activity commits', () => {
     pullRequests: [
       pr({ number: 1 }),
       pr({ number: 2, title: 'fix(storage): preserve pending sync' }),
-      pr({ number: 3, title: 'Release 2.8.0 — develop → main promotion', base: { ref: 'main' }, head: { ref: 'develop' } }),
+      pr({
+        number: 3,
+        title: 'Release 2.8.0 — develop → main promotion',
+        base: { ref: 'main' },
+        head: { ref: 'develop' },
+      }),
     ],
     commits: [
       commit(),
@@ -77,6 +104,7 @@ test('aggregation excludes merge, bot, and generated activity commits', () => {
       commit({ commit: { author: { date: '2026-07-12T12:00:00Z' }, message: 'chore(activity): refresh' } }),
     ],
   });
+
   assert.equal(result.currentMonth.mergedPullRequests, 3);
   assert.equal(result.currentMonth.productImprovements, 1);
   assert.equal(result.currentMonth.qualityImprovements, 1);
@@ -96,25 +124,42 @@ test('highlights are ordered by merge date even when API results are not', () =>
     ],
     commits: [],
   });
-  assert.deepEqual(result.currentMonth.highlights.map((highlight) => highlight.number), [11, 12, 10]);
+
+  assert.deepEqual(
+    result.currentMonth.highlights.map((highlight) => highlight.number),
+    [11, 12, 10],
+  );
 });
 
 test('pull-request pagination does not stop on an out-of-order updated_at value', async () => {
   const originalFetch = globalThis.fetch;
-  const pageOne = Array.from({ length: 100 }, (_, index) => pr({
-    number: index + 1,
-    merged_at: '2026-07-10T12:00:00Z',
-    updated_at: index === 0 ? '2025-12-01T12:00:00Z' : '2026-07-10T12:00:00Z',
-  }));
+  const pageOne = Array.from({ length: 100 }, (_, index) =>
+    pr({
+      number: index + 1,
+      merged_at: '2026-07-10T12:00:00Z',
+      updated_at: index === 0 ? '2025-12-01T12:00:00Z' : '2026-07-10T12:00:00Z',
+    }),
+  );
   const pageTwo = [pr({ number: 101, merged_at: '2026-07-20T12:00:00Z' })];
   let calls = 0;
+
   globalThis.fetch = async (url) => {
     calls += 1;
     const page = Number(new URL(url).searchParams.get('page'));
-    return { ok: true, json: async () => (page === 1 ? pageOne : pageTwo), text: async () => '' };
+    return {
+      ok: true,
+      json: async () => (page === 1 ? pageOne : pageTwo),
+      text: async () => '',
+    };
   };
+
   try {
-    const results = await fetchMergedPullRequests({ repository: 'example/repository', token: 'test-token', startDate: new Date('2026-02-01T00:00:00Z') });
+    const results = await fetchMergedPullRequests({
+      repository: 'example/repository',
+      token: 'test-token',
+      startDate: new Date('2026-02-01T00:00:00Z'),
+    });
+
     assert.equal(calls, 2);
     assert.equal(results.length, 101);
     assert.equal(results.at(-1).number, 101);
