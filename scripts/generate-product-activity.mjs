@@ -38,8 +38,13 @@ export function isProductionRelease(pr) {
   return base === 'main' && (head === 'develop' || releaseSignal) && releaseSignal;
 }
 
+export function isReleaseManagement(pr) {
+  const title = normalize(pr.title);
+  return /^(chore\(release\)|release)(\b|:)/.test(title);
+}
+
 export function isProductImprovement(pr) {
-  if (isProductionRelease(pr)) return false;
+  if (isProductionRelease(pr) || isReleaseManagement(pr)) return false;
 
   const labels = labelNames(pr);
   const title = normalize(pr.title);
@@ -60,7 +65,7 @@ export function isProductImprovement(pr) {
 }
 
 export function isQualityImprovement(pr) {
-  if (isProductionRelease(pr) || isProductImprovement(pr)) return false;
+  if (isProductionRelease(pr) || isReleaseManagement(pr) || isProductImprovement(pr)) return false;
 
   const labels = labelNames(pr);
   const title = normalize(pr.title);
@@ -287,7 +292,7 @@ export async function runGenerator(options = {}) {
     windowMonths: months.length,
     definitions: {
       mergedPullRequests: 'Pull requests merged during the calendar month.',
-      productImprovements: 'Merged, non-release PRs identified by feature/story labels or user-facing feature signals.',
+      productImprovements: 'Merged, non-release-management PRs identified by feature/story labels or user-facing feature signals.',
       productionReleases: 'Release or promotion PRs merged into main.',
       qualityImprovements: 'Merged, non-feature PRs focused on fixes, testing, security, reliability, accessibility, documentation, refactoring, or technical debt.',
       developmentCommits: 'Non-merge, non-bot commits on the source branch. Generated activity commits are excluded.',
