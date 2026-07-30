@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-07-30T22:24:56.038Z",
+  "generatedAt": "2026-07-30T23:31:45.029Z",
   "repository": "kaushikkuberanathan/lineup_generator",
   "sourceBranch": "develop",
   "windowMonths": 6,
@@ -9,7 +9,8 @@
     "productImprovements": "Merged customer-facing PRs, excluding release management and internal activity tooling.",
     "productionReleases": "Release or promotion PRs merged into main.",
     "qualityImprovements": "Merged PRs focused on fixes, testing, security, reliability, accessibility, documentation, refactoring, technical debt, or internal activity tooling.",
-    "developmentCommits": "Non-merge, non-bot commits on the source branch. Generated activity commits are excluded."
+    "developmentCommits": "Non-merge, non-bot commits on the source branch. Generated activity commits are excluded.",
+    "latestReleaseNotes": "The three most recent production promotion pull requests in the reporting window."
   },
   "months": [
     {
@@ -21,6 +22,7 @@
       "qualityImprovements": 0,
       "developmentCommits": 0,
       "otherPullRequests": 0,
+      "releaseNotes": [],
       "highlights": []
     },
     {
@@ -32,6 +34,7 @@
       "qualityImprovements": 0,
       "developmentCommits": 222,
       "otherPullRequests": 0,
+      "releaseNotes": [],
       "highlights": []
     },
     {
@@ -43,11 +46,38 @@
       "qualityImprovements": 8,
       "developmentCommits": 171,
       "otherPullRequests": 7,
+      "releaseNotes": [
+        {
+          "number": 31,
+          "title": "Release v2.5.3 to prod: Internal hygiene release (branch enforcement + governance + rate limiter docs)",
+          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/31"
+        },
+        {
+          "number": 29,
+          "title": "Release v2.5.2: Game Mode polish — count strip, Toast, mercy banner symmetry",
+          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/29"
+        },
+        {
+          "number": 27,
+          "title": "Release: v2.5.1 to production (bundles v2.4.0 + v2.5.0 + v2.5.1)",
+          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/27"
+        }
+      ],
       "highlights": [
         {
-          "number": 7,
-          "title": "feat(scoring): opponent pitch tracking + persistence (v2.3.2)",
-          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/7"
+          "number": 31,
+          "title": "Release v2.5.3 to prod: Internal hygiene release (branch enforcement + governance + rate limiter docs)",
+          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/31"
+        },
+        {
+          "number": 29,
+          "title": "Release v2.5.2: Game Mode polish — count strip, Toast, mercy banner symmetry",
+          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/29"
+        },
+        {
+          "number": 27,
+          "title": "Release: v2.5.1 to production (bundles v2.4.0 + v2.5.0 + v2.5.1)",
+          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/27"
         }
       ]
     },
@@ -60,21 +90,38 @@
       "qualityImprovements": 89,
       "developmentCommits": 156,
       "otherPullRequests": 10,
+      "releaseNotes": [
+        {
+          "number": 250,
+          "title": "chore: promote v2.5.23 to production",
+          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/250"
+        },
+        {
+          "number": 239,
+          "title": "release: v2.5.22 — DefenseDiamond + MaintenanceScreen token migration; sync-script CRLF fix",
+          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/239"
+        },
+        {
+          "number": 222,
+          "title": "chore: promote v2.5.21 to production",
+          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/222"
+        }
+      ],
       "highlights": [
         {
-          "number": 259,
-          "title": "feat: Story 93 — DefenseDiamond Tier D + App.jsx POS_COLORS domain token migration (#219)",
-          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/259"
+          "number": 250,
+          "title": "chore: promote v2.5.23 to production",
+          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/250"
         },
         {
-          "number": 247,
-          "title": "feat: Stories 60+64+65 — token gap cleanup (letterSpacing, font size, body text, shadow)",
-          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/247"
+          "number": 239,
+          "title": "release: v2.5.22 — DefenseDiamond + MaintenanceScreen token migration; sync-script CRLF fix",
+          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/239"
         },
         {
-          "number": 227,
-          "title": "feat: Stories 92+94 — DefenseDiamond Tier A+B + MaintenanceScreen token migration",
-          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/227"
+          "number": 222,
+          "title": "chore: promote v2.5.21 to production",
+          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/222"
         }
       ]
     },
@@ -87,84 +134,152 @@
       "qualityImprovements": 30,
       "developmentCommits": 38,
       "otherPullRequests": 1,
+      "releaseNotes": [
+        {
+          "number": 334,
+          "title": "Release v2.5.30 — Demo All-Stars team",
+          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/334"
+        },
+        {
+          "number": 327,
+          "title": "Release v2.5.29 - brand mark on About tab + printed lineups",
+          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/327"
+        },
+        {
+          "number": 323,
+          "title": "Release v2.5.28 — Dugout Lineup brand mark across app + share surfaces",
+          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/323"
+        }
+      ],
       "highlights": [
         {
-          "number": 333,
-          "title": "feat(demo): Demo All-Stars team seeded from Mud Hens clone (v2.5.30)",
-          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/333"
+          "number": 334,
+          "title": "Release v2.5.30 — Demo All-Stars team",
+          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/334"
         },
         {
-          "number": 326,
-          "title": "feat(branding): brand mark on About tab + PDF header (v2.5.29)",
-          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/326"
+          "number": 327,
+          "title": "Release v2.5.29 - brand mark on About tab + printed lineups",
+          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/327"
         },
         {
-          "number": 320,
-          "title": "feat(branding): Dugout Lineup brand mark across app + share headers; per-team PDF initial fix",
-          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/320"
+          "number": 323,
+          "title": "Release v2.5.28 — Dugout Lineup brand mark across app + share surfaces",
+          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/323"
         }
       ]
     },
     {
       "key": "2026-07",
       "label": "Jul 2026",
-      "mergedPullRequests": 55,
+      "mergedPullRequests": 56,
       "productImprovements": 8,
       "productionReleases": 8,
       "qualityImprovements": 32,
-      "developmentCommits": 76,
-      "otherPullRequests": 7,
+      "developmentCommits": 79,
+      "otherPullRequests": 8,
+      "releaseNotes": [
+        {
+          "number": 422,
+          "title": "Release 2.8.1 — develop → main",
+          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/422"
+        },
+        {
+          "number": 414,
+          "title": "Release 2.8.0 - develop ? main",
+          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/414"
+        },
+        {
+          "number": 409,
+          "title": "Release 2.7.0 - develop ? main",
+          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/409"
+        }
+      ],
       "highlights": [
         {
-          "number": 417,
-          "title": "feat(account): extract HomeNameNudge + AccountNameField into tested components (#407)",
-          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/417"
+          "number": 422,
+          "title": "Release 2.8.1 — develop → main",
+          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/422"
         },
         {
-          "number": 408,
-          "title": "feat: Set your name - profile name editing (#405)",
-          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/408"
+          "number": 414,
+          "title": "Release 2.8.0 - develop ? main",
+          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/414"
         },
         {
-          "number": 399,
-          "title": "feat(auth): session visibility - sign out, account tab, team switcher (#395)",
-          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/399"
+          "number": 409,
+          "title": "Release 2.7.0 - develop ? main",
+          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/409"
         }
       ]
     }
   ],
   "totals": {
-    "mergedPullRequests": 277,
+    "mergedPullRequests": 278,
     "productImprovements": 48,
     "productionReleases": 45,
     "qualityImprovements": 159,
-    "developmentCommits": 663
+    "developmentCommits": 666
   },
   "currentMonth": {
     "key": "2026-07",
     "label": "Jul 2026",
-    "mergedPullRequests": 55,
+    "mergedPullRequests": 56,
     "productImprovements": 8,
     "productionReleases": 8,
     "qualityImprovements": 32,
-    "developmentCommits": 76,
-    "otherPullRequests": 7,
+    "developmentCommits": 79,
+    "otherPullRequests": 8,
+    "releaseNotes": [
+      {
+        "number": 422,
+        "title": "Release 2.8.1 — develop → main",
+        "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/422"
+      },
+      {
+        "number": 414,
+        "title": "Release 2.8.0 - develop ? main",
+        "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/414"
+      },
+      {
+        "number": 409,
+        "title": "Release 2.7.0 - develop ? main",
+        "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/409"
+      }
+    ],
     "highlights": [
       {
-        "number": 417,
-        "title": "feat(account): extract HomeNameNudge + AccountNameField into tested components (#407)",
-        "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/417"
+        "number": 422,
+        "title": "Release 2.8.1 — develop → main",
+        "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/422"
       },
       {
-        "number": 408,
-        "title": "feat: Set your name - profile name editing (#405)",
-        "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/408"
+        "number": 414,
+        "title": "Release 2.8.0 - develop ? main",
+        "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/414"
       },
       {
-        "number": 399,
-        "title": "feat(auth): session visibility - sign out, account tab, team switcher (#395)",
-        "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/399"
+        "number": 409,
+        "title": "Release 2.7.0 - develop ? main",
+        "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/409"
       }
     ]
-  }
+  },
+  "latestReleaseNotes": [
+    {
+      "number": 422,
+      "title": "Release 2.8.1 — develop → main",
+      "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/422"
+    },
+    {
+      "number": 414,
+      "title": "Release 2.8.0 - develop ? main",
+      "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/414"
+    },
+    {
+      "number": 409,
+      "title": "Release 2.7.0 - develop ? main",
+      "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/409"
+    }
+  ]
 }
