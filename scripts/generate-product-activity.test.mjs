@@ -58,6 +58,7 @@ test('commit classification follows conventional commit intent', () => {
   assert.equal(classifyCommit(commit({ commit: { author: { date: '2026-07-12T12:00:00Z' }, message: '\uFEFFfix(data): block roster wipe' } })), 'quality');
   assert.equal(classifyCommit(commit({ commit: { author: { date: '2026-07-12T12:00:00Z' }, message: 'test(rls): pin policy behavior' } })), 'quality');
   assert.equal(classifyCommit(commit({ commit: { author: { date: '2026-07-12T12:00:00Z' }, message: 'docs(activity): explain metrics' } })), 'delivery');
+  assert.equal(classifyCommit(commit({ commit: { author: { date: '2026-07-12T12:00:00Z' }, message: 'promote: release 2.8.0 to production' } })), 'delivery');
   assert.equal(classifyCommit(commit({ commit: { author: { date: '2026-07-12T12:00:00Z' }, message: 'Release 2.8.0 to production' } })), 'delivery');
   assert.equal(classifyCommit(commit({ commit: { author: { date: '2026-07-12T12:00:00Z' }, message: 'Tighten lineup behavior' } })), 'other');
 });
