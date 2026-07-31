@@ -13,8 +13,8 @@
     "backfill": "node scripts/backfill-members.js"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "Kaushik Kuberanathan",
+  "license": "MIT",
   "type": "commonjs",
   "dependencies": {
     "@supabase/supabase-js": "^2.100.0",

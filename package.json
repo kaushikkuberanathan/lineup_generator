@@ -17,8 +17,8 @@
     "url": "git+https://github.com/kaushikkuberanathan/lineup_generator.git"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "Kaushik Kuberanathan",
+  "license": "MIT",
   "type": "commonjs",
   "bugs": {
     "url": "https://github.com/kaushikkuberanathan/lineup_generator/issues"
