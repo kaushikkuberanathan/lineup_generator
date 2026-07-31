@@ -1,0 +1,65 @@
+name: Auto-update open PR branches
+
+# develop's branch protection has required_status_checks.strict = true
+# ("Require branches to be up to date before merging"). Auto-merge (enabled
+# per-PR) only automates clicking Merge once every condition is already
+# true — it does not update a PR's branch itself. Without this workflow,
+# every merge to develop invalidates every other open PR's "up to date"
+# status, and someone has to click "Update branch" (or comment
+# "@dependabot rebase") by hand before auto-merge can ever fire.
+#
+# This closes that gap: on every push to develop, update the branch of
+# every open PR that has auto-merge enabled. That push re-triggers CI on
+# each PR (a normal pull_request synchronize event, not a push to develop,
+# so this can't trigger itself in a loop) and auto-merge takes it from
+# there once checks are green.
+#
+# Deliberately scoped to PRs with auto-merge already enabled — this
+# workflow never decides what's safe to merge, it only keeps already-
+# approved-for-auto-merge PRs current. A PR without auto-merge enabled is
+# untouched, exactly as if this workflow didn't exist.
+
+on:
+  push:
+    branches: [develop]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-open-prs:
+    name: Update open PR branches with auto-merge enabled
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update each open PR with auto-merge enabled
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -uo pipefail
+
+          numbers=$(gh pr list --base develop --state open \
+            --json number,autoMergeRequest \
+            --jq '.[] | select(.autoMergeRequest != null) | .number')
+
+          if [ -z "$numbers" ]; then
+            echo "No open PRs have auto-merge enabled — nothing to update."
+            exit 0
+          fi
+
+          failed=0
+          for n in $numbers; do
+            echo "── updating PR #$n ──"
+            if gh pr update-branch "$n"; then
+              echo "PR #$n: update requested"
+            else
+              echo "PR #$n: update-branch failed (likely a real merge conflict or already up to date) — continuing"
+              failed=1
+            fi
+          done
+
+          # Non-zero exit if any PR failed, so a real, recurring problem is
+          # visible in the Actions tab — but only after every PR got a try,
+          # so one conflicted PR never blocks the rest from updating.
+          exit $failed
