@@ -4,12 +4,22 @@
 //
 // This is the ONLY test surface in the repo that holds a service-role key and
 // issues writes + deletes. It is fenced accordingly:
-//   - It refuses to run against any project other than DEV.
-//   - It reads credentials from .env.rls.local ONLY, never the app's .env.
+//   - It refuses to run against any project other than DEV or a recognized
+//     local/ephemeral stack (#415).
+//   - Credentials come from process.env. Locally, backend/.env.rls.local
+//     (gitignored) is loaded via dotenv to populate it — dotenv's config()
+//     is a documented no-op when the file is missing (does not throw), so
+//     this works unchanged in CI, where RLS_TEST_* are set directly as job
+//     env vars instead (see .github/workflows/ci.yml, `rls` job) and no
+//     .env.rls.local exists at all.
 //
 // Ground truth for what these tests assert is docs/db/schema.sql (introspected
-// from prod 2026-07-13), NOT backend/migrations/004_rls_fixes.sql — 004 is a
-// known landmine (see 006_p0_lock_team_data_history.sql header).
+// from prod 2026-07-13) PLUS backend/migrations/004 through 016 replayed in
+// order — schema.sql's own RLS/GRANTS section is stale (predates WS-3, #411)
+// and must not be trusted on its own; the CI job (#415) bootstraps against
+// the migrations, not the stale section. NOT backend/migrations/004_rls_fixes.sql
+// read in isolation — 004 is a known landmine (see 006_p0_lock_team_data_history.sql
+// header) when read as a standalone spec rather than replayed alongside 005-016.
 
 const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
@@ -21,34 +31,48 @@ require('dotenv').config({
 const DEV_PROJECT_REF  = 'psqvzppphdedqkpmarwx';
 const PROD_PROJECT_REF = 'hzaajccyurlyeweekvma';
 
+// The Supabase CLI's local stack (`supabase start`) always serves on loopback.
+// These are never real network-reachable hosts, so matching on them cannot
+// accidentally widen the fence to include any real hosted project.
+const LOCAL_HOST_PATTERNS = ['127.0.0.1', 'localhost', '::1'];
+
 const URL          = process.env.RLS_TEST_SUPABASE_URL;
-const ANON_KEY     = process.env.RLS_TEST_SUPABASE_ANON_KEY;
+const ANON_KEY      = process.env.RLS_TEST_SUPABASE_ANON_KEY;
 const SERVICE_KEY  = process.env.RLS_TEST_SUPABASE_SERVICE_ROLE_KEY;
+
+function isLocalEphemeral(url) {
+  return LOCAL_HOST_PATTERNS.some((host) => url.includes(host));
+}
 
 // ─── BLAST-RADIUS FENCE ──────────────────────────────────────────────────────
 // This suite seeds and deletes rows with a service-role key. It must be
 // structurally incapable of touching production, even if someone pastes the
-// wrong credentials into .env.rls.local.
+// wrong credentials into .env.rls.local or a CI secret is misconfigured.
 function assertDevProject() {
   if (!URL || !ANON_KEY || !SERVICE_KEY) {
     throw new Error(
       'RLS suite: missing credentials. Expected RLS_TEST_SUPABASE_URL, ' +
-      'RLS_TEST_SUPABASE_ANON_KEY, RLS_TEST_SUPABASE_SERVICE_ROLE_KEY in ' +
-      'backend/.env.rls.local'
+      'RLS_TEST_SUPABASE_ANON_KEY, RLS_TEST_SUPABASE_SERVICE_ROLE_KEY as ' +
+      'environment variables (locally: backend/.env.rls.local; in CI: set ' +
+      'directly in the workflow job).'
     );
   }
+  // PROD rejection is unconditional and checked first — no host pattern or
+  // project ref below can ever override it.
   if (URL.includes(PROD_PROJECT_REF)) {
     throw new Error(
       'RLS suite: URL points at PRODUCTION (' + PROD_PROJECT_REF + '). ' +
       'This suite writes and deletes rows. REFUSING TO RUN.'
     );
   }
-  if (!URL.includes(DEV_PROJECT_REF)) {
-    throw new Error(
-      'RLS suite: URL does not point at the DEV project (' + DEV_PROJECT_REF +
-      '). REFUSING TO RUN. Got: ' + URL
-    );
+  if (URL.includes(DEV_PROJECT_REF) || isLocalEphemeral(URL)) {
+    return;
   }
+  throw new Error(
+    'RLS suite: URL does not point at the DEV project (' + DEV_PROJECT_REF +
+    ') or a local/ephemeral stack (127.0.0.1, localhost, ::1). ' +
+    'REFUSING TO RUN. Got: ' + URL
+  );
 }
 assertDevProject();
 

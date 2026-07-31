@@ -1,0 +1,114 @@
+# Local ephemeral Supabase stack for the RLS regression suite CI gate (#415).
+#
+# This is NOT a general local-dev config — it exists specifically so
+# `supabase start` in the `rls` CI job (.github/workflows/ci.yml) can provide
+# a real Postgres + GoTrue (Auth) + PostgREST stack for
+# `backend/src/__tests__/rls/policies.test.js`, which needs the Auth Admin
+# API (generateLink/verifyOtp/createUser) and PostgREST's grant/RLS
+# enforcement — a bare Postgres container is not enough.
+#
+# Only db + api + auth are enabled. Everything else (Studio, Storage,
+# Realtime, Edge Functions, Analytics, Inbucket) is disabled: the suite
+# doesn't use them, and every disabled service is one less thing that can
+# make CI startup flaky.
+#
+# For detailed configuration reference documentation, visit:
+# https://supabase.com/docs/guides/local-development/cli/config
+project_id = "dugout-lineup-rls-test"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[api.tls]
+enabled = false
+
+[db]
+port = 54322
+shadow_port = 54320
+health_timeout = "2m"
+major_version = 17
+
+[db.pooler]
+enabled = false
+
+# Schema is applied explicitly by backend/scripts/apply-rls-bootstrap.sh
+# (docs/db/schema.sql + backend/migrations/004-016, in order) AFTER
+# `supabase start`, not through the CLI's own migration/seed mechanism.
+# supabase/migrations/ is a separate, currently-stale tracking convention
+# (see #411) — leaving [db.migrations] enabled would auto-apply it on start
+# and could conflict with tables the bootstrap script also creates.
+[db.migrations]
+enabled = false
+
+[db.seed]
+enabled = false
+
+[db.network_restrictions]
+enabled = false
+
+[realtime]
+enabled = false
+
+[studio]
+enabled = false
+
+[inbucket]
+enabled = false
+
+[storage]
+enabled = false
+
+[storage.s3_protocol]
+enabled = false
+
+[auth]
+enabled = true
+site_url = "http://127.0.0.1:3000"
+additional_redirect_urls = []
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+refresh_token_reuse_interval = 10
+enable_signup = true
+enable_anonymous_sign_ins = false
+enable_manual_linking = false
+minimum_password_length = 6
+password_requirements = ""
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = false
+secure_password_change = false
+max_frequency = "1s"
+otp_length = 6
+otp_expiry = 3600
+
+[auth.sms]
+enable_signup = false
+enable_confirmations = false
+template = "Your code is {{ .Code }}"
+max_frequency = "5s"
+
+[auth.mfa]
+max_enrolled_factors = 10
+
+[auth.mfa.totp]
+enroll_enabled = false
+verify_enabled = false
+
+[auth.mfa.phone]
+enroll_enabled = false
+verify_enabled = false
+otp_length = 6
+template = "Your code is {{ .Code }}"
+max_frequency = "5s"
+
+[edge_runtime]
+enabled = false
+
+[analytics]
+enabled = false
