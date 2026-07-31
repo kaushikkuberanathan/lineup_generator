@@ -44,10 +44,22 @@ jobs:
   # Required GitHub secrets:
   #   SUPABASE_URL             — Supabase project URL
   #   SUPABASE_SERVICE_ROLE_KEY — Service role key (server-side only, never expose)
+  #
+  # #466: GitHub Actions does not pass repository secrets to pull_request-
+  # triggered workflows opened by dependabot[bot], even on same-repo branches
+  # — a deliberate anti-exfiltration measure, not a bug. That makes this job
+  # structurally unable to run on a Dependabot PR, so it's skipped for that
+  # actor rather than left to fail on every dependency bump. `backend-unit`
+  # (hermetic, dummy env, no secrets) and `rls` (self-contained local stack,
+  # no secrets) both still run unconditionally, so Dependabot PRs keep real
+  # backend and RLS coverage — they just don't get this specific prod-facing
+  # job. A skipped required check satisfies GitHub branch protection the same
+  # as a passed one; this does not weaken the gate for human-authored PRs.
 
   backend:
     name: Backend Integration Tests (CI_SAFE, prod read-only)
     runs-on: ubuntu-latest
+    if: github.actor != 'dependabot[bot]'
     steps:
       - uses: actions/checkout@v4
 
