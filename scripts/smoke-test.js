@@ -173,8 +173,16 @@ async function checkBackend(backendUrl) {
 }
 
 // ── CATEGORY 3 — Supabase connectivity ───────────────────────────────────────
+//
+// These are security-regression guards, not connectivity checks. Since the
+// v2.6.0 auth gate (membership-scoped RLS) and the v2.5.31 grant revocations,
+// the anon key is INTENTIONALLY restricted on most of these tables. A PASS
+// here means "anon still can't see what it shouldn't" — a FAIL means either
+// a genuine outage, or a real security regression (anon can suddenly read
+// data it used to be correctly blocked from). See issue #449 for the
+// investigation that replaced the old pre-auth-gate assumptions.
 async function checkSupabase(supabaseUrl, supabaseKey) {
-  section('CATEGORY 3 — Supabase connectivity');
+  section('CATEGORY 3 — Supabase connectivity + access-control regression guards');
 
   if (!supabaseUrl || !supabaseKey) {
     fail('Supabase checks', 'missing URL or anon key — skipping all');
@@ -187,49 +195,85 @@ async function checkSupabase(supabaseUrl, supabaseKey) {
   };
 
   const tables = [
-    { name: 'teams',              check: 'at least one row' },
-    { name: 'feature_flags',      check: 'table exists'     },
-    { name: 'team_data_history',  check: 'table exists'     },
-    { name: 'roster_snapshots',   check: 'table exists'     },
+    // Public by design — anon must see real rows, or a real feature breaks.
+    { name: 'feature_flags', mode: 'public-read',
+      note: 'flags must be readable pre-auth (useFeatureFlags bootstrap)' },
+    { name: 'share_links',   mode: 'public-read',
+      note: 'backs Strategic North Star #1 — share links never require login' },
+    // Membership-scoped RLS (v2.6.0, WS-3, #342) — anon has no membership,
+    // so it must see zero rows. Any row returned is a live data leak.
+    { name: 'teams',            mode: 'membership-scoped' },
+    { name: 'roster_snapshots', mode: 'membership-scoped' },
+    // Grants revoked outright (v2.5.31) — anon must get a permission error,
+    // not a 200. A 200 here means the grant was accidentally restored.
+    { name: 'team_data_history', mode: 'grant-revoked' },
   ];
 
-  for (const { name, check } of tables) {
+  for (const { name, mode, note } of tables) {
     try {
       const { res, ms } = await timedFetch(
         `${supabaseUrl}/rest/v1/${name}?select=*&limit=1`,
         { headers }
       );
+      let body = {};
+      try { body = await res.json(); } catch (_) {}
+      const rows = Array.isArray(body) ? body : [];
 
-      if (res.status === 200) {
-        const rows = await res.json().catch(() => []);
-        if (name === 'teams' && (!Array.isArray(rows) || rows.length === 0)) {
-          fail(`${name}: ${check}`, `0 rows returned`);
+      if (mode === 'public-read') {
+        if (res.status === 200 && rows.length > 0) {
+          pass(`${name}: public read returns data`, `${ms}ms`);
+        } else if (res.status === 200) {
+          fail(`${name}: public read returns data`, `0 rows returned${note ? ' — ' + note : ''}`);
         } else {
-          pass(`${name}: ${check}`, `${ms}ms`);
+          fail(`${name}: public read returns data`,
+            `HTTP ${res.status} — ${body.message || body.error || ''} — REGRESSION: was publicly readable`);
         }
-      } else {
-        let body = {};
-        try { body = await res.json(); } catch (_) {}
-        fail(`${name}: ${check}`, `HTTP ${res.status} — ${body.message || body.error || ''}`);
+      } else if (mode === 'membership-scoped') {
+        if (res.status === 200 && rows.length === 0) {
+          pass(`${name}: anon correctly sees zero rows`, `${ms}ms`);
+        } else if (res.status === 200) {
+          fail(`${name}: anon correctly sees zero rows`,
+            `SECURITY REGRESSION — anon read ${rows.length} row(s) it should not see`);
+        } else if (res.status === 401 || res.status === 403) {
+          pass(`${name}: anon blocked (grant or RLS)`, `HTTP ${res.status}, ${ms}ms`);
+        } else {
+          fail(`${name}: anon access check`, `unexpected HTTP ${res.status}`);
+        }
+      } else if (mode === 'grant-revoked') {
+        if (res.status === 401 || res.status === 403) {
+          pass(`${name}: anon correctly denied`, `HTTP ${res.status}, ${ms}ms`);
+        } else if (res.status === 200) {
+          fail(`${name}: anon correctly denied`,
+            'SECURITY REGRESSION — anon can now read this table (grant was revoked by design)');
+        } else {
+          fail(`${name}: anon access check`, `unexpected HTTP ${res.status}`);
+        }
       }
     } catch (err) {
-      fail(`${name}: ${check}`, err.message);
+      fail(`${name}: anon access check`, err.message);
     }
   }
 }
 
-// ── CATEGORY 4 — Schedule field integrity (DEV only) ─────────────────────────
+// ── CATEGORY 4 — team_data access-control guard + opportunistic field check ──
+//
+// team_data is membership-scoped RLS (v2.6.0, WS-3, #342) — the anon key has
+// no membership on any team, so the primary assertion is that anon CANNOT
+// read this row. That's a security-regression guard, same as Category 3.
+// If a row does come back (regression), the schedule field-integrity check
+// still runs as a bonus diagnostic — but the category fails either way,
+// because the real finding is the data exposure, not the field shape.
 async function checkScheduleIntegrity(supabaseUrl, supabaseKey) {
-  section('CATEGORY 4 — Schedule field integrity');
+  section('CATEGORY 4 — team_data access-control guard (DEV only)');
 
   if (ENV !== 'dev') {
-    skip('Schedule field integrity', 'DEV only — skipped in prod');
+    skip('team_data access-control guard', 'DEV only — skipped in prod');
     return;
   }
 
   const teamId = env('DEV_TEAM_ID');
-  if (!teamId) { fail('Schedule integrity', 'DEV_TEAM_ID missing from .env.smoke'); return; }
-  if (!supabaseUrl || !supabaseKey) { fail('Schedule integrity', 'missing Supabase config'); return; }
+  if (!teamId) { fail('team_data access-control guard', 'DEV_TEAM_ID missing from .env.smoke'); return; }
+  if (!supabaseUrl || !supabaseKey) { fail('team_data access-control guard', 'missing Supabase config'); return; }
 
   const headers = {
     'apikey': supabaseKey,
@@ -242,18 +286,27 @@ async function checkScheduleIntegrity(supabaseUrl, supabaseKey) {
       { headers }
     );
 
+    if (res.status === 401 || res.status === 403) {
+      pass('Anon correctly blocked from reading team_data', `HTTP ${res.status}, ${ms}ms`);
+      return;
+    }
+
     if (res.status !== 200) {
-      fail('Read schedule for DEV_TEAM_ID', `HTTP ${res.status}`);
+      fail('Anon access to team_data', `unexpected HTTP ${res.status}`);
       return;
     }
 
     const rows = await res.json().catch(() => []);
     if (!rows || rows.length === 0) {
-      fail('Read schedule for DEV_TEAM_ID', 'no row found');
+      pass('Anon correctly sees zero rows for team_data', `${ms}ms`);
       return;
     }
 
-    pass(`Read schedule for DEV_TEAM_ID`, `${ms}ms`);
+    // Regression: anon CAN read this team's data. Fail loudly, then still
+    // run the field-integrity check so a real leak is fully diagnosed in
+    // one run rather than requiring a second pass.
+    fail('Anon correctly sees zero rows for team_data',
+      `SECURITY REGRESSION — anon read team_data for DEV_TEAM_ID (${ms}ms)`);
 
     const schedule = rows[0].schedule;
     if (!Array.isArray(schedule)) {
@@ -262,20 +315,14 @@ async function checkScheduleIntegrity(supabaseUrl, supabaseKey) {
     }
 
     const requiredFields = ['snackDuty', 'gameBall', 'scoreReported', 'battingPerf'];
-    let allClean = true;
     schedule.forEach((game, i) => {
       const missing = requiredFields.filter(f => !(f in game));
       if (missing.length > 0) {
         warn(`Game ${i} (${game.date || 'no date'}) missing fields`, missing.join(', '));
-        allClean = false;
       }
     });
-
-    if (allClean) {
-      pass('All games have required fields (snackDuty, gameBall, scoreReported, battingPerf)');
-    }
   } catch (err) {
-    fail('Schedule integrity check', err.message);
+    fail('team_data access-control guard', err.message);
   }
 }
 
