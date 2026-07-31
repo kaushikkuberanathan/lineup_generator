@@ -1,3 +1,19 @@
+-- !! STATUS UPDATE (2026-07-31, #428): the precondition below was written
+-- !! 2026-07-19, one day before v2.6.0 (2026-07-20) shipped "Auth gate live
+-- !! in prod - editing requires a session." On this file's own stated terms,
+-- !! that precondition now looks satisfied, and live evidence agrees: prod
+-- !! anon reads on teams/team_data/roster_snapshots return 200 + zero rows
+-- !! (RLS-filtered, not grant-denied) - exactly what this file's SELECT
+-- !! policies produce. NOT independently confirmed: the REVOKE TRUNCATE/
+-- !! DELETE half (section 5 below) - no live write-probe was run against
+-- !! prod to check it, deliberately, given the blast radius of getting that
+-- !! wrong. See CLAUDE.md "Phase 4 Cutover" section and #428 for the full
+-- !! evidence chain and the zero-risk pg_policies query that would settle
+-- !! this definitively. Until that runs: treat this file as very likely
+-- !! already applied, not as safe to casually re-run "just in case" — its
+-- !! own DROP POLICY IF EXISTS guards make a genuine re-run idempotent, but
+-- !! don't use idempotency as a reason to skip confirming first.
+--
 -- !!!! STOP: do NOT run against prod until the auth gate is LIVE IN MAIN. Every policy here targets TO authenticated; prod writes as anon until then, and running this early breaks every coach save. See RUN TIMING below.
 -- Migration 004: RLS hardening for Phase 4 auth cutover
 -- Purpose: Lock down Supabase Row Level Security so Phase 4 (adding requireAuth
