@@ -14,12 +14,13 @@
 //     .env.rls.local exists at all.
 //
 // Ground truth for what these tests assert is docs/db/schema.sql (introspected
-// from prod 2026-07-13) PLUS backend/migrations/004 through 016 replayed in
-// order — schema.sql's own RLS/GRANTS section is stale (predates WS-3, #411)
-// and must not be trusted on its own; the CI job (#415) bootstraps against
-// the migrations, not the stale section. NOT backend/migrations/004_rls_fixes.sql
+// from prod 2026-07-13) PLUS migrations 004, 013, 014, 015, 016 replayed on
+// top, in that order — see backend/scripts/apply-rls-bootstrap.sh for exactly
+// why those five and not 005-012 (schema.sql's own 2026-07-13 capture already
+// contains 005-012's effects; replaying them too is redundant and, for 008
+// specifically, actively fails). NOT backend/migrations/004_rls_fixes.sql
 // read in isolation — 004 is a known landmine (see 006_p0_lock_team_data_history.sql
-// header) when read as a standalone spec rather than replayed alongside 005-016.
+// header) when read as a standalone spec rather than replayed alongside schema.sql.
 
 const path = require('path');
 const { createClient } = require('@supabase/supabase-js');

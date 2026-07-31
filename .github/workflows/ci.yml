@@ -180,7 +180,8 @@ jobs:
   # Schema/security state is NOT taken from docs/db/schema.sql's own RLS
   # section (stale, predates WS-3 — #411). It's reconstructed by applying
   # schema.sql for table shape, then replaying the real migrations
-  # (004 through 016) on top, via backend/scripts/apply-rls-bootstrap.sh —
+  # (004, 013-016 — not 005-012, already baked into schema.sql's capture) on
+  # top, via backend/scripts/apply-rls-bootstrap.sh —
   # see that script's header for the full reasoning.
   #
   # NOT yet a required status check — see #415's own "prove stability across
@@ -215,7 +216,7 @@ jobs:
       - name: Start local Supabase stack
         run: supabase start
 
-      - name: Apply schema + RLS bootstrap (schema.sql + migrations 004-016)
+      - name: Apply schema + RLS bootstrap (schema.sql + migrations 004, 013-016)
         env:
           # supabase start's fixed local DB port/credentials (config.toml [db]).
           DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres

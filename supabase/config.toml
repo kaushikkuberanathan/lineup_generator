@@ -36,7 +36,7 @@ major_version = 17
 enabled = false
 
 # Schema is applied explicitly by backend/scripts/apply-rls-bootstrap.sh
-# (docs/db/schema.sql + backend/migrations/004-016, in order) AFTER
+# (docs/db/schema.sql + backend/migrations/004,013-016, in order) AFTER
 # `supabase start`, not through the CLI's own migration/seed mechanism.
 # supabase/migrations/ is a separate, currently-stale tracking convention
 # (see #411) — leaving [db.migrations] enabled would auto-apply it on start
