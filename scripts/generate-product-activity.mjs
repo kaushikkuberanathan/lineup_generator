@@ -168,7 +168,7 @@ export function classifyCommit(commit) {
   const type = commitType(commit);
   if (['feat', 'feature'].includes(type)) return 'product';
   if (['fix', 'test', 'refactor', 'perf', 'security', 'revert'].includes(type)) return 'quality';
-  if (['docs', 'chore', 'ci', 'build', 'style', 'release'].includes(type)) return 'delivery';
+  if (['docs', 'chore', 'ci', 'build', 'style', 'release', 'promote'].includes(type)) return 'delivery';
   return 'other';
 }
 
