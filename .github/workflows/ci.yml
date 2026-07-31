@@ -166,6 +166,78 @@ jobs:
       - name: Run sync-patch tests
         run: node --test scripts/__tests__/sync-patch.test.js
 
+  # ── Job 3b: RLS Policy Suite (ephemeral local stack) ────────────────────────
+  # #415 — the executable spec for the WS-3 auth-gate cutover
+  # (backend/src/__tests__/rls/policies.test.js) was quarantined from CI
+  # because CI's only Supabase secrets point at PROD and the suite writes,
+  # deletes, and mints magic links — it must never run against a real
+  # project. Option C (decided on the issue): a local, ephemeral
+  # `supabase start` stack, spun up fresh per run and thrown away after.
+  # Zero standing secrets — the anon/service-role keys below are the
+  # well-known local-dev demo keys `supabase start` always issues; they are
+  # not usable against any real project.
+  #
+  # Schema/security state is NOT taken from docs/db/schema.sql's own RLS
+  # section (stale, predates WS-3 — #411). It's reconstructed by applying
+  # schema.sql for table shape, then replaying the real migrations
+  # (004, 013-016 — not 005-012, already baked into schema.sql's capture) on
+  # top, via backend/scripts/apply-rls-bootstrap.sh —
+  # see that script's header for the full reasoning.
+  #
+  # NOT yet a required status check — see #415's own "prove stability across
+  # several consecutive runs" step. Promote it once that's done.
+
+  rls:
+    name: RLS Policy Suite (ephemeral)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend dependencies
+        run: npm install --prefer-offline
+        working-directory: backend
+
+      - name: Install postgresql-client (psql)
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.84.2
+
+      - name: Start local Supabase stack
+        run: supabase start
+
+      - name: Apply schema + RLS bootstrap (schema.sql + migrations 004, 013-016)
+        env:
+          # supabase start's fixed local DB port/credentials (config.toml [db]).
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: bash backend/scripts/apply-rls-bootstrap.sh
+
+      - name: Export local Supabase credentials for the RLS suite
+        run: |
+          supabase status -o env > /tmp/supabase-status.env
+          set -a
+          source /tmp/supabase-status.env
+          set +a
+          {
+            echo "RLS_TEST_SUPABASE_URL=$API_URL"
+            echo "RLS_TEST_SUPABASE_ANON_KEY=$ANON_KEY"
+            echo "RLS_TEST_SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"
+          } >> "$GITHUB_ENV"
+
+      - name: Run RLS policy suite
+        run: npm run test:rls
+        working-directory: backend
+
   # ── Job 4: Smoke Test (dev environment) ────────────────────────────────────
   # Runs on main only, after both frontend and backend jobs pass.
   # Requires GitHub secrets: DEV_BACKEND_URL, DEV_FRONTEND_URL
