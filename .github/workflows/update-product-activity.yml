@@ -8,12 +8,13 @@ on:
       - '.github/workflows/update-product-activity.yml'
       - 'scripts/generate-product-activity.mjs'
       - 'scripts/generate-product-activity.test.mjs'
+      - 'frontend/vercel.json'
   schedule:
     # Weekly refreshes keep the public portfolio trend current without noisy daily commits.
     - cron: '17 11 * * 1'
   workflow_dispatch:
 
-# Read PR metadata for classification; write only the generated activity branch.
+# Read PR metadata for release notes; write only the generated activity branch.
 permissions:
   contents: write
   pull-requests: read
@@ -69,7 +70,20 @@ jobs:
           printf '%s\n' '# Generated product activity' '' 'This branch is managed by GitHub Actions.' > README.md
           touch .nojekyll
 
-          git add product-activity.json README.md .nojekyll
+          # The Vercel project uses frontend/ as its Root Directory. Keep that
+          # directory present on the generated branch and explicitly disable all
+          # Vercel deployments so JSON refreshes do not create failed previews.
+          mkdir -p frontend
+          cat > frontend/vercel.json <<'JSON'
+          {
+            "$schema": "https://openapi.vercel.sh/vercel.json",
+            "git": {
+              "deploymentEnabled": false
+            }
+          }
+          JSON
+
+          git add product-activity.json README.md .nojekyll frontend/vercel.json
           if git diff --cached --quiet; then
             echo "No activity change to publish."
             exit 0
