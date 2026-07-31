@@ -133,6 +133,30 @@ export function classifyPullRequest(pr) {
   return 'other';
 }
 
+function commitSubject(commit) {
+  return String(commit.commit?.message || '').split('\n', 1)[0].trim();
+}
+
+export function isEligibleDevelopmentCommit(commit) {
+  const isMerge = Array.isArray(commit.parents) && commit.parents.length > 1;
+  const authorLogin = normalize(commit.author?.login || commit.committer?.login);
+  const message = normalize(commit.commit?.message);
+  const isGeneratedActivityCommit = message.startsWith('chore(activity): refresh public product metrics');
+  const isBot = authorLogin.endsWith('[bot]') || authorLogin === 'github-actions';
+  return !isMerge && !isGeneratedActivityCommit && !isBot;
+}
+
+export function classifyCommit(commit) {
+  if (!isEligibleDevelopmentCommit(commit)) return 'excluded';
+
+  const subject = normalize(commitSubject(commit));
+  const internalActivityTooling = subject.includes('(activity)') || subject.includes('product activity') || subject.includes('activity-data');
+  const featureSignal = /^(feat|feature)(\(.+\))?:/.test(subject);
+
+  if (featureSignal && !internalActivityTooling) return 'productImprovement';
+  return 'qualityImprovement';
+}
+
 function releaseVersion(pr) {
   const match = String(pr.title || '').match(/\brelease\s+v?(\d+(?:\.\d+)+)/i);
   return match ? match[1] : '';
@@ -203,38 +227,34 @@ export function aggregateActivity({ pullRequests, commits, months }) {
     const bucket = byMonth.get(monthKey(pr.merged_at));
     if (!bucket) continue;
 
+    // Retained for backward compatibility. Public delivery metrics are commit-driven.
     bucket.mergedPullRequests += 1;
-    const classification = classifyPullRequest(pr);
 
-    if (classification === 'productionRelease') {
+    if (isProductionRelease(pr)) {
       bucket.productionReleases += 1;
       const note = releaseNote(pr);
       if (note && bucket.releaseNotes.length < 3) {
         bucket.releaseNotes.push(note);
-        // Backward-compatible alias for portfolio versions that still read highlights.
         bucket.highlights.push(note);
       }
       if (note && latestReleaseNotes.length < 3) latestReleaseNotes.push(note);
-    } else if (classification === 'productImprovement') bucket.productImprovements += 1;
-    else if (classification === 'qualityImprovement') bucket.qualityImprovements += 1;
-    else bucket.otherPullRequests += 1;
+    } else {
+      bucket.otherPullRequests += 1;
+    }
   }
 
   for (const commit of commits) {
-    const authoredAt = commit.commit?.author?.date || commit.commit?.committer?.date;
-    if (!authoredAt) continue;
-    const bucket = byMonth.get(monthKey(authoredAt));
+    if (!isEligibleDevelopmentCommit(commit)) continue;
+
+    const committedAt = commit.commit?.committer?.date || commit.commit?.author?.date;
+    if (!committedAt) continue;
+    const bucket = byMonth.get(monthKey(committedAt));
     if (!bucket) continue;
 
-    const isMerge = Array.isArray(commit.parents) && commit.parents.length > 1;
-    const authorLogin = normalize(commit.author?.login || commit.committer?.login);
-    const message = normalize(commit.commit?.message);
-    const isGeneratedActivityCommit = message.startsWith('chore(activity):');
-    const isBot = authorLogin.endsWith('[bot]') || authorLogin === 'github-actions';
-
-    if (!isMerge && !isGeneratedActivityCommit && !isBot) {
-      bucket.developmentCommits += 1;
-    }
+    bucket.developmentCommits += 1;
+    const classification = classifyCommit(commit);
+    if (classification === 'productImprovement') bucket.productImprovements += 1;
+    else bucket.qualityImprovements += 1;
   }
 
   const monthRows = months.map((month) => byMonth.get(month.key));
@@ -287,9 +307,6 @@ export async function fetchMergedPullRequests({ repository, token, startDate }) 
       if (pr.merged_at && new Date(pr.merged_at) >= startDate) results.push(pr);
     }
 
-    // GitHub's REST pull-request ordering is not guaranteed to be globally
-    // monotonic across pages. Fetch every available page, then filter and sort
-    // client-side so a stale updated_at value cannot truncate the activity window.
     if (batch.length < 100) break;
   }
   return results;
@@ -348,11 +365,11 @@ export async function runGenerator(options = {}) {
     sourceBranch: branch,
     windowMonths: months.length,
     definitions: {
-      mergedPullRequests: 'Pull requests merged during the calendar month.',
-      productImprovements: 'Merged customer-facing PRs, excluding release management and internal activity tooling.',
-      productionReleases: 'Release or promotion PRs merged into main.',
-      qualityImprovements: 'Merged PRs focused on fixes, testing, security, reliability, accessibility, documentation, refactoring, technical debt, or internal activity tooling.',
-      developmentCommits: 'Non-merge, non-bot commits on the source branch. Generated activity commits are excluded.',
+      mergedPullRequests: 'Merged PR count retained for backward compatibility; the public dashboard uses individual commits as the primary delivery measure.',
+      productImprovements: 'Individual non-merge feature commits on the source branch, excluding bots and generated activity refreshes.',
+      productionReleases: 'User-facing release or promotion PRs merged into main.',
+      qualityImprovements: 'All other eligible individual commits, including fixes, tests, security, reliability, accessibility, documentation, refactoring, build work, and technical debt.',
+      developmentCommits: 'All eligible individual non-merge, non-bot commits on the source branch. Product and quality counts reconcile to this total.',
       latestReleaseNotes: 'The three most recent user-facing production releases, summarized from the first Shipping bullet; internal-only releases are excluded.',
     },
     ...activity,
