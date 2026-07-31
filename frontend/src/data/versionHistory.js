@@ -1,5 +1,21 @@
 export var VERSION_HISTORY = [
   {
+    version: '2.8.2',
+    date: 'July 2026',
+    headline: 'Under-the-hood improvements to reliability and code quality',
+    techNote: 'Minor fixes and internal improvements',
+    userChanges: [
+      'Behind-the-scenes reliability and stability improvements. No changes to how the app works for you.',
+    ],
+    internalChanges: [
+      'Public activity feed now links to actual production release notes instead of individual implementation stories.',
+      'Release-note summaries on the public feed are derived automatically from the release version and its first shipping bullet.',
+      'Public delivery metrics now count individual commits, classified as product or quality work, instead of merged pull requests.',
+      'Fixed recurring Vercel deployment failures caused by the generated activity-data branch missing the configured frontend root directory.',
+      'Minor bump 2.8.1 to 2.8.2.',
+    ],
+  },
+  {
     version: '2.8.1',
     date: 'July 2026',
     headline: 'Under-the-hood improvements to reliability and code quality',
