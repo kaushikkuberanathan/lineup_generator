@@ -2,22 +2,29 @@
 
 The public portfolio reads a generated six-month activity summary from `product-activity.json` on the `activity-data` branch.
 
-## Reported metrics
+## Commit-centric metrics
 
-- Merged pull requests
-- Customer-facing product improvements
-- Production releases promoted into `main`
-- Quality, reliability, security, testing, documentation, and technical-debt improvements
-- Non-merge development commits on `develop`
+The public dashboard treats each eligible commit as a unit of delivery effort. It counts non-merge, non-bot commits on `develop` and excludes the generated activity refresh commit itself.
 
-## Release notes
+Eligible commits are classified from their conventional-commit prefix:
 
-The feed publishes `latestReleaseNotes`, containing the three most recent user-facing production releases in the reporting window. Each public title combines the release version with the first bullet under the release PR's `Shipping` or `What's shipping` section.
+- **Product commits** — `feat` and `feature`
+- **Quality commits** — `fix`, `test`, `refactor`, `perf`, `security`, and `revert`
+- **Delivery commits** — `docs`, `chore`, `ci`, `build`, `style`, release, and promotion commits
+- **Other commits** — eligible commits without a recognized prefix
 
-Story and feature PRs remain part of the monthly product-improvement count, but they are not used as release-note links. Release PRs explicitly marked `Internal-only release` or `No user-facing change` are excluded from the public list.
+Every eligible commit must land in exactly one category. The workflow validates that the category total equals the monthly commit total before publishing.
 
-For backward compatibility, each month's `highlights` field mirrors that month's summarized production release notes while portfolio clients transition to `latestReleaseNotes`.
+Legacy PR-based fields remain in the JSON temporarily so older portfolio clients do not break during the transition. They are no longer the primary public activity model.
 
-## Refresh behavior
+## Production release notes
+
+The feed still uses release promotion pull requests for `latestReleaseNotes`, because those PR bodies provide the clearest production-level summary of what shipped. Each public title combines the release version with the first bullet under the release PR's `Shipping` or `What's shipping` section.
+
+Individual story or feature PRs are not used as public release-note links. Release PRs explicitly marked `Internal-only release` or `No user-facing change` are excluded from the public list.
+
+## Refresh and hosting behavior
 
 `.github/workflows/update-product-activity.yml` validates the generator, creates the rolling JSON payload, and updates only the generated `activity-data` branch. The workflow runs weekly, can be triggered manually, and refreshes when the activity tooling changes on `develop`.
+
+The generated branch includes `frontend/vercel.json` with Vercel Git deployments disabled for `activity-data`. This keeps the branch available as a raw GitHub data source without creating failed Vercel previews caused by the application project's `frontend` root-directory requirement.
