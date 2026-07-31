@@ -1,15 +1,15 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-07-30T23:40:03.059Z",
+  "generatedAt": "2026-07-31T00:22:39.830Z",
   "repository": "kaushikkuberanathan/lineup_generator",
   "sourceBranch": "develop",
   "windowMonths": 6,
   "definitions": {
-    "mergedPullRequests": "Pull requests merged during the calendar month.",
-    "productImprovements": "Merged customer-facing PRs, excluding release management and internal activity tooling.",
-    "productionReleases": "Release or promotion PRs merged into main.",
-    "qualityImprovements": "Merged PRs focused on fixes, testing, security, reliability, accessibility, documentation, refactoring, technical debt, or internal activity tooling.",
-    "developmentCommits": "Non-merge, non-bot commits on the source branch. Generated activity commits are excluded.",
+    "mergedPullRequests": "Merged PR count retained for backward compatibility; the public dashboard uses individual commits as the primary delivery measure.",
+    "productImprovements": "Individual non-merge feature commits on the source branch, excluding bots and generated activity refreshes.",
+    "productionReleases": "User-facing release or promotion PRs merged into main.",
+    "qualityImprovements": "All other eligible individual commits, including fixes, tests, security, reliability, accessibility, documentation, refactoring, build work, and technical debt.",
+    "developmentCommits": "All eligible individual non-merge, non-bot commits on the source branch. Product and quality counts reconcile to this total.",
     "latestReleaseNotes": "The three most recent user-facing production releases, summarized from the first Shipping bullet; internal-only releases are excluded."
   },
   "months": [
@@ -29,9 +29,9 @@
       "key": "2026-03",
       "label": "Mar 2026",
       "mergedPullRequests": 0,
-      "productImprovements": 0,
+      "productImprovements": 87,
       "productionReleases": 0,
-      "qualityImprovements": 0,
+      "qualityImprovements": 135,
       "developmentCommits": 222,
       "otherPullRequests": 0,
       "releaseNotes": [],
@@ -41,11 +41,11 @@
       "key": "2026-04",
       "label": "Apr 2026",
       "mergedPullRequests": 25,
-      "productImprovements": 1,
+      "productImprovements": 18,
       "productionReleases": 9,
-      "qualityImprovements": 8,
+      "qualityImprovements": 153,
       "developmentCommits": 171,
-      "otherPullRequests": 7,
+      "otherPullRequests": 16,
       "releaseNotes": [
         {
           "number": 29,
@@ -85,11 +85,11 @@
       "key": "2026-05",
       "label": "May 2026",
       "mergedPullRequests": 150,
-      "productImprovements": 30,
+      "productImprovements": 20,
       "productionReleases": 21,
-      "qualityImprovements": 89,
+      "qualityImprovements": 136,
       "developmentCommits": 156,
-      "otherPullRequests": 10,
+      "otherPullRequests": 129,
       "releaseNotes": [
         {
           "number": 250,
@@ -131,9 +131,9 @@
       "mergedPullRequests": 47,
       "productImprovements": 9,
       "productionReleases": 7,
-      "qualityImprovements": 30,
+      "qualityImprovements": 29,
       "developmentCommits": 38,
-      "otherPullRequests": 1,
+      "otherPullRequests": 40,
       "releaseNotes": [
         {
           "number": 334,
@@ -172,12 +172,12 @@
     {
       "key": "2026-07",
       "label": "Jul 2026",
-      "mergedPullRequests": 57,
+      "mergedPullRequests": 58,
       "productImprovements": 9,
       "productionReleases": 8,
-      "qualityImprovements": 32,
-      "developmentCommits": 82,
-      "otherPullRequests": 8,
+      "qualityImprovements": 78,
+      "developmentCommits": 87,
+      "otherPullRequests": 50,
       "releaseNotes": [
         {
           "number": 414,
@@ -215,21 +215,21 @@
     }
   ],
   "totals": {
-    "mergedPullRequests": 279,
-    "productImprovements": 49,
+    "mergedPullRequests": 280,
+    "productImprovements": 143,
     "productionReleases": 45,
-    "qualityImprovements": 159,
-    "developmentCommits": 669
+    "qualityImprovements": 531,
+    "developmentCommits": 674
   },
   "currentMonth": {
     "key": "2026-07",
     "label": "Jul 2026",
-    "mergedPullRequests": 57,
+    "mergedPullRequests": 58,
     "productImprovements": 9,
     "productionReleases": 8,
-    "qualityImprovements": 32,
-    "developmentCommits": 82,
-    "otherPullRequests": 8,
+    "qualityImprovements": 78,
+    "developmentCommits": 87,
+    "otherPullRequests": 50,
     "releaseNotes": [
       {
         "number": 414,
