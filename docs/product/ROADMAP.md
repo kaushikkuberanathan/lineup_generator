@@ -1,7 +1,16 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: 2026-07-21 (v2.7.0 - Google sign-in, session visibility, roster-wipe protection)
+> Last updated: 2026-07-31 (v2.8.2 - public activity feed: release notes, commit metrics, deploy fix)
 > MVP launched: March 24, 2026
+
+---
+
+## v2.8.2 - 2026-07-31 - Public activity feed: release notes, commit metrics, deploy fix
+- Public portfolio activity feed now publishes actual production release notes (#442) instead of individual implementation-story links, with per-release summaries auto-derived from the version and its first shipping bullet (#443).
+- Public delivery metrics switched from merged-PR counts to individual non-merge commits, classified as product or quality work (#445); release PRs are still used for production release counts and release-note links.
+- Fixed recurring Vercel deployment failures on the generated `activity-data` branch by disabling deployments for that branch and publishing a minimal `frontend/vercel.json` onto it, so the configured Root Directory always exists (#445).
+- Tooling/portfolio-only change - no Dugout Lineup application runtime or user-facing behavior changed.
+- Minor bump 2.8.1 to 2.8.2.
 
 ---
 
