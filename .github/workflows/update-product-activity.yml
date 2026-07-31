@@ -13,7 +13,7 @@ on:
     - cron: '17 11 * * 1'
   workflow_dispatch:
 
-# Read PR metadata for classification; write only the generated activity branch.
+# Read PR metadata for release notes; write only the generated activity branch.
 permissions:
   contents: write
   pull-requests: read
@@ -36,7 +36,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
 
       - name: Validate activity classification
         run: node --test scripts/generate-product-activity.test.mjs
@@ -45,6 +45,21 @@ jobs:
         run: node scripts/generate-product-activity.mjs --output /tmp/product-activity.json --months 6 --branch develop
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Validate generated commit totals
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const data = JSON.parse(fs.readFileSync('/tmp/product-activity.json', 'utf8'));
+          if (data.activityModel !== 'commit-centric-v1') throw new Error('Unexpected activity model');
+          if (!Array.isArray(data.months) || data.months.length !== 6) throw new Error('Expected six monthly rows');
+          for (const month of data.months) {
+            const classified = month.productCommits + month.qualityCommits + month.deliveryCommits + month.otherCommits;
+            if (classified !== month.developmentCommits) {
+              throw new Error(`${month.label}: classified ${classified} commits but total is ${month.developmentCommits}`);
+            }
+          }
+          NODE
 
       - name: Publish JSON to activity-data branch
         shell: bash
@@ -66,10 +81,30 @@ jobs:
           fi
 
           cp /tmp/product-activity.json product-activity.json
-          printf '%s\n' '# Generated product activity' '' 'This branch is managed by GitHub Actions.' > README.md
+          printf '%s\n' \
+            '# Generated product activity' \
+            '' \
+            'This branch is managed by GitHub Actions.' \
+            'It is a data-publishing branch, not an application deployment branch.' > README.md
           touch .nojekyll
 
-          git add product-activity.json README.md .nojekyll
+          # Vercel's project root is `frontend`. Keep that directory present on
+          # the generated branch and explicitly disable Git deployments for it,
+          # preventing every metrics refresh from becoming a failed preview.
+          git rm -r --ignore-unmatch frontend >/dev/null 2>&1 || true
+          mkdir -p frontend
+          cat > frontend/vercel.json <<'JSON'
+          {
+            "$schema": "https://openapi.vercel.sh/vercel.json",
+            "git": {
+              "deploymentEnabled": {
+                "activity-data": false
+              }
+            }
+          }
+          JSON
+
+          git add product-activity.json README.md .nojekyll frontend/vercel.json
           if git diff --cached --quiet; then
             echo "No activity change to publish."
             exit 0
