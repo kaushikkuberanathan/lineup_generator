@@ -121,8 +121,16 @@ Viewing lineup and share links must **never** require login. Auth must never blo
 - NOTE: `platform_admin` is NOT a valid team_memberships value - the CHECK constraint forbids it. DB-verified 2026-07-13: three `admin` rows exist for KK across three email identities (kaushik.kuberanathan@, kaushikkuberanathan@ without the dot, icoachyouthball@).
 - Stan Hoover: role=coach, team=Mud Hens (1774297491626), status=invited → set active before Phase 4 cutover
 
-### Phase 4 Cutover (parked)
-Full checklist: `docs/ops/PHASE4_PRECHECK.md`. Do NOT run `backend/migrations/004_rls_fixes.sql` until cutover — will break anon writes coaches rely on today.
+### Phase 4 Cutover — likely already happened, docs never caught up (#428)
+**`docs/ops/PHASE4_PRECHECK.md` is itself header-marked "archived for reference only... Phase 4 phone OTP cutover abandoned."** The cutover this line used to gate on, in its originally-planned form, never happened. The cutover that actually shipped — magic-link + Google OAuth, "Auth gate live in prod: editing requires a session" — landed in **v2.6.0 (2026-07-20)**, one day after `004_rls_fixes.sql`'s own header recorded the gate as "on develop (904abb5) but NOT promoted to main" (2026-07-19). On the migration file's own stated terms, its precondition looks satisfied.
+
+**Evidence 004's SELECT-side policies (or a full functional equivalent) are already live in prod**, gathered 2026-07-31 without any write probe:
+- Live anon-key reads against prod `teams`, `roster_snapshots`, and `team_data` (schedule read) all return `200` + zero rows — RLS-filtered, not grant-denied. That is exactly what 004's `TO authenticated` policies with no anon policy produce; it is not consistent with RLS still being off.
+- `frontend/src/supabase.js` exports one shared `supabase` client; `frontend/src/hooks/useAuth.js` calls `supabase.auth.getSession()`/`onAuthStateChange()` on that same client, not a separate one. Once a coach is signed in, supabase-js attaches the session JWT to every subsequent `.from()` call on that client automatically — so `dbSaveTeamData`/`dbSaveTeams` (which reuse the same singleton) write as `authenticated`, not `anon`, for any logged-in coach. Combined with v2.6.0's "editing requires a session" gate, the write path should no longer be able to reach Postgres as `anon` for any edit action.
+
+**Not verified — deliberately not probed:** the GRANT-revocation half (`REVOKE TRUNCATE, DELETE` on `team_data`/`teams`/`roster_snapshots`). The read-only introspection RPC for this (`rls_test_anon_grants`, migration 013) is `EXECUTE`-gated to `service_role` only. Confirming it would require either an anon write-probe against live prod data (real risk: if the hypothesis is wrong, the write either pollutes production or can't be cleaned up afterward, since 004 also revokes DELETE) or running the read-only query already in `004_rls_fixes.sql`'s own header (`SELECT ... FROM pg_policies WHERE schemaname = 'public'`) in the Supabase dashboard SQL Editor — zero risk, settles this definitively. Recommend the latter before treating this as fully closed.
+
+**Until that final check lands: do not re-run `004_rls_fixes.sql` on the assumption it wasn't applied.** If its policies are already live (as the evidence above suggests), re-running it is a harmless no-op — the file's own `DROP POLICY IF EXISTS` guards make it idempotent. But don't run it as a "let's just apply it now" action either — confirm via the read-only query first, since a wrong assumption in either direction has real cost.
 
 ### Phase 4C Auth Cutover — Live Scoring cleanup (do at cutover, not before)
 > Full shim removal checklist: see [docs/ops/PHASE4C_CUTOVER.md](docs/ops/PHASE4C_CUTOVER.md).
