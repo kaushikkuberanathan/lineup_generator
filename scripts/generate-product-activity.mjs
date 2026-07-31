@@ -9,7 +9,7 @@ const DEFAULT_REPOSITORY = 'kaushikkuberanathan/lineup_generator';
 const DEFAULT_MONTHS = 6;
 
 function normalize(value = '') {
-  return String(value).trim().toLowerCase();
+  return String(value).replace(/^\uFEFF/, '').trim().toLowerCase();
 }
 
 function labelNames(pr) {
@@ -133,6 +133,45 @@ export function classifyPullRequest(pr) {
   return 'other';
 }
 
+function commitMessage(commit) {
+  return String(commit.commit?.message || '').replace(/^\uFEFF/, '').trim();
+}
+
+function commitHeadline(commit) {
+  return commitMessage(commit).split(/\r?\n/, 1)[0].trim();
+}
+
+function commitType(commit) {
+  const headline = normalize(commitHeadline(commit));
+  const conventional = headline.match(/^([a-z]+)(?:\([^)]+\))?!?:/);
+  if (conventional) return conventional[1];
+  if (/^(release|promote)(\b|:)/.test(headline)) return 'release';
+  return 'other';
+}
+
+export function isEligibleCommit(commit) {
+  const authoredAt = commit.commit?.author?.date || commit.commit?.committer?.date;
+  if (!authoredAt) return false;
+
+  const isMerge = Array.isArray(commit.parents) && commit.parents.length > 1;
+  const authorLogin = normalize(commit.author?.login || commit.committer?.login);
+  const message = normalize(commitMessage(commit));
+  const isGeneratedActivityCommit = message.startsWith('chore(activity): refresh public product metrics');
+  const isBot = authorLogin.endsWith('[bot]') || authorLogin === 'github-actions';
+
+  return !isMerge && !isGeneratedActivityCommit && !isBot;
+}
+
+export function classifyCommit(commit) {
+  if (!isEligibleCommit(commit)) return 'excluded';
+
+  const type = commitType(commit);
+  if (['feat', 'feature'].includes(type)) return 'product';
+  if (['fix', 'test', 'refactor', 'perf', 'security', 'revert'].includes(type)) return 'quality';
+  if (['docs', 'chore', 'ci', 'build', 'style', 'release'].includes(type)) return 'delivery';
+  return 'other';
+}
+
 function releaseVersion(pr) {
   const match = String(pr.title || '').match(/\brelease\s+v?(\d+(?:\.\d+)+)/i);
   return match ? match[1] : '';
@@ -171,24 +210,28 @@ function releaseNote(pr) {
   return { number: pr.number, title, url: pr.html_url };
 }
 
+function emptyMonth(month) {
+  return {
+    key: month.key,
+    label: month.label,
+    developmentCommits: 0,
+    productCommits: 0,
+    qualityCommits: 0,
+    deliveryCommits: 0,
+    otherCommits: 0,
+    productionReleases: 0,
+    releaseNotes: [],
+    // Legacy PR metrics remain additive for older portfolio clients.
+    mergedPullRequests: 0,
+    productImprovements: 0,
+    qualityImprovements: 0,
+    otherPullRequests: 0,
+    highlights: [],
+  };
+}
+
 export function aggregateActivity({ pullRequests, commits, months }) {
-  const byMonth = new Map(
-    months.map((month) => [
-      month.key,
-      {
-        key: month.key,
-        label: month.label,
-        mergedPullRequests: 0,
-        productImprovements: 0,
-        productionReleases: 0,
-        qualityImprovements: 0,
-        developmentCommits: 0,
-        otherPullRequests: 0,
-        releaseNotes: [],
-        highlights: [],
-      },
-    ]),
-  );
+  const byMonth = new Map(months.map((month) => [month.key, emptyMonth(month)]));
 
   const sortedPullRequests = [...pullRequests].sort((left, right) => {
     const leftTime = left.merged_at ? new Date(left.merged_at).getTime() : 0;
@@ -211,7 +254,6 @@ export function aggregateActivity({ pullRequests, commits, months }) {
       const note = releaseNote(pr);
       if (note && bucket.releaseNotes.length < 3) {
         bucket.releaseNotes.push(note);
-        // Backward-compatible alias for portfolio versions that still read highlights.
         bucket.highlights.push(note);
       }
       if (note && latestReleaseNotes.length < 3) latestReleaseNotes.push(note);
@@ -221,37 +263,43 @@ export function aggregateActivity({ pullRequests, commits, months }) {
   }
 
   for (const commit of commits) {
+    if (!isEligibleCommit(commit)) continue;
+
     const authoredAt = commit.commit?.author?.date || commit.commit?.committer?.date;
-    if (!authoredAt) continue;
     const bucket = byMonth.get(monthKey(authoredAt));
     if (!bucket) continue;
 
-    const isMerge = Array.isArray(commit.parents) && commit.parents.length > 1;
-    const authorLogin = normalize(commit.author?.login || commit.committer?.login);
-    const message = normalize(commit.commit?.message);
-    const isGeneratedActivityCommit = message.startsWith('chore(activity):');
-    const isBot = authorLogin.endsWith('[bot]') || authorLogin === 'github-actions';
-
-    if (!isMerge && !isGeneratedActivityCommit && !isBot) {
-      bucket.developmentCommits += 1;
-    }
+    bucket.developmentCommits += 1;
+    const classification = classifyCommit(commit);
+    if (classification === 'product') bucket.productCommits += 1;
+    else if (classification === 'quality') bucket.qualityCommits += 1;
+    else if (classification === 'delivery') bucket.deliveryCommits += 1;
+    else bucket.otherCommits += 1;
   }
 
   const monthRows = months.map((month) => byMonth.get(month.key));
   const totals = monthRows.reduce(
     (sum, row) => ({
+      developmentCommits: sum.developmentCommits + row.developmentCommits,
+      productCommits: sum.productCommits + row.productCommits,
+      qualityCommits: sum.qualityCommits + row.qualityCommits,
+      deliveryCommits: sum.deliveryCommits + row.deliveryCommits,
+      otherCommits: sum.otherCommits + row.otherCommits,
+      productionReleases: sum.productionReleases + row.productionReleases,
       mergedPullRequests: sum.mergedPullRequests + row.mergedPullRequests,
       productImprovements: sum.productImprovements + row.productImprovements,
-      productionReleases: sum.productionReleases + row.productionReleases,
       qualityImprovements: sum.qualityImprovements + row.qualityImprovements,
-      developmentCommits: sum.developmentCommits + row.developmentCommits,
     }),
     {
+      developmentCommits: 0,
+      productCommits: 0,
+      qualityCommits: 0,
+      deliveryCommits: 0,
+      otherCommits: 0,
+      productionReleases: 0,
       mergedPullRequests: 0,
       productImprovements: 0,
-      productionReleases: 0,
       qualityImprovements: 0,
-      developmentCommits: 0,
     },
   );
 
@@ -287,9 +335,6 @@ export async function fetchMergedPullRequests({ repository, token, startDate }) 
       if (pr.merged_at && new Date(pr.merged_at) >= startDate) results.push(pr);
     }
 
-    // GitHub's REST pull-request ordering is not guaranteed to be globally
-    // monotonic across pages. Fetch every available page, then filter and sort
-    // client-side so a stale updated_at value cannot truncate the activity window.
     if (batch.length < 100) break;
   }
   return results;
@@ -343,17 +388,22 @@ export async function runGenerator(options = {}) {
   const activity = aggregateActivity({ pullRequests, commits, months });
   return {
     schemaVersion: 1,
+    activityModel: 'commit-centric-v1',
     generatedAt: new Date().toISOString(),
     repository,
     sourceBranch: branch,
     windowMonths: months.length,
     definitions: {
-      mergedPullRequests: 'Pull requests merged during the calendar month.',
-      productImprovements: 'Merged customer-facing PRs, excluding release management and internal activity tooling.',
-      productionReleases: 'Release or promotion PRs merged into main.',
-      qualityImprovements: 'Merged PRs focused on fixes, testing, security, reliability, accessibility, documentation, refactoring, technical debt, or internal activity tooling.',
       developmentCommits: 'Non-merge, non-bot commits on the source branch. Generated activity commits are excluded.',
+      productCommits: 'Eligible commits using feat or feature conventional-commit prefixes.',
+      qualityCommits: 'Eligible commits using fix, test, refactor, perf, security, or revert prefixes.',
+      deliveryCommits: 'Eligible commits using docs, chore, ci, build, style, release, or promote prefixes.',
+      otherCommits: 'Eligible commits without a recognized conventional-commit prefix.',
+      productionReleases: 'Release or promotion pull requests merged into main.',
       latestReleaseNotes: 'The three most recent user-facing production releases, summarized from the first Shipping bullet; internal-only releases are excluded.',
+      mergedPullRequests: 'Legacy compatibility field: pull requests merged during the calendar month.',
+      productImprovements: 'Legacy compatibility field: merged customer-facing pull requests.',
+      qualityImprovements: 'Legacy compatibility field: merged quality-focused pull requests.',
     },
     ...activity,
   };
