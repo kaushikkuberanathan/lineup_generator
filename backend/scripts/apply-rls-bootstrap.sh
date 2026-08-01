@@ -66,6 +66,7 @@ FILES=(
   "backend/migrations/015_roster_wipe_db_guard.sql"
   "backend/migrations/016_profile_name_from_metadata.sql"
   "backend/migrations/017_fix_prune_roster_snapshots_security_definer.sql"
+  "backend/migrations/TEMP_mutation_test_weaken_teams_delete.sql"  # TEMP — mutation test, reverted before this branch closes, never merged
 )
 # 005, 006, 007, 008, 009, 011, 012 are deliberately NOT here — see WHY THIS
 # EXISTS above. schema.sql's 2026-07-13 capture already contains their effects.
