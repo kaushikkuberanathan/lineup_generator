@@ -120,6 +120,21 @@ identical: `(team_id, status, requested_at DESC)`. One is redundant.
 
 ## RLS STATE (as of 2026-07-13)
 
+> **!! STALE — predates WS-3 (#411). DO NOT TREAT THIS TABLE AS CURRENT.**
+> This capture is the same 2026-07-13 vintage as `docs/db/schema.sql`'s own RLS
+> section, which carries an identical staleness warning in three places
+> (`ci.yml`, `apply-rls-bootstrap.sh`, `backend/src/__tests__/rls/clients.js`).
+> WS-3 (migration `004_rls_fixes.sql`, shipped prod v2.6.0, 2026-07-20) enabled
+> RLS and revoked the TRUNCATE grant on the first three rows below — the table
+> as written now describes a database that no longer exists. Confirmed stale by
+> direct prod probe 2026-08-01 (Test-Health Survey Pass 3, #476): anon SELECT
+> against prod `teams` and `roster_snapshots` returns zero rows with no error
+> (the RLS-filtered signature), not the full-CRUD access this table claims.
+> Current ground truth for RLS state: `docs/db/schema.sql`'s table shape +
+> migrations 004, 013–016 replayed — see `clients.js`'s header for the exact
+> recipe. This table's non-RLS content (constraints, indexes, triggers) is not
+> known to be affected and is out of scope for this warning.
+
 | Table | RLS | Policies | anon/auth grants |
 |---|---|---|---|
 | `team_data` | **OFF** | 0 | **FULL CRUD + TRUNCATE** |
