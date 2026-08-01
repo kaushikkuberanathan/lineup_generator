@@ -15,8 +15,20 @@ const { adminClient } = require('./clients');
 const TEAM_A = 'zzz-rls-test-a';
 const TEAM_B = 'zzz-rls-test-b';
 
+// Throwaway, single-test-use teams (#477 teams RLS coverage). Not part of the
+// shared before()/after() fixture — each is created and destroyed by the one
+// test that needs it (teams_auth_insert's positive control literally IS an
+// insert; teams_auth_delete's positive control literally IS a delete), with
+// teardown() below as an unconditional safety net if either test crashes
+// mid-way. Kept out of the main seed() so a failure in one doesn't affect
+// the TEAM_A/TEAM_B-based SELECT/UPDATE scenarios sharing the module-level
+// `before()` session.
+const TEAM_C = 'zzz-rls-test-c-admin-delete';
+const TEAM_D = 'zzz-rls-test-d-insert-control';
+
 const COACH_A_EMAIL = 'zzz-rls-coach-a@dugout-rls-test.invalid';
 const COACH_B_EMAIL = 'zzz-rls-coach-b@dugout-rls-test.invalid';
+const ADMIN_EMAIL   = 'zzz-rls-admin-delete@dugout-rls-test.invalid';
 
 const SHARE_ID = 'zzzrls01';   // share_links.id is TEXT; prod ids are 8 hex chars
 
@@ -45,7 +57,7 @@ async function findUserByEmail(admin, email) {
  */
 async function teardown() {
   const admin = adminClient();
-  const teams = [TEAM_A, TEAM_B];
+  const teams = [TEAM_A, TEAM_B, TEAM_C, TEAM_D];
 
   await admin.from('share_links').delete().eq('id', SHARE_ID);
   await admin.from('team_data_history').delete().in('team_id', teams);
@@ -54,13 +66,48 @@ async function teardown() {
   await admin.from('team_data').delete().in('team_id', teams);
   await admin.from('teams').delete().in('id', teams);
 
-  for (const email of [COACH_A_EMAIL, COACH_B_EMAIL]) {
+  for (const email of [COACH_A_EMAIL, COACH_B_EMAIL, ADMIN_EMAIL]) {
     const user = await findUserByEmail(admin, email);
     if (user) {
       const { error } = await admin.auth.admin.deleteUser(user.id);
       if (error) throw new Error('deleteUser failed for ' + email + ': ' + error.message);
     }
   }
+}
+
+/**
+ * Self-contained fixture for teams_auth_delete's positive control (#477):
+ * a throwaway team with a real admin-role, active membership, so a test can
+ * prove an actual admin CAN delete their own team — not just that a coach
+ * (role='coach', the shared fixture's role) cannot. teams_auth_delete
+ * requires role = 'admin' specifically, stricter than teams_auth_update's
+ * role IN ('admin','coach'), so the shared coachA/coachB identities cannot
+ * exercise this path at all.
+ *
+ * Called directly by the one test that needs it, not the module-level
+ * before() — the test's own DELETE assertion is what tears this down in the
+ * success case; teardown() above is the backstop if the test fails first.
+ */
+async function seedAdminDeleteFixture() {
+  const admin = adminClient();
+
+  const { data, error: userErr } = await admin.auth.admin.createUser({
+    email: ADMIN_EMAIL,
+    email_confirm: true,
+  });
+  if (userErr) throw new Error('createUser failed for ' + ADMIN_EMAIL + ': ' + userErr.message);
+
+  const { error: teamErr } = await admin.from('teams').insert({
+    id: TEAM_C, name: 'ZZZ RLS Test C (admin delete)', age_group: '8U', year: 2026, sport: 'baseball',
+  });
+  if (teamErr) throw new Error('teams insert failed for TEAM_C: ' + teamErr.message);
+
+  const { error: memErr } = await admin.from('team_memberships').insert({
+    user_id: data.user.id, team_id: TEAM_C, role: 'admin', status: 'active', email: ADMIN_EMAIL,
+  });
+  if (memErr) throw new Error('team_memberships insert failed for TEAM_C admin: ' + memErr.message);
+
+  return { teamId: TEAM_C, adminEmail: ADMIN_EMAIL };
 }
 
 /**
@@ -167,10 +214,14 @@ async function seed() {
 module.exports = {
   TEAM_A,
   TEAM_B,
+  TEAM_C,
+  TEAM_D,
   COACH_A_EMAIL,
   COACH_B_EMAIL,
+  ADMIN_EMAIL,
   SHARE_ID,
   FAKE_ROSTER,
   seed,
   teardown,
+  seedAdminDeleteFixture,
 };
