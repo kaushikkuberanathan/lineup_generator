@@ -10,6 +10,22 @@
 
 ---
 
+## 2026-08-01-A — develop git-integrity check (closed-with-caveat)
+
+**Date:** August 1, 2026
+**Session ID:** 2026-08-01-A (Terminal 2 — UX Track)
+**Status:** Closed with caveat — not resolved.
+
+### Finding
+
+`develop` git-integrity check (2026-08-01): clean ancestor chain from `7086cec` → `472eca5`, no rewrite/force-push, all 6 intervening commits map to merged PRs (#484, #486, #487). Originating Terminal 1 concern was relayed secondhand with no specifics; T1 session closed before detail could be confirmed. No git-level anomaly found. If the concern resurfaces, check commit content (e.g. migration 017's SECURITY DEFINER change) not just lineage.
+
+### Why "closed-with-caveat" and not "resolved"
+
+Verified via `git merge-base --is-ancestor` and full linear log inspection that the branch itself was never rewritten or reset — that specific failure mode is ruled out. But the original concern (Terminal 1, relayed secondhand) was never pinned to specifics before that session closed, so there's no way to confirm this check addresses the actual thing Terminal 1 was worried about versus a narrower or different issue (e.g. a value inside a commit, not the commit's existence). Treat as "no lineage anomaly found," not "confirmed non-issue."
+
+---
+
 ## 2026-05-29-A — v2.5.22 release ritual + sync-script CRLF fix
 
 **Date:** May 29, 2026  
