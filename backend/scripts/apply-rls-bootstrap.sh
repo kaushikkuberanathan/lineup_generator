@@ -31,7 +31,9 @@
 #
 #   Replayed, because they postdate the 2026-07-13 capture and are NOT yet in
 #   schema.sql: 004 (WS-3, applied ~2026-07-19/20), 013 (DEV 2026-07-14),
-#   014 (DEV 2026-07-15), 015 (DEV+prod 2026-07-20), 016 (2026-07-21).
+#   014 (DEV 2026-07-15), 015 (DEV+prod 2026-07-20), 016 (2026-07-21), 017
+#   (#477, authored 2026-08-01 — not yet applied to DEV/prod as of writing;
+#   included here so the ephemeral CI stack validates it before it ships).
 #
 #   Migration 010 does not exist in this tree by design — see 011's own
 #   header ("010 is taken by docs/db/future/010_pitcher_rest_eligibility.sql,
@@ -63,6 +65,7 @@ FILES=(
   "backend/migrations/014_handle_new_user_profile_trigger.sql"
   "backend/migrations/015_roster_wipe_db_guard.sql"
   "backend/migrations/016_profile_name_from_metadata.sql"
+  "backend/migrations/017_fix_prune_roster_snapshots_security_definer.sql"
 )
 # 005, 006, 007, 008, 009, 011, 012 are deliberately NOT here — see WHY THIS
 # EXISTS above. schema.sql's 2026-07-13 capture already contains their effects.

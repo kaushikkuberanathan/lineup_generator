@@ -148,6 +148,16 @@ Unit suite total: **111** (verified via `npm run test:unit`, 2026-07-31 — 0 fa
 - **Canonical migration directory: `backend/migrations/`.** New migrations go here.
 - `backend/src/db/migrations/` is the ORIGINAL tree (001-007). It is historical.
   Do not add to it. Do not rebuild from it without reading the warnings below.
+- **`017_fix_prune_roster_snapshots_security_definer.sql` — written 2026-08-01,
+  NOT YET APPLIED to DEV or PROD.** Fixes a live bug found while writing #477's
+  RLS coverage: the roster_snapshots auto-prune trigger has no SECURITY
+  DEFINER, so its internal DELETE runs as the caller — and migration 004
+  revoked DELETE on this table from anon/authenticated. Net effect: every
+  `dbSnapshotRoster()` insert (frontend/src/supabase.js, called on app load +
+  every roster auto-save) has been silently failing since v2.6.0 (2026-07-20).
+  CI-validated against the ephemeral stack; needs a manual DEV-then-PROD run
+  via the Supabase Dashboard before this note can say APPLIED. See the
+  migration file's own header for the full chain of evidence.
 
 ### !! FIVE NUMERIC COLLISIONS ACROSS THE TWO TREES !!
 
