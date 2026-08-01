@@ -3938,7 +3938,7 @@ Proposed fix: Decide preserve-as-new-tokens vs align-to-canonical, then migrate 
 RED-to-GREEN asserting intended final colors. Low priority - single isolated component.
 
 ---
-### Story 112 (P2) — admin.js authorized-action route coverage <!-- #TBD --> <!-- #474 -->
+### Story 112 (P2) — admin.js authorized-action route coverage <!-- #474 -->
 Status: Open
 Discovered: 2026-07-31 — Story 99 closure pass
 Target: v2.9.x
