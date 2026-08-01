@@ -51,9 +51,11 @@ Router mounts (in `app.js`):
 - `/api/v1/auth` → `src/routes/auth.js`
 - `/api/v1/ops` → `src/routes/ops.js`
 - `/api/v1/teams` (+ legacy `/api/teams`) → `src/routes/teamData.js`
-- `/api/v1` → `src/routes/admin.js` **and** `src/routes/feedback.js`
+- `/api/v1` → `src/routes/feedback.js` **and** `src/routes/admin.js`, **feedback mounted first — order matters, see warning below**
 
 **⚠️ Admin route paths are NOT under `/api/v1/admin/`.** admin.js mounts bare at `/api/v1`, so its protected handlers are `/api/v1/requests`, `/api/v1/members`, `/api/v1/approve`, `/api/v1/reject`, `/api/v1/update-role` (POST), `/api/v1/reset-access`, `/api/v1/suspend`. Only the two public 1-tap email links carry `/admin`: `GET /api/v1/admin/approve-link`, `GET /api/v1/admin/deny-link`. A router-level `router.use(requireAuth, requireAdmin)` (admin.js:172) sits **after** the public links and **before** the protected handlers; it is path/method-agnostic, so it 401s any unmatched path under the router too. (This is why the legacy `suite-admin.js` "passed" against non-existent `/api/v1/admin/*` paths — it hit the catch-all, not the real routes. See Story 99.)
+
+**⚠️ `feedbackRouter` MUST mount before `adminRouter`.** Both share the `/api/v1` base. Because admin.js's `requireAuth`+`requireAdmin` gate is path-agnostic (previous paragraph), mounting `adminRouter` first meant every `POST /api/v1/feedback` hit that gate before ever reaching feedback.js's own route — every non-admin coach's feedback submission returned 403. Found and fixed 2026-07-31 while writing `feedback.test.js` (FB-7 is the regression guard). If a third router is ever added under the bare `/api/v1` base, mount it before `adminRouter` too, or give it its own path prefix.
 
 ---
 
@@ -112,16 +114,23 @@ A second, hermetic test system runs alongside the integration runner:
 - **Env**: still needs `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` / `SUPABASE_ANON_KEY` set, because `src/lib/env.js` + `src/lib/supabase.js` throw at import. Tests never make a real Supabase or network call — they either short-circuit before the client (auth-rejection in `requireAuth.js`) or monkey-patch the seams (`supabaseAdmin.from` / `supabaseAdmin.rpc` / `supabaseAnon.auth.signInWithOtp` / `global.fetch`). `supabaseAdmin` is a shared singleton, so patching `.from` also intercepts `logAuthEvent`'s `auth_events` write. Dummy non-empty values work anywhere.
 - **File convention**: specs live in `src/__tests__/*.test.js` (the `test:unit` glob) — use this path, **not** `src/tests/`.
 
-Unit suite total: **39** (Story 99 Phase 2 complete for #252 route coverage).
+Unit suite total: **111** (verified via `npm run test:unit`, 2026-07-31 — 0 fail / 0 skipped). Story 99 closed this date; see ROADMAP.md Story 99 for the closure writeup and the new follow-up story for admin.js's remaining success-path gap.
 
 | Spec | Covers |
 |------|--------|
-| `admin.auth.test.js` (9) | Admin routes reject no-token requests with **401** at their real bare `/api/v1/*` paths (requests/members/approve/reject/update-role/reset-access/suspend); public `/api/v1/admin/{approve,deny}-link` return 400, never 401. Closes the legacy "green-but-vacuous" gap. |
+| `admin.auth.test.js` (9) | Admin routes reject no-token requests with **401** at their real bare `/api/v1/*` paths (requests/members/approve/reject/update-role/reset-access/suspend); public `/api/v1/admin/{approve,deny}-link` return 400, never 401. Closes the legacy "green-but-vacuous" gap. Rejection-path only — see the follow-up story for authorized-action coverage. |
 | `teamData.guard.test.js` (12) | `rosterWipeGuard` unit suite + `isAdminRequest` truth table — direct unit tests (the route-level 403 is unreachable in-process; see `teamData.routes.test.js` header). |
 | `teamData.envGuard.test.js` (2) | Production-mode `FORBIDDEN_TEST_DATA` rejection for test team IDs on POST + GET. |
 | `teamData.routes.test.js` (6) | Route-level `POST/GET /api/v1/teams/:id` (+ legacy `/api/teams`): 409 wipe-guard, `force` override, dual-mount smoke, DB-error 500, history limit clamp. `supabaseAdmin.from`/`.rpc` monkey-patched. |
 | `aiProxy.test.js` (6) | `POST /api/ai`: 503 unconfigured, **413 oversize (v2.2.4 regression guard)**, 400 bad type, 200 upstream status/body relay + call-shape (`claude-sonnet-4-6`, max_tokens, content), 504 AbortError, 502 unreachable. `global.fetch` stubbed; `ANTHROPIC_API_KEY` save/restore. |
 | `auth.happy.test.js` (4) | `POST /request-access` 201/409 + `POST /magic-link` 200/403. Hermetic via shared-`supabaseAdmin` patch (also covers `logAuthEvent`), `signInWithOtp` stub, and `global.fetch` stub for the Resend send. |
+| `approve.role.test.js` (6) | `POST /api/v1/approve` role-transition behavior. Landed between Phase 2 tranche 2 and Story 99's closure without a doc update — backfilled here 2026-07-31. |
+| `approveLink.role.test.js` (7) | `GET /api/v1/admin/approve-link` role-transition behavior (the public 1-tap email link). Backfilled 2026-07-31 — see note above. |
+| `requestAccess.role.test.js` (7) | `POST /api/v1/request-access` role validation. Backfilled 2026-07-31 — see note above. |
+| `normalizeRole.test.js` (13) | `normalizeRole()` — the code-level enforcement of the four-role model documented in root `CLAUDE.md` → Multi-team design. Backfilled 2026-07-31 — see note above. |
+| `loginLimiter.test.js` (3) | **NEW 2026-07-31.** `loginLimiter` (auth.js) keyed by email, not IP — Story 26 fix. Same email exhausts its own budget (429 on the 6th attempt); a different email is unaffected by another's exhausted budget (the actual bug); no-email requests are exempt via `skip()`. RED→GREEN mutation-verified. |
+| `auth.session.test.js` (8) | **NEW 2026-07-31.** `GET /me`, `PATCH /me`, `POST /logout` — zero prior coverage. Hydrated-user happy path, missing-profile non-crash, validation and not-found paths, and 401 rejection for all three routes. |
+| `feedback.test.js` (7) | **NEW 2026-07-31.** `POST /api/v1/feedback` — zero prior coverage. Valid submission, optional fields, validation, DB-error, 401 rejection, and **FB-7**: regression guard for the admin.js mount-order bug this file's authoring discovered (see Zero-Downtime / app.js note below) — a non-admin coach must reach 201, not 403. |
 
 **CI**: the `backend-unit` job in `.github/workflows/ci.yml` runs `npm run test:unit` on every push/PR — hermetic, no Render dependency (unlike the integration `backend` job that polls prod). It gates the sync-script and main-deploy (smoke) jobs.
 

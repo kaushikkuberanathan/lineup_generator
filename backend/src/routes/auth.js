@@ -25,6 +25,7 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const rateLimit = require('express-rate-limit');
+const { ipKeyGenerator } = require('express-rate-limit');
 const { supabaseAdmin, supabaseAnon } = require('../lib/supabase');
 const requireAuth = require('../middleware/requireAuth');
 const { logAuthEvent } = require('../lib/authEvents');
@@ -35,12 +36,36 @@ const router = express.Router();
 
 // ─── Rate Limiters ────────────────────────────────────────────────────────────
 
+function hasEmail(req) {
+  const email = req.body && req.body.email;
+  return typeof email === 'string' && email.trim().length > 0;
+}
+
+// Keyed by email, not IP (ROADMAP Story 26, fix D). The default IP-keyed
+// limiter shares one budget across every caller behind the same address —
+// in CI, that means every workflow run and every PR/push trigger against
+// the same runner IP pool draws from one 5-request/15-minute budget, so
+// unrelated test runs starve each other (this is what produced live
+// 429s on VAL-08/VAL-09/RATE-01a in CI on 2026-07-31, not a flake).
+// Keying by email scopes the budget to the account being targeted, which
+// is also the behavior that actually matters for abuse prevention — a
+// real attacker enumerating accounts from one IP should be limited per
+// target account, not merely per source address.
+// A request with no email isn't a login attempt against any account — it
+// has nothing to rate-limit and express-validator will reject it with 400
+// regardless. skip() excludes it from consuming budget at all (e.g.
+// VAL-09's deliberately-missing-email case), rather than falling it back
+// onto a still-shared IP bucket. keyGenerator's own IP fallback (via the
+// library's ipKeyGenerator helper, which normalizes IPv6 correctly) is
+// defensive only, for the case skip() doesn't already exclude.
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,
   message: { error: 'TOO_MANY_ATTEMPTS', message: 'Too many login attempts. Please try again in 15 minutes.' },
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => !hasEmail(req),
+  keyGenerator: (req) => (hasEmail(req) ? req.body.email.trim().toLowerCase() : ipKeyGenerator(req.ip)),
 });
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
