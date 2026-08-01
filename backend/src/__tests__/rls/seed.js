@@ -120,6 +120,23 @@ async function seed() {
     if (error) throw new Error('team_memberships insert failed: ' + error.message);
   }
 
+  // ─── roster_snapshots ──────────────────────────────────────────────────────
+  // One real row per team so a SELECT returning zero rows can only mean "RLS
+  // filtered it", never "the table happened to be empty" (#477). trigger_event
+  // must be one of the CHECK constraint's four values (schema.sql) — the
+  // column's own DEFAULT ('manual') is NOT one of them, so every insert here,
+  // including this fixture, must pass an explicit valid value or hit that
+  // constraint. trg_prune_roster_snapshots fires AFTER INSERT and keeps only
+  // the latest 10 rows per team_id — one row per team is nowhere near that
+  // cap, so it's a no-op here.
+  {
+    const { error } = await admin.from('roster_snapshots').insert([
+      { team_id: TEAM_A, team_name: 'ZZZ RLS Test A', roster: FAKE_ROSTER, trigger_event: 'manual_export' },
+      { team_id: TEAM_B, team_name: 'ZZZ RLS Test B', roster: FAKE_ROSTER, trigger_event: 'manual_export' },
+    ]);
+    if (error) throw new Error('roster_snapshots insert failed: ' + error.message);
+  }
+
   // ─── Share link ────────────────────────────────────────────────────────────
   // Payload is inline and self-contained. This is the architectural fact that
   // lets team_data be fully locked without breaking viewer mode: the viewer
