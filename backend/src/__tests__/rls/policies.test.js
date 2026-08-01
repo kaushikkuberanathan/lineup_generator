@@ -29,16 +29,24 @@
 //   shapes — anon-blocked, cross-team-blocked, own-team-allowed — to
 //   roster_snapshots, which had zero coverage despite being one of the three
 //   tables #342 originally exposed. See the RS describe block for detail.
-//   `teams` coverage is a deliberately separate follow-up (#477 sequences
-//   roster_snapshots first — higher stakes, its sibling view exposes real
-//   children's names).
+//   Sequenced first — higher stakes, its sibling view exposes real
+//   children's names.
+//
+//   T1-T7(+controls) (#477 second half, added 2026-08-01) do the same for
+//   `teams` — the third of the three originally-exposed tables. teams has a
+//   richer policy shape than roster_snapshots (four operations, not two;
+//   an unconditionally-open INSERT; a stricter admin-only DELETE), so the
+//   scenario count reflects that real shape rather than a forced 1:1 mirror
+//   of RS's five. See the T describe blocks for detail.
 //
 // HOW TO READ A FAILURE
 //   Every test here should be GREEN. A red S1b/S3/S4a/S4b means the WS-3 RLS
 //   lockdown has regressed in DEV — fix the DATABASE, not the test. A red
 //   S6-anything means an emergency-fix migration (005/006/011) regressed. A
 //   red RS-anything means the same class of regression on roster_snapshots
-//   specifically (migration 004's "4. roster_snapshots" section).
+//   specifically (migration 004's "4. roster_snapshots" section). A red
+//   T-anything means the same on `teams` (migration 004's "2. teams"
+//   section).
 
 const { test, describe, before, after } = require('node:test');
 const assert = require('node:assert/strict');
@@ -56,8 +64,10 @@ const {
   teardown,
   TEAM_A,
   TEAM_B,
+  TEAM_D,
   COACH_A_EMAIL,
   SHARE_ID,
+  seedAdminDeleteFixture,
 } = require('./seed');
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -308,6 +318,180 @@ describe('RS — roster_snapshots read + write isolation', () => {
     if (res.data?.[0]?.id) {
       await adminClient().from('roster_snapshots').delete().eq('id', res.data[0].id);
     }
+  });
+
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+// T — teams read + write isolation (#477, second half — sequenced after
+//     roster_snapshots deliberately, higher-stakes table first).
+//
+//     teams' actual policy shape (migration 004, "2. teams" section) was read
+//     before writing any of this, not assumed from the roster_snapshots
+//     template — and it differs in two real ways:
+//
+//       - teams_auth_insert is `WITH CHECK (true)` — completely unscoped. Any
+//         authenticated user can insert ANY team row, no membership check at
+//         all. This is intentional: a brand-new team has no membership yet,
+//         so there is nothing to scope against. There is no "cross-team
+//         insert block" test to write here (T3/T3-control only), unlike
+//         roster_snapshots_auth_insert which DID scope to the caller's team.
+//       - teams_auth_delete requires role = 'admin' specifically — stricter
+//         than teams_auth_update's role IN ('admin','coach'). The shared
+//         coachA/coachB fixture identities are both role='coach', so they
+//         can prove the admin-only restriction blocks a coach (T7), but
+//         proving an admin CAN delete needs a real admin identity — see
+//         seedAdminDeleteFixture() in seed.js, used only by T7-control.
+//
+//     No trigger complications found on this table: teams_updated_at just
+//     sets NEW.updated_at and returns — no cross-table DML, so no
+//     SECURITY DEFINER exposure like roster_snapshots' prune trigger had
+//     (checked explicitly, not assumed, given what that check found there).
+// ═════════════════════════════════════════════════════════════════════════════
+describe('T — teams read isolation (SELECT)', () => {
+
+  // Mirrors S1b/RS1. No anon policy exists on teams at all.
+  test('T1: anon CANNOT read teams', async () => {
+    const res = await anon.from('teams').select('id, name').eq('id', TEAM_A);
+    assert.ok(
+      !returnedRows(res),
+      'EXPOSURE: anon read a teams row. No anon SELECT policy should exist on this table.'
+    );
+  });
+
+  // Mirrors S3/RS2. teams_auth_select scopes to the caller's own team_id via
+  // team_memberships — coach A must not see team B's row.
+  test('T2: coach A CANNOT read team B', async () => {
+    const res = await coachA.from('teams').select('id, name').eq('id', TEAM_B);
+    assert.ok(
+      !returnedRows(res),
+      'EXPOSURE: coach A read team B\'s teams row. Cross-team isolation absent on this table.'
+    );
+  });
+
+  // Mirrors S3-control/RS2-control. Proves teams_auth_select grants access
+  // rather than blanket-denying every authenticated caller.
+  test('T2-control: coach A CAN read own team A', async () => {
+    const res = await coachA.from('teams').select('id, name').eq('id', TEAM_A);
+    assert.equal(res.error, null, 'coach must be able to read their own team');
+    assert.equal(res.data.length, 1, 'coach A must see team A');
+  });
+
+});
+
+describe('T — teams write isolation (INSERT)', () => {
+
+  // No anon policy exists for INSERT either.
+  test('T3: anon CANNOT insert into teams', async () => {
+    const res = await anon.from('teams').insert({
+      id: 'zzz-rls-test-anon-insert', name: 'HACKED', age_group: '8U', year: 2026, sport: 'baseball',
+    }).select();
+    assert.ok(
+      isWriteBlocked(res) || !returnedRows(res),
+      'EXPOSURE: anon inserted into teams. Write protection absent on this table.'
+    );
+  });
+
+  // teams_auth_insert is WITH CHECK (true) — deliberately unscoped, since a
+  // brand-new team has no membership row to check against yet. This proves
+  // that unconditional grant actually works for a real authenticated user,
+  // not just that unauthenticated inserts are blocked (T3 alone could pass
+  // even if EVERY insert failed, authenticated included — same gap RS5
+  // caught on roster_snapshots).
+  test('T3-control: authenticated coach CAN insert a new team (unscoped by design)', async () => {
+    const res = await coachA.from('teams').insert({
+      id: TEAM_D, name: 'ZZZ RLS Test D (insert control)', age_group: '8U', year: 2026, sport: 'baseball',
+    }).select();
+    assert.equal(res.error, null, 'an authenticated user must be able to create a new team');
+    assert.equal(res.data.length, 1, 'the insert must return the new row');
+    // Clean up immediately rather than relying solely on the end-of-suite
+    // teardown() — keeps this test's side effect from lingering across the
+    // rest of the run.
+    if (res.data?.[0]?.id) {
+      await adminClient().from('teams').delete().eq('id', res.data[0].id);
+    }
+  });
+
+});
+
+describe('T — teams write isolation (UPDATE)', () => {
+
+  test('T4: anon CANNOT update teams', async () => {
+    const res = await anon.from('teams').update({ name: 'HACKED' }).eq('id', TEAM_A).select();
+    assert.ok(
+      isWriteBlocked(res) || !returnedRows(res),
+      'EXPOSURE: anon updated a teams row. Write protection absent on this table.'
+    );
+  });
+
+  // teams_auth_update's EXISTS clause scopes to the caller's own team_id —
+  // coach A (role='coach', which IS in the allowed 'admin','coach' set for
+  // UPDATE) must still be blocked from updating team B specifically.
+  test('T5: coach A CANNOT update team B', async () => {
+    const res = await coachA.from('teams').update({ name: 'HACKED BY COACH A' }).eq('id', TEAM_B).select();
+    assert.ok(
+      isWriteBlocked(res) || !returnedRows(res),
+      'EXPOSURE: coach A updated team B. Cross-team write isolation absent on this table.'
+    );
+  });
+
+  // Positive control: role='coach' is sufficient for UPDATE (unlike DELETE,
+  // below, which requires role='admin' specifically) — proves the policy
+  // grants access for the caller's OWN team, not blanket-denying every write.
+  test('T5-control: coach A CAN update own team A', async () => {
+    const res = await coachA.from('teams').update({ name: 'ZZZ RLS Test A (updated)' }).eq('id', TEAM_A).select();
+    assert.equal(res.error, null, 'a coach-role member must be able to update their own team');
+    assert.equal(res.data.length, 1, 'the update must return the affected row');
+    // Restore the name so later tests (T2-control's implicit assumptions,
+    // any re-run) see the fixture's original state rather than this test's
+    // leftover edit.
+    await adminClient().from('teams').update({ name: 'ZZZ RLS Test A' }).eq('id', TEAM_A);
+  });
+
+});
+
+describe('T — teams write isolation (DELETE)', () => {
+
+  test('T6: anon CANNOT delete teams', async () => {
+    // #380: anon KEEPS its DELETE grant on teams (deliberate — see S4b's
+    // header). So unlike T3/T4's anon cases, a rejection here MUST come from
+    // RLS (no matching policy), not a grant-level 42501 — this is the
+    // closest analog on this table to the roster_snapshots trigger bug: a
+    // control that is only as strong as the RLS policy actually is, because
+    // the grant alone would allow it.
+    const res = await anon.from('teams').delete().eq('id', TEAM_A).select();
+    assert.ok(
+      isWriteBlocked(res) || !returnedRows(res),
+      'EXPOSURE: anon deleted a teams row. RLS did not block a DELETE the grant still allows (#380).'
+    );
+  });
+
+  // teams_auth_delete requires role = 'admin' specifically. Coach A holds
+  // role='coach' (sufficient for UPDATE, above) but must NOT be able to
+  // delete their own team — proves DELETE's stricter role check, distinct
+  // from UPDATE's, is actually enforced and not just documented.
+  test('T7: coach A (role=coach, not admin) CANNOT delete own team A', async () => {
+    const res = await coachA.from('teams').delete().eq('id', TEAM_A).select();
+    assert.ok(
+      isWriteBlocked(res) || !returnedRows(res),
+      'EXPOSURE: a coach-role member deleted their own team. DELETE must require role=admin, not just admin/coach.'
+    );
+  });
+
+  // Positive control: a REAL admin-role member CAN delete their own team.
+  // Without this, T6/T7 alone could pass even if DELETE were broken for
+  // every role including admin — the same blind spot RS5 exposed on
+  // roster_snapshots. Self-contained: seedAdminDeleteFixture() creates a
+  // throwaway team + admin membership that only this test touches; the
+  // DELETE assertion below IS the cleanup for the happy path, with
+  // teardown() as the backstop if this test fails first.
+  test('T7-control: admin-role member CAN delete their own team', async () => {
+    const { teamId, adminEmail } = await seedAdminDeleteFixture();
+    const admin = await authedClient(adminEmail);
+
+    const res = await admin.from('teams').delete().eq('id', teamId).select();
+    assert.equal(res.error, null, 'an admin-role member must be able to delete their own team');
+    assert.equal(res.data.length, 1, 'the delete must return the removed row');
   });
 
 });
