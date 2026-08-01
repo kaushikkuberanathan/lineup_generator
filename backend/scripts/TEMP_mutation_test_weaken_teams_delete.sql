@@ -1,5 +1,13 @@
 -- TEMPORARY MUTATION-TEST FILE — DO NOT MERGE, DO NOT NUMBER AS A REAL MIGRATION
 --
+-- Deliberately lives in backend/scripts/, NOT backend/migrations/ — that
+-- directory is the real numbered-migration tree, and a TEMP_-prefixed file
+-- sitting inside it is still a landmine for anyone who globs the directory
+-- later (exactly the class of migration-tree confusion #411 already found
+-- once in this repo). apply-rls-bootstrap.sh references this file by its
+-- full path, same as any real migration in its FILES array — but the path
+-- itself keeps it out of the tree that matters.
+--
 -- Exists only to prove T7 (backend/src/__tests__/rls/policies.test.js)
 -- actually detects a real teams_auth_delete regression, not just a fixture
 -- issue. Widens the DELETE role check from role = 'admin' to
