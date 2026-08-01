@@ -144,8 +144,20 @@ app.get('/ping', function(req, res) {
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/ops', opsRouter);
 app.use('/api/v1/teams', teamDataRouter);
-app.use('/api/v1', adminRouter);
+// feedbackRouter MUST mount before adminRouter (Story 99 closure, 2026-07-31).
+// Both share the /api/v1 base. adminRouter has an unconditional, path-agnostic
+// router.use(requireAuth, requireAdmin) gate (admin.js:172) that runs for ANY
+// request reaching that mount point, whether or not a route inside adminRouter
+// itself matches the path (documented in backend/CLAUDE.md's admin routes
+// section as "it 401s any unmatched path under the router too"). With
+// adminRouter mounted first, every POST /api/v1/feedback request hit that gate
+// before ever reaching feedback.js's own route, and requireAdmin 403'd any
+// non-admin coach — the feedback feature was only reachable by the one admin
+// account. feedbackRouter has no such catch-all, so mounting it first lets its
+// one specific route (/feedback) claim that exact path; every other path still
+// falls through to adminRouter exactly as before. See feedback.test.js FB-7.
 app.use('/api/v1', feedbackRouter);
+app.use('/api/v1', adminRouter);
 // Ops/data-protection routes — localhost or X-Admin-Key restricted
 // legacy mount — deprecate after /api/v1/teams cutover is confirmed
 app.use('/api/teams', teamDataRouter);
