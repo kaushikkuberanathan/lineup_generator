@@ -66,12 +66,6 @@ FILES=(
   "backend/migrations/015_roster_wipe_db_guard.sql"
   "backend/migrations/016_profile_name_from_metadata.sql"
   "backend/migrations/017_fix_prune_roster_snapshots_security_definer.sql"
-  # Deliberately NOT under backend/migrations/ despite running in this same
-  # sequence — that directory is the real numbered-migration tree (see
-  # backend/CLAUDE.md's #411 numeric-collision warnings on exactly this
-  # class of confusion). This line + the file it points at are reverted
-  # together before this throwaway branch closes; never merged.
-  "backend/scripts/TEMP_mutation_test_weaken_teams_delete.sql"
 )
 # 005, 006, 007, 008, 009, 011, 012 are deliberately NOT here — see WHY THIS
 # EXISTS above. schema.sql's 2026-07-13 capture already contains their effects.
