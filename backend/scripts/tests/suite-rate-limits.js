@@ -47,34 +47,26 @@ async function run(test, BASE_URL, state) {
     };
   });
 
-  // RATE-01b: was a permanent [SKIPPED] stub — "tests share the CI runner IP
-  // pool" (ROADMAP Story 26). loginLimiter is now email-keyed with a fresh
-  // email per suite run (see TEST_EMAIL above), so that blocker no longer
-  // applies: this run's budget cannot collide with any other run's, past or
-  // concurrent. Uses its own dedicated email, separate from RATE-01a's, so
-  // this test's result never depends on RATE-01a having run first.
-  //
-  // max is 5 (backend/src/routes/auth.js loginLimiter) — the first 5 requests
-  // reach the route handler and get membership-check 403s (same as RATE-01a,
-  // and each one writes an access_denied row to auth_events, exactly as
-  // RATE-01a already does today); the 6th is stopped by the rate-limit
-  // middleware itself before reaching the handler, so it does not.
+  // RATE-01b: [SKIPPED] — not a flaky-test problem, a suite-scope one. This
+  // integration suite's CI job ("Backend Integration Tests, CI_SAFE prod
+  // read-only" — see .github/workflows/ci.yml) runs against the ALREADY
+  // DEPLOYED prod Render backend, not this branch's code. The email-keying
+  // fix (Story 26/99) this test wants to assert lives only in this PR until
+  // it merges to develop, promotes to main, and Render redeploys — so this
+  // test would fail on every PR that ships the fix itself, then only start
+  // passing after a deploy this suite has no way to wait for. First attempt
+  // at un-skipping this (2026-07-31) confirmed exactly that failure mode:
+  // ran green in backend-unit (hermetic, actual code) but red here against
+  // still-IP-keyed prod. Real RED→GREEN proof for the fix lives in
+  // backend/src/__tests__/loginLimiter.test.js, which exercises the actual
+  // route code in-process via supertest — not the deployed snapshot. Revisit
+  // un-skipping this once the email-keying fix has been live in prod for a
+  // full release cycle.
   await test('RATE-01b', 'Magic link: 6th rapid attempt within the 5-request budget → 429 from rate limiter', async () => {
-    const rateLimitEmail = `ratelimit-suite-b-${process.pid}-${Date.now()}@test.com`;
-    const results = [];
-    for (let i = 0; i < 6; i++) {
-      const res = await post(BASE_URL, '/api/v1/auth/magic-link', {
-        email: rateLimitEmail, teamId: TEAM_ID, deviceContext: DEVICE,
-      });
-      results.push(res.status);
-    }
-    const firstFive = results.slice(0, 5);
-    const sixth = results[5];
-    const firstFiveOk = firstFive.every((s) => s === 403);
     return {
-      pass: firstFiveOk && sixth === 429,
-      expected: '[403,403,403,403,403,429]',
-      actual: `[${results.join(',')}]`,
+      pass: true,
+      expected: 'N/A',
+      actual: 'SKIPPED — asserts not-yet-deployed behavior; this suite targets already-deployed prod (see comment above); see loginLimiter.test.js for real RED→GREEN coverage',
     };
   });
 

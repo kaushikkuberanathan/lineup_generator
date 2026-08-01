@@ -3695,9 +3695,15 @@ Closure pass (2026-07-31):
   /magic-link now generates a unique email per run. RED→GREEN proven
   via mutation test (loginLimiter.test.js, 3 specs) — reverting the fix
   makes exactly 2 of the 3 fail, the 2 that probe the actual bug.
-  RATE-01b (integration suite) converted from a permanent [SKIPPED]
-  stub to a real assertion (6 rapid requests → first 5 get 403, 6th
-  gets 429) now that unique-per-run emails make it safe to run for real.
+  RATE-01b (integration suite) — first un-skipped to a real assertion,
+  then reverted with an accurate skip reason after CI proved it
+  unprovable in that suite: the "Backend Integration Tests (CI_SAFE,
+  prod read-only)" job runs against the already-deployed prod backend,
+  not this PR's code, so an assertion about the just-shipped email-
+  keying fix cannot pass there until a full deploy cycle after merge.
+  Real RED→GREEN proof lives in loginLimiter.test.js (hermetic, tests
+  actual code). Revisit RATE-01b once the fix has been live in prod for
+  a release.
 - Corrected scope: the original plan's tier (a)/(b) ("game-mode/
   share-link routes") don't exist — both features write directly from
   frontend to Supabase (RLS-enforced), never through a backend route.
