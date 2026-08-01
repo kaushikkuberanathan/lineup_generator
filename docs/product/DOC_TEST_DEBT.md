@@ -190,7 +190,7 @@
 | **Proposed test** | Add S3/S4a-equivalent scenarios for `teams` and `roster_snapshots` to `policies.test.js`, reusing the existing two-team/two-coach fixture in `seed.js`. Also directly exercise the `004_rls_fixes.sql:131` cast-ambiguity comment ("teams.id may be uuid or text depending on team age — cast to text for join"). Prioritize `roster_snapshots` first (exposes children's names via its sibling view). |
 | **Opened** | 2026-08-01 |
 | **Age** | 0 days |
-| **Target** | Before next RLS-adjacent migration; recommend gating the `rls` CI job's promotion to required (see D-S415) on this closing first |
+| **Target** | Before next RLS-adjacent migration. Note: D-S415 (the `rls` CI required-check promotion) was resolved 2026-08-01 *before* this item, not after — KK deliberately reversed the original sequencing recommendation so these new scenarios land already protected by the gate. |
 | **Issue** | [#477](https://github.com/kaushikkuberanathan/lineup_generator/issues/477) |
 
 ### 🟠 P1 — D-S348b: Migration 007's admin-panel recursion fix has no regression test (Test-Health Survey Pass 3)
@@ -414,15 +414,6 @@
 - **Source:** Audited during v2.5.1 deploy, April 27, 2026.
 - **Partial mitigation (Story 99, PR #272):** the new `backend-unit` CI job runs in-process supertest tests with no `BACKEND_URL` / prod dependency — admin auth-rejection coverage is now prod-URL-free. The hardcoded-prod-URL concern remains only for the live integration `backend` job and the smoke job.
 
-### 🟠 P1 — D-S415: `rls` CI job is not a required status check (Test-Health Survey Pass 3)
-
-- **What:** The `rls` job in `.github/workflows/ci.yml` (real ephemeral-Postgres exercise of `backend/src/__tests__/rls/policies.test.js`) runs on every push/PR to `main`/`develop`, but per its own inline comment is "NOT yet a required status check — see #415's own 'prove stability across several consecutive runs' step. Promote it once that's done." A red result today does not block merge.
-- **Risk if unfixed:** The otherwise well-engineered RLS suite (real Postgres, correct grant/RLS/empty-table distinction, hard prod-rejection fence) is advisory only. A regression could go red on `main` and nobody is forced to look before shipping.
-- **Proposed action:** Once #415's stability-proof step is satisfied, promote `rls` to a required status check alongside `backend-unit` and `frontend`.
-- **Target:** v2.9.x — recommend sequencing after D-S348a (`teams`/`roster_snapshots` coverage) closes, so the gate is protecting complete coverage when it goes required.
-- **Source:** Test-Health Survey Pass 3, 2026-08-01.
-- **Issue:** [#480](https://github.com/kaushikkuberanathan/lineup_generator/issues/480) — cheap process fix; do right after coverage (#477) closes, don't let it get buried under the coverage-writing work.
-
 ### 🟡 P2 — `snack_duty` column drop blocked on codebase audit
 
 - **What:** Column verified present in Supabase as jsonb on April 27, 2026 (logged in MASTER_DEV_REFERENCE.md as outstanding manual action).
@@ -436,9 +427,10 @@
 
 *(Items move here once shipped. Format: date, version, original description summary, resolution commit.)*
 
-### August 1, 2026 — Test-Health Survey Pass 3 (#476)
+### August 1, 2026 — Test-Health Survey Pass 3 (#476, #480)
 
 - ✅ **D-S411b — `docs/db/PROD_SCHEMA_BASELINE.md` stale, unflagged, contradicted its own designated successor doc** — Resolved same-day. Staleness banners added to `docs/db/PROD_SCHEMA_BASELINE.md` (RLS STATE section) and `PROD_SCHEMA_BASELINE_ADDENDUM_1.md` (doc-level, covering every RLS-off restatement in the file), each citing a direct read-only prod probe (2026-08-01): anon SELECT against prod `teams`/`roster_snapshots` returned zero rows with no error (the RLS-filtered signature), confirming the "RLS OFF, full CRUD+TRUNCATE" claim in both docs is stale and the WS-3 lockdown (v2.6.0) is actually live. Issue: [#476](https://github.com/kaushikkuberanathan/lineup_generator/issues/476).
+- ✅ **D-S415 — `rls` CI job promoted to a required status check** — Resolved same-day, deliberately sequenced *before* D-S348a's coverage work (#477), reversing this ledger's original recommendation: KK's reasoning was that gating first means #477's new test scenarios land already protected by the required check, rather than being added to a suite that still wasn't gating anything. Verified #415's own "stable across several consecutive runs" precondition directly via the GitHub Actions API before promoting: 13 consecutive green runs of the `rls` job on `develop` since it was added to `ci.yml` (2026-07-31 20:13 onward, commit `1e52f0b`), zero failures. `RLS Policy Suite (ephemeral)` added to `required_status_checks.contexts` on both `main` and `develop` branch protection (alongside the existing `Frontend Tests (Vitest)` and `Backend Integration Tests (CI_SAFE, prod read-only)` — neither removed or altered). Stale "NOT yet a required status check" comment in `.github/workflows/ci.yml` corrected. Issue: [#480](https://github.com/kaushikkuberanathan/lineup_generator/issues/480), closed.
 
 ### June 12, 2026 — Story 99 Phase 2 tranche 2 (#252)
 
@@ -474,11 +466,11 @@
 | Priority | Test Gaps | Doc Gaps | Process Gaps | Total |
 |---|---|---|---|---|
 | 🔴 P0 | 3 | 0 | 0 | **3** |
-| 🟠 P1 | 6 | 2 | 2 | **10** |
+| 🟠 P1 | 6 | 2 | 1 | **9** |
 | 🟡 P2 | 7 | 4 | 3 | **14** |
-| **Total** | **16** | **6** | **5** | **27** |
+| **Total** | **16** | **6** | **4** | **26** |
 
-*(D-S411b resolved same-day 2026-08-01 — see Resolved section — so it no longer counts in Open. D-S348a and D-S348b/D-S355/D-S415/D-S428b/D-S348c remain open, now filed as issues #477–#482.)*
+*(D-S411b and D-S415 both resolved same-day 2026-08-01 — see Resolved section — so neither counts in Open anymore. D-S348a, D-S348b, D-S355, D-S428b, D-S348c remain open, filed as issues #477–#479, #481–#482.)*
 
 **Age distribution:**
 - 0–30 days: 7 (all opened 2026-08-01 — Test-Health Survey Passes 3 & 4)
@@ -601,4 +593,5 @@
   - Dashboard: Test gaps 11 → 16, Doc gaps 6 → 7 → 6 (net, after same-day resolution), Process gaps 4 → 5. Total open 21 → 27. P0 total 2 → 3.
   - Age distribution not fully recomputed this pass (see dashboard note) — flagged as drift for the next full Audit Cadence sweep, consistent with the v2.13 precedent of flagging rather than guessing.
   - **Follow-up same day (2026-08-01):** KK directed running #428's read-only `pg_policies` ground-truth check before filing anything. No Supabase MCP auth or direct Postgres connection was available in-session, so a substitute read-only prod probe was run instead (`backend/spike-428-teams-roster-probe.js`, gitignored, mirrors the existing `spike-prod-authrole.js`/`spike-grants.js` convention): anon SELECT against prod `teams`/`roster_snapshots` returned `EMPTY-NO-ERROR` (RLS-filtered, not exposure) — reads confirmed clean. The `rls_test_anon_grants` RPC (migration 013) does not exist in prod (`PGRST202`); the underlying REVOKE statements live in migration 004 (confirmed applied to prod for WS-3), so this reads as a verification-tooling gap, not a live incident — treated as "clean enough to proceed," not silently rounded to either extreme.
-  - Based on that result: **D-S411b resolved same-day** (see Resolved section, issue #476). Issues filed for the remaining six: D-S348a **#477** (teams/roster_snapshots coverage, `roster_snapshots` prioritized first), D-S348b **#478**, D-S355 **#479**, D-S415 **#480** (sequenced after #477 closes), D-S428b **#481** (folded under D003 umbrella, no separate urgency), D-S348c **#482**.
+  - Based on that result: **D-S411b resolved same-day** (see Resolved section, issue #476). Issues filed for the remaining six: D-S348a **#477** (teams/roster_snapshots coverage, `roster_snapshots` prioritized first), D-S348b **#478**, D-S355 **#479**, D-S415 **#480**, D-S428b **#481** (folded under D003 umbrella, no separate urgency), D-S348c **#482**.
+  - **Second follow-up same day (2026-08-01):** KK deliberately reversed this ledger's original sequencing and asked for D-S415 (#480) done *before* D-S348a's coverage work (#477), reasoning that gating first means #477's new tests land already protected rather than added to a still-non-gating suite. Verified #415's "stable across several consecutive runs" precondition via the GitHub Actions API (13/13 green `rls` runs on `develop` since the job was added) before promoting — not assumed. `RLS Policy Suite (ephemeral)` added to required status checks on both `main` and `develop`; stale ci.yml comment corrected; **D-S415 resolved same-day**, issue #480 closed. Dashboard: Process gaps 5 → 4, P1 total 10 → 9, overall total 27 → 26.

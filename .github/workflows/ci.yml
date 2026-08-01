@@ -196,8 +196,10 @@ jobs:
   # top, via backend/scripts/apply-rls-bootstrap.sh —
   # see that script's header for the full reasoning.
   #
-  # NOT yet a required status check — see #415's own "prove stability across
-  # several consecutive runs" step. Promote it once that's done.
+  # PROMOTED to a required status check 2026-08-01 (#415, #480) on both `main`
+  # and `develop` — 13 consecutive green runs on develop since the job was
+  # added (2026-07-31 20:13 onward) satisfied #415's stability bar. A red
+  # result now blocks merge, same as `frontend` and `backend`.
 
   rls:
     name: RLS Policy Suite (ephemeral)
