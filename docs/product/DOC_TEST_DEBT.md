@@ -57,7 +57,7 @@
 | **Risk if unfixed** | Silent regression breaks the #2 Strategic North Star ("Game Mode dugout-ready under pressure"). |
 | **Proposed test** | `frontend/src/tests/gameMode.test.js` — render GameModeScreen with fixture lineup, simulate inning advance, simulate QuickSwap tap, assert state transitions and candidate filtering (including absent-player exclusion). |
 | **Opened** | 2026-04-17 |
-| **Age** | 43 days |
+| **Age** | 106 days (corrected 2026-08-01 — Test-Health Survey Pass 4; prior entries carried a stale 43-day figure last touched at v2.5.5). Re-verified against current source: `GameModeScreen.jsx` is still untested and is confirmed still reachable — not dead code — via 3 quick-action call sites in `App.jsx` (`setGameModeActive(true)`) that bypass the DugoutView tab entirely. |
 | **Target** | v2.6.x |
 
 ### 🟠 P1 — Live Scoring Scorer-Lock Regression
@@ -179,6 +179,71 @@
 | **Opened** | 2026-06-15 |
 | **Age** | 0 days |
 | **Target** | v2.6.x |
+
+### 🔴 P0 — D-S348a: `teams` and `roster_snapshots` have zero RLS test coverage (Test-Health Survey Pass 3)
+
+| | |
+|---|---|
+| **Area** | RLS / Security — `backend/src/__tests__/rls/policies.test.js` |
+| **Description** | The dedicated RLS suite's 9 scenarios (S1/S3/S4/S6) only exercise `team_data` and `share_links` through a real `anon`/`authenticated` client. `teams` and `roster_snapshots` — two of the three tables originally exposed by the #342 incident (RLS fully off for months) — have **no scenario that queries them as anon or as a cross-team coach**. S4b's grant-introspection RPC checks TRUNCATE/DELETE grants on all three tables generically, but nothing proves the SELECT/INSERT/UPDATE policies defined in `backend/migrations/004_rls_fixes.sql` for `teams_auth_*` and `roster_snapshots_auth_*` actually behave as written. `roster_snapshots` is not low-stakes — per `docs/db/PROD_SCHEMA_BASELINE_ADDENDUM_1.md`, its sibling view exposes real roster contents (children's names). |
+| **Risk if unfixed** | If `roster_snapshots`'s lockdown didn't land the same way `team_data`'s did, a cross-team coach (or anon) could read another team's roster history and nothing in CI would ever go red to say so — this is exactly the class of exposure the suite exists to catch, just on the two tables it doesn't yet test. |
+| **Proposed test** | Add S3/S4a-equivalent scenarios for `teams` and `roster_snapshots` to `policies.test.js`, reusing the existing two-team/two-coach fixture in `seed.js`. Also directly exercise the `004_rls_fixes.sql:131` cast-ambiguity comment ("teams.id may be uuid or text depending on team age — cast to text for join"). Prioritize `roster_snapshots` first (exposes children's names via its sibling view). |
+| **Opened** | 2026-08-01 |
+| **Age** | 0 days |
+| **Target** | Before next RLS-adjacent migration; recommend gating the `rls` CI job's promotion to required (see D-S415) on this closing first |
+| **Issue** | [#477](https://github.com/kaushikkuberanathan/lineup_generator/issues/477) |
+
+### 🟠 P1 — D-S348b: Migration 007's admin-panel recursion fix has no regression test (Test-Health Survey Pass 3)
+
+| | |
+|---|---|
+| **Area** | RLS / Security — `team_memberships`, `access_requests`, `feedback` policies |
+| **Description** | `backend/migrations/007_p1_fix_recursive_rls_policy.sql`'s own header states the original recursive-policy bug was found "only by KK actually logging in to the admin panel for the first time" and explicitly calls out "nothing in any test suite exercises RLS as an authenticated user" as the root cause. `policies.test.js` still does not test `team_memberships`, `access_requests`, or `feedback` policies at all — no scenario touches `is_active_admin()`, `user_sees_own_membership`, or `admin_manages_memberships`. |
+| **Risk if unfixed** | If a future edit reintroduces an inline self-referential subquery on `team_memberships` (the exact regression 007 fixed), the admin panel silently denies real admins again — and per 007's own history, the only detection mechanism today is a human noticing during manual login, not CI. |
+| **Proposed test** | Add an admin-authenticated scenario to `policies.test.js` (extend `seed.js`'s fixture with an admin-role membership) that reads `team_memberships` as that admin and asserts no recursion error. |
+| **Opened** | 2026-08-01 |
+| **Age** | 0 days |
+| **Target** | v2.9.x |
+| **Issue** | [#478](https://github.com/kaushikkuberanathan/lineup_generator/issues/478) |
+
+### 🟠 P1 — D-S355: Live-scoring anon-test backdoors (#355) have zero test surface (Test-Health Survey Pass 3)
+
+| | |
+|---|---|
+| **Area** | RLS / Security — `live_game_state`, `game_scoring_sessions`, `scoring_audit_log` |
+| **Description** | `docs/db/schema.sql` confirms four hardcoded anon-test backdoors (`at_bats_anon_test`, `game_state_anon_test`, `scorer_lock_anon_test`, `audit_log_anon_test`, scoped to the live Mud Hens team ID) plus `allow_scorer_writes USING(true) WITH CHECK(true)` policies, reproduced "because they are in prod, not because they are correct" — already tracked as a known vulnerability (#355) in ROADMAP.md/SECURITY_FRAMEWORK.md/AUTH_SECURITY_AUDIT_ROADMAP.md. Unlike #342 (committed RED-by-design as an executable spec for the fix), #355 has no equivalent test anywhere in the repo. |
+| **Risk if unfixed** | Purely a test-debt angle on an already-tracked vuln: whoever eventually fixes #355 has no test to turn green, and no automated way to confirm the fix landed or later regressed. |
+| **Proposed test** | Write the RED-by-design scenario now (mirroring S1b/S3/S4a's pattern) so #355's fix has an executable spec to turn green, per this suite's own established convention. |
+| **Opened** | 2026-08-01 |
+| **Age** | 0 days |
+| **Target** | Alongside whichever release fixes #355 — see AUTH_SECURITY_AUDIT_ROADMAP.md |
+| **Issue** | [#479](https://github.com/kaushikkuberanathan/lineup_generator/issues/479) |
+
+### 🟡 P2 — D-S348c: `access_requests`, `profiles`, `feedback`, `feature_flags` RLS policies untested (Test-Health Survey Pass 3)
+
+| | |
+|---|---|
+| **Area** | RLS / Security — defense-in-depth tables |
+| **Description** | `004_rls_fixes.sql` explicitly frames these tables as defense-in-depth (all writes go through backend routes using `supabaseAdmin`; RLS here is not the primary gate), so a coverage gap is lower risk than on `team_data`/`teams`/`roster_snapshots`. Still zero coverage in `policies.test.js`. |
+| **Risk if unfixed** | Low relative to the P0/P1 items above — the primary control (backend route auth) is separately covered by `backend/src/__tests__/admin.auth.test.js` etc. RLS here is a second line of defense that could silently stop working without anyone noticing. |
+| **Proposed test** | Opportunistic — add when touching these tables for other reasons, no dedicated sprint needed. |
+| **Opened** | 2026-08-01 |
+| **Age** | 0 days |
+| **Target** | Opportunistic, no version target |
+| **Issue** | [#482](https://github.com/kaushikkuberanathan/lineup_generator/issues/482) |
+
+### 🟠 P1 — D-S428b: `NoMembershipScreen` (Google sign-in gate-first routing) has zero tests (Test-Health Survey Pass 4)
+
+| | |
+|---|---|
+| **Area** | Auth — `frontend/src/components/Auth/NoMembershipScreen.jsx` |
+| **Description** | v2.7.0 shipped Google sign-in "gate-first — memberless sessions route to `NoMembershipScreen`." This is a real security/UX gate: a Google-authenticated user with no `team_memberships` row must never fall through to team data. No test file exists for this component. The existing umbrella item (D003, "Auth Flow End-to-End") predates the Google sign-in ship and doesn't name this specific gate-first invariant. |
+| **Risk if unfixed** | A refactor of the auth-hydration path in `useAuth.js` could accidentally treat an empty memberships array the same as a populated one, and a memberless Google sign-in could see a stale/cached team's data instead of `NoMembershipScreen`. Nothing would catch this today. |
+| **Proposed test** | `frontend/src/tests/noMembershipScreen.test.jsx` — mock `useAuth` to return a session with `memberships: []`, assert `NoMembershipScreen` renders and no team-data surface is reachable; assert the reverse (non-empty memberships) routes past it. |
+| **Opened** | 2026-08-01 |
+| **Age** | 0 days |
+| **Target** | v2.9.x |
+| **Issue** | [#481](https://github.com/kaushikkuberanathan/lineup_generator/issues/481) — filed as a standalone issue but folded under the existing D003 auth umbrella per KK's direction; no separate urgency |
 
 ### ✅ RESOLVED — D017: ScoreboardRow primitive has no test coverage
 
@@ -349,6 +414,15 @@
 - **Source:** Audited during v2.5.1 deploy, April 27, 2026.
 - **Partial mitigation (Story 99, PR #272):** the new `backend-unit` CI job runs in-process supertest tests with no `BACKEND_URL` / prod dependency — admin auth-rejection coverage is now prod-URL-free. The hardcoded-prod-URL concern remains only for the live integration `backend` job and the smoke job.
 
+### 🟠 P1 — D-S415: `rls` CI job is not a required status check (Test-Health Survey Pass 3)
+
+- **What:** The `rls` job in `.github/workflows/ci.yml` (real ephemeral-Postgres exercise of `backend/src/__tests__/rls/policies.test.js`) runs on every push/PR to `main`/`develop`, but per its own inline comment is "NOT yet a required status check — see #415's own 'prove stability across several consecutive runs' step. Promote it once that's done." A red result today does not block merge.
+- **Risk if unfixed:** The otherwise well-engineered RLS suite (real Postgres, correct grant/RLS/empty-table distinction, hard prod-rejection fence) is advisory only. A regression could go red on `main` and nobody is forced to look before shipping.
+- **Proposed action:** Once #415's stability-proof step is satisfied, promote `rls` to a required status check alongside `backend-unit` and `frontend`.
+- **Target:** v2.9.x — recommend sequencing after D-S348a (`teams`/`roster_snapshots` coverage) closes, so the gate is protecting complete coverage when it goes required.
+- **Source:** Test-Health Survey Pass 3, 2026-08-01.
+- **Issue:** [#480](https://github.com/kaushikkuberanathan/lineup_generator/issues/480) — cheap process fix; do right after coverage (#477) closes, don't let it get buried under the coverage-writing work.
+
 ### 🟡 P2 — `snack_duty` column drop blocked on codebase audit
 
 - **What:** Column verified present in Supabase as jsonb on April 27, 2026 (logged in MASTER_DEV_REFERENCE.md as outstanding manual action).
@@ -361,6 +435,10 @@
 ## Resolved
 
 *(Items move here once shipped. Format: date, version, original description summary, resolution commit.)*
+
+### August 1, 2026 — Test-Health Survey Pass 3 (#476)
+
+- ✅ **D-S411b — `docs/db/PROD_SCHEMA_BASELINE.md` stale, unflagged, contradicted its own designated successor doc** — Resolved same-day. Staleness banners added to `docs/db/PROD_SCHEMA_BASELINE.md` (RLS STATE section) and `PROD_SCHEMA_BASELINE_ADDENDUM_1.md` (doc-level, covering every RLS-off restatement in the file), each citing a direct read-only prod probe (2026-08-01): anon SELECT against prod `teams`/`roster_snapshots` returned zero rows with no error (the RLS-filtered signature), confirming the "RLS OFF, full CRUD+TRUNCATE" claim in both docs is stale and the WS-3 lockdown (v2.6.0) is actually live. Issue: [#476](https://github.com/kaushikkuberanathan/lineup_generator/issues/476).
 
 ### June 12, 2026 — Story 99 Phase 2 tranche 2 (#252)
 
@@ -395,18 +473,20 @@
 
 | Priority | Test Gaps | Doc Gaps | Process Gaps | Total |
 |---|---|---|---|---|
-| 🔴 P0 | 2 | 0 | 0 | **2** |
-| 🟠 P1 | 3 | 2 | 1 | **6** |
-| 🟡 P2 | 6 | 4 | 3 | **13** |
-| **Total** | **11** | **6** | **4** | **21** |
+| 🔴 P0 | 3 | 0 | 0 | **3** |
+| 🟠 P1 | 6 | 2 | 2 | **10** |
+| 🟡 P2 | 7 | 4 | 3 | **14** |
+| **Total** | **16** | **6** | **5** | **27** |
+
+*(D-S411b resolved same-day 2026-08-01 — see Resolved section — so it no longer counts in Open. D-S348a and D-S348b/D-S355/D-S415/D-S428b/D-S348c remain open, now filed as issues #477–#482.)*
 
 **Age distribution:**
-- 0–30 days: 4
-- 31–60 days: 17
-- 60+ days: 0
+- 0–30 days: 7 (all opened 2026-08-01 — Test-Health Survey Passes 3 & 4)
+- 31–90 days: not recomputed this pass — the previous 31–60 / 60+ buckets were already stale relative to today; several P0/P1 items opened 2026-04-17 are now ~106 days old (see the corrected age on the Game Mode Rendering + State item above as one example). Flagged for the next full audit sweep per Audit Cadence rather than guessed here.
+- 60+ days: not recomputed this pass (see above)
 
 **Ship blockers:**
-- Next minor (v2.6.0) — must resolve all P0 before bump
+- Next minor version bump — must resolve all P0 before bump (3 P0 items open: Share Link Payload Integrity, Game Mode Rendering + State, and D-S348a [teams/roster_snapshots RLS coverage, issue #477]. D-S411b resolved same-day, see Resolved section.)
 
 ---
 
@@ -513,3 +593,12 @@
   - New test file: `backend/src/__tests__/auth.happy.test.js` — 4 tests (AUTH-1–AUTH-4) covering the `request-access` (201/409) and `magic-link` (200/403) primary paths. Hermetic via shared-`supabaseAdmin` singleton patch (also intercepts `logAuthEvent`), `signInWithOtp` stub, and `global.fetch` stub for the Resend send. Closes the "auth happy-path" half of #252.
   - #252 coverage now complete: wipe-guard (tranche 1) + AI proxy + auth happy-path.
   - Backend unit suite: 29 → 39 (+10). Dashboard: P2 test gaps 7 → 6, total open 22 → 21.
+
+- **v2.18 — August 2026 (Test-Health Survey Passes 3 & 4)**
+  - Survey-only pass, no code changes — assessment logged per KK's explicit "assessment and review only, no implementation without approval" instruction.
+  - **Pass 3 (RLS/schema)** verdict: the dedicated RLS suite (`backend/src/__tests__/rls/policies.test.js`) is genuinely rigorous — real ephemeral Postgres, correct grant/RLS/empty-table distinction, unconditional prod-rejection fence — and does **not** repeat the Passes 1–2 fake-green pattern. Real gaps found instead: **D-S411b** (P0, new) — `docs/db/PROD_SCHEMA_BASELINE.md` is stale, unflagged, and contradicts its own designated successor doc, recreating the #342/#411 "acted on a description, not the database" failure class one document over; **D-S348a** (P0, new) — `teams` and `roster_snapshots` (2 of 3 tables originally exposed by #342) have zero anon/authenticated-client RLS test coverage; **D-S348b** (P1, new) — migration 007's admin-panel recursion fix has no regression test despite its own header requesting one; **D-S355** (P1, new) — the already-tracked #355 live-scoring anon-backdoors have no test surface to turn green when fixed; **D-S415** (P1, new, process) — the `rls` CI job isn't a required status check yet; **D-S348c** (P2, new) — `access_requests`/`profiles`/`feedback`/`feature_flags` RLS policies untested (lower risk, defense-in-depth only per `004_rls_fixes.sql`'s own framing).
+  - **Pass 4 (frontend screens/data)** verdict: confirmed all pre-existing P0/P1 DOC_TEST_DEBT items (Share Link Payload Integrity, Game Mode Rendering + State, Share-link routing render path) are still accurate against current source — no fake-green pattern found there either. One new item opened: **D-S428b** (P1, new) — `NoMembershipScreen` (Google sign-in gate-first routing, shipped v2.7.0) has zero tests and wasn't specifically named under the existing D003 auth umbrella. Corrected a stale age field on the Game Mode Rendering + State item (was showing 43 days from its v2.5.5 origin; actually 106 days).
+  - Dashboard: Test gaps 11 → 16, Doc gaps 6 → 7 → 6 (net, after same-day resolution), Process gaps 4 → 5. Total open 21 → 27. P0 total 2 → 3.
+  - Age distribution not fully recomputed this pass (see dashboard note) — flagged as drift for the next full Audit Cadence sweep, consistent with the v2.13 precedent of flagging rather than guessing.
+  - **Follow-up same day (2026-08-01):** KK directed running #428's read-only `pg_policies` ground-truth check before filing anything. No Supabase MCP auth or direct Postgres connection was available in-session, so a substitute read-only prod probe was run instead (`backend/spike-428-teams-roster-probe.js`, gitignored, mirrors the existing `spike-prod-authrole.js`/`spike-grants.js` convention): anon SELECT against prod `teams`/`roster_snapshots` returned `EMPTY-NO-ERROR` (RLS-filtered, not exposure) — reads confirmed clean. The `rls_test_anon_grants` RPC (migration 013) does not exist in prod (`PGRST202`); the underlying REVOKE statements live in migration 004 (confirmed applied to prod for WS-3), so this reads as a verification-tooling gap, not a live incident — treated as "clean enough to proceed," not silently rounded to either extreme.
+  - Based on that result: **D-S411b resolved same-day** (see Resolved section, issue #476). Issues filed for the remaining six: D-S348a **#477** (teams/roster_snapshots coverage, `roster_snapshots` prioritized first), D-S348b **#478**, D-S355 **#479**, D-S415 **#480** (sequenced after #477 closes), D-S428b **#481** (folded under D003 umbrella, no separate urgency), D-S348c **#482**.
