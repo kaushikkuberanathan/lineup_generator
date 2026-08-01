@@ -398,18 +398,33 @@ describe('T — teams write isolation (INSERT)', () => {
   // not just that unauthenticated inserts are blocked (T3 alone could pass
   // even if EVERY insert failed, authenticated included — same gap RS5
   // caught on roster_snapshots).
+  //
+  // Deliberately NOT chaining .select() here. A first attempt did, and it
+  // failed with "new row violates row-level security policy for table
+  // teams" — NOT a WITH CHECK failure (that clause is unconditionally
+  // true), but RETURNING's separate requirement that the inserted row also
+  // satisfy the table's SELECT policy. teams_auth_select requires an
+  // existing active team_memberships row, which a brand-new team doesn't
+  // have yet (nothing here creates one for the creator). Confirmed this is
+  // a test-design issue, not an app-facing bug: dbSaveTeams()
+  // (frontend/src/supabase.js) creates teams via a bare .upsert() with no
+  // .select() chained, so the real app never hits this RETURNING-vs-SELECT-
+  // policy interaction at all. Verifying success via error-is-null plus an
+  // admin-bypassed follow-up read is the correct match for actual usage.
   test('T3-control: authenticated coach CAN insert a new team (unscoped by design)', async () => {
     const res = await coachA.from('teams').insert({
       id: TEAM_D, name: 'ZZZ RLS Test D (insert control)', age_group: '8U', year: 2026, sport: 'baseball',
-    }).select();
+    });
     assert.equal(res.error, null, 'an authenticated user must be able to create a new team');
-    assert.equal(res.data.length, 1, 'the insert must return the new row');
+
+    const admin = adminClient();
+    const verify = await admin.from('teams').select('id').eq('id', TEAM_D);
+    assert.equal(verify.data?.length, 1, 'the row must actually exist (service-role bypasses RLS to confirm)');
+
     // Clean up immediately rather than relying solely on the end-of-suite
     // teardown() — keeps this test's side effect from lingering across the
     // rest of the run.
-    if (res.data?.[0]?.id) {
-      await adminClient().from('teams').delete().eq('id', res.data[0].id);
-    }
+    await admin.from('teams').delete().eq('id', TEAM_D);
   });
 
 });
