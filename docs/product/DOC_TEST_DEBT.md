@@ -342,6 +342,18 @@
 
 ## Open — Tooling / Process Gaps
 
+### 🟡 P2 — Confirm intentional default-branch=develop setting, reconcile with release docs
+
+| | |
+|---|---|
+| **Area** | Governance / repo settings |
+| **Description** | Discovered 2026-08-01 during a branch/issue-cleanup audit: this repo's GitHub default branch is `develop`, not `main`. That's why "Closes #N" auto-closed #252 and #476 on merge into `develop` tonight — GitHub's closing-keyword behavior triggers on whatever branch is configured as default. Root `CLAUDE.md`'s Branch Strategy describes `main` as "Production" and frames the whole Release Ritual around a `develop -> main` promotion, implying `main` is the conceptually primary branch — but whether `develop`-as-GitHub-default is intentional or a leftover has never been explicitly decided or documented. |
+| **Risk if unfixed** | Same category as tonight's `allow_auto_merge` and required-status-check changes: a repo setting that materially changes behavior (auto-close target, fresh-clone checkout, default PR base) sitting undocumented, waiting to be re-discovered as a surprise in a future session instead of a known, deliberate choice. |
+| **Proposed action** | Decide whether `develop` should stay the GitHub default or be switched to `main`. Whichever way, document the decision explicitly in `CLAUDE.md`'s Branch Strategy section. |
+| **Opened** | 2026-08-01 |
+| **Target** | Next session — flagged as a real item, not a footnote (KK's explicit instruction) |
+| **Issue** | [#488](https://github.com/kaushikkuberanathan/lineup_generator/issues/488) |
+
 ### 🟠 P1 — Auto-Staging Git Hook
 
 | | |
@@ -467,8 +479,10 @@
 |---|---|---|---|---|
 | 🔴 P0 | 3 | 0 | 0 | **3** |
 | 🟠 P1 | 6 | 2 | 1 | **9** |
-| 🟡 P2 | 7 | 4 | 3 | **14** |
-| **Total** | **16** | **6** | **4** | **26** |
+| 🟡 P2 | 7 | 4 | 4 | **15** |
+| **Total** | **16** | **6** | **5** | **27** |
+
+*(New 2026-08-01: default-branch=develop confirmation, #488 — the branch-cleanup audit's real cross-terminal finding, not a footnote.)*
 
 *(D-S411b and D-S415 both resolved same-day 2026-08-01 — see Resolved section — so neither counts in Open anymore. D-S348a, D-S348b, D-S355, D-S428b, D-S348c remain open, filed as issues #477–#479, #481–#482.)*
 
