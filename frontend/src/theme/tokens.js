@@ -23,6 +23,10 @@ export const tokens = {
       navy: '#0F1F3D',  // 63x — dominant header/nav/card bg
       gold: '#F5C842',  // 59x — primary accent, badges, CTAs
       red:  '#C8102E',  // 19x — brand red, jersey-style (intentionally ≠ status.error)
+
+      // ─── Story 110 (#296) — legacy C-object DIVERGENT/ORPHAN resolution ────
+      navyLight: '#1a3260',  // 5x App.jsx — header/nav gradient partner for brand.navy (was C.navyLight; ORPHAN, no prior token — differs from surface.chrome #1E3A5F, not a substitute)
+      redDark:   '#9b0c22',  // 3x App.jsx — primary-CTA gradient partner for brand.red (was C.redDark; ORPHAN, no prior token)
     },
 
     surface: {
@@ -41,6 +45,16 @@ export const tokens = {
       tertiary:  '#94A3B8',  // 58x — slate-400, placeholder/caption
       onDark:    '#FFFFFF',  // all #FFF on dark surfaces
       disabled:  '#9CA3AF',  // 13x — gray-400, disabled states
+
+      // Story 110 (#296) — 20x App.jsx (was C.text), DIVERGENT from text.primary (near-black
+      // vs navy — App.jsx root `color:` prop, i.e. the whole app's inherited default text
+      // color). Highest blast-radius key in the #296 batch.
+      // !! When this eventually migrates at the App.jsx call sites (a separate, later Story —
+      // #296 itself makes no App.jsx edits), do NOT assume "provably no-op" like the other 7
+      // resolutions in this batch. Run a full visual smoke pass across every screen before
+      // merging that migration — 20 call sites through CSS inheritance is exactly the shape
+      // of change a snapshot diff can miss.
+      ink: '#1a1a2e',
     },
 
     status: {
@@ -49,6 +63,10 @@ export const tokens = {
       error:   '#DC2626',  // 32x — Tailwind red-600, alert/error UI (intentionally ≠ brand.red)
       errorBg: '#FEE2E2',  // 6x — red-50, error chip/alert backgrounds
       info:    '#2563EB',  // 22x — Tailwind blue-600, informational UI
+
+      // ─── Story 110 (#296) — legacy C-object DIVERGENT/ORPHAN resolution ────
+      neutral: '#7f8c8d',  // 1x App.jsx — game-canceled status badge (was C.canceled; ORPHAN — text.tertiary #94A3B8 is a cooler, lighter slate, not a substitute)
+      ready:   '#2e7d32',  // 1x App.jsx — team-readiness "Ready" status badge (was C.greenField; DIVERGENT from field.grass #2d7a3a — near-identical hex but NOT field/SVG-domain; the real call site is a Home-screen status badge, not the diamond SVG, so field.grass would be a role-mismatch despite the close value; status.success #27AE60 is a distinct, brighter green, also not a substitute)
 
       // ─── Status surface tints (Story 88 — ValidationBanner family) ─────────
       successBg:        '#d1fae5',               // 1x ValidationBanner.jsx — green-100 card background
@@ -65,6 +83,9 @@ export const tokens = {
       subtle:  'rgba(15,31,61,0.08)',  // 23x — faint navy tint, card dividers on light surfaces
       default: '#E2E8F0',              // 14x — slate-200, standard dividers/outlines
       strong:  '#94A3B8',              // selective — visible borders, input outlines, focus rings
+
+      // Story 110 (#296) — legacy C-object DIVERGENT resolution
+      neutral: 'rgba(0,0,0,0.06)',  // 15x App.jsx — generic 1px divider/border (was C.border; DIVERGENT from border.subtle — black vs navy tint, plus differing opacity 0.06 vs 0.08)
     },
 
     // Pre-mixed rgba tints — directly usable in React inline styles without a helper.
@@ -82,6 +103,10 @@ export const tokens = {
       goldTint:   'rgba(245,200,66,0.12)',  // 9x — gold-tinted section backgrounds
       goldStrong: 'rgba(245,200,66,0.40)',  // 9x — gold wash for selected/active states
       backdrop:   'rgba(5,10,25,0.97)',     // — modal/bottom-sheet near-opaque scrim
+
+      // ─── Story 110 (#296) — legacy C-object DIVERGENT resolution ───────────
+      neutralWash: 'rgba(0,0,0,0.04)',  // 2x App.jsx — generic subtle divider wash (was C.subtleBorder; DIVERGENT from overlay.navyWash — same 0.04 opacity, black vs navy hue)
+      scrimLight:  'rgba(0,0,0,0.5)',   // 3x App.jsx — lighter full-screen modal backdrop (was C.overlayBg; DIVERGENT from overlay.backdrop — 0.5 vs 0.97 opacity, would double backdrop darkness if adopted)
 
       // ─── Brand/status alpha tints (Story 89 — OfflineIndicator family) ─────
       redFaint:   'rgba(200,16,46,0.15)',    // 1x OfflineIndicator.jsx — brand.red 0.15 (No Connection bg)
