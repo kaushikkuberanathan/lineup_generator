@@ -1,10 +1,13 @@
 -- Migration 017: pin prune_roster_snapshots() as SECURITY DEFINER
 --
--- NOT YET APPLIED TO DEV OR PROD as of authoring (2026-08-01). Written and
--- CI-validated against the ephemeral local stack (#415, #477); needs a
--- manual DEV-then-PROD run via the Supabase Dashboard SQL Editor before this
--- note can be updated to APPLIED, per this repo's DEV-first convention (see
--- migrations 005-016).
+-- APPLIED TO DEV: 2026-08-01 (psqvzppphdedqkpmarwx), via Supabase Dashboard
+-- SQL Editor - "Success. No rows returned." Verified by re-running
+-- `npm run test:rls` directly against DEV (not the ephemeral CI stack):
+-- 15 pass / 0 fail, RS5 included - confirms the fix holds against a real,
+-- persistent database, not just CI's throwaway Postgres instance.
+--
+-- NOT YET APPLIED TO PROD. Same DEV-first convention as migrations 005-016 -
+-- PROD is a deliberate, separate step, not bundled into this one.
 --
 -- ---------------------------------------------------------------------------
 -- WHY (#477 — discovered while writing roster_snapshots RLS test coverage)
