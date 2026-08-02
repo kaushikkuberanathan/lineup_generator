@@ -39,6 +39,30 @@ const ADMIN_RECURSION_EMAIL = 'zzz-rls-admin-recursion@dugout-rls-test.invalid';
 
 const SHARE_ID = 'zzzrls01';   // share_links.id is TEXT; prod ids are 8 hex chars
 
+// ─── D-S355 / #479 (LS scenarios) fixture constants ─────────────────────────
+// LS_BACKDOOR_TEAM_ID is the SECOND of the two hardcoded ids in the
+// *_anon_test backdoor policies (docs/db/schema.sql § 8: ANY(ARRAY[
+// '1774297491626', '9000000000001'])) — the "Demo All-Stars" fixture team
+// already named in docs/db/dev_rebuild.sql and docs/TROUBLESHOOTING.md. The
+// FIRST id, '1774297491626', is the real, live Mud Hens team — deliberately
+// never typed into test source here, even though clients.js's blast-radius
+// fence already makes this suite incapable of running against prod. Both ids
+// are equally exposed by the live policy; there is no reason to prefer the
+// real one when a second, already-public placeholder proves the identical
+// defect (same "no real names/ids beyond what's necessary" ethos as
+// FAKE_ROSTER above).
+const LS_BACKDOOR_TEAM_ID = '9000000000001';
+// Deliberately NOT in the backdoor's hardcoded array — proves
+// allow_scorer_writes (USING(true) WITH CHECK(true)) has NO team scoping at
+// all, which is broader than the four named *_anon_test backdoors.
+const LS_ARBITRARY_TEAM_ID = 'zzz-rls-test-ls-arbitrary';
+// Unique game_ids, not random — same "identifiable orphan" reasoning as the
+// fixed team ids above. Never delete LS_BACKDOOR_TEAM_ID rows by team_id: it
+// is a real fixture team that may hold legitimate rows on DEV outside this
+// suite's own game_ids.
+const LS_GAME_ID_BACKDOOR = 'zzz-rls-test-ls-backdoor-game';
+const LS_GAME_ID_ARBITRARY = 'zzz-rls-test-ls-arbitrary-game';
+
 const FAKE_ROSTER = [
   { id: 'p1', name: 'Test Player One',   number: '1' },
   { id: 'p2', name: 'Test Player Two',   number: '2' },
@@ -65,6 +89,17 @@ async function findUserByEmail(admin, email) {
 async function teardown() {
   const admin = adminClient();
   const teams = [TEAM_A, TEAM_B, TEAM_C, TEAM_D, TEAM_E];
+
+  // D-S355 / #479 (LS scenarios) crash backstop. Matched by game_id, NEVER by
+  // team_id — LS_BACKDOOR_TEAM_ID ('9000000000001') is a real fixture team
+  // that may hold legitimate rows on DEV outside this suite's own game_ids,
+  // and a team_id-scoped delete would risk wiping them. Each LS test also
+  // cleans up its own row inline (mirrors RS5/T5-control); this is only the
+  // safety net for a run that crashed before reaching that cleanup.
+  await admin.from('scoring_audit_log').delete().like('game_id', 'zzz-rls-test-ls-%');
+  await admin.from('at_bats').delete().like('game_id', 'zzz-rls-test-ls-%');
+  await admin.from('game_scoring_sessions').delete().like('game_id', 'zzz-rls-test-ls-%');
+  await admin.from('live_game_state').delete().like('game_id', 'zzz-rls-test-ls-%');
 
   await admin.from('share_links').delete().eq('id', SHARE_ID);
   await admin.from('team_data_history').delete().in('team_id', teams);
@@ -271,6 +306,10 @@ module.exports = {
   ADMIN_RECURSION_EMAIL,
   SHARE_ID,
   FAKE_ROSTER,
+  LS_BACKDOOR_TEAM_ID,
+  LS_ARBITRARY_TEAM_ID,
+  LS_GAME_ID_BACKDOOR,
+  LS_GAME_ID_ARBITRARY,
   seed,
   teardown,
   seedAdminDeleteFixture,

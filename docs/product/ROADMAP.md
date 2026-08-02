@@ -3996,6 +3996,76 @@ changes expected — this is coverage-only unless writing it surfaces a real
 bug, the same way feedback.test.js did for Story 99.
 
 ---
+### Story 113 (P2) - cream background token disposition (App.jsx var C gap) <!-- #496 -->
+Status: Open
+Discovered: 2026-08-02 - App.jsx color sweep scoping session
+Target: before any App.jsx region-slice migration starts
+Symptom: C.cream (#fdf6ec), the literal app-wide page background, was never
+audited by Story 109's disposition table - 19 of var C's 20 keys got a
+decision, cream did not. 5 call sites.
+Impact: The App.jsx color sweep can't claim "every var C key decided" until
+this closes. Low mechanical risk but it's the backdrop behind every screen.
+Root cause: Known - Story 109's original recon missed this one key.
+Proposed fix: Mint color.surface.cream (or similar), preserve current value
+exactly - same pattern as Story 110's 8 resolutions. surface.page is not
+close (cool vs warm cast); surface.tableHeader is value-close but wrong
+domain (table-header band, not page background) - noted for design input,
+not blocking the mint decision.
+
+---
+### Story 114 (P2) - text root-prop visual-smoke verification (App.jsx var C) <!-- #497 -->
+Status: Open
+Discovered: 2026-08-02 - App.jsx color sweep scoping session
+Target: before any App.jsx region-slice migration touches the root render
+Symptom: Story 110 already resolved text's token-layer decision (minted
+color.text.ink) - but confirmed 2026-08-02 that App.jsx's own root render
+node sets color:C.text directly (both the S.app style constant and the
+literal root <div> App's main render function returns), not just a leaf
+component. 20 call sites, all through inheritance from that root.
+Impact: A region slice's RED-GREEN snapshot only covers sites it explicitly
+touches - it would not catch a regression in some other, untouched region
+silently relying on inherited root color. Needs a full visual smoke pass
+across every screen, not a snapshot-diff assumption.
+Root cause: Known - documented as a risk in Story 110's own token comment;
+this story is the App.jsx call-site follow-through, not a new decision.
+Proposed fix: Confirm color.text.ink is still the right target (already
+preserves current value exactly - verification, not a new decision), do the
+full visual smoke pass, then the mechanical swap at 20 sites is identical
+to the other ADOPT keys.
+Update 2026-08-02: Step 1 (exhaustive structural search, both inheritance
+roots + all always-present chrome) and Step 2 (runtime getComputedStyle
+verification) both done - one genuine finding (SharedView line 1064-1065,
+confirmed at runtime to resolve to #1a1a2e / C.text exactly), every chrome
+item independently re-confirmed safe. Methodology closed; the 20+2-site
+App.jsx swap itself has not started (gated on the App.jsx unlock phrase).
+See DESIGN_AUDIT.md Story 114 evidence artifact for the full record.
+
+---
+### Story 116 (P2) - GameModeScreen/DugoutView region-slice coverage gap (App.jsx var C sweep) <!-- #503 -->
+Status: Open
+Discovered: 2026-08-02 - Story 114's exhaustive Step 1 structural search
+Target: resolve before the App.jsx color sweep can claim full coverage -
+not blocking any of the other region slices individually
+Symptom: GameModeScreen and the in-app DugoutView (App.jsx lines
+~7996-8039) render nested inside the same color:C.text root Story 114
+audited, but they're full-screen modes reached via navigation state, not
+tabs or modals - so they fell outside every one of the 7 originally-planned
+region slices' stated boundary without anyone deciding to exclude them.
+Impact: The var C sweep could ship "complete" across all 7 original slices
+while this surface's own inheritance risk was never checked by Story 114's
+methodology or any slice's.
+Root cause: Scope boundary gap - the region-slice plan followed App.jsx's
+tab structure; Game Mode isn't reached via a tab.
+Decided 2026-08-02: dedicated 8th region slice, sequenced last (not folded
+into slice 1 or slice 7 - see DESIGN_AUDIT.md §Recommended migration shape,
+item 8, for the full reasoning). Sequenced last because game-mode/ and
+ScoringMode/ are each their own Locked File requiring their own gate phrase
+in addition to App.jsx's, and this is the live game-day surface - proving
+the migration pattern on six lower-stakes slices first is the safer order.
+Proposed fix: When slice 8 starts, run Story 114's Step 1/2 methodology
+against GameModeScreen/DugoutView specifically, then the mechanical swap.
+
+---
 ### Automated Score Reporting (County Integration)
 **Status:** Architecture finalized, implementation pending
 **Trigger:** Coach taps "Report Score" on a completed game

@@ -156,19 +156,6 @@
 | **Age** | 0 days |
 | **Target** | v2.6.x |
 
-### 🟠 P1 — D-S355: Live-scoring anon-test backdoors (#355) have zero test surface (Test-Health Survey Pass 3)
-
-| | |
-|---|---|
-| **Area** | RLS / Security — `live_game_state`, `game_scoring_sessions`, `scoring_audit_log` |
-| **Description** | `docs/db/schema.sql` confirms four hardcoded anon-test backdoors (`at_bats_anon_test`, `game_state_anon_test`, `scorer_lock_anon_test`, `audit_log_anon_test`, scoped to the live Mud Hens team ID) plus `allow_scorer_writes USING(true) WITH CHECK(true)` policies, reproduced "because they are in prod, not because they are correct" — already tracked as a known vulnerability (#355) in ROADMAP.md/SECURITY_FRAMEWORK.md/AUTH_SECURITY_AUDIT_ROADMAP.md. Unlike #342 (committed RED-by-design as an executable spec for the fix), #355 has no equivalent test anywhere in the repo. |
-| **Risk if unfixed** | Purely a test-debt angle on an already-tracked vuln: whoever eventually fixes #355 has no test to turn green, and no automated way to confirm the fix landed or later regressed. |
-| **Proposed test** | Write the RED-by-design scenario now (mirroring S1b/S3/S4a's pattern) so #355's fix has an executable spec to turn green, per this suite's own established convention. |
-| **Opened** | 2026-08-01 |
-| **Age** | 0 days |
-| **Target** | Alongside whichever release fixes #355 — see AUTH_SECURITY_AUDIT_ROADMAP.md |
-| **Issue** | [#479](https://github.com/kaushikkuberanathan/lineup_generator/issues/479) |
-
 ### 🟡 P2 — D-S348c: `access_requests`, `profiles`, `feedback`, `feature_flags` RLS policies untested (Test-Health Survey Pass 3)
 
 | | |
@@ -393,6 +380,14 @@
 
 *(Items move here once shipped. Format: date, version, original description summary, resolution commit.)*
 
+### August 2, 2026 — D-S355 RED-by-design spec added (#479)
+
+- ✅ **D-S355 — Live-scoring anon-test backdoors (#355) had zero test surface** — Resolved as a test-debt item (the underlying #355 vulnerability itself is NOT fixed — see below). Added an `LS` describe block to `backend/src/__tests__/rls/policies.test.js` (LS1–LS7 + LS7-control, 8 scenarios) covering all four hardcoded `*_anon_test` backdoors (`at_bats_anon_test`, `game_state_anon_test`, `scorer_lock_anon_test`, `audit_log_anon_test`) plus the three `allow_scorer_writes USING(true) WITH CHECK(true)` catch-alls on `live_game_state`/`game_scoring_sessions`/`scoring_audit_log`, mirroring S1b/S3/S4a's established RED-by-design convention exactly. Uses `LS_BACKDOOR_TEAM_ID` ('9000000000001', the "Demo All-Stars" fixture team — the second of the two hardcoded ids in the backdoor array) rather than the real Mud Hens id, and `LS_ARBITRARY_TEAM_ID` to prove `allow_scorer_writes` has zero team scoping at all — strictly broader than the four named backdoors. LS7-control (an arbitrary team against `at_bats`) is the one scenario in the block expected to stay green, documenting that `at_bats` has no catch-all and so its exposure is narrower than the other three tables'. **7 of the 8 new scenarios (LS1–LS7) are red-by-design specs for a REAL, CONFIRMED-LIVE-IN-PROD vulnerability** — confirmed directly against `docs/db/schema.sql`'s own "captured from prod" header, not assumed. **CI-required-check tension surfaced and decided:** the `rls` job was promoted to a required status check the same release (#480); merging LS1–LS7 as permanently-failing tests would fail `rls` on every subsequent PR until #355 is actually fixed, blocking all merges. Escalated to KK (2026-08-02) rather than decided unilaterally — KK confirmed the vulnerability is genuinely live in prod but chose **not** to attempt an urgent same-night fix (the real fix requires wiring actual auth into the Live Scoring write path, a Phase-4C-scale change, not a quick patch like migration 017). Decision: LS1–LS7 are `{ skip: '#355 tracked, unfixed — see PR #506' }` so the `rls` required check stays green for everyone else's PRs; the executable spec stays visible in source (not deleted) for whoever eventually fixes #355 to un-skip and turn green. LS7-control is NOT skipped — it asserts already-secure behavior (`at_bats` has no catch-all) and stays green today. **#355 itself remains open and unfixed** — this entry closes only the test-debt gap, per its own original scope. Validated via `node --check` (syntax) and a live `node --test` run against an unreachable local endpoint with the correct `RLS_TEST_SUPABASE_*` env var names (structural correctness — node:test reports all 7 LS tests as genuinely `skipped` with the exact tracking reason shown, LS7-control fails identically to every other real test in the suite via the shared `before()` hook's network call, no reference/syntax errors) — full RLS-semantics validation still depends on CI's `rls` job (ephemeral Docker stack), unavailable in this sandbox. Issue: [#479](https://github.com/kaushikkuberanathan/lineup_generator/issues/479).
+
+### August 2, 2026 — dotenv self-promotional tip output suppressed (P3)
+
+- ✅ **P3 — `dotenv`'s self-promotional "tip" output not suppressed in RLS test client** — Added `quiet: true` to `clients.js:28`'s `dotenv.config({...})` call. Investigated as a potential security incident earlier the same session (a `vestauth.com` line in the random-tip output looked like a possible prompt-injection/phishing string targeting AI agents) — confirmed benign via `npm view dotenv@17.4.2` against the real npm registry: legitimate package, real maintainer (`motdotla`), no compromise, no typosquat, published 3 months prior. The string is static marketing copy baked into the official package's own "tips" array, not a dynamic or network-triggered payload. Fixed same-day per KK's direction once confirmed benign.
+
 ### August 2, 2026 — Both P0 ship-blockers closed (Share Link Payload Integrity + Game Mode Rendering + State)
 
 - ✅ **P0 — Game Mode Rendering + State** — `frontend/src/components/game-mode/GameModeScreen.test.jsx` (15 tests) and `frontend/src/components/game-mode/QuickSwap.test.jsx` (13 tests) added, 28 total. Covers: initial render + `initialInning` restore, Exit button, the defense/batting half-completion state machine (including the inning modal not opening until BOTH halves are marked done), the 200ms inning-advance transition, last-inning-exits-instead-of-advancing, QuickSwap open/close/swap wiring, the Out Tonight strip's absent-player visibility rules, and QuickSwap's candidate-list absent-player exclusion (including excluding the current occupant if they're marked absent). Genuine RED evidence surfaced while authoring, not synthetic: the `completeBothHalves()` test helper's assumed 2-click sequence was wrong (actual behavior needs 3 — the 2nd click reads the pre-click `bothHalvesDone` value and just re-calls `handleEndHalf()`), and an ambiguous `getByText('SS')` query collided between the header and an occupied position's badge — both caught the tests failing for a real reason before being fixed, satisfying the RED-checkpoint rule without needing a separate mutation pass. Re-verified 28/28 passing directly on this branch before writing this entry. Branch: `fix/game-mode-p0-coverage` (renamed from `fix/share-print-debt-stale`, which undersold what the branch now carries).
@@ -448,9 +443,11 @@
 | Priority | Test Gaps | Doc Gaps | Process Gaps | Total |
 |---|---|---|---|---|
 | 🔴 P0 | 0 | 0 | 0 | **0** |
-| 🟠 P1 | 5 | 2 | 0 | **7** |
-| 🟡 P2 | 7 | 4 | 5 | **16** |
-| **Total** | **12** | **6** | **5** | **23** |
+| 🟠 P1 | 5 | 2 | 3 | **10** |
+| 🟡 P2 | 8 | 5 | 7 | **20** |
+| **Total** | **13** | **7** | **10** | **30** |
+
+*(2026-08-02: recomputed by DIRECT COUNT of every `###` item actually present in each Open section, not by propagating prior arithmetic — this merge combined two branches that each edited this dashboard independently (see conflict-resolution note below), and direct counting is the only way to be sure the combined number is real rather than a doubled or dropped delta. This surfaced a genuine pre-existing drift, unrelated to tonight's work: Process Gaps had been under-counted for some time — 3 P1 items (Auto-Staging Git Hook, Windows Vitest pre-push hook OOM cascade, Box-score AI parser test coverage) and most of the 7 P2 process items were apparently never reflected in this table's counts, even though the items themselves were correctly listed in the Open section the whole time. Same failure class as D-S31 (FEATURE_MAP.md denominator drift) — a summary table silently diverging from the content it's supposed to summarize. Not fixed beyond correcting the count here; if a recurring drift-prevention mechanism is wanted, that's a new debt item, not something to silently add mid-merge.)*
 
 *(2026-08-02: both P0 items resolved — Game Mode Rendering + State and Share Link Payload Integrity, merged from sibling branches `fix/game-mode-p0-coverage` and `fix/share-link-payload-coverage` — see Resolved section. First time this ledger has shown zero open P0s since the 2026-04-17 seed.)*
 
@@ -458,12 +455,14 @@
 
 *(2026-08-02: new P2 process gap — share payload songs-map divergence + absent-player song leakage, #502 — surfaced during the Share Link Payload Integrity P0 extraction, flag-only per KK's instruction.)*
 
-*(2026-08-02: D-S348b — migration 007 admin-panel recursion regression test — resolved on a sibling branch, merged here; see Resolved section. P1 test gaps 6 → 5, test gaps total 13 → 12, P1 total 8 → 7, grand total 24 → 23.)*
+*(2026-08-02: D-S348b — migration 007 admin-panel recursion regression test — resolved on a sibling branch, merged here — AND D-S355 — live-scoring anon-backdoor RED-by-design spec (resolved as a test-debt item; #355 itself remains open, see the Resolved entry and the note below) — both resolved same day, both merges combined in this conflict resolution.)*
 
-*(D-S411b, D-S415, D-S348a, and D-S348b all resolved — see Resolved section — so none count in Open anymore (D-S348a and the other two same-day 2026-08-01; D-S348b 2026-08-02). D-S355, D-S428b, D-S348c remain open, filed as issues #479, #481–#482. New 2026-08-01: default-branch=develop confirmation, #488 — the branch-cleanup audit's real cross-terminal finding, not a footnote.)*
+*(D-S411b, D-S415, D-S348a, D-S348b, and D-S355 all resolved — see Resolved section — so none count in Open anymore (D-S348a and the other two same-day 2026-08-01; D-S348b and D-S355 both 2026-08-02). Remaining open P1 test gaps: Story 61 follow-up, Live Scoring Scorer-Lock Regression, Auth Flow End-to-End, Roster-Wipe Guard + Recovery Endpoint, D-S428b (issue #481). D-S348c (issue #482) remains the only named open P2. New 2026-08-01: default-branch=develop confirmation, #488 — the branch-cleanup audit's real cross-terminal finding, not a footnote.)*
+
+**Note on D-S355's resolution scope:** closing this debt item means "the executable spec now exists," NOT "the vulnerability is fixed." #355 itself is still open and live in prod, tracked in ROADMAP.md/SECURITY_FRAMEWORK.md/AUTH_SECURITY_AUDIT_ROADMAP.md — see the Resolved section entry for the full CI-required-check tension this surfaced and how it was resolved (skip-with-tracking, not a fix).
 
 **Age distribution:**
-- 0–30 days: 6 (all opened 2026-08-01 — Test-Health Survey Passes 3 & 4; D-S348b, opened 2026-08-01, resolved 2026-08-02 and moved to Resolved, no longer counted here)
+- 0–30 days: 5 (all opened 2026-08-01 — Test-Health Survey Passes 3 & 4; D-S348b and D-S355, both opened 2026-08-01, resolved 2026-08-02 and moved to Resolved, no longer counted here)
 - 31–90 days: not recomputed this pass — the previous 31–60 / 60+ buckets were already stale relative to today; several P0/P1 items opened 2026-04-17 are now ~106 days old (see the corrected age on the Game Mode Rendering + State item above as one example). Flagged for the next full audit sweep per Audit Cadence rather than guessed here.
 - 60+ days: not recomputed this pass (see above)
 

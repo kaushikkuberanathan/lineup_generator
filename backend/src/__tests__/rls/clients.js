@@ -27,6 +27,7 @@ const { createClient } = require('@supabase/supabase-js');
 
 require('dotenv').config({
   path: path.resolve(__dirname, '../../../.env.rls.local'),
+  quiet: true, // suppress dotenv's built-in self-promotional "tip" line on every run
 });
 
 const DEV_PROJECT_REF  = 'psqvzppphdedqkpmarwx';
