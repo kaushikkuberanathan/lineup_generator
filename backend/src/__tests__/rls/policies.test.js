@@ -40,22 +40,29 @@
 //   of RS's five. See the T describe blocks for detail.
 //
 //   LS1-LS7(+control) (#355 / D-S355, Test-Health Survey Pass 3, added
-//   2026-08-02) are DIFFERENT from every block above: they are RED-BY-DESIGN
-//   and expected to STAY red. #355 is a real, unfixed vulnerability — four
-//   hardcoded team-id backdoors (at_bats_anon_test, game_state_anon_test,
-//   scorer_lock_anon_test, audit_log_anon_test) plus a fully-open
-//   allow_scorer_writes (USING(true) WITH CHECK(true)) catch-all on
-//   live_game_state / game_scoring_sessions / scoring_audit_log — and this
-//   suite had ZERO test surface for it before now. These scenarios are the
-//   executable spec #355's eventual fix must turn green, mirroring exactly
-//   how S1b/S3/S4a were committed RED before WS-3 closed #342. See the LS
-//   describe block for the full policy-by-policy breakdown.
+//   2026-08-02) are DIFFERENT from every block above: LS1-LS7 are
+//   RED-BY-DESIGN executable specs for a REAL, CONFIRMED-LIVE-IN-PROD
+//   vulnerability — four hardcoded team-id backdoors (at_bats_anon_test,
+//   game_state_anon_test, scorer_lock_anon_test, audit_log_anon_test,
+//   confirmed against docs/db/schema.sql's own "captured from prod" header)
+//   plus a fully-open allow_scorer_writes (USING(true) WITH CHECK(true))
+//   catch-all on live_game_state / game_scoring_sessions / scoring_audit_log.
+//   Because the `rls` CI job is now a REQUIRED status check (#480) — unlike
+//   when S1b/S3/S4a were originally red, before #480 existed — merging these
+//   7 as permanently-failing tests would make `rls` fail on every subsequent
+//   PR until #355 is fixed, blocking all merges. KK's explicit decision
+//   (2026-08-02, after the finding was escalated and confirmed prod-live):
+//   skip LS1-LS7 with `{ skip: '#355 tracked...' }` so `rls` stays green,
+//   while keeping the executable spec visible in source (NOT deleted) for
+//   whoever fixes #355 to un-skip and turn green. LS7-control is NOT
+//   skipped — it asserts already-secure behavior and should stay green.
+//   See the LS describe block for the full policy-by-policy breakdown.
 //
 // HOW TO READ A FAILURE
-//   Every test here should be GREEN, EXCEPT the LS block, which is expected
-//   to be RED until #355 is actually fixed in the database — that is not a
-//   regression to chase, it is the tracked, open vulnerability's executable
-//   spec (see the LS describe block header). Every other failure IS a
+//   Every test here should be GREEN. LS1-LS7 are currently SKIPPED (see
+//   above) — do not un-skip them without #355 actually being fixed in the
+//   database first; un-skipping prematurely will fail the required `rls`
+//   check for everyone. Every failure among the non-skipped tests IS a
 //   regression: a red S1b/S3/S4a/S4b means the WS-3 RLS lockdown has
 //   regressed in DEV — fix the DATABASE, not the test. A red S6-anything
 //   means an emergency-fix migration (005/006/011) regressed. A red
@@ -618,7 +625,7 @@ describe('S6 — locked-table regression guards', () => {
 // ═════════════════════════════════════════════════════════════════════════════
 describe('LS — live-scoring anon-test backdoors (#355, RED-by-design)', () => {
 
-  test('LS1: anon CANNOT write live_game_state for the hardcoded backdoor team (game_state_anon_test)', async () => {
+  test('LS1: anon CANNOT write live_game_state for the hardcoded backdoor team (game_state_anon_test)', { skip: '#355 tracked, unfixed — see PR #506. Not a regression to chase; do not un-skip without the vulnerability actually being fixed first.' }, async () => {
     const res = await anon.from('live_game_state').insert({
       game_id: LS_GAME_ID_BACKDOOR, team_id: LS_BACKDOOR_TEAM_ID, my_score: 99, opponent_score: 0,
     }).select();
@@ -633,7 +640,7 @@ describe('LS — live-scoring anon-test backdoors (#355, RED-by-design)', () => 
     }
   });
 
-  test('LS2: anon CANNOT write live_game_state for an arbitrary (non-hardcoded) team (allow_scorer_writes)', async () => {
+  test('LS2: anon CANNOT write live_game_state for an arbitrary (non-hardcoded) team (allow_scorer_writes)', { skip: '#355 tracked, unfixed — see PR #506. Not a regression to chase; do not un-skip without the vulnerability actually being fixed first.' }, async () => {
     const res = await anon.from('live_game_state').insert({
       game_id: LS_GAME_ID_ARBITRARY, team_id: LS_ARBITRARY_TEAM_ID, my_score: 99, opponent_score: 0,
     }).select();
@@ -649,7 +656,7 @@ describe('LS — live-scoring anon-test backdoors (#355, RED-by-design)', () => 
     }
   });
 
-  test('LS3: anon CANNOT claim/overwrite the scorer lock in game_scoring_sessions for the hardcoded backdoor team (scorer_lock_anon_test)', async () => {
+  test('LS3: anon CANNOT claim/overwrite the scorer lock in game_scoring_sessions for the hardcoded backdoor team (scorer_lock_anon_test)', { skip: '#355 tracked, unfixed — see PR #506. Not a regression to chase; do not un-skip without the vulnerability actually being fixed first.' }, async () => {
     const res = await anon.from('game_scoring_sessions').insert({
       game_id: LS_GAME_ID_BACKDOOR, team_id: LS_BACKDOOR_TEAM_ID, scorer_name: 'RLS TEST INTRUDER',
     }).select();
@@ -664,7 +671,7 @@ describe('LS — live-scoring anon-test backdoors (#355, RED-by-design)', () => 
     }
   });
 
-  test('LS4: anon CANNOT claim the scorer lock for an arbitrary (non-hardcoded) team (allow_scorer_writes)', async () => {
+  test('LS4: anon CANNOT claim the scorer lock for an arbitrary (non-hardcoded) team (allow_scorer_writes)', { skip: '#355 tracked, unfixed — see PR #506. Not a regression to chase; do not un-skip without the vulnerability actually being fixed first.' }, async () => {
     const res = await anon.from('game_scoring_sessions').insert({
       game_id: LS_GAME_ID_ARBITRARY, team_id: LS_ARBITRARY_TEAM_ID, scorer_name: 'RLS TEST INTRUDER',
     }).select();
@@ -679,7 +686,7 @@ describe('LS — live-scoring anon-test backdoors (#355, RED-by-design)', () => 
     }
   });
 
-  test('LS5: anon CANNOT forge a scoring_audit_log entry for the hardcoded backdoor team (audit_log_anon_test)', async () => {
+  test('LS5: anon CANNOT forge a scoring_audit_log entry for the hardcoded backdoor team (audit_log_anon_test)', { skip: '#355 tracked, unfixed — see PR #506. Not a regression to chase; do not un-skip without the vulnerability actually being fixed first.' }, async () => {
     const res = await anon.from('scoring_audit_log').insert({
       game_id: LS_GAME_ID_BACKDOOR, team_id: LS_BACKDOOR_TEAM_ID,
       action: 'rls_test_forged_entry', actor_name: 'RLS TEST INTRUDER',
@@ -697,7 +704,7 @@ describe('LS — live-scoring anon-test backdoors (#355, RED-by-design)', () => 
     }
   });
 
-  test('LS6: anon CANNOT forge a scoring_audit_log entry for an arbitrary (non-hardcoded) team (allow_scorer_writes)', async () => {
+  test('LS6: anon CANNOT forge a scoring_audit_log entry for an arbitrary (non-hardcoded) team (allow_scorer_writes)', { skip: '#355 tracked, unfixed — see PR #506. Not a regression to chase; do not un-skip without the vulnerability actually being fixed first.' }, async () => {
     const res = await anon.from('scoring_audit_log').insert({
       game_id: LS_GAME_ID_ARBITRARY, team_id: LS_ARBITRARY_TEAM_ID,
       action: 'rls_test_forged_entry', actor_name: 'RLS TEST INTRUDER',
@@ -713,7 +720,7 @@ describe('LS — live-scoring anon-test backdoors (#355, RED-by-design)', () => 
     }
   });
 
-  test('LS7: anon CANNOT forge an at_bats row for the hardcoded backdoor team (at_bats_anon_test)', async () => {
+  test('LS7: anon CANNOT forge an at_bats row for the hardcoded backdoor team (at_bats_anon_test)', { skip: '#355 tracked, unfixed — see PR #506. Not a regression to chase; do not un-skip without the vulnerability actually being fixed first.' }, async () => {
     const res = await anon.from('at_bats').insert({
       game_id: LS_GAME_ID_BACKDOOR, team_id: LS_BACKDOOR_TEAM_ID, inning: 1,
       batter_id: 'rls-test-intruder', batter_name: 'RLS TEST INTRUDER',
