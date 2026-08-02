@@ -39,6 +39,12 @@
 //   scenario count reflects that real shape rather than a forced 1:1 mirror
 //   of RS's five. See the T describe blocks for detail.
 //
+//   M1-M4 (#478, D-S348b, added 2026-08-02) cover migration 007's admin-panel
+//   recursion fix — a distinct RLS gap from #342/#477 (data exposure) rather
+//   than a regression on it. Authenticates as a real admin-role member and
+//   reads team_memberships/access_requests/feedback, the three tables 007's
+//   fix touched. See the M describe block for detail.
+//
 //   LS1-LS7(+control) (#355 / D-S355, Test-Health Survey Pass 3, added
 //   2026-08-02) are DIFFERENT from every block above: LS1-LS7 are
 //   RED-BY-DESIGN executable specs for a REAL, CONFIRMED-LIVE-IN-PROD
@@ -69,7 +75,9 @@
 //   RS-anything means the same class of regression on roster_snapshots
 //   specifically (migration 004's "4. roster_snapshots" section). A red
 //   T-anything means the same on `teams` (migration 004's "2. teams"
-//   section).
+//   section). A red M-anything means migration 007's recursion fix has
+//   regressed — a future edit reintroduced an inline self-referential
+//   subquery on team_memberships instead of calling is_active_admin().
 
 const { test, describe, before, after } = require('node:test');
 const assert = require('node:assert/strict');
@@ -91,6 +99,7 @@ const {
   COACH_A_EMAIL,
   SHARE_ID,
   seedAdminDeleteFixture,
+  seedAdminRecursionFixture,
   LS_BACKDOOR_TEAM_ID,
   LS_ARBITRARY_TEAM_ID,
   LS_GAME_ID_BACKDOOR,
@@ -536,6 +545,101 @@ describe('T — teams write isolation (DELETE)', () => {
     assert.equal(res.data.length, 1, 'the delete must return the removed row');
   });
 
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+// M — team_memberships / access_requests / feedback admin-authenticated RLS
+//     (#478, D-S348b, Test-Health Survey Pass 3). Migration 007's own header
+//     names the exact gap this closes: "nothing in any test suite exercises
+//     RLS as an authenticated user" was the reason a self-referential
+//     subquery on team_memberships ("admin_manages_memberships" reading
+//     team_memberships FROM a policy ON team_memberships) recursed for every
+//     authenticated reader of that table — not just admins — and was only
+//     found by KK logging into the admin panel for the first time. 007's fix
+//     replaced the inline subquery with is_active_admin(), a SECURITY
+//     DEFINER function (schema.sql "5. FUNCTIONS") that reads team_memberships
+//     as its owner, bypassing RLS and breaking the loop. Blast radius per
+//     007's header was wider than team_memberships alone: access_requests and
+//     feedback's admin policies call the same function, and both failed
+//     pre-007 too, because evaluating them required reading team_memberships,
+//     which tripped THAT table's recursive policy.
+//
+//     GREEN today (007 already applied) — this is a regression guard, not a
+//     RED-by-design spec. A red M-anything means a future edit reintroduced
+//     an inline self-referential subquery on team_memberships (007's own
+//     documented rollback SQL, in its header, is exactly that shape) and the
+//     admin panel would silently deny real admins again.
+// ═════════════════════════════════════════════════════════════════════════════
+describe('M — team_memberships / access_requests / feedback admin-authenticated RLS', () => {
+  let recursionAdmin;
+  let recursionAdminClient;
+
+  before(async () => {
+    recursionAdmin = await seedAdminRecursionFixture();
+    recursionAdminClient = await authedClient(recursionAdmin.adminEmail);
+  });
+
+  after(async () => {
+    // team_memberships_team_id_fkey is ON DELETE CASCADE (schema.sql), so
+    // deleting the team also removes the membership row created above.
+    // teardown() (module-level after()) is the crash backstop if this fails.
+    await adminClient().from('teams').delete().eq('id', recursionAdmin.teamId);
+  });
+
+  // Multiple permissive SELECT policies on the same table are combined with
+  // OR — so a NON-admin reading team_memberships still requires Postgres to
+  // evaluate admin_manages_memberships's USING clause (is_active_admin()),
+  // not just user_sees_own_membership's. Pre-007, this is exactly why EVERY
+  // authenticated reader of team_memberships hit the recursion error, not
+  // only admins. Broadest-reach regression guard in this block.
+  test('M1: coach A (non-admin) CAN read own team_memberships row (no recursion)', async () => {
+    const res = await coachA.from('team_memberships').select('id, role, status').eq('team_id', TEAM_A);
+    assert.equal(
+      res.error, null,
+      'REGRESSION: reading team_memberships as an authenticated non-admin errored ' +
+      '(migration 007\'s recursion fix may have regressed). Got: ' + JSON.stringify(res.error)
+    );
+    assert.equal(res.data.length, 1, 'coach A must see their own team_memberships row');
+  });
+
+  // The scenario migration 007's header names directly: an admin
+  // authenticating and reading team_memberships. admin_manages_memberships's
+  // USING clause calls is_active_admin(), which itself queries
+  // team_memberships — the exact self-referential shape that recursed
+  // before 007's SECURITY DEFINER fix broke the loop.
+  test('M2: admin-authenticated CAN read team_memberships (migration 007 regression guard)', async () => {
+    const res = await recursionAdminClient.from('team_memberships').select('id, role, status');
+    assert.equal(
+      res.error, null,
+      'REGRESSION: reading team_memberships as an authenticated admin errored — ' +
+      'migration 007\'s recursion fix may have regressed. Got: ' + JSON.stringify(res.error)
+    );
+    assert.ok(res.data.length >= 1, 'admin must see at least their own team_memberships row');
+  });
+
+  // access_requests' admin_manages_requests policy was rewritten by the same
+  // migration to call is_active_admin() instead of the same inline
+  // subquery. Reading team_memberships from inside that USING clause is
+  // cross-table, not self-recursive, but it still failed pre-007 — see
+  // 007's header, "blast radius was wider than one table".
+  test('M3: admin-authenticated CAN read access_requests (migration 007 regression guard)', async () => {
+    const res = await recursionAdminClient.from('access_requests').select('id').limit(1);
+    assert.equal(
+      res.error, null,
+      'REGRESSION: reading access_requests as an authenticated admin errored — ' +
+      'migration 007\'s cross-table fix may have regressed. Got: ' + JSON.stringify(res.error)
+    );
+  });
+
+  // Same cross-table shape as M3, for feedback's "feedback: admin select" policy.
+  test('M4: admin-authenticated CAN read feedback (migration 007 regression guard)', async () => {
+    const res = await recursionAdminClient.from('feedback').select('id').limit(1);
+    assert.equal(
+      res.error, null,
+      'REGRESSION: reading feedback as an authenticated admin errored — migration ' +
+      '007\'s cross-table fix may have regressed. Got: ' + JSON.stringify(res.error)
+    );
+  });
 });
 
 // ═════════════════════════════════════════════════════════════════════════════

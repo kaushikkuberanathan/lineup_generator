@@ -24,18 +24,6 @@
 
 ## Open — Test Gaps
 
-### 🔴 P0 — Share Link Payload Integrity
-
-| | |
-|---|---|
-| **Area** | Share links (8-char Supabase-backed) |
-| **Description** | No automated test validates that a share link generated from a locked lineup renders correctly in Viewer mode with (a) full defensive grid, (b) full batting order, (c) absent players filtered, (d) walk-up song links. Root cause of missing link generation confirmed May 18, 2026: renderPrint() orphaned at App.jsx:7564, shareCurrentLineup() dead. Fix tracked in Story 67. shareCurrentLineup() is now live and reachable from the Lineups tab (Story 67, v2.5.15) — this test gap is now urgent, not hypothetical. Priority elevated. **Update v2.5.16 (2026-05-19):** `frontend/src/tests/shareLink.test.js` now exists — 3 specs cover `dbLoadShareLink` timeout + happy path + Supabase error (Story 61 Bug A). Payload-integrity scope (generated payload shape, absent-player filtering, song link preservation) remains open in the same file. |
-| **Risk if unfixed** | Silent regression breaks the #1 Strategic North Star ("share link bulletproof"). A future refactor of `shareCurrentLineup` or `SharedView.jsx` could ship with the link returning stale or incomplete data and we would not catch it pre-deploy. |
-| **Proposed test** | `frontend/src/tests/shareLink.test.js` — **file exists, partial coverage**. Still needed: build a lineup fixture, call `shareCurrentLineup`, parse the `share_links.payload` JSONB, assert every expected field is present and correctly filtered. Also a DOM test that `SharedView` renders all sections without errors given the payload. |
-| **Opened** | 2026-04-17 |
-| **Age** | 43 days |
-| **Target** | v2.6.x |
-
 ### 🟠 P1 — Share-link routing render path (Story 61 follow-up)
 
 | | |
@@ -46,18 +34,6 @@
 | **Proposed test** | Render-path integration test in `frontend/src/tests/` — render `<App />` (or extract the share-link branch into a small testable surface) with `window.location.search` stubbed for `?s=abc`, `?s=abc&view=true`, and `?share=<base64>` variants. Assert routing lands on `SharedView` vs `DugoutView` per URL. Requires standing up an `App.jsx` render-test harness for the first time — explicit cost the v2.5.16 PR opted not to pay. |
 | **Opened** | 2026-05-19 |
 | **Age** | 11 days |
-| **Target** | v2.6.x |
-
-### 🔴 P0 — Game Mode Rendering + State
-
-| | |
-|---|---|
-| **Area** | Game Mode (full-screen dugout view) |
-| **Description** | No tests cover GameModeScreen rendering, inning advance, batter advance, or QuickSwap candidate filtering. The QuickSwap `onClick` regression in March 2026 (DefenseDiamond missing handlers) would not have been caught by tests. Scope expanded in v2.5.4: now includes DugoutView's flag-ON render path (mounts ScoringModeEntry + LiveScoringPanel + RestoreScoreModal under feature flag COMBINED_GAMEMODE_AND_SCORING). Coverage gaps are inherited from ScoringMode, not new — but the new container surface needs at least a smoke test before flag flips ON in production. **Update v2.5.5:** `DugoutView.test.jsx` (5 smoke tests) added — "smoke test before flag flip" threshold met for the DugoutView container. GameModeScreen itself remains untested. |
-| **Risk if unfixed** | Silent regression breaks the #2 Strategic North Star ("Game Mode dugout-ready under pressure"). |
-| **Proposed test** | `frontend/src/tests/gameMode.test.js` — render GameModeScreen with fixture lineup, simulate inning advance, simulate QuickSwap tap, assert state transitions and candidate filtering (including absent-player exclusion). |
-| **Opened** | 2026-04-17 |
-| **Age** | 106 days (corrected 2026-08-01 — Test-Health Survey Pass 4; prior entries carried a stale 43-day figure last touched at v2.5.5). Re-verified against current source: `GameModeScreen.jsx` is still untested and is confirmed still reachable — not dead code — via 3 quick-action call sites in `App.jsx` (`setGameModeActive(true)`) that bypass the DugoutView tab entirely. |
 | **Target** | v2.6.x |
 
 ### 🟠 P1 — Live Scoring Scorer-Lock Regression
@@ -179,19 +155,6 @@
 | **Opened** | 2026-06-15 |
 | **Age** | 0 days |
 | **Target** | v2.6.x |
-
-### 🟠 P1 — D-S348b: Migration 007's admin-panel recursion fix has no regression test (Test-Health Survey Pass 3)
-
-| | |
-|---|---|
-| **Area** | RLS / Security — `team_memberships`, `access_requests`, `feedback` policies |
-| **Description** | `backend/migrations/007_p1_fix_recursive_rls_policy.sql`'s own header states the original recursive-policy bug was found "only by KK actually logging in to the admin panel for the first time" and explicitly calls out "nothing in any test suite exercises RLS as an authenticated user" as the root cause. `policies.test.js` still does not test `team_memberships`, `access_requests`, or `feedback` policies at all — no scenario touches `is_active_admin()`, `user_sees_own_membership`, or `admin_manages_memberships`. |
-| **Risk if unfixed** | If a future edit reintroduces an inline self-referential subquery on `team_memberships` (the exact regression 007 fixed), the admin panel silently denies real admins again — and per 007's own history, the only detection mechanism today is a human noticing during manual login, not CI. |
-| **Proposed test** | Add an admin-authenticated scenario to `policies.test.js` (extend `seed.js`'s fixture with an admin-role membership) that reads `team_memberships` as that admin and asserts no recursion error. |
-| **Opened** | 2026-08-01 |
-| **Age** | 0 days |
-| **Target** | v2.9.x |
-| **Issue** | [#478](https://github.com/kaushikkuberanathan/lineup_generator/issues/478) |
 
 ### 🟡 P2 — D-S348c: `access_requests`, `profiles`, `feedback`, `feature_flags` RLS policies untested (Test-Health Survey Pass 3)
 
@@ -316,6 +279,14 @@
 
 ## Open — Tooling / Process Gaps
 
+### 🟡 P3 — `dotenv`'s self-promotional "tip" output not suppressed in RLS test client
+
+- **What:** `backend/src/__tests__/rls/clients.js:28` calls `dotenv.config({ path: ... })` with no `quiet` option. Installed `dotenv@17.4.2` prints one random line from a static built-in "tips" array (mostly self-promotion for the maintainer's other products, e.g. `dotenvx.com`, `vestauth.com`) on every `.config()` call — including during every local/CI run of the RLS suite. Investigated as a potential security incident 2026-08-02 (a `vestauth.com` line looked like it could be a prompt-injection/phishing string aimed at AI agents) — confirmed benign via `npm view dotenv@17.4.2` against the real registry: legitimate package, real maintainer (`motdotla`), no compromise, no typosquat. The string is static marketing copy shipped in the official package, not a dynamic or network-triggered payload.
+- **Risk if unfixed:** None security-wise — cosmetic noise in test/CI output only. Worth fixing eventually so unfamiliar third-party domain names don't keep showing up unexplained in logs (and so a future reader doesn't have to redo tonight's investigation from scratch).
+- **Proposed fix:** Add `quiet: true` to the `dotenv.config({...})` call in `clients.js:28`.
+- **Opened:** 2026-08-02
+- **Target:** Opportunistic, no version target — explicitly deferred rather than fixed inline, to avoid touching a shared RLS client file mid-merge-conflict-resolution.
+
 ### 🟡 P2 — Confirm intentional default-branch=develop setting, reconcile with release docs
 
 | | |
@@ -327,6 +298,18 @@
 | **Opened** | 2026-08-01 |
 | **Target** | Next session — flagged as a real item, not a footnote (KK's explicit instruction) |
 | **Issue** | [#488](https://github.com/kaushikkuberanathan/lineup_generator/issues/488) |
+
+### 🟡 P2 — Share payload: songs-map divergence + absent-player song leakage (product decision needed)
+
+| | |
+|---|---|
+| **Area** | Share links — `buildSharePayload()` (`frontend/src/utils/buildSharePayload.js`), extracted from App.jsx's `shareCurrentLineup()`/`shareViewerLink()` |
+| **Description** | Two pre-existing behaviors surfaced 2026-08-02 while extracting the payload-building logic for P0 test coverage (Share Link Payload Integrity) — both are exactly what's shipped today, not introduced by the extraction, which preserved them precisely (see `buildSharePayload.test.js`'s comments on both). (1) `shareViewerLink()` hardcodes `songs: {}` while `shareCurrentLineup()` computes the real walk-up song map — the two share paths otherwise build near-identical payloads, with no comment explaining the divergence. (2) Both paths build the songs map from the *full, unfiltered* roster, independent of the `absentTonight` filter applied to the `roster` name list — an absent player's walk-up song can still appear in the payload even though their name is excluded from `roster`. |
+| **Risk if unfixed** | Not a code defect — a product-intent question. Undocumented, it's the kind of thing that gets "corrected" by a future refactor without anyone realizing it was intentional (if it was), or stays quietly wrong (if it wasn't). |
+| **Proposed action** | KK decides both: is the songs-map divergence intentional, and should absent players' songs be excluded like their names are? Then either update `buildSharePayload()` + its tests to match, or add a one-line comment recording the decision so it isn't re-discovered as a mystery. |
+| **Opened** | 2026-08-02 |
+| **Target** | Opportunistic — flag only, do not fix without a decision (KK's explicit instruction) |
+| **Issue** | [#502](https://github.com/kaushikkuberanathan/lineup_generator/issues/502) |
 
 ### 🟠 P1 — Auto-Staging Git Hook
 
@@ -367,14 +350,6 @@
 | **Proposed action** | Write a lint script that scans FEATURE_MAP.md for test file paths, verifies they exist on disk, and warns on broken references. Run in CI. |
 | **Opened** | 2026-04-17 |
 | **Target** | v2.4.0 |
-
-### 🟠 P1 — Diagnose share/print broken in production
-
-- **What:** Share/print functionality confirmed broken on April 24, 2026 (game day) and again April 27, 2026 (post-v2.5.1 prod smoke test). Root cause UNKNOWN.
-- **What it is NOT:** Not the `renderSharedView` hooks violation — that fix shipped in v2.1.6 (commit `46f071a`, `SharedView` component at App.jsx:2560).
-- **Investigation steps:** Reproduce locally → check browser console errors on `?s=` URLs → verify share/print buttons render → determine if share payload generation or share view rendering is failing.
-- **Target:** v2.6.0 P0
-- **Source:** Surfaced during v2.5.1 production smoke test, April 27, 2026.
 
 ### 🟠 P1 — Windows Vitest pre-push hook OOM cascade
 
@@ -417,11 +392,26 @@
 
 - ✅ **D-S355 — Live-scoring anon-test backdoors (#355) had zero test surface** — Resolved as a test-debt item (the underlying #355 vulnerability itself is NOT fixed — see below). Added an `LS` describe block to `backend/src/__tests__/rls/policies.test.js` (LS1–LS7 + LS7-control, 8 scenarios) covering all four hardcoded `*_anon_test` backdoors (`at_bats_anon_test`, `game_state_anon_test`, `scorer_lock_anon_test`, `audit_log_anon_test`) plus the three `allow_scorer_writes USING(true) WITH CHECK(true)` catch-alls on `live_game_state`/`game_scoring_sessions`/`scoring_audit_log`, mirroring S1b/S3/S4a's established RED-by-design convention exactly. Uses `LS_BACKDOOR_TEAM_ID` ('9000000000001', the "Demo All-Stars" fixture team — the second of the two hardcoded ids in the backdoor array) rather than the real Mud Hens id, and `LS_ARBITRARY_TEAM_ID` to prove `allow_scorer_writes` has zero team scoping at all — strictly broader than the four named backdoors. LS7-control (an arbitrary team against `at_bats`) is the one scenario in the block expected to stay green, documenting that `at_bats` has no catch-all and so its exposure is narrower than the other three tables'. **7 of the 8 new scenarios (LS1–LS7) are red-by-design specs for a REAL, CONFIRMED-LIVE-IN-PROD vulnerability** — confirmed directly against `docs/db/schema.sql`'s own "captured from prod" header, not assumed. **CI-required-check tension surfaced and decided:** the `rls` job was promoted to a required status check the same release (#480); merging LS1–LS7 as permanently-failing tests would fail `rls` on every subsequent PR until #355 is actually fixed, blocking all merges. Escalated to KK (2026-08-02) rather than decided unilaterally — KK confirmed the vulnerability is genuinely live in prod but chose **not** to attempt an urgent same-night fix (the real fix requires wiring actual auth into the Live Scoring write path, a Phase-4C-scale change, not a quick patch like migration 017). Decision: LS1–LS7 are `{ skip: '#355 tracked, unfixed — see PR #506' }` so the `rls` required check stays green for everyone else's PRs; the executable spec stays visible in source (not deleted) for whoever eventually fixes #355 to un-skip and turn green. LS7-control is NOT skipped — it asserts already-secure behavior (`at_bats` has no catch-all) and stays green today. **#355 itself remains open and unfixed** — this entry closes only the test-debt gap, per its own original scope. Validated via `node --check` (syntax) and a live `node --test` run against an unreachable local endpoint (structural correctness — all 8 tests registered correctly, non-skipped ones failed only on `ECONNREFUSED`, no reference errors) — full RLS-semantics validation still depends on CI's `rls` job (ephemeral Docker stack), unavailable in this sandbox. Issue: [#479](https://github.com/kaushikkuberanathan/lineup_generator/issues/479).
 
+### August 2, 2026 — Both P0 ship-blockers closed (Share Link Payload Integrity + Game Mode Rendering + State)
+
+- ✅ **P0 — Game Mode Rendering + State** — `frontend/src/components/game-mode/GameModeScreen.test.jsx` (15 tests) and `frontend/src/components/game-mode/QuickSwap.test.jsx` (13 tests) added, 28 total. Covers: initial render + `initialInning` restore, Exit button, the defense/batting half-completion state machine (including the inning modal not opening until BOTH halves are marked done), the 200ms inning-advance transition, last-inning-exits-instead-of-advancing, QuickSwap open/close/swap wiring, the Out Tonight strip's absent-player visibility rules, and QuickSwap's candidate-list absent-player exclusion (including excluding the current occupant if they're marked absent). Genuine RED evidence surfaced while authoring, not synthetic: the `completeBothHalves()` test helper's assumed 2-click sequence was wrong (actual behavior needs 3 — the 2nd click reads the pre-click `bothHalvesDone` value and just re-calls `handleEndHalf()`), and an ambiguous `getByText('SS')` query collided between the header and an occupied position's badge — both caught the tests failing for a real reason before being fixed, satisfying the RED-checkpoint rule without needing a separate mutation pass. Re-verified 28/28 passing directly on this branch before writing this entry. Branch: `fix/game-mode-p0-coverage` (renamed from `fix/share-print-debt-stale`, which undersold what the branch now carries).
+- ✅ **P0 — Share Link Payload Integrity** — Both halves of the ticket's proposed test now exist. **Payload-building half:** `shareCurrentLineup()`'s and `shareViewerLink()`'s near-duplicate inline payload construction extracted to `frontend/src/utils/buildSharePayload.js`; `buildSharePayload.test.js` (19 tests) covers field shape, absent-player filtering of the roster name list, `absentNames` presence/copy semantics, and walk-up song preservation. Mutation-tested: temporarily inverted the absent-player filter, confirmed exactly the 3 filtering-related tests went red (16/19 unaffected), reverted, confirmed 19/19 green again. **Render half:** `SharedView` (App.jsx) — previously a top-level but unexported function — made a named export with a one-line change (`export function SharedView(...)`; no other change) so it could be rendered in isolation. `frontend/src/__tests__/SharedView.test.jsx` (12 tests) renders it directly with a fixture payload and asserts every major section (header/team name/Print button, game-info vs. fallback line, player-filter pills present/absent, inning filter controls, diamond view + Bench/Out table, table-view toggle with per-inning position badges, Batting Order card with walk-up song details, absent-player footnote, footer) without throwing. Mutation-tested: temporarily short-circuited the absent-player footnote condition, confirmed exactly that 1 test went red (11/12 unaffected), reverted, confirmed 12/12 green again. Two pre-existing behavioral quirks surfaced during the extraction (songs-map divergence between the two share paths; absent players' walk-up songs still included despite name exclusion) were deliberately NOT fixed — flagged as a product-decision item, see [#502](https://github.com/kaushikkuberanathan/lineup_generator/issues/502) and the P2 entry above. Landed via PR #504 (merged into `develop` 2026-08-02, prior to this branch's own merge).
+- Resolved independently on two deliberately separate branches per KK's branch-scoping instruction (different risk tiers — Game Mode's branch also carried the `App.jsx` locked-file extraction and the share/print stale-bug fix below; Share Link's branch was scoped tighter). Both are now genuinely present together as of this merge — the "both P0s clear" hedge in each branch's own copy of this ledger no longer applies.
+
+### August 2, 2026 — Share/print production bug re-triaged as stale
+
+- ✅ **P1 — Diagnose share/print broken in production** — Closed as stale, not fixed fresh. Opened April 27, 2026 against `renderPrint()`/`shareCurrentLineup()` being orphaned/dead — the exact defect class Story 67 (v2.5.15, 2026-05-19) fixed weeks later; the debt entry was simply never closed out or cross-referenced afterward. Re-verified directly against current `App.jsx`: `shareCurrentLineup()` (line 2123) builds the payload, calls `dbSaveShareLink`, and constructs the URL correctly, wired to a real button (line 4351); the shared-view `Print` button (line 867) is a plain `window.print()` call, also correctly wired. Neither shows the orphaned-function/dead-handler pattern the original entry described. Triggered by KK's explicit instruction to check whether this P1 was live before prioritizing the two P0 test-coverage items below it — it was not.
+- **Separate finding surfaced during this check, not yet acted on:** `frontend/CLAUDE.md`'s "Key sections within App.jsx" documents a "Roster, Defense, Batting, Schedule, Print, Share, Links, Feedback, About" tab list that no longer exists — current navigation is `PRIMARY_TABS` (Home/My Team/Game Day/Support) with `GAMEDAY_SUBTABS` (Lineups/Songs/Dugout View) and `MORE_SUBTABS` (Account/FAQ/Feedback/Links/About/Updates/Legal). Share and Print are no longer tabs at all — Share is a sheet/modal, Print is a button on the shared-view page. This doc section needs a rewrite; flagging rather than fixing inline since it's out of scope for this pass.
+
 ### August 1, 2026 — Test-Health Survey Pass 3 (#476, #477, #480)
 
 - ✅ **D-S411b — `docs/db/PROD_SCHEMA_BASELINE.md` stale, unflagged, contradicted its own designated successor doc** — Resolved same-day. Staleness banners added to `docs/db/PROD_SCHEMA_BASELINE.md` (RLS STATE section) and `PROD_SCHEMA_BASELINE_ADDENDUM_1.md` (doc-level, covering every RLS-off restatement in the file), each citing a direct read-only prod probe (2026-08-01): anon SELECT against prod `teams`/`roster_snapshots` returned zero rows with no error (the RLS-filtered signature), confirming the "RLS OFF, full CRUD+TRUNCATE" claim in both docs is stale and the WS-3 lockdown (v2.6.0) is actually live. Issue: [#476](https://github.com/kaushikkuberanathan/lineup_generator/issues/476).
 - ✅ **D-S415 — `rls` CI job promoted to a required status check** — Resolved same-day, deliberately sequenced *before* D-S348a's coverage work (#477), reversing this ledger's original recommendation: KK's reasoning was that gating first means #477's new test scenarios land already protected by the required check, rather than being added to a suite that still wasn't gating anything. Verified #415's own "stable across several consecutive runs" precondition directly via the GitHub Actions API before promoting: 13 consecutive green runs of the `rls` job on `develop` since it was added to `ci.yml` (2026-07-31 20:13 onward, commit `1e52f0b`), zero failures. `RLS Policy Suite (ephemeral)` added to `required_status_checks.contexts` on both `main` and `develop` branch protection (alongside the existing `Frontend Tests (Vitest)` and `Backend Integration Tests (CI_SAFE, prod read-only)` — neither removed or altered). Stale "NOT yet a required status check" comment in `.github/workflows/ci.yml` corrected. Issue: [#480](https://github.com/kaushikkuberanathan/lineup_generator/issues/480), closed.
 - ✅ **D-S348a — `teams` and `roster_snapshots` had zero RLS test coverage** — Resolved same-day, both halves, sequenced deliberately (higher-stakes `roster_snapshots` first, `teams` second). `roster_snapshots`: RS1-RS5 added, surfaced and fixed a live production bug along the way — the auto-prune trigger had no `SECURITY DEFINER`, so every roster-snapshot insert had been silently failing since v2.6.0 (2026-07-20); migration 017 fixed it, applied to DEV, verified 15/15 against the real database. `teams`: T1-T7 plus five positive controls added, covering all four operations (SELECT/INSERT/UPDATE/DELETE) against the actual policy shape read from migration 004 (not assumed) — including `teams_auth_insert`'s deliberately unscoped `WITH CHECK (true)` and `teams_auth_delete`'s stricter admin-only role check, distinct from UPDATE's admin/coach. Mutation-tested via a throwaway, never-merged branch: weakened `teams_auth_delete` to admin-or-coach, confirmed T7 alone went red (25/26, nothing else affected), reverted, confirmed 26/26 green again — proving the test detects a real regression, not just asserting a fixture. Re-verified 26/26 against DEV directly, not just CI's ephemeral stack. Issue: [#477](https://github.com/kaushikkuberanathan/lineup_generator/issues/477), closed.
+
+### August 2, 2026 — Migration 007 admin-panel recursion regression test (#478)
+
+- ✅ **D-S348b — Migration 007's admin-panel recursion fix had no regression test** — Resolved. Added `M1`–`M4` to `backend/src/__tests__/rls/policies.test.js`, plus a new `seedAdminRecursionFixture()` in `seed.js` (throwaway team + a real admin-role, active `team_memberships` row, cleaned up via the same self-contained/single-test-use pattern as `seedAdminDeleteFixture()`). Authenticates via the suite's existing `authedClient()` helper. **M1** proves a NON-admin authenticated read of `team_memberships` succeeds without error — Postgres evaluates BOTH permissive SELECT policies for that read (`user_sees_own_membership` OR `admin_manages_memberships`), so this is the broadest-reach guard: pre-007, EVERY authenticated reader recursed, not only admins. **M2** reproduces the exact scenario 007's own header names — an admin authenticating and reading `team_memberships`, which evaluates `admin_manages_memberships`'s `is_active_admin()` call, the self-referential shape that recursed before 007's `SECURITY DEFINER` fix. **M3**/**M4** extend the same guard to `access_requests` and `feedback` — the two tables 007's header calls out as sharing the same cross-table blast radius (reading them requires evaluating a `team_memberships` read internally, which tripped that table's own recursive policy pre-007). All four GREEN today (007's fix already applied) — a regression guard, not a RED-by-design spec. Verified via `node --check` only (no Docker in the authoring sandbox to run `supabase start` locally); live pass/fail depends on CI's `rls` job. Issue: [#478](https://github.com/kaushikkuberanathan/lineup_generator/issues/478), closed.
 
 ### June 12, 2026 — Story 99 Phase 2 tranche 2 (#252)
 
@@ -456,20 +446,32 @@
 
 | Priority | Test Gaps | Doc Gaps | Process Gaps | Total |
 |---|---|---|---|---|
-| 🔴 P0 | 2 | 0 | 0 | **2** |
-| 🟠 P1 | 5 | 2 | 1 | **8** |
-| 🟡 P2 | 7 | 4 | 4 | **15** |
-| **Total** | **14** | **6** | **5** | **25** |
+| 🔴 P0 | 0 | 0 | 0 | **0** |
+| 🟠 P1 | 5 | 2 | 3 | **10** |
+| 🟡 P2 | 8 | 5 | 7 | **20** |
+| **Total** | **13** | **7** | **10** | **30** |
 
-*(D-S411b, D-S415, and D-S348a all resolved same-day 2026-08-01, and D-S355 resolved 2026-08-02 as a test-debt item — see Resolved section — so none count in Open anymore. Note D-S355's resolution is scoped to "the executable spec now exists," NOT "the vulnerability is fixed" — #355 itself is still open and tracked in ROADMAP.md/SECURITY_FRAMEWORK.md/AUTH_SECURITY_AUDIT_ROADMAP.md; see the Resolved entry for the CI-required-check tension this surfaced. D-S348b, D-S428b, D-S348c remain open, filed as issues #478, #481–#482. New 2026-08-01: default-branch=develop confirmation, #488 — the branch-cleanup audit's real cross-terminal finding, not a footnote.)*
+*(2026-08-02: recomputed by DIRECT COUNT of every `###` item actually present in each Open section, not by propagating prior arithmetic — this merge combined two branches that each edited this dashboard independently (see conflict-resolution note below), and direct counting is the only way to be sure the combined number is real rather than a doubled or dropped delta. This surfaced a genuine pre-existing drift, unrelated to tonight's work: Process Gaps had been under-counted for some time — 3 P1 items (Auto-Staging Git Hook, Windows Vitest pre-push hook OOM cascade, Box-score AI parser test coverage) and most of the 7 P2 process items were apparently never reflected in this table's counts, even though the items themselves were correctly listed in the Open section the whole time. Same failure class as D-S31 (FEATURE_MAP.md denominator drift) — a summary table silently diverging from the content it's supposed to summarize. Not fixed beyond correcting the count here; if a recurring drift-prevention mechanism is wanted, that's a new debt item, not something to silently add mid-merge.)*
+
+*(2026-08-02: both P0 items resolved — Game Mode Rendering + State and Share Link Payload Integrity, merged from sibling branches `fix/game-mode-p0-coverage` and `fix/share-link-payload-coverage` — see Resolved section. First time this ledger has shown zero open P0s since the 2026-04-17 seed.)*
+
+*(2026-08-02: "Diagnose share/print broken in production" resolved as stale — see Resolved section — so it no longer counts in Open Process Gaps.)*
+
+*(2026-08-02: new P2 process gap — share payload songs-map divergence + absent-player song leakage, #502 — surfaced during the Share Link Payload Integrity P0 extraction, flag-only per KK's instruction.)*
+
+*(2026-08-02: D-S348b — migration 007 admin-panel recursion regression test — resolved on a sibling branch, merged here — AND D-S355 — live-scoring anon-backdoor RED-by-design spec (resolved as a test-debt item; #355 itself remains open, see the Resolved entry and the note below) — both resolved same day, both merges combined in this conflict resolution.)*
+
+*(D-S411b, D-S415, D-S348a, D-S348b, and D-S355 all resolved — see Resolved section — so none count in Open anymore (D-S348a and the other two same-day 2026-08-01; D-S348b and D-S355 both 2026-08-02). Remaining open P1 test gaps: Story 61 follow-up, Live Scoring Scorer-Lock Regression, Auth Flow End-to-End, Roster-Wipe Guard + Recovery Endpoint, D-S428b (issue #481). D-S348c (issue #482) remains the only named open P2. New 2026-08-01: default-branch=develop confirmation, #488 — the branch-cleanup audit's real cross-terminal finding, not a footnote.)*
+
+**Note on D-S355's resolution scope:** closing this debt item means "the executable spec now exists," NOT "the vulnerability is fixed." #355 itself is still open and live in prod, tracked in ROADMAP.md/SECURITY_FRAMEWORK.md/AUTH_SECURITY_AUDIT_ROADMAP.md — see the Resolved section entry for the full CI-required-check tension this surfaced and how it was resolved (skip-with-tracking, not a fix).
 
 **Age distribution:**
-- 0–30 days: 6 (all opened 2026-08-01 — Test-Health Survey Passes 3 & 4; D-S355 opened same day but resolved 2026-08-02, moved to Resolved above)
+- 0–30 days: 5 (all opened 2026-08-01 — Test-Health Survey Passes 3 & 4; D-S348b and D-S355, both opened 2026-08-01, resolved 2026-08-02 and moved to Resolved, no longer counted here)
 - 31–90 days: not recomputed this pass — the previous 31–60 / 60+ buckets were already stale relative to today; several P0/P1 items opened 2026-04-17 are now ~106 days old (see the corrected age on the Game Mode Rendering + State item above as one example). Flagged for the next full audit sweep per Audit Cadence rather than guessed here.
 - 60+ days: not recomputed this pass (see above)
 
 **Ship blockers:**
-- Next minor version bump — must resolve all P0 before bump (2 P0 items open: Share Link Payload Integrity, Game Mode Rendering + State. D-S411b and D-S348a both resolved same-day 2026-08-01, see Resolved section.)
+- None currently open. Next minor version bump was gated on both P0 items — Share Link Payload Integrity and Game Mode Rendering + State, both resolved 2026-08-02 (see Resolved section) — plus D-S411b and D-S348a, both resolved same-day 2026-08-01 (see Resolved section). Run `debt-p0` to confirm the gate before actually bumping the minor version, per the project's own minor-version-gate rule.
 
 ---
 
@@ -586,3 +588,8 @@
   - **Follow-up same day (2026-08-01):** KK directed running #428's read-only `pg_policies` ground-truth check before filing anything. No Supabase MCP auth or direct Postgres connection was available in-session, so a substitute read-only prod probe was run instead (`backend/spike-428-teams-roster-probe.js`, gitignored, mirrors the existing `spike-prod-authrole.js`/`spike-grants.js` convention): anon SELECT against prod `teams`/`roster_snapshots` returned `EMPTY-NO-ERROR` (RLS-filtered, not exposure) — reads confirmed clean. The `rls_test_anon_grants` RPC (migration 013) does not exist in prod (`PGRST202`); the underlying REVOKE statements live in migration 004 (confirmed applied to prod for WS-3), so this reads as a verification-tooling gap, not a live incident — treated as "clean enough to proceed," not silently rounded to either extreme.
   - Based on that result: **D-S411b resolved same-day** (see Resolved section, issue #476). Issues filed for the remaining six: D-S348a **#477** (teams/roster_snapshots coverage, `roster_snapshots` prioritized first), D-S348b **#478**, D-S355 **#479**, D-S415 **#480**, D-S428b **#481** (folded under D003 umbrella, no separate urgency), D-S348c **#482**.
   - **Second follow-up same day (2026-08-01):** KK deliberately reversed this ledger's original sequencing and asked for D-S415 (#480) done *before* D-S348a's coverage work (#477), reasoning that gating first means #477's new tests land already protected rather than added to a still-non-gating suite. Verified #415's "stable across several consecutive runs" precondition via the GitHub Actions API (13/13 green `rls` runs on `develop` since the job was added) before promoting — not assumed. `RLS Policy Suite (ephemeral)` added to required status checks on both `main` and `develop`; stale ci.yml comment corrected; **D-S415 resolved same-day**, issue #480 closed. Dashboard: Process gaps 5 → 4, P1 total 10 → 9, overall total 27 → 26.
+
+- **v2.19 — August 2026 (D-S348b closure, #478)**
+  - `M1`–`M4` added to `backend/src/__tests__/rls/policies.test.js`: admin-authenticated (and, for M1, non-admin-authenticated) regression coverage for migration 007's recursion fix on `team_memberships`/`access_requests`/`feedback`. New `seedAdminRecursionFixture()` + `TEAM_E`/`ADMIN_RECURSION_EMAIL` added to `seed.js`, same self-contained/single-test-use pattern as `seedAdminDeleteFixture()`/`TEAM_C`.
+  - D-S348b moved to Resolved (see above). Validated via `node --check` only in this sandbox (no Docker to run `supabase start`); live pass/fail depends on CI's `rls` job on the PR.
+  - Branch cut from `develop` after two sibling branches (`fix/game-mode-p0-coverage`, `fix/share-link-payload-coverage`) had already merged and resolved both P0 items — this ledger's dashboard picked up their numbers as the new baseline (P0 2→0, process P1 1→0/P2 +1) before this entry's own delta is applied. Net dashboard change from this entry alone: P1 test gaps 6→5, test gaps total 13→12, P1 total 8→7, overall total 24→23. (The upstream P0-resolution work did not add its own Revision History entry — flagged here rather than silently absorbed, but not backfilled as out of scope for this ticket.)
