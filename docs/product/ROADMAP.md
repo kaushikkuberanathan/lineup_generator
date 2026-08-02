@@ -1,7 +1,20 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: 2026-07-31 (v2.8.2 - public activity feed: release notes, commit metrics, deploy fix)
+> Last updated: 2026-08-01 (v2.8.3 - backend test coverage closure, RLS hardening, two silent bugs fixed)
 > MVP launched: March 24, 2026
+
+---
+
+## v2.8.3 - 2026-08-01 - Backend test coverage closure, RLS hardening, two silent production bugs fixed
+- **Feedback/bug-report submissions fixed (#252, Story 99)**: `admin.js`'s catch-all auth gate was mounted before `feedback.js` on the shared `/api/v1` base, so every non-admin coach's feedback submission silently returned 403. Fixed via mount order in `app.js`; found while closing out Story 99's backend test coverage (unit suite 39 → 111).
+- **Automatic roster snapshots fixed (migration 017, #477)**: the `roster_snapshots` auto-prune trigger had no `SECURITY DEFINER`, so its internal DELETE ran as the caller — and migration 004 had revoked DELETE on that table from anon/authenticated. Every roster-snapshot insert had been silently failing since v2.6.0 (2026-07-20). Applied to DEV and PROD; the "Restore Previous Roster" safety net is capturing snapshots again.
+- Real-database RLS test coverage added for `roster_snapshots` and `teams` (#477) — the last two of the three tables originally exposed by #342 to gain dedicated coverage. `teams`' coverage was mutation-tested (a temporarily weakened policy confirmed the test catches a real regression, not just a fixture assertion) and re-verified directly against DEV, not just CI's ephemeral stack.
+- The `rls` CI job is now a required status check on `main` and `develop` (#480).
+- `loginLimiter` (magic-link rate limiting) re-keyed from IP to email, removing a source of cross-request test interference (Story 26).
+- Design token cleanup: Stories 110/111 resolved, zero visible UI change (#296, #297).
+- Added OSS governance files: LICENSE, SECURITY.md, CONTRIBUTING.md, CODE_OF_CONDUCT.md (#452).
+- Routine CI hardening (Dependabot PR fixes, auto-update-PR-branches workflow) and dependency updates.
+- Patch bump 2.8.2 to 2.8.3.
 
 ---
 
@@ -3639,9 +3652,9 @@ not block release but prevents recurring CI churn.
 
 ---
 
-### Story 99 (P1) — Backend test suite re-authoring <!-- #252 -->
+### ✅ Story 99 (P1) — Backend test suite re-authoring <!-- #252 -->
 
-Status: In Progress — foundation shipped (PR #272, 2026-06-01); route coverage follow-up open
+Status: Resolved (2026-07-31, this session)
 Discovered: 2026-04-24 — backend suite obsolete against
 v2.3.3+ (routes restructured into src/routes/ at v2.5.17)
 Target: v2.6.x (prerequisite for Phase 4C auth gate)
@@ -3680,10 +3693,64 @@ Progress (follow-up coverage):
   Hermetic (global.fetch + supabaseAdmin singleton + signInWithOtp
   stubs). Unit suite 29 → 39. Closes the AI-proxy + auth-happy-path
   items; DOC_TEST_DEBT "AI Photo Import E2E" P2 → Resolved.
+- Between tranche 2 and this closure pass, four more files landed
+  without a ROADMAP update (approve.role.test.js, approveLink.role.test.js,
+  requestAccess.role.test.js, normalizeRole.test.js) — unit suite was
+  actually 93, not the 39 this file and backend/CLAUDE.md still claimed.
+  Corrected in both places as part of this closure — the "39" count was
+  itself a instance of the doc-vs-reality gap this story exists to close.
 
-Remaining Phase 2 candidates:
-- malformed/expired-token 401 (requireAuth) spec
-- requireAdmin rejection with a valid non-admin token
+Closure pass (2026-07-31):
+- Story 26 (rate-limiter test fragility) actually fixed, not just
+  documented: loginLimiter (auth.js) re-keyed from IP to email (fix D),
+  with a skip() exemption for requests with no email so they never
+  consume budget at all. Defense in depth: every test hitting
+  /magic-link now generates a unique email per run. RED→GREEN proven
+  via mutation test (loginLimiter.test.js, 3 specs) — reverting the fix
+  makes exactly 2 of the 3 fail, the 2 that probe the actual bug.
+  RATE-01b (integration suite) — first un-skipped to a real assertion,
+  then reverted with an accurate skip reason after CI proved it
+  unprovable in that suite: the "Backend Integration Tests (CI_SAFE,
+  prod read-only)" job runs against the already-deployed prod backend,
+  not this PR's code, so an assertion about the just-shipped email-
+  keying fix cannot pass there until a full deploy cycle after merge.
+  Real RED→GREEN proof lives in loginLimiter.test.js (hermetic, tests
+  actual code). Revisit RATE-01b once the fix has been live in prod for
+  a release.
+- Corrected scope: the original plan's tier (a)/(b) ("game-mode/
+  share-link routes") don't exist — both features write directly from
+  frontend to Supabase (RLS-enforced), never through a backend route.
+  Verified by grepping backend/src for every relevant table name — only
+  the RLS test suite (#415) references them, no route does.
+- Substituted the closest real equivalent — zero-coverage, user-facing
+  routes — and covered them: GET /me, PATCH /me, POST /logout
+  (auth.session.test.js, 8 specs) and POST /feedback (feedback.test.js,
+  7 specs).
+- Writing feedback.test.js surfaced a real production bug, not just a
+  coverage gap: admin.js and feedback.js both mount at /api/v1, and
+  admin.js's unconditional router.use(requireAuth, requireAdmin) gate
+  (the same one #252's own symptom names) intercepted EVERY request to
+  that base, including /feedback, before feedback.js's own route ever
+  ran. Every non-admin coach's feedback/bug-report submission returned
+  403 FORBIDDEN in production — only the one admin account could ever
+  submit feedback. Fixed by mounting feedbackRouter before adminRouter
+  in app.js (routing-order only, no handler modified). FB-7 is the
+  regression guard; RED→GREEN proven by reverting the mount order and
+  confirming FB-7 alone fails with exactly 403 vs its expected 201.
+- Unit suite 93 → 111 (+18: 3 loginLimiter, 8 auth.session, 7 feedback).
+
+Deliberately not closed here, spun off as a new story (see below):
+admin.js's other 7 routes (/requests, /reject, /members, /update-role,
+/reset-access, /suspend, GET /feedback admin view, GET /admin/deny-link)
+still have ONLY admin.auth.test.js's blanket 401-rejection coverage —
+zero coverage of whether the actual authorized admin action works. This
+is the same "green but vacuous" pattern #252 was created to close, now
+narrowed to a specific, named list rather than "route coverage follow-up
+open" with no list. Subsumes the two items previously listed here as
+"remaining Phase 2 candidates" (malformed/expired-token 401 spec,
+requireAdmin rejection with a valid non-admin token) — neither was ever
+written; both fold into the new story rather than staying as an
+orphaned two-item list under a now-resolved story.
 
 ---
 
@@ -3860,7 +3927,7 @@ change. Shipped via PR #295.
 
 ---
 ### Story 110 (P2) - Resolve DIVERGENT/ORPHAN token decisions (blocks C migration) <!-- #296 -->
-Status: Open
+Status: Resolved
 Discovered: 2026-06-08 - Story 109 recon
 Target: v2.5.x
 Symptom: 8 C keys do not map cleanly to tokens.js. DIVERGENT (visual change on migrate):
@@ -3868,20 +3935,65 @@ border, subtleBorder, overlayBg, text, greenField. ORPHAN (no token): navyLight,
 Impact: Until resolved, no App.jsx color slice can claim visual equivalence. Gating
 decision for the whole multi-branch sweep.
 Root cause: Known - documented in DESIGN_AUDIT.md Legacy C Object Disposition.
-Proposed fix: Per-key mint-a-token / accept-shift / retire decision; update tokens.js
-with provenance. No App.jsx edits in this Story.
+Resolution: All 8 keys resolved (PR #490) - every key mints a new token rather than
+adopting an existing one, each grounded in live App.jsx usage rather than the
+2026-06-08 doc snapshot. Two corrections surfaced along the way: redDark is real
+active usage (3 sites), not retirable; greenField is status-domain (team-readiness
+badge), not field-domain, so it mints status.ready rather than adopting field.grass.
+text.ink flagged as highest-blast-radius (20 sites incl. App.jsx's root color prop) -
+its eventual App.jsx migration is explicitly NOT provably-no-op like the other 7 and
+needs a full visual smoke pass. No App.jsx edits in this Story, as scoped.
 
 ---
 ### Story 111 (P3) - LockFlow.jsx local colors diverge from canonical tokens <!-- #297 -->
-Status: Open
+Status: Resolved
 Discovered: 2026-06-08 - Story 109 recon
 Target: v2.5.x
 Symptom: LockFlow.jsx re-declares local color vars; gold (#b8860b) and textMuted
 (rgba(15,31,61,0.45)) differ from brand.gold (#F5C842) and text.muted (#6b7280).
 Impact: Duplicated hex sync hazard; lock modal renders different gold/muted than rest of app.
 Root cause: Known - component extracted from App.jsx before the token system.
-Proposed fix: Decide preserve-as-new-tokens vs align-to-canonical, then migrate with
-RED-to-GREEN asserting intended final colors. Low priority - single isolated component.
+Resolution: PR #495. Original premise was stale - 3 of the 4 flagged keys (navy, win,
+gold) were already migrated onto tokens.* by an earlier, unrelated commit (Story 87
+BottomSheet migration) before this issue was filed; confirmed via grep before starting,
+corrected in an issue comment. Only textMuted remained. Minted color.overlay.navyStrong
+(not color.text.navyMuted as first placed) - theme.tokens.test.js enforces color.text
+as hex-only, so the rgba value has to live in the overlay family; the wrong first
+placement was caught by that exact test on a full-suite run before landing, not
+assumed correct.
+
+---
+### Story 112 (P2) — admin.js authorized-action route coverage <!-- #474 -->
+Status: Open
+Discovered: 2026-07-31 — Story 99 closure pass
+Target: v2.9.x
+Symptom: admin.auth.test.js (9 specs) proves every admin.js route rejects an
+unauthenticated or non-admin caller with 401 — but no test exercises what
+happens when an authenticated admin actually calls one of these routes.
+7 routes have zero coverage of their real behavior: GET /api/v1/requests,
+POST /api/v1/reject, GET /api/v1/members, POST /api/v1/update-role,
+POST /api/v1/reset-access, POST /api/v1/suspend, GET /api/v1/admin/deny-link.
+(POST /api/v1/approve and GET /api/v1/admin/approve-link already have
+authorized-path coverage via approve.role.test.js / approveLink.role.test.js.)
+Impact: This is the exact "green but vacuous" pattern #252 (Story 99) was
+opened to close, narrowed from "route coverage follow-up open" (no list) to
+these 7 specific routes. A regression in any authorized admin action —
+wrong role transition, wrong status filter, wrong audit-log write — would
+currently ship with a fully green CI run. Subsumes the two items previously
+tracked as "remaining Phase 2 candidates" under Story 99 (malformed/expired-
+token 401 spec, requireAdmin rejection with a valid non-admin token) —
+neither was ever written; fold both into this story's scope rather than
+leaving them orphaned under a now-resolved story.
+Root cause: Known — admin.auth.test.js was written to close the specific
+"phantom /api/v1/admin/* paths" bug (Story 99's original symptom) and never
+extended to the authorized-success path once that immediate bug was fixed.
+Proposed fix: One test file per route (or a shared admin.routes.test.js
+following the stubbing pattern in auth.session.test.js / feedback.test.js —
+stub supabaseAdmin.auth.getUser for an admin caller, stub .from() per table
+the route touches). Minimum: one 200-with-correct-side-effect spec per
+route, plus the two admin-auth edge cases folded in above. No route handler
+changes expected — this is coverage-only unless writing it surfaces a real
+bug, the same way feedback.test.js did for Story 99.
 
 ---
 ### Automated Score Reporting (County Integration)

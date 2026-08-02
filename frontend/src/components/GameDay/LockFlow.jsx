@@ -21,7 +21,7 @@ export function LockFlow({ activeWarnings, nextGame, hasPin, onConfirmLock, onRe
 
   var stepLabels = hasPin ? ["Review", "Confirm", "Lock"] : ["Review", "Confirm"];
 
-  var textMuted = "rgba(15,31,61,0.45)";
+  var textMuted = tokens.color.overlay.navyStrong;
 
   function StepIndicator() {
     return (

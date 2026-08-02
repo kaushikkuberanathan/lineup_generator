@@ -13,6 +13,19 @@ surfaced a **live security hole in a control shipped the previous day** (see
 
 This addendum closes those gaps.
 
+> **!! RLS-STATE CLAIMS BELOW ARE STALE — predates WS-3 (#411).** Every "RLS-OFF"
+> or "still RLS-OFF" statement in this file (e.g. `roster_snapshots` below, and
+> the TRUNCATE-grant table further down) reflects the 2026-07-13 capture, before
+> migration `004_rls_fixes.sql` shipped to prod (v2.6.0, 2026-07-20) and enabled
+> RLS + revoked the TRUNCATE grant on `team_data`/`teams`/`roster_snapshots`.
+> Confirmed stale by direct prod probe 2026-08-01 (Test-Health Survey Pass 3,
+> #476): anon SELECT against prod `teams` and `roster_snapshots` returns zero
+> rows with no error (the RLS-filtered signature), not the open access this
+> file describes. This addendum's VIEWS and RLS-POLICIES enumeration (structure,
+> not RLS-on/off state) is not known to be affected. Current ground truth for
+> RLS state: `docs/db/schema.sql`'s table shape + migrations 004, 013–016
+> replayed — see `backend/src/__tests__/rls/clients.js`'s header for the recipe.
+
 ---
 
 ## CORRECTION to the original baseline

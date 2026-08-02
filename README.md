@@ -1,5 +1,5 @@
 # ⚾ Lineup Generator
-> **Last Updated:** May 17, 2026 (v2.5.14 in production)
+> **Last Updated:** July 31, 2026 (v2.8.2 in production — see [ROADMAP.md](docs/product/ROADMAP.md) for release history)
 
 > **Baseball and softball lineup management for youth coaches — built on the sideline, for the sideline.**
 
@@ -67,13 +67,13 @@ Installable on iOS and Android from the browser. No App Store. No Play Store. Ta
 
 ---
 
-## Built With Claude Code + Vibe Coding
+## AI-Assisted Product Development
 
-This is a real-world example of what **AI-assisted development** makes possible for a domain expert who isn't a full-time engineer.
+This is a real-world example of what **AI-assisted development** makes possible for a domain expert who isn't a full-time engineer. Some call this "vibe coding" — but that term undersells what's actually happening here.
 
-### What "Vibe Coding" Actually Means Here
+### What This Actually Looks Like
 
-Vibe coding isn't about pasting prompts and hoping for the best. It's a disciplined, iterative co-design process — human judgment drives *what* to build, AI capability accelerates *how* it gets built.
+This isn't pasting prompts and hoping for the best. It's a disciplined, iterative co-design process — human judgment drives *what* to build, *architecture*, *security*, *testing*, and *release quality*; AI capability accelerates *how* it gets built.
 
 Here's what that looked like in practice:
 
@@ -248,7 +248,9 @@ For architecture, data models, scoring engine logic, API design, database schema
 
 ## License
 
-MIT — use it, fork it, build your own version for soccer or lacrosse or whatever sport is running your weekends.
+[MIT](LICENSE) — use it, fork it, build your own version for soccer or lacrosse or whatever sport is running your weekends.
+
+See also [SECURITY.md](SECURITY.md), [CONTRIBUTING.md](CONTRIBUTING.md), and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
 
 ---
 

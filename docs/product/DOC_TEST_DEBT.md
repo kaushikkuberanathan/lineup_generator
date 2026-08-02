@@ -57,7 +57,7 @@
 | **Risk if unfixed** | Silent regression breaks the #2 Strategic North Star ("Game Mode dugout-ready under pressure"). |
 | **Proposed test** | `frontend/src/tests/gameMode.test.js` — render GameModeScreen with fixture lineup, simulate inning advance, simulate QuickSwap tap, assert state transitions and candidate filtering (including absent-player exclusion). |
 | **Opened** | 2026-04-17 |
-| **Age** | 43 days |
+| **Age** | 106 days (corrected 2026-08-01 — Test-Health Survey Pass 4; prior entries carried a stale 43-day figure last touched at v2.5.5). Re-verified against current source: `GameModeScreen.jsx` is still untested and is confirmed still reachable — not dead code — via 3 quick-action call sites in `App.jsx` (`setGameModeActive(true)`) that bypass the DugoutView tab entirely. |
 | **Target** | v2.6.x |
 
 ### 🟠 P1 — Live Scoring Scorer-Lock Regression
@@ -180,6 +180,58 @@
 | **Age** | 0 days |
 | **Target** | v2.6.x |
 
+### 🟠 P1 — D-S348b: Migration 007's admin-panel recursion fix has no regression test (Test-Health Survey Pass 3)
+
+| | |
+|---|---|
+| **Area** | RLS / Security — `team_memberships`, `access_requests`, `feedback` policies |
+| **Description** | `backend/migrations/007_p1_fix_recursive_rls_policy.sql`'s own header states the original recursive-policy bug was found "only by KK actually logging in to the admin panel for the first time" and explicitly calls out "nothing in any test suite exercises RLS as an authenticated user" as the root cause. `policies.test.js` still does not test `team_memberships`, `access_requests`, or `feedback` policies at all — no scenario touches `is_active_admin()`, `user_sees_own_membership`, or `admin_manages_memberships`. |
+| **Risk if unfixed** | If a future edit reintroduces an inline self-referential subquery on `team_memberships` (the exact regression 007 fixed), the admin panel silently denies real admins again — and per 007's own history, the only detection mechanism today is a human noticing during manual login, not CI. |
+| **Proposed test** | Add an admin-authenticated scenario to `policies.test.js` (extend `seed.js`'s fixture with an admin-role membership) that reads `team_memberships` as that admin and asserts no recursion error. |
+| **Opened** | 2026-08-01 |
+| **Age** | 0 days |
+| **Target** | v2.9.x |
+| **Issue** | [#478](https://github.com/kaushikkuberanathan/lineup_generator/issues/478) |
+
+### 🟠 P1 — D-S355: Live-scoring anon-test backdoors (#355) have zero test surface (Test-Health Survey Pass 3)
+
+| | |
+|---|---|
+| **Area** | RLS / Security — `live_game_state`, `game_scoring_sessions`, `scoring_audit_log` |
+| **Description** | `docs/db/schema.sql` confirms four hardcoded anon-test backdoors (`at_bats_anon_test`, `game_state_anon_test`, `scorer_lock_anon_test`, `audit_log_anon_test`, scoped to the live Mud Hens team ID) plus `allow_scorer_writes USING(true) WITH CHECK(true)` policies, reproduced "because they are in prod, not because they are correct" — already tracked as a known vulnerability (#355) in ROADMAP.md/SECURITY_FRAMEWORK.md/AUTH_SECURITY_AUDIT_ROADMAP.md. Unlike #342 (committed RED-by-design as an executable spec for the fix), #355 has no equivalent test anywhere in the repo. |
+| **Risk if unfixed** | Purely a test-debt angle on an already-tracked vuln: whoever eventually fixes #355 has no test to turn green, and no automated way to confirm the fix landed or later regressed. |
+| **Proposed test** | Write the RED-by-design scenario now (mirroring S1b/S3/S4a's pattern) so #355's fix has an executable spec to turn green, per this suite's own established convention. |
+| **Opened** | 2026-08-01 |
+| **Age** | 0 days |
+| **Target** | Alongside whichever release fixes #355 — see AUTH_SECURITY_AUDIT_ROADMAP.md |
+| **Issue** | [#479](https://github.com/kaushikkuberanathan/lineup_generator/issues/479) |
+
+### 🟡 P2 — D-S348c: `access_requests`, `profiles`, `feedback`, `feature_flags` RLS policies untested (Test-Health Survey Pass 3)
+
+| | |
+|---|---|
+| **Area** | RLS / Security — defense-in-depth tables |
+| **Description** | `004_rls_fixes.sql` explicitly frames these tables as defense-in-depth (all writes go through backend routes using `supabaseAdmin`; RLS here is not the primary gate), so a coverage gap is lower risk than on `team_data`/`teams`/`roster_snapshots`. Still zero coverage in `policies.test.js`. |
+| **Risk if unfixed** | Low relative to the P0/P1 items above — the primary control (backend route auth) is separately covered by `backend/src/__tests__/admin.auth.test.js` etc. RLS here is a second line of defense that could silently stop working without anyone noticing. |
+| **Proposed test** | Opportunistic — add when touching these tables for other reasons, no dedicated sprint needed. |
+| **Opened** | 2026-08-01 |
+| **Age** | 0 days |
+| **Target** | Opportunistic, no version target |
+| **Issue** | [#482](https://github.com/kaushikkuberanathan/lineup_generator/issues/482) |
+
+### 🟠 P1 — D-S428b: `NoMembershipScreen` (Google sign-in gate-first routing) has zero tests (Test-Health Survey Pass 4)
+
+| | |
+|---|---|
+| **Area** | Auth — `frontend/src/components/Auth/NoMembershipScreen.jsx` |
+| **Description** | v2.7.0 shipped Google sign-in "gate-first — memberless sessions route to `NoMembershipScreen`." This is a real security/UX gate: a Google-authenticated user with no `team_memberships` row must never fall through to team data. No test file exists for this component. The existing umbrella item (D003, "Auth Flow End-to-End") predates the Google sign-in ship and doesn't name this specific gate-first invariant. |
+| **Risk if unfixed** | A refactor of the auth-hydration path in `useAuth.js` could accidentally treat an empty memberships array the same as a populated one, and a memberless Google sign-in could see a stale/cached team's data instead of `NoMembershipScreen`. Nothing would catch this today. |
+| **Proposed test** | `frontend/src/tests/noMembershipScreen.test.jsx` — mock `useAuth` to return a session with `memberships: []`, assert `NoMembershipScreen` renders and no team-data surface is reachable; assert the reverse (non-empty memberships) routes past it. |
+| **Opened** | 2026-08-01 |
+| **Age** | 0 days |
+| **Target** | v2.9.x |
+| **Issue** | [#481](https://github.com/kaushikkuberanathan/lineup_generator/issues/481) — filed as a standalone issue but folded under the existing D003 auth umbrella per KK's direction; no separate urgency |
+
 ### ✅ RESOLVED — D017: ScoreboardRow primitive has no test coverage
 
 - **Discovered:** 2026-05-01 (during Slice 0 / v2.5.4 Pre-release Docs Checklist walk)
@@ -277,6 +329,18 @@
 
 ## Open — Tooling / Process Gaps
 
+### 🟡 P2 — Confirm intentional default-branch=develop setting, reconcile with release docs
+
+| | |
+|---|---|
+| **Area** | Governance / repo settings |
+| **Description** | Discovered 2026-08-01 during a branch/issue-cleanup audit: this repo's GitHub default branch is `develop`, not `main`. That's why "Closes #N" auto-closed #252 and #476 on merge into `develop` tonight — GitHub's closing-keyword behavior triggers on whatever branch is configured as default. Root `CLAUDE.md`'s Branch Strategy describes `main` as "Production" and frames the whole Release Ritual around a `develop -> main` promotion, implying `main` is the conceptually primary branch — but whether `develop`-as-GitHub-default is intentional or a leftover has never been explicitly decided or documented. |
+| **Risk if unfixed** | Same category as tonight's `allow_auto_merge` and required-status-check changes: a repo setting that materially changes behavior (auto-close target, fresh-clone checkout, default PR base) sitting undocumented, waiting to be re-discovered as a surprise in a future session instead of a known, deliberate choice. |
+| **Proposed action** | Decide whether `develop` should stay the GitHub default or be switched to `main`. Whichever way, document the decision explicitly in `CLAUDE.md`'s Branch Strategy section. |
+| **Opened** | 2026-08-01 |
+| **Target** | Next session — flagged as a real item, not a footnote (KK's explicit instruction) |
+| **Issue** | [#488](https://github.com/kaushikkuberanathan/lineup_generator/issues/488) |
+
 ### 🟠 P1 — Auto-Staging Git Hook
 
 | | |
@@ -362,6 +426,12 @@
 
 *(Items move here once shipped. Format: date, version, original description summary, resolution commit.)*
 
+### August 1, 2026 — Test-Health Survey Pass 3 (#476, #477, #480)
+
+- ✅ **D-S411b — `docs/db/PROD_SCHEMA_BASELINE.md` stale, unflagged, contradicted its own designated successor doc** — Resolved same-day. Staleness banners added to `docs/db/PROD_SCHEMA_BASELINE.md` (RLS STATE section) and `PROD_SCHEMA_BASELINE_ADDENDUM_1.md` (doc-level, covering every RLS-off restatement in the file), each citing a direct read-only prod probe (2026-08-01): anon SELECT against prod `teams`/`roster_snapshots` returned zero rows with no error (the RLS-filtered signature), confirming the "RLS OFF, full CRUD+TRUNCATE" claim in both docs is stale and the WS-3 lockdown (v2.6.0) is actually live. Issue: [#476](https://github.com/kaushikkuberanathan/lineup_generator/issues/476).
+- ✅ **D-S415 — `rls` CI job promoted to a required status check** — Resolved same-day, deliberately sequenced *before* D-S348a's coverage work (#477), reversing this ledger's original recommendation: KK's reasoning was that gating first means #477's new test scenarios land already protected by the required check, rather than being added to a suite that still wasn't gating anything. Verified #415's own "stable across several consecutive runs" precondition directly via the GitHub Actions API before promoting: 13 consecutive green runs of the `rls` job on `develop` since it was added to `ci.yml` (2026-07-31 20:13 onward, commit `1e52f0b`), zero failures. `RLS Policy Suite (ephemeral)` added to `required_status_checks.contexts` on both `main` and `develop` branch protection (alongside the existing `Frontend Tests (Vitest)` and `Backend Integration Tests (CI_SAFE, prod read-only)` — neither removed or altered). Stale "NOT yet a required status check" comment in `.github/workflows/ci.yml` corrected. Issue: [#480](https://github.com/kaushikkuberanathan/lineup_generator/issues/480), closed.
+- ✅ **D-S348a — `teams` and `roster_snapshots` had zero RLS test coverage** — Resolved same-day, both halves, sequenced deliberately (higher-stakes `roster_snapshots` first, `teams` second). `roster_snapshots`: RS1-RS5 added, surfaced and fixed a live production bug along the way — the auto-prune trigger had no `SECURITY DEFINER`, so every roster-snapshot insert had been silently failing since v2.6.0 (2026-07-20); migration 017 fixed it, applied to DEV, verified 15/15 against the real database. `teams`: T1-T7 plus five positive controls added, covering all four operations (SELECT/INSERT/UPDATE/DELETE) against the actual policy shape read from migration 004 (not assumed) — including `teams_auth_insert`'s deliberately unscoped `WITH CHECK (true)` and `teams_auth_delete`'s stricter admin-only role check, distinct from UPDATE's admin/coach. Mutation-tested via a throwaway, never-merged branch: weakened `teams_auth_delete` to admin-or-coach, confirmed T7 alone went red (25/26, nothing else affected), reverted, confirmed 26/26 green again — proving the test detects a real regression, not just asserting a fixture. Re-verified 26/26 against DEV directly, not just CI's ephemeral stack. Issue: [#477](https://github.com/kaushikkuberanathan/lineup_generator/issues/477), closed.
+
 ### June 12, 2026 — Story 99 Phase 2 tranche 2 (#252)
 
 - ✅ **P2 — AI Photo Import End-to-End** — Resolved. `backend/src/__tests__/aiProxy.test.js` (6 tests, AI-1–AI-6) covers `POST /api/ai`: 503 unconfigured, **413 oversize body (the v2.2.4 regression guard)**, 400 invalid type, 200 happy-path with upstream status/body relay + call-shape assertions (model `claude-sonnet-4-6`, max_tokens, content forwarded), 504 AbortError timeout, 502 upstream-unreachable. Hermetic — `global.fetch` stubbed, `ANTHROPIC_API_KEY` save/override/restore; never bills Anthropic on a rejected request. (Story 99 / #252)
@@ -396,17 +466,19 @@
 | Priority | Test Gaps | Doc Gaps | Process Gaps | Total |
 |---|---|---|---|---|
 | 🔴 P0 | 2 | 0 | 0 | **2** |
-| 🟠 P1 | 3 | 2 | 1 | **6** |
-| 🟡 P2 | 6 | 4 | 3 | **13** |
-| **Total** | **11** | **6** | **4** | **21** |
+| 🟠 P1 | 6 | 2 | 1 | **9** |
+| 🟡 P2 | 7 | 4 | 4 | **15** |
+| **Total** | **15** | **6** | **5** | **26** |
+
+*(D-S411b, D-S415, and D-S348a all resolved same-day 2026-08-01 — see Resolved section — so none count in Open anymore. D-S348b, D-S355, D-S428b, D-S348c remain open, filed as issues #478–#479, #481–#482. New 2026-08-01: default-branch=develop confirmation, #488 — the branch-cleanup audit's real cross-terminal finding, not a footnote.)*
 
 **Age distribution:**
-- 0–30 days: 4
-- 31–60 days: 17
-- 60+ days: 0
+- 0–30 days: 7 (all opened 2026-08-01 — Test-Health Survey Passes 3 & 4)
+- 31–90 days: not recomputed this pass — the previous 31–60 / 60+ buckets were already stale relative to today; several P0/P1 items opened 2026-04-17 are now ~106 days old (see the corrected age on the Game Mode Rendering + State item above as one example). Flagged for the next full audit sweep per Audit Cadence rather than guessed here.
+- 60+ days: not recomputed this pass (see above)
 
 **Ship blockers:**
-- Next minor (v2.6.0) — must resolve all P0 before bump
+- Next minor version bump — must resolve all P0 before bump (2 P0 items open: Share Link Payload Integrity, Game Mode Rendering + State. D-S411b and D-S348a both resolved same-day 2026-08-01, see Resolved section.)
 
 ---
 
@@ -513,3 +585,13 @@
   - New test file: `backend/src/__tests__/auth.happy.test.js` — 4 tests (AUTH-1–AUTH-4) covering the `request-access` (201/409) and `magic-link` (200/403) primary paths. Hermetic via shared-`supabaseAdmin` singleton patch (also intercepts `logAuthEvent`), `signInWithOtp` stub, and `global.fetch` stub for the Resend send. Closes the "auth happy-path" half of #252.
   - #252 coverage now complete: wipe-guard (tranche 1) + AI proxy + auth happy-path.
   - Backend unit suite: 29 → 39 (+10). Dashboard: P2 test gaps 7 → 6, total open 22 → 21.
+
+- **v2.18 — August 2026 (Test-Health Survey Passes 3 & 4)**
+  - Survey-only pass, no code changes — assessment logged per KK's explicit "assessment and review only, no implementation without approval" instruction.
+  - **Pass 3 (RLS/schema)** verdict: the dedicated RLS suite (`backend/src/__tests__/rls/policies.test.js`) is genuinely rigorous — real ephemeral Postgres, correct grant/RLS/empty-table distinction, unconditional prod-rejection fence — and does **not** repeat the Passes 1–2 fake-green pattern. Real gaps found instead: **D-S411b** (P0, new) — `docs/db/PROD_SCHEMA_BASELINE.md` is stale, unflagged, and contradicts its own designated successor doc, recreating the #342/#411 "acted on a description, not the database" failure class one document over; **D-S348a** (P0, new) — `teams` and `roster_snapshots` (2 of 3 tables originally exposed by #342) have zero anon/authenticated-client RLS test coverage; **D-S348b** (P1, new) — migration 007's admin-panel recursion fix has no regression test despite its own header requesting one; **D-S355** (P1, new) — the already-tracked #355 live-scoring anon-backdoors have no test surface to turn green when fixed; **D-S415** (P1, new, process) — the `rls` CI job isn't a required status check yet; **D-S348c** (P2, new) — `access_requests`/`profiles`/`feedback`/`feature_flags` RLS policies untested (lower risk, defense-in-depth only per `004_rls_fixes.sql`'s own framing).
+  - **Pass 4 (frontend screens/data)** verdict: confirmed all pre-existing P0/P1 DOC_TEST_DEBT items (Share Link Payload Integrity, Game Mode Rendering + State, Share-link routing render path) are still accurate against current source — no fake-green pattern found there either. One new item opened: **D-S428b** (P1, new) — `NoMembershipScreen` (Google sign-in gate-first routing, shipped v2.7.0) has zero tests and wasn't specifically named under the existing D003 auth umbrella. Corrected a stale age field on the Game Mode Rendering + State item (was showing 43 days from its v2.5.5 origin; actually 106 days).
+  - Dashboard: Test gaps 11 → 16, Doc gaps 6 → 7 → 6 (net, after same-day resolution), Process gaps 4 → 5. Total open 21 → 27. P0 total 2 → 3.
+  - Age distribution not fully recomputed this pass (see dashboard note) — flagged as drift for the next full Audit Cadence sweep, consistent with the v2.13 precedent of flagging rather than guessing.
+  - **Follow-up same day (2026-08-01):** KK directed running #428's read-only `pg_policies` ground-truth check before filing anything. No Supabase MCP auth or direct Postgres connection was available in-session, so a substitute read-only prod probe was run instead (`backend/spike-428-teams-roster-probe.js`, gitignored, mirrors the existing `spike-prod-authrole.js`/`spike-grants.js` convention): anon SELECT against prod `teams`/`roster_snapshots` returned `EMPTY-NO-ERROR` (RLS-filtered, not exposure) — reads confirmed clean. The `rls_test_anon_grants` RPC (migration 013) does not exist in prod (`PGRST202`); the underlying REVOKE statements live in migration 004 (confirmed applied to prod for WS-3), so this reads as a verification-tooling gap, not a live incident — treated as "clean enough to proceed," not silently rounded to either extreme.
+  - Based on that result: **D-S411b resolved same-day** (see Resolved section, issue #476). Issues filed for the remaining six: D-S348a **#477** (teams/roster_snapshots coverage, `roster_snapshots` prioritized first), D-S348b **#478**, D-S355 **#479**, D-S415 **#480**, D-S428b **#481** (folded under D003 umbrella, no separate urgency), D-S348c **#482**.
+  - **Second follow-up same day (2026-08-01):** KK deliberately reversed this ledger's original sequencing and asked for D-S415 (#480) done *before* D-S348a's coverage work (#477), reasoning that gating first means #477's new tests land already protected rather than added to a still-non-gating suite. Verified #415's "stable across several consecutive runs" precondition via the GitHub Actions API (13/13 green `rls` runs on `develop` since the job was added) before promoting — not assumed. `RLS Policy Suite (ephemeral)` added to required status checks on both `main` and `develop`; stale ci.yml comment corrected; **D-S415 resolved same-day**, issue #480 closed. Dashboard: Process gaps 5 → 4, P1 total 10 → 9, overall total 27 → 26.
