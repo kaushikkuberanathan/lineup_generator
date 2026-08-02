@@ -180,19 +180,6 @@
 | **Age** | 0 days |
 | **Target** | v2.6.x |
 
-### 🔴 P0 — D-S348a: `teams` and `roster_snapshots` have zero RLS test coverage (Test-Health Survey Pass 3)
-
-| | |
-|---|---|
-| **Area** | RLS / Security — `backend/src/__tests__/rls/policies.test.js` |
-| **Description** | The dedicated RLS suite's 9 scenarios (S1/S3/S4/S6) only exercise `team_data` and `share_links` through a real `anon`/`authenticated` client. `teams` and `roster_snapshots` — two of the three tables originally exposed by the #342 incident (RLS fully off for months) — have **no scenario that queries them as anon or as a cross-team coach**. S4b's grant-introspection RPC checks TRUNCATE/DELETE grants on all three tables generically, but nothing proves the SELECT/INSERT/UPDATE policies defined in `backend/migrations/004_rls_fixes.sql` for `teams_auth_*` and `roster_snapshots_auth_*` actually behave as written. `roster_snapshots` is not low-stakes — per `docs/db/PROD_SCHEMA_BASELINE_ADDENDUM_1.md`, its sibling view exposes real roster contents (children's names). |
-| **Risk if unfixed** | If `roster_snapshots`'s lockdown didn't land the same way `team_data`'s did, a cross-team coach (or anon) could read another team's roster history and nothing in CI would ever go red to say so — this is exactly the class of exposure the suite exists to catch, just on the two tables it doesn't yet test. |
-| **Proposed test** | Add S3/S4a-equivalent scenarios for `teams` and `roster_snapshots` to `policies.test.js`, reusing the existing two-team/two-coach fixture in `seed.js`. Also directly exercise the `004_rls_fixes.sql:131` cast-ambiguity comment ("teams.id may be uuid or text depending on team age — cast to text for join"). Prioritize `roster_snapshots` first (exposes children's names via its sibling view). |
-| **Opened** | 2026-08-01 |
-| **Age** | 0 days |
-| **Target** | Before next RLS-adjacent migration. Note: D-S415 (the `rls` CI required-check promotion) was resolved 2026-08-01 *before* this item, not after — KK deliberately reversed the original sequencing recommendation so these new scenarios land already protected by the gate. |
-| **Issue** | [#477](https://github.com/kaushikkuberanathan/lineup_generator/issues/477) |
-
 ### 🟠 P1 — D-S348b: Migration 007's admin-panel recursion fix has no regression test (Test-Health Survey Pass 3)
 
 | | |
@@ -439,10 +426,11 @@
 
 *(Items move here once shipped. Format: date, version, original description summary, resolution commit.)*
 
-### August 1, 2026 — Test-Health Survey Pass 3 (#476, #480)
+### August 1, 2026 — Test-Health Survey Pass 3 (#476, #477, #480)
 
 - ✅ **D-S411b — `docs/db/PROD_SCHEMA_BASELINE.md` stale, unflagged, contradicted its own designated successor doc** — Resolved same-day. Staleness banners added to `docs/db/PROD_SCHEMA_BASELINE.md` (RLS STATE section) and `PROD_SCHEMA_BASELINE_ADDENDUM_1.md` (doc-level, covering every RLS-off restatement in the file), each citing a direct read-only prod probe (2026-08-01): anon SELECT against prod `teams`/`roster_snapshots` returned zero rows with no error (the RLS-filtered signature), confirming the "RLS OFF, full CRUD+TRUNCATE" claim in both docs is stale and the WS-3 lockdown (v2.6.0) is actually live. Issue: [#476](https://github.com/kaushikkuberanathan/lineup_generator/issues/476).
 - ✅ **D-S415 — `rls` CI job promoted to a required status check** — Resolved same-day, deliberately sequenced *before* D-S348a's coverage work (#477), reversing this ledger's original recommendation: KK's reasoning was that gating first means #477's new test scenarios land already protected by the required check, rather than being added to a suite that still wasn't gating anything. Verified #415's own "stable across several consecutive runs" precondition directly via the GitHub Actions API before promoting: 13 consecutive green runs of the `rls` job on `develop` since it was added to `ci.yml` (2026-07-31 20:13 onward, commit `1e52f0b`), zero failures. `RLS Policy Suite (ephemeral)` added to `required_status_checks.contexts` on both `main` and `develop` branch protection (alongside the existing `Frontend Tests (Vitest)` and `Backend Integration Tests (CI_SAFE, prod read-only)` — neither removed or altered). Stale "NOT yet a required status check" comment in `.github/workflows/ci.yml` corrected. Issue: [#480](https://github.com/kaushikkuberanathan/lineup_generator/issues/480), closed.
+- ✅ **D-S348a — `teams` and `roster_snapshots` had zero RLS test coverage** — Resolved same-day, both halves, sequenced deliberately (higher-stakes `roster_snapshots` first, `teams` second). `roster_snapshots`: RS1-RS5 added, surfaced and fixed a live production bug along the way — the auto-prune trigger had no `SECURITY DEFINER`, so every roster-snapshot insert had been silently failing since v2.6.0 (2026-07-20); migration 017 fixed it, applied to DEV, verified 15/15 against the real database. `teams`: T1-T7 plus five positive controls added, covering all four operations (SELECT/INSERT/UPDATE/DELETE) against the actual policy shape read from migration 004 (not assumed) — including `teams_auth_insert`'s deliberately unscoped `WITH CHECK (true)` and `teams_auth_delete`'s stricter admin-only role check, distinct from UPDATE's admin/coach. Mutation-tested via a throwaway, never-merged branch: weakened `teams_auth_delete` to admin-or-coach, confirmed T7 alone went red (25/26, nothing else affected), reverted, confirmed 26/26 green again — proving the test detects a real regression, not just asserting a fixture. Re-verified 26/26 against DEV directly, not just CI's ephemeral stack. Issue: [#477](https://github.com/kaushikkuberanathan/lineup_generator/issues/477), closed.
 
 ### June 12, 2026 — Story 99 Phase 2 tranche 2 (#252)
 
@@ -477,14 +465,12 @@
 
 | Priority | Test Gaps | Doc Gaps | Process Gaps | Total |
 |---|---|---|---|---|
-| 🔴 P0 | 3 | 0 | 0 | **3** |
+| 🔴 P0 | 2 | 0 | 0 | **2** |
 | 🟠 P1 | 6 | 2 | 1 | **9** |
 | 🟡 P2 | 7 | 4 | 4 | **15** |
-| **Total** | **16** | **6** | **5** | **27** |
+| **Total** | **15** | **6** | **5** | **26** |
 
-*(New 2026-08-01: default-branch=develop confirmation, #488 — the branch-cleanup audit's real cross-terminal finding, not a footnote.)*
-
-*(D-S411b and D-S415 both resolved same-day 2026-08-01 — see Resolved section — so neither counts in Open anymore. D-S348a, D-S348b, D-S355, D-S428b, D-S348c remain open, filed as issues #477–#479, #481–#482.)*
+*(D-S411b, D-S415, and D-S348a all resolved same-day 2026-08-01 — see Resolved section — so none count in Open anymore. D-S348b, D-S355, D-S428b, D-S348c remain open, filed as issues #478–#479, #481–#482. New 2026-08-01: default-branch=develop confirmation, #488 — the branch-cleanup audit's real cross-terminal finding, not a footnote.)*
 
 **Age distribution:**
 - 0–30 days: 7 (all opened 2026-08-01 — Test-Health Survey Passes 3 & 4)
@@ -492,7 +478,7 @@
 - 60+ days: not recomputed this pass (see above)
 
 **Ship blockers:**
-- Next minor version bump — must resolve all P0 before bump (3 P0 items open: Share Link Payload Integrity, Game Mode Rendering + State, and D-S348a [teams/roster_snapshots RLS coverage, issue #477]. D-S411b resolved same-day, see Resolved section.)
+- Next minor version bump — must resolve all P0 before bump (2 P0 items open: Share Link Payload Integrity, Game Mode Rendering + State. D-S411b and D-S348a both resolved same-day 2026-08-01, see Resolved section.)
 
 ---
 
