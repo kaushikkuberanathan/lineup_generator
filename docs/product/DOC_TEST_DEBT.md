@@ -381,14 +381,6 @@
 | **Opened** | 2026-04-17 |
 | **Target** | v2.4.0 |
 
-### 🟠 P1 — Diagnose share/print broken in production
-
-- **What:** Share/print functionality confirmed broken on April 24, 2026 (game day) and again April 27, 2026 (post-v2.5.1 prod smoke test). Root cause UNKNOWN.
-- **What it is NOT:** Not the `renderSharedView` hooks violation — that fix shipped in v2.1.6 (commit `46f071a`, `SharedView` component at App.jsx:2560).
-- **Investigation steps:** Reproduce locally → check browser console errors on `?s=` URLs → verify share/print buttons render → determine if share payload generation or share view rendering is failing.
-- **Target:** v2.6.0 P0
-- **Source:** Surfaced during v2.5.1 production smoke test, April 27, 2026.
-
 ### 🟠 P1 — Windows Vitest pre-push hook OOM cascade
 
 - **What:** Pre-push hook running full vitest suite OOM-cascades on Windows when module cache is cold (22 worker timeouts, 5/27 files run). Currently mitigated by warm-up workaround in CLAUDE.md.
@@ -425,6 +417,11 @@
 ## Resolved
 
 *(Items move here once shipped. Format: date, version, original description summary, resolution commit.)*
+
+### August 2, 2026 — Share/print production bug re-triaged as stale
+
+- ✅ **P1 — Diagnose share/print broken in production** — Closed as stale, not fixed fresh. Opened April 27, 2026 against `renderPrint()`/`shareCurrentLineup()` being orphaned/dead — the exact defect class Story 67 (v2.5.15, 2026-05-19) fixed weeks later; the debt entry was simply never closed out or cross-referenced afterward. Re-verified directly against current `App.jsx`: `shareCurrentLineup()` (line 2123) builds the payload, calls `dbSaveShareLink`, and constructs the URL correctly, wired to a real button (line 4351); the shared-view `Print` button (line 867) is a plain `window.print()` call, also correctly wired. Neither shows the orphaned-function/dead-handler pattern the original entry described. Triggered by KK's explicit instruction to check whether this P1 was live before prioritizing the two P0 test-coverage items below it — it was not.
+- **Separate finding surfaced during this check, not yet acted on:** `frontend/CLAUDE.md`'s "Key sections within App.jsx" documents a "Roster, Defense, Batting, Schedule, Print, Share, Links, Feedback, About" tab list that no longer exists — current navigation is `PRIMARY_TABS` (Home/My Team/Game Day/Support) with `GAMEDAY_SUBTABS` (Lineups/Songs/Dugout View) and `MORE_SUBTABS` (Account/FAQ/Feedback/Links/About/Updates/Legal). Share and Print are no longer tabs at all — Share is a sheet/modal, Print is a button on the shared-view page. This doc section needs a rewrite; flagging rather than fixing inline since it's out of scope for this pass.
 
 ### August 1, 2026 — Test-Health Survey Pass 3 (#476, #477, #480)
 
@@ -466,9 +463,11 @@
 | Priority | Test Gaps | Doc Gaps | Process Gaps | Total |
 |---|---|---|---|---|
 | 🔴 P0 | 2 | 0 | 0 | **2** |
-| 🟠 P1 | 6 | 2 | 1 | **9** |
+| 🟠 P1 | 6 | 2 | 0 | **8** |
 | 🟡 P2 | 7 | 4 | 4 | **15** |
-| **Total** | **15** | **6** | **5** | **26** |
+| **Total** | **15** | **6** | **4** | **25** |
+
+*(2026-08-02: "Diagnose share/print broken in production" resolved as stale — see Resolved section — so it no longer counts in Open Process Gaps.)*
 
 *(D-S411b, D-S415, and D-S348a all resolved same-day 2026-08-01 — see Resolved section — so none count in Open anymore. D-S348b, D-S355, D-S428b, D-S348c remain open, filed as issues #478–#479, #481–#482. New 2026-08-01: default-branch=develop confirmation, #488 — the branch-cleanup audit's real cross-terminal finding, not a footnote.)*
 
