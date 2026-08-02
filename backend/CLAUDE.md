@@ -149,17 +149,17 @@ Unit suite total: **111** (verified via `npm run test:unit`, 2026-07-31 — 0 fa
 - `backend/src/db/migrations/` is the ORIGINAL tree (001-007). It is historical.
   Do not add to it. Do not rebuild from it without reading the warnings below.
 - **`017_fix_prune_roster_snapshots_security_definer.sql` — APPLIED TO DEV
-  2026-08-01, NOT YET APPLIED TO PROD.** Fixes a live bug found while writing
-  #477's RLS coverage: the roster_snapshots auto-prune trigger has no
-  SECURITY DEFINER, so its internal DELETE runs as the caller — and migration
-  004 revoked DELETE on this table from anon/authenticated. Net effect: every
+  AND PROD, both 2026-08-01.** Fixes a live bug found while writing #477's
+  RLS coverage: the roster_snapshots auto-prune trigger has no SECURITY
+  DEFINER, so its internal DELETE runs as the caller — and migration 004
+  revoked DELETE on this table from anon/authenticated. Net effect: every
   `dbSnapshotRoster()` insert (frontend/src/supabase.js, called on app load +
-  every roster auto-save) has been silently failing since v2.6.0 (2026-07-20).
-  CI-validated against the ephemeral stack AND re-verified with
-  `npm run test:rls` run directly against DEV (15/15 pass, RS5 included) —
-  confirmed against a real persistent database, not just CI's throwaway
-  Postgres. PROD is a deliberate, separate step, not yet done. See the
-  migration file's own header for the full chain of evidence.
+  every roster auto-save) was silently failing from v2.6.0 (2026-07-20)
+  until this fix. CI-validated against the ephemeral stack, re-verified with
+  `npm run test:rls` run directly against DEV (15/15 pass, RS5 included),
+  and confirmed live on PROD via a direct query (KK). PR #486 documented
+  PROD as pending at the time it merged; that framing is now corrected —
+  see the migration file's own header for the full chain of evidence.
 
 ### !! FIVE NUMERIC COLLISIONS ACROSS THE TWO TREES !!
 

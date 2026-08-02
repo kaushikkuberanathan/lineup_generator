@@ -1,5 +1,25 @@
 export var VERSION_HISTORY = [
   {
+    version: '2.8.3',
+    date: 'August 2026',
+    headline: 'Two silent bugs fixed, backend security hardened',
+    techNote: 'Bug fixes and performance improvements',
+    userChanges: [
+      'Fixed an issue where feedback and bug report submissions were silently failing for most coaches — this now works for everyone.',
+      'Fixed a background issue where automatic roster snapshots (the safety-net data behind "Restore Previous Roster") were quietly not being saved — snapshots are being captured again.',
+    ],
+    internalChanges: [
+      'Backend test suite foundation completed: unit test count more than doubled (93 to 111), closing remaining route-coverage gaps for admin actions and session endpoints (#252).',
+      'Rate limiter on the magic-link endpoint re-keyed from IP to email address, removing a source of cross-request test interference (#26).',
+      'Added real-database Row Level Security policy test coverage for the roster_snapshots and teams tables — the last two of the three tables originally exposed by #342 to gain dedicated automated coverage (#477).',
+      'The dedicated RLS regression test suite is now a required status check on both main and develop, so a red result blocks merge instead of just being advisory (#480).',
+      'Added open-source governance files: LICENSE, SECURITY.md, CONTRIBUTING.md, CODE_OF_CONDUCT.md (#452).',
+      'Resolved the remaining legacy color-token migration decisions with no visible UI change (#296, #297).',
+      'Routine CI hardening and dependency updates.',
+      'Patch bump 2.8.2 to 2.8.3.',
+    ],
+  },
+  {
     version: '2.8.2',
     date: 'July 2026',
     headline: 'Under-the-hood improvements to reliability and code quality',
