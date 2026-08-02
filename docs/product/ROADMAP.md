@@ -1,7 +1,20 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: 2026-07-31 (v2.8.2 - public activity feed: release notes, commit metrics, deploy fix)
+> Last updated: 2026-08-01 (v2.8.3 - backend test coverage closure, RLS hardening, two silent bugs fixed)
 > MVP launched: March 24, 2026
+
+---
+
+## v2.8.3 - 2026-08-01 - Backend test coverage closure, RLS hardening, two silent production bugs fixed
+- **Feedback/bug-report submissions fixed (#252, Story 99)**: `admin.js`'s catch-all auth gate was mounted before `feedback.js` on the shared `/api/v1` base, so every non-admin coach's feedback submission silently returned 403. Fixed via mount order in `app.js`; found while closing out Story 99's backend test coverage (unit suite 39 → 111).
+- **Automatic roster snapshots fixed (migration 017, #477)**: the `roster_snapshots` auto-prune trigger had no `SECURITY DEFINER`, so its internal DELETE ran as the caller — and migration 004 had revoked DELETE on that table from anon/authenticated. Every roster-snapshot insert had been silently failing since v2.6.0 (2026-07-20). Applied to DEV and PROD; the "Restore Previous Roster" safety net is capturing snapshots again.
+- Real-database RLS test coverage added for `roster_snapshots` and `teams` (#477) — the last two of the three tables originally exposed by #342 to gain dedicated coverage. `teams`' coverage was mutation-tested (a temporarily weakened policy confirmed the test catches a real regression, not just a fixture assertion) and re-verified directly against DEV, not just CI's ephemeral stack.
+- The `rls` CI job is now a required status check on `main` and `develop` (#480).
+- `loginLimiter` (magic-link rate limiting) re-keyed from IP to email, removing a source of cross-request test interference (Story 26).
+- Design token cleanup: Stories 110/111 resolved, zero visible UI change (#296, #297).
+- Added OSS governance files: LICENSE, SECURITY.md, CONTRIBUTING.md, CODE_OF_CONDUCT.md (#452).
+- Routine CI hardening (Dependabot PR fixes, auto-update-PR-branches workflow) and dependency updates.
+- Patch bump 2.8.2 to 2.8.3.
 
 ---
 
@@ -3914,7 +3927,7 @@ change. Shipped via PR #295.
 
 ---
 ### Story 110 (P2) - Resolve DIVERGENT/ORPHAN token decisions (blocks C migration) <!-- #296 -->
-Status: Open
+Status: Resolved
 Discovered: 2026-06-08 - Story 109 recon
 Target: v2.5.x
 Symptom: 8 C keys do not map cleanly to tokens.js. DIVERGENT (visual change on migrate):
@@ -3922,20 +3935,32 @@ border, subtleBorder, overlayBg, text, greenField. ORPHAN (no token): navyLight,
 Impact: Until resolved, no App.jsx color slice can claim visual equivalence. Gating
 decision for the whole multi-branch sweep.
 Root cause: Known - documented in DESIGN_AUDIT.md Legacy C Object Disposition.
-Proposed fix: Per-key mint-a-token / accept-shift / retire decision; update tokens.js
-with provenance. No App.jsx edits in this Story.
+Resolution: All 8 keys resolved (PR #490) - every key mints a new token rather than
+adopting an existing one, each grounded in live App.jsx usage rather than the
+2026-06-08 doc snapshot. Two corrections surfaced along the way: redDark is real
+active usage (3 sites), not retirable; greenField is status-domain (team-readiness
+badge), not field-domain, so it mints status.ready rather than adopting field.grass.
+text.ink flagged as highest-blast-radius (20 sites incl. App.jsx's root color prop) -
+its eventual App.jsx migration is explicitly NOT provably-no-op like the other 7 and
+needs a full visual smoke pass. No App.jsx edits in this Story, as scoped.
 
 ---
 ### Story 111 (P3) - LockFlow.jsx local colors diverge from canonical tokens <!-- #297 -->
-Status: Open
+Status: Resolved
 Discovered: 2026-06-08 - Story 109 recon
 Target: v2.5.x
 Symptom: LockFlow.jsx re-declares local color vars; gold (#b8860b) and textMuted
 (rgba(15,31,61,0.45)) differ from brand.gold (#F5C842) and text.muted (#6b7280).
 Impact: Duplicated hex sync hazard; lock modal renders different gold/muted than rest of app.
 Root cause: Known - component extracted from App.jsx before the token system.
-Proposed fix: Decide preserve-as-new-tokens vs align-to-canonical, then migrate with
-RED-to-GREEN asserting intended final colors. Low priority - single isolated component.
+Resolution: PR #495. Original premise was stale - 3 of the 4 flagged keys (navy, win,
+gold) were already migrated onto tokens.* by an earlier, unrelated commit (Story 87
+BottomSheet migration) before this issue was filed; confirmed via grep before starting,
+corrected in an issue comment. Only textMuted remained. Minted color.overlay.navyStrong
+(not color.text.navyMuted as first placed) - theme.tokens.test.js enforces color.text
+as hex-only, so the rgba value has to live in the overlay family; the wrong first
+placement was caught by that exact test on a full-suite run before landing, not
+assumed correct.
 
 ---
 ### Story 112 (P2) — admin.js authorized-action route coverage <!-- #474 -->

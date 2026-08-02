@@ -6,8 +6,11 @@
 -- 15 pass / 0 fail, RS5 included - confirms the fix holds against a real,
 -- persistent database, not just CI's throwaway Postgres instance.
 --
--- NOT YET APPLIED TO PROD. Same DEV-first convention as migrations 005-016 -
--- PROD is a deliberate, separate step, not bundled into this one.
+-- APPLIED TO PROD: 2026-08-01 (hzaajccyurlyeweekvma) - confirmed live via a
+-- direct query against prod (KK). PR #486 (merged same day) documented this
+-- as "NOT YET APPLIED TO PROD" at the time it was written; that framing is
+-- now stale and corrected here, since it was the source of repeated
+-- confusion later in the same session.
 --
 -- ---------------------------------------------------------------------------
 -- WHY (#477 — discovered while writing roster_snapshots RLS test coverage)
