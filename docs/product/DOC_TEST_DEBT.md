@@ -156,19 +156,6 @@
 | **Age** | 0 days |
 | **Target** | v2.6.x |
 
-### 🟠 P1 — D-S348b: Migration 007's admin-panel recursion fix has no regression test (Test-Health Survey Pass 3)
-
-| | |
-|---|---|
-| **Area** | RLS / Security — `team_memberships`, `access_requests`, `feedback` policies |
-| **Description** | `backend/migrations/007_p1_fix_recursive_rls_policy.sql`'s own header states the original recursive-policy bug was found "only by KK actually logging in to the admin panel for the first time" and explicitly calls out "nothing in any test suite exercises RLS as an authenticated user" as the root cause. `policies.test.js` still does not test `team_memberships`, `access_requests`, or `feedback` policies at all — no scenario touches `is_active_admin()`, `user_sees_own_membership`, or `admin_manages_memberships`. |
-| **Risk if unfixed** | If a future edit reintroduces an inline self-referential subquery on `team_memberships` (the exact regression 007 fixed), the admin panel silently denies real admins again — and per 007's own history, the only detection mechanism today is a human noticing during manual login, not CI. |
-| **Proposed test** | Add an admin-authenticated scenario to `policies.test.js` (extend `seed.js`'s fixture with an admin-role membership) that reads `team_memberships` as that admin and asserts no recursion error. |
-| **Opened** | 2026-08-01 |
-| **Age** | 0 days |
-| **Target** | v2.9.x |
-| **Issue** | [#478](https://github.com/kaushikkuberanathan/lineup_generator/issues/478) |
-
 ### 🟠 P1 — D-S355: Live-scoring anon-test backdoors (#355) have zero test surface (Test-Health Survey Pass 3)
 
 | | |
@@ -423,6 +410,10 @@
 - ✅ **D-S415 — `rls` CI job promoted to a required status check** — Resolved same-day, deliberately sequenced *before* D-S348a's coverage work (#477), reversing this ledger's original recommendation: KK's reasoning was that gating first means #477's new test scenarios land already protected by the required check, rather than being added to a suite that still wasn't gating anything. Verified #415's own "stable across several consecutive runs" precondition directly via the GitHub Actions API before promoting: 13 consecutive green runs of the `rls` job on `develop` since it was added to `ci.yml` (2026-07-31 20:13 onward, commit `1e52f0b`), zero failures. `RLS Policy Suite (ephemeral)` added to `required_status_checks.contexts` on both `main` and `develop` branch protection (alongside the existing `Frontend Tests (Vitest)` and `Backend Integration Tests (CI_SAFE, prod read-only)` — neither removed or altered). Stale "NOT yet a required status check" comment in `.github/workflows/ci.yml` corrected. Issue: [#480](https://github.com/kaushikkuberanathan/lineup_generator/issues/480), closed.
 - ✅ **D-S348a — `teams` and `roster_snapshots` had zero RLS test coverage** — Resolved same-day, both halves, sequenced deliberately (higher-stakes `roster_snapshots` first, `teams` second). `roster_snapshots`: RS1-RS5 added, surfaced and fixed a live production bug along the way — the auto-prune trigger had no `SECURITY DEFINER`, so every roster-snapshot insert had been silently failing since v2.6.0 (2026-07-20); migration 017 fixed it, applied to DEV, verified 15/15 against the real database. `teams`: T1-T7 plus five positive controls added, covering all four operations (SELECT/INSERT/UPDATE/DELETE) against the actual policy shape read from migration 004 (not assumed) — including `teams_auth_insert`'s deliberately unscoped `WITH CHECK (true)` and `teams_auth_delete`'s stricter admin-only role check, distinct from UPDATE's admin/coach. Mutation-tested via a throwaway, never-merged branch: weakened `teams_auth_delete` to admin-or-coach, confirmed T7 alone went red (25/26, nothing else affected), reverted, confirmed 26/26 green again — proving the test detects a real regression, not just asserting a fixture. Re-verified 26/26 against DEV directly, not just CI's ephemeral stack. Issue: [#477](https://github.com/kaushikkuberanathan/lineup_generator/issues/477), closed.
 
+### August 2, 2026 — Migration 007 admin-panel recursion regression test (#478)
+
+- ✅ **D-S348b — Migration 007's admin-panel recursion fix had no regression test** — Resolved. Added `M1`–`M4` to `backend/src/__tests__/rls/policies.test.js`, plus a new `seedAdminRecursionFixture()` in `seed.js` (throwaway team + a real admin-role, active `team_memberships` row, cleaned up via the same self-contained/single-test-use pattern as `seedAdminDeleteFixture()`). Authenticates via the suite's existing `authedClient()` helper. **M1** proves a NON-admin authenticated read of `team_memberships` succeeds without error — Postgres evaluates BOTH permissive SELECT policies for that read (`user_sees_own_membership` OR `admin_manages_memberships`), so this is the broadest-reach guard: pre-007, EVERY authenticated reader recursed, not only admins. **M2** reproduces the exact scenario 007's own header names — an admin authenticating and reading `team_memberships`, which evaluates `admin_manages_memberships`'s `is_active_admin()` call, the self-referential shape that recursed before 007's `SECURITY DEFINER` fix. **M3**/**M4** extend the same guard to `access_requests` and `feedback` — the two tables 007's header calls out as sharing the same cross-table blast radius (reading them requires evaluating a `team_memberships` read internally, which tripped that table's own recursive policy pre-007). All four GREEN today (007's fix already applied) — a regression guard, not a RED-by-design spec. Verified via `node --check` only (no Docker in the authoring sandbox to run `supabase start` locally); live pass/fail depends on CI's `rls` job. Issue: [#478](https://github.com/kaushikkuberanathan/lineup_generator/issues/478), closed.
+
 ### June 12, 2026 — Story 99 Phase 2 tranche 2 (#252)
 
 - ✅ **P2 — AI Photo Import End-to-End** — Resolved. `backend/src/__tests__/aiProxy.test.js` (6 tests, AI-1–AI-6) covers `POST /api/ai`: 503 unconfigured, **413 oversize body (the v2.2.4 regression guard)**, 400 invalid type, 200 happy-path with upstream status/body relay + call-shape assertions (model `claude-sonnet-4-6`, max_tokens, content forwarded), 504 AbortError timeout, 502 upstream-unreachable. Hermetic — `global.fetch` stubbed, `ANTHROPIC_API_KEY` save/override/restore; never bills Anthropic on a rejected request. (Story 99 / #252)
@@ -457,9 +448,9 @@
 | Priority | Test Gaps | Doc Gaps | Process Gaps | Total |
 |---|---|---|---|---|
 | 🔴 P0 | 0 | 0 | 0 | **0** |
-| 🟠 P1 | 6 | 2 | 0 | **8** |
+| 🟠 P1 | 5 | 2 | 0 | **7** |
 | 🟡 P2 | 7 | 4 | 5 | **16** |
-| **Total** | **13** | **6** | **5** | **24** |
+| **Total** | **12** | **6** | **5** | **23** |
 
 *(2026-08-02: both P0 items resolved — Game Mode Rendering + State and Share Link Payload Integrity, merged from sibling branches `fix/game-mode-p0-coverage` and `fix/share-link-payload-coverage` — see Resolved section. First time this ledger has shown zero open P0s since the 2026-04-17 seed.)*
 
@@ -467,10 +458,12 @@
 
 *(2026-08-02: new P2 process gap — share payload songs-map divergence + absent-player song leakage, #502 — surfaced during the Share Link Payload Integrity P0 extraction, flag-only per KK's instruction.)*
 
-*(D-S411b, D-S415, and D-S348a all resolved same-day 2026-08-01 — see Resolved section — so none count in Open anymore. D-S348b, D-S355, D-S428b, D-S348c remain open, filed as issues #478–#479, #481–#482. New 2026-08-01: default-branch=develop confirmation, #488 — the branch-cleanup audit's real cross-terminal finding, not a footnote.)*
+*(2026-08-02: D-S348b — migration 007 admin-panel recursion regression test — resolved on a sibling branch, merged here; see Resolved section. P1 test gaps 6 → 5, test gaps total 13 → 12, P1 total 8 → 7, grand total 24 → 23.)*
+
+*(D-S411b, D-S415, D-S348a, and D-S348b all resolved — see Resolved section — so none count in Open anymore (D-S348a and the other two same-day 2026-08-01; D-S348b 2026-08-02). D-S355, D-S428b, D-S348c remain open, filed as issues #479, #481–#482. New 2026-08-01: default-branch=develop confirmation, #488 — the branch-cleanup audit's real cross-terminal finding, not a footnote.)*
 
 **Age distribution:**
-- 0–30 days: 7 (all opened 2026-08-01 — Test-Health Survey Passes 3 & 4)
+- 0–30 days: 6 (all opened 2026-08-01 — Test-Health Survey Passes 3 & 4; D-S348b, opened 2026-08-01, resolved 2026-08-02 and moved to Resolved, no longer counted here)
 - 31–90 days: not recomputed this pass — the previous 31–60 / 60+ buckets were already stale relative to today; several P0/P1 items opened 2026-04-17 are now ~106 days old (see the corrected age on the Game Mode Rendering + State item above as one example). Flagged for the next full audit sweep per Audit Cadence rather than guessed here.
 - 60+ days: not recomputed this pass (see above)
 
@@ -592,3 +585,8 @@
   - **Follow-up same day (2026-08-01):** KK directed running #428's read-only `pg_policies` ground-truth check before filing anything. No Supabase MCP auth or direct Postgres connection was available in-session, so a substitute read-only prod probe was run instead (`backend/spike-428-teams-roster-probe.js`, gitignored, mirrors the existing `spike-prod-authrole.js`/`spike-grants.js` convention): anon SELECT against prod `teams`/`roster_snapshots` returned `EMPTY-NO-ERROR` (RLS-filtered, not exposure) — reads confirmed clean. The `rls_test_anon_grants` RPC (migration 013) does not exist in prod (`PGRST202`); the underlying REVOKE statements live in migration 004 (confirmed applied to prod for WS-3), so this reads as a verification-tooling gap, not a live incident — treated as "clean enough to proceed," not silently rounded to either extreme.
   - Based on that result: **D-S411b resolved same-day** (see Resolved section, issue #476). Issues filed for the remaining six: D-S348a **#477** (teams/roster_snapshots coverage, `roster_snapshots` prioritized first), D-S348b **#478**, D-S355 **#479**, D-S415 **#480**, D-S428b **#481** (folded under D003 umbrella, no separate urgency), D-S348c **#482**.
   - **Second follow-up same day (2026-08-01):** KK deliberately reversed this ledger's original sequencing and asked for D-S415 (#480) done *before* D-S348a's coverage work (#477), reasoning that gating first means #477's new tests land already protected rather than added to a still-non-gating suite. Verified #415's "stable across several consecutive runs" precondition via the GitHub Actions API (13/13 green `rls` runs on `develop` since the job was added) before promoting — not assumed. `RLS Policy Suite (ephemeral)` added to required status checks on both `main` and `develop`; stale ci.yml comment corrected; **D-S415 resolved same-day**, issue #480 closed. Dashboard: Process gaps 5 → 4, P1 total 10 → 9, overall total 27 → 26.
+
+- **v2.19 — August 2026 (D-S348b closure, #478)**
+  - `M1`–`M4` added to `backend/src/__tests__/rls/policies.test.js`: admin-authenticated (and, for M1, non-admin-authenticated) regression coverage for migration 007's recursion fix on `team_memberships`/`access_requests`/`feedback`. New `seedAdminRecursionFixture()` + `TEAM_E`/`ADMIN_RECURSION_EMAIL` added to `seed.js`, same self-contained/single-test-use pattern as `seedAdminDeleteFixture()`/`TEAM_C`.
+  - D-S348b moved to Resolved (see above). Validated via `node --check` only in this sandbox (no Docker to run `supabase start`); live pass/fail depends on CI's `rls` job on the PR.
+  - Branch cut from `develop` after two sibling branches (`fix/game-mode-p0-coverage`, `fix/share-link-payload-coverage`) had already merged and resolved both P0 items — this ledger's dashboard picked up their numbers as the new baseline (P0 2→0, process P1 1→0/P2 +1) before this entry's own delta is applied. Net dashboard change from this entry alone: P1 test gaps 6→5, test gaps total 13→12, P1 total 8→7, overall total 24→23. (The upstream P0-resolution work did not add its own Revision History entry — flagged here rather than silently absorbed, but not backfilled as out of scope for this ticket.)
