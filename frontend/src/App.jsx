@@ -44,6 +44,7 @@ import { RequestAccessScreen }   from './components/Auth/RequestAccessScreen';
 import { PendingApprovalScreen } from './components/Auth/PendingApprovalScreen';
 import { NoMembershipScreen }    from './components/Auth/NoMembershipScreen';
 import { roleLabel } from './utils/roleLabels';
+import { buildSharePayload } from './utils/buildSharePayload';
 import Toast from './components/ui/Toast';
 import { useAuth } from './hooks/useAuth';
 import { useFeatureFlag } from '@/hooks/useFeatureFlag';
@@ -802,7 +803,7 @@ function PlayerFilterToggle({ players, selected, onSelect }) {
   );
 }
 
-function SharedView({ payload, renderFieldSVG }) {
+export function SharedView({ payload, renderFieldSVG }) {
   // Derive inning count from grid
   var innCount = 0;
   for (var k in payload.grid) {
@@ -2128,23 +2129,7 @@ export default function App() {
       has_game_id: false,
       share_type: "lineup_view"
     });
-    var payload = {
-      team:    activeTeam ? activeTeam.name + (activeTeam.ageGroup ? " " + activeTeam.ageGroup : "") : "Lineup",
-      game:    null,
-      grid:    grid,
-      batting: activeBattingOrder,
-      roster:  roster.filter(function(r) { return absentTonight.indexOf(r.name) < 0; }).map(function(r) { return r.name; }),
-      absentNames: absentTonight.length > 0 ? absentTonight.slice() : undefined,
-      songs:   (function() {
-        var s = {};
-        roster.forEach(function(p) {
-          if (p.walkUpSong || p.walkUpArtist) {
-            s[p.name] = { song: p.walkUpSong || null, artist: p.walkUpArtist || null, start: p.walkUpStart || null, end: p.walkUpEnd || null };
-          }
-        });
-        return s;
-      })()
-    };
+    var payload = buildSharePayload(activeTeam, grid, activeBattingOrder, roster, absentTonight);
     var base = window.location.href.split("?")[0];
     var url;
     if (isSupabaseEnabled) {
@@ -2170,15 +2155,7 @@ export default function App() {
 
   function shareViewerLink() {
     track("share_viewer_link", {});
-    var payload = {
-      team:    activeTeam ? activeTeam.name + (activeTeam.ageGroup ? " " + activeTeam.ageGroup : "") : "Lineup",
-      game:    null,
-      grid:    grid,
-      batting: activeBattingOrder,
-      roster:  roster.filter(function(r) { return absentTonight.indexOf(r.name) < 0; }).map(function(r) { return r.name; }),
-      absentNames: absentTonight.length > 0 ? absentTonight.slice() : undefined,
-      songs:   {}
-    };
+    var payload = buildSharePayload(activeTeam, grid, activeBattingOrder, roster, absentTonight, { includeSongs: false });
     var base = window.location.href.split("?")[0];
     var url;
     if (isSupabaseEnabled) {
