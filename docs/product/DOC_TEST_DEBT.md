@@ -429,7 +429,7 @@
 ### August 2, 2026 — Share Link Payload Integrity (P0) closed
 
 - ✅ **P0 — Share Link Payload Integrity** — Both halves of the ticket's proposed test now exist. **Payload-building half:** `shareCurrentLineup()`'s and `shareViewerLink()`'s near-duplicate inline payload construction extracted to `frontend/src/utils/buildSharePayload.js`; `buildSharePayload.test.js` (19 tests) covers field shape, absent-player filtering of the roster name list, `absentNames` presence/copy semantics, and walk-up song preservation. Mutation-tested: temporarily inverted the absent-player filter, confirmed exactly the 3 filtering-related tests went red (16/19 unaffected), reverted, confirmed 19/19 green again. **Render half:** `SharedView` (App.jsx) — previously a top-level but unexported function — made a named export with a one-line change (`export function SharedView(...)`; no other change) so it could be rendered in isolation. `frontend/src/__tests__/SharedView.test.jsx` (12 tests) renders it directly with a fixture payload and asserts every major section (header/team name/Print button, game-info vs. fallback line, player-filter pills present/absent, inning filter controls, diamond view + Bench/Out table, table-view toggle with per-inning position badges, Batting Order card with walk-up song details, absent-player footnote, footer) without throwing. Mutation-tested: temporarily short-circuited the absent-player footnote condition, confirmed exactly that 1 test went red (11/12 unaffected), reverted, confirmed 12/12 green again. Two pre-existing behavioral quirks surfaced during the extraction (songs-map divergence between the two share paths; absent players' walk-up songs still included despite name exclusion) were deliberately NOT fixed — flagged as a product-decision item, see [#502](https://github.com/kaushikkuberanathan/lineup_generator/issues/502) and the P2 entry above. Branch: `fix/share-link-payload-coverage`.
-- **Note on Game Mode Rendering + State (the other P0):** its test coverage (`GameModeScreen.test.jsx`, `QuickSwap.test.jsx`) already exists and is committed on the sibling branch `fix/share-print-debt-stale` (kept deliberately separate per KK's branch-scoping instruction — different risk tiers, different review depth). That branch's own ledger entry for the Game Mode P0 has not yet been updated to Resolved as of this writing; do that there (or reconcile on merge) rather than assuming it's done here. The "both P0s clear" state is only true once both branches land on `develop`.
+- **Note on Game Mode Rendering + State (the other P0):** its test coverage (`GameModeScreen.test.jsx`, `QuickSwap.test.jsx`) already exists and is committed on the sibling branch `fix/game-mode-p0-coverage` (renamed from `fix/share-print-debt-stale`, which undersold what the branch now carries — kept deliberately separate per KK's branch-scoping instruction, different risk tiers, different review depth). That branch's own ledger entry has since been updated to Resolved too. The "both P0s clear" state is only true once both branches land on `develop`.
 
 ### August 1, 2026 — Test-Health Survey Pass 3 (#476, #477, #480)
 
@@ -475,7 +475,7 @@
 | 🟡 P2 | 7 | 4 | 5 | **16** |
 | **Total** | **14** | **6** | **6** | **26** |
 
-*(2026-08-02: Share Link Payload Integrity P0 resolved on this branch — see Resolved section. Game Mode Rendering + State P0 remains open in THIS branch's copy of the ledger because its test files live on sibling branch `fix/share-print-debt-stale`, not here — do not treat the count above as "both P0s clear" until that branch's own ledger update lands and both merge to develop.)*
+*(2026-08-02: Share Link Payload Integrity P0 resolved on this branch — see Resolved section. Game Mode Rendering + State P0 remains open in THIS branch's copy of the ledger because its test files live on sibling branch `fix/game-mode-p0-coverage`, not here — do not treat the count above as "both P0s clear" until that branch's own ledger update lands and both merge to develop.)*
 
 *(2026-08-02: new P2 process gap — share payload songs-map divergence + absent-player song leakage, #502 — surfaced during the Share Link Payload Integrity P0 extraction, flag-only per KK's instruction.)*
 
@@ -487,7 +487,7 @@
 - 60+ days: not recomputed this pass (see above)
 
 **Ship blockers:**
-- Next minor version bump — must resolve all P0 before bump. Share Link Payload Integrity resolved 2026-08-02 (see Resolved section, branch `fix/share-link-payload-coverage`). Game Mode Rendering + State's test coverage also already exists (branch `fix/share-print-debt-stale`) but that branch's ledger entry is not yet flipped to Resolved — confirm it there before treating the gate as clear. D-S411b and D-S348a both resolved same-day 2026-08-01, see Resolved section.
+- Next minor version bump — must resolve all P0 before bump. Share Link Payload Integrity resolved 2026-08-02 (see Resolved section, branch `fix/share-link-payload-coverage`). Game Mode Rendering + State also resolved 2026-08-02 (branch `fix/game-mode-p0-coverage`) — gate is code- and ledger-complete on both branches, but not "clear" for real until both merge to `develop`. D-S411b and D-S348a both resolved same-day 2026-08-01, see Resolved section.
 
 ---
 
