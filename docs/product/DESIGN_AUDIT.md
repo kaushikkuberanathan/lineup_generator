@@ -756,6 +756,7 @@ Specific values are anchored in this document (§7, Token Mapping Table). The co
    - **Story 113 / #496 — `cream` disposition.** Never audited; blocks nothing else, but the table isn't "every key decided" until this closes.
    - **Story 114 / #497 — `text` App.jsx call-site verification.** Token-layer decision already made (Story 110); this is the separate, still-open question of whether the App.jsx root-render risk is actually safe to swap. A full visual smoke pass across every screen, not a snapshot — because inheritance means an untouched region could silently depend on this value without its own explicit `color`.
 3. **Migrate by App.jsx region, not by key** — `textMuted` (125 sites) and most of the other ADOPT keys aren't concentrated in one tab; they're spread across nearly the whole file. Slicing by region (not by key) is what makes each slice's snapshot tractable. Proposed region order, one branch per slice, each RED→GREEN with a snapshot pinning pre/post hex equivalence, each soaked overnight:
+   - **Binding obligation, not a suggestion:** each slice below must run Story 114's Step 1/2 methodology (structural inheritance-candidate search + `getComputedStyle` verification — see §Story 114 evidence below) against its own tab's content before that slice can claim the `text.ink` swap is safe there. Story 114 itself only covers the chrome that's always present regardless of tab (done, see below) — every region slice inherits the *obligation*, not the *result*. A slice that skips this and just assumes `text` is free reintroduces exactly the assumption Story 114 exists to eliminate.
    1. Header + nav chrome (`S.header`, `S.logoWrap`, ~lines 677–900) — small, high-visibility, proves the snapshot-pinning pattern first. Bundle `navyLight`'s literal-hex header-gradient sites here.
    2. Roster tab
    3. Defense/Batting grid tabs
@@ -767,8 +768,65 @@ Specific values are anchored in this document (§7, Token Mapping Table). The co
 4. **Retire `var C`** only after the last consumer is migrated; add a keys-present guard test first so a stray leftover reference fails loudly instead of silently keeping the dead object alive.
 5. Sequence behind or alongside App.jsx Phase 4 decomposition where possible — migrating a region is cheaper once it is a component consuming tokens via props/primitive. Coordination between the two tracks is a product call, not assumed here.
 
+### Story 114 / #497 evidence artifact — exhaustive Step 1 (structural candidate search), chrome + `SharedView`
+
+Scope: both independent inheritance roots' *own* structure, plus every "always-present chrome" element reachable from the main app shell regardless of active tab (Toast, header/logo, sub-tab bars, install banner, bottom nav, exit sheet, PIN modal, edit-team modal, `needRefresh` banner, `LockFlow`, `tabContent`'s own inline JSX before it dispatches to per-tab render functions). Exhaustive, not sampled, per the explicit instruction that a sampled search reintroduces the exact assumption this story exists to eliminate.
+
+**Root 1 — `SharedView()` (lines 805–1116):**
+
+| Element | Ancestor chain | Result |
+|---|---|---|
+| Header (team name, game info, print button) | root → header div | All explicit (`C.gold`, `rgba(255,255,255,*)`) |
+| Controls row (inning pills, view toggle) | root → controls div | All explicit (`C.textMuted`, `#fff`, `C.navy`) |
+| Diamond/table view (bench table, position badges) | root → view div | All explicit (`C.navy`, `#dc2626`, `#ccc`, `C.textMuted`) |
+| Batting order — batter number circle, position list, song info | root → `S.card` (no color) → row div (no color) | Explicit except one case below |
+| **Batting order — player name div (line 1064–1065)** | root (`C.text`) → `S.card` (no color, confirmed) → row div (no color) → name div (`color: isSelectedBatter ? "#b45309" : undefined`) | **GENUINE FINDING.** When not the selected batter (the default case), `color` is `undefined` — genuinely inherits `C.text` from the root. Confirmed `S.card` has no `color` of its own (only background/border/shadow/padding) — chain reaches the root uninterrupted. |
+| Footer | root → footer div (`color:C.textMuted`) → child divs | Inherits `C.textMuted`, not `C.text` — different, already-resolved token, not a risk for this key |
+| `<PlayerFilterToggle>` (child component) | separate render tree | All explicit (`#0f1f3d` / `#555` both branches) |
+| `<BrandMark>` (child component) | separate render tree | Pure SVG, explicit `fill=` throughout, no CSS `color` dependency at all |
+| `renderFieldSVG(...)` (passed-in prop, SVG diamond) | separate render tree | SVG `<text fill="white">` and friends — confirmed zero `fill="currentColor"` usage, so SVG `fill` inheritance never bridges to CSS `color` here |
+
+**Root 2 — main app shell chrome (line 7904 onward, tab-dispatch content excluded per the agreed boundary):**
+
+| Element | Result |
+|---|---|
+| `S.header`/`logoWrap`/`logoCircle`/`logoTitle`/`logoSub` | `logoCircle`/`logoTitle` explicit (`C.gold`); `logoSub` explicit (`rgba(255,255,255,0.5)`); `header`/`logoWrap` have no `color` at all but wrap only explicit-or-opaque-safe children |
+| `<Toast/>` | Wrapper has no `color`, but every text-bearing child sets its own (`#e2e8f0`, `#fff`) — no inheriting text node |
+| `<OfflineIndicator/>` | Fully token-driven already (Phase 3 migration), zero `C` dependency |
+| `<NowBattingBar/>` | Fully token-driven already, zero `C` dependency |
+| `subTabBar` (both `gameday` and `more` branches, via `subTabStyle()`) | All explicit (`#fff` / `C.textMuted`) |
+| Install banner | All explicit (`#fff`, `rgba(255,255,255,*)`, `#f5c842`, `#0f1f3d`) |
+| `needRefresh` banner | One bare `<span>` inherits — but from the banner's own explicit `color:'#ffffff'` ancestor, not the root. Not a `C.text` risk |
+| `renderBottomNav()` | All explicit (`C.gold` / `disabled` / `rgba(255,255,255,*)`) — icon + label inherit from the button's own explicit color, not the root |
+| `renderExitSheet()` | All explicit |
+| `renderPinModal()` | All explicit. Also confirms `S.btn()` **always** returns an explicit `color:col` — every variant (`primary`/`gold`/`ghost`/`danger`) *and* the default (`var col = C.text`) — so every `...S.btn(...)` spread anywhere in the app is safe from this specific risk, by construction |
+| `<LockFlow/>` | Already migrated (Story 111/#297) — token-driven, irrelevant to this key |
+| Edit-team modal | All explicit |
+| `tabContent`'s own inline JSX (context label, locked-lineup banner, dispatch to per-tab renderers) | All explicit. Everything *past* this — `renderTeamTab()`, `renderLineups()`, `renderSongs()`, `renderAccount()`, `renderFeedback()`, `renderLinks()`, `renderAbout()`, `renderUpdates()`, `<ParentView/>`, `<LegalSection/>`, `<FAQSection/>` — is genuinely per-tab content, correctly out of Story 114's scope per the agreed boundary; verified as each region slice reaches it |
+
+**Process gap surfaced, not silently dropped:** `<GameModeScreen/>` and the in-app `<DugoutView/>` (lines ~7996–8039) are nested *inside* this root — unlike the share-link `isViewer` branch, which renders via a completely separate `<ErrorBoundary>` tree outside it. Neither is covered by Story 114 (they're not "always-present chrome") nor by any of the 7 numbered region slices above (they're full-screen modes, not tabs or modals). This is a real hole in the region-slice plan, not an oversight to quietly patch — needs its own slice or explicit assignment before the sweep can claim full coverage. **Filed as Story 116 / #503**, same treatment as Story 115's `S.app` byproduct — not left as a paragraph in this doc with no tracked issue.
+
+**Net result of the exhaustive search: exactly one genuine finding** (`SharedView` line 1064). Everything else checked — every leaf, every ancestor, every child component and passed-in render prop — resolves to an explicit color that isn't `C.text`, or (for `S.card`/`header`/`logoWrap`) has no color at all and wraps only already-verified-safe children.
+
+### Story 114 / #497 — Step 2: runtime verification (2026-08-02)
+
+**Method.** Local `npm run dev` (frontend, Vite 6.4.3, port 5173) loaded in an isolated browser tab. `SharedView` was exercised via the real `?share=<base64>` code path (`App.jsx`'s `JSON.parse(decodeURIComponent(escape(atob(shareParam))))` decoder), not a mock — payload: 2-player roster, both with a `grid` and a `batting` order, no `svPlayer` set so `isSelectedBatter` is `false` for every entry, forcing the exact `color: undefined` branch at line 1065 for both rendered rows.
+
+**Flagged element (line 1064–1065) — CONFIRMED.** `getComputedStyle` on both rendered player-name divs (`firstName(name)`, no inline `color` in either — `el.style.color === ''`) returned `color: rgb(26, 26, 46)`. `#1a1a2e` is `C.text`'s literal value (`App.jsx:667`) — exact match, not merely "some inherited color." This settles the one open question Step 1 could not: that the DOM's real cascade, not just the JSX ancestor chain on paper, actually resolves this element to the root's `C.text` with nothing intervening. Confirms the finding is real and quantifies exactly what a `text.ink` swap would need to preserve (`#1a1a2e`) for this site to stay a zero-visual-change MINT rather than a silent shift.
+
+**Chrome spot-confirmation.** No authenticated session is reachable in this headless verification path — magic-link requires a real inbox, Google OAuth requires a real login, and driving either here would mean an agent completing a login flow, which is out of bounds regardless of feasibility. `http://localhost:5173/` with no session renders `NoMembershipScreen` (the pre-auth login form), not Root 2's header/nav chrome — every element on that screen already carries its own explicit inline `color` (confirmed via `getComputedStyle`: heading `rgb(15,23,42)`, label `rgb(55,65,81)`, buttons `rgb(255,255,255)` / `rgb(37,99,235)`), consistent with Step 1's finding that pre-auth surfaces don't rely on inheritance at all.
+
+For Root 2 itself, spot-confirmation was done as an independent second source-reading pass (distinct from, not a restatement of, the Step 1 table) rather than a live DOM read, since none of these sites carry the `isSelectedBatter`-style runtime branch that made the SharedView case ambiguous on paper — a second read of the literal object/JSX settles them with the same confidence a DOM read would:
+- `S.logoCircle` (`App.jsx:687–692`) — explicit `color:C.gold`, confirmed directly in the style object (not just inferred from the table row).
+- `S.logoTitle` (`App.jsx:693`) — explicit `color:C.gold`.
+- `S.logoSub` (`App.jsx:694`) — explicit `color:"rgba(255,255,255,0.5)"`.
+- `S.header`/`S.logoWrap` (`App.jsx:679–686`) — re-confirmed neither object defines `color` at all; re-read their actual JSX usage (`App.jsx:7912–7927`) to confirm every direct child is one of the three rows above, `<BrandMark/>` (SVG, no CSS `color` dependency), or a background-only sync-status dot with no text node — no untracked fourth child slipped through.
+- `needRefresh` banner — two independent render sites exist (`App.jsx:3337` and `App.jsx:8040`), not one; both were re-checked (Step 1's table only cited one). Both set explicit `color:'#ffffff'` on the banner div itself, and both banners' `<span>` children inherit from that div, not from either root. Two sites, same conclusion — not a discrepancy from Step 1, just a completeness gap in which line number the table pointed at, worth recording since Step 1's own standard was exhaustive-not-sampled.
+
+**Step 2 result:** the one genuine finding is confirmed and quantified at runtime; every chrome item Step 1 called safe is now independently re-confirmed via a second read (live DOM where an authenticated route was reachable, second source pass where it was not). Story 114's chrome-scope methodology (Step 1 + Step 2) is complete. The binding obligation on the 7 region slices (§Recommended migration shape, item 3) to run this same methodology against their own tab content is unaffected — this closes only the always-present-chrome portion.
+
 **Logistics that will bite if skipped, confirmed 2026-08-02:**
 - **`App.jsx` is a Locked File** (root `CLAUDE.md`) — every slice's actual edit needs the gate phrase *"all clear — App.jsx editing approved"*, every time, not once at the start.
 - **Skip-worktree is currently set** on `App.jsx` (`git ls-files -v` shows the `S` flag — Bug #11). `git diff`/`git status` will show nothing even after real edits until `git update-index --no-skip-worktree frontend/src/App.jsx` is run first; re-lock with `--skip-worktree` after each commit.
 
-**This Story (#294) ships this disposition table only. No source code changes.**
+**Story 106 (#294) shipped this disposition table only. No source code changes.** (Attribution corrected 2026-08-02 — this note originally sat directly below the disposition table it describes; Stories 110–114 were appended below it in later sessions without updating the reference, leaving it misread as a closing note for Story 114/#497. It documents Story 106's original table, not Story 114.)
