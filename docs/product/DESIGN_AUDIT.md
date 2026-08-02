@@ -715,7 +715,7 @@ Specific values are anchored in this document (§7, Token Mapping Table). The co
 ## Legacy `C` Object — App.jsx Disposition (Story 109 / Issue #294)
 
 **Recon date:** 2026-06-08 (T2 UX track)
-**Status:** Decision recorded — migration deferred, multi-branch.
+**Status:** Decision recorded — migration deferred, multi-branch. **Update 2026-08-01 (Story 110 / #296):** all 8 DIVERGENT/ORPHAN keys resolved — see per-key disposition table below. `tokens.js` updated with provenance; no App.jsx edits (per #296's own scope). #296 was briefly, accidentally auto-closed by PR #298 on 2026-06-08 (GitHub's closing-keyword parser matched the substring "close #296" inside a sentence that read "does NOT close #296/#297" — negation isn't parsed) and has been reopened; the decisions below were never actually made until now.
 **Scope:** The flat `var C = {...}` color object defined in App.jsx (STYLES section). 20 keys, 437 `C.` reference sites in App.jsx. This predates the semantic token system in `theme/tokens.js` and was never migrated when the nested tokens landed. This section records the per-key disposition so the eventual sweep is mechanical, not investigative.
 
 ### Why this is deferred, not done now
@@ -739,18 +739,18 @@ Specific values are anchored in this document (§7, Token Mapping Table). The co
 | win | #27ae60 | color.status.success #27AE60 | **ADOPT** |
 | loss | #c8102e | color.brand.red #C8102E | **ADOPT** (loss==brand.red, not status.error) |
 | tie | #d4a017 | color.status.warning #D4A017 | **ADOPT** |
-| border | rgba(0,0,0,0.06) | color.border.subtle rgba(15,31,61,0.08) | **DIVERGENT** — black vs navy tint; migration is a visual change. Decide: adopt border.subtle (navy) or mint a neutral-black border token. |
-| subtleBorder | rgba(0,0,0,0.04) | overlay.navyWash rgba(15,31,61,0.04) | **DIVERGENT** — same opacity, black vs navy hue. Same decision as border. |
-| overlayBg | rgba(0,0,0,0.5) | overlay.backdrop rgba(5,10,25,0.97) | **DIVERGENT** — different opacity and hue; C.overlayBg is a lighter scrim. Decide: mint overlay.scrimLight or adopt backdrop (visual change). |
-| navyLight | #1a3260 | none (chrome is #1E3A5F) | **ORPHAN** — no token. Used in header gradient. Mint brand.navyLight or map to surface.chrome (visual change). |
-| redDark | #9b0c22 | none | **ORPHAN** — darker brand red. Mint brand.redDark or retire if unused post-audit. |
-| text | #1a1a2e | text.primary #0F1F3D | **DIVERGENT** — near-black vs navy. C.text is the body-text default; mapping to text.primary (navy) shifts all default text. Decide: mint text.ink (#1a1a2e) or accept navy shift. |
-| canceled | #7f8c8d | none | **ORPHAN** — game-canceled gray. Mint status.neutral; text.tertiary (slate #94A3B8) differs. |
-| greenField | #2e7d32 | field.grass #2d7a3a | **DIVERGENT** — close but not equal green. Decide: adopt field.grass (slight shift) or mint. |
+| border | rgba(0,0,0,0.06) | color.border.subtle rgba(15,31,61,0.08) | **RESOLVED (Story 110 / #296) — MINT `color.border.neutral`.** 15 App.jsx call sites; hue and opacity both differ from border.subtle — adopting would be a real visual shift at real scale. |
+| subtleBorder | rgba(0,0,0,0.04) | overlay.navyWash rgba(15,31,61,0.04) | **RESOLVED — MINT `color.overlay.neutralWash`.** 2 call sites; paired with `border`'s decision for a consistent neutral-tint family alongside the existing navy-tint family. |
+| overlayBg | rgba(0,0,0,0.5) | overlay.backdrop rgba(5,10,25,0.97) | **RESOLVED — MINT `color.overlay.scrimLight`.** 3 live full-screen modal-backdrop sites (a narrow `C.overlayBg`-only grep found 0 — broadening to the literal value caught them). Adopting backdrop (0.97) would nearly double backdrop darkness across all 3. |
+| navyLight | #1a3260 | none (chrome is #1E3A5F) | **RESOLVED — MINT `color.brand.navyLight`.** 5 live sites, all header/nav gradient stops paired with brand.navy. surface.chrome is a genuinely different navy (game-day-strip/Toast band), not a gradient partner. |
+| redDark | #9b0c22 | none | **RESOLVED — MINT `color.brand.redDark`.** Confirmed real, active usage: 3 sites, shared "primary CTA" gradient dark stop paired with brand.red. Not unused — retire was never viable once checked. |
+| text | #1a1a2e | text.primary #0F1F3D | **RESOLVED — MINT `color.text.ink`.** Highest blast radius in the batch: 20 App.jsx sites, including the app-root `color:` prop — this is the whole app's inherited default text color. text.primary is a documented navy alias for emphasis/header text, not body copy; text.body (#374151) is a separate, lighter Story-60 value for specific components. Neither is a safe substitute. **The eventual App.jsx call-site migration for this key is NOT "provably no-op" like the other 7 — it needs a full visual smoke pass, not a snapshot-diff assumption.** (Same warning is baked into the token's own provenance comment in tokens.js so it travels with the code, not just this doc.) |
+| canceled | #7f8c8d | none | **RESOLVED — MINT `color.status.neutral`.** 1 site (game-canceled status badge). text.tertiary (#94A3B8) is a cooler, lighter slate — different enough to notice on a status badge. |
+| greenField | #2e7d32 | field.grass #2d7a3a | **RESOLVED — MINT `color.status.ready`, NOT adopt field.grass.** Correction to this table's own original framing: the one real call site (`statusColor = "#2e7d32"`, Home-screen team-readiness badge, "Ready" state) has nothing to do with the diamond SVG — it's status-domain, not field-domain. field.grass is a near-identical hex, but reusing it would violate this file's own "name tokens by role, not appearance" rule despite the negligible value delta. status.success (#27AE60) is a distinct, brighter green — also not a substitute. |
 
 ### Recommended migration shape (future, multi-branch)
 
-1. **Resolve the 6 DIVERGENT/ORPHAN decisions first** (own Story): mint or retire each, update `tokens.js` with provenance. No App.jsx edits.
+1. ~~**Resolve the 8 DIVERGENT/ORPHAN decisions first** (own Story): mint or retire each, update `tokens.js` with provenance. No App.jsx edits.~~ **DONE (Story 110 / #296, 2026-08-01)** — see resolved table above. (This line previously said "6"; the table always had 8 — 5 DIVERGENT + 3 ORPHAN. Corrected.)
 2. **Migrate ADOPT keys by surface, not all at once** — one App.jsx region per branch (header, schedule, roster grid, scoring), each RED→GREEN with a snapshot pinning pre/post hex equivalence, each soaked overnight.
 3. **Retire `var C`** only after the last consumer is migrated; a keys-present guard catches stray references.
 4. Sequence behind App.jsx Phase 4 decomposition where possible — migrating a region is cheaper once it is a component consuming tokens via props/primitive.
