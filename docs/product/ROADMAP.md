@@ -4007,6 +4007,38 @@ Proposed fix: Confirm color.text.ink is still the right target (already
 preserves current value exactly - verification, not a new decision), do the
 full visual smoke pass, then the mechanical swap at 20 sites is identical
 to the other ADOPT keys.
+Update 2026-08-02: Step 1 (exhaustive structural search, both inheritance
+roots + all always-present chrome) and Step 2 (runtime getComputedStyle
+verification) both done - one genuine finding (SharedView line 1064-1065,
+confirmed at runtime to resolve to #1a1a2e / C.text exactly), every chrome
+item independently re-confirmed safe. Methodology closed; the 20+2-site
+App.jsx swap itself has not started (gated on the App.jsx unlock phrase).
+See DESIGN_AUDIT.md Story 114 evidence artifact for the full record.
+
+---
+### Story 116 (P2) - GameModeScreen/DugoutView region-slice coverage gap (App.jsx var C sweep) <!-- #503 -->
+Status: Open
+Discovered: 2026-08-02 - Story 114's exhaustive Step 1 structural search
+Target: resolve before the App.jsx color sweep can claim full coverage -
+not blocking any of the other region slices individually
+Symptom: GameModeScreen and the in-app DugoutView (App.jsx lines
+~7996-8039) render nested inside the same color:C.text root Story 114
+audited, but they're full-screen modes reached via navigation state, not
+tabs or modals - so they fell outside every one of the 7 originally-planned
+region slices' stated boundary without anyone deciding to exclude them.
+Impact: The var C sweep could ship "complete" across all 7 original slices
+while this surface's own inheritance risk was never checked by Story 114's
+methodology or any slice's.
+Root cause: Scope boundary gap - the region-slice plan followed App.jsx's
+tab structure; Game Mode isn't reached via a tab.
+Decided 2026-08-02: dedicated 8th region slice, sequenced last (not folded
+into slice 1 or slice 7 - see DESIGN_AUDIT.md §Recommended migration shape,
+item 8, for the full reasoning). Sequenced last because game-mode/ and
+ScoringMode/ are each their own Locked File requiring their own gate phrase
+in addition to App.jsx's, and this is the live game-day surface - proving
+the migration pattern on six lower-stakes slices first is the safer order.
+Proposed fix: When slice 8 starts, run Story 114's Step 1/2 methodology
+against GameModeScreen/DugoutView specifically, then the mechanical swap.
 
 ---
 ### Automated Score Reporting (County Integration)
