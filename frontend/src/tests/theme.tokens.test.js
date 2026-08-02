@@ -57,12 +57,37 @@ describe('Group 2 — color sub-groups', function () {
     });
   });
 
-  test('2.3: color.surface has correct keys as non-empty strings; cream is absent', function () {
-    ['page', 'card', 'dark', 'tableHeader', 'chrome'].forEach(k => {
+  // Story 113 (#496) — this test used to assert `.not.toHaveProperty('cream')`.
+  // Archaeology before removing it (2026-08-02), because a negative assertion
+  // with no documented rationale could equally be a considered decision or an
+  // accident, and this repo's own history has plenty of both:
+  //   - git blame traces the exclusion to 85d1c19f (2026-05-02), the SAME
+  //     commit that authored tokens.js, DESIGN_AUDIT.md, and this test file
+  //     together — so it wasn't a defensive add by someone unaware of context.
+  //   - BUT: unlike this doc's other documented exclusions (Purple family
+  //     "role unconfirmed", #F9FAFB "near-duplicate, collapsed"), DESIGN_AUDIT.md
+  //     never mentions `cream`/`#fdf6ec` anywhere — not in the disposition
+  //     table, not in the raw §1.1 hex-frequency inventory, despite `cream`
+  //     sitting at exactly that table's own stated qualifying threshold
+  //     (≥5 occurrences) and several OTHER exactly-5x colors being captured
+  //     there. The doc's own §1 admits the recon was manually truncated
+  //     ("150+ estimated; recon output truncated after ~60 entries").
+  //   - `C.cream` itself predates the audit by 5+ weeks (introduced in
+  //     App.jsx 2026-03-23, commit 58d664a) — it was sitting in the same
+  //     `var C` block as every key that DID get captured, available to be
+  //     found, not a later addition the recon couldn't have seen.
+  // Conclusion: this reads as a genuine recon gap encoded as a contract, not
+  // a merits-based rejection — cream was never found, so its absence was
+  // asserted as if that were the complete, correct shape. Resolved via
+  // Story 113 (#496): minted `color.surface.cream`, preserving the original
+  // `#fdf6ec` value exactly. See DESIGN_AUDIT.md's Legacy C Object section
+  // for the full disposition (surface.page is not close — cool vs warm cast;
+  // surface.tableHeader is value-close but wrong-domain).
+  test('2.3: color.surface has correct keys as non-empty strings, including cream', function () {
+    ['page', 'card', 'dark', 'tableHeader', 'chrome', 'cream'].forEach(k => {
       expect(typeof tokens.color.surface[k]).toBe('string');
       expect(tokens.color.surface[k].length).toBeGreaterThan(0);
     });
-    expect(tokens.color.surface).not.toHaveProperty('cream');
   });
 
   test('2.4: color.text has all keys as non-empty strings', function () {

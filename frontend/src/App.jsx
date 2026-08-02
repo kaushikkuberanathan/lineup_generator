@@ -675,7 +675,7 @@ var C = {
 };
 
 var S = {
-  app: { minHeight:"100vh", background:C.cream, fontFamily:"Georgia,'Times New Roman',serif", color:C.text },
+  app: { minHeight:"100vh", background:tokens.color.surface.cream, fontFamily:"Georgia,'Times New Roman',serif", color:C.text },
   header: {
     background:"linear-gradient(135deg,#0f1f3d 0%,#1a3260 100%)",
     borderBottom:"4px solid " + C.red,
@@ -840,7 +840,7 @@ function SharedView({ payload, renderFieldSVG }) {
   var teamInitial = payload.team ? payload.team.charAt(0).toUpperCase() : "L";
 
   return (
-    <div style={{ minHeight:"100vh", background:C.cream, fontFamily:"Georgia,'Times New Roman',serif", color:C.text }}>
+    <div style={{ minHeight:"100vh", background:tokens.color.surface.cream, fontFamily:"Georgia,'Times New Roman',serif", color:C.text }}>
 
       {/* ── Header ─────────────────────────────────────────────── */}
       <div style={{ background:"linear-gradient(135deg,#0f1f3d,#1a3260)", borderBottom:"4px solid " + C.red, padding:"14px 20px" }}>
@@ -7531,7 +7531,7 @@ export default function App() {
     var _showGameMode = roster.length > 0 && schedule.length > 0;
 
     subTabBar = (
-      <div style={{ display:"flex", gap:"4px", alignItems:"center", padding:"8px 12px 4px", background:C.cream, borderBottom:"1px solid " + C.border }}>
+      <div style={{ display:"flex", gap:"4px", alignItems:"center", padding:"8px 12px 4px", background:tokens.color.surface.cream, borderBottom:"1px solid " + C.border }}>
         {GAMEDAY_SUBTABS.map(function(st) {
           if (st.launcher) {
             if (!_showGameMode) { return null; }
@@ -7612,7 +7612,7 @@ export default function App() {
     );
   } else if (primaryTab === "more") {
     subTabBar = (
-      <div style={{ display:"flex", gap:"4px", padding:"8px 12px 4px", background:C.cream, borderBottom:"1px solid " + C.border }}>
+      <div style={{ display:"flex", gap:"4px", padding:"8px 12px 4px", background:tokens.color.surface.cream, borderBottom:"1px solid " + C.border }}>
         {MORE_SUBTABS.map(function(st) {
           return (
             <button key={st.key}
@@ -7901,7 +7901,7 @@ export default function App() {
   // ── Always column: header + top tabs + scrollable content ──────────────
   // TODO: extract — deferred (Header depends on syncStatus, isLandscape, screen, activeTeam, isOnline, activeTeamId — extract after OfflineIndicator is stable and state prop drilling pattern is established)
   return (
-    <div style={{ height: isStandalone ? "100dvh" : "100svh", display:"flex", flexDirection:"column", overflow:"hidden", background: primaryTab === "more" ? "linear-gradient(160deg,#0f1f3d 0%,#1a3260 55%,#2a0a0a 100%)" : C.cream, fontFamily:"Georgia,'Times New Roman',serif", color:C.text }}>
+    <div style={{ height: isStandalone ? "100dvh" : "100svh", display:"flex", flexDirection:"column", overflow:"hidden", background: primaryTab === "more" ? "linear-gradient(160deg,#0f1f3d 0%,#1a3260 55%,#2a0a0a 100%)" : tokens.color.surface.cream, fontFamily:"Georgia,'Times New Roman',serif", color:C.text }}>
       <Toast
         open={toast.open}
         message={toast.message}
