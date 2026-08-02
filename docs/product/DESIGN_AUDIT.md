@@ -715,44 +715,60 @@ Specific values are anchored in this document (§7, Token Mapping Table). The co
 ## Legacy `C` Object — App.jsx Disposition (Story 109 / Issue #294)
 
 **Recon date:** 2026-06-08 (T2 UX track)
-**Status:** Decision recorded — migration deferred, multi-branch. **Update 2026-08-01 (Story 110 / #296):** all 8 DIVERGENT/ORPHAN keys resolved — see per-key disposition table below. `tokens.js` updated with provenance; no App.jsx edits (per #296's own scope). #296 was briefly, accidentally auto-closed by PR #298 on 2026-06-08 (GitHub's closing-keyword parser matched the substring "close #296" inside a sentence that read "does NOT close #296/#297" — negation isn't parsed) and has been reopened; the decisions below were never actually made until now.
-**Scope:** The flat `var C = {...}` color object defined in App.jsx (STYLES section). 20 keys, 437 `C.` reference sites in App.jsx. This predates the semantic token system in `theme/tokens.js` and was never migrated when the nested tokens landed. This section records the per-key disposition so the eventual sweep is mechanical, not investigative.
+**Status:** Decision recorded — migration deferred, multi-branch. **Update 2026-08-01 (Story 110 / #296):** all 8 DIVERGENT/ORPHAN keys resolved — see per-key disposition table below. `tokens.js` updated with provenance; no App.jsx edits (per #296's own scope). #296 was briefly, accidentally auto-closed by PR #298 on 2026-06-08 (GitHub's closing-keyword parser matched the substring "close #296" inside a sentence that read "does NOT close #296/#297" — negation isn't parsed) and has been reopened; the decisions below were never actually made until now. **Update 2026-08-02 (sweep-scoping session):** re-verified everything below against the *current* `App.jsx`, not the April 30 recon snapshot. Two corrections: (1) the "20 keys" figure was right but this table only ever disposed 19 of them — `cream` was never audited at all, filed as **Story 113 / #496**; (2) real call-site count today is **310, not 437** (App.jsx has shrunk via Stories 87/92/93/94/77 since the original audit — genuinely less remaining work, not a miscount). Also: `text`'s token-layer decision (Story 110, resolved) and its App.jsx call-site risk are two different things — the latter is now its own verification story, **Story 114 / #497**, because App.jsx's own root render node sets `color:C.text` directly (confirmed at the literal root `<div>` App returns, not just the `S.app` style constant) — a region slice cannot safely assume this key is free.
+**Scope:** The flat `var C = {...}` color object defined in App.jsx (STYLES section). 20 keys, **310 `C.` reference sites** in App.jsx as of 2026-08-02 (was 437 at the 2026-04-30 recon; see update above). This predates the semantic token system in `theme/tokens.js` and was never migrated when the nested tokens landed. This section records the per-key disposition so the eventual sweep is mechanical, not investigative.
 
 ### Why this is deferred, not done now
 
-- **437 call sites** in a single 5,000+ line file. This is the migration backlog the token authors parked, not a slice. One PR cannot soak-test 437 visual touch points against Game Mode / share-link surfaces safely.
+- **310 call sites** (verified 2026-08-02) in a single 8,000+ line file. This is the migration backlog the token authors parked, not a slice. One PR cannot soak-test that many visual touch points against Game Mode / share-link surfaces safely.
 - **Primitives-first sequencing.** `tokens.js` header states consumers arrive via primitives (v2.5.0+), not by App.jsx reaching directly into `tokens.color.*`. `shadow.elevated` is explicitly tagged "App.jsx call sites (locked); migration deferred to v2.5.x." Migrating `C` direct-to-token would violate that intended consumer path.
 - **Values genuinely diverge.** Several `C` keys have no token equivalent or differ from the nearest token (see table). Migration is therefore a design decision per orphan key, not a rename.
 
 ### Per-key disposition
 
-| `C` key | value | nearest token | disposition |
-|---|---|---|---|
-| navy | #0f1f3d | color.brand.navy #0F1F3D | **ADOPT** (case-only diff) |
-| red | #c8102e | color.brand.red #C8102E | **ADOPT** |
-| gold | #f5c842 | color.brand.gold #F5C842 | **ADOPT** |
-| white | #ffffff | color.surface.card / text.onDark | **ADOPT** (context-dependent) |
-| cardBg | #ffffff | color.surface.card #FFFFFF | **ADOPT** |
-| subtleBg | #f8fafc | color.surface.page #F8FAFC | **ADOPT** |
-| textMuted | #6b7280 | color.text.muted #6b7280 | **ADOPT** (exact) |
-| subtleText | #9ca3af | color.text.disabled #9CA3AF | **ADOPT** |
-| win | #27ae60 | color.status.success #27AE60 | **ADOPT** |
-| loss | #c8102e | color.brand.red #C8102E | **ADOPT** (loss==brand.red, not status.error) |
-| tie | #d4a017 | color.status.warning #D4A017 | **ADOPT** |
-| border | rgba(0,0,0,0.06) | color.border.subtle rgba(15,31,61,0.08) | **RESOLVED (Story 110 / #296) — MINT `color.border.neutral`.** 15 App.jsx call sites; hue and opacity both differ from border.subtle — adopting would be a real visual shift at real scale. |
-| subtleBorder | rgba(0,0,0,0.04) | overlay.navyWash rgba(15,31,61,0.04) | **RESOLVED — MINT `color.overlay.neutralWash`.** 2 call sites; paired with `border`'s decision for a consistent neutral-tint family alongside the existing navy-tint family. |
-| overlayBg | rgba(0,0,0,0.5) | overlay.backdrop rgba(5,10,25,0.97) | **RESOLVED — MINT `color.overlay.scrimLight`.** 3 live full-screen modal-backdrop sites (a narrow `C.overlayBg`-only grep found 0 — broadening to the literal value caught them). Adopting backdrop (0.97) would nearly double backdrop darkness across all 3. |
-| navyLight | #1a3260 | none (chrome is #1E3A5F) | **RESOLVED — MINT `color.brand.navyLight`.** 5 live sites, all header/nav gradient stops paired with brand.navy. surface.chrome is a genuinely different navy (game-day-strip/Toast band), not a gradient partner. |
-| redDark | #9b0c22 | none | **RESOLVED — MINT `color.brand.redDark`.** Confirmed real, active usage: 3 sites, shared "primary CTA" gradient dark stop paired with brand.red. Not unused — retire was never viable once checked. |
-| text | #1a1a2e | text.primary #0F1F3D | **RESOLVED — MINT `color.text.ink`.** Highest blast radius in the batch: 20 App.jsx sites, including the app-root `color:` prop — this is the whole app's inherited default text color. text.primary is a documented navy alias for emphasis/header text, not body copy; text.body (#374151) is a separate, lighter Story-60 value for specific components. Neither is a safe substitute. **The eventual App.jsx call-site migration for this key is NOT "provably no-op" like the other 7 — it needs a full visual smoke pass, not a snapshot-diff assumption.** (Same warning is baked into the token's own provenance comment in tokens.js so it travels with the code, not just this doc.) |
-| canceled | #7f8c8d | none | **RESOLVED — MINT `color.status.neutral`.** 1 site (game-canceled status badge). text.tertiary (#94A3B8) is a cooler, lighter slate — different enough to notice on a status badge. |
-| greenField | #2e7d32 | field.grass #2d7a3a | **RESOLVED — MINT `color.status.ready`, NOT adopt field.grass.** Correction to this table's own original framing: the one real call site (`statusColor = "#2e7d32"`, Home-screen team-readiness badge, "Ready" state) has nothing to do with the diamond SVG — it's status-domain, not field-domain. field.grass is a near-identical hex, but reusing it would violate this file's own "name tokens by role, not appearance" rule despite the negligible value delta. status.success (#27AE60) is a distinct, brighter green — also not a substitute. |
+| `C` key | value | sites (2026-08-02) | nearest token | disposition |
+|---|---|---|---|---|
+| navy | #0f1f3d | 56 | color.brand.navy #0F1F3D | **ADOPT** (case-only diff) |
+| red | #c8102e | 33 | color.brand.red #C8102E | **ADOPT** |
+| gold | #f5c842 | 17 | color.brand.gold #F5C842 | **ADOPT** |
+| white | #ffffff | 7 | color.surface.card / text.onDark | **ADOPT** (context-dependent) |
+| cardBg | #ffffff | 3 | color.surface.card #FFFFFF | **ADOPT** |
+| subtleBg | #f8fafc | — | color.surface.page #F8FAFC | **ADOPT** |
+| textMuted | #6b7280 | 125 | color.text.muted #6b7280 | **ADOPT** (exact) — highest single-key call-site count of any key in the table; spans nearly the entire file (line 722→7794 of 8159), not concentrated in one region |
+| subtleText | #9ca3af | 1 | color.text.disabled #9CA3AF | **ADOPT** |
+| win | #27ae60 | 22 | color.status.success #27AE60 | **ADOPT** |
+| loss | #c8102e | — | color.brand.red #C8102E | **ADOPT** (loss==brand.red, not status.error) |
+| tie | #d4a017 | 2 | color.status.warning #D4A017 | **ADOPT** |
+| border | rgba(0,0,0,0.06) | 15 | color.border.subtle rgba(15,31,61,0.08) | **RESOLVED (Story 110 / #296) — MINT `color.border.neutral`.** Hue and opacity both differ from border.subtle — adopting would be a real visual shift at real scale. |
+| subtleBorder | rgba(0,0,0,0.04) | 2 | overlay.navyWash rgba(15,31,61,0.04) | **RESOLVED — MINT `color.overlay.neutralWash`.** Paired with `border`'s decision for a consistent neutral-tint family alongside the existing navy-tint family. |
+| overlayBg | rgba(0,0,0,0.5) | 0 via `C.overlayBg` / 3 via literal hex | overlay.backdrop rgba(5,10,25,0.97) | **RESOLVED — MINT `color.overlay.scrimLight`.** 3 live full-screen modal-backdrop sites, but all bypass `C` entirely — every real usage is the literal `rgba(0,0,0,0.5)`, not `C.overlayBg`. Migration mechanic is find-the-literal, not swap-the-reference. Adopting backdrop (0.97) would nearly double backdrop darkness across all 3. |
+| navyLight | #1a3260 | 0 via `C.navyLight` / 5 via literal hex | none (chrome is #1E3A5F) | **RESOLVED — MINT `color.brand.navyLight`.** 5 live sites, all header/nav gradient stops paired with brand.navy — same as overlayBg, every real usage bypasses `C` and uses the literal hex directly. surface.chrome is a genuinely different navy (game-day-strip/Toast band), not a gradient partner. |
+| redDark | #9b0c22 | 1 via `C.redDark` / 2 more via literal hex (3 total) | none | **RESOLVED — MINT `color.brand.redDark`.** Confirmed real, active usage across both forms. Not unused — retire was never viable once checked. |
+| text | #1a1a2e | 20 | text.primary #0F1F3D | **Token layer RESOLVED (Story 110 / #296) — MINT `color.text.ink`.** App.jsx call-site migration is a SEPARATE, still-open item: **Story 114 / #497.** Highest blast radius of any resolved key: confirmed 2026-08-02 that App.jsx's own root render node sets `color:C.text` directly (both the `S.app` style constant AND the literal root `<div>` App's main render function returns) — this is the whole app's inherited default text color, not a leaf-level style. text.primary is a documented navy alias for emphasis/header text, not body copy; text.body (#374151) is a separate, lighter Story-60 value for specific components. Neither is a safe substitute. **Do not bundle this key into a region slice that assumes it's a free swap — Story 114 needs a full visual smoke pass across every screen first, not a snapshot-diff assumption**, precisely because inheritance means an untouched region could be silently relying on this root value with no explicit `color` of its own. |
+| canceled | #7f8c8d | 1 | none | **RESOLVED — MINT `color.status.neutral`.** Game-canceled status badge. text.tertiary (#94A3B8) is a cooler, lighter slate — different enough to notice on a status badge. |
+| greenField | #2e7d32 | 0 via `C.greenField` / 1 via literal hex | field.grass #2d7a3a | **RESOLVED — MINT `color.status.ready`, NOT adopt field.grass.** Correction to this table's own original framing: the one real call site (`statusColor = "#2e7d32"`, Home-screen team-readiness badge, "Ready" state) has nothing to do with the diamond SVG — it's status-domain, not field-domain, and bypasses `C` entirely (literal hex only). field.grass is a near-identical hex, but reusing it would violate this file's own "name tokens by role, not appearance" rule despite the negligible value delta. status.success (#27AE60) is a distinct, brighter green — also not a substitute. |
+| cream | #fdf6ec | 5 | surface.page #F8FAFC (not close) / surface.tableHeader #F5EFE4 (close in value, wrong domain) | **OPEN — Story 113 / #496.** Never audited by this table until 2026-08-02. Sets the literal app-wide page background (`S.app.background`, and App's root `<div>`). No safe adopt candidate exists in-role; a value-close but domain-mismatched candidate exists (`surface.tableHeader`) — see #496 for the full analysis. |
 
-### Recommended migration shape (future, multi-branch)
+### Recommended migration shape (updated 2026-08-02, sweep-scoping session)
 
-1. ~~**Resolve the 8 DIVERGENT/ORPHAN decisions first** (own Story): mint or retire each, update `tokens.js` with provenance. No App.jsx edits.~~ **DONE (Story 110 / #296, 2026-08-01)** — see resolved table above. (This line previously said "6"; the table always had 8 — 5 DIVERGENT + 3 ORPHAN. Corrected.)
-2. **Migrate ADOPT keys by surface, not all at once** — one App.jsx region per branch (header, schedule, roster grid, scoring), each RED→GREEN with a snapshot pinning pre/post hex equivalence, each soaked overnight.
-3. **Retire `var C`** only after the last consumer is migrated; a keys-present guard catches stray references.
-4. Sequence behind App.jsx Phase 4 decomposition where possible — migrating a region is cheaper once it is a component consuming tokens via props/primitive.
+1. ~~**Resolve the 8 DIVERGENT/ORPHAN decisions first** (own Story): mint or retire each, update `tokens.js` with provenance. No App.jsx edits.~~ **DONE (Story 110 / #296, 2026-08-01)** — see resolved table above.
+2. **Two more prerequisites, discovered while scoping the actual sweep — resolve before any region slice starts, not concurrently:**
+   - **Story 113 / #496 — `cream` disposition.** Never audited; blocks nothing else, but the table isn't "every key decided" until this closes.
+   - **Story 114 / #497 — `text` App.jsx call-site verification.** Token-layer decision already made (Story 110); this is the separate, still-open question of whether the App.jsx root-render risk is actually safe to swap. A full visual smoke pass across every screen, not a snapshot — because inheritance means an untouched region could silently depend on this value without its own explicit `color`.
+3. **Migrate by App.jsx region, not by key** — `textMuted` (125 sites) and most of the other ADOPT keys aren't concentrated in one tab; they're spread across nearly the whole file. Slicing by region (not by key) is what makes each slice's snapshot tractable. Proposed region order, one branch per slice, each RED→GREEN with a snapshot pinning pre/post hex equivalence, each soaked overnight:
+   1. Header + nav chrome (`S.header`, `S.logoWrap`, ~lines 677–900) — small, high-visibility, proves the snapshot-pinning pattern first. Bundle `navyLight`'s literal-hex header-gradient sites here.
+   2. Roster tab
+   3. Defense/Batting grid tabs
+   4. Schedule tab — bundle `greenField`'s literal-hex "Ready" status-badge site here (or split to its own Home-adjacent slice — open call)
+   5. Print/Share/Links tabs
+   6. Feedback/About tabs
+   7. Modals/overlays — bundle `overlayBg`'s 3 literal-hex full-screen backdrop sites here
+   - **`overlayBg`, `navyLight`, `greenField` need a different migration mechanic** at their respective slices: every real usage bypasses `C` entirely (literal hex duplicates, not `C.key` references) — find-the-literal-and-replace, not swap-the-reference. Confirmed 2026-08-02 via broadened grep past the narrow `C.key`-only pattern (which showed 0 for all three and would have missed them).
+4. **Retire `var C`** only after the last consumer is migrated; add a keys-present guard test first so a stray leftover reference fails loudly instead of silently keeping the dead object alive.
+5. Sequence behind or alongside App.jsx Phase 4 decomposition where possible — migrating a region is cheaper once it is a component consuming tokens via props/primitive. Coordination between the two tracks is a product call, not assumed here.
+
+**Logistics that will bite if skipped, confirmed 2026-08-02:**
+- **`App.jsx` is a Locked File** (root `CLAUDE.md`) — every slice's actual edit needs the gate phrase *"all clear — App.jsx editing approved"*, every time, not once at the start.
+- **Skip-worktree is currently set** on `App.jsx` (`git ls-files -v` shows the `S` flag — Bug #11). `git diff`/`git status` will show nothing even after real edits until `git update-index --no-skip-worktree frontend/src/App.jsx` is run first; re-lock with `--skip-worktree` after each commit.
 
 **This Story (#294) ships this disposition table only. No source code changes.**
