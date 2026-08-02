@@ -193,19 +193,6 @@
 | **Target** | v2.9.x |
 | **Issue** | [#478](https://github.com/kaushikkuberanathan/lineup_generator/issues/478) |
 
-### 🟠 P1 — D-S355: Live-scoring anon-test backdoors (#355) have zero test surface (Test-Health Survey Pass 3)
-
-| | |
-|---|---|
-| **Area** | RLS / Security — `live_game_state`, `game_scoring_sessions`, `scoring_audit_log` |
-| **Description** | `docs/db/schema.sql` confirms four hardcoded anon-test backdoors (`at_bats_anon_test`, `game_state_anon_test`, `scorer_lock_anon_test`, `audit_log_anon_test`, scoped to the live Mud Hens team ID) plus `allow_scorer_writes USING(true) WITH CHECK(true)` policies, reproduced "because they are in prod, not because they are correct" — already tracked as a known vulnerability (#355) in ROADMAP.md/SECURITY_FRAMEWORK.md/AUTH_SECURITY_AUDIT_ROADMAP.md. Unlike #342 (committed RED-by-design as an executable spec for the fix), #355 has no equivalent test anywhere in the repo. |
-| **Risk if unfixed** | Purely a test-debt angle on an already-tracked vuln: whoever eventually fixes #355 has no test to turn green, and no automated way to confirm the fix landed or later regressed. |
-| **Proposed test** | Write the RED-by-design scenario now (mirroring S1b/S3/S4a's pattern) so #355's fix has an executable spec to turn green, per this suite's own established convention. |
-| **Opened** | 2026-08-01 |
-| **Age** | 0 days |
-| **Target** | Alongside whichever release fixes #355 — see AUTH_SECURITY_AUDIT_ROADMAP.md |
-| **Issue** | [#479](https://github.com/kaushikkuberanathan/lineup_generator/issues/479) |
-
 ### 🟡 P2 — D-S348c: `access_requests`, `profiles`, `feedback`, `feature_flags` RLS policies untested (Test-Health Survey Pass 3)
 
 | | |
@@ -426,6 +413,10 @@
 
 *(Items move here once shipped. Format: date, version, original description summary, resolution commit.)*
 
+### August 2, 2026 — D-S355 RED-by-design spec added (#479)
+
+- ✅ **D-S355 — Live-scoring anon-test backdoors (#355) had zero test surface** — Resolved as a test-debt item (the underlying #355 vulnerability itself is NOT fixed — see below). Added an `LS` describe block to `backend/src/__tests__/rls/policies.test.js` (LS1–LS7 + LS7-control, 8 scenarios) covering all four hardcoded `*_anon_test` backdoors (`at_bats_anon_test`, `game_state_anon_test`, `scorer_lock_anon_test`, `audit_log_anon_test`) plus the three `allow_scorer_writes USING(true) WITH CHECK(true)` catch-alls on `live_game_state`/`game_scoring_sessions`/`scoring_audit_log`, mirroring S1b/S3/S4a's established RED-by-design convention exactly. Uses `LS_BACKDOOR_TEAM_ID` ('9000000000001', the "Demo All-Stars" fixture team — the second of the two hardcoded ids in the backdoor array) rather than the real Mud Hens id, and `LS_ARBITRARY_TEAM_ID` to prove `allow_scorer_writes` has zero team scoping at all — strictly broader than the four named backdoors. LS7-control (an arbitrary team against `at_bats`) is the one scenario in the block expected to stay green, documenting that `at_bats` has no catch-all and so its exposure is narrower than the other three tables'. **7 of the 8 new scenarios are deliberately RED today** — #355 is real and unfixed — and will turn green only when #355 itself is fixed in the database, per this suite's own established convention (exactly how S1b/S3/S4a behaved before WS-3). **CI implication surfaced, not resolved here:** the `rls` job was promoted to a required status check the same release (#480) — a required check that now contains permanently-red tests until #355 lands is a genuine process tension the debt item's "RED-by-design" convention did not anticipate; flagged for KK to decide (options include: fixing #355 promptly, marking the `rls` job non-blocking until then, or using `node:test`'s per-test `skip` with an explicit "#355, tracked" reason to keep the check green without deleting the spec). Validated via `node --check` (syntax) and a live `node --test` run against an unreachable local endpoint (structural correctness — all 8 new tests registered and failed only on `ECONNREFUSED`, no reference errors) — full RLS-semantics validation still depends on CI's `rls` job (ephemeral Docker stack), unavailable in this sandbox. Issue: [#479](https://github.com/kaushikkuberanathan/lineup_generator/issues/479).
+
 ### August 1, 2026 — Test-Health Survey Pass 3 (#476, #477, #480)
 
 - ✅ **D-S411b — `docs/db/PROD_SCHEMA_BASELINE.md` stale, unflagged, contradicted its own designated successor doc** — Resolved same-day. Staleness banners added to `docs/db/PROD_SCHEMA_BASELINE.md` (RLS STATE section) and `PROD_SCHEMA_BASELINE_ADDENDUM_1.md` (doc-level, covering every RLS-off restatement in the file), each citing a direct read-only prod probe (2026-08-01): anon SELECT against prod `teams`/`roster_snapshots` returned zero rows with no error (the RLS-filtered signature), confirming the "RLS OFF, full CRUD+TRUNCATE" claim in both docs is stale and the WS-3 lockdown (v2.6.0) is actually live. Issue: [#476](https://github.com/kaushikkuberanathan/lineup_generator/issues/476).
@@ -466,14 +457,14 @@
 | Priority | Test Gaps | Doc Gaps | Process Gaps | Total |
 |---|---|---|---|---|
 | 🔴 P0 | 2 | 0 | 0 | **2** |
-| 🟠 P1 | 6 | 2 | 1 | **9** |
+| 🟠 P1 | 5 | 2 | 1 | **8** |
 | 🟡 P2 | 7 | 4 | 4 | **15** |
-| **Total** | **15** | **6** | **5** | **26** |
+| **Total** | **14** | **6** | **5** | **25** |
 
-*(D-S411b, D-S415, and D-S348a all resolved same-day 2026-08-01 — see Resolved section — so none count in Open anymore. D-S348b, D-S355, D-S428b, D-S348c remain open, filed as issues #478–#479, #481–#482. New 2026-08-01: default-branch=develop confirmation, #488 — the branch-cleanup audit's real cross-terminal finding, not a footnote.)*
+*(D-S411b, D-S415, and D-S348a all resolved same-day 2026-08-01, and D-S355 resolved 2026-08-02 as a test-debt item — see Resolved section — so none count in Open anymore. Note D-S355's resolution is scoped to "the executable spec now exists," NOT "the vulnerability is fixed" — #355 itself is still open and tracked in ROADMAP.md/SECURITY_FRAMEWORK.md/AUTH_SECURITY_AUDIT_ROADMAP.md; see the Resolved entry for the CI-required-check tension this surfaced. D-S348b, D-S428b, D-S348c remain open, filed as issues #478, #481–#482. New 2026-08-01: default-branch=develop confirmation, #488 — the branch-cleanup audit's real cross-terminal finding, not a footnote.)*
 
 **Age distribution:**
-- 0–30 days: 7 (all opened 2026-08-01 — Test-Health Survey Passes 3 & 4)
+- 0–30 days: 6 (all opened 2026-08-01 — Test-Health Survey Passes 3 & 4; D-S355 opened same day but resolved 2026-08-02, moved to Resolved above)
 - 31–90 days: not recomputed this pass — the previous 31–60 / 60+ buckets were already stale relative to today; several P0/P1 items opened 2026-04-17 are now ~106 days old (see the corrected age on the Game Mode Rendering + State item above as one example). Flagged for the next full audit sweep per Audit Cadence rather than guessed here.
 - 60+ days: not recomputed this pass (see above)
 
