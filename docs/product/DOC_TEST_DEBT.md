@@ -48,18 +48,6 @@
 | **Age** | 11 days |
 | **Target** | v2.6.x |
 
-### 🔴 P0 — Game Mode Rendering + State
-
-| | |
-|---|---|
-| **Area** | Game Mode (full-screen dugout view) |
-| **Description** | No tests cover GameModeScreen rendering, inning advance, batter advance, or QuickSwap candidate filtering. The QuickSwap `onClick` regression in March 2026 (DefenseDiamond missing handlers) would not have been caught by tests. Scope expanded in v2.5.4: now includes DugoutView's flag-ON render path (mounts ScoringModeEntry + LiveScoringPanel + RestoreScoreModal under feature flag COMBINED_GAMEMODE_AND_SCORING). Coverage gaps are inherited from ScoringMode, not new — but the new container surface needs at least a smoke test before flag flips ON in production. **Update v2.5.5:** `DugoutView.test.jsx` (5 smoke tests) added — "smoke test before flag flip" threshold met for the DugoutView container. GameModeScreen itself remains untested. |
-| **Risk if unfixed** | Silent regression breaks the #2 Strategic North Star ("Game Mode dugout-ready under pressure"). |
-| **Proposed test** | `frontend/src/tests/gameMode.test.js` — render GameModeScreen with fixture lineup, simulate inning advance, simulate QuickSwap tap, assert state transitions and candidate filtering (including absent-player exclusion). |
-| **Opened** | 2026-04-17 |
-| **Age** | 106 days (corrected 2026-08-01 — Test-Health Survey Pass 4; prior entries carried a stale 43-day figure last touched at v2.5.5). Re-verified against current source: `GameModeScreen.jsx` is still untested and is confirmed still reachable — not dead code — via 3 quick-action call sites in `App.jsx` (`setGameModeActive(true)`) that bypass the DugoutView tab entirely. |
-| **Target** | v2.6.x |
-
 ### 🟠 P1 — Live Scoring Scorer-Lock Regression
 
 | | |
@@ -418,6 +406,11 @@
 
 *(Items move here once shipped. Format: date, version, original description summary, resolution commit.)*
 
+### August 2, 2026 — Game Mode Rendering + State (P0) closed
+
+- ✅ **P0 — Game Mode Rendering + State** — `frontend/src/components/game-mode/GameModeScreen.test.jsx` (15 tests) and `frontend/src/components/game-mode/QuickSwap.test.jsx` (13 tests) added, 28 total. Covers: initial render + `initialInning` restore, Exit button, the defense/batting half-completion state machine (including the inning modal not opening until BOTH halves are marked done), the 200ms inning-advance transition, last-inning-exits-instead-of-advancing, QuickSwap open/close/swap wiring, the Out Tonight strip's absent-player visibility rules, and QuickSwap's candidate-list absent-player exclusion (including excluding the current occupant if they're marked absent). Genuine RED evidence surfaced while authoring, not synthetic: the `completeBothHalves()` test helper's assumed 2-click sequence was wrong (actual behavior needs 3 — the 2nd click reads the pre-click `bothHalvesDone` value and just re-calls `handleEndHalf()`), and an ambiguous `getByText('SS')` query collided between the header and an occupied position's badge — both caught the tests failing for a real reason before being fixed, satisfying the RED-checkpoint rule without needing a separate mutation pass. Re-verified 28/28 passing directly on this branch before writing this entry. Branch: `fix/share-print-debt-stale`.
+- **Note on Share Link Payload Integrity (the other P0):** resolved the same day on sibling branch `fix/share-link-payload-coverage` (`buildSharePayload.js`/`.test.js` + `SharedView.test.jsx`, both mutation-tested) — kept deliberately separate per KK's branch-scoping instruction. See that branch's own ledger entry. The "both P0s clear" state is only true once both branches land on `develop`.
+
 ### August 2, 2026 — Share/print production bug re-triaged as stale
 
 - ✅ **P1 — Diagnose share/print broken in production** — Closed as stale, not fixed fresh. Opened April 27, 2026 against `renderPrint()`/`shareCurrentLineup()` being orphaned/dead — the exact defect class Story 67 (v2.5.15, 2026-05-19) fixed weeks later; the debt entry was simply never closed out or cross-referenced afterward. Re-verified directly against current `App.jsx`: `shareCurrentLineup()` (line 2123) builds the payload, calls `dbSaveShareLink`, and constructs the URL correctly, wired to a real button (line 4351); the shared-view `Print` button (line 867) is a plain `window.print()` call, also correctly wired. Neither shows the orphaned-function/dead-handler pattern the original entry described. Triggered by KK's explicit instruction to check whether this P1 was live before prioritizing the two P0 test-coverage items below it — it was not.
@@ -462,10 +455,12 @@
 
 | Priority | Test Gaps | Doc Gaps | Process Gaps | Total |
 |---|---|---|---|---|
-| 🔴 P0 | 2 | 0 | 0 | **2** |
+| 🔴 P0 | 1 | 0 | 0 | **1** |
 | 🟠 P1 | 6 | 2 | 0 | **8** |
 | 🟡 P2 | 7 | 4 | 4 | **15** |
-| **Total** | **15** | **6** | **4** | **25** |
+| **Total** | **14** | **6** | **4** | **24** |
+
+*(2026-08-02: Game Mode Rendering + State P0 resolved on this branch — see Resolved section. Share Link Payload Integrity P0 remains open in THIS branch's copy of the ledger because its test files live on sibling branch `fix/share-link-payload-coverage`, not here — do not treat the count above as "both P0s clear" until that branch's own ledger update lands and both merge to develop.)*
 
 *(2026-08-02: "Diagnose share/print broken in production" resolved as stale — see Resolved section — so it no longer counts in Open Process Gaps.)*
 
@@ -477,7 +472,7 @@
 - 60+ days: not recomputed this pass (see above)
 
 **Ship blockers:**
-- Next minor version bump — must resolve all P0 before bump (2 P0 items open: Share Link Payload Integrity, Game Mode Rendering + State. D-S411b and D-S348a both resolved same-day 2026-08-01, see Resolved section.)
+- Next minor version bump — must resolve all P0 before bump. Game Mode Rendering + State resolved 2026-08-02 (see Resolved section, branch `fix/share-print-debt-stale`). Share Link Payload Integrity's test coverage also already exists (branch `fix/share-link-payload-coverage`) but confirm that branch's own ledger entry before treating the gate as clear. D-S411b and D-S348a both resolved same-day 2026-08-01, see Resolved section.
 
 ---
 
