@@ -96,6 +96,7 @@ export const tokens = {
       navyWash:   'rgba(15,31,61,0.04)',    // 22x — barely-there navy wash
       navyFaint:  'rgba(15,31,61,0.08)',    // 23x — card hover tints, subtle fills
       navyMedium: 'rgba(15,31,61,0.15)',    // 24x — mid-weight overlays, border tints
+      navyStrong: 'rgba(15,31,61,0.45)',    // 6x LockFlow.jsx (Story 111 / #297; was local `var textMuted`) — muted caption text on light surfaces, distinct from text.muted (gray-500, solid). rgba format keeps this in the overlay family per theme.tokens.test.js's hex-only contract on color.text; preserves LockFlow's original appearance exactly.
       whiteFaint: 'rgba(255,255,255,0.08)', // 32x — lighten elements on dark surfaces
       whiteLight: 'rgba(255,255,255,0.15)', // 16x — on-dark borders, highlights
       whiteMedium:'rgba(255,255,255,0.25)', // 1x MaintenanceScreen.jsx — dim version chip text on dark navy (Story 94)
