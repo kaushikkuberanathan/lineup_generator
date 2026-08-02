@@ -676,7 +676,7 @@ var C = {
 };
 
 var S = {
-  app: { minHeight:"100vh", background:C.cream, fontFamily:"Georgia,'Times New Roman',serif", color:C.text },
+  app: { minHeight:"100vh", background:C.cream, fontFamily:"Georgia,'Times New Roman',serif", color:tokens.color.text.ink },
   header: {
     background:"linear-gradient(135deg,#0f1f3d 0%,#1a3260 100%)",
     borderBottom:"4px solid " + C.red,
@@ -715,7 +715,7 @@ var S = {
   },
   btn: function(v) {
     var bg = "rgba(15,31,61,0.08)";
-    var col = C.text;
+    var col = tokens.color.text.ink;
     var bdr = "none";
     var shadow = "none";
     if (v === "primary") { bg = "linear-gradient(135deg,"+C.red+","+C.redDark+")"; col="#fff"; shadow="0 2px 8px rgba(200,16,46,0.3)"; }
@@ -738,7 +738,7 @@ var S = {
   },
   input: {
     background:"#f8f4ee", border:"1.5px solid rgba(15,31,61,0.15)",
-    borderRadius:"6px", padding:"7px 10px", color:C.text,
+    borderRadius:"6px", padding:"7px 10px", color:tokens.color.text.ink,
     fontFamily:"Georgia,serif", fontSize:"12px", outline:"none",
     width:"100%", boxSizing:"border-box"
   },
@@ -841,7 +841,7 @@ export function SharedView({ payload, renderFieldSVG }) {
   var teamInitial = payload.team ? payload.team.charAt(0).toUpperCase() : "L";
 
   return (
-    <div style={{ minHeight:"100vh", background:C.cream, fontFamily:"Georgia,'Times New Roman',serif", color:C.text }}>
+    <div style={{ minHeight:"100vh", background:C.cream, fontFamily:"Georgia,'Times New Roman',serif", color:tokens.color.text.ink }}>
 
       {/* ── Header ─────────────────────────────────────────────── */}
       <div style={{ background:"linear-gradient(135deg,#0f1f3d,#1a3260)", borderBottom:"4px solid " + C.red, padding:"14px 20px" }}>
@@ -3545,7 +3545,7 @@ export default function App() {
                       var info = row.info;
                       var stats = row.stats;
                       var avg = row.avg;
-                      var avgColor = avg === null ? C.textMuted : avg >= 0.300 ? "#27ae60" : avg >= 0.200 ? "#e67e22" : C.text;
+                      var avgColor = avg === null ? C.textMuted : avg >= 0.300 ? "#27ae60" : avg >= 0.200 ? "#e67e22" : tokens.color.text.ink;
                       return (
                         <tr key={info.name} style={{ borderBottom:"1px solid rgba(15,31,61,0.05)", background: ri % 2 === 0 ? "transparent" : "rgba(15,31,61,0.03)" }}>
                           <td style={{ padding:"4px 6px", fontWeight:"600", textAlign:"left" }}>{firstName(info.name)}</td>
@@ -4041,11 +4041,11 @@ export default function App() {
                           <div style={{ display:"flex", gap:"12px", padding:"8px 12px", borderRadius:"8px", background:"rgba(15,31,61,0.04)", border:"1px solid rgba(15,31,61,0.08)" }}>
                             {[
                               ["AVG", avg, avgColor],
-                              ["AB",  fmtStat(st.ab), C.text],
-                              ["H",   fmtStat(st.h),  C.text],
-                              ["R",   fmtStat(st.r),  C.text],
-                              ["RBI", fmtStat(st.rbi), C.text],
-                              ["BB",  fmtStat(st.bb),  C.text]
+                              ["AB",  fmtStat(st.ab), tokens.color.text.ink],
+                              ["H",   fmtStat(st.h),  tokens.color.text.ink],
+                              ["R",   fmtStat(st.r),  tokens.color.text.ink],
+                              ["RBI", fmtStat(st.rbi), tokens.color.text.ink],
+                              ["BB",  fmtStat(st.bb),  tokens.color.text.ink]
                             ].map(function(row) {
                               return (
                                 <div key={row[0]} style={{ textAlign:"center" }}>
@@ -5125,7 +5125,7 @@ export default function App() {
                       var st = seasonStats[name];
                       var avg = st.ab > 0 ? (st.h / st.ab) : null;
                       var avgStr = fmtAvg(st.h, st.ab);
-                      var avgColor = avg !== null && avg >= 0.300 ? C.win : avg !== null && avg >= 0.200 ? "#d4a017" : C.text;
+                      var avgColor = avg !== null && avg >= 0.300 ? C.win : avg !== null && avg >= 0.200 ? "#d4a017" : tokens.color.text.ink;
                       return (
                         <tr key={name} style={{ borderBottom:"1px solid rgba(15,31,61,0.04)" }}>
                           <td style={{ padding:"6px 8px", fontWeight:"bold" }}>{firstName(name)}</td>
@@ -5606,7 +5606,7 @@ export default function App() {
                     📅 {dateStr}
                     {game.time ? <span style={{ fontWeight:"normal", color:C.textMuted, fontSize:"12px", marginLeft:"8px" }}>• {game.time}</span> : null}
                   </div>
-                  <div style={{ fontSize:"13px", color: isPast && !isToday ? C.textMuted : C.text, marginTop:"2px" }}>
+                  <div style={{ fontSize:"13px", color: isPast && !isToday ? C.textMuted : tokens.color.text.ink, marginTop:"2px" }}>
                     {game.home ? "vs " : "@ "}<strong>{game.opponent || "TBD"}</strong>
                     {game.location ? <span style={{ fontWeight:"normal", color:C.textMuted, fontSize:"12px" }}> — {game.location}</span> : null}
                   </div>
@@ -5631,7 +5631,7 @@ export default function App() {
                     updateSnackField(gid, "playerName", e.target.value);
                   }; }(game.id)}
                   disabled={lineupLocked}
-                  style={{ flex:"1 1 140px", minWidth:"120px", padding:"5px 8px", borderRadius:"6px", border:"1px solid rgba(15,31,61,0.15)", fontSize:"13px", fontFamily:"inherit", background:C.cardBg, color: hasAssignment ? C.text : C.textMuted, opacity: lineupLocked ? 0.5 : 1 }}>
+                  style={{ flex:"1 1 140px", minWidth:"120px", padding:"5px 8px", borderRadius:"6px", border:"1px solid rgba(15,31,61,0.15)", fontSize:"13px", fontFamily:"inherit", background:C.cardBg, color: hasAssignment ? tokens.color.text.ink : C.textMuted, opacity: lineupLocked ? 0.5 : 1 }}>
                   <option value="">— select player —</option>
                   {roster.slice().sort(function(a,b){ return (a.firstName||a.name||'').toLowerCase().localeCompare((b.firstName||b.name||'').toLowerCase()); }).map(function(p) {
                     return <option key={p.name} value={p.firstName || p.name}>{p.firstName || p.name}</option>;
@@ -6179,7 +6179,7 @@ export default function App() {
                               );
                             })}
                             <td style={cellStyle}>
-                              <span style={{ fontSize:"12px", fontWeight:"bold", color: perf.ab > 0 ? (perf.h/perf.ab >= 0.300 ? C.win : perf.h/perf.ab >= 0.200 ? "#d4a017" : C.text) : C.textMuted }}>
+                              <span style={{ fontSize:"12px", fontWeight:"bold", color: perf.ab > 0 ? (perf.h/perf.ab >= 0.300 ? C.win : perf.h/perf.ab >= 0.200 ? "#d4a017" : tokens.color.text.ink) : C.textMuted }}>
                                 {perf.ab > 0 ? fmtAvg(perf.h, perf.ab) : "—"}
                               </span>
                             </td>
@@ -6297,7 +6297,7 @@ export default function App() {
                             }));
                           }; }(game.id, !game.scoreReported)}
                           style={{ width:"15px", height:"15px", accentColor:C.gold, cursor:"pointer", flexShrink:0 }} />
-                        <label htmlFor={"county-" + game.id} style={{ fontSize:"12px", color: game.scoreReported ? C.text : C.textMuted, cursor:"pointer", userSelect:"none" }}>
+                        <label htmlFor={"county-" + game.id} style={{ fontSize:"12px", color: game.scoreReported ? tokens.color.text.ink : C.textMuted, cursor:"pointer", userSelect:"none" }}>
                           {game.scoreReported ? "✓ Score reported to the County" : "Report score to the County"}
                         </label>
                       </div>
@@ -6314,7 +6314,7 @@ export default function App() {
                               onChange={function(gid) { return function(e) {
                                 updateSnackField(gid, "playerName", e.target.value);
                               }; }(game.id)}
-                              style={{ flex:"1 1 110px", minWidth:"100px", padding:"3px 6px", borderRadius:"5px", border:"1px solid rgba(15,31,61,0.15)", fontSize:"12px", fontFamily:"inherit", background:C.cardBg, color: hasSa ? C.text : C.textMuted }}>
+                              style={{ flex:"1 1 110px", minWidth:"100px", padding:"3px 6px", borderRadius:"5px", border:"1px solid rgba(15,31,61,0.15)", fontSize:"12px", fontFamily:"inherit", background:C.cardBg, color: hasSa ? tokens.color.text.ink : C.textMuted }}>
                               <option value="">— Assign —</option>
                               {roster.slice().sort(function(a,b){ return (a.firstName||a.name||'').toLowerCase().localeCompare((b.firstName||b.name||'').toLowerCase()); }).map(function(p) {
                                 return <option key={p.name} value={p.firstName || p.name}>{p.firstName || p.name}</option>;
@@ -6542,7 +6542,7 @@ export default function App() {
                           <span style={{ fontSize:"10px", color:C.textMuted }}>{dt}</span>
                           {label ? <span style={{ fontSize:"10px", padding:"1px 6px", borderRadius:"4px", background:"rgba(15,31,61,0.08)", color:C.navy, fontWeight:"bold" }}>{label}</span> : null}
                         </div>
-                        <div style={{ fontSize:"11px", color:C.text }}>{preview}</div>
+                        <div style={{ fontSize:"11px", color:tokens.color.text.ink }}>{preview}</div>
                       </div>
                     );
                   })}
@@ -7167,7 +7167,7 @@ export default function App() {
 
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline", gap:"12px", padding:"9px 0", borderBottom:"1px solid " + C.border, marginBottom:"14px" }}>
           <span style={{ fontSize:"11px", letterSpacing:"0.08em", textTransform:"uppercase", color:C.textMuted, whiteSpace:"nowrap" }}>Signed in as</span>
-          <span style={{ fontSize:"13px", color:C.text, fontWeight:"600", textAlign:"right", wordBreak:"break-word" }}>{_email}</span>
+          <span style={{ fontSize:"13px", color:tokens.color.text.ink, fontWeight:"600", textAlign:"right", wordBreak:"break-word" }}>{_email}</span>
         </div>
 
         <div style={{ fontSize:"11px", letterSpacing:"0.08em", textTransform:"uppercase", color:C.textMuted, marginBottom:"8px" }}>Your teams</div>
@@ -7245,7 +7245,7 @@ export default function App() {
               </div>
               {isOpen ? (
                 <div>
-                  <div style={{ fontSize:"0.95rem", fontWeight:"600", color:C.text, marginBottom:"6px", lineHeight:"1.4" }}>{v.headline}</div>
+                  <div style={{ fontSize:"0.95rem", fontWeight:"600", color:tokens.color.text.ink, marginBottom:"6px", lineHeight:"1.4" }}>{v.headline}</div>
                   {v.userChanges && v.userChanges.length > 0 ? (
                     <ul style={{ margin:"0 0 6px 0", paddingLeft:"0", listStyle:"none" }}>
                       {v.userChanges.map(function(ch, ci) {
@@ -7878,7 +7878,7 @@ export default function App() {
   // ── Always column: header + top tabs + scrollable content ──────────────
   // TODO: extract — deferred (Header depends on syncStatus, isLandscape, screen, activeTeam, isOnline, activeTeamId — extract after OfflineIndicator is stable and state prop drilling pattern is established)
   return (
-    <div style={{ height: isStandalone ? "100dvh" : "100svh", display:"flex", flexDirection:"column", overflow:"hidden", background: primaryTab === "more" ? "linear-gradient(160deg,#0f1f3d 0%,#1a3260 55%,#2a0a0a 100%)" : C.cream, fontFamily:"Georgia,'Times New Roman',serif", color:C.text }}>
+    <div style={{ height: isStandalone ? "100dvh" : "100svh", display:"flex", flexDirection:"column", overflow:"hidden", background: primaryTab === "more" ? "linear-gradient(160deg,#0f1f3d 0%,#1a3260 55%,#2a0a0a 100%)" : C.cream, fontFamily:"Georgia,'Times New Roman',serif", color:tokens.color.text.ink }}>
       <Toast
         open={toast.open}
         message={toast.message}
