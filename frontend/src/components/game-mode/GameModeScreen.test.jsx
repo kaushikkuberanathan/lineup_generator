@@ -15,7 +15,7 @@
  * own absent-player-filtering logic gets a second, focused look in
  * QuickSwap.test.jsx.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { GameModeScreen } from './GameModeScreen';
 
