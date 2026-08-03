@@ -3997,7 +3997,8 @@ bug, the same way feedback.test.js did for Story 99.
 
 ---
 ### Story 113 (P2) - cream background token disposition (App.jsx var C gap) <!-- #496 -->
-Status: Open
+Status: Resolved
+Resolved: commit `59959fd` (#508) - "Story 113: mint color.surface.cream, retire C.cream (5 App.jsx sites)". Verified 2026-08-03 via grep: zero live `C.cream` references remain in App.jsx; `tokens.color.surface.cream` appears at exactly 5 sites, matching this story's predicted count. Docs status was stale - the code landed before this entry was flipped.
 Discovered: 2026-08-02 - App.jsx color sweep scoping session
 Target: before any App.jsx region-slice migration starts
 Symptom: C.cream (#fdf6ec), the literal app-wide page background, was never
@@ -4014,7 +4015,8 @@ not blocking the mint decision.
 
 ---
 ### Story 114 (P2) - text root-prop visual-smoke verification (App.jsx var C) <!-- #497 -->
-Status: Open
+Status: Resolved
+Resolved: commit `532296c` (#509) - "Story 114: verify + swap C.text to tokens.color.text.ink (20 App.jsx sites)". Verified 2026-08-03 via grep: zero live `C.text` references remain in App.jsx; `tokens.color.text.ink` appears at exactly 20 sites, matching this story's predicted count. The "Update 2026-08-02" note below saying the swap "has not started" was accurate when written but the swap landed in the same squashed commit shortly after - docs status was stale.
 Discovered: 2026-08-02 - App.jsx color sweep scoping session
 Target: before any App.jsx region-slice migration touches the root render
 Symptom: Story 110 already resolved text's token-layer decision (minted
@@ -4039,6 +4041,18 @@ confirmed at runtime to resolve to #1a1a2e / C.text exactly), every chrome
 item independently re-confirmed safe. Methodology closed; the 20+2-site
 App.jsx swap itself has not started (gated on the App.jsx unlock phrase).
 See DESIGN_AUDIT.md Story 114 evidence artifact for the full record.
+
+---
+### Story 115 (P3) - S.app dead code cleanup (App.jsx, found during Story 114) <!-- #501 -->
+Status: Open
+Discovered: 2026-08-02 - byproduct of Story 114's render-tree topology investigation (App.jsx var C sweep).
+Target: opportunistic - not blocking Story 114 or the region-slice sweep.
+Symptom: `S.app` (App.jsx line ~678 - `{ minHeight:"100vh", background:C.cream, fontFamily:..., color:C.text }`) is dead code. Confirmed via grep: zero references to `S.app` anywhere in App.jsx as an applied style prop. It is defined and never consumed.
+Impact: None today - it's inert. But it sat in the same object as every key Story 109-114 analyzed for real usage, and would have been silently counted as a "real" C.text/C.cream consumer if anyone assumed definitions imply usage.
+Root cause: Unknown - likely superseded when the main app's actual render root moved to the "header + top tabs + scrollable content" return (the real root, ~line 7904) at some point after S.app was originally authored, and the old style object was never deleted.
+Explicitly out of scope for Story 114 (text token-migration verification) and not fixed as a drive-by anywhere else - this issue exists specifically so it isn't lost and isn't silently folded into an unrelated PR's diff.
+Proposed fix: Delete the S.app object entirely once confirmed no dynamic/computed reference exists (e.g. S["app"] or similar indirect access - worth one more grep before deleting). Tiny, isolated, its own cleanup story.
+NOTE 2026-08-03: this story existed as GitHub issue #501 but had no ROADMAP.md entry - the inverse of the usual "placeholder marker with no issue" gap this repo's Issue Hygiene rules guard against. Filed here now; work tracked as its own task, not bundled into region slice 1's diff per this issue's own explicit request.
 
 ---
 ### Story 116 (P2) - GameModeScreen/DugoutView region-slice coverage gap (App.jsx var C sweep) <!-- #503 -->
