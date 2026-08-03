@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-07-31T20:44:19.403Z",
+  "generatedAt": "2026-08-03T13:49:26.282Z",
   "repository": "kaushikkuberanathan/lineup_generator",
   "sourceBranch": "develop",
   "windowMonths": 6,
@@ -13,18 +13,6 @@
     "latestReleaseNotes": "The three most recent user-facing production releases, summarized from the first Shipping bullet; internal-only releases are excluded."
   },
   "months": [
-    {
-      "key": "2026-02",
-      "label": "Feb 2026",
-      "mergedPullRequests": 0,
-      "productImprovements": 0,
-      "productionReleases": 0,
-      "qualityImprovements": 0,
-      "developmentCommits": 0,
-      "otherPullRequests": 0,
-      "releaseNotes": [],
-      "highlights": []
-    },
     {
       "key": "2026-03",
       "label": "Mar 2026",
@@ -172,12 +160,12 @@
     {
       "key": "2026-07",
       "label": "Jul 2026",
-      "mergedPullRequests": 66,
-      "productImprovements": 10,
+      "mergedPullRequests": 75,
+      "productImprovements": 11,
       "productionReleases": 9,
-      "qualityImprovements": 84,
-      "developmentCommits": 94,
-      "otherPullRequests": 57,
+      "qualityImprovements": 88,
+      "developmentCommits": 99,
+      "otherPullRequests": 66,
       "releaseNotes": [
         {
           "number": 414,
@@ -212,60 +200,69 @@
           "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/393"
         }
       ]
+    },
+    {
+      "key": "2026-08",
+      "label": "Aug 2026",
+      "mergedPullRequests": 25,
+      "productImprovements": 2,
+      "productionReleases": 1,
+      "qualityImprovements": 29,
+      "developmentCommits": 31,
+      "otherPullRequests": 24,
+      "releaseNotes": [
+        {
+          "number": 499,
+          "title": "Release 2.8.3 — Non-admin coaches' feedback/bug-report submissions were silently returning 403 since a router mount-order issue",
+          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/499"
+        }
+      ],
+      "highlights": [
+        {
+          "number": 499,
+          "title": "Release 2.8.3 — Non-admin coaches' feedback/bug-report submissions were silently returning 403 since a router mount-order issue",
+          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/499"
+        }
+      ]
     }
   ],
   "totals": {
-    "mergedPullRequests": 288,
-    "productImprovements": 144,
-    "productionReleases": 46,
-    "qualityImprovements": 537,
-    "developmentCommits": 681
+    "mergedPullRequests": 322,
+    "productImprovements": 147,
+    "productionReleases": 47,
+    "qualityImprovements": 570,
+    "developmentCommits": 717
   },
   "currentMonth": {
-    "key": "2026-07",
-    "label": "Jul 2026",
-    "mergedPullRequests": 66,
-    "productImprovements": 10,
-    "productionReleases": 9,
-    "qualityImprovements": 84,
-    "developmentCommits": 94,
-    "otherPullRequests": 57,
+    "key": "2026-08",
+    "label": "Aug 2026",
+    "mergedPullRequests": 25,
+    "productImprovements": 2,
+    "productionReleases": 1,
+    "qualityImprovements": 29,
+    "developmentCommits": 31,
+    "otherPullRequests": 24,
     "releaseNotes": [
       {
-        "number": 414,
-        "title": "Release 2.8.0 — Set your name",
-        "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/414"
-      },
-      {
-        "number": 409,
-        "title": "Release 2.7.0 — Google sign-in",
-        "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/409"
-      },
-      {
-        "number": 393,
-        "title": "release: v2.6.0 to production",
-        "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/393"
+        "number": 499,
+        "title": "Release 2.8.3 — Non-admin coaches' feedback/bug-report submissions were silently returning 403 since a router mount-order issue",
+        "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/499"
       }
     ],
     "highlights": [
       {
-        "number": 414,
-        "title": "Release 2.8.0 — Set your name",
-        "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/414"
-      },
-      {
-        "number": 409,
-        "title": "Release 2.7.0 — Google sign-in",
-        "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/409"
-      },
-      {
-        "number": 393,
-        "title": "release: v2.6.0 to production",
-        "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/393"
+        "number": 499,
+        "title": "Release 2.8.3 — Non-admin coaches' feedback/bug-report submissions were silently returning 403 since a router mount-order issue",
+        "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/499"
       }
     ]
   },
   "latestReleaseNotes": [
+    {
+      "number": 499,
+      "title": "Release 2.8.3 — Non-admin coaches' feedback/bug-report submissions were silently returning 403 since a router mount-order issue",
+      "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/499"
+    },
     {
       "number": 414,
       "title": "Release 2.8.0 — Set your name",
@@ -275,11 +272,6 @@
       "number": 409,
       "title": "Release 2.7.0 — Google sign-in",
       "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/409"
-    },
-    {
-      "number": 393,
-      "title": "release: v2.6.0 to production",
-      "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/393"
     }
   ]
 }
