@@ -38,7 +38,6 @@ import { tokens } from '../../theme/tokens';
 
 describe('Story 117 Tier 1 — Card equivalence vs legacy S.card', function () {
 
-  var C_WHITE  = '#ffffff';
   var C_BORDER = 'rgba(0,0,0,0.06)';
   var LEGACY_BOX_SHADOW = '0 2px 8px rgba(15,31,61,0.06)';
 
