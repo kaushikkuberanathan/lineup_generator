@@ -705,11 +705,6 @@ var S = {
     };
   },
   body: { flex:1, overflowY:"auto", WebkitOverflowScrolling:"touch", display:"flex", flexDirection:"column", alignItems:"center", width:"100%", maxWidth:"600px", marginLeft:"auto", marginRight:"auto", paddingBottom:"80px" },
-  card: {
-    background:C.white, borderRadius:"10px", padding:"16px 18px",
-    boxShadow:"0 2px 8px rgba(15,31,61,0.06)", marginBottom:"14px",
-    border:"1px solid " + C.border
-  },
   sectionTitle: {
     fontSize:"11px", letterSpacing:"0.18em", textTransform:"uppercase",
     color:C.red, fontWeight:"bold", marginBottom:"14px"
@@ -1035,7 +1030,7 @@ export function SharedView({ payload, renderFieldSVG }) {
 
         {/* ── Batting order ─────────────────────────────────────── */}
         {payload.batting && payload.batting.length > 0 ? (
-          <div style={{ ...S.card, marginTop:"4px" }}>
+          <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px", marginTop:"4px" }}>
             <div style={S.sectionTitle}>Batting Order</div>
             <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))", gap:"6px" }}>
               {payload.batting.map(function(name, idx) {
@@ -1097,7 +1092,7 @@ export function SharedView({ payload, renderFieldSVG }) {
                 Not playing tonight: {payload.absentNames.map(function(n) { return n.split(" ")[0]; }).join(", ")}
               </div>
             ) : null}
-          </div>
+          </Card>
         ) : null}
 
         {/* ── Footer ─────────────────────────────────────────────── */}
@@ -3660,7 +3655,7 @@ export default function App() {
             var pr = info.prefs || [];
 
             return (
-              <div key={info.name} style={{ ...S.card, padding:"14px" }}>
+              <Card key={info.name} padding="14px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
                 <div style={{ display:"flex", alignItems:"center", gap:"8px", marginBottom: isCol ? 0 : "12px" }}>
                   {!lineupLocked ? (
                     <button onClick={function(n) { return function() { var next = {}; for (var k in collapsed) { next[k]=collapsed[k]; } next[n] = !collapsed[n]; setCollapsed(next); }; }(info.name)}
@@ -4093,7 +4088,7 @@ export default function App() {
                     </div>
                   </div>
                 ) : null}
-              </div>
+              </Card>
             );
           })}
         </div>
@@ -5020,7 +5015,7 @@ export default function App() {
         </div>
 
         {hasAnyStats ? (
-          <div style={{ ...S.card, padding:"12px 14px", marginBottom:"14px", background:"rgba(15,31,61,0.03)", border:"1px solid rgba(15,31,61,0.1)" }}>
+          <Card padding="12px 14px" radius="md" style={{ background:"rgba(15,31,61,0.03)", border:"1px solid rgba(15,31,61,0.1)", boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
             <div style={{ fontSize:"10px", color:C.textMuted, marginBottom:"8px", textTransform:"uppercase", letterSpacing:"0.1em" }}>Season Batting Stats</div>
             {(function() {
               var tg = 0, tab = 0, th = 0, tr = 0, trbi = 0;
@@ -5143,7 +5138,7 @@ export default function App() {
                 </tbody>
               </table>
             </div>
-          </div>
+          </Card>
         ) : null}
 
         <div style={{ fontSize:"11px", color:C.textMuted, marginBottom:"10px" }}>
@@ -5431,7 +5426,7 @@ export default function App() {
               if (!player) return null;
               var _isAbsentEdit = absentTonight.indexOf(name) >= 0;
               return (
-                <div key={name} style={{ ...S.card, marginBottom:"8px", opacity: _isAbsentEdit ? 0.45 : 1, pointerEvents: _isAbsentEdit ? "none" : "auto" }}>
+                <Card key={name} padding="16px 18px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"8px", opacity: _isAbsentEdit ? 0.45 : 1, pointerEvents: _isAbsentEdit ? "none" : "auto" }}>
                   <div style={{ fontWeight:"bold", fontSize:"13px", color:C.navy, marginBottom:"10px" }}>
                     #{idx + 1} &nbsp; {firstName(name)}{_isAbsentEdit ? <span style={{ fontSize:"11px", color:C.red, marginLeft:"8px", fontWeight:"normal" }}>(Out Tonight)</span> : null}
                   </div>
@@ -5475,7 +5470,7 @@ export default function App() {
                       onChange={function(e) { updatePlayer(name, { walkUpLink: e.target.value || null }); }}
                     />
                   </div>
-                </div>
+                </Card>
               );
             })}
             <div style={{ display:"flex", gap:"8px", marginTop:"16px" }}>
@@ -5931,7 +5926,7 @@ export default function App() {
         ) : null}
 
         {showGameForm ? (
-          <div style={{ ...S.card, marginBottom:"14px", borderLeft:"3px solid " + C.red }}>
+          <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px", borderLeft:"3px solid " + C.red }}>
             <div style={{ fontWeight:"bold", fontSize:"14px", marginBottom:"14px" }}>
               {editingGame ? "Edit Game" : "Add New Game"}
             </div>
@@ -6198,7 +6193,7 @@ export default function App() {
               </button>
               <button style={S.btn("ghost")} onClick={function() { setShowGameForm(false); setEditingGame(null); }}>Cancel</button>
             </div>
-          </div>
+          </Card>
         ) : null}
 
         <div>
@@ -6213,7 +6208,7 @@ export default function App() {
             var resultColor = game.result === "W" ? C.win : game.result === "L" ? C.red : game.result === "T" ? "#d4a017" : "#888";
             var cancelColor = C.canceled;
             return (
-              <div key={game.id} style={{ ...S.card, borderLeft:"3px solid " + (isCanceled ? cancelColor : isPlayed ? resultColor : C.red), padding:"14px 16px", opacity: isCanceled ? 0.72 : 1 }}>
+              <Card key={game.id} padding="14px 16px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px", borderLeft:"3px solid " + (isCanceled ? cancelColor : isPlayed ? resultColor : C.red), opacity: isCanceled ? 0.72 : 1 }}>
                 <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:"10px" }}>
                   <div style={{ flex:1 }}>
                     <div style={{ display:"flex", alignItems:"center", gap:"8px", marginBottom:"4px", flexWrap:"wrap" }}>
@@ -6369,14 +6364,14 @@ export default function App() {
                     <button style={{ ...S.btn("ghost"), color:C.red }} onClick={function(id) { return function() { if (confirm("Delete game?")) { deleteGame(id); } }; }(game.id)}>Del</button>
                   </div>
                 </div>
-              </div>
+              </Card>
             );
           })}
         </div>
 
         {showShare ? (
           <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:100, padding:"20px" }}>
-            <div style={{ ...S.card, maxWidth:"420px", width:"100%", padding:"24px" }}>
+            <Card padding="24px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px", maxWidth:"420px", width:"100%" }}>
               <div style={{ fontWeight:"bold", fontSize:"15px", marginBottom:"12px" }}>Share Lineup</div>
               <div style={{ fontSize:"11px", color:C.textMuted, marginBottom:"8px" }}>View-only link for coaches and parents:</div>
               <div style={{ padding:"10px", background:"#f8f4ee", borderRadius:"6px", fontSize:"11px", wordBreak:"break-all", marginBottom:"12px", border:"1px solid rgba(15,31,61,0.08)" }}>
@@ -6390,7 +6385,7 @@ export default function App() {
                 }}>Copy Link</button>
                 <button style={S.btn("ghost")} onClick={function() { setShowShare(false); setShareGame(null); }}>Close</button>
               </div>
-            </div>
+            </Card>
           </div>
         ) : null}
       </div>
