@@ -4066,6 +4066,47 @@ Proposed fix: When slice 8 starts, run Story 114's Step 1/2 methodology
 against GameModeScreen/DugoutView specifically, then the mechanical swap.
 
 ---
+### Story 117 (P2) - Full S.card retirement: Card primitive parity + App.jsx migration <!-- #514 -->
+Status: In Progress - Phase 0 shipped (Card.jsx `border` prop + raw-padding passthrough, 4 new tests, 20/20 passing). Tier 1 shipped (10 of 17 App.jsx sites migrated: Roster Quick Summary, 3 Schedule import panels, 3 Feedback sections, Links, About/Account, About/Updates). Verification: build clean (395 modules), full suite clean (962 passed/1 skipped/963 total, 78/78 files), lint clean (0 warnings), plus a computed-style equivalence test (`Story117TierOneEquivalence.test.jsx`, 6/6 passing) substituting for live-browser screenshots - the auth-gated tabs' magic-link/OAuth flow redirects to prod in this dev environment, no local bypass exists. Tier 2 (6 sites) and Tier 3 (1 site) not started.
+Discovered: 2026-08-02 - UX track spike session re-auditing Story 64 (closed 2026-05-29, PR #247)
+Target: v2.8.x
+Symptom: Story 64's closure only migrated LegalSection's single call site. 17 `S.card`
+consumers remain live in App.jsx across Roster, Batting, Songs, Schedule, Feedback,
+Links, About (Account + Updates), and the public SharedView. Full audit grouped them
+into 9 override/addition shapes and 3 risk tiers:
+  - Tier 1 (10 sites): bare or no-op `S.card` reference, zero real customization
+  - Tier 2 (6 sites): real per-site customization (padding variants, borderLeft
+    accents, conditional opacity/pointerEvents, modal sizing)
+  - Tier 3 (1 site, Batting tab Season Stats box): overrides core surface
+    color/border, not just spacing - stays a style escape, not a new Card variant
+Impact: `S.card` remains a parallel, untokenized styling path alongside the Card
+primitive. Card.jsx itself had two real contract gaps this surfaced: no `border`
+prop, and boolean `shadow` mapped to `tokens.shadow.card` (wrong token for this
+shape) even though `tokens.shadow.subtleCard` is an exact match for `S.card`'s
+box-shadow.
+Root cause: Known - Story 64's PR #247 scope covered only the one LegalSection site
+discovered during Phase 3 Step 3; the "audit S.card consumers in App.jsx first"
+recommendation was never followed up.
+Resolution (Phase 0): Card.jsx - added `border` boolean prop (1px solid
+`tokens.color.border.default`) and raw-string passthrough for `padding` values
+outside the sm/md/lg scale. 4 new characterization tests (C3.4/C3.5/C8.1/C8.2).
+Radius 10px has no exact token (nearest: md 8px / lg 12px) - accepting the
+`radius.md` drift, same call LegalSection made for its one site; this is now the
+second instance of that exact accepted drift - a third would be a signal `radius`
+needs a dedicated in-between value, not another silent acceptance.
+Remaining: Phase 1 (10 Tier 1 sites, mechanical swap), Phase 2 (6 Tier 2 sites,
+Card + targeted style escape per site), Phase 3 (Tier 3's one site stays a style
+escape). Requires the App.jsx gate phrase + feature branch off `develop` per
+CLAUDE.md. Verification is manual/visual across the 9 affected surfaces (no
+per-tab App.jsx unit tests exist) - must render pixel-identical.
+Note: originally misfiled as "Story 112" against a stale local `main` checkout
+before verifying against `origin/develop`, where 112 was already in use (admin.js
+route coverage, #474). Caught before commit; renumbered to 117 (next-free after
+the highest in-use number, 116 - 115 was found unused/skipped and deliberately
+not backfilled to avoid colliding with anything reserved-but-uncommitted
+elsewhere). GitHub issue #514 title corrected to match.
+
+---
 ### Automated Score Reporting (County Integration)
 **Status:** Architecture finalized, implementation pending
 **Trigger:** Coach taps "Report Score" on a completed game

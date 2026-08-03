@@ -46,6 +46,7 @@ import { NoMembershipScreen }    from './components/Auth/NoMembershipScreen';
 import { roleLabel } from './utils/roleLabels';
 import { buildSharePayload } from './utils/buildSharePayload';
 import Toast from './components/ui/Toast';
+import { Card } from './components/ui/Card';
 import { useAuth } from './hooks/useAuth';
 import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 import { VERSION_HISTORY } from './data/versionHistory';
@@ -3462,7 +3463,7 @@ export default function App() {
           </div>
         )}
 
-        <div style={{ ...S.card, marginBottom:"14px" }}>
+        <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
           <div
             onClick={function() { setSummaryOpen(!summaryOpen); }}
             style={{ display:"flex", justifyContent:"space-between", alignItems:"center", cursor:"pointer", marginBottom: summaryOpen ? "10px" : "0" }}>
@@ -3575,7 +3576,7 @@ export default function App() {
               </div>
             );
           })()}
-        </div>
+        </Card>
 
         {isHydrating && roster.length === 0 && (
           <div style={{ textAlign:"center", padding:"20px", color:"#94a3b8", fontSize:"13px" }}>
@@ -5748,7 +5749,7 @@ export default function App() {
         </div>
 
         {importMode === "choose" ? (
-          <div style={{ ...S.card, marginBottom:"14px" }}>
+          <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
             <div style={S.sectionTitle}>How do you have your schedule?</div>
             <div style={{ display:"flex", flexDirection:"column", gap:"10px" }}>
               {[
@@ -5775,11 +5776,11 @@ export default function App() {
                 );
               })}
             </div>
-          </div>
+          </Card>
         ) : null}
 
         {importMode === "image" ? (
-          <div style={{ ...S.card, marginBottom:"14px" }}>
+          <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
             <div style={S.sectionTitle}>Import from Photo</div>
             <div style={{ fontSize:"12px", color:C.textMuted, marginBottom:"14px" }}>
               Take a photo of your printed schedule, or choose a screenshot from your camera roll.
@@ -5883,11 +5884,11 @@ export default function App() {
               onClick={function() { setImportMode("choose"); setImportState({ mode:null, text:"", image:null, loading:false, error:"", preview:[] }); }}>
               Back
             </button>
-          </div>
+          </Card>
         ) : null}
 
         {importMode === "text" ? (
-          <div style={{ ...S.card, marginBottom:"14px" }}>
+          <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
             <div style={S.sectionTitle}>Paste Schedule Text</div>
             <div style={{ fontSize:"12px", color:C.textMuted, marginBottom:"10px" }}>
               Copy the schedule from an email, GroupMe message, or website and paste it below. Any format works.
@@ -5926,7 +5927,7 @@ export default function App() {
                 </div>
               </div>
             ) : null}
-          </div>
+          </Card>
         ) : null}
 
         {showGameForm ? (
@@ -6418,7 +6419,7 @@ export default function App() {
       <div>
 
         {/* ── Section 1: General Feedback ───────────────────── */}
-        <div style={S.card}>
+        <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
           <div style={S.sectionTitle}>Share Feedback</div>
           <div style={{ color:C.textMuted, fontSize:"12px", marginBottom:"14px" }}>
             Help us improve the app. Tell us what’s working and what isn’t.
@@ -6467,10 +6468,10 @@ export default function App() {
           {fbConfirm ? (
             <div style={{ marginTop:"10px", color:"#27ae60", fontSize:"12px", fontWeight:"bold" }}>{fbConfirm}</div>
           ) : null}
-        </div>
+        </Card>
 
         {/* ── Section 2: Report a Bug ──────────────────────── */}
-        <div style={S.card}>
+        <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
           <div style={S.sectionTitle}>Report an Issue</div>
           <div style={{ color:C.textMuted, fontSize:"12px", marginBottom:"14px" }}>
             Something not working right? Tell us what happened.
@@ -6515,10 +6516,10 @@ export default function App() {
           {bugConfirm ? (
             <div style={{ marginTop:"10px", color:"#27ae60", fontSize:"12px", fontWeight:"bold" }}>{bugConfirm}</div>
           ) : null}
-        </div>
+        </Card>
 
         {/* ── Submitted Feedback History ─────────────────────── */}
-        <div style={S.card}>
+        <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", cursor:"pointer" }}
             onClick={function() { setFbHistoryOpen(!fbHistoryOpen); }}>
             <div style={{ fontSize:"11px", fontWeight:"bold", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.1em" }}>
@@ -6559,7 +6560,7 @@ export default function App() {
               )}
             </div>
           ) : null}
-        </div>
+        </Card>
 
       </div>
     );
@@ -7111,7 +7112,7 @@ export default function App() {
       <div>
         {LINKS.map(function(section) {
           return (
-            <div key={section.group} style={S.card}>
+            <Card key={section.group} padding="16px 18px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
               <div style={S.sectionTitle}>{section.group}</div>
               {section.items.map(function(link, li) {
                 return (
@@ -7128,7 +7129,7 @@ export default function App() {
                   </a>
                 );
               })}
-            </div>
+            </Card>
           );
         })}
       </div>
@@ -7153,7 +7154,7 @@ export default function App() {
       border:"1px solid " + C.navy + "22", whiteSpace:"nowrap", flexShrink:0
     };
     return (
-      <div style={S.card}>
+      <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
         <div style={S.sectionTitle}>Your Account</div>
 
         {/* #405 — editable name, extracted #407 (component owns its state). */}
@@ -7216,13 +7217,13 @@ export default function App() {
         <div style={{ fontSize:"11px", color:C.textMuted, marginTop:"12px", lineHeight:"1.5", textAlign:"center" }}>
           Your teams and lineups stay saved on this device. You&apos;ll need to sign in again to make changes.
         </div>
-      </div>
+      </Card>
     );
   }
 
   function renderUpdates() {
     return (
-      <div style={S.card}>
+      <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
         <div style={S.sectionTitle}>What&#x27;s New</div>
         {VERSION_HISTORY.map(function(v, vi) {
           var isCurrent = v.version === APP_VERSION;
@@ -7266,7 +7267,7 @@ export default function App() {
             </div>
           );
         })}
-      </div>
+      </Card>
     );
   }
 
