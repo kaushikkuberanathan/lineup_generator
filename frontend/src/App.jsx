@@ -4525,7 +4525,7 @@ export default function App() {
         </ErrorBoundary>
         {/* ── Fairness Check card — only when finalized ──── */}
         <ErrorBoundary fallback="Fairness Check">
-          {lineupLocked ? <FairnessCheck roster={roster} grid={grid} C={C} /> : null}
+          {lineupLocked ? <FairnessCheck roster={roster} grid={grid} /> : null}
         </ErrorBoundary>
 
         {/* ── Finalized badge ───────────────────────────────── */}
