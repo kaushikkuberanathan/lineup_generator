@@ -14,6 +14,7 @@
 import { useState } from "react";
 import { tokens } from "../../theme/tokens";
 import { BottomSheet } from "../ui/BottomSheet";
+import { Text } from "../ui/Text";
 
 export function LockFlow({ activeWarnings, nextGame, hasPin, onConfirmLock, onRequestPin, onClose }) {
   var _step = useState(1);
@@ -40,10 +41,10 @@ export function LockFlow({ activeWarnings, nextGame, hasPin, onConfirmLock, onRe
                   fontSize:tokens.font.size.sm, fontWeight:tokens.font.weight.bold }}>
                   {isDone ? "✓" : num}
                 </div>
-                <span style={{ fontSize:"10px", letterSpacing:"0.05em", textTransform:"uppercase",
+                <Text uppercase style={{ fontSize:"10px", letterSpacing:"0.05em",
                   color: isActive ? tokens.color.brand.navy : textMuted, fontWeight: isActive ? tokens.font.weight.bold : tokens.font.weight.regular }}>
                   {label}
-                </span>
+                </Text>
               </div>
               {i < stepLabels.length - 1 ? (
                 <div style={{ width:"28px", height:"1px", background:tokens.color.overlay.navyMedium, marginBottom:"14px" }} />
@@ -60,31 +61,31 @@ export function LockFlow({ activeWarnings, nextGame, hasPin, onConfirmLock, onRe
   function renderStep1() {
     return (
       <div>
-        <div style={{ fontSize:tokens.font.size.lg, fontWeight:tokens.font.weight.bold, color:tokens.color.brand.navy, fontFamily:tokens.font.family.serif, marginBottom:"14px" }}>
+        <Text as="div" weight="bold" family="serif" style={{ fontSize:tokens.font.size.lg, color:tokens.color.brand.navy, marginBottom:"14px" }}>
           Review Lineup
-        </div>
+        </Text>
         {!hasIssues ? (
           <div style={{ display:"flex", alignItems:"center", gap:"10px", background:"rgba(39,174,96,0.08)",
             border:"1px solid rgba(39,174,96,0.25)", borderRadius:"10px", padding:"14px", marginBottom:"18px" }}>
             <span style={{ fontSize:"20px" }}>✅</span>
             <div>
-              <div style={{ fontSize:tokens.font.size.md, fontWeight:tokens.font.weight.bold, color:tokens.color.status.success }}>Lineup looks good</div>
-              <div style={{ fontSize:tokens.font.size.sm, color:"rgba(39,174,96,0.8)", marginTop:"2px" }}>No issues detected</div>
+              <Text as="div" weight="bold" style={{ fontSize:tokens.font.size.md, color:tokens.color.status.success }}>Lineup looks good</Text>
+              <Text as="div" style={{ fontSize:tokens.font.size.sm, color:"rgba(39,174,96,0.8)", marginTop:"2px" }}>No issues detected</Text>
             </div>
           </div>
         ) : (
           <div style={{ background:"rgba(200,16,46,0.04)", border:"1px solid rgba(200,16,46,0.15)", borderRadius:"10px", padding:"14px", marginBottom:"18px" }}>
-            <div style={{ fontSize:tokens.font.size.body, fontWeight:tokens.font.weight.bold, color:"#92400e", marginBottom:tokens.space.sm }}>
+            <Text as="div" weight="bold" style={{ fontSize:tokens.font.size.body, color:"#92400e", marginBottom:tokens.space.sm }}>
               {activeWarnings.length + " issue" + (activeWarnings.length === 1 ? "" : "s") + " must be resolved"}
-            </div>
+            </Text>
             <ul style={{ margin:0, paddingLeft:"18px", marginBottom:"10px" }}>
               {activeWarnings.map(function(w, i) {
-                return <li key={i} style={{ fontSize:tokens.font.size.sm, color:"#78350f", lineHeight:tokens.font.lineHeight.comfortable }}>{w.msg || w}</li>;
+                return <Text as="li" key={i} style={{ fontSize:tokens.font.size.sm, color:"#78350f", lineHeight:tokens.font.lineHeight.comfortable }}>{w.msg || w}</Text>;
               })}
             </ul>
-            <div style={{ fontSize:tokens.font.size.xs, color:"#92400e", opacity:0.7 }}>
+            <Text as="div" style={{ fontSize:tokens.font.size.xs, color:"#92400e", opacity:0.7 }}>
               Dismissed warnings are shown here — all issues must be fixed before locking.
-            </div>
+            </Text>
           </div>
         )}
         <div style={{ display:"flex", gap:tokens.space.sm, justifyContent:"flex-end", flexWrap:"wrap" }}>
@@ -121,21 +122,21 @@ export function LockFlow({ activeWarnings, nextGame, hasPin, onConfirmLock, onRe
     }
     return (
       <div>
-        <div style={{ fontSize:tokens.font.size.lg, fontWeight:tokens.font.weight.bold, color:tokens.color.brand.navy, fontFamily:tokens.font.family.serif, marginBottom:"14px" }}>
+        <Text as="div" weight="bold" family="serif" style={{ fontSize:tokens.font.size.lg, color:tokens.color.brand.navy, marginBottom:"14px" }}>
           Confirm Lock
-        </div>
+        </Text>
         <div style={{ background:tokens.color.overlay.navyWash, border:"1px solid rgba(15,31,61,0.1)", borderRadius:"10px", padding:"14px", marginBottom:"18px" }}>
-          <div style={{ fontSize:"10px", color:textMuted, marginBottom:"6px", letterSpacing:"0.05em", textTransform:"uppercase" }}>
+          <Text as="div" uppercase style={{ fontSize:"10px", color:textMuted, marginBottom:"6px", letterSpacing:"0.05em" }}>
             You are about to lock the lineup for
-          </div>
+          </Text>
           {gameLabel ? (
-            <div style={{ fontSize:"15px", fontWeight:tokens.font.weight.bold, color:tokens.color.brand.navy, fontFamily:tokens.font.family.serif }}>{gameLabel}</div>
+            <Text as="div" weight="bold" family="serif" style={{ fontSize:"15px", color:tokens.color.brand.navy }}>{gameLabel}</Text>
           ) : (
-            <div style={{ fontSize:tokens.font.size.md, color:tokens.color.brand.navy, fontStyle:"italic" }}>Next game</div>
+            <Text as="div" style={{ fontSize:tokens.font.size.md, color:tokens.color.brand.navy, fontStyle:"italic" }}>Next game</Text>
           )}
-          <div style={{ fontSize:tokens.font.size.sm, color:textMuted, marginTop:tokens.space.sm }}>
+          <Text as="div" style={{ fontSize:tokens.font.size.sm, color:textMuted, marginTop:tokens.space.sm }}>
             Once locked, the lineup is read-only. Use your PIN to unlock and make changes.
-          </div>
+          </Text>
         </div>
         <div style={{ display:"flex", gap:tokens.space.sm, justifyContent:"flex-end" }}>
           <button onClick={function() { setStep(1); }}
