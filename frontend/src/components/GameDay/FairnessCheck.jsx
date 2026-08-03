@@ -6,12 +6,19 @@
  * Props:
  *   roster  {Array}   array of player objects with .name property
  *   grid    {object}  player name → array of position strings per inning
- *   C       {object}  color/theme constants (C.white, C.border, C.text, C.red)
+ *
+ * Phase 3 Step 5+ / var C retirement: no longer takes a `C` prop. `C.text` maps
+ * 1:1 to tokens.color.text.ink (already the established equivalence, Story 114).
+ * `C.border` is App.jsx's legacy rgba(0,0,0,0.06) value, which has no token
+ * equivalent - tokens.color.border.default (#E2E8F0) is a real, visible drift
+ * (rejected for the same reason Story 117 rejected it for S.card). Kept as the
+ * exact raw literal instead of silently drifting onto the token.
  */
 
 import { tokens } from "../../theme/tokens";
+import { Card } from "../ui/Card";
 
-export function FairnessCheck({ roster, grid, C }) {
+export function FairnessCheck({ roster, grid }) {
   var pcCounts = roster.map(function(p) {
     return (grid[p.name] || []).filter(function(pos) { return pos === "P" || pos === "C"; }).length;
   });
@@ -65,21 +72,23 @@ export function FairnessCheck({ roster, grid, C }) {
   ];
 
   return (
-    <div style={{ background:tokens.color.surface.card, borderRadius:tokens.radius.md, border:"1px solid " + C.border,
-      borderLeft:"4px solid " + (allPass ? tokens.color.status.success : tokens.color.status.warning),
-      padding:"12px 14px", marginBottom:"14px",
-      boxShadow:tokens.shadow.subtle }}>
+    <Card padding="12px 14px" radius="md" style={{
+      border: "1px solid rgba(0,0,0,0.06)",
+      borderLeft: "4px solid " + (allPass ? tokens.color.status.success : tokens.color.status.warning),
+      marginBottom: "14px",
+      boxShadow: tokens.shadow.subtle,
+    }}>
       <div style={{ fontSize:tokens.font.size.body, fontWeight:tokens.font.weight.bold, marginBottom:tokens.space.sm,
         color: allPass ? tokens.color.status.success : tokens.color.status.warning }}>
         {allPass ? "✅ Fairness Check Passed" : "⚠️ Fairness Check — " + failCount + " issue" + (failCount !== 1 ? "s" : "")}
       </div>
       {checks.map(function(ch) {
         return (
-          <div key={ch.label} style={{ fontSize:tokens.font.size.md, color: ch.pass ? C.text : tokens.color.brand.red, marginBottom:"3px" }}>
+          <div key={ch.label} style={{ fontSize:tokens.font.size.md, color: ch.pass ? tokens.color.text.ink : tokens.color.brand.red, marginBottom:"3px" }}>
             {ch.pass ? "✅" : "❌"} {ch.label}
           </div>
         );
       })}
-    </div>
+    </Card>
   );
 }
