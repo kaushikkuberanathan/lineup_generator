@@ -677,7 +677,6 @@ var C = {
 };
 
 var S = {
-  app: { minHeight:"100vh", background:tokens.color.surface.cream, fontFamily:"Georgia,'Times New Roman',serif", color:tokens.color.text.ink },
   header: {
     background:"linear-gradient(135deg,#0f1f3d 0%,#1a3260 100%)",
     borderBottom:"4px solid " + C.red,
