@@ -4122,9 +4122,27 @@ per-tab App.jsx unit tests exist) - must render pixel-identical.
 Note: originally misfiled as "Story 112" against a stale local `main` checkout
 before verifying against `origin/develop`, where 112 was already in use (admin.js
 route coverage, #474). Caught before commit; renumbered to 117 (next-free after
-the highest in-use number, 116 - 115 was found unused/skipped and deliberately
-not backfilled to avoid colliding with anything reserved-but-uncommitted
-elsewhere). GitHub issue #514 title corrected to match.
+the highest in-use number, 116). GitHub issue #514 title corrected to match.
+Correction 2026-08-03: the note above originally said "115 was found
+unused/skipped" - that was wrong. Story 115 is real (GitHub issue #501, S.app
+dead-code cleanup); it just had no ROADMAP.md body at the time this was
+written, which is why the numbering check didn't surface it as in-use. See
+Story 115's own entry above for the fix.
+
+---
+### Story 118 (P3) - Vitest Bug #7 flake: pool/timeout tuning + Windows Defender exclusion investigation <!-- #517 -->
+Status: Open
+Discovered: 2026-08-03 - Bug #7 (Windows Vitest worker cold-start flake) cost multiple full-suite re-runs in one session; investigated switching the default pool as a permanent fix rather than a manual per-run retry.
+Target: opportunistic - current threads/maxWorkers:1 config remains the working default in the meantime.
+Symptom: `frontend/vite.config.js` pins `pool: 'threads', maxWorkers: 1` - a single-worker config that still intermittently drops 1-2 test files per run to a worker-spawn timeout (Bug #7), recoverable only by re-running the full suite until a clean pass lands.
+Impact: Every full-suite run has a real chance of costing a second (or third) re-run for a trustworthy clean number - pure session-time overhead, not a signal of real regressions. 100% of investigated Bug #7 instances this session were confirmed clean in isolation.
+Root cause: Unknown precisely - two live theories: (1) pure Windows Vitest worker-thread cold-start flake, environmental and unrelated to endpoint security; (2) a deeper spawn-contention issue, possibly endpoint security software (Cox Defender or similar) scanning newly-spawned worker threads/processes on-access, adding enough latency under load that some workers miss their startup handshake window.
+Tried and empirically REJECTED this session - do not retry blindly: switching to `pool: 'forks'` + `poolOptions.forks.singleFork: true` (the pre-Story-41 config). Not just insufficient - actively worse: dozens of `[vitest-pool]: Timeout terminating forks worker for test files` messages (most of the suite, not 1-2 files), 7 REAL test failures with explicit `Error: Test timed out in 5000ms` (tests hung, not just dropped), and duration ballooned 4x+ (`environment` sub-phase alone: 1012.29s vs. the normal ~250-450s total run). Categorically different failure signature than Bug #7's isolated flake - looks like a systemic hang, consistent with Story 41's original Cox Defender `child_process.fork` IPC finding still being live even though the specific git-hook-context trigger no longer applies (Vitest was removed from the pre-push hook in Story 75 - CI is now the authoritative gate). Reverted immediately; `git diff` confirmed zero net change before moving on.
+Proposed fix - three independent angles, not mutually exclusive:
+  1. Confirm whether the current threads/maxWorkers:1 flake rate is an acceptable steady-state (keep the manual-retry pattern, documented clearly), or whether tuning threads-pool-specific options (worker count, startup timeout) reduces the flake rate without the forks-pool regression.
+  2. Document a Windows Defender (or Cox Defender specifically) exclusion recommendation for the project's node_modules and repo root as a system-level fix - NOT something a coding session can apply itself (requires admin access to endpoint security policy); write up as a clear manual step for whoever administers the machine.
+  3. Once either angle is tried, revisit whether the flake was ever really about Vitest/Windows at all, or has been masking this deeper spawn-contention issue the whole time - correct the "Bug #7" doc language accordingly if so.
+Explicitly out of scope for this issue: actually applying a Windows Defender policy change.
 
 ---
 ### Automated Score Reporting (County Integration)
