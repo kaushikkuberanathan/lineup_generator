@@ -4203,6 +4203,48 @@ SharedView's own render tree specifically (groundwork already exists in Story
 C.* -> tokens.* swap for its own header markup.
 
 ---
+### Story 121 (P0) - AppShareLinkRouting.test.jsx incomplete Supabase mock fires real network writes/deletes <!-- #535 -->
+Status: Open - NOT auto-implemented, flagged for T1/whoever owns this test
+file (Dugout/main track). Deliberately not fixed in the session that found it.
+Discovered: 2026-08-04, while diagnosing Bug #7 (Vitest worker-spawn flake,
+Story 118/#517) on the lineup-generator (Dugout/main) worktree.
+Target: should be picked up soon, not routine backlog cadence - see Impact.
+Symptom: frontend/src/__tests__/AppShareLinkRouting.test.jsx mocks
+../supabase.js incompletely - `Object.assign({}, actual, { dbLoadShareLink:
+... })` spreads in the REAL module and only overrides dbLoadShareLink. Every
+other export (dbSaveTeamData, dbSaveTeams, deleteTeam, etc.) falls through to
+the real implementation, firing genuine Supabase network calls during the
+test run (confirmed: dbSaveTeamData, dbSaveTeams, and a real deleteTeam(teamId)
+call, all triggered from "renders SharedView (not DugoutView)" test cases).
+Impact: LIVE-DATA-MUTATION RISK, not just a flaky-test annoyance. On any
+machine where the local .env's VITE_SUPABASE_ANON_KEY is still valid
+(not yet legacy-disabled), running npm test locally fires real writes AND a
+real delete against whatever team_id the test constructs, against the actual
+Supabase project this repo points at. On the lineup-generator worktree
+specifically this instead surfaces as loud "Legacy API keys are disabled"
+unhandled rejections (6-9 per full-suite run) because that worktree's local
+key has already been disabled - which is what exposed the bug, not the cause
+of it. A teammate or any environment with a still-valid key would NOT see an
+error at all; the writes/delete would simply succeed silently against real
+data. Identical mock gap exists verbatim on the UX worktree's copy of this
+file - it just hasn't surfaced there yet (different local key), so this needs
+fixing at the shared source, not per-worktree.
+Root cause: Known - incomplete vi.mock spread pattern, confirmed by direct
+source read.
+Possible connection to Story 118/#517: real, uncontrolled network I/O firing
+mid-test-run is exactly the kind of resource/timing contention Story 118's own
+"Root cause: Unknown" section lists as an alternate, unconfirmed theory for the
+worker-spawn flake. Not proven - worth re-evaluating the flake rate once this
+mock gap closes.
+Proposed fix: Complete the mock - either explicitly stub every supabase.js
+export this test's code path can reach (dbSaveTeamData, dbSaveTeams,
+deleteTeam at minimum, re-verify the full call surface before closing), or
+mock the entire module without spreading in `actual`, matching the pattern the
+file's own top comment references (SharedView.test.jsx /
+AppNoMembershipRouting.test.jsx - check whether those siblings already do this
+correctly, as a first diagnostic step).
+
+---
 ### Automated Score Reporting (County Integration)
 **Status:** Architecture finalized, implementation pending
 **Trigger:** Coach taps "Report Score" on a completed game
