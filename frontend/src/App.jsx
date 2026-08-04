@@ -3394,7 +3394,7 @@ export default function App() {
           <div style={S.sectionTitle}>Roster and Player Profiles</div>
           <div style={{ display:"flex", gap:"6px", flexWrap:"wrap", alignItems:"center" }}>
             {rosterHistory.length > 0 ? (
-              <button style={{ ...S.btn("ghost"), color:C.red, border:"1px solid rgba(200,16,46,0.3)" }}
+              <button style={{ ...S.btn("ghost"), color:tokens.color.brand.red, border:"1px solid rgba(200,16,46,0.3)" }}
                 onClick={undoRoster}>
                 Undo ({rosterHistory.length})
               </button>
@@ -3428,7 +3428,7 @@ export default function App() {
         )}
 
         {lineupLocked ? (
-          <div style={{ fontSize:"11px", color:C.textMuted, textAlign:"center", padding:"8px 12px", marginBottom:"14px", background:"rgba(15,31,61,0.03)", borderRadius:"8px", border:"1px dashed rgba(15,31,61,0.15)" }}>
+          <div style={{ fontSize:"11px", color:tokens.color.text.muted, textAlign:"center", padding:"8px 12px", marginBottom:"14px", background:"rgba(15,31,61,0.03)", borderRadius:"8px", border:"1px dashed rgba(15,31,61,0.15)" }}>
             🔒 Lineup is finalized — unlock to add or remove players
           </div>
         ) : !showAddForm ? (
@@ -3457,7 +3457,7 @@ export default function App() {
           </div>
         )}
 
-        <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
+        <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
           <div
             onClick={function() { setSummaryOpen(!summaryOpen); }}
             style={{ display:"flex", justifyContent:"space-between", alignItems:"center", cursor:"pointer", marginBottom: summaryOpen ? "10px" : "0" }}>
@@ -3522,7 +3522,7 @@ export default function App() {
                               padding:"4px 6px",
                               textAlign: col.key === "player" ? "left" : "center",
                               fontSize:"10px",
-                              color: isActive ? C.red : "#6a7a9a",
+                              color: isActive ? tokens.color.brand.red : "#6a7a9a",
                               fontWeight: isActive ? "bold" : "normal",
                               borderBottom:"2px solid rgba(15,31,61,0.08)",
                               whiteSpace:"nowrap",
@@ -3540,7 +3540,7 @@ export default function App() {
                       var info = row.info;
                       var stats = row.stats;
                       var avg = row.avg;
-                      var avgColor = avg === null ? C.textMuted : avg >= 0.300 ? "#27ae60" : avg >= 0.200 ? "#e67e22" : tokens.color.text.ink;
+                      var avgColor = avg === null ? tokens.color.text.muted : avg >= 0.300 ? "#27ae60" : avg >= 0.200 ? "#e67e22" : tokens.color.text.ink;
                       return (
                         <tr key={info.name} style={{ borderBottom:"1px solid rgba(15,31,61,0.05)", background: ri % 2 === 0 ? "transparent" : "rgba(15,31,61,0.03)" }}>
                           <td style={{ padding:"4px 6px", fontWeight:"600", textAlign:"left" }}>{firstName(info.name)}</td>
@@ -3654,11 +3654,11 @@ export default function App() {
             var pr = info.prefs || [];
 
             return (
-              <Card key={info.name} padding="14px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
+              <Card key={info.name} padding="14px" radius="md" style={{ border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
                 <div style={{ display:"flex", alignItems:"center", gap:"8px", marginBottom: isCol ? 0 : "12px" }}>
                   {!lineupLocked ? (
                     <button onClick={function(n) { return function() { var next = {}; for (var k in collapsed) { next[k]=collapsed[k]; } next[n] = !collapsed[n]; setCollapsed(next); }; }(info.name)}
-                      style={{ background:"none", border:"none", cursor:"pointer", fontSize:"11px", color:C.textMuted, padding:"2px", flexShrink:0 }}>
+                      style={{ background:"none", border:"none", cursor:"pointer", fontSize:"11px", color:tokens.color.text.muted, padding:"2px", flexShrink:0 }}>
                       {isCol ? ">" : "v"}
                     </button>
                   ) : <span style={{ width:"16px", flexShrink:0 }} />}
@@ -3686,7 +3686,7 @@ export default function App() {
                 {!isCol ? (
                   <div style={{ pointerEvents: lineupLocked ? "none" : "auto" }}>
                     {lineupLocked ? (
-                      <div style={{ fontSize:"11px", color:C.textMuted, textAlign:"center", padding:"6px 10px", marginBottom:"10px", background:"rgba(15,31,61,0.03)", borderRadius:"6px", border:"1px dashed rgba(15,31,61,0.12)" }}>
+                      <div style={{ fontSize:"11px", color:tokens.color.text.muted, textAlign:"center", padding:"6px 10px", marginBottom:"10px", background:"rgba(15,31,61,0.03)", borderRadius:"6px", border:"1px dashed rgba(15,31,61,0.12)" }}>
                         🔒 Unlock lineup to edit player attributes
                       </div>
                     ) : null}
@@ -3719,7 +3719,7 @@ export default function App() {
                           <div key={item.label} style={{ display:"flex", alignItems:"center", gap:"4px" }}>
                             <span style={{ width:"6px", height:"6px", borderRadius:"50%",
                               background:item.color, display:"inline-block", flexShrink:0 }}></span>
-                            <span style={{ fontSize:"9px", color:C.textMuted }}>{item.label}</span>
+                            <span style={{ fontSize:"9px", color:tokens.color.text.muted }}>{item.label}</span>
                           </div>
                         );
                       })}
@@ -3754,7 +3754,7 @@ export default function App() {
                             })()}
                           </div>
                           <span style={{ fontSize:"10px", fontWeight:600, color:"#666666", marginTop:"8px", marginBottom:"4px", display:"block" }}>Preferred Positions</span>
-                          <div style={{ fontSize:"10px", color:C.textMuted, marginBottom:"6px" }}>
+                          <div style={{ fontSize:"10px", color:tokens.color.text.muted, marginBottom:"6px" }}>
                             Tap to add in priority order. 1st pick gets the biggest boost. Tap again to remove.
                           </div>
                           <div style={{ marginBottom:"6px" }}>
@@ -3775,7 +3775,7 @@ export default function App() {
                           </div>
                           {pr.length > 0 ? (
                             <div style={{ display:"flex", gap:"4px", flexWrap:"wrap", marginBottom:"6px", alignItems:"center" }}>
-                              <span style={{ fontSize:"10px", color:C.textMuted }}>Order:</span>
+                              <span style={{ fontSize:"10px", color:tokens.color.text.muted }}>Order:</span>
                               {pr.map(function(pos, ri) {
                                 return (
                                   <span key={pos} style={{ fontSize:"10px", padding:"1px 6px", borderRadius:"4px",
@@ -3785,7 +3785,7 @@ export default function App() {
                                 );
                               })}
                               <span onClick={function() { updatePlayer(info.name, { prefs: [] }); }}
-                                style={{ fontSize:"10px", color:C.textMuted, cursor:"pointer", marginLeft:"4px", textDecoration:"underline" }}>
+                                style={{ fontSize:"10px", color:tokens.color.text.muted, cursor:"pointer", marginLeft:"4px", textDecoration:"underline" }}>
                                 clear
                               </span>
                             </div>
@@ -4029,10 +4029,10 @@ export default function App() {
                       }
                       if (st.games === 0) { return null; }
                       var avg = fmtAvg(st.h, st.ab);
-                      var avgColor = st.ab > 0 && (st.h/st.ab) >= 0.300 ? C.win : st.ab > 0 && (st.h/st.ab) >= 0.200 ? "#d4a017" : C.textMuted;
+                      var avgColor = st.ab > 0 && (st.h/st.ab) >= 0.300 ? tokens.color.status.success : st.ab > 0 && (st.h/st.ab) >= 0.200 ? "#d4a017" : tokens.color.text.muted;
                       return (
                         <div style={{ marginBottom:"10px" }}>
-                          <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:"6px" }}>Season Batting Record ({st.games} game{st.games !== 1 ? "s" : ""})</div>
+                          <div style={{ fontSize:"10px", color:tokens.color.text.muted, textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:"6px" }}>Season Batting Record ({st.games} game{st.games !== 1 ? "s" : ""})</div>
                           <div style={{ display:"flex", gap:"12px", padding:"8px 12px", borderRadius:"8px", background:"rgba(15,31,61,0.04)", border:"1px solid rgba(15,31,61,0.08)" }}>
                             {[
                               ["AVG", avg, avgColor],
@@ -4058,16 +4058,16 @@ export default function App() {
                             }).slice(0, 3).map(function(sg) {
                               var p = sg.battingPerf[info.name];
                               var gameAvg = fmtAvg(p.h, p.ab);
-                              var rc = sg.result === "W" ? C.win : sg.result === "L" ? C.red : "#d4a017";
+                              var rc = sg.result === "W" ? tokens.color.status.success : sg.result === "L" ? tokens.color.brand.red : "#d4a017";
                               return (
                                 <div key={sg.id} style={{ display:"flex", alignItems:"center", gap:"8px", fontSize:"11px", padding:"3px 0", borderBottom:"1px solid rgba(15,31,61,0.04)" }}>
                                   <span style={{ fontSize:"10px", fontWeight:"bold", color:rc, minWidth:"12px" }}>{sg.result}</span>
-                                  <span style={{ color:C.textMuted, flex:1 }}>vs {sg.opponent}</span>
-                                  <span style={{ color:C.textMuted }}>{fmtStat(p.ab)}-AB</span>
-                                  <span style={{ color:C.textMuted }}>{fmtStat(p.h)}-H</span>
-                                  {p.r  ? <span style={{ color:C.textMuted }}>{fmtStat(p.r)}-R</span>   : null}
-                                  {p.rbi ? <span style={{ color:C.textMuted }}>{fmtStat(p.rbi)}-RBI</span> : null}
-                                  <span style={{ fontWeight:"bold", color: parseInt(p.ab||0,10) > 0 && (parseInt(p.h||0,10)/parseInt(p.ab||0,10)) >= 0.300 ? C.win : C.textMuted }}>{gameAvg}</span>
+                                  <span style={{ color:tokens.color.text.muted, flex:1 }}>vs {sg.opponent}</span>
+                                  <span style={{ color:tokens.color.text.muted }}>{fmtStat(p.ab)}-AB</span>
+                                  <span style={{ color:tokens.color.text.muted }}>{fmtStat(p.h)}-H</span>
+                                  {p.r  ? <span style={{ color:tokens.color.text.muted }}>{fmtStat(p.r)}-R</span>   : null}
+                                  {p.rbi ? <span style={{ color:tokens.color.text.muted }}>{fmtStat(p.rbi)}-RBI</span> : null}
+                                  <span style={{ fontWeight:"bold", color: parseInt(p.ab||0,10) > 0 && (parseInt(p.h||0,10)/parseInt(p.ab||0,10)) >= 0.300 ? tokens.color.status.success : tokens.color.text.muted }}>{gameAvg}</span>
                                 </div>
                               );
                             })}
@@ -4076,7 +4076,7 @@ export default function App() {
                       );
                     })()}
 
-                    <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:"6px" }}>Auto-Assign Preview</div>
+                    <div style={{ fontSize:"10px", color:tokens.color.text.muted, textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:"6px" }}>Auto-Assign Preview</div>
                     <div>
                       {(function() {
                         var top = getTopPositions(info);
