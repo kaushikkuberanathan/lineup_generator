@@ -678,8 +678,8 @@ var C = {
 
 var S = {
   header: {
-    background:"linear-gradient(135deg,#0f1f3d 0%,#1a3260 100%)",
-    borderBottom:"4px solid " + C.red,
+    background:"linear-gradient(135deg,"+tokens.color.brand.navy+" 0%,"+tokens.color.brand.navyLight+" 100%)",
+    borderBottom:"4px solid " + tokens.color.brand.red,
     padding:"12px 20px", display:"flex", alignItems:"center",
     justifyContent:"space-between", gap:"12px", flexWrap:"wrap",
     position:"sticky", top:0, zIndex:100
@@ -687,11 +687,11 @@ var S = {
   logoWrap: { display:"flex", alignItems:"center", gap:"10px", cursor:"pointer" },
   logoCircle: {
     width:"42px", height:"42px", borderRadius:"50%",
-    background:C.red, border:"2.5px solid " + C.gold,
+    background:tokens.color.brand.red, border:"2.5px solid " + tokens.color.brand.gold,
     display:"flex", alignItems:"center", justifyContent:"center",
-    fontSize:"18px", fontWeight:"bold", color:C.gold, fontFamily:"Georgia,serif", flexShrink:0
+    fontSize:"18px", fontWeight:"bold", color:tokens.color.brand.gold, fontFamily:"Georgia,serif", flexShrink:0
   },
-  logoTitle: { fontSize:"18px", fontWeight:"bold", color:C.gold, letterSpacing:"0.04em" },
+  logoTitle: { fontSize:"18px", fontWeight:"bold", color:tokens.color.brand.gold, letterSpacing:"0.04em" },
   logoSub: { fontSize:"10px", color:"rgba(255,255,255,0.5)", letterSpacing:"0.08em" },
   tabs: { display:"flex", gap:"2px", flexWrap:"wrap" },
   tab: function(active) {
@@ -7887,7 +7887,7 @@ export default function App() {
         }}>
           <BrandMark size={isLandscape ? 30 : 42} />
           {screen === "app" && primaryTab !== "more" && activeTeam ? (
-            <div style={Object.assign({}, S.logoCircle, { background:C.navy, border:"2px solid "+C.gold }, isLandscape ? { width:"24px", height:"24px", fontSize:"11px" } : { width:"30px", height:"30px", fontSize:"14px" })}>{activeTeam.name.charAt(0).toUpperCase()}</div>
+            <div style={Object.assign({}, S.logoCircle, { background:tokens.color.brand.navy, border:"2px solid "+tokens.color.brand.gold }, isLandscape ? { width:"24px", height:"24px", fontSize:"11px" } : { width:"30px", height:"30px", fontSize:"14px" })}>{activeTeam.name.charAt(0).toUpperCase()}</div>
           ) : null}
           <div>
             <div style={Object.assign({}, S.logoTitle, isLandscape ? { fontSize:"14px" } : {})}>{screen === "app" && primaryTab !== "more" && activeTeam ? activeTeam.name : "Dugout Lineup"}</div>
