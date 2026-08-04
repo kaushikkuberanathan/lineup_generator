@@ -4245,6 +4245,42 @@ AppNoMembershipRouting.test.jsx - check whether those siblings already do this
 correctly, as a first diagnostic step).
 
 ---
+### Story 122 (P1) - Dependabot #61/#62: ip-address SSRF/trust-boundary bypass via express-rate-limit <!-- #539 -->
+Status: Open - tracked separately per KK's explicit go/no-go decision on the
+v2.8.4 release audit (2026-08-04): ship v2.8.4 with these alerts open, address
+here rather than blocking that release.
+Discovered: 2026-08-04, during the v2.8.4 release audit's live Dependabot
+check (docs/product/RELEASE_AUDIT_2026-08-04.md - superseded the previously
+assumed "2 known alerts" with the actual live count of 4).
+Target: soon, not routine backlog cadence - these are runtime (not dev-only)
+backend alerts.
+Symptom: Two NEW Dependabot alerts, both created 2026-08-04, both on
+ip-address (backend package-lock.json, runtime scope, not a dev dependency):
+#61 (medium) - IPv4-mapped/NAT64 IPv6 address misclassification can bypass
+SSRF and trust-boundary checks (vulnerable >=10.1.1 <=10.2.0, fixed in
+10.2.1). #62 (medium) - a CIDR suffix on the parsed address suppresses
+special-use classification, same SSRF/trust-boundary bypass class
+(vulnerable >=10.1.1 <=10.2.1, fixed in 10.2.2). Both pulled in transitively
+via express-rate-limit@8.6.1 - the actual loginLimiter middleware protecting
+POST /magic-link in production.
+Impact: Not independently confirmed whether express-rate-limit's actual usage
+of ip-address (IP-based rate-limit keying / trust-proxy classification)
+touches the vulnerable code path directly - that's the first thing to check,
+not assumed. Sits directly behind the auth rate-limiter, so deserves closing
+out rather than leaving open indefinitely even though real exploitability is
+unconfirmed.
+Note - two OLDER alerts exist too, NOT the concern of this issue: #28 (high,
+vite, dev-only) and #30 (medium, vite/launch-editor, dev-only) are both
+transitive via vitest@4.1.2's own bundled vite@8.0.14 (a
+devDependency-of-a-devDependency, never reaches a deployed build) - separate,
+lower-relevance, not tracked by this issue.
+Proposed fix: Bump express-rate-limit to a version that pulls a patched
+ip-address (>=10.2.2), or add an npm overrides/resolutions entry pinning
+ip-address directly if express-rate-limit hasn't picked up the bump yet.
+Verify loginLimiter behavior is unchanged after the bump (existing rate-limit
+tests should cover this).
+
+---
 ### Automated Score Reporting (County Integration)
 **Status:** Architecture finalized, implementation pending
 **Trigger:** Coach taps "Report Score" on a completed game
