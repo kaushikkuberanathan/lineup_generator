@@ -4145,6 +4145,64 @@ Proposed fix - three independent angles, not mutually exclusive:
 Explicitly out of scope for this issue: actually applying a Windows Defender policy change.
 
 ---
+### Story 119 (P2) - App-shell root gradient third-stop token disposition (App.jsx var C gap) <!-- #530 -->
+Status: Open
+Discovered: 2026-08-04 - flagged as a deliberately out-of-scope item during Phase 4 slice 1 (header/nav chrome), held for KK per the standing rule that real naming/architecture decisions get logged and confirmed, not decided solo.
+Target: resolve before the App.jsx var C sweep can claim full coverage - does not block slices 2-9 individually.
+Symptom: The app-shell root background (App.jsx, ~line 7876) is a ternary with a
+third gradient stop at the literal hex #2a0a0a. Unlike every other resolved/ADOPT
+key in this sweep, no existing token (dark or otherwise) is an exact value match -
+this is a genuinely new color with no minted home yet.
+Impact: None of the 9 planned region slices (1-8 tab/mode slices + slice 9, see
+Story 120 below) claim this site. The sweep cannot say "every var C / literal-hex
+site in App.jsx is token-driven" until this is decided - same class of gap Story
+113 (cream) and Story 114 (text) closed before slice 1 started, just discovered
+one slice later.
+Root cause: Known - this stop was never audited by Story 109's original
+disposition table (same root cause as Story 113's cream gap) because it's a
+literal hex value, not a C.key reference, and the original table's search was
+C.key-scoped.
+Recommendation (2026-08-04, not yet confirmed by KK): mint a new token named by
+role, not appearance - same principle Story 110's 8 resolutions and Story 113's
+color.surface.cream mint both followed. Candidate name: color.brand.gradientDark
+(the gradient stop's actual role - dark end of the app-shell background
+gradient - not a generic "dark" or appearance-based name). Preserve the current
+value (#2a0a0a) exactly; this is a reference-swap, not a visual change. Do not
+mint or swap the call site without an explicit go on the proposed name.
+
+---
+### Story 120 (P2) - SharedView duplicate header: dedicate as region slice 9 (App.jsx var C sweep) <!-- #531 -->
+Status: Open
+Discovered: 2026-08-02 (Story 114's Step 1 structural search, DESIGN_AUDIT.md), disposition confirmed 2026-08-04.
+Target: resolve before the App.jsx var C sweep can claim full coverage - sequenced
+after slice 7, does not block slices 1-8.
+Symptom: SharedView() (App.jsx lines ~805-1116, the public share-link view) has
+its own duplicate header markup with its own separate C.red/C.navy/navyLight
+literals. Not part of the main authenticated app's persistent header (already
+covered by slice 1); renders via a completely separate <ErrorBoundary> tree
+outside the main app shell's root. Never one of the 7 originally-planned region
+slices - same class of boundary gap slice 8 (GameModeScreen/DugoutView, Story
+116/#503) was carved out for.
+Impact: The var C sweep could ship "complete" across slices 1-8 while
+SharedView's own color references were never migrated or structurally verified
+against Story 114's inheritance methodology - a real coverage hole, since
+SharedView is the Auth Principle's #1 priority surface (share links must always
+render, unauthenticated).
+Root cause: Scope boundary gap, same shape as slice 8's - the region-slice plan
+followed the main app shell's tab structure; SharedView is a structurally
+separate render path (public, pre-auth, outside the authenticated shell), not a
+tab or modal any of the 7 slices actually own.
+Decided 2026-08-04: dedicated as its own region slice - slice 9 - rather than
+folded into an existing slice (same reasoning as slice 8's carve-out). Sequenced
+after slice 7, not last like slice 8 - SharedView has no Locked-File
+gate-phrase complication beyond App.jsx's own, so it doesn't need to wait as
+long as slice 8 does.
+Proposed fix: When slice 9 starts, run Story 114's Step 1/2 methodology against
+SharedView's own render tree specifically (groundwork already exists in Story
+114's "Root 1 - SharedView()" table in DESIGN_AUDIT.md), then the mechanical
+C.* -> tokens.* swap for its own header markup.
+
+---
 ### Automated Score Reporting (County Integration)
 **Status:** Architecture finalized, implementation pending
 **Trigger:** Coach taps "Report Score" on a completed game
