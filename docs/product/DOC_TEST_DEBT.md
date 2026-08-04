@@ -24,6 +24,18 @@
 
 ## Open — Test Gaps
 
+### 🔴 P0 — AppShareLinkRouting.test.jsx incomplete Supabase mock fires real network writes/deletes
+
+| | |
+|---|---|
+| **Area** | Share link (test infrastructure) |
+| **Description** | `frontend/src/__tests__/AppShareLinkRouting.test.jsx` mocks `../supabase.js` incompletely — `Object.assign({}, actual, { dbLoadShareLink: ... })` spreads in the real module and only overrides `dbLoadShareLink`. Every other export (`dbSaveTeamData`, `dbSaveTeams`, `deleteTeam`, etc.) falls through to the real implementation, firing genuine Supabase network calls — including a real `deleteTeam(teamId)` call — during the test run. |
+| **Risk if unfixed** | Live-data-mutation risk, not just a flaky-test annoyance. On any machine where the local `.env`'s `VITE_SUPABASE_ANON_KEY` is still valid, running `npm test` locally fires real writes AND a real delete against whatever `team_id` the test constructs, against the actual Supabase project. Only surfaced as a loud, safe-to-notice error on the `lineup-generator` worktree because that worktree's local key happens to already be legacy-disabled — a teammate with a still-valid key would see no error at all while real data mutated silently. Share link is a North Star capability (Auth Principle #1 priority), and this is its own routing test's infrastructure — this is why it's P0, not a routine test-debt item. |
+| **Proposed test/fix** | Complete the mock — explicitly stub every `supabase.js` export this test's code path can reach (`dbSaveTeamData`, `dbSaveTeams`, `deleteTeam` at minimum, re-verify the full call surface before closing), or mock the entire module without spreading in `actual`. Check whether sibling files `SharedView.test.jsx` / `AppNoMembershipRouting.test.jsx` already do this correctly, as a first diagnostic step. |
+| **Opened** | 2026-08-04 |
+| **Age** | 0 days |
+| **Target** | Flagged for Dugout/main track ownership (T1) — not fixed in the session that found it. See Story 121, ROADMAP.md, and [#535](https://github.com/kaushikkuberanathan/lineup_generator/issues/535). |
+
 ### 🟠 P1 — Auth Flow End-to-End (Magic Link + Google OAuth)
 
 | | |
@@ -415,10 +427,12 @@
 
 | Priority | Test Gaps | Doc Gaps | Process Gaps | Total |
 |---|---|---|---|---|
-| 🔴 P0 | 0 | 0 | 0 | **0** |
+| 🔴 P0 | 1 | 0 | 0 | **1** |
 | 🟠 P1 | 2 | 2 | 3 | **7** |
 | 🟡 P2 | 8 | 5 | 7 | **20** |
-| **Total** | **10** | **7** | **10** | **27** |
+| **Total** | **11** | **7** | **10** | **28** |
+
+*(2026-08-04: new P0 test gap added — `AppShareLinkRouting.test.jsx` incomplete Supabase mock, live-data-mutation risk, discovered while diagnosing an unrelated Vitest flake (Story 118/#517) on the Dugout worktree. Direct count re-verified against every `### 🔴`/`### 🟠`/`### 🟡` heading actually present in Open — Test Gaps before this edit (0 P0, 3 P1, 8 P2 = 11 unchanged aside from the new P0), matching this table's prior state exactly. Test Gaps 10→11, P0 Total 0→1, Grand Total 27→28. This item's own priority definition ("Cannot ship a minor version with P0 debt open") does not block the release this was filed ahead of — that release is a PATCH bump (v2.8.3→v2.8.4), not a minor bump (x.Y.0); the project's own `debt-p0` gate is explicitly scoped to minor bumps only. Logged here per KK's explicit instruction to patch the ledger before that release, not because the release itself required it.)*
 
 *(2026-08-02: recomputed by DIRECT COUNT of every `###` item actually present in each Open section, not by propagating prior arithmetic — this merge combined two branches that each edited this dashboard independently (see conflict-resolution note below), and direct counting is the only way to be sure the combined number is real rather than a doubled or dropped delta. This surfaced a genuine pre-existing drift, unrelated to tonight's work: Process Gaps had been under-counted for some time — 3 P1 items (Auto-Staging Git Hook, Windows Vitest pre-push hook OOM cascade, Box-score AI parser test coverage) and most of the 7 P2 process items were apparently never reflected in this table's counts, even though the items themselves were correctly listed in the Open section the whole time. Same failure class as D-S31 (FEATURE_MAP.md denominator drift) — a summary table silently diverging from the content it's supposed to summarize. Not fixed beyond correcting the count here; if a recurring drift-prevention mechanism is wanted, that's a new debt item, not something to silently add mid-merge.)*
 
@@ -446,7 +460,8 @@
 - 60+ days: not recomputed this pass (see above)
 
 **Ship blockers:**
-- None currently open. Next minor version bump was gated on both P0 items — Share Link Payload Integrity and Game Mode Rendering + State, both resolved 2026-08-02 (see Resolved section) — plus D-S411b and D-S348a, both resolved same-day 2026-08-01 (see Resolved section). Run `debt-p0` to confirm the gate before actually bumping the minor version, per the project's own minor-version-gate rule.
+- **1 P0 open as of 2026-08-04** — `AppShareLinkRouting.test.jsx` incomplete Supabase mock (see Open — Test Gaps above). Does NOT block the v2.8.4 patch release this was filed ahead of — the `debt-p0` gate only applies to minor version bumps (x.Y.0), not patches. **Will block the next minor version bump (v2.9.0 or later)** until resolved — run `debt-p0` before that bump, per the project's own minor-version-gate rule, and expect it to fail until this item closes.
+- Prior to this: none open. The previous minor version bump was gated on both P0 items — Share Link Payload Integrity and Game Mode Rendering + State, both resolved 2026-08-02 (see Resolved section) — plus D-S411b and D-S348a, both resolved same-day 2026-08-01 (see Resolved section).
 
 ---
 
