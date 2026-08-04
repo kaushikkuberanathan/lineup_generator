@@ -4559,7 +4559,7 @@ export default function App() {
           {/* Finalize button — opens LockFlow 3-step confirmation */}
           {!lineupLocked ? (
             <button
-              style={{ ...S.btn("ghost"), color:C.win, border:"1px solid rgba(39,174,96,0.35)", marginLeft:"4px" }}
+              style={{ ...S.btn("ghost"), color:tokens.color.status.success, border:"1px solid rgba(39,174,96,0.35)", marginLeft:"4px" }}
               onClick={function() { setLockFlowOpen(true); }}>
               ✓ Finalize
             </button>
@@ -4569,10 +4569,10 @@ export default function App() {
             <button
               onClick={function() { setShowDiamond(!showDiamond); if (showDiamond) { setDiamondInning(null); } }}
               title={showDiamond ? "Hide diamond" : "Show diamond view"}
-              style={{ padding:"5px 12px", borderRadius:"6px", border:"2px solid " + (showDiamond ? C.navy : "rgba(15,31,61,0.15)"),
+              style={{ padding:"5px 12px", borderRadius:"6px", border:"2px solid " + (showDiamond ? tokens.color.brand.navy : "rgba(15,31,61,0.15)"),
                 cursor:"pointer", fontSize:"11px", fontWeight:"bold", fontFamily:"inherit",
-                background: showDiamond ? C.navy : "transparent",
-                color: showDiamond ? "#fff" : C.textMuted }}>
+                background: showDiamond ? tokens.color.brand.navy : "transparent",
+                color: showDiamond ? "#fff" : tokens.color.text.muted }}>
               ◆ Diamond
             </button>
             {/* By Player / By Position table toggle */}
@@ -4581,8 +4581,8 @@ export default function App() {
                 var active = gridView === opt[1];
                 return (
                   <button key={opt[1]} style={{ padding:"5px 12px", borderRadius:"6px", border:"none", cursor:"pointer", fontSize:"11px", fontWeight:"bold", fontFamily:"inherit",
-                    background: active ? C.white : "transparent",
-                    color: active ? C.navy : C.textMuted,
+                    background: active ? tokens.color.surface.card : "transparent",
+                    color: active ? tokens.color.brand.navy : tokens.color.text.muted,
                     boxShadow: active ? "0 1px 3px rgba(0,0,0,0.1)" : "none" }}
                     onClick={function(v) { return function() { setGridView(v); }; }(opt[1])}>
                     {opt[0]}
@@ -4718,7 +4718,7 @@ export default function App() {
         {showDiamond ? (
           <div style={{ borderTop:"2px solid rgba(15,31,61,0.1)", margin:"16px 0 12px",
             display:"flex", alignItems:"center", gap:"8px" }}>
-            <span style={{ fontSize:"10px", fontWeight:"bold", color:C.textMuted,
+            <span style={{ fontSize:"10px", fontWeight:"bold", color:tokens.color.text.muted,
               textTransform:"uppercase", letterSpacing:"0.12em", whiteSpace:"nowrap" }}>
               {gridView === "player" ? "By Player" : "By Position"}
             </span>
@@ -4731,11 +4731,11 @@ export default function App() {
             <table style={{ width:"100%", borderCollapse:"collapse", fontSize:"12px" }}>
               <thead>
                 <tr style={{ background:"#f5efe4" }}>
-                  <th style={{ padding:"8px 12px", textAlign:"left", fontSize:"10px", color:C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase", borderBottom:"2px solid rgba(15,31,61,0.08)", position:"sticky", left:0, background:"#f5efe4", zIndex:1, minWidth:"90px" }}>Player</th>
+                  <th style={{ padding:"8px 12px", textAlign:"left", fontSize:"10px", color:tokens.color.text.muted, letterSpacing:"0.1em", textTransform:"uppercase", borderBottom:"2px solid rgba(15,31,61,0.08)", position:"sticky", left:0, background:"#f5efe4", zIndex:1, minWidth:"90px" }}>Player</th>
                   {innArr.map(function(i) {
                     var done = inningComplete[i];
                     return (
-                      <th key={i} style={{ padding:"6px 10px", textAlign:"center", fontSize:"10px", color: done ? "#27ae60" : C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase", borderBottom:"2px solid " + (done ? "rgba(39,174,96,0.35)" : "rgba(15,31,61,0.08)"), minWidth:"72px", background: done ? "rgba(39,174,96,0.07)" : "transparent" }}>
+                      <th key={i} style={{ padding:"6px 10px", textAlign:"center", fontSize:"10px", color: done ? "#27ae60" : tokens.color.text.muted, letterSpacing:"0.1em", textTransform:"uppercase", borderBottom:"2px solid " + (done ? "rgba(39,174,96,0.35)" : "rgba(15,31,61,0.08)"), minWidth:"72px", background: done ? "rgba(39,174,96,0.07)" : "transparent" }}>
                         Inn {i+1}
                         {done ? <div style={{ fontSize:"11px", lineHeight:"1", marginTop:"2px", color:"#27ae60" }}>✓</div> : null}
                       </th>
@@ -4773,7 +4773,7 @@ export default function App() {
                               style={{ width:"64px", padding:"4px 2px", borderRadius:"5px", fontSize:"11px", fontWeight:"bold",
                                 background: pos ? (tokens.color.position[pos] + (lineupLocked ? "99" : "cc")) : "#f8f4ee",
                                 color: pos ? "#fff" : "#9aaaaa",
-                                border: hasViol ? "2px solid " + C.red : "1px solid " + (pos ? "rgba(255,255,255,0.3)" : "rgba(15,31,61,0.1)"),
+                                border: hasViol ? "2px solid " + tokens.color.brand.red : "1px solid " + (pos ? "rgba(255,255,255,0.3)" : "rgba(15,31,61,0.1)"),
                                 cursor: lineupLocked ? "default" : "pointer", outline:"none", fontFamily:"inherit", textAlign:"center",
                                 opacity: lineupLocked ? 0.8 : 1 }}>
                               <option value="">-</option>
@@ -4796,11 +4796,11 @@ export default function App() {
             <table style={{ width:"100%", borderCollapse:"collapse", fontSize:"12px" }}>
               <thead>
                 <tr style={{ background:"#f5efe4" }}>
-                  <th style={{ padding:"8px 12px", textAlign:"left", fontSize:"10px", color:C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase", borderBottom:"2px solid rgba(15,31,61,0.08)", position:"sticky", left:0, background:"#f5efe4", zIndex:1, minWidth:"90px" }}>Position</th>
+                  <th style={{ padding:"8px 12px", textAlign:"left", fontSize:"10px", color:tokens.color.text.muted, letterSpacing:"0.1em", textTransform:"uppercase", borderBottom:"2px solid rgba(15,31,61,0.08)", position:"sticky", left:0, background:"#f5efe4", zIndex:1, minWidth:"90px" }}>Position</th>
                   {innArr.map(function(i) {
                     var done = inningComplete[i];
                     return (
-                      <th key={i} style={{ padding:"6px 10px", textAlign:"center", fontSize:"10px", color: done ? "#27ae60" : C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase", borderBottom:"2px solid " + (done ? "rgba(39,174,96,0.35)" : "rgba(15,31,61,0.08)"), minWidth:"90px", background: done ? "rgba(39,174,96,0.07)" : "transparent" }}>
+                      <th key={i} style={{ padding:"6px 10px", textAlign:"center", fontSize:"10px", color: done ? "#27ae60" : tokens.color.text.muted, letterSpacing:"0.1em", textTransform:"uppercase", borderBottom:"2px solid " + (done ? "rgba(39,174,96,0.35)" : "rgba(15,31,61,0.08)"), minWidth:"90px", background: done ? "rgba(39,174,96,0.07)" : "transparent" }}>
                         Inn {i+1}
                         {done ? <div style={{ fontSize:"11px", lineHeight:"1", marginTop:"2px", color:"#27ae60" }}>✓</div> : null}
                       </th>
@@ -4847,7 +4847,7 @@ export default function App() {
                                     ) : null,
                                     benchedPlayers.map(function(bp) {
                                       return (
-                                        <div key={bp} style={{ fontSize:"11px", color:C.navy, fontWeight:"bold", padding:"2px 6px", borderRadius:"4px", background:"rgba(15,31,61,0.1)", marginBottom:"2px", textAlign:"center" }}>{firstName(bp)}</div>
+                                        <div key={bp} style={{ fontSize:"11px", color:tokens.color.brand.navy, fontWeight:"bold", padding:"2px 6px", borderRadius:"4px", background:"rgba(15,31,61,0.1)", marginBottom:"2px", textAlign:"center" }}>{firstName(bp)}</div>
                                       );
                                     }),
                                     outP.map(function(op) {
@@ -4859,7 +4859,7 @@ export default function App() {
                                 })()}
                               </div>
                             ) : assignedPlayer ? (
-                              <div style={{ fontSize:"12px", fontWeight:"bold", color:C.navy }}>{firstName(assignedPlayer)}</div>
+                              <div style={{ fontSize:"12px", fontWeight:"bold", color:tokens.color.brand.navy }}>{firstName(assignedPlayer)}</div>
                             ) : (
                               <div style={{ fontSize:"11px", color:"rgba(200,16,46,0.5)", fontWeight:"bold" }}>-</div>
                             )}
@@ -4959,12 +4959,12 @@ export default function App() {
               <span style={{ fontSize:"10px", color:"#d4a017", fontWeight:"bold", letterSpacing:"0.04em" }}>● Unsaved changes</span>
             ) : null}
             {battingOrderSaved ? (
-              <span style={{ fontSize:"10px", color:C.win, fontWeight:"bold" }}>✓ Saved</span>
+              <span style={{ fontSize:"10px", color:tokens.color.status.success, fontWeight:"bold" }}>✓ Saved</span>
             ) : null}
           </div>
           <div style={{ display:"flex", gap:"6px", alignItems:"center" }}>
             {battingOrderDirty ? (
-              <button style={{ ...S.btn("ghost"), color:C.win, border:"1px solid rgba(39,174,96,0.4)" }}
+              <button style={{ ...S.btn("ghost"), color:tokens.color.status.success, border:"1px solid rgba(39,174,96,0.4)" }}
                 onClick={function() {
                   persistBatting(battingOrder);
                   setBattingOrderDirty(false);
@@ -4993,7 +4993,7 @@ export default function App() {
                 onMouseLeave={function(e) { var t = e.currentTarget.querySelector(".fin-tip"); if (t) t.style.display = "none"; }}>
                 <button
                   disabled={battingOrderDirty}
-                  style={{ ...S.btn("ghost"), color: battingOrderDirty ? C.textMuted : C.win, border:"1px solid " + (battingOrderDirty ? "rgba(0,0,0,0.12)" : "rgba(39,174,96,0.35)"), opacity: battingOrderDirty ? 0.5 : 1, cursor: battingOrderDirty ? "default" : "pointer" }}
+                  style={{ ...S.btn("ghost"), color: battingOrderDirty ? tokens.color.text.muted : tokens.color.status.success, border:"1px solid " + (battingOrderDirty ? "rgba(0,0,0,0.12)" : "rgba(39,174,96,0.35)"), opacity: battingOrderDirty ? 0.5 : 1, cursor: battingOrderDirty ? "default" : "pointer" }}
                   onClick={function() { setLockFlowOpen(true); }}>
                   ✓ Finalize
                 </button>
@@ -5015,7 +5015,7 @@ export default function App() {
 
         {hasAnyStats ? (
           <Card padding="12px 14px" radius="md" style={{ background:"rgba(15,31,61,0.03)", border:"1px solid rgba(15,31,61,0.1)", boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
-            <div style={{ fontSize:"10px", color:C.textMuted, marginBottom:"8px", textTransform:"uppercase", letterSpacing:"0.1em" }}>Season Batting Stats</div>
+            <div style={{ fontSize:"10px", color:tokens.color.text.muted, marginBottom:"8px", textTransform:"uppercase", letterSpacing:"0.1em" }}>Season Batting Stats</div>
             {(function() {
               var tg = 0, tab = 0, th = 0, tr = 0, trbi = 0;
               var keys = Object.keys(seasonStats);
@@ -5029,13 +5029,13 @@ export default function App() {
               }
               var teamAvgStr = tab > 0 ? fmtAvg(th, tab) : "---";
               var teamAvgNum = tab > 0 ? th / tab : null;
-              var avgColor = teamAvgNum !== null && teamAvgNum >= 0.300 ? C.win : teamAvgNum !== null && teamAvgNum >= 0.200 ? "#d4a017" : C.textMuted;
-              var divider = <div style={{ width:"1px", height:"28px", background:C.border, margin:"0 4px" }} />;
+              var avgColor = teamAvgNum !== null && teamAvgNum >= 0.300 ? tokens.color.status.success : teamAvgNum !== null && teamAvgNum >= 0.200 ? "#d4a017" : tokens.color.text.muted;
+              var divider = <div style={{ width:"1px", height:"28px", background:tokens.color.border.neutral, margin:"0 4px" }} />;
               var statCell = function(label, val, color) {
                 return (
                   <div style={{ display:"flex", flexDirection:"column", alignItems:"center", minWidth:"40px" }}>
-                    <div style={{ fontSize:"15px", fontWeight:"bold", color: color || C.navy }}>{val}</div>
-                    <div style={{ fontSize:"9px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.08em" }}>{label}</div>
+                    <div style={{ fontSize:"15px", fontWeight:"bold", color: color || tokens.color.brand.navy }}>{val}</div>
+                    <div style={{ fontSize:"9px", color:tokens.color.text.muted, textTransform:"uppercase", letterSpacing:"0.08em" }}>{label}</div>
                   </div>
                 );
               };
@@ -5080,9 +5080,9 @@ export default function App() {
                           }; }(col.key) : undefined}
                           style={{ padding:"5px 8px", textAlign:col.align, fontSize:"10px", letterSpacing:"0.1em", textTransform:"uppercase", borderBottom:"2px solid rgba(15,31,61,0.08)", whiteSpace:"nowrap",
                             cursor: col.sortable ? "pointer" : "default",
-                            color: isActive ? C.navy : C.textMuted,
+                            color: isActive ? tokens.color.brand.navy : tokens.color.text.muted,
                             fontWeight: isActive ? "bold" : "normal" }}>
-                          {col.label}<span style={{ color: isActive ? C.red : "rgba(15,31,61,0.25)", fontSize:"9px" }}>{indicator}</span>
+                          {col.label}<span style={{ color: isActive ? tokens.color.brand.red : "rgba(15,31,61,0.25)", fontSize:"9px" }}>{indicator}</span>
                         </th>
                       );
                     })}
@@ -5120,11 +5120,11 @@ export default function App() {
                       var st = seasonStats[name];
                       var avg = st.ab > 0 ? (st.h / st.ab) : null;
                       var avgStr = fmtAvg(st.h, st.ab);
-                      var avgColor = avg !== null && avg >= 0.300 ? C.win : avg !== null && avg >= 0.200 ? "#d4a017" : tokens.color.text.ink;
+                      var avgColor = avg !== null && avg >= 0.300 ? tokens.color.status.success : avg !== null && avg >= 0.200 ? "#d4a017" : tokens.color.text.ink;
                       return (
                         <tr key={name} style={{ borderBottom:"1px solid rgba(15,31,61,0.04)" }}>
                           <td style={{ padding:"6px 8px", fontWeight:"bold" }}>{firstName(name)}</td>
-                          <td style={{ padding:"6px 8px", textAlign:"center", color:C.textMuted }}>{st.games}</td>
+                          <td style={{ padding:"6px 8px", textAlign:"center", color:tokens.color.text.muted }}>{st.games}</td>
                           <td style={{ padding:"6px 8px", textAlign:"center" }}>{fmtStat(st.ab)}</td>
                           <td style={{ padding:"6px 8px", textAlign:"center" }}>{fmtStat(st.h)}</td>
                           <td style={{ padding:"6px 8px", textAlign:"center", fontWeight:"bold", color:avgColor }}>{avgStr}</td>
@@ -5140,7 +5140,7 @@ export default function App() {
           </Card>
         ) : null}
 
-        <div style={{ fontSize:"11px", color:C.textMuted, marginBottom:"10px" }}>
+        <div style={{ fontSize:"11px", color:tokens.color.text.muted, marginBottom:"10px" }}>
           Use ▲▼ arrows or drag to reorder. Enter game stats in the Schedule tab after each game.
         </div>
 
@@ -5151,7 +5151,7 @@ export default function App() {
             if (!info) { return null; }
             var bs = info.batSkills || [];
             var score = getBatScore(info);
-            var scoreColor = score > 3 ? C.win : score > 0 ? "#d4a017" : score < 0 ? C.red : "#555";
+            var scoreColor = score > 3 ? tokens.color.status.success : score > 0 ? "#d4a017" : score < 0 ? tokens.color.brand.red : "#555";
             var fieldPositions = [];
             for (var ii = 0; ii < innings; ii++) {
               var pos = (grid[name] || [])[ii];
@@ -5208,7 +5208,7 @@ export default function App() {
                     window._bTouchDrag = { active:true, name:n, startY:e.touches[0].clientY, currentIdx:i };
                     bumpTouchDrag(function(v) { return v + 1; });
                   }; }(name, idx)}
-                  style={{ width:"26px", height:"26px", borderRadius:"50%", background: lineupLocked ? "rgba(15,31,61,0.2)" : C.navy, color:"#fff", fontSize:"12px", fontWeight:"bold", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, touchAction:"none", cursor: lineupLocked ? "default" : "grab", userSelect:"none" }}>
+                  style={{ width:"26px", height:"26px", borderRadius:"50%", background: lineupLocked ? "rgba(15,31,61,0.2)" : tokens.color.brand.navy, color:"#fff", fontSize:"12px", fontWeight:"bold", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, touchAction:"none", cursor: lineupLocked ? "default" : "grab", userSelect:"none" }}>
                   {idx + 1}
                 </div>
 
@@ -5228,9 +5228,9 @@ export default function App() {
                 {st ? (
                   <div style={{ display:"flex", gap:"10px", alignItems:"center" }}>
                     {[
-                      ["AVG", fmtAvg(st.h, st.ab), st.ab > 0 && (st.h/st.ab) >= 0.300 ? C.win : st.ab > 0 && (st.h/st.ab) >= 0.200 ? "#d4a017" : C.textMuted],
-                      ["RBI", fmtStat(st.rbi), C.textMuted],
-                      ["BB",  fmtStat(st.bb),  C.textMuted]
+                      ["AVG", fmtAvg(st.h, st.ab), st.ab > 0 && (st.h/st.ab) >= 0.300 ? tokens.color.status.success : st.ab > 0 && (st.h/st.ab) >= 0.200 ? "#d4a017" : tokens.color.text.muted],
+                      ["RBI", fmtStat(st.rbi), tokens.color.text.muted],
+                      ["BB",  fmtStat(st.bb),  tokens.color.text.muted]
                     ].map(function(row) {
                       return (
                         <div key={row[0]} style={{ textAlign:"center" }}>
@@ -5259,7 +5259,7 @@ export default function App() {
                       disabled={idx === 0}
                       style={{ width:"26px", height:"26px", border:"1px solid rgba(15,31,61,0.15)", borderRadius:"5px",
                         background: idx === 0 ? "rgba(15,31,61,0.04)" : "#fff",
-                        color: idx === 0 ? "rgba(15,31,61,0.2)" : C.navy,
+                        color: idx === 0 ? "rgba(15,31,61,0.2)" : tokens.color.brand.navy,
                         cursor: idx === 0 ? "default" : "pointer",
                         fontSize:"13px", lineHeight:1, padding:0,
                         display:"flex", alignItems:"center", justifyContent:"center" }}>
@@ -5270,7 +5270,7 @@ export default function App() {
                       disabled={idx === battingOrder.length - 1}
                       style={{ width:"26px", height:"26px", border:"1px solid rgba(15,31,61,0.15)", borderRadius:"5px",
                         background: idx === battingOrder.length - 1 ? "rgba(15,31,61,0.04)" : "#fff",
-                        color: idx === battingOrder.length - 1 ? "rgba(15,31,61,0.2)" : C.navy,
+                        color: idx === battingOrder.length - 1 ? "rgba(15,31,61,0.2)" : tokens.color.brand.navy,
                         cursor: idx === battingOrder.length - 1 ? "default" : "pointer",
                         fontSize:"13px", lineHeight:1, padding:0,
                         display:"flex", alignItems:"center", justifyContent:"center" }}>
