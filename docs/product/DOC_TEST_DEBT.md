@@ -396,20 +396,12 @@
 
 | Priority | Test Gaps | Doc Gaps | Process Gaps | Total |
 |---|---|---|---|---|
-| 🔴 P0 | 1 | 0 | 0 | **1** |
+| 🔴 P0 | 0 | 0 | 0 | **0** |
 | 🟠 P1 | 0 | 1 | 0 | **1** |
-| 🟡 P2 | 8 | 5 | 7 | **20** |
+| 🟡 P2 | 9 | 5 | 7 | **21** |
 | **Total** | **9** | **6** | **7** | **22** |
 
-*(2026-08-05: FEATURE_MAP.md Missing Feature Rows — resolved, see Resolved section (Structural Restructure deliberately split off, still open — see its own entry above). Direct count of every `### 🟠` heading actually present in Open — Doc Gaps immediately before this edit: 2 P1 (both FEATURE_MAP items) — matched the prior table exactly. Doc Gaps P1 2→1, Doc Gaps total 7→6, P1 Total 2→1, Grand Total 23→22.)*
-| 🔴 P0 | 0 | 0 | 0 | **0** |
-| 🟠 P1 | 0 | 2 | 0 | **2** |
-| 🟡 P2 | 9 | 5 | 7 | **21** |
-| **Total** | **9** | **7** | **7** | **23** |
-
-*(2026-08-05: new P2 test gap added — useAuth.js `onAuthStateChange` silent-strand finding (#579), filed after being flagged verbally across two sessions without a tracked issue. Test Gaps P2 8→9, Test Gaps total 8→9, P2 Total 20→21, Grand Total 22→23.)*
-
-*(2026-08-05: P0 — AppShareLinkRouting.test.jsx / AppNoMembershipRouting.test.jsx incomplete Supabase mocks — resolved, see Resolved section. Direct count of every `### 🔴` heading actually present in Open — Test Gaps immediately before this edit: exactly 1 (this item), matching the prior table. Test Gaps P0 1→0, Test Gaps total 9→8, P0 Total 1→0, Grand Total 23→22. This clears the `debt-p0` gate again — zero open P0 items.)*
+*(2026-08-05: table repaired after a squash-merge left two overlapping, malformed table fragments in this file (PR #574/#575/#578 each carried their own dashboard edit against a diverging base, all landed via squash). This merge additionally folds in PR #580's useAuth.js P2 test-gap addition (#579), which landed on `develop` after the table-repair branch was cut. Values confirmed by direct count of every `### 🔴`/`### 🟠`/`### 🟡` heading actually present in Open just now — not propagated from either side's own arithmetic: 0 P0; 1 P1 (FEATURE_MAP.md Structural Restructure, the only item still open); 21 P2 (9 Test Gaps incl. the useAuth.js finding + 5 Doc Gaps + 7 Process Gaps). Grand Total 22. Clears the `debt-p0` gate — zero open P0 items.)*
 
 *(2026-08-05, branch-hygiene audit: corrected an arithmetic error in the prior entry below — its Test Gaps column total and Grand Total both dropped the existing P0 item (`AppShareLinkRouting.test.jsx` mock) when recomputing after item 10's closure, undercounting both by exactly 1. Direct recount of every `### 🔴`/`### 🟠`/`### 🟡` heading actually present in Open — Test Gaps: 1 P0 + 0 P1 + 8 P2 = 9 (not 8). Doc Gaps (7) and Process Gaps (7) were already correct. Corrected: Total row 9/7/7 = 23, not 8/7/7 = 22. This was a column-sum-vs-row-sum mismatch inside the table itself (P0 1 + P1 2 + P2 20 = 23 by row, but the old Total row said 22) — exactly the kind of drift this ledger's own standing practice exists to catch.)*
 
@@ -445,8 +437,8 @@
 - 60+ days: not recomputed this pass (see above)
 
 **Ship blockers:**
-- **1 P0 open as of 2026-08-04** — `AppShareLinkRouting.test.jsx` incomplete Supabase mock (see Open — Test Gaps above). Does NOT block the v2.8.4 patch release this was filed ahead of — the `debt-p0` gate only applies to minor version bumps (x.Y.0), not patches. **Will block the next minor version bump (v2.9.0 or later)** until resolved — run `debt-p0` before that bump, per the project's own minor-version-gate rule, and expect it to fail until this item closes.
-- Prior to this: none open. The previous minor version bump was gated on both P0 items — Share Link Payload Integrity and Game Mode Rendering + State, both resolved 2026-08-02 (see Resolved section) — plus D-S411b and D-S348a, both resolved same-day 2026-08-01 (see Resolved section).
+- **0 P0 open as of 2026-08-05** — the one open P0, `AppShareLinkRouting.test.jsx` / `AppNoMembershipRouting.test.jsx` incomplete Supabase mocks (Story 121, #535), is now resolved — see the Resolved section entry for full evidence (both files' mocks fully self-contained, real RED→GREEN via `git stash`, confirmed not an active incident since the anon key has been dead since 2026-07-14). Matches the Debt Summary Dashboard table above (0/0/0/**0**), which this section had drifted out of sync with. `debt-p0` gate is clear again for the next minor version bump.
+- Prior to this: **1 P0 open as of 2026-08-04** — the same `AppShareLinkRouting.test.jsx` item, filed that day, did not block the v2.8.4 patch release (the `debt-p0` gate only applies to minor version bumps, not patches). Before that: none open — the previous minor version bump was gated on both P0 items — Share Link Payload Integrity and Game Mode Rendering + State, both resolved 2026-08-02 (see Resolved section) — plus D-S411b and D-S348a, both resolved same-day 2026-08-01 (see Resolved section).
 
 ---
 

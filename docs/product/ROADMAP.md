@@ -3009,7 +3009,7 @@ carries the full rule as step 29 of the Release Ritual phase sequence plus a
 2026-05-23)" already. `DOC_TEST_DEBT.md` has no separate entry for this
 Story — nothing to close there. No doc content changed by this closure;
 this is a stale status-marker fix only, same pattern as the share/print and
-Auto-Staging Git Hook items closed as stale in prior sessions.
+Auto-Staging Git Hook items closed as stale in prior sessions. PR #575.
 Discovered: May 23, 2026 — promote PR #175 had 8-file conflict
 because post-promote sync was skipped after PR #159
 Target: Next governance pass
@@ -4252,7 +4252,7 @@ mischaracterization from earlier the same session: several "N errors" lines
 seen during unrelated full-suite runs were wrongly attributed to Bug #7 noise
 without verifying the source - they were these exact 401'd write attempts.
 Clears the debt-p0 gate again (0 open P0 items). Branch:
-issue/535-appsharelinkrouting-mock-fix.
+issue/535-appsharelinkrouting-mock-fix, PR #574.
 Discovered: 2026-08-04, while diagnosing Bug #7 (Vitest worker-spawn flake,
 Story 118/#517) on the lineup-generator (Dugout/main) worktree.
 Target: should be picked up soon, not routine backlog cadence - see Impact.
@@ -4293,9 +4293,27 @@ correctly, as a first diagnostic step).
 
 ---
 ### Story 122 (P1) - Dependabot #61/#62/#63: ip-address SSRF/trust-boundary bypass via express-rate-limit <!-- #539 -->
-Status: Open - tracked separately per KK's explicit go/no-go decision on the
-v2.8.4 release audit (2026-08-04): ship v2.8.4 with these alerts open, address
-here rather than blocking that release.
+Status: Resolved (2026-08-05), per KK's explicit go decision after a
+decision-ready writeup (severity, exploitability, and fix-cost analysis).
+Investigated reachability directly against source before deciding fix
+approach: `ipKeyGenerator(req.ip)` in `backend/src/routes/auth.js`'s
+loginLimiter IS the vulnerable code path, but only as a documented
+"defensive only" fallback branch (the code's own existing comment) - the
+happy path keys on email, not IP. Even if hit, this is an IP-classification
+bug used only for rate-limit bucket keying here, not a trust/access
+decision - narrower than the advisory's generic SSRF framing for this
+specific usage. Confirmed `express-rate-limit`'s own latest version (8.6.2)
+still declares `"ip-address": "^10.2.0"` - never bumped its own constraint -
+so the fix does NOT require an express-rate-limit bump at all: added
+`"overrides": { "ip-address": "^10.4.0" }` to `backend/package.json` (a
+locked file, gate phrase granted same session). `npm install` confirmed the
+resolved version: `node_modules/ip-address` now pins exactly `10.4.0`
+(satisfies `>=10.3.1`, closing #61/#62/#63 together). Verified no
+regression: `loginLimiter.test.js` 3/3 pass, full backend unit suite 111/111
+pass, 0 fail. `npm install` also reported "found 0 vulnerabilities".
+Branch: `issue/539-ip-address-override-fix`, PR #583. Dependabot alerts
+#61/#62/#63 auto-confirmed `state: fixed` at 2026-08-05T21:51:35Z, matching
+this fix's merge.
 Update 2026-08-05: a third alert, #63 (HIGH), appeared seconds after v2.8.4's
 version-bump merged to develop - same ip-address package/dependency chain
 (express-rate-limit), but a more severe, broader-reaching SSRF bypass
