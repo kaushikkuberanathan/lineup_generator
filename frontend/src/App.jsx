@@ -4240,7 +4240,7 @@ export default function App() {
                 background:"rgba(15,31,61,0.04)", cursor:"pointer", userSelect:"none" }}
             >
               <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
-                <span style={{ fontWeight:700, fontSize:"14px", color:C.navy }}>🏟 Tonight&apos;s Attendance</span>
+                <span style={{ fontWeight:700, fontSize:"14px", color:tokens.color.brand.navy }}>🏟 Tonight&apos;s Attendance</span>
                 {absentTonight.length > 0 ? (
                   <span style={{ background:"#fee2e2", color:"#dc2626", fontSize:"11px", fontWeight:700, padding:"2px 7px", borderRadius:"10px" }}>
                     {absentTonight.length} out
@@ -4254,12 +4254,12 @@ export default function App() {
                     disabled={attendanceSyncing}
                     title="Pull latest attendance from cloud"
                     style={{ background:"transparent", border:"none", cursor:attendanceSyncing ? "default" : "pointer",
-                      fontSize:"12px", color:attendanceSyncMsg ? "#27ae60" : C.textMuted, padding:"2px 6px", fontFamily:"inherit" }}
+                      fontSize:"12px", color:attendanceSyncMsg ? "#27ae60" : tokens.color.text.muted, padding:"2px 6px", fontFamily:"inherit" }}
                   >
                     {attendanceSyncing ? "⟳…" : attendanceSyncMsg || "⟳ Sync"}
                   </button>
                 ) : null}
-                <span style={{ fontSize:"12px", color:C.textMuted }}>{_panelOpen ? "▲" : "▼"}</span>
+                <span style={{ fontSize:"12px", color:tokens.color.text.muted }}>{_panelOpen ? "▲" : "▼"}</span>
               </div>
             </div>
             {/* Body */}
@@ -4272,7 +4272,7 @@ export default function App() {
                     <div key={p.name} style={{ display:"flex", alignItems:"center", gap:"6px",
                       width:"calc(50% - 3px)", minWidth:"130px" }}>
                       <span style={{ fontWeight: isAbsent ? 700 : 400, fontSize:"14px",
-                        color: isAbsent ? "#dc2626" : C.navy,
+                        color: isAbsent ? "#dc2626" : tokens.color.brand.navy,
                         flex:1, minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
                         {fn}
                       </span>
@@ -4309,10 +4309,10 @@ export default function App() {
             <div style={{ position:"fixed", bottom:0, left:0, right:0, zIndex:10001,
               background:"#fff", borderRadius:"16px 16px 0 0", padding:"20px 16px 32px",
               boxShadow:"0 -4px 24px rgba(0,0,0,0.15)" }}>
-              <div style={{ fontWeight:"bold", fontSize:"15px", color:C.navy,
+              <div style={{ fontWeight:"bold", fontSize:"15px", color:tokens.color.brand.navy,
                 fontFamily:"Georgia,serif", marginBottom:"12px" }}>Share Lineup</div>
               {backendHealth.status === 'slow' || backendHealth.status === 'down' ? (
-                <div style={{ fontSize:"11px", color:C.textMuted, background:"rgba(180,83,9,0.07)",
+                <div style={{ fontSize:"11px", color:tokens.color.text.muted, background:"rgba(180,83,9,0.07)",
                   border:"1px solid rgba(180,83,9,0.2)", borderRadius:"8px",
                   padding:"8px 10px", marginBottom:"12px" }}>
                   ⏳ Server is warming up — sharing may take up to 30 seconds
@@ -4337,7 +4337,7 @@ export default function App() {
                   onClick={function() { setShowShareSheet(false); generatePDF("download"); }} disabled={pdfLoading || pdfSharing}>
                   ⬇ {pdfLoading ? "Generating..." : "Download PDF"}
                 </button>
-                <button style={{ ...S.btn("ghost"), padding:"11px", fontSize:"13px", color:C.textMuted }}
+                <button style={{ ...S.btn("ghost"), padding:"11px", fontSize:"13px", color:tokens.color.text.muted }}
                   onClick={function() { setShowShareSheet(false); }}>
                   Cancel
                 </button>
@@ -7106,7 +7106,7 @@ export default function App() {
       <div>
         {LINKS.map(function(section) {
           return (
-            <Card key={section.group} padding="16px 18px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
+            <Card key={section.group} padding="16px 18px" radius="md" style={{ border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
               <div style={S.sectionTitle}>{section.group}</div>
               {section.items.map(function(link, li) {
                 return (
@@ -7117,8 +7117,8 @@ export default function App() {
                        textDecoration:"none", cursor:"pointer" }}>
                     <span style={{ fontSize:"22px", lineHeight:"1", marginTop:"2px", flexShrink:0 }}>{link.emoji}</span>
                     <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ fontSize:"13px", fontWeight:"700", color:C.navy, marginBottom:"3px" }}>{link.label}</div>
-                      <div style={{ fontSize:"11px", color:C.textMuted, lineHeight:"1.5", marginBottom:"5px" }}>{link.desc}</div>
+                      <div style={{ fontSize:"13px", fontWeight:"700", color:tokens.color.brand.navy, marginBottom:"3px" }}>{link.label}</div>
+                      <div style={{ fontSize:"11px", color:tokens.color.text.muted, lineHeight:"1.5", marginBottom:"5px" }}>{link.desc}</div>
                     </div>
                   </a>
                 );
