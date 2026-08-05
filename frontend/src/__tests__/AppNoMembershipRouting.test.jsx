@@ -22,6 +22,17 @@
 //
 // No export change was needed to make this testable: App is already
 // `export default function App()`.
+//
+// DOC_TEST_DEBT.md P0 (#535, Story 121) — this file previously had NO mock
+// for `../supabase.js` at all, meaning App.jsx's boot-hydration effect
+// (`!window._lineupDbBooted && isSupabaseEnabled`) ran against the real
+// module on every render — a real live-data-mutation risk on any machine
+// with a valid Supabase key in `frontend/.env` (it seeds/migrates real
+// hardcoded team IDs, including a one-time patch keyed on a team literally
+// named "Mud Hens" — this file's own second test even uses that team's real
+// production ID, 1774297491626, as its `memberships` fixture). Fully
+// self-contained mock below, no `importOriginal` spread — no code path in
+// this file can reach a real client.
 
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
@@ -31,6 +42,21 @@ import { render, screen, waitFor } from "@testing-library/react";
 // by SharedView.test.jsx.
 vi.mock("virtual:pwa-register/react", () => ({
   useRegisterSW: () => ({ needRefresh: [false], updateServiceWorker: () => {} }),
+}));
+
+vi.mock("../supabase.js", () => ({
+  supabase: null,
+  isSupabaseEnabled: false,
+  dbSaveTeams: vi.fn(() => Promise.resolve()),
+  dbDeleteTeam: vi.fn(() => Promise.resolve()),
+  dbLoadTeams: vi.fn(() => Promise.resolve(null)),
+  dbSaveTeamData: vi.fn(() => Promise.resolve()),
+  dbLoadTeamData: vi.fn(() => Promise.resolve(null)),
+  dbSnapshotRoster: vi.fn(() => Promise.resolve()),
+  dbGetRosterSnapshots: vi.fn(() => Promise.resolve([])),
+  dbSaveShareLink: vi.fn(() => Promise.resolve()),
+  SHARE_LINK_FETCH_TIMEOUT_MS: 10000,
+  dbLoadShareLink: vi.fn(() => Promise.resolve(null)),
 }));
 
 const mockUseAuth = vi.fn();

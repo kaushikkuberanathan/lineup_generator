@@ -2,7 +2,7 @@
 
 > Authoritative mapping of every shipped feature to its documentation and test coverage.
 > Update this file whenever a feature ships, changes behavior, or gains new tests.
-> Owner: KK | Last updated: 2026-08-04 (Doc Audit Spike Story 6 - Coverage Summary recounted (was 8/12/15, now 10/14/11), 12 dangling D0xx debt-ID references removed/replaced, Row 18 test status corrected, Rows 14/23 reclassified Pilot -> MVP; previously updated 2026-08-01 for v2.8.3 row #33)
+> Owner: KK | Last updated: 2026-08-05 (DOC_TEST_DEBT.md P1 "Missing Feature Rows" closure, #576 -- added rows 36 Analytics + 37 PWA Setup, renamed row 22 "Governance infrastructure" -> "Governance" for exact Area-value match, Coverage Summary recounted 30/5/0/10/14/11 -> 32/5/0/10/14/13 over 37; previously updated 2026-08-04 for Doc Audit Spike Story 6)
 
 ---
 
@@ -17,7 +17,7 @@
 
 ---
 
-## Feature Registry (35 features)
+## Feature Registry (37 features)
 
 | # | Feature | Status | Primary Doc | Doc Status | Test File(s) | Test Status | Debt |
 |---|---------|--------|-------------|------------|--------------|-------------|------|
@@ -47,7 +47,7 @@
 | 19 | **Multi-team support** | MVP | `CLAUDE.md` § Architecture | ✅ Current | `migrations.test.js` (partial — migration only) | ⚠ Partial | — |
 | 20 | **Fairness Check + violation warnings** | MVP | `SOLUTION_DESIGN.md` § Scoring Engine | ✅ Current | `engine.v2.test.js` (violations surfaced) | ⚠ Partial | — |
 | 21 | **Player profiles (V2 attributes)** | MVP | `SOLUTION_DESIGN.md` § Player Attributes; `PERSONAS.md` § Head Coach | ✅ Current | `scoring.test.js`, `lineupEngineV2-unit.test.js` | ✅ Yes | — |
-| 22 | **Governance infrastructure** | MVP | `CHARTER.md`, `ONE_PAGER.md`, `ROADMAP.md`, `PERSONAS.md`, `faqs.js`, `FEATURE_MAP.md`, `MASTER_DEV_REFERENCE.md`, `CLAUDE.md` | ✅ Current | — | ❌ None | — |
+| 22 | **Governance** | MVP | `CHARTER.md`, `ONE_PAGER.md`, `ROADMAP.md`, `PERSONAS.md`, `faqs.js`, `FEATURE_MAP.md`, `MASTER_DEV_REFERENCE.md`, `CLAUDE.md` | ✅ Current | — | ❌ None | — |
 | 24 | **Toast UI primitive** | MVP | `CLAUDE.md` § UI Primitives | ✅ Current | `src/components/ui/Toast.test.jsx` | ✅ Yes | — |
 | 29 | **BottomSheet UI primitive** | MVP | `CLAUDE.md` § UI Primitives | ✅ Current | `src/components/ui/BottomSheet.test.jsx` (7 tests, BS1–BS7); `theme.tokens.test.js` (+6 tests for `radius.sheet` + `shadow.sheetTop`) | ✅ Yes | LockFlow is the sole consumer today (v2.5.21); future modals/pickers expected to migrate. Pill + ListRow (v2.5.14) and the Phase 2 primitives row (#28) cover other shipped primitives — pre-existing gaps where this map lags shipped primitives. |
 | 30 | **DefenseDiamond — Game Day diamond view** | MVP | `ROADMAP.md` §§ Stories 92, 93; `SOLUTION_DESIGN.md` § Design Tokens (v2.5.22 + v2.5.24 additions) | ✅ Current | None at component level; token contract covered by `theme.tokens.test.js` | ❌ None | Tier A+B token migration shipped v2.5.22 (Story 92, PR #218). Tier D shipped v2.5.24 (Story 93, PR #259): position.* (22 keys), field.* (7 keys), overlay.error* (4 tints); POS_COLORS prop drilling removed from App.jsx → ParentView; DefenseDiamond, App.jsx renderFieldSVG, and ParentView unified on identical token contract. |
@@ -56,6 +56,8 @@
 | 33 | **Backend test foundation** | ✅ Resolved | `ROADMAP.md` §§ Story 99; `backend/CLAUDE.md` § Test Suite | ✅ Current | `backend/src/__tests__/` — `admin.auth.test.js` (9), `teamData.guard.test.js` (12), `teamData.envGuard.test.js` (2), `teamData.routes.test.js` (6), `aiProxy.test.js` (6), `auth.happy.test.js` (4), `approve.role.test.js` (6), `approveLink.role.test.js` (7), `requestAccess.role.test.js` (7), `normalizeRole.test.js` (13), `loginLimiter.test.js` (3), `auth.session.test.js` (8), `feedback.test.js` (7) = 111 | ✅ Yes — #252 fully closed | #252 closed 2026-08-01: unit suite 39 → 111. Closure pass added `GET/PATCH /me`, `POST /logout`, and `POST /feedback` coverage (all previously untested), plus a real loginLimiter fix (Story 26, IP→email re-keying). Writing `feedback.test.js` surfaced a live production bug — `admin.js`'s catch-all auth gate was mounted before `feedback.js`, so every non-admin coach's feedback submission was silently returning 403 — fixed via mount-order in `app.js` (v2.8.3). Remaining gap (admin.js's 7 other routes still rejection-only coverage) tracked separately as Story 112 (#474), not blocking this row's resolution. |
 | 34 | **About tab (Builder profile + AboutTab extraction)** | MVP | `ROADMAP.md` § Story 105 | ✅ Current | `AboutTab.test.jsx` (13 tests, AT1–AT13) | ✅ Yes | `status.warning` eyebrow contrast ~3.4:1 documented debt; Support tab reorder pending (#285 / Story 107) |
 | 35 | **Demo All-Stars team (Try Demo Team onboarding)** | MVP | `ROADMAP.md` § v2.5.30 | ✅ Current | `demoSeed.test.js` (8 data-shape assertions, PR #426; DS8 tightened to exact-match by PR #430) | ⚠ Partial | D-S332 remains open — demoSeed.test.js covers the seed data's shape only, not `loadDemoTeam()`'s fresh-create/upgrade/dedup behavior, which is what D-S332 tracks; seeded from `frontend/src/data/demoSeed.js` (frozen clone of real team data, all names remapped); per-user local copy; `demoSeedVersion` upgrade path (Story 332, v2.5.30) |
+| 36 | **Analytics (Mixpanel + Vercel Analytics + UTM)** | MVP | `docs/analytics/ANALYTICS.md`; `SOLUTION_DESIGN.md` § Analytics Architecture | ✅ Current | None | ❌ None | Analytics track() Wrapper + SSR Guards — no test covers the window/navigator SSR guard branches (DOC_TEST_DEBT.md P2) |
+| 37 | **PWA Setup (install prompt + service worker)** | MVP | `SOLUTION_DESIGN.md` § PWA Setup | ✅ Current | None | ❌ None | PWA Install Prompt Logic — Android/iOS/already-installed platform branches untested (DOC_TEST_DEBT.md P2) |
 
 ---
 
@@ -63,13 +65,15 @@
 
 | Status | Count |
 |--------|-------|
-| ✅ Doc Current | 30 / 35 |
-| ⚠ Doc Stale | 5 / 35 |
-| ❌ Doc Missing | 0 / 35 |
-| ✅ Tests Exist | 10 / 35 |
-| ⚠ Tests Partial | 14 / 35 |
-| ❌ No Tests | 11 / 35 |
+| ✅ Doc Current | 32 / 37 |
+| ⚠ Doc Stale | 5 / 37 |
+| ❌ Doc Missing | 0 / 37 |
+| ✅ Tests Exist | 10 / 37 |
+| ⚠ Tests Partial | 14 / 37 |
+| ❌ No Tests | 13 / 37 |
 
+> **Recounted 2026-08-05** (DOC_TEST_DEBT.md P1 "Missing Feature Rows" closure, #576): rows 36 (Analytics) and 37 (PWA Setup) added, both Doc Current / No Tests — denominator 35→37, Doc Current 30→32, No Tests 11→13, all other categories unchanged. Row 22 renamed "Governance infrastructure" → "Governance" for exact Area-value string match (mechanical-lookup fix, no count change). Direct recount against the table above, not propagated arithmetic.
+>
 > **Recounted 2026-08-04** (Doc Audit Spike Story 6): the Test Status row previously read 8/12/15, which didn't match a direct tally of the table above even before this pass's Row 18 fix (a real count gave 10/13/12; Row 18's fix then moved one row from None to Partial, landing on 10/14/11). Recount before editing this summary block in the future — it has drifted from the table's actual contents more than once (see also D-S31 in `DOC_TEST_DEBT.md` for the same failure mode on the row-count denominator).
 
 > The test gap is large but expected — the engine is the highest-risk surface and is well-covered. Features with no test are all UI-layer or integration paths with no engine logic.

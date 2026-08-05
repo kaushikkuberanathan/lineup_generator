@@ -24,17 +24,18 @@
 
 ## Open — Test Gaps
 
-### 🔴 P0 — AppShareLinkRouting.test.jsx incomplete Supabase mock fires real network writes/deletes
+### 🟡 P2 — useAuth.js `onAuthStateChange` silently strands user on failed `/me` call after `SIGNED_IN`
 
 | | |
 |---|---|
-| **Area** | Share link (test infrastructure) |
-| **Description** | `frontend/src/__tests__/AppShareLinkRouting.test.jsx` mocks `../supabase.js` incompletely — `Object.assign({}, actual, { dbLoadShareLink: ... })` spreads in the real module and only overrides `dbLoadShareLink`. Every other export (`dbSaveTeamData`, `dbSaveTeams`, `deleteTeam`, etc.) falls through to the real implementation, firing genuine Supabase network calls — including a real `deleteTeam(teamId)` call — during the test run. |
-| **Risk if unfixed** | Live-data-mutation risk, not just a flaky-test annoyance. On any machine where the local `.env`'s `VITE_SUPABASE_ANON_KEY` is still valid, running `npm test` locally fires real writes AND a real delete against whatever `team_id` the test constructs, against the actual Supabase project. Only surfaced as a loud, safe-to-notice error on the `lineup-generator` worktree because that worktree's local key happens to already be legacy-disabled — a teammate with a still-valid key would see no error at all while real data mutated silently. Share link is a North Star capability (Auth Principle #1 priority), and this is its own routing test's infrastructure — this is why it's P0, not a routine test-debt item. |
-| **Proposed test/fix** | Complete the mock — explicitly stub every `supabase.js` export this test's code path can reach (`dbSaveTeamData`, `dbSaveTeams`, `deleteTeam` at minimum, re-verify the full call surface before closing), or mock the entire module without spreading in `actual`. Check whether sibling files `SharedView.test.jsx` / `AppNoMembershipRouting.test.jsx` already do this correctly, as a first diagnostic step. |
-| **Opened** | 2026-08-04 |
+| **Area** | Auth system (magic link + Google OAuth) |
+| **Description** | `frontend/src/hooks/useAuth.js`'s `onAuthStateChange` listener has a bare `if (res.ok)` guard around the backend `GET /me` call it makes after Supabase fires `SIGNED_IN`. If that call fails (network error, non-2xx), the entire state-update block is skipped — no `authState` change, no error surfaced, no retry. The user is left exactly where they were (typically the login screen) with a live Supabase session and zero feedback. |
+| **Risk if unfixed** | Not a security bypass — no unauthorized access results. A reliability/UX stall: a coach who clicks a magic link or completes Google OAuth during a transient backend hiccup gets silently stuck, likely reads it as "the link didn't work," and may re-request during the `loginLimiter`'s rate-limit window. |
+| **Proposed test/fix** | Surface an error to the user (toast/banner) and/or retry the `/me` call with backoff. `frontend/src/tests/auth.test.js` test B4 already documents the current (broken) behavior — extend or replace it with a fix-verifying test once a fix approach is chosen. |
+| **Opened** | 2026-08-05 — found while adding `auth.test.js` (test B4) during Sprint 2's Story 6 (Auth Flow End-to-End, #566/PR #567); flagged in execution logs across two sessions the same day without being filed as its own tracked item until now. |
 | **Age** | 0 days |
-| **Target** | Flagged for Dugout/main track ownership (T1) — not fixed in the session that found it. See Story 121, ROADMAP.md, and [#535](https://github.com/kaushikkuberanathan/lineup_generator/issues/535). |
+| **Target** | Opportunistic — no hard deadline, but should be fixed before treating "no error shown after clicking the link" coach reports as unrelated confusion. |
+| **Issue** | [#579](https://github.com/kaushikkuberanathan/lineup_generator/issues/579) |
 
 ### 🟡 P2 — Walk-Up Song Navigation
 
@@ -150,22 +151,12 @@
 | | |
 |---|---|
 | **Area** | Governance |
-| **Status** | Open |
+| **Status** | Open — deferred to a dedicated session |
 | **Type** | Refactor |
 | **Opened** | 2026-04-17 |
-| **Target** | v2.3.4 |
+| **Target** | Needs re-targeting when picked up (2026-08-05: deliberately not started this session) |
 | **Summary** | FEATURE_MAP.md currently uses a flat numbered table (`\| 1 \| **Feature Name** \| MVP \|`). Adjacency tooling and AI cross-referencing require per-feature sections with structured fields: Code Surfaces, Doc Surfaces, FAQ Categories, Personas, Test Surfaces. Restructure adds `### <Feature Title>` sections below the existing summary table; table becomes TOC, sections become data. Same information, parseable by scripts. Required prerequisite for v2.2.41 Backlog Adjacency System. |
-
-### 🟠 P1 — FEATURE_MAP.md Missing Feature Rows (Analytics, PWA, Governance)
-
-| | |
-|---|---|
-| **Area** | Governance |
-| **Status** | Open |
-| **Type** | Doc gap |
-| **Opened** | 2026-04-17 |
-| **Target** | v2.3.4 |
-| **Summary** | Three Area values in DOC_TEST_DEBT.md have no matching row in FEATURE_MAP.md: "Analytics (Mixpanel + Vercel Analytics + UTM)", "PWA Setup", and "Governance" (exists as "Governance infrastructure" — not exact match, breaks mechanical lookup). Add dedicated rows for each during the restructure. Each row must include full Code Surfaces, Doc Surfaces, FAQ Categories, Personas, Test Surfaces fields so adjacency tooling works mechanically. Note: v2.3.3 hygiene patch added Practice Mode, Runner Placement, and Opponent Half Tracking rows — remaining gap is Analytics, PWA, and exact Governance match. |
+| **2026-08-05 scope check** | Re-read against current `FEATURE_MAP.md` (now 37 rows) before starting: 2 of the 5 proposed fields (Doc Surfaces, Test Surfaces) map directly from existing columns, but Code Surfaces, FAQ Categories, and Personas exist nowhere in the current table — each needs real per-feature investigation, not a reformat. Comparable in size to the App.jsx decomposition work this repo already treats as its own dedicated session (Story 104). Deferred per KK's explicit decision rather than attempted or silently shrunk within this batch. Issue: [#577](https://github.com/kaushikkuberanathan/lineup_generator/issues/577). |
 
 ### 🟡 P2 — SOLUTION_DESIGN.md §Test Suite Inventory
 
@@ -305,9 +296,17 @@
 
 *(Items move here once shipped. Format: date, version, original description summary, resolution commit.)*
 
+### August 5, 2026 — FEATURE_MAP.md Missing Feature Rows (Analytics, PWA, Governance)
+
+- ✅ **P1 — FEATURE_MAP.md Missing Feature Rows** — Resolved, structural-restructure half deliberately split off and deferred (see the still-open entry above). Added row 36 (Analytics — Mixpanel + Vercel Analytics + UTM) and row 37 (PWA Setup — install prompt + service worker), both citing existing doc sections (`docs/analytics/ANALYTICS.md` + `SOLUTION_DESIGN.md` §§ Analytics Architecture / PWA Setup) and both correctly marked `❌ None` for tests (confirmed by direct file search — no `analytics.test.js`/`pwaInstall.test.js` exists; PWA install logic lives inline in `App.jsx` around lines 1608–1774, no dedicated file). Renamed row 22 from "Governance infrastructure" to "Governance" for the exact Area-value string match the original ticket asked for — no other change to that row. Recounted `FEATURE_MAP.md`'s own Coverage Summary by direct tally against the table, not propagated arithmetic: 35→37 rows, Doc Current 30→32, No Tests 11→13, Doc Stale/Doc Missing/Tests Exist/Tests Partial unchanged. Issue: [#576](https://github.com/kaushikkuberanathan/lineup_generator/issues/576).
+
 ### August 5, 2026 — Box-score AI parser test coverage (teamName fix, PR #229)
 
 - ✅ **P1 — Box-score AI parser test coverage** — Resolved. The parser's `systemPrompt`/`userContent` construction was inline in `App.jsx`'s `parseGameResult()`, closure-scoped over `activeTeam`/`roster` state, with no way to unit-test it independently of rendering the whole App — exactly the extraction gap this item's proposed test called out. Extracted to `frontend/src/utils/buildBoxScorePrompt.js` (App.jsx locked-file edit, gate phrase granted this session), mirroring `buildSharePayload.js`'s established pattern for this repo's App.jsx-testability problem. `parseGameResult()` itself is now a two-line call to the extracted function plus the existing fetch/AbortController/timeout plumbing, which was left untouched (out of scope — that's network wiring, not the teamName resolution logic this item was about). Added `frontend/src/utils/buildBoxScorePrompt.test.js` (8 tests): happy-path teamName extraction into the system prompt; a direct regression guard that `activeTeam === null` never produces the literal string `"undefined"` (the exact v2.5.20 bug shape Story 84/PR #178→#228→#229 fixed) in either the system prompt or user content; the same guard for `activeTeam` present but `.name` falsy; empty-roster handling; and userContent shape correctness for all three `sourceType` variants (`image` incl. default `media_type` fallback, `pdf`, `text`). **Mutation-test RED checkpoint** (file is untracked, so a `git stash` RED check doesn't apply — mutation substitute used, per this doc's own rule): reverted the `teamName` guard from `(activeTeam && activeTeam.name) ? activeTeam.name : ""` to a bare `activeTeam.name` — the null-guard test failed RED with a real `TypeError: Cannot read properties of null` (a stronger failure signature than a silent `"undefined"` string, and arguably a better regression trap than the original bug shape). Reverted, confirmed `git diff --stat` on the util file empty, re-ran and confirmed 8/8 green again. Also ran `npx eslint src/App.jsx src/utils/buildBoxScorePrompt.js` (clean) and `npm run build` (clean production build, pre-existing chunk-size warning unrelated) to verify the extraction didn't regress anything beyond the unit tests. No real production bug found in the current (already-fixed) behavior — this closes a coverage gap only. Branch: `issue/10-boxscore-parser-coverage`. Issue: [#570](https://github.com/kaushikkuberanathan/lineup_generator/issues/570) (filed retroactively, closed same session).
+
+### August 5, 2026 — AppShareLinkRouting.test.jsx / AppNoMembershipRouting.test.jsx incomplete Supabase mocks fixed (Story 121, #535)
+
+- ✅ **P0 — Incomplete Supabase mocks fire real network writes/deletes** — Resolved, and the blast radius was larger than this ticket originally scoped. Investigated as a hard-stop item per this repo's standing severity tier for live-data-mutation findings (same tier as D-S355) before any fix was attempted. **Confirmed by direct evidence, not assumption:** `frontend/.env`'s `VITE_SUPABASE_URL` (`hzaajccyurlyeweekvma.supabase.co` — the one real Supabase project this app uses, per `CLAUDE.md`'s own infra section) plus a real anon key are loaded by Vite for `test` mode (no test-mode override exists, `src/tests/setup.js` stubs only `window.matchMedia`), so `isSupabaseEnabled` is genuinely `true` under Vitest in this worktree — nothing neutralizes it. `App.jsx`'s boot-hydration effect ([App.jsx:1170](frontend/src/App.jsx:1170)) runs unconditionally on the first render of a fresh `<App/>`, gated only by `window._lineupDbBooted` (fresh per test file — Vitest's default `isolate: true`) and `isSupabaseEnabled`; when local `app:teams` storage is empty (true at the start of both affected files) it seeds/migrates 5 hardcoded real team IDs (the actual division rivals named in `CLAUDE.md`) and runs a one-time "Mud Hens" schedule-patch — real writes against the real coaching team's record, not a coverage abstraction. **A second file, `AppNoMembershipRouting.test.jsx`, had zero Supabase mocking at all** (not scoped in the original ticket) — its own second test even uses the real Mud Hens team ID (`1774297491626`) as a fixture. **CI is not exposed**: `frontend/.env` is gitignored and CI's `frontend` job injects no Supabase secrets, so `isSupabaseEnabled` is `false` there — the original ticket's "including in CI" framing was incorrect. **Confirmed not an active incident**: a read-only probe against the real REST endpoint (`teams?select=id&limit=1`, same anon key) returned `401 Legacy API keys are disabled` — disabled 2026-07-14T17:11:14Z, over three weeks before this investigation. Every write attempt through this path, past and present, fails identically; no real data was ever successfully mutated via this path. **Fix**: both files' `../supabase.js` mocks replaced with a fully self-contained mock (no `importOriginal` spread) listing every export (`supabase: null`, `isSupabaseEnabled: false`, and a `vi.fn()` stub for every `db*` function) — spreading `actual` doesn't get fixed by only overriding the `isSupabaseEnabled`/`supabase` export names, since `actual.dbSaveTeams` etc. are the real functions closed over the real module's own internal `supabase` binding, unaffected by what the mock factory returns under those names. **RED→GREEN evidence, real not synthetic**: reverted both fixes via `git stash` (files were tracked) and re-ran — 19 unhandled `Error: Legacy API keys are disabled` rejections fired from `src/supabase.js`'s real `dbSaveTeams`/`dbSaveTeamData` call sites, with all 8 tests still reporting "passed" throughout (proving the original defect: a broken mock that no assertion catches). Restored the fix, re-ran — 0 unhandled errors, same 8/8 passed. **Also traces and corrects a mischaracterization from earlier this same session**: the "11/16/18/19 errors" seen at the end of several `npx vitest run` full-suite executions during Sprint 2 work were attributed to the documented Bug #7 unhandled-rejection flake without verifying the source — they were actually these exact 401'd real-network-call attempts, not Bug #7 at all. Issue: [#535](https://github.com/kaushikkuberanathan/lineup_generator/issues/535). Branch: `issue/535-appsharelinkrouting-mock-fix`.
 
 ### August 5, 2026 — Auto-Staging Git Hook re-triaged as stale
 
@@ -398,9 +397,19 @@
 | Priority | Test Gaps | Doc Gaps | Process Gaps | Total |
 |---|---|---|---|---|
 | 🔴 P0 | 1 | 0 | 0 | **1** |
-| 🟠 P1 | 0 | 2 | 0 | **2** |
+| 🟠 P1 | 0 | 1 | 0 | **1** |
 | 🟡 P2 | 8 | 5 | 7 | **20** |
+| **Total** | **9** | **6** | **7** | **22** |
+
+*(2026-08-05: FEATURE_MAP.md Missing Feature Rows — resolved, see Resolved section (Structural Restructure deliberately split off, still open — see its own entry above). Direct count of every `### 🟠` heading actually present in Open — Doc Gaps immediately before this edit: 2 P1 (both FEATURE_MAP items) — matched the prior table exactly. Doc Gaps P1 2→1, Doc Gaps total 7→6, P1 Total 2→1, Grand Total 23→22.)*
+| 🔴 P0 | 0 | 0 | 0 | **0** |
+| 🟠 P1 | 0 | 2 | 0 | **2** |
+| 🟡 P2 | 9 | 5 | 7 | **21** |
 | **Total** | **9** | **7** | **7** | **23** |
+
+*(2026-08-05: new P2 test gap added — useAuth.js `onAuthStateChange` silent-strand finding (#579), filed after being flagged verbally across two sessions without a tracked issue. Test Gaps P2 8→9, Test Gaps total 8→9, P2 Total 20→21, Grand Total 22→23.)*
+
+*(2026-08-05: P0 — AppShareLinkRouting.test.jsx / AppNoMembershipRouting.test.jsx incomplete Supabase mocks — resolved, see Resolved section. Direct count of every `### 🔴` heading actually present in Open — Test Gaps immediately before this edit: exactly 1 (this item), matching the prior table. Test Gaps P0 1→0, Test Gaps total 9→8, P0 Total 1→0, Grand Total 23→22. This clears the `debt-p0` gate again — zero open P0 items.)*
 
 *(2026-08-05, branch-hygiene audit: corrected an arithmetic error in the prior entry below — its Test Gaps column total and Grand Total both dropped the existing P0 item (`AppShareLinkRouting.test.jsx` mock) when recomputing after item 10's closure, undercounting both by exactly 1. Direct recount of every `### 🔴`/`### 🟠`/`### 🟡` heading actually present in Open — Test Gaps: 1 P0 + 0 P1 + 8 P2 = 9 (not 8). Doc Gaps (7) and Process Gaps (7) were already correct. Corrected: Total row 9/7/7 = 23, not 8/7/7 = 22. This was a column-sum-vs-row-sum mismatch inside the table itself (P0 1 + P1 2 + P2 20 = 23 by row, but the old Total row said 22) — exactly the kind of drift this ledger's own standing practice exists to catch.)*
 

@@ -2996,7 +2996,20 @@ removable before committing.
 
 ### Story 86 (P1) — Post-promote sync: add main → develop sync step to Release Ritual <!-- #189 -->
 
-Status: Open
+Status: Resolved (2026-08-05). Re-verified directly against current source
+rather than trusting this entry's own "Open" status: the proposed fix already
+shipped, just was never closed out here. `CLAUDE.md`'s "Release Ritual —
+Develop to Main Promotion" section (line ~225) carries the one-liner —
+"**Post-promote sync (required):** After every develop → main promote
+merges, immediately open a `sync/main-into-develop` PR to absorb the merge
+commit back into develop. Skipping causes 8-file conflict on the next
+promote. (Story 86, 2026-05-23)" — and `docs/product/MASTER_DEV_REFERENCE.md`
+carries the full rule as step 29 of the Release Ritual phase sequence plus a
+"don't skip this" callout in its pitfalls list, both citing "(Story 86,
+2026-05-23)" already. `DOC_TEST_DEBT.md` has no separate entry for this
+Story — nothing to close there. No doc content changed by this closure;
+this is a stale status-marker fix only, same pattern as the share/print and
+Auto-Staging Git Hook items closed as stale in prior sessions.
 Discovered: May 23, 2026 — promote PR #175 had 8-file conflict
 because post-promote sync was skipped after PR #159
 Target: Next governance pass
@@ -4219,8 +4232,27 @@ C.* -> tokens.* swap for its own header markup.
 
 ---
 ### Story 121 (P0) - AppShareLinkRouting.test.jsx incomplete Supabase mock fires real network writes/deletes <!-- #535 -->
-Status: Open - NOT auto-implemented, flagged for T1/whoever owns this test
-file (Dugout/main track). Deliberately not fixed in the session that found it.
+Status: Resolved (2026-08-05). Treated as a hard-stop investigation before any
+fix per this repo's live-data-mutation severity tier (same as D-S355) - full
+findings reported to KK, explicit go-ahead given, before writing the fix.
+Confirmed NOT an active incident: a read-only probe against the real REST
+endpoint returned 401 "Legacy API keys are disabled" (disabled
+2026-07-14T17:11:14Z, three weeks before this investigation) - no write
+through this path has ever succeeded, past or present. Confirmed CI is not
+exposed at all (frontend/.env is gitignored, CI injects no Supabase secrets
+into the frontend job). Scope grew beyond this ticket's original framing:
+AppNoMembershipRouting.test.jsx had ZERO Supabase mocking (not just an
+incomplete one), and its own real fixture uses the actual Mud Hens team ID.
+Both files fixed with a fully self-contained supabase.js mock (no
+`importOriginal` spread) - see DOC_TEST_DEBT.md's matching Resolved entry for
+full technical detail and the git-stash RED-checkpoint evidence (19 real
+"Legacy API keys are disabled" unhandled rejections with the old mock, 0
+with the fix, same 8/8 tests passing throughout). Also corrects a
+mischaracterization from earlier the same session: several "N errors" lines
+seen during unrelated full-suite runs were wrongly attributed to Bug #7 noise
+without verifying the source - they were these exact 401'd write attempts.
+Clears the debt-p0 gate again (0 open P0 items). Branch:
+issue/535-appsharelinkrouting-mock-fix.
 Discovered: 2026-08-04, while diagnosing Bug #7 (Vitest worker-spawn flake,
 Story 118/#517) on the lineup-generator (Dugout/main) worktree.
 Target: should be picked up soon, not routine backlog cadence - see Impact.
