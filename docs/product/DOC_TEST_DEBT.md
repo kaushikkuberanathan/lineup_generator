@@ -36,18 +36,6 @@
 | **Age** | 0 days |
 | **Target** | Flagged for Dugout/main track ownership (T1) — not fixed in the session that found it. See Story 121, ROADMAP.md, and [#535](https://github.com/kaushikkuberanathan/lineup_generator/issues/535). |
 
-### 🟠 P1 — Auth Flow End-to-End (Magic Link + Google OAuth)
-
-| | |
-|---|---|
-| **Area** | Auth system (magic link + Google OAuth) |
-| **Description** | No tests cover the magic link request → callback handling → team membership hydration flow. Same for Google OAuth. |
-| **Risk if unfixed** | **Corrected 2026-08-04: the auth cutover this item originally gated on already shipped (v2.6.0, 2026-07-20), without this coverage landing first.** The gap is now about regressing already-live behavior, not blocking a future cutover — an auth-gate change that silently blocks unauthenticated viewers would reproduce the v2.2.22 hotfix scenario, live in prod, not in a pre-launch check. |
-| **Proposed test** | `frontend/src/tests/auth.test.js` — mock Supabase client, simulate magic link flow, assert `useAuth` state transitions correctly through `pending → authenticated`. Also test: share link renders when `authState === unauthenticated`. |
-| **Opened** | 2026-04-17 |
-| **Age** | 109 days (corrected 2026-08-04 — was stale at "43 days," same drift class the Game Mode Rendering + State item caught and fixed 2026-08-01) |
-| **Target** | Not version-pinned — should be re-scoped as a live-regression risk now that the auth system it covers is in prod, not a pre-cutover gate |
-
 ### 🟡 P2 — Walk-Up Song Navigation
 
 | | |
@@ -266,16 +254,6 @@
 | **Target** | Opportunistic — flag only, do not fix without a decision (KK's explicit instruction) |
 | **Issue** | [#502](https://github.com/kaushikkuberanathan/lineup_generator/issues/502) |
 
-### 🟠 P1 — Auto-Staging Git Hook
-
-| | |
-|---|---|
-| **Area** | Governance |
-| **Description** | During v2.2.31 session, a git hook silently staged files that were intentionally unstaged. The scope-creep was caught at the gate but would have shipped otherwise. |
-| **Proposed action** | Investigate `.git/hooks/pre-commit`, husky config, or Claude Code hook config. Remove auto-staging. If a hook is needed, restrict it to the deploy-checklist files only. |
-| **Opened** | 2026-04-17 |
-| **Target** | v2.3.4 |
-
 ### 🟡 P2 — Orphan Stash Cleanup
 
 | | |
@@ -306,15 +284,6 @@
 | **Opened** | 2026-04-17 |
 | **Target** | v2.4.0 |
 
-### 🟠 P1 — Box-score AI parser test coverage (teamName fix, PR #229)
-
-- **What:** The box-score AI parser code path in `App.jsx` was patched in v2.5.20/v2.5.21 to replace undefined `teamName` references with `activeTeam.name` (Story 84, PR #178; chore cleanup PR #228; fix PR #229). No regression test exists for this code path — a future refactor that re-introduces the `teamName` undefined reference, or breaks the `activeTeam.name` fallback, would ship silently because the parser is invoked only when a coach uploads a box-score image (low-frequency manual flow).
-- **What it is NOT:** Not a test for the Anthropic API call itself — that path is covered indirectly by backend integration tests. Specifically the parser's local variable resolution inside App.jsx's response-handling block.
-- **Proposed test:** Mock the Anthropic API response shape, invoke the parser function (currently inline in App.jsx; will need light extraction to be testable), assert `teamName` extracts correctly from `activeTeam.name` for the happy path and from explicit response fields when present. Vitest with `vi.mock('fetch')` is sufficient — no API key required at test time.
-- **Why deferred from v2.5.22:** The fix landed via three PRs (#178, #228, #229) with manual validation against real box-score images during the chore-sprint. The test gap was not caught at the time. For a patch release (Z bump), manual validation is acceptable; the full test scaffold (parser extraction + mock harness) is more work than v2.5.22 scope allows. Sets a debt-with-justification precedent for parser-path coverage in v2.6.0.
-- **Target:** v2.9.0 P1 (re-targeted 2026-08-04 — original "v2.6.0" target is 3 major versions behind current; still genuinely open, no test file exists for this path today. Alongside the App.jsx component split — parser extraction is a natural piece of that work.)
-- **Source:** Ship Gate Q1 verification during v2.5.22 release packaging, 2026-05-29.
-
 ### 🟡 P2 — CI workflow `BACKEND_URL` audit
 
 - **What:** Both backend integration test job and smoke test job hardcode prod URL in `.github/workflows/ci.yml`. Smoke job has misleading variable named `DEV_BACKEND_URL` that points to prod URL.
@@ -335,6 +304,18 @@
 ## Resolved
 
 *(Items move here once shipped. Format: date, version, original description summary, resolution commit.)*
+
+### August 5, 2026 — Box-score AI parser test coverage (teamName fix, PR #229)
+
+- ✅ **P1 — Box-score AI parser test coverage** — Resolved. The parser's `systemPrompt`/`userContent` construction was inline in `App.jsx`'s `parseGameResult()`, closure-scoped over `activeTeam`/`roster` state, with no way to unit-test it independently of rendering the whole App — exactly the extraction gap this item's proposed test called out. Extracted to `frontend/src/utils/buildBoxScorePrompt.js` (App.jsx locked-file edit, gate phrase granted this session), mirroring `buildSharePayload.js`'s established pattern for this repo's App.jsx-testability problem. `parseGameResult()` itself is now a two-line call to the extracted function plus the existing fetch/AbortController/timeout plumbing, which was left untouched (out of scope — that's network wiring, not the teamName resolution logic this item was about). Added `frontend/src/utils/buildBoxScorePrompt.test.js` (8 tests): happy-path teamName extraction into the system prompt; a direct regression guard that `activeTeam === null` never produces the literal string `"undefined"` (the exact v2.5.20 bug shape Story 84/PR #178→#228→#229 fixed) in either the system prompt or user content; the same guard for `activeTeam` present but `.name` falsy; empty-roster handling; and userContent shape correctness for all three `sourceType` variants (`image` incl. default `media_type` fallback, `pdf`, `text`). **Mutation-test RED checkpoint** (file is untracked, so a `git stash` RED check doesn't apply — mutation substitute used, per this doc's own rule): reverted the `teamName` guard from `(activeTeam && activeTeam.name) ? activeTeam.name : ""` to a bare `activeTeam.name` — the null-guard test failed RED with a real `TypeError: Cannot read properties of null` (a stronger failure signature than a silent `"undefined"` string, and arguably a better regression trap than the original bug shape). Reverted, confirmed `git diff --stat` on the util file empty, re-ran and confirmed 8/8 green again. Also ran `npx eslint src/App.jsx src/utils/buildBoxScorePrompt.js` (clean) and `npm run build` (clean production build, pre-existing chunk-size warning unrelated) to verify the extraction didn't regress anything beyond the unit tests. No real production bug found in the current (already-fixed) behavior — this closes a coverage gap only. Branch: `issue/10-boxscore-parser-coverage`. Issue: [#570](https://github.com/kaushikkuberanathan/lineup_generator/issues/570) (filed retroactively, closed same session).
+
+### August 5, 2026 — Auto-Staging Git Hook re-triaged as stale
+
+- ✅ **P1 — Auto-Staging Git Hook** — Closed as stale, not fixed fresh. Opened 2026-04-17 against a git hook that "silently staged files that were intentionally unstaged" during the v2.2.31 session. Re-verified directly against current source: `.husky/pre-commit` does not exist at all (only `.husky/pre-push` exists, and per Story 75/PR #155 it validates the branch guard only — it does not touch the index). `.claude/settings.local.json` has no `hooks` key of any kind — no Claude-Code-level hook config exists either. Neither of the two mechanisms the original ticket's proposed action named as suspects (`.git/hooks`/husky, or Claude Code hook config) is present today; no git or tooling mechanism in this repo currently stages files on a user's behalf. The actual root cause — Claude Code's own file-creation/edit side effects landing in the working tree, then getting swept up by a blanket `git add -A`/`git add .` — was independently addressed by policy, not by removing a hook: root `CLAUDE.md`'s "Git Staging Discipline" section (mandatory explicit-path `git add`, `git add -A`/`git add .` banned outright) traces to the same v2.2.31→v2.2.36 governance-activation window (`d66eba9`, "governance activation: enhanced debt ledger, staging discipline, shell helpers") and has been the enforced convention in every commit since, including every Sprint 1/2 item this session and the prior one. No code change made — this closes a stale debt entry whose originally-suspected technical cause no longer exists and whose actual root cause was already fixed by a standing rule, years of commits deep, never cross-referenced back to this ticket. Investigated per KK's explicit direction (Sprint 2 continuation, 2026-08-05) before assuming a hook fix was still needed. Issue: [#568](https://github.com/kaushikkuberanathan/lineup_generator/issues/568) (filed retroactively, closed same session). Branch: `issue/8-auto-staging-hook-stale`.
+
+### August 5, 2026 — Auth Flow End-to-End test coverage (magic link + Google OAuth)
+
+- ✅ **P1 — Auth Flow End-to-End (Magic Link + Google OAuth)** — Resolved. `frontend/src/hooks/useAuth.js` had zero coverage for its session-hydration effect, its `onAuthStateChange` listener, or `sendMagicLink` — `AppShareLinkRouting.test.jsx` and `AppNoMembershipRouting.test.jsx` both mock `useAuth` entirely, so none of the hook's internal logic had ever run under test. Magic link and Google OAuth converge on the exact same post-redirect code path (both land back via Supabase with a session that fires `SIGNED_IN`), so one file covers both providers' shared hydration logic. Added `frontend/src/tests/auth.test.js` (15 tests, mirroring `useAuth.updateProfileName.test.js`'s `vi.hoisted` Supabase-mock + `renderHook` harness): Group A (7) — mount-time `checkSession()` for no-session/authenticated/no_membership/backend-401-signs-out/magic-link-hash-error-short-circuits/magic-link-hash-success-falls-through/network-throw-doesn't-hang-on-loading. Group B (4) — `onAuthStateChange` SIGNED_IN (with and without memberships) and SIGNED_OUT. Group C (4) — `sendMagicLink` success/`NOT_AUTHORIZED`/other-error/network-throw. Also added `frontend/src/components/Auth/LoginScreen.test.jsx` (6 tests) — the actual click-triggered Google OAuth entry point (`handleGoogleSignIn` → `supabase.auth.signInWithOAuth`) that `auth.test.js` starts downstream of; plus 2 magic-link submit-form tests. **Verified the Auth Principle directly against source rather than assuming it**: `App.jsx` calls `useAuth()` unconditionally on every mount, but the render tree checks `sharePayload` (share-link routing) before it ever checks `authState` — confirmed by reading the actual render order (share-link branches return early at lines ~7382/7403, the `authState==='loading'`/`'unauthenticated'` gates don't appear until ~7414+). Auth's async effects run in parallel with share-link rendering but never block it; this is the same invariant Story 61's `AppShareLinkRouting.test.jsx` already asserts from the App.jsx side, now corroborated from the hook side too. **No live/exploitable auth gap found** — the elevated-caution threshold from this item's D-S355-adjacent risk framing was not triggered. **One reliability gap found and flagged, not fixed** (test B4, `auth.test.js`): if Supabase fires `SIGNED_IN` but the backend `/me` call then fails, the `onAuthStateChange` handler's bare `if (res.ok)` guard means no state update happens at all — the user is left on the login screen with a live Supabase session and no error shown, silently. This is a UX/reliability stall, not an auth bypass (no unauthorized access results) — FLAGGED FOR KK REVIEW in `SPRINT2_EXECUTION_LOG.md`, out of scope for this coverage-only item. **Mutation-test RED checkpoints** (both new files are untracked and so cannot use a `git stash` RED check per this doc's own rule — mutation substitutes used instead): (1) inverted `useAuth.js`'s `memberships.length === 0` membership-gate check — 4 of 15 `auth.test.js` tests went red (A2, A3, A6, B3 — exactly the ones touching that branch), reverted, confirmed `git diff --stat` empty, re-ran 15/15 green. (2) inverted `LoginScreen.jsx`'s `handleGoogleSignIn` error-guard (`if (error)` → `if (!error)`) — 2 of 6 `LoginScreen.test.jsx` tests went red, reverted, confirmed `git diff --stat` empty, re-ran 6/6 green. Full frontend suite re-run after both reverts: 82 files / 996 passed + 1 skipped (exactly baseline 975+1 plus the 21 new tests) — the one nonzero-exit retry hit the documented Bug #7-adjacent unhandled-rejection noise from `AppNoMembershipRouting.test.jsx`'s mock, unrelated to this change; all tests passed both times. Branch: `issue/6-auth-flow-e2e-coverage`. Issue: [#566](https://github.com/kaushikkuberanathan/lineup_generator/issues/566) (filed retroactively — this item predates the issue-per-debt-item convention, resolved same session it was filed in).
 
 ### August 4, 2026 — Windows Vitest pre-push hook OOM cascade
 
@@ -417,9 +398,13 @@
 | Priority | Test Gaps | Doc Gaps | Process Gaps | Total |
 |---|---|---|---|---|
 | 🔴 P0 | 1 | 0 | 0 | **1** |
-| 🟠 P1 | 1 | 2 | 2 | **5** |
+| 🟠 P1 | 0 | 2 | 0 | **2** |
 | 🟡 P2 | 8 | 5 | 7 | **20** |
-| **Total** | **10** | **7** | **9** | **26** |
+| **Total** | **9** | **7** | **7** | **23** |
+
+*(2026-08-05, branch-hygiene audit: corrected an arithmetic error in the prior entry below — its Test Gaps column total and Grand Total both dropped the existing P0 item (`AppShareLinkRouting.test.jsx` mock) when recomputing after item 10's closure, undercounting both by exactly 1. Direct recount of every `### 🔴`/`### 🟠`/`### 🟡` heading actually present in Open — Test Gaps: 1 P0 + 0 P1 + 8 P2 = 9 (not 8). Doc Gaps (7) and Process Gaps (7) were already correct. Corrected: Total row 9/7/7 = 23, not 8/7/7 = 22. This was a column-sum-vs-row-sum mismatch inside the table itself (P0 1 + P1 2 + P2 20 = 23 by row, but the old Total row said 22) — exactly the kind of drift this ledger's own standing practice exists to catch.)*
+
+*(2026-08-05, merge-conflict resolution combining item 10's own closure (Box-score AI parser test coverage) with the already-merged closures of items 6 (Auth Flow End-to-End, PR #567) and 8 (Auto-Staging Git Hook, PR #569) inherited via this merge from `develop`: direct recount of every `### 🟠`/`### 🟡` heading actually present in each Open section on this branch, post-merge — Doc Gaps 2 P1 + 5 P2 = 7 (untouched by any of the three closures); Process Gaps 0 P1 (Box-score AI parser test coverage now closed, Auto-Staging Git Hook already closed) + 7 P2 = 7. Neither this branch's nor `develop`'s pre-merge dashboard edit was correct in isolation post-merge — each only accounted for its own closure against a now-stale baseline. Combined: P1 0/2/0 = 2, P2 8/5/7 = 20.)*
 
 *(2026-08-04, Doc Audit Spike Story 8: two P1 items resolved — Roster-Wipe Guard + Recovery Endpoint (Test Gaps; tests exist via PR #282) and Windows Vitest pre-push hook OOM cascade (Process Gaps; pre-push no longer runs Vitest at all, Story 75) — both moved to Resolved section. Direct recount of every `### 🔴`/`### 🟠`/`### 🟡` heading actually present in each Open section immediately before this edit matched the prior table exactly (1/2/8 Test Gaps, 0/2/5 Doc Gaps, 0/3/7 Process Gaps = 28), so this is a clean two-item removal, not a correction of pre-existing drift. Test Gaps P1 2→1 (11→10 total); Process Gaps P1 3→2 (10→9 total); P1 row 7→5; Grand Total 28→26. Also re-targeted the Box-score AI parser item's stale "v2.6.0" Target to "v2.9.0" (current version is v2.8.4/v2.8.3) — no count change, still open.)*
 
