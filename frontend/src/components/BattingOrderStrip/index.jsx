@@ -1,4 +1,5 @@
 import { tokens } from "../../theme/tokens";
+import { Text } from "../ui/Text";
 
 function firstName(name) {
   if (!name) return '';
@@ -8,18 +9,19 @@ function firstName(name) {
 export function BattingOrderStrip({ battingOrder, currentBatterIndex }) {
   if (!battingOrder || battingOrder.length === 0) {
     return (
-      <div
+      <Text
+        as="div"
         data-testid="bos-empty"
+        uppercase
         style={{
           background: tokens.color.surface.chrome, color: 'rgba(255,255,255,0.4)',
           fontFamily: "Georgia,'Times New Roman',serif",
           padding: '10px 14px', textAlign: 'center',
           fontSize: '12px', letterSpacing: '0.06em',
-          textTransform: 'uppercase',
         }}
       >
         No batters in lineup
-      </div>
+      </Text>
     );
   }
 
@@ -54,7 +56,7 @@ export function BattingOrderStrip({ battingOrder, currentBatterIndex }) {
     return {
       fontSize: '10px', marginTop: '3px',
       color: active ? 'rgba(245,200,66,0.7)' : 'rgba(255,255,255,0.4)',
-      letterSpacing: '0.04em', textTransform: 'uppercase',
+      letterSpacing: '0.04em',
     };
   }
 
@@ -66,26 +68,27 @@ export function BattingOrderStrip({ battingOrder, currentBatterIndex }) {
       display: 'flex', alignItems: 'stretch', gap: '8px',
     }}>
       <div data-testid="bos-now" style={pillStyle(true)}>
-        <div style={nameStyle(true)}>{firstName(nowName)}</div>
-        <div style={labelStyle(true)}>Now Batting</div>
+        <Text as="div" style={nameStyle(true)}>{firstName(nowName)}</Text>
+        <Text as="div" uppercase style={labelStyle(true)}>Now Batting</Text>
       </div>
 
       {onDeckName ? (
         <div data-testid="bos-on-deck" style={pillStyle(false)}>
-          <div style={nameStyle(false)}>{firstName(onDeckName)}</div>
-          <div style={labelStyle(false)}>On Deck</div>
+          <Text as="div" style={nameStyle(false)}>{firstName(onDeckName)}</Text>
+          <Text as="div" uppercase style={labelStyle(false)}>On Deck</Text>
         </div>
       ) : null}
 
       {inHoleName ? (
         <div data-testid="bos-in-hole" style={pillStyle(false)}>
-          <div style={nameStyle(false)}>{firstName(inHoleName)}</div>
-          <div style={labelStyle(false)}>In Hole</div>
+          <Text as="div" style={nameStyle(false)}>{firstName(inHoleName)}</Text>
+          <Text as="div" uppercase style={labelStyle(false)}>In Hole</Text>
         </div>
       ) : null}
 
       {remaining > 0 ? (
-        <div
+        <Text
+          as="div"
           data-testid="bos-more"
           style={{
             flexShrink: 0, alignSelf: 'center',
@@ -94,7 +97,7 @@ export function BattingOrderStrip({ battingOrder, currentBatterIndex }) {
           }}
         >
           +{remaining} more
-        </div>
+        </Text>
       ) : null}
     </div>
   );

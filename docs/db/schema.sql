@@ -20,6 +20,22 @@
 --  !! It was caught by RUNNING it (the DEV rebuild), not by reading it. Any future
 --  !! change to this file must be executed against DEV before being trusted.
 --
+--  ADDENDUM 2026-08-04 (Doc Audit Spike Story 1): the RLS/policy/grant/constraint
+--  facts below were re-verified against LIVE PROD via direct pg_catalog queries
+--  (pg_class.relrowsecurity, pg_policies, pg_constraint, information_schema.
+--  role_table_grants) run by KK in the Supabase SQL Editor. This is a TARGETED
+--  re-verification of section 8 (RLS) + the team_data/teams/roster_snapshots grants
+--  in section 9 - it is NOT a full re-capture of every table/column/grant in this
+--  file. Everything else below this point still reflects the 2026-07-13 capture and
+--  has not been independently re-checked in this pass.
+--
+--  Headline result: #342 (RLS disabled on team_data/teams/roster_snapshots) is
+--  CLOSED - shipped v2.6.0 (2026-07-20, WS-3). All three tables now show
+--  relrowsecurity = true with real auth.uid()-scoped policies. #355 (the scoring-
+--  table allow_scorer_writes + *_anon_test policies) is CONFIRMED STILL OPEN,
+--  verbatim, unchanged - re-queried live and it's identical to what this file
+--  already documented.
+--
 --  WHY THIS FILE EXISTS
 --    Until now there was no source of truth to diff production against. The
 --    consequences, all found in one week:
@@ -703,22 +719,25 @@ WITH (security_invoker = true) AS
 -- ============================================================================
 -- 8. ROW LEVEL SECURITY
 --
+--    RE-VERIFIED LIVE 2026-08-04 (see ADDENDUM above). #342 is CLOSED: team_data,
+--    teams, and roster_snapshots now have RLS ENABLED with membership-scoped
+--    policies, shipped v2.6.0 (WS-3, 2026-07-20). The React app's write path
+--    (dbSaveTeamData/dbSaveTeams) now writes as `authenticated` for any signed-in
+--    coach - see root CLAUDE.md's Phase 4 Cutover note on why this works without
+--    breaking saves (auth gate went live the same release).
+--
 --    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
---    !! THREE TABLES HAVE RLS *OFF*. THIS IS THE OPEN EXPOSURE (#342).
---    !!   team_data, teams, roster_snapshots
---    !!
---    !! The anon key ships in the frontend bundle. With RLS off and full grants,
---    !! anyone can read every child's name on every roster, overwrite any roster,
---    !! delete any team, or TRUNCATE the lot.
---    !!
---    !! It CANNOT be turned on until WS-3: the React app writes all three directly
---    !! with the anon key, so any auth.uid() policy breaks every coach's save.
+--    !! THE SCORING TABLES (live_game_state, game_scoring_sessions,
+--    !! scoring_audit_log) ARE STILL OPEN - see #355 below (section "SCORING
+--    !! TABLES"). Re-verified live 2026-08-04, unchanged from the 2026-07-13
+--    !! capture. Do not confuse the two: #342 (this block) is fixed; #355
+--    !! (further down) is not.
 --    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 -- ============================================================================
 
-ALTER TABLE public.team_data        DISABLE ROW LEVEL SECURITY;  -- !! EXPOSED
-ALTER TABLE public.teams            DISABLE ROW LEVEL SECURITY;  -- !! EXPOSED
-ALTER TABLE public.roster_snapshots DISABLE ROW LEVEL SECURITY;  -- !! EXPOSED
+ALTER TABLE public.team_data        ENABLE ROW LEVEL SECURITY;  -- fixed v2.6.0, re-verified live 2026-08-04
+ALTER TABLE public.teams            ENABLE ROW LEVEL SECURITY;  -- fixed v2.6.0, re-verified live 2026-08-04
+ALTER TABLE public.roster_snapshots ENABLE ROW LEVEL SECURITY;  -- fixed v2.6.0, re-verified live 2026-08-04
 
 ALTER TABLE public.auth_events           ENABLE ROW LEVEL SECURITY;  -- locked, 005
 ALTER TABLE public.team_data_history     ENABLE ROW LEVEL SECURITY;  -- locked, 006
@@ -738,6 +757,17 @@ ALTER TABLE public.scoring_audit_log     ENABLE ROW LEVEL SECURITY;
 -- policy statements below would throw "already exists" on a second run and (because
 -- of the BEGIN/COMMIT wrapper) roll the whole transaction back. These DROPs make the
 -- file safely re-runnable.
+-- Added Story 1 (2026-08-04): team_data/teams/roster_snapshots RLS policies,
+-- shipped v2.6.0 (WS-3), re-verified live via pg_policies query.
+DROP POLICY IF EXISTS "team_data_auth_select"           ON public.team_data;
+DROP POLICY IF EXISTS "team_data_auth_insert"           ON public.team_data;
+DROP POLICY IF EXISTS "team_data_auth_update"           ON public.team_data;
+DROP POLICY IF EXISTS "teams_auth_select"               ON public.teams;
+DROP POLICY IF EXISTS "teams_auth_insert"               ON public.teams;
+DROP POLICY IF EXISTS "teams_auth_update"               ON public.teams;
+DROP POLICY IF EXISTS "teams_auth_delete"               ON public.teams;
+DROP POLICY IF EXISTS "roster_snapshots_auth_select"    ON public.roster_snapshots;
+DROP POLICY IF EXISTS "roster_snapshots_auth_insert"    ON public.roster_snapshots;
 DROP POLICY IF EXISTS "user_sees_own_membership"      ON public.team_memberships;
 DROP POLICY IF EXISTS "admin_manages_memberships"     ON public.team_memberships;
 DROP POLICY IF EXISTS "public_can_request_access"     ON public.access_requests;
@@ -759,6 +789,83 @@ DROP POLICY IF EXISTS "scorer_lock_anon_test"         ON public.game_scoring_ses
 DROP POLICY IF EXISTS "public_read_audit_log"         ON public.scoring_audit_log;
 DROP POLICY IF EXISTS "allow_scorer_writes"           ON public.scoring_audit_log;
 DROP POLICY IF EXISTS "audit_log_anon_test"           ON public.scoring_audit_log;
+
+-- ---- team_data / teams / roster_snapshots (WS-3, shipped v2.6.0) ------------
+-- Re-verified live 2026-08-04 via pg_policies. No anon-role policy exists on any
+-- of the three - anon reads/writes are RLS-default-denied here regardless of
+-- whatever section 9's GRANT statement says (see the note there).
+CREATE POLICY "team_data_auth_select" ON public.team_data
+  FOR SELECT TO authenticated
+  USING (EXISTS (
+    SELECT 1 FROM team_memberships tm
+    WHERE tm.user_id = auth.uid() AND tm.team_id = team_data.team_id AND tm.status = 'active'
+  ));
+
+CREATE POLICY "team_data_auth_insert" ON public.team_data
+  FOR INSERT TO authenticated
+  WITH CHECK (EXISTS (
+    SELECT 1 FROM team_memberships tm
+    WHERE tm.user_id = auth.uid() AND tm.team_id = team_data.team_id
+      AND tm.role = ANY (ARRAY['admin'::text, 'coach'::text]) AND tm.status = 'active'
+  ));
+
+CREATE POLICY "team_data_auth_update" ON public.team_data
+  FOR UPDATE TO authenticated
+  USING (EXISTS (
+    SELECT 1 FROM team_memberships tm
+    WHERE tm.user_id = auth.uid() AND tm.team_id = team_data.team_id
+      AND tm.role = ANY (ARRAY['admin'::text, 'coach'::text]) AND tm.status = 'active'
+  ))
+  WITH CHECK (EXISTS (
+    SELECT 1 FROM team_memberships tm
+    WHERE tm.user_id = auth.uid() AND tm.team_id = team_data.team_id
+      AND tm.role = ANY (ARRAY['admin'::text, 'coach'::text]) AND tm.status = 'active'
+  ));
+
+CREATE POLICY "teams_auth_select" ON public.teams
+  FOR SELECT TO authenticated
+  USING (EXISTS (
+    SELECT 1 FROM team_memberships tm
+    WHERE tm.user_id = auth.uid() AND tm.team_id = teams.id AND tm.status = 'active'
+  ));
+
+-- NOTE: teams_auth_insert has no membership check (WITH CHECK (true)) - this is
+-- how a brand-new coach creates their first team before any membership row exists
+-- for it yet. Confirmed live, not a gap in this capture.
+CREATE POLICY "teams_auth_insert" ON public.teams
+  FOR INSERT TO authenticated
+  WITH CHECK (true);
+
+CREATE POLICY "teams_auth_update" ON public.teams
+  FOR UPDATE TO authenticated
+  USING (EXISTS (
+    SELECT 1 FROM team_memberships tm
+    WHERE tm.user_id = auth.uid() AND tm.team_id = teams.id
+      AND tm.role = ANY (ARRAY['admin'::text, 'coach'::text]) AND tm.status = 'active'
+  ));
+
+CREATE POLICY "teams_auth_delete" ON public.teams
+  FOR DELETE TO authenticated
+  USING (EXISTS (
+    SELECT 1 FROM team_memberships tm
+    WHERE tm.user_id = auth.uid() AND tm.team_id = teams.id
+      AND tm.role = 'admin'::text AND tm.status = 'active'
+  ));
+
+CREATE POLICY "roster_snapshots_auth_select" ON public.roster_snapshots
+  FOR SELECT TO authenticated
+  USING (EXISTS (
+    SELECT 1 FROM team_memberships tm
+    WHERE tm.user_id = auth.uid() AND tm.team_id = roster_snapshots.team_id AND tm.status = 'active'
+  ));
+
+CREATE POLICY "roster_snapshots_auth_insert" ON public.roster_snapshots
+  FOR INSERT TO authenticated
+  WITH CHECK (EXISTS (
+    SELECT 1 FROM team_memberships tm
+    WHERE tm.user_id = auth.uid() AND tm.team_id = roster_snapshots.team_id
+      AND tm.role = ANY (ARRAY['admin'::text, 'coach'::text]) AND tm.status = 'active'
+  ));
 
 -- ---- team_memberships -------------------------------------------------------
 CREATE POLICY "user_sees_own_membership" ON public.team_memberships
@@ -854,14 +961,38 @@ CREATE POLICY "audit_log_anon_test"   ON public.scoring_audit_log FOR ALL
 --    Supabase grants anon + authenticated the full set on public tables by default.
 --    Only auth_events and team_data_history have been revoked (migrations 005, 006).
 --
---    !! TRUNCATE is granted to anon on every un-revoked table. RLS does not restrict
---    !! TRUNCATE. Where RLS is off (team_data, teams, roster_snapshots), the public
---    !! anon key can empty the table outright.
+--    RE-VERIFIED LIVE 2026-08-04 for team_data / teams / roster_snapshots only
+--    (see ADDENDUM in the header). TRUNCATE has been revoked from anon AND
+--    authenticated on all three - it no longer appears in information_schema.
+--    role_table_grants for any of them. DELETE has also been revoked on
+--    team_data and roster_snapshots for both roles. `teams` still grants DELETE
+--    to both anon and authenticated - per CLAUDE.md's v2.8.2 note this is
+--    "deliberately kept," though the anon half of that grant is functionally
+--    inert: no anon-role RLS policy exists on `teams` (see section 8), so RLS
+--    default-denies the anon DELETE regardless of the GRANT. Not re-cleaned up
+--    at the GRANT level, just moot in practice - flagged, not fixed, in this pass.
+--
+--    The remaining tables in the blanket grant below (team_memberships,
+--    access_requests, profiles, feedback, share_links, feature_flags, at_bats,
+--    live_game_state, game_scoring_sessions, scoring_audit_log) were NOT
+--    re-verified in this pass and may be equally stale - treat with the same
+--    skepticism as everything else in this file dated 2026-07-13.
 -- ============================================================================
 
+-- Re-verified live 2026-08-04: no TRUNCATE, no DELETE, on either role.
+GRANT SELECT, INSERT, UPDATE, REFERENCES, TRIGGER
+  ON public.team_data, public.roster_snapshots, public.roster_snapshots_latest
+  TO anon, authenticated;
+
+-- Re-verified live 2026-08-04: no TRUNCATE; DELETE retained (deliberately, per
+-- v2.8.2 changelog) but functionally inert for anon - no anon RLS policy exists.
+GRANT SELECT, INSERT, UPDATE, DELETE, REFERENCES, TRIGGER
+  ON public.teams
+  TO anon, authenticated;
+
+-- NOT re-verified this pass - unchanged from the 2026-07-13 capture.
 GRANT SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER
-  ON public.teams, public.team_data, public.roster_snapshots,
-     public.roster_snapshots_latest, public.team_memberships,
+  ON public.team_memberships,
      public.access_requests, public.profiles, public.feedback,
      public.share_links, public.feature_flags, public.at_bats,
      public.live_game_state, public.game_scoring_sessions,
@@ -877,14 +1008,27 @@ COMMIT;
 
 
 -- ############################################################################
---  KNOWN DEFECTS REPRODUCED ABOVE (because they are in prod)
+--  KNOWN DEFECTS - STATUS AS OF 2026-07-13 CAPTURE, RE-VERIFIED WHERE MARKED
 --
---   1. RLS OFF on team_data, teams, roster_snapshots            #342  <- THE BIG ONE
---   2. Four *_anon_test backdoors on real team IDs               #355
---   3. allow_scorer_writes USING (true) x3                       #355
---   4. TRUNCATE granted to anon on 14 tables
---   5. team_memberships CHECK allows 7 roles (repo says 4)
+--   1. RESOLVED v2.6.0 (WS-3), re-verified live 2026-08-04. RLS is now ON for
+--      team_data, teams, roster_snapshots, with real auth.uid()-scoped policies
+--      (section 8). #342 is closed.                                    #342
+--   2. Four *_anon_test backdoors on real team IDs - CONFIRMED STILL OPEN, live,
+--      2026-08-04, unchanged.                                          #355
+--   3. allow_scorer_writes USING (true) x3 - CONFIRMED STILL OPEN, live,
+--      2026-08-04, unchanged. Broader than item 2: this policy alone grants
+--      unrestricted read/write/delete to `public` (anon+authenticated) on
+--      every team's scoring data, not just the two hardcoded team IDs in
+--      item 2 - the anon_test policies are redundant given this one exists.  #355
+--   4. TRUNCATE granted to anon - RE-VERIFIED for team_data/teams/roster_snapshots
+--      ONLY (2026-08-04): TRUNCATE has been revoked from all three. The other
+--      ~11 tables in this original claim were NOT re-checked this pass and may
+--      still grant it - treat as unverified, not fixed.
+--   5. team_memberships CHECK allows 7 roles (repo says 4) - RE-VERIFIED LIVE
+--      2026-08-04, unchanged: still exactly 7 (admin, viewer, team_admin,
+--      coordinator, coach, scorekeeper, parent).
 --   6. access_requests CHECK allows 7 (widened to unbreak signup) migration 009
+--      - not re-verified this pass.
 --   7. feature_flags.team_id is BIGINT; team ids are slugs      -> flags broken for 6 teams
 --   8. teams.owner_id is TEXT default '', not FK'd to auth.users
 --   9. scorer_user_id / actor_user_id are TEXT, not FK'd        -> audit trail forgeable, WS-4
@@ -893,5 +1037,10 @@ COMMIT;
 --  12. No FK on team_id for: access_requests, roster_snapshots, team_data_history,
 --      at_bats, live_game_state, game_scoring_sessions, scoring_audit_log
 --
---  A rebuilt DEV should carry these so DEV MIRRORS PROD. Fix them in both, together.
+--  Items 7-12 were NOT part of the 2026-08-04 targeted re-verification (see
+--  ADDENDUM in the header) - treat as unchanged-since-2026-07-13, not re-confirmed.
+--
+--  A rebuilt DEV should carry the still-open defects (2, 3, 7-12) so DEV MIRRORS
+--  PROD. Fix them in both, together. Item 1 is fixed - a rebuilt DEV should use
+--  section 8's current ENABLE statements + policies, not the old DISABLE lines.
 -- ############################################################################

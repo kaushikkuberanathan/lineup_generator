@@ -1,7 +1,22 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: 2026-08-01 (v2.8.3 - backend test coverage closure, RLS hardening, two silent bugs fixed)
+> Last updated: 2026-08-04 (v2.8.4 - Phase 3 completion, Phase 4 slices 1-3, Bug #7 permanent fix)
 > MVP launched: March 24, 2026
+
+---
+
+## v2.8.4 - 2026-08-04 - Phase 3 primitives completion, Phase 4 color-token retirement (slices 1-3), Bug #7 permanent fix
+- Internal only, no user-facing change.
+- **Phase 3 UI-primitives migration completed**: remaining hand-styled components (FairnessCheck, NowBattingStrip, MaintenanceScreen, ParentView, BattingOrderStrip, LockFlow, DefenseDiamond) migrated to Card/Text/Stack primitives (PRs #519-#526).
+- **Story 117 - `S.card` fully retired** across all 17 App.jsx call sites, replaced with the Card primitive (#515); a related dead style object (`S.app`) found and deleted (Story 115, #523).
+- **Phase 4 `var C` legacy color-object retirement started** - 3 of 9 planned App.jsx regions migrated to the shared design-token system, all zero-visible-change reference swaps: header/nav chrome (slice 1, #528), Roster tab (slice 2, #529), Defense/Batting grid tabs (slice 3, #537).
+- **Bug #7 fixed permanently** (Story 118, #517): the Windows Vitest worker-spawn cold-start flake that intermittently dropped test files from local/CI runs. `fileParallelism:false` is now the standing default in both worktrees' `vite.config.js` (#533, #534) - reduces, does not eliminate, the flake rate.
+- Regression test coverage added for share-link payload construction, Game Mode rendering/state, live-scoring session security, and auth routing decisions (#504, #505, #506, #507, #511, #512, #513).
+- **Story 121 (P0) filed, not fixed**: `AppShareLinkRouting.test.jsx`'s incomplete Supabase mock fires real network writes/deletes during local test runs (#535) - a live-data-mutation risk, flagged for the Dugout track's ownership, patched into `DOC_TEST_DEBT.md`'s P0 dashboard (#538).
+- **Story 119/120 filed, not implemented**: app-shell gradient-token naming and a dedicated SharedView region slice (slice 9), both awaiting a naming/scoping decision.
+- **Dependabot reviewed live**: 4 open alerts (2 dev-only `vite`, 2 backend-runtime `ip-address` via `express-rate-limit`) - shipped with all open; the two backend-runtime ones tracked separately (Story 122, #539).
+- Full audit: `docs/product/RELEASE_AUDIT_2026-08-04.md`.
+- Patch bump 2.8.3 to 2.8.4.
 
 ---
 
@@ -1174,7 +1189,7 @@ Game Mode polish release covering three themes:
 
 ## 🔴 P0 — Critical / Blocking
 
-### Story 61 (P0) — Share-link viewer routing broken in prod
+### Story 61 (P0) — Share-link viewer routing broken in prod <!-- #555 -->
 
 **Status:** Resolved — v2.5.16 (shipped 2026-05-19)
 **Discovered:** April 30, 2026 during Slice 0 (combined game view) dev test on Vercel preview
@@ -1207,7 +1222,7 @@ Tests: `src/tests/shareLink.test.js` — 3 new specs (timeout-stall, happy path,
 
 **Blocks:** Final merge of feature/combined-game-view to main is NOT blocked — note in PR body that share-link viewer is broken in prod regardless of this change.
 
-### Story 67 (P0) — Share CTA orphaned: shareCurrentLineup() unreachable from Lineups tab
+### Story 67 (P0) — Share CTA orphaned: shareCurrentLineup() unreachable from Lineups tab <!-- #556 -->
 Status: Resolved — v2.5.15 (2026-05-19)
 Resolved: renderPrint() action bar lifted into renderLineups() via PR #99 (commit a355b1a). shareCurrentLineup() now reachable from Lineups tab. All three share paths confirmed working in local smoke test and dev.dugoutlineup.com overnight soak.
 Discovered: May 18, 2026 — root cause confirmed via code grep
@@ -3994,6 +4009,299 @@ the route touches). Minimum: one 200-with-correct-side-effect spec per
 route, plus the two admin-auth edge cases folded in above. No route handler
 changes expected — this is coverage-only unless writing it surfaces a real
 bug, the same way feedback.test.js did for Story 99.
+
+---
+### Story 113 (P2) - cream background token disposition (App.jsx var C gap) <!-- #496 -->
+Status: Resolved
+Resolved: commit `59959fd` (#508) - "Story 113: mint color.surface.cream, retire C.cream (5 App.jsx sites)". Verified 2026-08-03 via grep: zero live `C.cream` references remain in App.jsx; `tokens.color.surface.cream` appears at exactly 5 sites, matching this story's predicted count. Docs status was stale - the code landed before this entry was flipped.
+Discovered: 2026-08-02 - App.jsx color sweep scoping session
+Target: before any App.jsx region-slice migration starts
+Symptom: C.cream (#fdf6ec), the literal app-wide page background, was never
+audited by Story 109's disposition table - 19 of var C's 20 keys got a
+decision, cream did not. 5 call sites.
+Impact: The App.jsx color sweep can't claim "every var C key decided" until
+this closes. Low mechanical risk but it's the backdrop behind every screen.
+Root cause: Known - Story 109's original recon missed this one key.
+Proposed fix: Mint color.surface.cream (or similar), preserve current value
+exactly - same pattern as Story 110's 8 resolutions. surface.page is not
+close (cool vs warm cast); surface.tableHeader is value-close but wrong
+domain (table-header band, not page background) - noted for design input,
+not blocking the mint decision.
+
+---
+### Story 114 (P2) - text root-prop visual-smoke verification (App.jsx var C) <!-- #497 -->
+Status: Resolved
+Resolved: commit `532296c` (#509) - "Story 114: verify + swap C.text to tokens.color.text.ink (20 App.jsx sites)". Verified 2026-08-03 via grep: zero live `C.text` references remain in App.jsx; `tokens.color.text.ink` appears at exactly 20 sites, matching this story's predicted count. The "Update 2026-08-02" note below saying the swap "has not started" was accurate when written but the swap landed in the same squashed commit shortly after - docs status was stale.
+Discovered: 2026-08-02 - App.jsx color sweep scoping session
+Target: before any App.jsx region-slice migration touches the root render
+Symptom: Story 110 already resolved text's token-layer decision (minted
+color.text.ink) - but confirmed 2026-08-02 that App.jsx's own root render
+node sets color:C.text directly (both the S.app style constant and the
+literal root <div> App's main render function returns), not just a leaf
+component. 20 call sites, all through inheritance from that root.
+Impact: A region slice's RED-GREEN snapshot only covers sites it explicitly
+touches - it would not catch a regression in some other, untouched region
+silently relying on inherited root color. Needs a full visual smoke pass
+across every screen, not a snapshot-diff assumption.
+Root cause: Known - documented as a risk in Story 110's own token comment;
+this story is the App.jsx call-site follow-through, not a new decision.
+Proposed fix: Confirm color.text.ink is still the right target (already
+preserves current value exactly - verification, not a new decision), do the
+full visual smoke pass, then the mechanical swap at 20 sites is identical
+to the other ADOPT keys.
+Update 2026-08-02: Step 1 (exhaustive structural search, both inheritance
+roots + all always-present chrome) and Step 2 (runtime getComputedStyle
+verification) both done - one genuine finding (SharedView line 1064-1065,
+confirmed at runtime to resolve to #1a1a2e / C.text exactly), every chrome
+item independently re-confirmed safe. Methodology closed; the 20+2-site
+App.jsx swap itself has not started (gated on the App.jsx unlock phrase).
+See DESIGN_AUDIT.md Story 114 evidence artifact for the full record.
+
+---
+### Story 115 (P3) - S.app dead code cleanup (App.jsx, found during Story 114) <!-- #501 -->
+Status: Open
+Discovered: 2026-08-02 - byproduct of Story 114's render-tree topology investigation (App.jsx var C sweep).
+Target: opportunistic - not blocking Story 114 or the region-slice sweep.
+Symptom: `S.app` (App.jsx line ~678 - `{ minHeight:"100vh", background:C.cream, fontFamily:..., color:C.text }`) is dead code. Confirmed via grep: zero references to `S.app` anywhere in App.jsx as an applied style prop. It is defined and never consumed.
+Impact: None today - it's inert. But it sat in the same object as every key Story 109-114 analyzed for real usage, and would have been silently counted as a "real" C.text/C.cream consumer if anyone assumed definitions imply usage.
+Root cause: Unknown - likely superseded when the main app's actual render root moved to the "header + top tabs + scrollable content" return (the real root, ~line 7904) at some point after S.app was originally authored, and the old style object was never deleted.
+Explicitly out of scope for Story 114 (text token-migration verification) and not fixed as a drive-by anywhere else - this issue exists specifically so it isn't lost and isn't silently folded into an unrelated PR's diff.
+Proposed fix: Delete the S.app object entirely once confirmed no dynamic/computed reference exists (e.g. S["app"] or similar indirect access - worth one more grep before deleting). Tiny, isolated, its own cleanup story.
+NOTE 2026-08-03: this story existed as GitHub issue #501 but had no ROADMAP.md entry - the inverse of the usual "placeholder marker with no issue" gap this repo's Issue Hygiene rules guard against. Filed here now; work tracked as its own task, not bundled into region slice 1's diff per this issue's own explicit request.
+
+---
+### Story 116 (P2) - GameModeScreen/DugoutView region-slice coverage gap (App.jsx var C sweep) <!-- #503 -->
+Status: Open
+Discovered: 2026-08-02 - Story 114's exhaustive Step 1 structural search
+Target: resolve before the App.jsx color sweep can claim full coverage -
+not blocking any of the other region slices individually
+Symptom: GameModeScreen and the in-app DugoutView (App.jsx lines
+~7996-8039) render nested inside the same color:C.text root Story 114
+audited, but they're full-screen modes reached via navigation state, not
+tabs or modals - so they fell outside every one of the 7 originally-planned
+region slices' stated boundary without anyone deciding to exclude them.
+Impact: The var C sweep could ship "complete" across all 7 original slices
+while this surface's own inheritance risk was never checked by Story 114's
+methodology or any slice's.
+Root cause: Scope boundary gap - the region-slice plan followed App.jsx's
+tab structure; Game Mode isn't reached via a tab.
+Decided 2026-08-02: dedicated 8th region slice, sequenced last (not folded
+into slice 1 or slice 7 - see DESIGN_AUDIT.md §Recommended migration shape,
+item 8, for the full reasoning). Sequenced last because game-mode/ and
+ScoringMode/ are each their own Locked File requiring their own gate phrase
+in addition to App.jsx's, and this is the live game-day surface - proving
+the migration pattern on six lower-stakes slices first is the safer order.
+Proposed fix: When slice 8 starts, run Story 114's Step 1/2 methodology
+against GameModeScreen/DugoutView specifically, then the mechanical swap.
+
+---
+### Story 117 (P2) - Full S.card retirement: Card primitive parity + App.jsx migration <!-- #514 -->
+Status: All 17 App.jsx sites migrated (Phase 0 + Tier 1 + Tier 2 + Tier 3); the now-dead `S.card` definition itself (App.jsx, was lines 706-710) is deleted. One known gap held open, see below - not resolved.
+Phase 0: Card.jsx `border` prop + raw-padding passthrough, 4 new tests, 20/20 passing.
+Tier 1 (10 sites, uniform/no-op sites): Roster Quick Summary, 3 Schedule import panels, 3 Feedback sections, Links, About/Account, About/Updates.
+Tier 2 (6 sites, real per-site customization): SharedView Batting Order (marginTop), Roster player card (padding="14px" raw passthrough), Songs walk-up card (marginBottom="8px" + conditional opacity/pointerEvents), Schedule Add/Edit Game form (static borderLeft red accent), Schedule game row (computed borderLeft accent + padding), Schedule Share Lineup modal (maxWidth/width + padding="24px"). The two borderLeft sites needed `border` keyed BEFORE `borderLeft` in the style object to correctly preserve the original spread-order override (left edge = accent, other 3 edges = base border) - verified via computed-style assertion, not assumed.
+Tier 3 (1 site): Batting tab Season Stats box - kept its own pre-existing background (`rgba(15,31,61,0.03)`) and border (`rgba(15,31,61,0.1)`) override values, deliberately NOT the Tier 1 shared C.border/C.white pattern - re-checked per-site as flagged, not carried over blindly.
+Verification: build clean (395 modules, 18.57s), full suite clean (975 passed/1 skipped/976 total, 80/80 files - 3 consecutive runs hit the documented Bug #7 worker cold-start flake with passing tallies before one came back fully clean; the flake's signature is a file-count DROP with a passing exit code, and none of these runs actually dropped a file - each isolated-retry and full-rerun reconciled to the expected total), lint clean (0 warnings - caught and fixed one real unused-var issue in the Tier 1 equivalence test along the way), plus 13 computed-style equivalence tests total (`Story117TierOneEquivalence.test.jsx` 6/6, `Story117TierTwoThreeEquivalence.test.jsx` 7/7) substituting for live-browser screenshots - the auth-gated tabs' magic-link/OAuth flow redirects to prod in this dev environment, no local bypass exists.
+KNOWN GAP, explicitly not closed by this work: a real authenticated full-page render check across all touched surfaces (Roster, Schedule, Feedback, Links, Account, Updates, Batting, Songs, SharedView) is still owed once the Browser pane/auth flow can reach a local session. The computed-style equivalence tests prove the DOM node's style is byte-identical to the pre-migration values; they do not prove App.jsx's JSX wiring is free of some unrelated rendering bug at each real call site. Do not treat this story as fully closed until that check happens.
+Discovered: 2026-08-02 - UX track spike session re-auditing Story 64 (closed 2026-05-29, PR #247)
+Target: v2.8.x
+Symptom: Story 64's closure only migrated LegalSection's single call site. 17 `S.card`
+consumers remain live in App.jsx across Roster, Batting, Songs, Schedule, Feedback,
+Links, About (Account + Updates), and the public SharedView. Full audit grouped them
+into 9 override/addition shapes and 3 risk tiers:
+  - Tier 1 (10 sites): bare or no-op `S.card` reference, zero real customization
+  - Tier 2 (6 sites): real per-site customization (padding variants, borderLeft
+    accents, conditional opacity/pointerEvents, modal sizing)
+  - Tier 3 (1 site, Batting tab Season Stats box): overrides core surface
+    color/border, not just spacing - stays a style escape, not a new Card variant
+Impact: `S.card` remains a parallel, untokenized styling path alongside the Card
+primitive. Card.jsx itself had two real contract gaps this surfaced: no `border`
+prop, and boolean `shadow` mapped to `tokens.shadow.card` (wrong token for this
+shape) even though `tokens.shadow.subtleCard` is an exact match for `S.card`'s
+box-shadow.
+Root cause: Known - Story 64's PR #247 scope covered only the one LegalSection site
+discovered during Phase 3 Step 3; the "audit S.card consumers in App.jsx first"
+recommendation was never followed up.
+Resolution (Phase 0): Card.jsx - added `border` boolean prop (1px solid
+`tokens.color.border.default`) and raw-string passthrough for `padding` values
+outside the sm/md/lg scale. 4 new characterization tests (C3.4/C3.5/C8.1/C8.2).
+Radius 10px has no exact token (nearest: md 8px / lg 12px) - accepting the
+`radius.md` drift, same call LegalSection made for its one site; this is now the
+second instance of that exact accepted drift - a third would be a signal `radius`
+needs a dedicated in-between value, not another silent acceptance.
+Remaining: Phase 1 (10 Tier 1 sites, mechanical swap), Phase 2 (6 Tier 2 sites,
+Card + targeted style escape per site), Phase 3 (Tier 3's one site stays a style
+escape). Requires the App.jsx gate phrase + feature branch off `develop` per
+CLAUDE.md. Verification is manual/visual across the 9 affected surfaces (no
+per-tab App.jsx unit tests exist) - must render pixel-identical.
+Note: originally misfiled as "Story 112" against a stale local `main` checkout
+before verifying against `origin/develop`, where 112 was already in use (admin.js
+route coverage, #474). Caught before commit; renumbered to 117 (next-free after
+the highest in-use number, 116). GitHub issue #514 title corrected to match.
+Correction 2026-08-03: the note above originally said "115 was found
+unused/skipped" - that was wrong. Story 115 is real (GitHub issue #501, S.app
+dead-code cleanup); it just had no ROADMAP.md body at the time this was
+written, which is why the numbering check didn't surface it as in-use. See
+Story 115's own entry above for the fix.
+
+---
+### Story 118 (P3) - Vitest Bug #7 flake: pool/timeout tuning + Windows Defender exclusion investigation <!-- #517 -->
+Status: Open
+Discovered: 2026-08-03 - Bug #7 (Windows Vitest worker cold-start flake) cost multiple full-suite re-runs in one session; investigated switching the default pool as a permanent fix rather than a manual per-run retry.
+Target: opportunistic - current threads/maxWorkers:1 config remains the working default in the meantime.
+Symptom: `frontend/vite.config.js` pins `pool: 'threads', maxWorkers: 1` - a single-worker config that still intermittently drops 1-2 test files per run to a worker-spawn timeout (Bug #7), recoverable only by re-running the full suite until a clean pass lands.
+Impact: Every full-suite run has a real chance of costing a second (or third) re-run for a trustworthy clean number - pure session-time overhead, not a signal of real regressions. 100% of investigated Bug #7 instances this session were confirmed clean in isolation.
+Root cause: Unknown precisely - two live theories: (1) pure Windows Vitest worker-thread cold-start flake, environmental and unrelated to endpoint security; (2) a deeper spawn-contention issue, possibly endpoint security software (Cox Defender or similar) scanning newly-spawned worker threads/processes on-access, adding enough latency under load that some workers miss their startup handshake window.
+Tried and empirically REJECTED this session - do not retry blindly: switching to `pool: 'forks'` + `poolOptions.forks.singleFork: true` (the pre-Story-41 config). Not just insufficient - actively worse: dozens of `[vitest-pool]: Timeout terminating forks worker for test files` messages (most of the suite, not 1-2 files), 7 REAL test failures with explicit `Error: Test timed out in 5000ms` (tests hung, not just dropped), and duration ballooned 4x+ (`environment` sub-phase alone: 1012.29s vs. the normal ~250-450s total run). Categorically different failure signature than Bug #7's isolated flake - looks like a systemic hang, consistent with Story 41's original Cox Defender `child_process.fork` IPC finding still being live even though the specific git-hook-context trigger no longer applies (Vitest was removed from the pre-push hook in Story 75 - CI is now the authoritative gate). Reverted immediately; `git diff` confirmed zero net change before moving on.
+Proposed fix - three independent angles, not mutually exclusive:
+  1. Confirm whether the current threads/maxWorkers:1 flake rate is an acceptable steady-state (keep the manual-retry pattern, documented clearly), or whether tuning threads-pool-specific options (worker count, startup timeout) reduces the flake rate without the forks-pool regression.
+  2. Document a Windows Defender (or Cox Defender specifically) exclusion recommendation for the project's node_modules and repo root as a system-level fix - NOT something a coding session can apply itself (requires admin access to endpoint security policy); write up as a clear manual step for whoever administers the machine.
+  3. Once either angle is tried, revisit whether the flake was ever really about Vitest/Windows at all, or has been masking this deeper spawn-contention issue the whole time - correct the "Bug #7" doc language accordingly if so.
+Explicitly out of scope for this issue: actually applying a Windows Defender policy change.
+
+---
+### Story 119 (P2) - App-shell root gradient third-stop token disposition (App.jsx var C gap) <!-- #530 -->
+Status: Open
+Discovered: 2026-08-04 - flagged as a deliberately out-of-scope item during Phase 4 slice 1 (header/nav chrome), held for KK per the standing rule that real naming/architecture decisions get logged and confirmed, not decided solo.
+Target: resolve before the App.jsx var C sweep can claim full coverage - does not block slices 2-9 individually.
+Symptom: The app-shell root background (App.jsx, ~line 7876) is a ternary with a
+third gradient stop at the literal hex #2a0a0a. Unlike every other resolved/ADOPT
+key in this sweep, no existing token (dark or otherwise) is an exact value match -
+this is a genuinely new color with no minted home yet.
+Impact: None of the 9 planned region slices (1-8 tab/mode slices + slice 9, see
+Story 120 below) claim this site. The sweep cannot say "every var C / literal-hex
+site in App.jsx is token-driven" until this is decided - same class of gap Story
+113 (cream) and Story 114 (text) closed before slice 1 started, just discovered
+one slice later.
+Root cause: Known - this stop was never audited by Story 109's original
+disposition table (same root cause as Story 113's cream gap) because it's a
+literal hex value, not a C.key reference, and the original table's search was
+C.key-scoped.
+Recommendation (2026-08-04, not yet confirmed by KK): mint a new token named by
+role, not appearance - same principle Story 110's 8 resolutions and Story 113's
+color.surface.cream mint both followed. Candidate name: color.brand.gradientDark
+(the gradient stop's actual role - dark end of the app-shell background
+gradient - not a generic "dark" or appearance-based name). Preserve the current
+value (#2a0a0a) exactly; this is a reference-swap, not a visual change. Do not
+mint or swap the call site without an explicit go on the proposed name.
+
+---
+### Story 120 (P2) - SharedView duplicate header: dedicate as region slice 9 (App.jsx var C sweep) <!-- #531 -->
+Status: Open
+Discovered: 2026-08-02 (Story 114's Step 1 structural search, DESIGN_AUDIT.md), disposition confirmed 2026-08-04.
+Target: resolve before the App.jsx var C sweep can claim full coverage - sequenced
+after slice 7, does not block slices 1-8.
+Symptom: SharedView() (App.jsx lines ~805-1116, the public share-link view) has
+its own duplicate header markup with its own separate C.red/C.navy/navyLight
+literals. Not part of the main authenticated app's persistent header (already
+covered by slice 1); renders via a completely separate <ErrorBoundary> tree
+outside the main app shell's root. Never one of the 7 originally-planned region
+slices - same class of boundary gap slice 8 (GameModeScreen/DugoutView, Story
+116/#503) was carved out for.
+Impact: The var C sweep could ship "complete" across slices 1-8 while
+SharedView's own color references were never migrated or structurally verified
+against Story 114's inheritance methodology - a real coverage hole, since
+SharedView is the Auth Principle's #1 priority surface (share links must always
+render, unauthenticated).
+Root cause: Scope boundary gap, same shape as slice 8's - the region-slice plan
+followed the main app shell's tab structure; SharedView is a structurally
+separate render path (public, pre-auth, outside the authenticated shell), not a
+tab or modal any of the 7 slices actually own.
+Decided 2026-08-04: dedicated as its own region slice - slice 9 - rather than
+folded into an existing slice (same reasoning as slice 8's carve-out). Sequenced
+after slice 7, not last like slice 8 - SharedView has no Locked-File
+gate-phrase complication beyond App.jsx's own, so it doesn't need to wait as
+long as slice 8 does.
+Proposed fix: When slice 9 starts, run Story 114's Step 1/2 methodology against
+SharedView's own render tree specifically (groundwork already exists in Story
+114's "Root 1 - SharedView()" table in DESIGN_AUDIT.md), then the mechanical
+C.* -> tokens.* swap for its own header markup.
+
+---
+### Story 121 (P0) - AppShareLinkRouting.test.jsx incomplete Supabase mock fires real network writes/deletes <!-- #535 -->
+Status: Open - NOT auto-implemented, flagged for T1/whoever owns this test
+file (Dugout/main track). Deliberately not fixed in the session that found it.
+Discovered: 2026-08-04, while diagnosing Bug #7 (Vitest worker-spawn flake,
+Story 118/#517) on the lineup-generator (Dugout/main) worktree.
+Target: should be picked up soon, not routine backlog cadence - see Impact.
+Symptom: frontend/src/__tests__/AppShareLinkRouting.test.jsx mocks
+../supabase.js incompletely - `Object.assign({}, actual, { dbLoadShareLink:
+... })` spreads in the REAL module and only overrides dbLoadShareLink. Every
+other export (dbSaveTeamData, dbSaveTeams, deleteTeam, etc.) falls through to
+the real implementation, firing genuine Supabase network calls during the
+test run (confirmed: dbSaveTeamData, dbSaveTeams, and a real deleteTeam(teamId)
+call, all triggered from "renders SharedView (not DugoutView)" test cases).
+Impact: LIVE-DATA-MUTATION RISK, not just a flaky-test annoyance. On any
+machine where the local .env's VITE_SUPABASE_ANON_KEY is still valid
+(not yet legacy-disabled), running npm test locally fires real writes AND a
+real delete against whatever team_id the test constructs, against the actual
+Supabase project this repo points at. On the lineup-generator worktree
+specifically this instead surfaces as loud "Legacy API keys are disabled"
+unhandled rejections (6-9 per full-suite run) because that worktree's local
+key has already been disabled - which is what exposed the bug, not the cause
+of it. A teammate or any environment with a still-valid key would NOT see an
+error at all; the writes/delete would simply succeed silently against real
+data. Identical mock gap exists verbatim on the UX worktree's copy of this
+file - it just hasn't surfaced there yet (different local key), so this needs
+fixing at the shared source, not per-worktree.
+Root cause: Known - incomplete vi.mock spread pattern, confirmed by direct
+source read.
+Possible connection to Story 118/#517: real, uncontrolled network I/O firing
+mid-test-run is exactly the kind of resource/timing contention Story 118's own
+"Root cause: Unknown" section lists as an alternate, unconfirmed theory for the
+worker-spawn flake. Not proven - worth re-evaluating the flake rate once this
+mock gap closes.
+Proposed fix: Complete the mock - either explicitly stub every supabase.js
+export this test's code path can reach (dbSaveTeamData, dbSaveTeams,
+deleteTeam at minimum, re-verify the full call surface before closing), or
+mock the entire module without spreading in `actual`, matching the pattern the
+file's own top comment references (SharedView.test.jsx /
+AppNoMembershipRouting.test.jsx - check whether those siblings already do this
+correctly, as a first diagnostic step).
+
+---
+### Story 122 (P1) - Dependabot #61/#62/#63: ip-address SSRF/trust-boundary bypass via express-rate-limit <!-- #539 -->
+Status: Open - tracked separately per KK's explicit go/no-go decision on the
+v2.8.4 release audit (2026-08-04): ship v2.8.4 with these alerts open, address
+here rather than blocking that release.
+Update 2026-08-05: a third alert, #63 (HIGH), appeared seconds after v2.8.4's
+version-bump merged to develop - same ip-address package/dependency chain
+(express-rate-limit), but a more severe, broader-reaching SSRF bypass
+(leading-zero octal/decimal decode mismatch - new URL('http://012.0.0.1/').hostname
+resolves to 10.0.0.1), affecting ALL ip-address versions <=10.3.0, fixed in
+10.3.1. Per KK's explicit decision (2026-08-05): folded into this same Story
+rather than escalated separately or blocking the v2.8.4 promote - the fix
+should now target >=10.3.1 to close #61, #62, AND #63 together in one pass.
+Discovered: 2026-08-04, during the v2.8.4 release audit's live Dependabot
+check (docs/product/RELEASE_AUDIT_2026-08-04.md - superseded the previously
+assumed "2 known alerts" with the actual live count of 4).
+Target: soon, not routine backlog cadence - these are runtime (not dev-only)
+backend alerts.
+Symptom: Two NEW Dependabot alerts, both created 2026-08-04, both on
+ip-address (backend package-lock.json, runtime scope, not a dev dependency):
+#61 (medium) - IPv4-mapped/NAT64 IPv6 address misclassification can bypass
+SSRF and trust-boundary checks (vulnerable >=10.1.1 <=10.2.0, fixed in
+10.2.1). #62 (medium) - a CIDR suffix on the parsed address suppresses
+special-use classification, same SSRF/trust-boundary bypass class
+(vulnerable >=10.1.1 <=10.2.1, fixed in 10.2.2). Both pulled in transitively
+via express-rate-limit@8.6.1 - the actual loginLimiter middleware protecting
+POST /magic-link in production.
+Impact: Not independently confirmed whether express-rate-limit's actual usage
+of ip-address (IP-based rate-limit keying / trust-proxy classification)
+touches the vulnerable code path directly - that's the first thing to check,
+not assumed. Sits directly behind the auth rate-limiter, so deserves closing
+out rather than leaving open indefinitely even though real exploitability is
+unconfirmed.
+Note - two OLDER alerts exist too, NOT the concern of this issue: #28 (high,
+vite, dev-only) and #30 (medium, vite/launch-editor, dev-only) are both
+transitive via vitest@4.1.2's own bundled vite@8.0.14 (a
+devDependency-of-a-devDependency, never reaches a deployed build) - separate,
+lower-relevance, not tracked by this issue.
+Proposed fix: Bump express-rate-limit to a version that pulls a patched
+ip-address (>=10.3.1, covers #61/#62/#63 together), or add an npm
+overrides/resolutions entry pinning ip-address directly if express-rate-limit
+hasn't picked up the bump yet. Verify loginLimiter behavior is unchanged
+after the bump (existing rate-limit tests should cover this).
 
 ---
 ### Automated Score Reporting (County Integration)

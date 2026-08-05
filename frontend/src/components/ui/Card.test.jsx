@@ -84,6 +84,16 @@ describe('Card — Phase 2 primitive', function () {
     expect(container.querySelector('div').style.padding).toBe(tokens.space.lg);
   });
 
+  test('C3.4: padding="14px" (not in sm/md/lg scale) passes through raw', function () {
+    var { container } = render(<Card padding="14px">content</Card>);
+    expect(container.querySelector('div').style.padding).toBe('14px');
+  });
+
+  test('C3.5: padding="12px 14px" (compound raw value) passes through raw', function () {
+    var { container } = render(<Card padding="12px 14px">content</Card>);
+    expect(container.querySelector('div').style.padding).toBe('12px 14px');
+  });
+
   // ── Radius → tokens.radius.* ──────────────────────────────────────────────
 
   test('C4.1: radius="sm" → tokens.radius.sm (6px)', function () {
@@ -112,6 +122,23 @@ describe('Card — Phase 2 primitive', function () {
   test('C5.2: shadow omitted (default false) — no box-shadow set', function () {
     var { container } = render(<Card>content</Card>);
     expect(container.querySelector('div').style.boxShadow).toBe('');
+  });
+
+  // ── Border (Story 64 full retirement) ────────────────────────────────────
+
+  test('C8.1: border={true} adds 1px solid tokens.color.border.default', function () {
+    var { container } = render(<Card border={true}>content</Card>);
+    var div = container.querySelector('div');
+    // JSDOM parses border shorthand into longhands
+    expect(div.style.borderWidth).toBe('1px');
+    expect(div.style.borderStyle).toBe('solid');
+    // tokens.color.border.default = '#E2E8F0' → JSDOM normalizes to rgb()
+    expect(div.style.borderColor).toBe('rgb(226, 232, 240)');
+  });
+
+  test('C8.2: border omitted (default false) — no border set', function () {
+    var { container } = render(<Card>content</Card>);
+    expect(container.querySelector('div').style.border).toBe('');
   });
 
   // ── Children render unmodified ────────────────────────────────────────────

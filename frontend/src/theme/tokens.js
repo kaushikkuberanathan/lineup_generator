@@ -35,6 +35,15 @@ export const tokens = {
       dark:        '#0B1524',  // 12x — Game Mode header gradient, deepest navy surface
       tableHeader: '#F5EFE4',  // 13x — table thead row band (Defense/Batting/Scoring grids)
       chrome:      '#1E3A5F',  // 5x — mid-tone navy band; game-day strips (NowBattingStrip, BattingOrderStrip) + Toast notification bg
+
+      // Story 113 (#496) — 5x App.jsx (was C.cream), the literal app-wide page
+      // background (S.app.background + App's own root <div>). Never audited by
+      // Story 109's disposition table — surface.page (#F8FAFC, cool slate) is not
+      // close (visible cool-vs-warm cast shift on a full-page background);
+      // surface.tableHeader (#F5EFE4) is value-close but wrong-domain (table
+      // header band, not page background) — noted for design input, not a
+      // substitute. Mint preserves the current value exactly.
+      cream: '#fdf6ec',
     },
 
     text: {

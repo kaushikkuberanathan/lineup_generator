@@ -602,10 +602,20 @@ Everything in this table is intentionally NOT tokenized. It belongs to the v2.5.
 
 ## A. Concrete Drift Examples Surfaced During Audit
 
-### A.1 — Duplicate `fontSize` Key in LockFlow.jsx (Build Warning)
+### A.1 — Duplicate `fontSize` Key in LockFlow.jsx (Build Warning) — ✅ FIXED (v2.8.4 Phase 3 primitives migration)
+
+> **Corrected 2026-08-04.** No longer a live bug. `LockFlow.jsx` was migrated onto
+> the `Text` primitive as part of the v2.8.4 Phase 3 primitives work — confirmed
+> directly: the div this section describes is now `<Text as="div" uppercase
+> style={{ fontSize:"10px", color:textMuted, marginBottom:"6px",
+> letterSpacing:"0.05em" }}>` (line 129) — a single `fontSize` key, matching
+> exactly the "why tokens + primitives prevent it" mechanism this section already
+> predicted. **(develop only as of this writing — main is still v2.8.3; this fix
+> has not yet promoted.)** Kept below as the historical illustration of why
+> primitives matter — no longer describes a live defect.
 
 **File:** `frontend/src/components/GameDay/LockFlow.jsx`
-**Line:** 130
+**Line:** 130 (historical — pre-migration)
 
 **Build warning (verbatim):**
 ```
@@ -625,7 +635,7 @@ Duplicate key "fontSize" in object literal
 
 **Why tokens + primitives prevent it:** A `<Text size="body" transform="uppercase" spacing="wide" />` primitive owns the `fontSize` prop. There is no object literal at the call site — the consumer cannot produce a duplicate key because they don't write style objects at all. The primitive maps `size` to `font.size.body` internally, once, in one place.
 
-**Backlog disposition:** Tracked in v2.5.x call-site replacement. Fix: remove the first `fontSize:"13px"` (which was presumably the intended value), set `fontSize:"13px"`, verify the label renders correctly. Do not fix in this PR — the component is out of scope and the fix needs visual verification.
+**Backlog disposition (historical):** Was tracked for v2.5.x call-site replacement. **Resolved via the v2.8.4 Phase 3 primitives migration** (see correction note above) — the component now renders via `<Text>`, eliminating the duplicate-key class of bug entirely rather than patching the one instance.
 
 Also note: the inline style on line 130 contains several drift values that will resolve automatically once a `<Text>` primitive is in place:
 - `rgba(15,31,61,0.04)` → `color.overlay.navyWash`
@@ -640,20 +650,25 @@ This one div is a microcosm of the full drift inventory.
 
 ## B. Pipeline / Tooling Observations
 
-### B.1 — ESLint Configuration Missing from Repository
+### B.1 — ESLint Configuration Missing from Repository — ✅ RESOLVED (Story 77, v2.5.23)
 
-**Finding:** `git ls-files | grep -i eslint` returns empty. No `.eslintrc`, `eslint.config.js`, `.eslintrc.cjs`, or equivalent is tracked in the repository. The `npm run lint` script in `frontend/package.json` fails with:
+> **Corrected 2026-08-04.** This finding is fully obsolete. `frontend/.eslintrc.cjs`
+> exists and is tracked. Live re-run of `npm run lint` (`eslint src --ext .js,.jsx
+> --max-warnings 0`) from `frontend/`: **exit code 0, zero output** — 0 errors, 0
+> warnings. Story 77 (v2.5.23, 2026-05-30, PRs #237/#244/#245) closed this gap
+> with a 5-phase cleanup (~650 net lines removed from App.jsx). Kept below as
+> historical record of the original finding; do not treat as a current gap.
+
+**Finding (historical, 2026-05-01):** `git ls-files | grep -i eslint` returned empty. No `.eslintrc`, `eslint.config.js`, `.eslintrc.cjs`, or equivalent was tracked in the repository. The `npm run lint` script in `frontend/package.json` failed with:
 
 ```
 ESLint couldn't find a configuration file.
 ESLint looked for configuration files in frontend/src and its ancestors.
 ```
 
-**Confirmed pre-existing:** This gap predates the design tokens work. The ESLint packages (`eslint`, `eslint-plugin-react`, `eslint-plugin-react-hooks`) are present in `devDependencies` and the lint script is defined, but the configuration was never committed — or was lost at some point and never restored.
+**Confirmed pre-existing (at the time):** This gap predated the design tokens work. The ESLint packages (`eslint`, `eslint-plugin-react`, `eslint-plugin-react-hooks`) were present in `devDependencies` and the lint script was defined, but the configuration had never been committed — or was lost at some point and never restored.
 
-**Impact:** `npm run lint` (referenced in `CLAUDE.md` and the pre-deploy checklist) fails on a fresh clone or in any worktree. The lint step of Step B of this session was skipped on this basis.
-
-**Backlog disposition:** Restoring the lint pipeline is a separate `v2.4.x` backlog item. It requires deliberate rule choices affecting the entire codebase and is out of scope for the design tokens session. When restoring, the config should encode at minimum: `eslint-plugin-react` recommended rules, `eslint-plugin-react-hooks` rules, `no-unused-vars`, and `no-console`. The token files (`tokens.js`, `index.js`) have no JSX, no hooks, and no complex patterns — their lint risk is effectively zero even without a config.
+**Impact (at the time):** `npm run lint` (referenced in `CLAUDE.md` and the pre-deploy checklist) failed on a fresh clone or in any worktree. The lint step of Step B of the originating session was skipped on this basis.
 
 ### B.2 — Vitest Fork Pool Worker Timeouts on Windows (Missing-Module Shape)
 
@@ -715,44 +730,134 @@ Specific values are anchored in this document (§7, Token Mapping Table). The co
 ## Legacy `C` Object — App.jsx Disposition (Story 109 / Issue #294)
 
 **Recon date:** 2026-06-08 (T2 UX track)
-**Status:** Decision recorded — migration deferred, multi-branch. **Update 2026-08-01 (Story 110 / #296):** all 8 DIVERGENT/ORPHAN keys resolved — see per-key disposition table below. `tokens.js` updated with provenance; no App.jsx edits (per #296's own scope). #296 was briefly, accidentally auto-closed by PR #298 on 2026-06-08 (GitHub's closing-keyword parser matched the substring "close #296" inside a sentence that read "does NOT close #296/#297" — negation isn't parsed) and has been reopened; the decisions below were never actually made until now.
-**Scope:** The flat `var C = {...}` color object defined in App.jsx (STYLES section). 20 keys, 437 `C.` reference sites in App.jsx. This predates the semantic token system in `theme/tokens.js` and was never migrated when the nested tokens landed. This section records the per-key disposition so the eventual sweep is mechanical, not investigative.
+**Status:** Decision recorded — migration deferred, multi-branch. **Update 2026-08-01 (Story 110 / #296):** all 8 DIVERGENT/ORPHAN keys resolved — see per-key disposition table below. `tokens.js` updated with provenance; no App.jsx edits (per #296's own scope). #296 was briefly, accidentally auto-closed by PR #298 on 2026-06-08 (GitHub's closing-keyword parser matched the substring "close #296" inside a sentence that read "does NOT close #296/#297" — negation isn't parsed) and has been reopened; the decisions below were never actually made until now. **Update 2026-08-02 (sweep-scoping session):** re-verified everything below against the *current* `App.jsx`, not the April 30 recon snapshot. Two corrections: (1) the "20 keys" figure was right but this table only ever disposed 19 of them — `cream` was never audited at all, filed as **Story 113 / #496**; (2) real call-site count today is **310, not 437** (App.jsx has shrunk via Stories 87/92/93/94/77 since the original audit — genuinely less remaining work, not a miscount). Also: `text`'s token-layer decision (Story 110, resolved) and its App.jsx call-site risk are two different things — the latter is now its own verification story, **Story 114 / #497**, because App.jsx's own root render node sets `color:C.text` directly (confirmed at the literal root `<div>` App returns, not just the `S.app` style constant) — a region slice cannot safely assume this key is free.
+**Scope:** The flat `var C = {...}` color object defined in App.jsx (STYLES section). 20 keys, **227 `C.` reference sites** in App.jsx as of 2026-08-04 (was 310 at 2026-08-02, 437 at the 2026-04-30 recon — the drop reflects region slices 1-3 shipping, see the annotated slice list below; verified via `grep -oE '\bC\.[a-zA-Z]+' frontend/src/App.jsx | wc -l` directly against the current working tree, Doc Audit Spike Story 9). This predates the semantic token system in `theme/tokens.js` and was never migrated when the nested tokens landed. This section records the per-key disposition so the eventual sweep is mechanical, not investigative.
 
 ### Why this is deferred, not done now
 
-- **437 call sites** in a single 5,000+ line file. This is the migration backlog the token authors parked, not a slice. One PR cannot soak-test 437 visual touch points against Game Mode / share-link surfaces safely.
+- **227 call sites** (re-verified 2026-08-04; was 310 at the 2026-08-02 count this section previously cited) in a single 8,000+ line file. This is the migration backlog the token authors parked, not a slice — even with slices 1-3 shipped, one PR cannot soak-test the remaining touch points against Game Mode / share-link surfaces safely.
 - **Primitives-first sequencing.** `tokens.js` header states consumers arrive via primitives (v2.5.0+), not by App.jsx reaching directly into `tokens.color.*`. `shadow.elevated` is explicitly tagged "App.jsx call sites (locked); migration deferred to v2.5.x." Migrating `C` direct-to-token would violate that intended consumer path.
 - **Values genuinely diverge.** Several `C` keys have no token equivalent or differ from the nearest token (see table). Migration is therefore a design decision per orphan key, not a rename.
 
 ### Per-key disposition
 
-| `C` key | value | nearest token | disposition |
-|---|---|---|---|
-| navy | #0f1f3d | color.brand.navy #0F1F3D | **ADOPT** (case-only diff) |
-| red | #c8102e | color.brand.red #C8102E | **ADOPT** |
-| gold | #f5c842 | color.brand.gold #F5C842 | **ADOPT** |
-| white | #ffffff | color.surface.card / text.onDark | **ADOPT** (context-dependent) |
-| cardBg | #ffffff | color.surface.card #FFFFFF | **ADOPT** |
-| subtleBg | #f8fafc | color.surface.page #F8FAFC | **ADOPT** |
-| textMuted | #6b7280 | color.text.muted #6b7280 | **ADOPT** (exact) |
-| subtleText | #9ca3af | color.text.disabled #9CA3AF | **ADOPT** |
-| win | #27ae60 | color.status.success #27AE60 | **ADOPT** |
-| loss | #c8102e | color.brand.red #C8102E | **ADOPT** (loss==brand.red, not status.error) |
-| tie | #d4a017 | color.status.warning #D4A017 | **ADOPT** |
-| border | rgba(0,0,0,0.06) | color.border.subtle rgba(15,31,61,0.08) | **RESOLVED (Story 110 / #296) — MINT `color.border.neutral`.** 15 App.jsx call sites; hue and opacity both differ from border.subtle — adopting would be a real visual shift at real scale. |
-| subtleBorder | rgba(0,0,0,0.04) | overlay.navyWash rgba(15,31,61,0.04) | **RESOLVED — MINT `color.overlay.neutralWash`.** 2 call sites; paired with `border`'s decision for a consistent neutral-tint family alongside the existing navy-tint family. |
-| overlayBg | rgba(0,0,0,0.5) | overlay.backdrop rgba(5,10,25,0.97) | **RESOLVED — MINT `color.overlay.scrimLight`.** 3 live full-screen modal-backdrop sites (a narrow `C.overlayBg`-only grep found 0 — broadening to the literal value caught them). Adopting backdrop (0.97) would nearly double backdrop darkness across all 3. |
-| navyLight | #1a3260 | none (chrome is #1E3A5F) | **RESOLVED — MINT `color.brand.navyLight`.** 5 live sites, all header/nav gradient stops paired with brand.navy. surface.chrome is a genuinely different navy (game-day-strip/Toast band), not a gradient partner. |
-| redDark | #9b0c22 | none | **RESOLVED — MINT `color.brand.redDark`.** Confirmed real, active usage: 3 sites, shared "primary CTA" gradient dark stop paired with brand.red. Not unused — retire was never viable once checked. |
-| text | #1a1a2e | text.primary #0F1F3D | **RESOLVED — MINT `color.text.ink`.** Highest blast radius in the batch: 20 App.jsx sites, including the app-root `color:` prop — this is the whole app's inherited default text color. text.primary is a documented navy alias for emphasis/header text, not body copy; text.body (#374151) is a separate, lighter Story-60 value for specific components. Neither is a safe substitute. **The eventual App.jsx call-site migration for this key is NOT "provably no-op" like the other 7 — it needs a full visual smoke pass, not a snapshot-diff assumption.** (Same warning is baked into the token's own provenance comment in tokens.js so it travels with the code, not just this doc.) |
-| canceled | #7f8c8d | none | **RESOLVED — MINT `color.status.neutral`.** 1 site (game-canceled status badge). text.tertiary (#94A3B8) is a cooler, lighter slate — different enough to notice on a status badge. |
-| greenField | #2e7d32 | field.grass #2d7a3a | **RESOLVED — MINT `color.status.ready`, NOT adopt field.grass.** Correction to this table's own original framing: the one real call site (`statusColor = "#2e7d32"`, Home-screen team-readiness badge, "Ready" state) has nothing to do with the diamond SVG — it's status-domain, not field-domain. field.grass is a near-identical hex, but reusing it would violate this file's own "name tokens by role, not appearance" rule despite the negligible value delta. status.success (#27AE60) is a distinct, brighter green — also not a substitute. |
+| `C` key | value | sites (2026-08-02) | nearest token | disposition |
+|---|---|---|---|---|
+| navy | #0f1f3d | 56 | color.brand.navy #0F1F3D | **ADOPT** (case-only diff) |
+| red | #c8102e | 33 | color.brand.red #C8102E | **ADOPT** |
+| gold | #f5c842 | 17 | color.brand.gold #F5C842 | **ADOPT** |
+| white | #ffffff | 7 | color.surface.card / text.onDark | **ADOPT** (context-dependent) |
+| cardBg | #ffffff | 3 | color.surface.card #FFFFFF | **ADOPT** |
+| subtleBg | #f8fafc | — | color.surface.page #F8FAFC | **ADOPT** |
+| textMuted | #6b7280 | 125 | color.text.muted #6b7280 | **ADOPT** (exact) — highest single-key call-site count of any key in the table; spans nearly the entire file (line 722→7794 of 8159), not concentrated in one region |
+| subtleText | #9ca3af | 1 | color.text.disabled #9CA3AF | **ADOPT** |
+| win | #27ae60 | 22 | color.status.success #27AE60 | **ADOPT** |
+| loss | #c8102e | — | color.brand.red #C8102E | **ADOPT** (loss==brand.red, not status.error) |
+| tie | #d4a017 | 2 | color.status.warning #D4A017 | **ADOPT** |
+| border | rgba(0,0,0,0.06) | 15 | color.border.subtle rgba(15,31,61,0.08) | **RESOLVED (Story 110 / #296) — MINT `color.border.neutral`.** Hue and opacity both differ from border.subtle — adopting would be a real visual shift at real scale. |
+| subtleBorder | rgba(0,0,0,0.04) | 2 | overlay.navyWash rgba(15,31,61,0.04) | **RESOLVED — MINT `color.overlay.neutralWash`.** Paired with `border`'s decision for a consistent neutral-tint family alongside the existing navy-tint family. |
+| overlayBg | rgba(0,0,0,0.5) | 0 via `C.overlayBg` / 3 via literal hex | overlay.backdrop rgba(5,10,25,0.97) | **RESOLVED — MINT `color.overlay.scrimLight`.** 3 live full-screen modal-backdrop sites, but all bypass `C` entirely — every real usage is the literal `rgba(0,0,0,0.5)`, not `C.overlayBg`. Migration mechanic is find-the-literal, not swap-the-reference. Adopting backdrop (0.97) would nearly double backdrop darkness across all 3. |
+| navyLight | #1a3260 | 0 via `C.navyLight` / 5 via literal hex | none (chrome is #1E3A5F) | **RESOLVED — MINT `color.brand.navyLight`.** 5 live sites, all header/nav gradient stops paired with brand.navy — same as overlayBg, every real usage bypasses `C` and uses the literal hex directly. surface.chrome is a genuinely different navy (game-day-strip/Toast band), not a gradient partner. |
+| redDark | #9b0c22 | 1 via `C.redDark` / 2 more via literal hex (3 total) | none | **RESOLVED — MINT `color.brand.redDark`.** Confirmed real, active usage across both forms. Not unused — retire was never viable once checked. |
+| text | #1a1a2e | 20 | text.primary #0F1F3D | **Token layer RESOLVED (Story 110 / #296) — MINT `color.text.ink`.** App.jsx call-site migration is a SEPARATE, still-open item: **Story 114 / #497.** Highest blast radius of any resolved key: confirmed 2026-08-02 that App.jsx's own root render node sets `color:C.text` directly (both the `S.app` style constant AND the literal root `<div>` App's main render function returns) — this is the whole app's inherited default text color, not a leaf-level style. text.primary is a documented navy alias for emphasis/header text, not body copy; text.body (#374151) is a separate, lighter Story-60 value for specific components. Neither is a safe substitute. **Do not bundle this key into a region slice that assumes it's a free swap — Story 114 needs a full visual smoke pass across every screen first, not a snapshot-diff assumption**, precisely because inheritance means an untouched region could be silently relying on this root value with no explicit `color` of its own. |
+| canceled | #7f8c8d | 1 | none | **RESOLVED — MINT `color.status.neutral`.** Game-canceled status badge. text.tertiary (#94A3B8) is a cooler, lighter slate — different enough to notice on a status badge. |
+| greenField | #2e7d32 | 0 via `C.greenField` / 1 via literal hex | field.grass #2d7a3a | **RESOLVED — MINT `color.status.ready`, NOT adopt field.grass.** Correction to this table's own original framing: the one real call site (`statusColor = "#2e7d32"`, Home-screen team-readiness badge, "Ready" state) has nothing to do with the diamond SVG — it's status-domain, not field-domain, and bypasses `C` entirely (literal hex only). field.grass is a near-identical hex, but reusing it would violate this file's own "name tokens by role, not appearance" rule despite the negligible value delta. status.success (#27AE60) is a distinct, brighter green — also not a substitute. |
+| cream | #fdf6ec | 5 | surface.page #F8FAFC (not close) / surface.tableHeader #F5EFE4 (close in value, wrong domain) | **OPEN — Story 113 / #496.** Never audited by this table until 2026-08-02. Sets the literal app-wide page background (`S.app.background`, and App's root `<div>`). No safe adopt candidate exists in-role; a value-close but domain-mismatched candidate exists (`surface.tableHeader`) — see #496 for the full analysis. |
 
-### Recommended migration shape (future, multi-branch)
+### Recommended migration shape (updated 2026-08-02, sweep-scoping session)
 
-1. ~~**Resolve the 8 DIVERGENT/ORPHAN decisions first** (own Story): mint or retire each, update `tokens.js` with provenance. No App.jsx edits.~~ **DONE (Story 110 / #296, 2026-08-01)** — see resolved table above. (This line previously said "6"; the table always had 8 — 5 DIVERGENT + 3 ORPHAN. Corrected.)
-2. **Migrate ADOPT keys by surface, not all at once** — one App.jsx region per branch (header, schedule, roster grid, scoring), each RED→GREEN with a snapshot pinning pre/post hex equivalence, each soaked overnight.
-3. **Retire `var C`** only after the last consumer is migrated; a keys-present guard catches stray references.
-4. Sequence behind App.jsx Phase 4 decomposition where possible — migrating a region is cheaper once it is a component consuming tokens via props/primitive.
+1. ~~**Resolve the 8 DIVERGENT/ORPHAN decisions first** (own Story): mint or retire each, update `tokens.js` with provenance. No App.jsx edits.~~ **DONE (Story 110 / #296, 2026-08-01)** — see resolved table above.
+2. **Two more prerequisites, discovered while scoping the actual sweep — resolve before any region slice starts, not concurrently:**
+   - **Story 113 / #496 — `cream` disposition.** Never audited; blocks nothing else, but the table isn't "every key decided" until this closes.
+   - **Story 114 / #497 — `text` App.jsx call-site verification.** Token-layer decision already made (Story 110); this is the separate, still-open question of whether the App.jsx root-render risk is actually safe to swap. A full visual smoke pass across every screen, not a snapshot — because inheritance means an untouched region could silently depend on this value without its own explicit `color`.
+3. **Migrate by App.jsx region, not by key** — `textMuted` (125 sites) and most of the other ADOPT keys aren't concentrated in one tab; they're spread across nearly the whole file. Slicing by region (not by key) is what makes each slice's snapshot tractable. Proposed region order, one branch per slice, each RED→GREEN with a snapshot pinning pre/post hex equivalence, each soaked overnight:
+   - **Binding obligation, not a suggestion:** each slice below must run Story 114's Step 1/2 methodology (structural inheritance-candidate search + `getComputedStyle` verification — see §Story 114 evidence below) against its own tab's content before that slice can claim the `text.ink` swap is safe there. Story 114 itself only covers the chrome that's always present regardless of tab (done, see below) — every region slice inherits the *obligation*, not the *result*. A slice that skips this and just assumes `text` is free reintroduces exactly the assumption Story 114 exists to eliminate.
+   1. ~~Header + nav chrome (`S.header`, `S.logoWrap`, ~lines 677–900) — small, high-visibility, proves the snapshot-pinning pattern first. Bundle `navyLight`'s literal-hex header-gradient sites here.~~ **DONE (region slice 1, #528, v2.8.4)** — added 2026-08-04.
+   2. ~~Roster tab~~ **DONE (region slice 2, #529, v2.8.4)** — added 2026-08-04.
+   3. ~~Defense/Batting grid tabs~~ **DONE (region slice 3, #537, v2.8.4)** — added 2026-08-04. **(Slices 1-3: develop only as of this writing — main is still v2.8.3, not yet promoted.)**
+   4. Schedule tab — bundle `greenField`'s literal-hex "Ready" status-badge site here (or split to its own Home-adjacent slice — open call)
+   5. Print/Share/Links tabs
+   6. Feedback/About tabs
+   7. Modals/overlays — bundle `overlayBg`'s 3 literal-hex full-screen backdrop sites here
+   8. **GameModeScreen / in-app DugoutView** (App.jsx lines ~7996–8039) — its own slice, not folded into slice 1 or slice 7. **Decided 2026-08-02, Story 116 / #503:** it's neither "always-present chrome" (Story 114's own boundary excludes it), nor a tab (rules out slices 2–6), nor an actual modal/overlay component (rules out slice 7 — GameModeScreen is a full-screen mode reached via navigation state, not an overlay layered on top of tab content). Folding it into slice 1 would also dilute that slice's stated purpose — "small, high-visibility, proves the snapshot-pinning pattern first" — with an unrelated, much larger surface. Sequenced **last**, not first: `game-mode/` and `ScoringMode/` are each their own Locked File (root `CLAUDE.md`), requiring their own gate phrase on top of App.jsx's, and this is the live game-day surface the Auth Principle's priority order ranks second only to the share link — proving the migration pattern on the six lower-stakes tab/modal slices first, then applying it here last, is the safer order.
+   9. **`SharedView`'s own duplicate header** (App.jsx lines ~805–1116, the public share-link view). **Decided 2026-08-04, Story 120 / #531:** its own slice, not folded into slice 1 or any tab slice — same reasoning as slice 8's carve-out. `SharedView` renders via a completely separate `<ErrorBoundary>` tree outside the main app shell's root; it's not "always-present chrome" (Story 114's boundary excludes it), not a tab (rules out slices 2–6), and not a modal/overlay (rules out slice 7). Sequenced **after slice 7**, not last like slice 8 — `SharedView` carries no Locked-File gate-phrase complication beyond App.jsx's own, so it doesn't need to wait as long as slice 8 does. Run Story 114's Step 1/2 methodology against its own render tree at slice-start time (groundwork already exists in the "Root 1 — `SharedView()`" table below).
+   - **`overlayBg`, `navyLight`, `greenField` need a different migration mechanic** at their respective slices: every real usage bypasses `C` entirely (literal hex duplicates, not `C.key` references) — find-the-literal-and-replace, not swap-the-reference. Confirmed 2026-08-02 via broadened grep past the narrow `C.key`-only pattern (which showed 0 for all three and would have missed them).
+   - **The app-shell root background gradient's third stop (`#2a0a0a`)** — flagged 2026-08-04 as a deliberately out-of-scope item during slice 1, no existing token is an exact match. **Open, Story 119 / #530** — not yet resolved, not assigned to any of the 9 slices above. Recommendation logged (mint `color.brand.gradientDark`, named by role not appearance, same principle as Story 113's cream mint) but **not implemented — needs an explicit go on the proposed name from KK before minting or swapping the call site.**
+4. **Retire `var C`** only after the last consumer is migrated; add a keys-present guard test first so a stray leftover reference fails loudly instead of silently keeping the dead object alive.
+5. Sequence behind or alongside App.jsx Phase 4 decomposition where possible — migrating a region is cheaper once it is a component consuming tokens via props/primitive. Coordination between the two tracks is a product call, not assumed here.
 
-**This Story (#294) ships this disposition table only. No source code changes.**
+### Story 114 / #497 evidence artifact — exhaustive Step 1 (structural candidate search), chrome + `SharedView`
+
+Scope: both independent inheritance roots' *own* structure, plus every "always-present chrome" element reachable from the main app shell regardless of active tab (Toast, header/logo, sub-tab bars, install banner, bottom nav, exit sheet, PIN modal, edit-team modal, `needRefresh` banner, `LockFlow`, `tabContent`'s own inline JSX before it dispatches to per-tab render functions). Exhaustive, not sampled, per the explicit instruction that a sampled search reintroduces the exact assumption this story exists to eliminate.
+
+**Root 1 — `SharedView()` (lines 805–1116):**
+
+| Element | Ancestor chain | Result |
+|---|---|---|
+| Header (team name, game info, print button) | root → header div | All explicit (`C.gold`, `rgba(255,255,255,*)`) |
+| Controls row (inning pills, view toggle) | root → controls div | All explicit (`C.textMuted`, `#fff`, `C.navy`) |
+| Diamond/table view (bench table, position badges) | root → view div | All explicit (`C.navy`, `#dc2626`, `#ccc`, `C.textMuted`) |
+| Batting order — batter number circle, position list, song info | root → `S.card` (no color) → row div (no color) | Explicit except one case below |
+| **Batting order — player name div (line 1064–1065)** | root (`C.text`) → `S.card` (no color, confirmed) → row div (no color) → name div (`color: isSelectedBatter ? "#b45309" : undefined`) | **GENUINE FINDING.** When not the selected batter (the default case), `color` is `undefined` — genuinely inherits `C.text` from the root. Confirmed `S.card` has no `color` of its own (only background/border/shadow/padding) — chain reaches the root uninterrupted. |
+| Footer | root → footer div (`color:C.textMuted`) → child divs | Inherits `C.textMuted`, not `C.text` — different, already-resolved token, not a risk for this key |
+| `<PlayerFilterToggle>` (child component) | separate render tree | All explicit (`#0f1f3d` / `#555` both branches) |
+| `<BrandMark>` (child component) | separate render tree | Pure SVG, explicit `fill=` throughout, no CSS `color` dependency at all |
+| `renderFieldSVG(...)` (passed-in prop, SVG diamond) | separate render tree | SVG `<text fill="white">` and friends — confirmed zero `fill="currentColor"` usage, so SVG `fill` inheritance never bridges to CSS `color` here |
+
+**Root 2 — main app shell chrome (line 7904 onward, tab-dispatch content excluded per the agreed boundary):**
+
+| Element | Result |
+|---|---|
+| `S.header`/`logoWrap`/`logoCircle`/`logoTitle`/`logoSub` | `logoCircle`/`logoTitle` explicit (`C.gold`); `logoSub` explicit (`rgba(255,255,255,0.5)`); `header`/`logoWrap` have no `color` at all but wrap only explicit-or-opaque-safe children |
+| `<Toast/>` | Wrapper has no `color`, but every text-bearing child sets its own (`#e2e8f0`, `#fff`) — no inheriting text node |
+| `<OfflineIndicator/>` | Fully token-driven already (Phase 3 migration), zero `C` dependency |
+| `<NowBattingBar/>` | Fully token-driven already, zero `C` dependency |
+| `subTabBar` (both `gameday` and `more` branches, via `subTabStyle()`) | All explicit (`#fff` / `C.textMuted`) |
+| Install banner | All explicit (`#fff`, `rgba(255,255,255,*)`, `#f5c842`, `#0f1f3d`) |
+| `needRefresh` banner | One bare `<span>` inherits — but from the banner's own explicit `color:'#ffffff'` ancestor, not the root. Not a `C.text` risk |
+| `renderBottomNav()` | All explicit (`C.gold` / `disabled` / `rgba(255,255,255,*)`) — icon + label inherit from the button's own explicit color, not the root |
+| `renderExitSheet()` | All explicit |
+| `renderPinModal()` | All explicit. Also confirms `S.btn()` **always** returns an explicit `color:col` — every variant (`primary`/`gold`/`ghost`/`danger`) *and* the default (`var col = C.text`) — so every `...S.btn(...)` spread anywhere in the app is safe from this specific risk, by construction |
+| `<LockFlow/>` | Already migrated (Story 111/#297) — token-driven, irrelevant to this key |
+| Edit-team modal | All explicit |
+| `tabContent`'s own inline JSX (context label, locked-lineup banner, dispatch to per-tab renderers) | All explicit. Everything *past* this — `renderTeamTab()`, `renderLineups()`, `renderSongs()`, `renderAccount()`, `renderFeedback()`, `renderLinks()`, `renderAbout()`, `renderUpdates()`, `<ParentView/>`, `<LegalSection/>`, `<FAQSection/>` — is genuinely per-tab content, correctly out of Story 114's scope per the agreed boundary; verified as each region slice reaches it |
+
+**Process gap surfaced, not silently dropped:** `<GameModeScreen/>` and the in-app `<DugoutView/>` (lines ~7996–8039) are nested *inside* this root — unlike the share-link `isViewer` branch, which renders via a completely separate `<ErrorBoundary>` tree outside it. Neither is covered by Story 114 (they're not "always-present chrome") nor by any of the 7 numbered region slices above (they're full-screen modes, not tabs or modals). This is a real hole in the region-slice plan, not an oversight to quietly patch — needs its own slice or explicit assignment before the sweep can claim full coverage. **Filed as Story 116 / #503**, same treatment as Story 115's `S.app` byproduct — not left as a paragraph in this doc with no tracked issue.
+
+**Resolved 2026-08-02, same session:** dedicated as its own region slice — **slice 8**, sequenced last — rather than folded into an existing slice. See item 8 in §Recommended migration shape above for the disposition and reasoning; #503 updated to reflect the decision.
+
+**Net result of the exhaustive search: exactly one genuine finding** (`SharedView` line 1064). Everything else checked — every leaf, every ancestor, every child component and passed-in render prop — resolves to an explicit color that isn't `C.text`, or (for `S.card`/`header`/`logoWrap`) has no color at all and wraps only already-verified-safe children.
+
+### Story 114 / #497 — Step 2: runtime verification (2026-08-02)
+
+**Method.** Local `npm run dev` (frontend, Vite 6.4.3, port 5173) loaded in an isolated browser tab. `SharedView` was exercised via the real `?share=<base64>` code path (`App.jsx`'s `JSON.parse(decodeURIComponent(escape(atob(shareParam))))` decoder), not a mock — payload: 2-player roster, both with a `grid` and a `batting` order, no `svPlayer` set so `isSelectedBatter` is `false` for every entry, forcing the exact `color: undefined` branch at line 1065 for both rendered rows.
+
+**Flagged element (line 1064–1065) — CONFIRMED.** `getComputedStyle` on both rendered player-name divs (`firstName(name)`, no inline `color` in either — `el.style.color === ''`) returned `color: rgb(26, 26, 46)`. `#1a1a2e` is `C.text`'s literal value (`App.jsx:667`) — exact match, not merely "some inherited color." This settles the one open question Step 1 could not: that the DOM's real cascade, not just the JSX ancestor chain on paper, actually resolves this element to the root's `C.text` with nothing intervening. Confirms the finding is real and quantifies exactly what a `text.ink` swap would need to preserve (`#1a1a2e`) for this site to stay a zero-visual-change MINT rather than a silent shift.
+
+**Chrome spot-confirmation.** No authenticated session is reachable in this headless verification path — magic-link requires a real inbox, Google OAuth requires a real login, and driving either here would mean an agent completing a login flow, which is out of bounds regardless of feasibility. `http://localhost:5173/` with no session renders `NoMembershipScreen` (the pre-auth login form), not Root 2's header/nav chrome — every element on that screen already carries its own explicit inline `color` (confirmed via `getComputedStyle`: heading `rgb(15,23,42)`, label `rgb(55,65,81)`, buttons `rgb(255,255,255)` / `rgb(37,99,235)`), consistent with Step 1's finding that pre-auth surfaces don't rely on inheritance at all.
+
+For Root 2 itself, spot-confirmation was done as an independent second source-reading pass (distinct from, not a restatement of, the Step 1 table) rather than a live DOM read, since none of these sites carry the `isSelectedBatter`-style runtime branch that made the SharedView case ambiguous on paper — a second read of the literal object/JSX settles them with the same confidence a DOM read would:
+- `S.logoCircle` (`App.jsx:687–692`) — explicit `color:C.gold`, confirmed directly in the style object (not just inferred from the table row).
+- `S.logoTitle` (`App.jsx:693`) — explicit `color:C.gold`.
+- `S.logoSub` (`App.jsx:694`) — explicit `color:"rgba(255,255,255,0.5)"`.
+- `S.header`/`S.logoWrap` (`App.jsx:679–686`) — re-confirmed neither object defines `color` at all; re-read their actual JSX usage (`App.jsx:7912–7927`) to confirm every direct child is one of the three rows above, `<BrandMark/>` (SVG, no CSS `color` dependency), or a background-only sync-status dot with no text node — no untracked fourth child slipped through.
+- `needRefresh` banner — two independent render sites exist (`App.jsx:3337` and `App.jsx:8040`), not one; both were re-checked (Step 1's table only cited one). Both set explicit `color:'#ffffff'` on the banner div itself, and both banners' `<span>` children inherit from that div, not from either root. Two sites, same conclusion — not a discrepancy from Step 1, just a completeness gap in which line number the table pointed at, worth recording since Step 1's own standard was exhaustive-not-sampled.
+
+**Step 2 result:** the one genuine finding is confirmed and quantified at runtime; every chrome item Step 1 called safe is now independently re-confirmed via a second read (live DOM where an authenticated route was reachable, second source pass where it was not). Story 114's chrome-scope methodology (Step 1 + Step 2) is complete. The binding obligation on the region slices (§Recommended migration shape, item 3 — now 8 slices, see slice 8 / Story 116 below) to run this same methodology against their own content is unaffected — this closes only the always-present-chrome portion.
+
+### Post-merge re-verification (2026-08-02, before the actual swap)
+
+Between Step 2 closing and the actual App.jsx call-site swap starting, `develop` moved 11 commits — two of them (`fix/share-link-payload-coverage` #504, `fix/game-mode-p0-coverage` #505) landing directly in this story's and Story 116's subject matter. Merged `origin/develop` into this branch rather than swap on a stale base; then re-verified rather than assumed the merge was benign:
+
+- **`buildSharePayload` extraction (#504).** Payload-construction logic moved out of `shareCurrentLineup()`/`shareViewerLink()` into `frontend/src/utils/buildSharePayload.js`. Read the extracted function directly: it returns the identical shape (`{team, game, grid, batting, roster, absentNames, songs}`) the inline code built before — confirmed by diff against the pre-extraction code, not by trusting the commit message. The encode step (`btoa(unescape(encodeURIComponent(JSON.stringify(payload))))`) and decode step (`JSON.parse(decodeURIComponent(escape(atob(shareParam))))`) feeding `<SharedView payload={...}/>` are both byte-identical to what Step 2 exercised. `svPlayer`/`isSelectedBatter` (the genuine finding's own logic, `App.jsx` line ~1041, now shifted a few lines from the extraction) is `SharedView`'s own internal `useState`, entirely independent of the payload shape — confirmed by reading the current source, not by re-deriving from memory. The genuine finding stands unchanged, just at a shifted line number.
+- **`#505`'s "test-only" claim — independently confirmed, not trusted from the PR title.** `git diff` of the pre-session base against the merged state shows **zero changes** to `GameModeScreen.jsx`, `QuickSwap.jsx`, or `DugoutView.jsx` — the only files #505 touched are two new test files (`GameModeScreen.test.jsx`, `QuickSwap.test.jsx`). Story 116's disposition (dedicated 8th slice, GameModeScreen/DugoutView structure) rests entirely on unchanged code.
+- **New test files checked for conflicting assertions.** Neither `SharedView.test.jsx` nor `GameModeScreen.test.jsx` (both new) assert on `color`, hex values, or computed style — no collision with the coming swap's evidence.
+- **Fresh `C.text` site count:** re-grepped post-merge, still exactly **20** sites, same set Step 1 originally found (word-boundary match, excludes `C.textMuted`).
+
+**Conclusion: nothing shifted materially.** Full Step 1/Step 2 re-run not warranted — confirmed via direct diff of the actual render files, not inferred from the merge being clean. Proceeding to the 20-site swap on this merged base.
+
+**Logistics that will bite if skipped, confirmed 2026-08-02:**
+- **`App.jsx` is a Locked File** (root `CLAUDE.md`) — every slice's actual edit needs the gate phrase *"all clear — App.jsx editing approved"*, every time, not once at the start.
+- **Skip-worktree is currently set** on `App.jsx` (`git ls-files -v` shows the `S` flag — Bug #11). `git diff`/`git status` will show nothing even after real edits until `git update-index --no-skip-worktree frontend/src/App.jsx` is run first; re-lock with `--skip-worktree` after each commit.
+
+**Story 106 (#294) shipped this disposition table only. No source code changes.** (Attribution corrected 2026-08-02 — this note originally sat directly below the disposition table it describes; Stories 110–114 were appended below it in later sessions without updating the reference, leaving it misread as a closing note for Story 114/#497. It documents Story 106's original table, not Story 114.)

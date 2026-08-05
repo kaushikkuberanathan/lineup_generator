@@ -68,16 +68,20 @@ export function NowBattingBar({ battingOrder, currentIndex, onAdvance, onBack, a
             border: '1px solid ' + (pill.active ? tokens.color.overlay.goldStrong : 'rgba(255,255,255,0.12)'),
             borderRadius: tokens.radius.md, padding: '6px 8px',
           }}>
-            <div style={{ fontSize: '20px', fontWeight: tokens.font.weight.bold, lineHeight: 1.1,
+            <Text as="div" weight="bold" style={{
+              fontSize: '20px', lineHeight: 1.1,
               color: pill.active ? tokens.color.brand.gold : 'rgba(255,255,255,0.85)',
-              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            }}>
               {firstName(pill.name)}{' '}<PlayerHandBadge hand={pill.hand} context="dark" />
-            </div>
-            <div style={{ fontSize: '10px', marginTop: '3px',
+            </Text>
+            <Text as="div" uppercase style={{
+              fontSize: '10px', marginTop: '3px',
               color: pill.active ? 'rgba(245,200,66,0.7)' : 'rgba(255,255,255,0.4)',
-              letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+              letterSpacing: '0.04em',
+            }}>
               {pill.label}
-            </div>
+            </Text>
           </div>
         );
       })}

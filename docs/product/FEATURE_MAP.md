@@ -2,7 +2,7 @@
 
 > Authoritative mapping of every shipped feature to its documentation and test coverage.
 > Update this file whenever a feature ships, changes behavior, or gains new tests.
-> Owner: KK | Last updated: 2026-08-01 (v2.8.3 - row #33 Backend test foundation rewritten: Story 99 fully resolved, 39 -> 111 tests)
+> Owner: KK | Last updated: 2026-08-04 (Doc Audit Spike Story 6 - Coverage Summary recounted (was 8/12/15, now 10/14/11), 12 dangling D0xx debt-ID references removed/replaced, Row 18 test status corrected, Rows 14/23 reclassified Pilot -> MVP; previously updated 2026-08-01 for v2.8.3 row #33)
 
 ---
 
@@ -21,31 +21,31 @@
 
 | # | Feature | Status | Primary Doc | Doc Status | Test File(s) | Test Status | Debt |
 |---|---------|--------|-------------|------------|--------------|-------------|------|
-| 1 | **Auto-assign lineup engine (V2)** | MVP | `SOLUTION_DESIGN.md` § Scoring Engine | ✅ Current | `engine.v2.test.js`, `lineupEngineV2-unit.test.js`, `bench-equity.test.js`, `scoring.test.js` | ✅ Yes | D002 |
+| 1 | **Auto-assign lineup engine (V2)** | MVP | `SOLUTION_DESIGN.md` § Scoring Engine | ✅ Current | `engine.v2.test.js`, `lineupEngineV2-unit.test.js`, `bench-equity.test.js`, `scoring.test.js` | ✅ Yes | — |
 | 2 | **Manual grid overrides + cell lock** | MVP | `SOLUTION_DESIGN.md` § Field Layout | ✅ Current | `engine.v2.test.js` (partial — lock not unit tested) | ⚠ Partial | — |
-| 3 | **Batting order (drag, stats, season AVG)** | MVP | `PERSONAS.md` § Head Coach features | ✅ Current | None | ❌ None | D016 |
-| 4 | **Schedule management + AI import** | MVP | `ROADMAP.md` § v2.1.x entries | ⚠ Stale | None | ❌ None | D015 |
-| 5 | **Game result logging + batting stats** | MVP | `ROADMAP.md` § v2.1.x entries | ⚠ Stale | None | ❌ None | D016 |
-| 6 | **Walk-up songs per player** | MVP | `SOLUTION_DESIGN.md` § Walk-up Songs Architecture; `CHARTER.md` § Scope | ✅ Current | None | ❌ None | D004 |
-| 7 | **Out Tonight attendance tracking** | MVP | `CLAUDE.md` (as "Out Tonight"); `ROADMAP.md` § v2.2.30 | ✅ Current | `engine.v2.test.js` Group 6, `lineupEngineV2-unit.test.js` Group X, `bench-equity.test.js` absent-player | ⚠ Partial | D008 |
-| 8 | **Game Mode (full-screen dugout view)** | Removed | `SOLUTION_DESIGN.md` § Navigation Structure | ⚠ Stale | None | ❌ None | D006; ScoringMode render block + Scoring tab removed in Slice 3 (v2.5.9); legacy `ScoringMode/index.jsx` deleted in Slice 4 (v2.5.11). Superseded by #25. |
-| 9 | **Share links (8-char Supabase-backed)** | MVP | `SOLUTION_DESIGN.md` § RLS Policy Map; `CLAUDE.md` Auth Principle | ✅ Current | None | ❌ None | D005; Share CTA restored to Lineups tab — Story 67 (PR #99, v2.5.15) |
-| 10 | **PDF export + print view** | MVP | `ROADMAP.md` § v1.x | ⚠ Stale | None | ❌ None | D011 |
-| 11 | **Live scoring (scorer lock, inning entry, game finalization)** | MVP | `ROADMAP.md` § v2.2.29–v2.3.3; `PERSONAS.md` § Scorekeeper; `MASTER_DEV_REFERENCE.md` § Game Object Shape | ✅ Current | `finalizeSchedule.test.js`, `undoHalfInning.test.js`, `newGameTemplate.test.js`, `practiceModeIsolation.test.js`, `realtimeRaceGuard.test.js`, `runnerPlacement.test.js` | ⚠ Partial | D001; Scoring surfaces through Combined Game View (#25) only. Slice 4 (v2.5.11) deleted legacy `ScoringMode/index.jsx`; the 7 live child components (`ScoringModeEntry`, `LiveScoringPanel`, `RestoreScoreModal`, `FinishGameModal`, `GameModeGearMenu`, `LiveScoreViewer`, `RunnerConflictModal`) remain in `components/ScoringMode/` and are imported by `DugoutView.jsx`. Optional follow-up: relocate to `components/game-mode/scoring/`. |
+| 3 | **Batting order (drag, stats, season AVG)** | MVP | `PERSONAS.md` § Head Coach features | ✅ Current | None | ❌ None | — |
+| 4 | **Schedule management + AI import** | MVP | `ROADMAP.md` § v2.1.x entries | ⚠ Stale | None | ❌ None | — |
+| 5 | **Game result logging + batting stats** | MVP | `ROADMAP.md` § v2.1.x entries | ⚠ Stale | None | ❌ None | — |
+| 6 | **Walk-up songs per player** | MVP | `SOLUTION_DESIGN.md` § Walk-up Songs Architecture; `CHARTER.md` § Scope | ✅ Current | None | ❌ None | — |
+| 7 | **Out Tonight attendance tracking** | MVP | `CLAUDE.md` (as "Out Tonight"); `ROADMAP.md` § v2.2.30 | ✅ Current | `engine.v2.test.js` Group 6, `lineupEngineV2-unit.test.js` Group X, `bench-equity.test.js` absent-player | ⚠ Partial | — |
+| 8 | **Game Mode (full-screen dugout view)** | Removed | `SOLUTION_DESIGN.md` § Navigation Structure | ⚠ Stale | None | ❌ None | ScoringMode render block + Scoring tab removed in Slice 3 (v2.5.9); legacy `ScoringMode/index.jsx` deleted in Slice 4 (v2.5.11). Superseded by #25. |
+| 9 | **Share links (8-char Supabase-backed)** | MVP | `SOLUTION_DESIGN.md` § RLS Policy Map; `CLAUDE.md` Auth Principle | ✅ Current | None | ❌ None | Share CTA restored to Lineups tab — Story 67 (PR #99, v2.5.15) |
+| 10 | **PDF export + print view** | MVP | `ROADMAP.md` § v1.x | ⚠ Stale | None | ❌ None | — |
+| 11 | **Live scoring (scorer lock, inning entry, game finalization)** | MVP | `ROADMAP.md` § v2.2.29–v2.3.3; `PERSONAS.md` § Scorekeeper; `MASTER_DEV_REFERENCE.md` § Game Object Shape | ✅ Current | `finalizeSchedule.test.js`, `undoHalfInning.test.js`, `newGameTemplate.test.js`, `practiceModeIsolation.test.js`, `realtimeRaceGuard.test.js`, `runnerPlacement.test.js` | ⚠ Partial | Scoring surfaces through Combined Game View (#25) only. Slice 4 (v2.5.11) deleted legacy `ScoringMode/index.jsx`; the 7 live child components (`ScoringModeEntry`, `LiveScoringPanel`, `RestoreScoreModal`, `FinishGameModal`, `GameModeGearMenu`, `LiveScoreViewer`, `RunnerConflictModal`) remain in `components/ScoringMode/` and are imported by `DugoutView.jsx`. Optional follow-up: relocate to `components/game-mode/scoring/`. |
 | 25 | **Combined Game View (DugoutView — unified scoring surface)** | MVP | `docs/SOLUTION_DESIGN.md` § Feature Flag System | ✅ Current | `BattingOrderStrip.test.jsx` (6), `DugoutView.test.jsx` (5), `ScoreboardRow.test.jsx` (4), `DugoutView.viewport.test.jsx` (3) | ⚠ Partial | GA default-on as of Slice 3 (v2.5.9); mutual-exclusion invariant untested (legacy ScoringMode removed) |
 | 26 | **ACCESSIBILITY_V1 — Game Mode a11y enhancements** | MVP | `CLAUDE.md` § Feature Flags; `docs/product/A11Y_AUDIT.md`; `SOLUTION_DESIGN.md` § Feature Flag System | ✅ Current | `a11y-component-fixes.test.jsx` (11), `accessibility.v1.test.js` (23) | ⚠ Partial | Game Mode font/touch/contrast untested at component level; F1-F7 fixes covered |
 | 27 | **Design Tokens — semantic token foundation** | Phase 2 | `docs/product/DESIGN_AUDIT.md`; `SOLUTION_DESIGN.md` § Design Tokens Architecture | ✅ Current | `theme.tokens.test.js` (34) | ⚠ Partial | Shape contract tested; no consumer tests (zero consumers in Phase 1a). Story 102 (v2.5.25, PR #271): App.jsx OUT-row error tint migrated to `tokens.color.overlay.error*`; `errorMid` token added (`rgba(220,38,38,0.12)`) — zero visible change, contract covered by `theme.tokens.test.js`. |
 | 28 | **UI primitives — Badge / Button / Card / Stack / Text** | Phase 2 | `ROADMAP.md` § v2.5.10; `CLAUDE.md` § UI Primitives | ✅ Current | `Badge.test.jsx`, `Button.test.jsx`, `Card.test.jsx`, `Stack.test.jsx`, `Text.test.jsx` (107 total) | ⚠ Partial | Primitives covered in isolation; 2 consumers migrated as of v2.5.11 (PlayerHandBadge via PR #62, EmptyState via PR #68); more queued for Phase 3 Step 3+. Badge gained `context='light'\|'dark'` prop in v2.5.12 (PR #73); dark variants are token-driven. |
 | 12 | **Practice Mode** | MVP | `CLAUDE.md` § Live Scoring Architecture; `ROADMAP.md` § v2.3.3 | ✅ Current | `practiceModeIsolation.test.js` | ✅ Yes | — |
 | 13 | **Runner Placement on Diamond** | MVP | `CLAUDE.md` § Roster identity; `ROADMAP.md` § v2.3.3 | ✅ Current | `runnerPlacement.test.js` | ✅ Yes | — |
-| 14 | **Opponent Half Tracking** | Pilot | `CLAUDE.md` § Live Scoring Architecture; `ROADMAP.md` § v2.3.2–v2.5.0 | ✅ Current | `liveStateMerge.test.js` (opp integration) | ⚠ Partial | — |
+| 14 | **Opponent Half Tracking** | MVP | `CLAUDE.md` § Live Scoring Architecture; `ROADMAP.md` § v2.3.2–v2.5.0 | ✅ Current | `liveStateMerge.test.js` (opp integration) | ⚠ Partial | Status corrected 2026-08-04 (Pilot → MVP): no gating flag exists for this feature — it's part of core live-scoring behavior, same as row 11. |
 | 15 | **Feature flag system** | MVP | `CLAUDE.md` § Feature Flags; `SOLUTION_DESIGN.md` § Feature Flag System | ✅ Current | `flagBootstrap.test.js`, `accessibility.v1.test.js`, `scoringSheetV2.test.js`, `useFeatureFlags.test.js` (7 tests, PR #426) | ⚠ Partial | D-S30 — useFeatureFlags.test.js covers fetchRuntimeFlags' 4 branches + hook end-states; D-S30's isFlagEnabled DB-read-path gap needs re-verification against current source before closing |
-| 23 | **Scoring outcome sheet (SCORING_SHEET_V2)** | Pilot | `ROADMAP.md` § v2.5.0; `CLAUDE.md` § Current Version | ✅ Current | `scoringSheetV2.test.js` | ⚠ Partial | D-S30 |
-| 16 | **Auth system (magic link + Google OAuth)** | Phase 2 | `SOLUTION_DESIGN.md` § Auth Architecture; `CLAUDE.md` § Auth Strategy | ✅ Current | None | ❌ None | D003 |
-| 17 | **Admin UI (admin.html)** | MVP | `SOLUTION_DESIGN.md` § Admin UI; `PERSONAS.md` § Administrator | ⚠ Stale | None | ❌ None | D007; #338: !! admin.html writes DIRECTLY to Supabase via the client SDK. It bypasses normalizeRole, requireAuth, requireAdmin, reviewed_by attribution, and auth-event logging. A fix to a backend route DOES NOT FIX THE PANEL. |
-| 18 | **Roster backup/restore** | MVP | `SOLUTION_DESIGN.md` § Data Protection | ✅ Current | None | ❌ None | D013 |
-| 19 | **Multi-team support** | MVP | `CLAUDE.md` § Architecture | ✅ Current | `migrations.test.js` (partial — migration only) | ⚠ Partial | D014 |
-| 20 | **Fairness Check + violation warnings** | MVP | `SOLUTION_DESIGN.md` § Scoring Engine | ✅ Current | `engine.v2.test.js` (violations surfaced) | ⚠ Partial | D012 |
+| 23 | **Scoring outcome sheet (SCORING_SHEET_V2)** | MVP | `ROADMAP.md` § v2.5.0; `CLAUDE.md` § Current Version | ✅ Current | `scoringSheetV2.test.js` | ⚠ Partial | D-S30; Status corrected 2026-08-04 (Pilot → MVP): `SCORING_SHEET_V2` is `true` in `frontend/src/config/featureFlags.js` — GA default-on with a kill-switch, not a limited pilot. |
+| 16 | **Auth system (magic link + Google OAuth)** | MVP | `SOLUTION_DESIGN.md` § Auth Architecture; `CLAUDE.md` § Auth Strategy | ✅ Current | None | ❌ None | Informally tracked under DOC_TEST_DEBT.md's "D003 auth umbrella" (prose reference, not a numbered tracked item — see that file's D-S428b entry). Status corrected 2026-08-04 (Phase 2 → MVP): the auth gate has been live in prod since v2.6.0, not a future phase. |
+| 17 | **Admin UI (admin.html)** | MVP | `SOLUTION_DESIGN.md` § Admin UI; `PERSONAS.md` § Administrator | ⚠ Stale | None | ❌ None | #338: !! admin.html writes DIRECTLY to Supabase via the client SDK. It bypasses normalizeRole, requireAuth, requireAdmin, reviewed_by attribution, and auth-event logging. A fix to a backend route DOES NOT FIX THE PANEL. |
+| 18 | **Roster backup/restore** | MVP | `SOLUTION_DESIGN.md` § Data Protection | ✅ Current | `backend/src/__tests__/teamData.guard.test.js` (12), `teamData.routes.test.js` (6) | ⚠ Partial | Test Status corrected 2026-08-04 (None → Partial): the wipe-guard and recovery/history endpoint are covered on the backend (PR #282, Story 99 tranche 1). Frontend "Restore Previous Roster" UI itself remains untested. |
+| 19 | **Multi-team support** | MVP | `CLAUDE.md` § Architecture | ✅ Current | `migrations.test.js` (partial — migration only) | ⚠ Partial | — |
+| 20 | **Fairness Check + violation warnings** | MVP | `SOLUTION_DESIGN.md` § Scoring Engine | ✅ Current | `engine.v2.test.js` (violations surfaced) | ⚠ Partial | — |
 | 21 | **Player profiles (V2 attributes)** | MVP | `SOLUTION_DESIGN.md` § Player Attributes; `PERSONAS.md` § Head Coach | ✅ Current | `scoring.test.js`, `lineupEngineV2-unit.test.js` | ✅ Yes | — |
 | 22 | **Governance infrastructure** | MVP | `CHARTER.md`, `ONE_PAGER.md`, `ROADMAP.md`, `PERSONAS.md`, `faqs.js`, `FEATURE_MAP.md`, `MASTER_DEV_REFERENCE.md`, `CLAUDE.md` | ✅ Current | — | ❌ None | — |
 | 24 | **Toast UI primitive** | MVP | `CLAUDE.md` § UI Primitives | ✅ Current | `src/components/ui/Toast.test.jsx` | ✅ Yes | — |
@@ -66,9 +66,11 @@
 | ✅ Doc Current | 30 / 35 |
 | ⚠ Doc Stale | 5 / 35 |
 | ❌ Doc Missing | 0 / 35 |
-| ✅ Tests Exist | 8 / 35 |
-| ⚠ Tests Partial | 12 / 35 |
-| ❌ No Tests | 15 / 35 |
+| ✅ Tests Exist | 10 / 35 |
+| ⚠ Tests Partial | 14 / 35 |
+| ❌ No Tests | 11 / 35 |
+
+> **Recounted 2026-08-04** (Doc Audit Spike Story 6): the Test Status row previously read 8/12/15, which didn't match a direct tally of the table above even before this pass's Row 18 fix (a real count gave 10/13/12; Row 18's fix then moved one row from None to Partial, landing on 10/14/11). Recount before editing this summary block in the future — it has drifted from the table's actual contents more than once (see also D-S31 in `DOC_TEST_DEBT.md` for the same failure mode on the row-count denominator).
 
 > The test gap is large but expected — the engine is the highest-risk surface and is well-covered. Features with no test are all UI-layer or integration paths with no engine logic.
 

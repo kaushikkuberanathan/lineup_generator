@@ -17,6 +17,7 @@ export default defineConfig({
     environment: 'jsdom',
     pool: 'threads',
     maxWorkers: 1,
+    fileParallelism: false,
     setupFiles: ['./src/tests/setup.js'],
     include: ['src/**/*.test.{js,jsx}'],
     exclude: ['**/node_modules/**'],

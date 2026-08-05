@@ -1,6 +1,6 @@
 # Dugout Lineup — User Personas
 
-> **Last Updated:** April 27, 2026 (v2.5.1) — Personas content current as of v2.0 (April 2026, v2.2.31 refresh). See `## Revision History` at end of file.
+> **Last Updated:** 2026-08-04 (Doc Audit Spike Story 6 — auth status + Live Scoring rollout language corrected against live prod; content otherwise current as of v2.0, April 2026 v2.2.31 refresh). See `## Revision History` at end of file.
 
 ## Overview
 
@@ -10,8 +10,8 @@ Eight distinct roles interact with the product. All personas operate in real-wor
 
 | # | Persona | Role | Auth Required | Primary Need |
 |---|---------|------|---------------|--------------|
-| 1 | **Head Coach** | Team owner, primary user | Phase 2 (Google OAuth + magic link, cutover pending) | Create fair lineup fast, share it instantly |
-| 2 | **Dugout Parent** | Volunteer in-dugout assistant | Phase 2 (Google OAuth + magic link, cutover pending) | See current lineup, help manage substitutions |
+| 1 | **Head Coach** | Team owner, primary user | Active (Google OAuth + email magic link, live since v2.6.0) | Create fair lineup fast, share it instantly |
+| 2 | **Dugout Parent** | Volunteer in-dugout assistant | Active if editing (same as Head Coach); none if only viewing via share link | See current lineup, help manage substitutions |
 | 3 | **DJ Parent** | Controls walk-up music | None (share link) | Know the batting order and song info per player |
 | 4 | **Catcher Parent** | Supports catcher warmup between innings | None (share link) | Know who is catching which inning |
 | 5 | **Base Coach** | First/third base volunteer | None (share link) | Know the batting order and who is on deck |
@@ -94,8 +94,9 @@ Parent volunteer stationed in the dugout who assists with managing the batting s
 - Bench list per inning
 
 ### Permissions
-- Read-only access via share link (no account required in MVP)
-- Future: scoped write access for batting strip advance
+- Read-only access via share link (no account required) for most Dugout Parents — same view any parent gets
+- If also acting as the head coach's co-editor, requires the same sign-in (Google OAuth or magic link) as the Head Coach — auth gate applies to editing, never to viewing
+- Future: scoped write access for batting strip advance, without full coach-level edit rights
 
 ### Success Metric
 > Open the share link, understand the current inning's defensive assignments, and know who bats next — all without asking anyone.
@@ -245,7 +246,7 @@ Volunteer responsible for tracking game progress and stats. Needs the batting or
 
 ### Permissions
 - Read-only (MVP) via share link
-- Live Scoring write access — Mud Hens and Demo All-Stars (pilot)
+- Live Scoring write access — functionally available for every team today (see Rollout note below)
 
 ### Success Metric
 > Score the entire game without asking the coach to repeat the lineup.
@@ -256,15 +257,22 @@ Volunteer responsible for tracking game progress and stats. Needs the batting or
 | Batting order visible in share link | ✅ | — |
 | Defensive grid visible in share link | ✅ | — |
 | Print-ready PDF with batting + defense | ✅ | — |
-| Live score entry — Claim Scorer Role | ✅ MVP (Pilot Teams) | Full rollout |
-| Scorer lock (prevents concurrent writes) | ✅ MVP (Pilot Teams) | Full rollout |
+| Live score entry — Claim Scorer Role | ✅ MVP (functionally all teams, via shim) | Full rollout without the shim |
+| Scorer lock (prevents concurrent writes) | ✅ MVP (functionally all teams, via shim) | Full rollout without the shim |
 | Scorekeeper role with scoped write access | ❌ | ✅ |
 
-> **Pilot note:** Live Scoring is enabled for Mud Hens and Demo All-Stars by team name. All other teams require the `LIVE_SCORING` feature flag.
+> **Rollout note (corrected 2026-08-04):** Live Scoring is functionally enabled
+> for every team today via an active testing shim in `DugoutView.jsx`
+> (`liveScoringEnabled || true`) — the old bundled `LIVE_SCORING` flag this note
+> used to reference no longer exists in the codebase at all. The real gating
+> scaffolding — a per-team `live_scoring` DB flag plus a Mud Hens/Demo All-Stars
+> hardcode — is still in the code but currently bypassed by the shim, pending a
+> Phase 4C cleanup that hasn't been scheduled. Don't rely on the flag actually
+> restricting anything right now.
 
-### Scoring Workflow (Pilot — Mud Hens / Demo All-Stars)
+### Scoring Workflow
 
-1. Opens the app and navigates to the Scoring tab in the bottom nav
+1. Opens the app, taps **Game Day** in the bottom nav, then the **Dugout View** launcher
 2. Selects today's game from the entry screen (auto-populated when a game is scheduled for today)
 3. Declares which half their team bats — **Top ▲ / Bottom ▼ toggle** — determines which half shows pitch buttons vs. opponent tracker
 4. Taps **🎙 Claim Scorer** — generates a stable local UUID (`scorer_local_id`) if not logged in; upserts to `game_scoring_sessions` with heartbeat
@@ -399,3 +407,4 @@ Platform owner responsible for system integrity, data quality, and operational s
 |---------|------|---------|
 | v1.0 | March 2026 | Initial 5 personas (Coach, Parent Viewer, Scorekeeper, Team Coordinator, Administrator) |
 | v2.0 | April 2026 (v2.2.31) | Rewritten to 8 personas. Added Dugout Parent, DJ Parent, Catcher Parent, Base Coach. Flipped Live Scoring and Admin Dashboard to MVP. Auth Required updated to Phase 2 (Google OAuth + magic link, cutover pending). Removed Team Coordinator (deferred to Phase 3). |
+| v2.1 | 2026-08-04 (Doc Audit Spike Story 6) | Auth Required flipped from "Phase 2, cutover pending" to Active - the cutover shipped in v2.6.0, three months before this correction. Persona 6's "Scoring tab" workflow step corrected to Game Day → Dugout View (the standalone tab was removed in v2.5.9). Live Scoring "pilot" framing corrected - the old `LIVE_SCORING` flag no longer exists; scoring is functionally on for every team via an active testing shim, not gated to Mud Hens/Demo All-Stars. |

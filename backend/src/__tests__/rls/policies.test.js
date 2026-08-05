@@ -39,14 +39,45 @@
 //   scenario count reflects that real shape rather than a forced 1:1 mirror
 //   of RS's five. See the T describe blocks for detail.
 //
+//   M1-M4 (#478, D-S348b, added 2026-08-02) cover migration 007's admin-panel
+//   recursion fix — a distinct RLS gap from #342/#477 (data exposure) rather
+//   than a regression on it. Authenticates as a real admin-role member and
+//   reads team_memberships/access_requests/feedback, the three tables 007's
+//   fix touched. See the M describe block for detail.
+//
+//   LS1-LS7(+control) (#355 / D-S355, Test-Health Survey Pass 3, added
+//   2026-08-02) are DIFFERENT from every block above: LS1-LS7 are
+//   RED-BY-DESIGN executable specs for a REAL, CONFIRMED-LIVE-IN-PROD
+//   vulnerability — four hardcoded team-id backdoors (at_bats_anon_test,
+//   game_state_anon_test, scorer_lock_anon_test, audit_log_anon_test,
+//   confirmed against docs/db/schema.sql's own "captured from prod" header)
+//   plus a fully-open allow_scorer_writes (USING(true) WITH CHECK(true))
+//   catch-all on live_game_state / game_scoring_sessions / scoring_audit_log.
+//   Because the `rls` CI job is now a REQUIRED status check (#480) — unlike
+//   when S1b/S3/S4a were originally red, before #480 existed — merging these
+//   7 as permanently-failing tests would make `rls` fail on every subsequent
+//   PR until #355 is fixed, blocking all merges. KK's explicit decision
+//   (2026-08-02, after the finding was escalated and confirmed prod-live):
+//   skip LS1-LS7 with `{ skip: '#355 tracked...' }` so `rls` stays green,
+//   while keeping the executable spec visible in source (NOT deleted) for
+//   whoever fixes #355 to un-skip and turn green. LS7-control is NOT
+//   skipped — it asserts already-secure behavior and should stay green.
+//   See the LS describe block for the full policy-by-policy breakdown.
+//
 // HOW TO READ A FAILURE
-//   Every test here should be GREEN. A red S1b/S3/S4a/S4b means the WS-3 RLS
-//   lockdown has regressed in DEV — fix the DATABASE, not the test. A red
-//   S6-anything means an emergency-fix migration (005/006/011) regressed. A
-//   red RS-anything means the same class of regression on roster_snapshots
+//   Every test here should be GREEN. LS1-LS7 are currently SKIPPED (see
+//   above) — do not un-skip them without #355 actually being fixed in the
+//   database first; un-skipping prematurely will fail the required `rls`
+//   check for everyone. Every failure among the non-skipped tests IS a
+//   regression: a red S1b/S3/S4a/S4b means the WS-3 RLS lockdown has
+//   regressed in DEV — fix the DATABASE, not the test. A red S6-anything
+//   means an emergency-fix migration (005/006/011) regressed. A red
+//   RS-anything means the same class of regression on roster_snapshots
 //   specifically (migration 004's "4. roster_snapshots" section). A red
 //   T-anything means the same on `teams` (migration 004's "2. teams"
-//   section).
+//   section). A red M-anything means migration 007's recursion fix has
+//   regressed — a future edit reintroduced an inline self-referential
+//   subquery on team_memberships instead of calling is_active_admin().
 
 const { test, describe, before, after } = require('node:test');
 const assert = require('node:assert/strict');
@@ -68,6 +99,11 @@ const {
   COACH_A_EMAIL,
   SHARE_ID,
   seedAdminDeleteFixture,
+  seedAdminRecursionFixture,
+  LS_BACKDOOR_TEAM_ID,
+  LS_ARBITRARY_TEAM_ID,
+  LS_GAME_ID_BACKDOOR,
+  LS_GAME_ID_ARBITRARY,
 } = require('./seed');
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -512,6 +548,101 @@ describe('T — teams write isolation (DELETE)', () => {
 });
 
 // ═════════════════════════════════════════════════════════════════════════════
+// M — team_memberships / access_requests / feedback admin-authenticated RLS
+//     (#478, D-S348b, Test-Health Survey Pass 3). Migration 007's own header
+//     names the exact gap this closes: "nothing in any test suite exercises
+//     RLS as an authenticated user" was the reason a self-referential
+//     subquery on team_memberships ("admin_manages_memberships" reading
+//     team_memberships FROM a policy ON team_memberships) recursed for every
+//     authenticated reader of that table — not just admins — and was only
+//     found by KK logging into the admin panel for the first time. 007's fix
+//     replaced the inline subquery with is_active_admin(), a SECURITY
+//     DEFINER function (schema.sql "5. FUNCTIONS") that reads team_memberships
+//     as its owner, bypassing RLS and breaking the loop. Blast radius per
+//     007's header was wider than team_memberships alone: access_requests and
+//     feedback's admin policies call the same function, and both failed
+//     pre-007 too, because evaluating them required reading team_memberships,
+//     which tripped THAT table's recursive policy.
+//
+//     GREEN today (007 already applied) — this is a regression guard, not a
+//     RED-by-design spec. A red M-anything means a future edit reintroduced
+//     an inline self-referential subquery on team_memberships (007's own
+//     documented rollback SQL, in its header, is exactly that shape) and the
+//     admin panel would silently deny real admins again.
+// ═════════════════════════════════════════════════════════════════════════════
+describe('M — team_memberships / access_requests / feedback admin-authenticated RLS', () => {
+  let recursionAdmin;
+  let recursionAdminClient;
+
+  before(async () => {
+    recursionAdmin = await seedAdminRecursionFixture();
+    recursionAdminClient = await authedClient(recursionAdmin.adminEmail);
+  });
+
+  after(async () => {
+    // team_memberships_team_id_fkey is ON DELETE CASCADE (schema.sql), so
+    // deleting the team also removes the membership row created above.
+    // teardown() (module-level after()) is the crash backstop if this fails.
+    await adminClient().from('teams').delete().eq('id', recursionAdmin.teamId);
+  });
+
+  // Multiple permissive SELECT policies on the same table are combined with
+  // OR — so a NON-admin reading team_memberships still requires Postgres to
+  // evaluate admin_manages_memberships's USING clause (is_active_admin()),
+  // not just user_sees_own_membership's. Pre-007, this is exactly why EVERY
+  // authenticated reader of team_memberships hit the recursion error, not
+  // only admins. Broadest-reach regression guard in this block.
+  test('M1: coach A (non-admin) CAN read own team_memberships row (no recursion)', async () => {
+    const res = await coachA.from('team_memberships').select('id, role, status').eq('team_id', TEAM_A);
+    assert.equal(
+      res.error, null,
+      'REGRESSION: reading team_memberships as an authenticated non-admin errored ' +
+      '(migration 007\'s recursion fix may have regressed). Got: ' + JSON.stringify(res.error)
+    );
+    assert.equal(res.data.length, 1, 'coach A must see their own team_memberships row');
+  });
+
+  // The scenario migration 007's header names directly: an admin
+  // authenticating and reading team_memberships. admin_manages_memberships's
+  // USING clause calls is_active_admin(), which itself queries
+  // team_memberships — the exact self-referential shape that recursed
+  // before 007's SECURITY DEFINER fix broke the loop.
+  test('M2: admin-authenticated CAN read team_memberships (migration 007 regression guard)', async () => {
+    const res = await recursionAdminClient.from('team_memberships').select('id, role, status');
+    assert.equal(
+      res.error, null,
+      'REGRESSION: reading team_memberships as an authenticated admin errored — ' +
+      'migration 007\'s recursion fix may have regressed. Got: ' + JSON.stringify(res.error)
+    );
+    assert.ok(res.data.length >= 1, 'admin must see at least their own team_memberships row');
+  });
+
+  // access_requests' admin_manages_requests policy was rewritten by the same
+  // migration to call is_active_admin() instead of the same inline
+  // subquery. Reading team_memberships from inside that USING clause is
+  // cross-table, not self-recursive, but it still failed pre-007 — see
+  // 007's header, "blast radius was wider than one table".
+  test('M3: admin-authenticated CAN read access_requests (migration 007 regression guard)', async () => {
+    const res = await recursionAdminClient.from('access_requests').select('id').limit(1);
+    assert.equal(
+      res.error, null,
+      'REGRESSION: reading access_requests as an authenticated admin errored — ' +
+      'migration 007\'s cross-table fix may have regressed. Got: ' + JSON.stringify(res.error)
+    );
+  });
+
+  // Same cross-table shape as M3, for feedback's "feedback: admin select" policy.
+  test('M4: admin-authenticated CAN read feedback (migration 007 regression guard)', async () => {
+    const res = await recursionAdminClient.from('feedback').select('id').limit(1);
+    assert.equal(
+      res.error, null,
+      'REGRESSION: reading feedback as an authenticated admin errored — migration ' +
+      '007\'s cross-table fix may have regressed. Got: ' + JSON.stringify(res.error)
+    );
+  });
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
 // S6 — Locked tables. GREEN today. These are REGRESSION GUARDS on last week's
 //      emergency migrations (005 auth_events, 006 team_data_history, 011 view).
 //      If any goes red, a fix was reverted or a policy drifted.
@@ -548,4 +679,188 @@ describe('S6 — locked-table regression guards', () => {
       'REGRESSION: the team_data_history_latest view leaks past RLS (migration 011 reverted?)'
     );
   });
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+// LS — live-scoring anon-test backdoors (#355 / D-S355, Test-Health Survey
+//      Pass 3, added 2026-08-02). UNLIKE EVERY OTHER BLOCK IN THIS FILE, these
+//      tests are NOT expected to pass. #355 is a real, unfixed vulnerability —
+//      this block is the RED-by-design executable spec that #355's eventual
+//      fix must turn GREEN, mirroring exactly how S1b/S3/S4a were committed
+//      RED before WS-3 closed #342 (see this file's top-of-file header). A
+//      failure here is not a regression to chase; it is the tracked, open
+//      vulnerability, expected, until the database itself is fixed.
+//
+//      Policies under test (docs/db/schema.sql § 8, all reproduced there
+//      "because they are in prod, not because they are correct"):
+//        - at_bats_anon_test    FOR ALL, USING/WITH CHECK scoped to
+//          team_id = ANY(ARRAY['1774297491626', '9000000000001']) — the two
+//          hardcoded ids.
+//        - game_state_anon_test / scorer_lock_anon_test / audit_log_anon_test
+//          — the same hardcoded-array scoping, on live_game_state /
+//          game_scoring_sessions / scoring_audit_log respectively.
+//        - allow_scorer_writes — USING(true) WITH CHECK(true), FOR ALL, on
+//          live_game_state / game_scoring_sessions / scoring_audit_log ONLY.
+//          NO team scoping whatsoever — strictly BROADER than the four named
+//          backdoors above, since it grants anon a write on ANY team's row,
+//          not just the two hardcoded ones. at_bats has no such catch-all: its
+//          only anon write path is the scoped at_bats_anon_test, so at_bats'
+//          exposure is bounded to the two hardcoded ids while the other three
+//          tables' is not. LS7-control below is the test that proves that
+//          distinction, and is the one test in this block expected to PASS.
+//
+//      Test team id: LS_BACKDOOR_TEAM_ID ('9000000000001', seed.js) is the
+//      SECOND of the two hardcoded ids — the "Demo All-Stars" fixture team
+//      already named in docs/db/dev_rebuild.sql / docs/TROUBLESHOOTING.md.
+//      The FIRST id, the real Mud Hens team, is deliberately never typed into
+//      this test file even though clients.js's blast-radius fence already
+//      makes this suite structurally incapable of running against prod — both
+//      ids are equally exposed by the live policy, so there is no reason to
+//      prefer the real one. LS_ARBITRARY_TEAM_ID is a synthetic id that
+//      appears NOWHERE in the hardcoded array, used to prove
+//      allow_scorer_writes' lack of scoping is broader than the array itself.
+//
+//      Cleanup: each test deletes its own inserted row by game_id immediately
+//      (mirrors RS5/T3-control/T5-control/T7-control's inline cleanup);
+//      seed.js's teardown() carries a LIKE-pattern sweep on game_id as the
+//      crash backstop. Deliberately never a team_id-scoped delete —
+//      LS_BACKDOOR_TEAM_ID is a real fixture team that may hold legitimate
+//      rows on DEV outside this suite's own game_ids.
+// ═════════════════════════════════════════════════════════════════════════════
+describe('LS — live-scoring anon-test backdoors (#355, RED-by-design)', () => {
+
+  test('LS1: anon CANNOT write live_game_state for the hardcoded backdoor team (game_state_anon_test)', { skip: '#355 tracked, unfixed — see PR #506. Not a regression to chase; do not un-skip without the vulnerability actually being fixed first.' }, async () => {
+    const res = await anon.from('live_game_state').insert({
+      game_id: LS_GAME_ID_BACKDOOR, team_id: LS_BACKDOOR_TEAM_ID, my_score: 99, opponent_score: 0,
+    }).select();
+    assert.ok(
+      isWriteBlocked(res) || !returnedRows(res),
+      'EXPOSURE (#355): anon wrote a live_game_state row via the hardcoded ' +
+      'game_state_anon_test backdoor. A live game\'s score is forgeable by ' +
+      'anyone holding the public anon key, no session required.'
+    );
+    if (returnedRows(res)) {
+      await adminClient().from('live_game_state').delete().eq('game_id', LS_GAME_ID_BACKDOOR);
+    }
+  });
+
+  test('LS2: anon CANNOT write live_game_state for an arbitrary (non-hardcoded) team (allow_scorer_writes)', { skip: '#355 tracked, unfixed — see PR #506. Not a regression to chase; do not un-skip without the vulnerability actually being fixed first.' }, async () => {
+    const res = await anon.from('live_game_state').insert({
+      game_id: LS_GAME_ID_ARBITRARY, team_id: LS_ARBITRARY_TEAM_ID, my_score: 99, opponent_score: 0,
+    }).select();
+    assert.ok(
+      isWriteBlocked(res) || !returnedRows(res),
+      'EXPOSURE (#355): anon wrote a live_game_state row for a team NOT in the ' +
+      'backdoor\'s hardcoded array. allow_scorer_writes (USING(true) WITH ' +
+      'CHECK(true)) has no team scoping at all — broader than the four named ' +
+      'backdoors, not narrower.'
+    );
+    if (returnedRows(res)) {
+      await adminClient().from('live_game_state').delete().eq('game_id', LS_GAME_ID_ARBITRARY);
+    }
+  });
+
+  test('LS3: anon CANNOT claim/overwrite the scorer lock in game_scoring_sessions for the hardcoded backdoor team (scorer_lock_anon_test)', { skip: '#355 tracked, unfixed — see PR #506. Not a regression to chase; do not un-skip without the vulnerability actually being fixed first.' }, async () => {
+    const res = await anon.from('game_scoring_sessions').insert({
+      game_id: LS_GAME_ID_BACKDOOR, team_id: LS_BACKDOOR_TEAM_ID, scorer_name: 'RLS TEST INTRUDER',
+    }).select();
+    assert.ok(
+      isWriteBlocked(res) || !returnedRows(res),
+      'EXPOSURE (#355): anon created/claimed a game_scoring_sessions lock row ' +
+      'via the hardcoded scorer_lock_anon_test backdoor. Anyone holding the ' +
+      'anon key can steal the scorer lock on a live game.'
+    );
+    if (returnedRows(res)) {
+      await adminClient().from('game_scoring_sessions').delete().eq('game_id', LS_GAME_ID_BACKDOOR);
+    }
+  });
+
+  test('LS4: anon CANNOT claim the scorer lock for an arbitrary (non-hardcoded) team (allow_scorer_writes)', { skip: '#355 tracked, unfixed — see PR #506. Not a regression to chase; do not un-skip without the vulnerability actually being fixed first.' }, async () => {
+    const res = await anon.from('game_scoring_sessions').insert({
+      game_id: LS_GAME_ID_ARBITRARY, team_id: LS_ARBITRARY_TEAM_ID, scorer_name: 'RLS TEST INTRUDER',
+    }).select();
+    assert.ok(
+      isWriteBlocked(res) || !returnedRows(res),
+      'EXPOSURE (#355): anon claimed a scorer lock for a team NOT in the ' +
+      'backdoor\'s hardcoded array. allow_scorer_writes grants this ' +
+      'unconditionally, with no scoping at all.'
+    );
+    if (returnedRows(res)) {
+      await adminClient().from('game_scoring_sessions').delete().eq('game_id', LS_GAME_ID_ARBITRARY);
+    }
+  });
+
+  test('LS5: anon CANNOT forge a scoring_audit_log entry for the hardcoded backdoor team (audit_log_anon_test)', { skip: '#355 tracked, unfixed — see PR #506. Not a regression to chase; do not un-skip without the vulnerability actually being fixed first.' }, async () => {
+    const res = await anon.from('scoring_audit_log').insert({
+      game_id: LS_GAME_ID_BACKDOOR, team_id: LS_BACKDOOR_TEAM_ID,
+      action: 'rls_test_forged_entry', actor_name: 'RLS TEST INTRUDER',
+    }).select();
+    assert.ok(
+      isWriteBlocked(res) || !returnedRows(res),
+      'EXPOSURE (#355): anon forged a scoring_audit_log entry via the ' +
+      'hardcoded audit_log_anon_test backdoor. The audit trail is fabricable ' +
+      'by anyone holding the anon key — worse than the already-known ' +
+      'forgeable-identity gap (WS-4, TEXT actor_user_id), since here the ' +
+      'entire row is anon-writable, not just the actor identity within it.'
+    );
+    if (returnedRows(res)) {
+      await adminClient().from('scoring_audit_log').delete().eq('game_id', LS_GAME_ID_BACKDOOR);
+    }
+  });
+
+  test('LS6: anon CANNOT forge a scoring_audit_log entry for an arbitrary (non-hardcoded) team (allow_scorer_writes)', { skip: '#355 tracked, unfixed — see PR #506. Not a regression to chase; do not un-skip without the vulnerability actually being fixed first.' }, async () => {
+    const res = await anon.from('scoring_audit_log').insert({
+      game_id: LS_GAME_ID_ARBITRARY, team_id: LS_ARBITRARY_TEAM_ID,
+      action: 'rls_test_forged_entry', actor_name: 'RLS TEST INTRUDER',
+    }).select();
+    assert.ok(
+      isWriteBlocked(res) || !returnedRows(res),
+      'EXPOSURE (#355): anon forged a scoring_audit_log entry for a team NOT ' +
+      'in the backdoor\'s hardcoded array. allow_scorer_writes grants this ' +
+      'unconditionally, with no scoping at all.'
+    );
+    if (returnedRows(res)) {
+      await adminClient().from('scoring_audit_log').delete().eq('game_id', LS_GAME_ID_ARBITRARY);
+    }
+  });
+
+  test('LS7: anon CANNOT forge an at_bats row for the hardcoded backdoor team (at_bats_anon_test)', { skip: '#355 tracked, unfixed — see PR #506. Not a regression to chase; do not un-skip without the vulnerability actually being fixed first.' }, async () => {
+    const res = await anon.from('at_bats').insert({
+      game_id: LS_GAME_ID_BACKDOOR, team_id: LS_BACKDOOR_TEAM_ID, inning: 1,
+      batter_id: 'rls-test-intruder', batter_name: 'RLS TEST INTRUDER',
+    }).select();
+    assert.ok(
+      isWriteBlocked(res) || !returnedRows(res),
+      'EXPOSURE (#355): anon inserted an at_bats row via the hardcoded ' +
+      'at_bats_anon_test backdoor. Any anon caller can forge at-bat history ' +
+      'for the two hardcoded teams.'
+    );
+    if (returnedRows(res)) {
+      await adminClient().from('at_bats').delete().eq('game_id', LS_GAME_ID_BACKDOOR);
+    }
+  });
+
+  // Control, NOT red: at_bats has no allow_scorer_writes catch-all — its only
+  // anon write path is the scoped at_bats_anon_test exercised by LS7 above.
+  // So unlike LS2/LS4/LS6, an arbitrary (non-hardcoded) team id should already
+  // be blocked here, today, with no fix required. This is the one test in the
+  // LS block expected to PASS — it documents that at_bats' #355 exposure is
+  // narrower than the other three tables', not that the table is unaffected
+  // (LS7 shows it is, for the two hardcoded ids specifically).
+  test('LS7-control: anon CANNOT insert at_bats for an arbitrary (non-hardcoded) team (no catch-all exists on this table)', async () => {
+    const res = await anon.from('at_bats').insert({
+      game_id: LS_GAME_ID_ARBITRARY, team_id: LS_ARBITRARY_TEAM_ID, inning: 1,
+      batter_id: 'rls-test-intruder', batter_name: 'RLS TEST INTRUDER',
+    }).select();
+    assert.ok(
+      isWriteBlocked(res) || !returnedRows(res),
+      'at_bats has no allow_scorer_writes catch-all, so a non-hardcoded team ' +
+      'should already be blocked — if this fails, at_bats gained a broader ' +
+      'anon write path than at_bats_anon_test alone, and #355 is worse than documented.'
+    );
+    if (returnedRows(res)) {
+      await adminClient().from('at_bats').delete().eq('game_id', LS_GAME_ID_ARBITRARY);
+    }
+  });
+
 });

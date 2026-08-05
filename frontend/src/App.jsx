@@ -44,7 +44,9 @@ import { RequestAccessScreen }   from './components/Auth/RequestAccessScreen';
 import { PendingApprovalScreen } from './components/Auth/PendingApprovalScreen';
 import { NoMembershipScreen }    from './components/Auth/NoMembershipScreen';
 import { roleLabel } from './utils/roleLabels';
+import { buildSharePayload } from './utils/buildSharePayload';
 import Toast from './components/ui/Toast';
+import { Card } from './components/ui/Card';
 import { useAuth } from './hooks/useAuth';
 import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 import { VERSION_HISTORY } from './data/versionHistory';
@@ -138,7 +140,7 @@ var DISLIKE_PENALTY = -50;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.8.3";
+var APP_VERSION = "2.8.4";
 
 // loadJSON / saveJSON — localStorage with in-memory (_mem) fallback — moved to
 // ./utils/storage (#416). Imported above; call sites unchanged.
@@ -675,10 +677,9 @@ var C = {
 };
 
 var S = {
-  app: { minHeight:"100vh", background:C.cream, fontFamily:"Georgia,'Times New Roman',serif", color:C.text },
   header: {
-    background:"linear-gradient(135deg,#0f1f3d 0%,#1a3260 100%)",
-    borderBottom:"4px solid " + C.red,
+    background:"linear-gradient(135deg,"+tokens.color.brand.navy+" 0%,"+tokens.color.brand.navyLight+" 100%)",
+    borderBottom:"4px solid " + tokens.color.brand.red,
     padding:"12px 20px", display:"flex", alignItems:"center",
     justifyContent:"space-between", gap:"12px", flexWrap:"wrap",
     position:"sticky", top:0, zIndex:100
@@ -686,11 +687,11 @@ var S = {
   logoWrap: { display:"flex", alignItems:"center", gap:"10px", cursor:"pointer" },
   logoCircle: {
     width:"42px", height:"42px", borderRadius:"50%",
-    background:C.red, border:"2.5px solid " + C.gold,
+    background:tokens.color.brand.red, border:"2.5px solid " + tokens.color.brand.gold,
     display:"flex", alignItems:"center", justifyContent:"center",
-    fontSize:"18px", fontWeight:"bold", color:C.gold, fontFamily:"Georgia,serif", flexShrink:0
+    fontSize:"18px", fontWeight:"bold", color:tokens.color.brand.gold, fontFamily:"Georgia,serif", flexShrink:0
   },
-  logoTitle: { fontSize:"18px", fontWeight:"bold", color:C.gold, letterSpacing:"0.04em" },
+  logoTitle: { fontSize:"18px", fontWeight:"bold", color:tokens.color.brand.gold, letterSpacing:"0.04em" },
   logoSub: { fontSize:"10px", color:"rgba(255,255,255,0.5)", letterSpacing:"0.08em" },
   tabs: { display:"flex", gap:"2px", flexWrap:"wrap" },
   tab: function(active) {
@@ -703,18 +704,13 @@ var S = {
     };
   },
   body: { flex:1, overflowY:"auto", WebkitOverflowScrolling:"touch", display:"flex", flexDirection:"column", alignItems:"center", width:"100%", maxWidth:"600px", marginLeft:"auto", marginRight:"auto", paddingBottom:"80px" },
-  card: {
-    background:C.white, borderRadius:"10px", padding:"16px 18px",
-    boxShadow:"0 2px 8px rgba(15,31,61,0.06)", marginBottom:"14px",
-    border:"1px solid " + C.border
-  },
   sectionTitle: {
     fontSize:"11px", letterSpacing:"0.18em", textTransform:"uppercase",
     color:C.red, fontWeight:"bold", marginBottom:"14px"
   },
   btn: function(v) {
     var bg = "rgba(15,31,61,0.08)";
-    var col = C.text;
+    var col = tokens.color.text.ink;
     var bdr = "none";
     var shadow = "none";
     if (v === "primary") { bg = "linear-gradient(135deg,"+C.red+","+C.redDark+")"; col="#fff"; shadow="0 2px 8px rgba(200,16,46,0.3)"; }
@@ -737,7 +733,7 @@ var S = {
   },
   input: {
     background:"#f8f4ee", border:"1.5px solid rgba(15,31,61,0.15)",
-    borderRadius:"6px", padding:"7px 10px", color:C.text,
+    borderRadius:"6px", padding:"7px 10px", color:tokens.color.text.ink,
     fontFamily:"Georgia,serif", fontSize:"12px", outline:"none",
     width:"100%", boxSizing:"border-box"
   },
@@ -802,7 +798,7 @@ function PlayerFilterToggle({ players, selected, onSelect }) {
   );
 }
 
-function SharedView({ payload, renderFieldSVG }) {
+export function SharedView({ payload, renderFieldSVG }) {
   // Derive inning count from grid
   var innCount = 0;
   for (var k in payload.grid) {
@@ -840,7 +836,7 @@ function SharedView({ payload, renderFieldSVG }) {
   var teamInitial = payload.team ? payload.team.charAt(0).toUpperCase() : "L";
 
   return (
-    <div style={{ minHeight:"100vh", background:C.cream, fontFamily:"Georgia,'Times New Roman',serif", color:C.text }}>
+    <div style={{ minHeight:"100vh", background:tokens.color.surface.cream, fontFamily:"Georgia,'Times New Roman',serif", color:tokens.color.text.ink }}>
 
       {/* ── Header ─────────────────────────────────────────────── */}
       <div style={{ background:"linear-gradient(135deg,#0f1f3d,#1a3260)", borderBottom:"4px solid " + C.red, padding:"14px 20px" }}>
@@ -1033,7 +1029,7 @@ function SharedView({ payload, renderFieldSVG }) {
 
         {/* ── Batting order ─────────────────────────────────────── */}
         {payload.batting && payload.batting.length > 0 ? (
-          <div style={{ ...S.card, marginTop:"4px" }}>
+          <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px", marginTop:"4px" }}>
             <div style={S.sectionTitle}>Batting Order</div>
             <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))", gap:"6px" }}>
               {payload.batting.map(function(name, idx) {
@@ -1095,7 +1091,7 @@ function SharedView({ payload, renderFieldSVG }) {
                 Not playing tonight: {payload.absentNames.map(function(n) { return n.split(" ")[0]; }).join(", ")}
               </div>
             ) : null}
-          </div>
+          </Card>
         ) : null}
 
         {/* ── Footer ─────────────────────────────────────────────── */}
@@ -2128,23 +2124,7 @@ export default function App() {
       has_game_id: false,
       share_type: "lineup_view"
     });
-    var payload = {
-      team:    activeTeam ? activeTeam.name + (activeTeam.ageGroup ? " " + activeTeam.ageGroup : "") : "Lineup",
-      game:    null,
-      grid:    grid,
-      batting: activeBattingOrder,
-      roster:  roster.filter(function(r) { return absentTonight.indexOf(r.name) < 0; }).map(function(r) { return r.name; }),
-      absentNames: absentTonight.length > 0 ? absentTonight.slice() : undefined,
-      songs:   (function() {
-        var s = {};
-        roster.forEach(function(p) {
-          if (p.walkUpSong || p.walkUpArtist) {
-            s[p.name] = { song: p.walkUpSong || null, artist: p.walkUpArtist || null, start: p.walkUpStart || null, end: p.walkUpEnd || null };
-          }
-        });
-        return s;
-      })()
-    };
+    var payload = buildSharePayload(activeTeam, grid, activeBattingOrder, roster, absentTonight);
     var base = window.location.href.split("?")[0];
     var url;
     if (isSupabaseEnabled) {
@@ -2170,15 +2150,7 @@ export default function App() {
 
   function shareViewerLink() {
     track("share_viewer_link", {});
-    var payload = {
-      team:    activeTeam ? activeTeam.name + (activeTeam.ageGroup ? " " + activeTeam.ageGroup : "") : "Lineup",
-      game:    null,
-      grid:    grid,
-      batting: activeBattingOrder,
-      roster:  roster.filter(function(r) { return absentTonight.indexOf(r.name) < 0; }).map(function(r) { return r.name; }),
-      absentNames: absentTonight.length > 0 ? absentTonight.slice() : undefined,
-      songs:   {}
-    };
+    var payload = buildSharePayload(activeTeam, grid, activeBattingOrder, roster, absentTonight, { includeSongs: false });
     var base = window.location.href.split("?")[0];
     var url;
     if (isSupabaseEnabled) {
@@ -3422,7 +3394,7 @@ export default function App() {
           <div style={S.sectionTitle}>Roster and Player Profiles</div>
           <div style={{ display:"flex", gap:"6px", flexWrap:"wrap", alignItems:"center" }}>
             {rosterHistory.length > 0 ? (
-              <button style={{ ...S.btn("ghost"), color:C.red, border:"1px solid rgba(200,16,46,0.3)" }}
+              <button style={{ ...S.btn("ghost"), color:tokens.color.brand.red, border:"1px solid rgba(200,16,46,0.3)" }}
                 onClick={undoRoster}>
                 Undo ({rosterHistory.length})
               </button>
@@ -3456,7 +3428,7 @@ export default function App() {
         )}
 
         {lineupLocked ? (
-          <div style={{ fontSize:"11px", color:C.textMuted, textAlign:"center", padding:"8px 12px", marginBottom:"14px", background:"rgba(15,31,61,0.03)", borderRadius:"8px", border:"1px dashed rgba(15,31,61,0.15)" }}>
+          <div style={{ fontSize:"11px", color:tokens.color.text.muted, textAlign:"center", padding:"8px 12px", marginBottom:"14px", background:"rgba(15,31,61,0.03)", borderRadius:"8px", border:"1px dashed rgba(15,31,61,0.15)" }}>
             🔒 Lineup is finalized — unlock to add or remove players
           </div>
         ) : !showAddForm ? (
@@ -3485,7 +3457,7 @@ export default function App() {
           </div>
         )}
 
-        <div style={{ ...S.card, marginBottom:"14px" }}>
+        <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
           <div
             onClick={function() { setSummaryOpen(!summaryOpen); }}
             style={{ display:"flex", justifyContent:"space-between", alignItems:"center", cursor:"pointer", marginBottom: summaryOpen ? "10px" : "0" }}>
@@ -3550,7 +3522,7 @@ export default function App() {
                               padding:"4px 6px",
                               textAlign: col.key === "player" ? "left" : "center",
                               fontSize:"10px",
-                              color: isActive ? C.red : "#6a7a9a",
+                              color: isActive ? tokens.color.brand.red : "#6a7a9a",
                               fontWeight: isActive ? "bold" : "normal",
                               borderBottom:"2px solid rgba(15,31,61,0.08)",
                               whiteSpace:"nowrap",
@@ -3568,7 +3540,7 @@ export default function App() {
                       var info = row.info;
                       var stats = row.stats;
                       var avg = row.avg;
-                      var avgColor = avg === null ? C.textMuted : avg >= 0.300 ? "#27ae60" : avg >= 0.200 ? "#e67e22" : C.text;
+                      var avgColor = avg === null ? tokens.color.text.muted : avg >= 0.300 ? "#27ae60" : avg >= 0.200 ? "#e67e22" : tokens.color.text.ink;
                       return (
                         <tr key={info.name} style={{ borderBottom:"1px solid rgba(15,31,61,0.05)", background: ri % 2 === 0 ? "transparent" : "rgba(15,31,61,0.03)" }}>
                           <td style={{ padding:"4px 6px", fontWeight:"600", textAlign:"left" }}>{firstName(info.name)}</td>
@@ -3598,7 +3570,7 @@ export default function App() {
               </div>
             );
           })()}
-        </div>
+        </Card>
 
         {isHydrating && roster.length === 0 && (
           <div style={{ textAlign:"center", padding:"20px", color:"#94a3b8", fontSize:"13px" }}>
@@ -3682,11 +3654,11 @@ export default function App() {
             var pr = info.prefs || [];
 
             return (
-              <div key={info.name} style={{ ...S.card, padding:"14px" }}>
+              <Card key={info.name} padding="14px" radius="md" style={{ border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
                 <div style={{ display:"flex", alignItems:"center", gap:"8px", marginBottom: isCol ? 0 : "12px" }}>
                   {!lineupLocked ? (
                     <button onClick={function(n) { return function() { var next = {}; for (var k in collapsed) { next[k]=collapsed[k]; } next[n] = !collapsed[n]; setCollapsed(next); }; }(info.name)}
-                      style={{ background:"none", border:"none", cursor:"pointer", fontSize:"11px", color:C.textMuted, padding:"2px", flexShrink:0 }}>
+                      style={{ background:"none", border:"none", cursor:"pointer", fontSize:"11px", color:tokens.color.text.muted, padding:"2px", flexShrink:0 }}>
                       {isCol ? ">" : "v"}
                     </button>
                   ) : <span style={{ width:"16px", flexShrink:0 }} />}
@@ -3714,7 +3686,7 @@ export default function App() {
                 {!isCol ? (
                   <div style={{ pointerEvents: lineupLocked ? "none" : "auto" }}>
                     {lineupLocked ? (
-                      <div style={{ fontSize:"11px", color:C.textMuted, textAlign:"center", padding:"6px 10px", marginBottom:"10px", background:"rgba(15,31,61,0.03)", borderRadius:"6px", border:"1px dashed rgba(15,31,61,0.12)" }}>
+                      <div style={{ fontSize:"11px", color:tokens.color.text.muted, textAlign:"center", padding:"6px 10px", marginBottom:"10px", background:"rgba(15,31,61,0.03)", borderRadius:"6px", border:"1px dashed rgba(15,31,61,0.12)" }}>
                         🔒 Unlock lineup to edit player attributes
                       </div>
                     ) : null}
@@ -3747,7 +3719,7 @@ export default function App() {
                           <div key={item.label} style={{ display:"flex", alignItems:"center", gap:"4px" }}>
                             <span style={{ width:"6px", height:"6px", borderRadius:"50%",
                               background:item.color, display:"inline-block", flexShrink:0 }}></span>
-                            <span style={{ fontSize:"9px", color:C.textMuted }}>{item.label}</span>
+                            <span style={{ fontSize:"9px", color:tokens.color.text.muted }}>{item.label}</span>
                           </div>
                         );
                       })}
@@ -3782,7 +3754,7 @@ export default function App() {
                             })()}
                           </div>
                           <span style={{ fontSize:"10px", fontWeight:600, color:"#666666", marginTop:"8px", marginBottom:"4px", display:"block" }}>Preferred Positions</span>
-                          <div style={{ fontSize:"10px", color:C.textMuted, marginBottom:"6px" }}>
+                          <div style={{ fontSize:"10px", color:tokens.color.text.muted, marginBottom:"6px" }}>
                             Tap to add in priority order. 1st pick gets the biggest boost. Tap again to remove.
                           </div>
                           <div style={{ marginBottom:"6px" }}>
@@ -3803,7 +3775,7 @@ export default function App() {
                           </div>
                           {pr.length > 0 ? (
                             <div style={{ display:"flex", gap:"4px", flexWrap:"wrap", marginBottom:"6px", alignItems:"center" }}>
-                              <span style={{ fontSize:"10px", color:C.textMuted }}>Order:</span>
+                              <span style={{ fontSize:"10px", color:tokens.color.text.muted }}>Order:</span>
                               {pr.map(function(pos, ri) {
                                 return (
                                   <span key={pos} style={{ fontSize:"10px", padding:"1px 6px", borderRadius:"4px",
@@ -3813,7 +3785,7 @@ export default function App() {
                                 );
                               })}
                               <span onClick={function() { updatePlayer(info.name, { prefs: [] }); }}
-                                style={{ fontSize:"10px", color:C.textMuted, cursor:"pointer", marginLeft:"4px", textDecoration:"underline" }}>
+                                style={{ fontSize:"10px", color:tokens.color.text.muted, cursor:"pointer", marginLeft:"4px", textDecoration:"underline" }}>
                                 clear
                               </span>
                             </div>
@@ -4057,18 +4029,18 @@ export default function App() {
                       }
                       if (st.games === 0) { return null; }
                       var avg = fmtAvg(st.h, st.ab);
-                      var avgColor = st.ab > 0 && (st.h/st.ab) >= 0.300 ? C.win : st.ab > 0 && (st.h/st.ab) >= 0.200 ? "#d4a017" : C.textMuted;
+                      var avgColor = st.ab > 0 && (st.h/st.ab) >= 0.300 ? tokens.color.status.success : st.ab > 0 && (st.h/st.ab) >= 0.200 ? "#d4a017" : tokens.color.text.muted;
                       return (
                         <div style={{ marginBottom:"10px" }}>
-                          <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:"6px" }}>Season Batting Record ({st.games} game{st.games !== 1 ? "s" : ""})</div>
+                          <div style={{ fontSize:"10px", color:tokens.color.text.muted, textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:"6px" }}>Season Batting Record ({st.games} game{st.games !== 1 ? "s" : ""})</div>
                           <div style={{ display:"flex", gap:"12px", padding:"8px 12px", borderRadius:"8px", background:"rgba(15,31,61,0.04)", border:"1px solid rgba(15,31,61,0.08)" }}>
                             {[
                               ["AVG", avg, avgColor],
-                              ["AB",  fmtStat(st.ab), C.text],
-                              ["H",   fmtStat(st.h),  C.text],
-                              ["R",   fmtStat(st.r),  C.text],
-                              ["RBI", fmtStat(st.rbi), C.text],
-                              ["BB",  fmtStat(st.bb),  C.text]
+                              ["AB",  fmtStat(st.ab), tokens.color.text.ink],
+                              ["H",   fmtStat(st.h),  tokens.color.text.ink],
+                              ["R",   fmtStat(st.r),  tokens.color.text.ink],
+                              ["RBI", fmtStat(st.rbi), tokens.color.text.ink],
+                              ["BB",  fmtStat(st.bb),  tokens.color.text.ink]
                             ].map(function(row) {
                               return (
                                 <div key={row[0]} style={{ textAlign:"center" }}>
@@ -4086,16 +4058,16 @@ export default function App() {
                             }).slice(0, 3).map(function(sg) {
                               var p = sg.battingPerf[info.name];
                               var gameAvg = fmtAvg(p.h, p.ab);
-                              var rc = sg.result === "W" ? C.win : sg.result === "L" ? C.red : "#d4a017";
+                              var rc = sg.result === "W" ? tokens.color.status.success : sg.result === "L" ? tokens.color.brand.red : "#d4a017";
                               return (
                                 <div key={sg.id} style={{ display:"flex", alignItems:"center", gap:"8px", fontSize:"11px", padding:"3px 0", borderBottom:"1px solid rgba(15,31,61,0.04)" }}>
                                   <span style={{ fontSize:"10px", fontWeight:"bold", color:rc, minWidth:"12px" }}>{sg.result}</span>
-                                  <span style={{ color:C.textMuted, flex:1 }}>vs {sg.opponent}</span>
-                                  <span style={{ color:C.textMuted }}>{fmtStat(p.ab)}-AB</span>
-                                  <span style={{ color:C.textMuted }}>{fmtStat(p.h)}-H</span>
-                                  {p.r  ? <span style={{ color:C.textMuted }}>{fmtStat(p.r)}-R</span>   : null}
-                                  {p.rbi ? <span style={{ color:C.textMuted }}>{fmtStat(p.rbi)}-RBI</span> : null}
-                                  <span style={{ fontWeight:"bold", color: parseInt(p.ab||0,10) > 0 && (parseInt(p.h||0,10)/parseInt(p.ab||0,10)) >= 0.300 ? C.win : C.textMuted }}>{gameAvg}</span>
+                                  <span style={{ color:tokens.color.text.muted, flex:1 }}>vs {sg.opponent}</span>
+                                  <span style={{ color:tokens.color.text.muted }}>{fmtStat(p.ab)}-AB</span>
+                                  <span style={{ color:tokens.color.text.muted }}>{fmtStat(p.h)}-H</span>
+                                  {p.r  ? <span style={{ color:tokens.color.text.muted }}>{fmtStat(p.r)}-R</span>   : null}
+                                  {p.rbi ? <span style={{ color:tokens.color.text.muted }}>{fmtStat(p.rbi)}-RBI</span> : null}
+                                  <span style={{ fontWeight:"bold", color: parseInt(p.ab||0,10) > 0 && (parseInt(p.h||0,10)/parseInt(p.ab||0,10)) >= 0.300 ? tokens.color.status.success : tokens.color.text.muted }}>{gameAvg}</span>
                                 </div>
                               );
                             })}
@@ -4104,7 +4076,7 @@ export default function App() {
                       );
                     })()}
 
-                    <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:"6px" }}>Auto-Assign Preview</div>
+                    <div style={{ fontSize:"10px", color:tokens.color.text.muted, textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:"6px" }}>Auto-Assign Preview</div>
                     <div>
                       {(function() {
                         var top = getTopPositions(info);
@@ -4115,7 +4087,7 @@ export default function App() {
                     </div>
                   </div>
                 ) : null}
-              </div>
+              </Card>
             );
           })}
         </div>
@@ -4552,7 +4524,7 @@ export default function App() {
         </ErrorBoundary>
         {/* ── Fairness Check card — only when finalized ──── */}
         <ErrorBoundary fallback="Fairness Check">
-          {lineupLocked ? <FairnessCheck roster={roster} grid={grid} C={C} /> : null}
+          {lineupLocked ? <FairnessCheck roster={roster} grid={grid} /> : null}
         </ErrorBoundary>
 
         {/* ── Finalized badge ───────────────────────────────── */}
@@ -4587,7 +4559,7 @@ export default function App() {
           {/* Finalize button — opens LockFlow 3-step confirmation */}
           {!lineupLocked ? (
             <button
-              style={{ ...S.btn("ghost"), color:C.win, border:"1px solid rgba(39,174,96,0.35)", marginLeft:"4px" }}
+              style={{ ...S.btn("ghost"), color:tokens.color.status.success, border:"1px solid rgba(39,174,96,0.35)", marginLeft:"4px" }}
               onClick={function() { setLockFlowOpen(true); }}>
               ✓ Finalize
             </button>
@@ -4597,10 +4569,10 @@ export default function App() {
             <button
               onClick={function() { setShowDiamond(!showDiamond); if (showDiamond) { setDiamondInning(null); } }}
               title={showDiamond ? "Hide diamond" : "Show diamond view"}
-              style={{ padding:"5px 12px", borderRadius:"6px", border:"2px solid " + (showDiamond ? C.navy : "rgba(15,31,61,0.15)"),
+              style={{ padding:"5px 12px", borderRadius:"6px", border:"2px solid " + (showDiamond ? tokens.color.brand.navy : "rgba(15,31,61,0.15)"),
                 cursor:"pointer", fontSize:"11px", fontWeight:"bold", fontFamily:"inherit",
-                background: showDiamond ? C.navy : "transparent",
-                color: showDiamond ? "#fff" : C.textMuted }}>
+                background: showDiamond ? tokens.color.brand.navy : "transparent",
+                color: showDiamond ? "#fff" : tokens.color.text.muted }}>
               ◆ Diamond
             </button>
             {/* By Player / By Position table toggle */}
@@ -4609,8 +4581,8 @@ export default function App() {
                 var active = gridView === opt[1];
                 return (
                   <button key={opt[1]} style={{ padding:"5px 12px", borderRadius:"6px", border:"none", cursor:"pointer", fontSize:"11px", fontWeight:"bold", fontFamily:"inherit",
-                    background: active ? C.white : "transparent",
-                    color: active ? C.navy : C.textMuted,
+                    background: active ? tokens.color.surface.card : "transparent",
+                    color: active ? tokens.color.brand.navy : tokens.color.text.muted,
                     boxShadow: active ? "0 1px 3px rgba(0,0,0,0.1)" : "none" }}
                     onClick={function(v) { return function() { setGridView(v); }; }(opt[1])}>
                     {opt[0]}
@@ -4746,7 +4718,7 @@ export default function App() {
         {showDiamond ? (
           <div style={{ borderTop:"2px solid rgba(15,31,61,0.1)", margin:"16px 0 12px",
             display:"flex", alignItems:"center", gap:"8px" }}>
-            <span style={{ fontSize:"10px", fontWeight:"bold", color:C.textMuted,
+            <span style={{ fontSize:"10px", fontWeight:"bold", color:tokens.color.text.muted,
               textTransform:"uppercase", letterSpacing:"0.12em", whiteSpace:"nowrap" }}>
               {gridView === "player" ? "By Player" : "By Position"}
             </span>
@@ -4759,11 +4731,11 @@ export default function App() {
             <table style={{ width:"100%", borderCollapse:"collapse", fontSize:"12px" }}>
               <thead>
                 <tr style={{ background:"#f5efe4" }}>
-                  <th style={{ padding:"8px 12px", textAlign:"left", fontSize:"10px", color:C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase", borderBottom:"2px solid rgba(15,31,61,0.08)", position:"sticky", left:0, background:"#f5efe4", zIndex:1, minWidth:"90px" }}>Player</th>
+                  <th style={{ padding:"8px 12px", textAlign:"left", fontSize:"10px", color:tokens.color.text.muted, letterSpacing:"0.1em", textTransform:"uppercase", borderBottom:"2px solid rgba(15,31,61,0.08)", position:"sticky", left:0, background:"#f5efe4", zIndex:1, minWidth:"90px" }}>Player</th>
                   {innArr.map(function(i) {
                     var done = inningComplete[i];
                     return (
-                      <th key={i} style={{ padding:"6px 10px", textAlign:"center", fontSize:"10px", color: done ? "#27ae60" : C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase", borderBottom:"2px solid " + (done ? "rgba(39,174,96,0.35)" : "rgba(15,31,61,0.08)"), minWidth:"72px", background: done ? "rgba(39,174,96,0.07)" : "transparent" }}>
+                      <th key={i} style={{ padding:"6px 10px", textAlign:"center", fontSize:"10px", color: done ? "#27ae60" : tokens.color.text.muted, letterSpacing:"0.1em", textTransform:"uppercase", borderBottom:"2px solid " + (done ? "rgba(39,174,96,0.35)" : "rgba(15,31,61,0.08)"), minWidth:"72px", background: done ? "rgba(39,174,96,0.07)" : "transparent" }}>
                         Inn {i+1}
                         {done ? <div style={{ fontSize:"11px", lineHeight:"1", marginTop:"2px", color:"#27ae60" }}>✓</div> : null}
                       </th>
@@ -4801,7 +4773,7 @@ export default function App() {
                               style={{ width:"64px", padding:"4px 2px", borderRadius:"5px", fontSize:"11px", fontWeight:"bold",
                                 background: pos ? (tokens.color.position[pos] + (lineupLocked ? "99" : "cc")) : "#f8f4ee",
                                 color: pos ? "#fff" : "#9aaaaa",
-                                border: hasViol ? "2px solid " + C.red : "1px solid " + (pos ? "rgba(255,255,255,0.3)" : "rgba(15,31,61,0.1)"),
+                                border: hasViol ? "2px solid " + tokens.color.brand.red : "1px solid " + (pos ? "rgba(255,255,255,0.3)" : "rgba(15,31,61,0.1)"),
                                 cursor: lineupLocked ? "default" : "pointer", outline:"none", fontFamily:"inherit", textAlign:"center",
                                 opacity: lineupLocked ? 0.8 : 1 }}>
                               <option value="">-</option>
@@ -4824,11 +4796,11 @@ export default function App() {
             <table style={{ width:"100%", borderCollapse:"collapse", fontSize:"12px" }}>
               <thead>
                 <tr style={{ background:"#f5efe4" }}>
-                  <th style={{ padding:"8px 12px", textAlign:"left", fontSize:"10px", color:C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase", borderBottom:"2px solid rgba(15,31,61,0.08)", position:"sticky", left:0, background:"#f5efe4", zIndex:1, minWidth:"90px" }}>Position</th>
+                  <th style={{ padding:"8px 12px", textAlign:"left", fontSize:"10px", color:tokens.color.text.muted, letterSpacing:"0.1em", textTransform:"uppercase", borderBottom:"2px solid rgba(15,31,61,0.08)", position:"sticky", left:0, background:"#f5efe4", zIndex:1, minWidth:"90px" }}>Position</th>
                   {innArr.map(function(i) {
                     var done = inningComplete[i];
                     return (
-                      <th key={i} style={{ padding:"6px 10px", textAlign:"center", fontSize:"10px", color: done ? "#27ae60" : C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase", borderBottom:"2px solid " + (done ? "rgba(39,174,96,0.35)" : "rgba(15,31,61,0.08)"), minWidth:"90px", background: done ? "rgba(39,174,96,0.07)" : "transparent" }}>
+                      <th key={i} style={{ padding:"6px 10px", textAlign:"center", fontSize:"10px", color: done ? "#27ae60" : tokens.color.text.muted, letterSpacing:"0.1em", textTransform:"uppercase", borderBottom:"2px solid " + (done ? "rgba(39,174,96,0.35)" : "rgba(15,31,61,0.08)"), minWidth:"90px", background: done ? "rgba(39,174,96,0.07)" : "transparent" }}>
                         Inn {i+1}
                         {done ? <div style={{ fontSize:"11px", lineHeight:"1", marginTop:"2px", color:"#27ae60" }}>✓</div> : null}
                       </th>
@@ -4875,7 +4847,7 @@ export default function App() {
                                     ) : null,
                                     benchedPlayers.map(function(bp) {
                                       return (
-                                        <div key={bp} style={{ fontSize:"11px", color:C.navy, fontWeight:"bold", padding:"2px 6px", borderRadius:"4px", background:"rgba(15,31,61,0.1)", marginBottom:"2px", textAlign:"center" }}>{firstName(bp)}</div>
+                                        <div key={bp} style={{ fontSize:"11px", color:tokens.color.brand.navy, fontWeight:"bold", padding:"2px 6px", borderRadius:"4px", background:"rgba(15,31,61,0.1)", marginBottom:"2px", textAlign:"center" }}>{firstName(bp)}</div>
                                       );
                                     }),
                                     outP.map(function(op) {
@@ -4887,7 +4859,7 @@ export default function App() {
                                 })()}
                               </div>
                             ) : assignedPlayer ? (
-                              <div style={{ fontSize:"12px", fontWeight:"bold", color:C.navy }}>{firstName(assignedPlayer)}</div>
+                              <div style={{ fontSize:"12px", fontWeight:"bold", color:tokens.color.brand.navy }}>{firstName(assignedPlayer)}</div>
                             ) : (
                               <div style={{ fontSize:"11px", color:"rgba(200,16,46,0.5)", fontWeight:"bold" }}>-</div>
                             )}
@@ -4987,12 +4959,12 @@ export default function App() {
               <span style={{ fontSize:"10px", color:"#d4a017", fontWeight:"bold", letterSpacing:"0.04em" }}>● Unsaved changes</span>
             ) : null}
             {battingOrderSaved ? (
-              <span style={{ fontSize:"10px", color:C.win, fontWeight:"bold" }}>✓ Saved</span>
+              <span style={{ fontSize:"10px", color:tokens.color.status.success, fontWeight:"bold" }}>✓ Saved</span>
             ) : null}
           </div>
           <div style={{ display:"flex", gap:"6px", alignItems:"center" }}>
             {battingOrderDirty ? (
-              <button style={{ ...S.btn("ghost"), color:C.win, border:"1px solid rgba(39,174,96,0.4)" }}
+              <button style={{ ...S.btn("ghost"), color:tokens.color.status.success, border:"1px solid rgba(39,174,96,0.4)" }}
                 onClick={function() {
                   persistBatting(battingOrder);
                   setBattingOrderDirty(false);
@@ -5021,7 +4993,7 @@ export default function App() {
                 onMouseLeave={function(e) { var t = e.currentTarget.querySelector(".fin-tip"); if (t) t.style.display = "none"; }}>
                 <button
                   disabled={battingOrderDirty}
-                  style={{ ...S.btn("ghost"), color: battingOrderDirty ? C.textMuted : C.win, border:"1px solid " + (battingOrderDirty ? "rgba(0,0,0,0.12)" : "rgba(39,174,96,0.35)"), opacity: battingOrderDirty ? 0.5 : 1, cursor: battingOrderDirty ? "default" : "pointer" }}
+                  style={{ ...S.btn("ghost"), color: battingOrderDirty ? tokens.color.text.muted : tokens.color.status.success, border:"1px solid " + (battingOrderDirty ? "rgba(0,0,0,0.12)" : "rgba(39,174,96,0.35)"), opacity: battingOrderDirty ? 0.5 : 1, cursor: battingOrderDirty ? "default" : "pointer" }}
                   onClick={function() { setLockFlowOpen(true); }}>
                   ✓ Finalize
                 </button>
@@ -5042,8 +5014,8 @@ export default function App() {
         </div>
 
         {hasAnyStats ? (
-          <div style={{ ...S.card, padding:"12px 14px", marginBottom:"14px", background:"rgba(15,31,61,0.03)", border:"1px solid rgba(15,31,61,0.1)" }}>
-            <div style={{ fontSize:"10px", color:C.textMuted, marginBottom:"8px", textTransform:"uppercase", letterSpacing:"0.1em" }}>Season Batting Stats</div>
+          <Card padding="12px 14px" radius="md" style={{ background:"rgba(15,31,61,0.03)", border:"1px solid rgba(15,31,61,0.1)", boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
+            <div style={{ fontSize:"10px", color:tokens.color.text.muted, marginBottom:"8px", textTransform:"uppercase", letterSpacing:"0.1em" }}>Season Batting Stats</div>
             {(function() {
               var tg = 0, tab = 0, th = 0, tr = 0, trbi = 0;
               var keys = Object.keys(seasonStats);
@@ -5057,13 +5029,13 @@ export default function App() {
               }
               var teamAvgStr = tab > 0 ? fmtAvg(th, tab) : "---";
               var teamAvgNum = tab > 0 ? th / tab : null;
-              var avgColor = teamAvgNum !== null && teamAvgNum >= 0.300 ? C.win : teamAvgNum !== null && teamAvgNum >= 0.200 ? "#d4a017" : C.textMuted;
-              var divider = <div style={{ width:"1px", height:"28px", background:C.border, margin:"0 4px" }} />;
+              var avgColor = teamAvgNum !== null && teamAvgNum >= 0.300 ? tokens.color.status.success : teamAvgNum !== null && teamAvgNum >= 0.200 ? "#d4a017" : tokens.color.text.muted;
+              var divider = <div style={{ width:"1px", height:"28px", background:tokens.color.border.neutral, margin:"0 4px" }} />;
               var statCell = function(label, val, color) {
                 return (
                   <div style={{ display:"flex", flexDirection:"column", alignItems:"center", minWidth:"40px" }}>
-                    <div style={{ fontSize:"15px", fontWeight:"bold", color: color || C.navy }}>{val}</div>
-                    <div style={{ fontSize:"9px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.08em" }}>{label}</div>
+                    <div style={{ fontSize:"15px", fontWeight:"bold", color: color || tokens.color.brand.navy }}>{val}</div>
+                    <div style={{ fontSize:"9px", color:tokens.color.text.muted, textTransform:"uppercase", letterSpacing:"0.08em" }}>{label}</div>
                   </div>
                 );
               };
@@ -5108,9 +5080,9 @@ export default function App() {
                           }; }(col.key) : undefined}
                           style={{ padding:"5px 8px", textAlign:col.align, fontSize:"10px", letterSpacing:"0.1em", textTransform:"uppercase", borderBottom:"2px solid rgba(15,31,61,0.08)", whiteSpace:"nowrap",
                             cursor: col.sortable ? "pointer" : "default",
-                            color: isActive ? C.navy : C.textMuted,
+                            color: isActive ? tokens.color.brand.navy : tokens.color.text.muted,
                             fontWeight: isActive ? "bold" : "normal" }}>
-                          {col.label}<span style={{ color: isActive ? C.red : "rgba(15,31,61,0.25)", fontSize:"9px" }}>{indicator}</span>
+                          {col.label}<span style={{ color: isActive ? tokens.color.brand.red : "rgba(15,31,61,0.25)", fontSize:"9px" }}>{indicator}</span>
                         </th>
                       );
                     })}
@@ -5148,11 +5120,11 @@ export default function App() {
                       var st = seasonStats[name];
                       var avg = st.ab > 0 ? (st.h / st.ab) : null;
                       var avgStr = fmtAvg(st.h, st.ab);
-                      var avgColor = avg !== null && avg >= 0.300 ? C.win : avg !== null && avg >= 0.200 ? "#d4a017" : C.text;
+                      var avgColor = avg !== null && avg >= 0.300 ? tokens.color.status.success : avg !== null && avg >= 0.200 ? "#d4a017" : tokens.color.text.ink;
                       return (
                         <tr key={name} style={{ borderBottom:"1px solid rgba(15,31,61,0.04)" }}>
                           <td style={{ padding:"6px 8px", fontWeight:"bold" }}>{firstName(name)}</td>
-                          <td style={{ padding:"6px 8px", textAlign:"center", color:C.textMuted }}>{st.games}</td>
+                          <td style={{ padding:"6px 8px", textAlign:"center", color:tokens.color.text.muted }}>{st.games}</td>
                           <td style={{ padding:"6px 8px", textAlign:"center" }}>{fmtStat(st.ab)}</td>
                           <td style={{ padding:"6px 8px", textAlign:"center" }}>{fmtStat(st.h)}</td>
                           <td style={{ padding:"6px 8px", textAlign:"center", fontWeight:"bold", color:avgColor }}>{avgStr}</td>
@@ -5165,10 +5137,10 @@ export default function App() {
                 </tbody>
               </table>
             </div>
-          </div>
+          </Card>
         ) : null}
 
-        <div style={{ fontSize:"11px", color:C.textMuted, marginBottom:"10px" }}>
+        <div style={{ fontSize:"11px", color:tokens.color.text.muted, marginBottom:"10px" }}>
           Use ▲▼ arrows or drag to reorder. Enter game stats in the Schedule tab after each game.
         </div>
 
@@ -5179,7 +5151,7 @@ export default function App() {
             if (!info) { return null; }
             var bs = info.batSkills || [];
             var score = getBatScore(info);
-            var scoreColor = score > 3 ? C.win : score > 0 ? "#d4a017" : score < 0 ? C.red : "#555";
+            var scoreColor = score > 3 ? tokens.color.status.success : score > 0 ? "#d4a017" : score < 0 ? tokens.color.brand.red : "#555";
             var fieldPositions = [];
             for (var ii = 0; ii < innings; ii++) {
               var pos = (grid[name] || [])[ii];
@@ -5236,7 +5208,7 @@ export default function App() {
                     window._bTouchDrag = { active:true, name:n, startY:e.touches[0].clientY, currentIdx:i };
                     bumpTouchDrag(function(v) { return v + 1; });
                   }; }(name, idx)}
-                  style={{ width:"26px", height:"26px", borderRadius:"50%", background: lineupLocked ? "rgba(15,31,61,0.2)" : C.navy, color:"#fff", fontSize:"12px", fontWeight:"bold", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, touchAction:"none", cursor: lineupLocked ? "default" : "grab", userSelect:"none" }}>
+                  style={{ width:"26px", height:"26px", borderRadius:"50%", background: lineupLocked ? "rgba(15,31,61,0.2)" : tokens.color.brand.navy, color:"#fff", fontSize:"12px", fontWeight:"bold", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, touchAction:"none", cursor: lineupLocked ? "default" : "grab", userSelect:"none" }}>
                   {idx + 1}
                 </div>
 
@@ -5256,9 +5228,9 @@ export default function App() {
                 {st ? (
                   <div style={{ display:"flex", gap:"10px", alignItems:"center" }}>
                     {[
-                      ["AVG", fmtAvg(st.h, st.ab), st.ab > 0 && (st.h/st.ab) >= 0.300 ? C.win : st.ab > 0 && (st.h/st.ab) >= 0.200 ? "#d4a017" : C.textMuted],
-                      ["RBI", fmtStat(st.rbi), C.textMuted],
-                      ["BB",  fmtStat(st.bb),  C.textMuted]
+                      ["AVG", fmtAvg(st.h, st.ab), st.ab > 0 && (st.h/st.ab) >= 0.300 ? tokens.color.status.success : st.ab > 0 && (st.h/st.ab) >= 0.200 ? "#d4a017" : tokens.color.text.muted],
+                      ["RBI", fmtStat(st.rbi), tokens.color.text.muted],
+                      ["BB",  fmtStat(st.bb),  tokens.color.text.muted]
                     ].map(function(row) {
                       return (
                         <div key={row[0]} style={{ textAlign:"center" }}>
@@ -5287,7 +5259,7 @@ export default function App() {
                       disabled={idx === 0}
                       style={{ width:"26px", height:"26px", border:"1px solid rgba(15,31,61,0.15)", borderRadius:"5px",
                         background: idx === 0 ? "rgba(15,31,61,0.04)" : "#fff",
-                        color: idx === 0 ? "rgba(15,31,61,0.2)" : C.navy,
+                        color: idx === 0 ? "rgba(15,31,61,0.2)" : tokens.color.brand.navy,
                         cursor: idx === 0 ? "default" : "pointer",
                         fontSize:"13px", lineHeight:1, padding:0,
                         display:"flex", alignItems:"center", justifyContent:"center" }}>
@@ -5298,7 +5270,7 @@ export default function App() {
                       disabled={idx === battingOrder.length - 1}
                       style={{ width:"26px", height:"26px", border:"1px solid rgba(15,31,61,0.15)", borderRadius:"5px",
                         background: idx === battingOrder.length - 1 ? "rgba(15,31,61,0.04)" : "#fff",
-                        color: idx === battingOrder.length - 1 ? "rgba(15,31,61,0.2)" : C.navy,
+                        color: idx === battingOrder.length - 1 ? "rgba(15,31,61,0.2)" : tokens.color.brand.navy,
                         cursor: idx === battingOrder.length - 1 ? "default" : "pointer",
                         fontSize:"13px", lineHeight:1, padding:0,
                         display:"flex", alignItems:"center", justifyContent:"center" }}>
@@ -5453,7 +5425,7 @@ export default function App() {
               if (!player) return null;
               var _isAbsentEdit = absentTonight.indexOf(name) >= 0;
               return (
-                <div key={name} style={{ ...S.card, marginBottom:"8px", opacity: _isAbsentEdit ? 0.45 : 1, pointerEvents: _isAbsentEdit ? "none" : "auto" }}>
+                <Card key={name} padding="16px 18px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"8px", opacity: _isAbsentEdit ? 0.45 : 1, pointerEvents: _isAbsentEdit ? "none" : "auto" }}>
                   <div style={{ fontWeight:"bold", fontSize:"13px", color:C.navy, marginBottom:"10px" }}>
                     #{idx + 1} &nbsp; {firstName(name)}{_isAbsentEdit ? <span style={{ fontSize:"11px", color:C.red, marginLeft:"8px", fontWeight:"normal" }}>(Out Tonight)</span> : null}
                   </div>
@@ -5497,7 +5469,7 @@ export default function App() {
                       onChange={function(e) { updatePlayer(name, { walkUpLink: e.target.value || null }); }}
                     />
                   </div>
-                </div>
+                </Card>
               );
             })}
             <div style={{ display:"flex", gap:"8px", marginTop:"16px" }}>
@@ -5629,7 +5601,7 @@ export default function App() {
                     📅 {dateStr}
                     {game.time ? <span style={{ fontWeight:"normal", color:C.textMuted, fontSize:"12px", marginLeft:"8px" }}>• {game.time}</span> : null}
                   </div>
-                  <div style={{ fontSize:"13px", color: isPast && !isToday ? C.textMuted : C.text, marginTop:"2px" }}>
+                  <div style={{ fontSize:"13px", color: isPast && !isToday ? C.textMuted : tokens.color.text.ink, marginTop:"2px" }}>
                     {game.home ? "vs " : "@ "}<strong>{game.opponent || "TBD"}</strong>
                     {game.location ? <span style={{ fontWeight:"normal", color:C.textMuted, fontSize:"12px" }}> — {game.location}</span> : null}
                   </div>
@@ -5654,7 +5626,7 @@ export default function App() {
                     updateSnackField(gid, "playerName", e.target.value);
                   }; }(game.id)}
                   disabled={lineupLocked}
-                  style={{ flex:"1 1 140px", minWidth:"120px", padding:"5px 8px", borderRadius:"6px", border:"1px solid rgba(15,31,61,0.15)", fontSize:"13px", fontFamily:"inherit", background:C.cardBg, color: hasAssignment ? C.text : C.textMuted, opacity: lineupLocked ? 0.5 : 1 }}>
+                  style={{ flex:"1 1 140px", minWidth:"120px", padding:"5px 8px", borderRadius:"6px", border:"1px solid rgba(15,31,61,0.15)", fontSize:"13px", fontFamily:"inherit", background:C.cardBg, color: hasAssignment ? tokens.color.text.ink : C.textMuted, opacity: lineupLocked ? 0.5 : 1 }}>
                   <option value="">— select player —</option>
                   {roster.slice().sort(function(a,b){ return (a.firstName||a.name||'').toLowerCase().localeCompare((b.firstName||b.name||'').toLowerCase()); }).map(function(p) {
                     return <option key={p.name} value={p.firstName || p.name}>{p.firstName || p.name}</option>;
@@ -5771,7 +5743,7 @@ export default function App() {
         </div>
 
         {importMode === "choose" ? (
-          <div style={{ ...S.card, marginBottom:"14px" }}>
+          <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
             <div style={S.sectionTitle}>How do you have your schedule?</div>
             <div style={{ display:"flex", flexDirection:"column", gap:"10px" }}>
               {[
@@ -5798,11 +5770,11 @@ export default function App() {
                 );
               })}
             </div>
-          </div>
+          </Card>
         ) : null}
 
         {importMode === "image" ? (
-          <div style={{ ...S.card, marginBottom:"14px" }}>
+          <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
             <div style={S.sectionTitle}>Import from Photo</div>
             <div style={{ fontSize:"12px", color:C.textMuted, marginBottom:"14px" }}>
               Take a photo of your printed schedule, or choose a screenshot from your camera roll.
@@ -5906,11 +5878,11 @@ export default function App() {
               onClick={function() { setImportMode("choose"); setImportState({ mode:null, text:"", image:null, loading:false, error:"", preview:[] }); }}>
               Back
             </button>
-          </div>
+          </Card>
         ) : null}
 
         {importMode === "text" ? (
-          <div style={{ ...S.card, marginBottom:"14px" }}>
+          <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
             <div style={S.sectionTitle}>Paste Schedule Text</div>
             <div style={{ fontSize:"12px", color:C.textMuted, marginBottom:"10px" }}>
               Copy the schedule from an email, GroupMe message, or website and paste it below. Any format works.
@@ -5949,11 +5921,11 @@ export default function App() {
                 </div>
               </div>
             ) : null}
-          </div>
+          </Card>
         ) : null}
 
         {showGameForm ? (
-          <div style={{ ...S.card, marginBottom:"14px", borderLeft:"3px solid " + C.red }}>
+          <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px", borderLeft:"3px solid " + C.red }}>
             <div style={{ fontWeight:"bold", fontSize:"14px", marginBottom:"14px" }}>
               {editingGame ? "Edit Game" : "Add New Game"}
             </div>
@@ -6202,7 +6174,7 @@ export default function App() {
                               );
                             })}
                             <td style={cellStyle}>
-                              <span style={{ fontSize:"12px", fontWeight:"bold", color: perf.ab > 0 ? (perf.h/perf.ab >= 0.300 ? C.win : perf.h/perf.ab >= 0.200 ? "#d4a017" : C.text) : C.textMuted }}>
+                              <span style={{ fontSize:"12px", fontWeight:"bold", color: perf.ab > 0 ? (perf.h/perf.ab >= 0.300 ? C.win : perf.h/perf.ab >= 0.200 ? "#d4a017" : tokens.color.text.ink) : C.textMuted }}>
                                 {perf.ab > 0 ? fmtAvg(perf.h, perf.ab) : "—"}
                               </span>
                             </td>
@@ -6220,7 +6192,7 @@ export default function App() {
               </button>
               <button style={S.btn("ghost")} onClick={function() { setShowGameForm(false); setEditingGame(null); }}>Cancel</button>
             </div>
-          </div>
+          </Card>
         ) : null}
 
         <div>
@@ -6235,7 +6207,7 @@ export default function App() {
             var resultColor = game.result === "W" ? C.win : game.result === "L" ? C.red : game.result === "T" ? "#d4a017" : "#888";
             var cancelColor = C.canceled;
             return (
-              <div key={game.id} style={{ ...S.card, borderLeft:"3px solid " + (isCanceled ? cancelColor : isPlayed ? resultColor : C.red), padding:"14px 16px", opacity: isCanceled ? 0.72 : 1 }}>
+              <Card key={game.id} padding="14px 16px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px", borderLeft:"3px solid " + (isCanceled ? cancelColor : isPlayed ? resultColor : C.red), opacity: isCanceled ? 0.72 : 1 }}>
                 <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:"10px" }}>
                   <div style={{ flex:1 }}>
                     <div style={{ display:"flex", alignItems:"center", gap:"8px", marginBottom:"4px", flexWrap:"wrap" }}>
@@ -6320,7 +6292,7 @@ export default function App() {
                             }));
                           }; }(game.id, !game.scoreReported)}
                           style={{ width:"15px", height:"15px", accentColor:C.gold, cursor:"pointer", flexShrink:0 }} />
-                        <label htmlFor={"county-" + game.id} style={{ fontSize:"12px", color: game.scoreReported ? C.text : C.textMuted, cursor:"pointer", userSelect:"none" }}>
+                        <label htmlFor={"county-" + game.id} style={{ fontSize:"12px", color: game.scoreReported ? tokens.color.text.ink : C.textMuted, cursor:"pointer", userSelect:"none" }}>
                           {game.scoreReported ? "✓ Score reported to the County" : "Report score to the County"}
                         </label>
                       </div>
@@ -6337,7 +6309,7 @@ export default function App() {
                               onChange={function(gid) { return function(e) {
                                 updateSnackField(gid, "playerName", e.target.value);
                               }; }(game.id)}
-                              style={{ flex:"1 1 110px", minWidth:"100px", padding:"3px 6px", borderRadius:"5px", border:"1px solid rgba(15,31,61,0.15)", fontSize:"12px", fontFamily:"inherit", background:C.cardBg, color: hasSa ? C.text : C.textMuted }}>
+                              style={{ flex:"1 1 110px", minWidth:"100px", padding:"3px 6px", borderRadius:"5px", border:"1px solid rgba(15,31,61,0.15)", fontSize:"12px", fontFamily:"inherit", background:C.cardBg, color: hasSa ? tokens.color.text.ink : C.textMuted }}>
                               <option value="">— Assign —</option>
                               {roster.slice().sort(function(a,b){ return (a.firstName||a.name||'').toLowerCase().localeCompare((b.firstName||b.name||'').toLowerCase()); }).map(function(p) {
                                 return <option key={p.name} value={p.firstName || p.name}>{p.firstName || p.name}</option>;
@@ -6391,14 +6363,14 @@ export default function App() {
                     <button style={{ ...S.btn("ghost"), color:C.red }} onClick={function(id) { return function() { if (confirm("Delete game?")) { deleteGame(id); } }; }(game.id)}>Del</button>
                   </div>
                 </div>
-              </div>
+              </Card>
             );
           })}
         </div>
 
         {showShare ? (
           <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:100, padding:"20px" }}>
-            <div style={{ ...S.card, maxWidth:"420px", width:"100%", padding:"24px" }}>
+            <Card padding="24px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px", maxWidth:"420px", width:"100%" }}>
               <div style={{ fontWeight:"bold", fontSize:"15px", marginBottom:"12px" }}>Share Lineup</div>
               <div style={{ fontSize:"11px", color:C.textMuted, marginBottom:"8px" }}>View-only link for coaches and parents:</div>
               <div style={{ padding:"10px", background:"#f8f4ee", borderRadius:"6px", fontSize:"11px", wordBreak:"break-all", marginBottom:"12px", border:"1px solid rgba(15,31,61,0.08)" }}>
@@ -6412,7 +6384,7 @@ export default function App() {
                 }}>Copy Link</button>
                 <button style={S.btn("ghost")} onClick={function() { setShowShare(false); setShareGame(null); }}>Close</button>
               </div>
-            </div>
+            </Card>
           </div>
         ) : null}
       </div>
@@ -6441,7 +6413,7 @@ export default function App() {
       <div>
 
         {/* ── Section 1: General Feedback ───────────────────── */}
-        <div style={S.card}>
+        <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
           <div style={S.sectionTitle}>Share Feedback</div>
           <div style={{ color:C.textMuted, fontSize:"12px", marginBottom:"14px" }}>
             Help us improve the app. Tell us what’s working and what isn’t.
@@ -6490,10 +6462,10 @@ export default function App() {
           {fbConfirm ? (
             <div style={{ marginTop:"10px", color:"#27ae60", fontSize:"12px", fontWeight:"bold" }}>{fbConfirm}</div>
           ) : null}
-        </div>
+        </Card>
 
         {/* ── Section 2: Report a Bug ──────────────────────── */}
-        <div style={S.card}>
+        <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
           <div style={S.sectionTitle}>Report an Issue</div>
           <div style={{ color:C.textMuted, fontSize:"12px", marginBottom:"14px" }}>
             Something not working right? Tell us what happened.
@@ -6538,10 +6510,10 @@ export default function App() {
           {bugConfirm ? (
             <div style={{ marginTop:"10px", color:"#27ae60", fontSize:"12px", fontWeight:"bold" }}>{bugConfirm}</div>
           ) : null}
-        </div>
+        </Card>
 
         {/* ── Submitted Feedback History ─────────────────────── */}
-        <div style={S.card}>
+        <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", cursor:"pointer" }}
             onClick={function() { setFbHistoryOpen(!fbHistoryOpen); }}>
             <div style={{ fontSize:"11px", fontWeight:"bold", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.1em" }}>
@@ -6565,7 +6537,7 @@ export default function App() {
                           <span style={{ fontSize:"10px", color:C.textMuted }}>{dt}</span>
                           {label ? <span style={{ fontSize:"10px", padding:"1px 6px", borderRadius:"4px", background:"rgba(15,31,61,0.08)", color:C.navy, fontWeight:"bold" }}>{label}</span> : null}
                         </div>
-                        <div style={{ fontSize:"11px", color:C.text }}>{preview}</div>
+                        <div style={{ fontSize:"11px", color:tokens.color.text.ink }}>{preview}</div>
                       </div>
                     );
                   })}
@@ -6582,7 +6554,7 @@ export default function App() {
               )}
             </div>
           ) : null}
-        </div>
+        </Card>
 
       </div>
     );
@@ -7134,7 +7106,7 @@ export default function App() {
       <div>
         {LINKS.map(function(section) {
           return (
-            <div key={section.group} style={S.card}>
+            <Card key={section.group} padding="16px 18px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
               <div style={S.sectionTitle}>{section.group}</div>
               {section.items.map(function(link, li) {
                 return (
@@ -7151,7 +7123,7 @@ export default function App() {
                   </a>
                 );
               })}
-            </div>
+            </Card>
           );
         })}
       </div>
@@ -7176,7 +7148,7 @@ export default function App() {
       border:"1px solid " + C.navy + "22", whiteSpace:"nowrap", flexShrink:0
     };
     return (
-      <div style={S.card}>
+      <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
         <div style={S.sectionTitle}>Your Account</div>
 
         {/* #405 — editable name, extracted #407 (component owns its state). */}
@@ -7190,7 +7162,7 @@ export default function App() {
 
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline", gap:"12px", padding:"9px 0", borderBottom:"1px solid " + C.border, marginBottom:"14px" }}>
           <span style={{ fontSize:"11px", letterSpacing:"0.08em", textTransform:"uppercase", color:C.textMuted, whiteSpace:"nowrap" }}>Signed in as</span>
-          <span style={{ fontSize:"13px", color:C.text, fontWeight:"600", textAlign:"right", wordBreak:"break-word" }}>{_email}</span>
+          <span style={{ fontSize:"13px", color:tokens.color.text.ink, fontWeight:"600", textAlign:"right", wordBreak:"break-word" }}>{_email}</span>
         </div>
 
         <div style={{ fontSize:"11px", letterSpacing:"0.08em", textTransform:"uppercase", color:C.textMuted, marginBottom:"8px" }}>Your teams</div>
@@ -7239,13 +7211,13 @@ export default function App() {
         <div style={{ fontSize:"11px", color:C.textMuted, marginTop:"12px", lineHeight:"1.5", textAlign:"center" }}>
           Your teams and lineups stay saved on this device. You&apos;ll need to sign in again to make changes.
         </div>
-      </div>
+      </Card>
     );
   }
 
   function renderUpdates() {
     return (
-      <div style={S.card}>
+      <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
         <div style={S.sectionTitle}>What&#x27;s New</div>
         {VERSION_HISTORY.map(function(v, vi) {
           var isCurrent = v.version === APP_VERSION;
@@ -7268,7 +7240,7 @@ export default function App() {
               </div>
               {isOpen ? (
                 <div>
-                  <div style={{ fontSize:"0.95rem", fontWeight:"600", color:C.text, marginBottom:"6px", lineHeight:"1.4" }}>{v.headline}</div>
+                  <div style={{ fontSize:"0.95rem", fontWeight:"600", color:tokens.color.text.ink, marginBottom:"6px", lineHeight:"1.4" }}>{v.headline}</div>
                   {v.userChanges && v.userChanges.length > 0 ? (
                     <ul style={{ margin:"0 0 6px 0", paddingLeft:"0", listStyle:"none" }}>
                       {v.userChanges.map(function(ch, ci) {
@@ -7289,7 +7261,7 @@ export default function App() {
             </div>
           );
         })}
-      </div>
+      </Card>
     );
   }
 
@@ -7531,7 +7503,7 @@ export default function App() {
     var _showGameMode = roster.length > 0 && schedule.length > 0;
 
     subTabBar = (
-      <div style={{ display:"flex", gap:"4px", alignItems:"center", padding:"8px 12px 4px", background:C.cream, borderBottom:"1px solid " + C.border }}>
+      <div style={{ display:"flex", gap:"4px", alignItems:"center", padding:"8px 12px 4px", background:tokens.color.surface.cream, borderBottom:"1px solid " + C.border }}>
         {GAMEDAY_SUBTABS.map(function(st) {
           if (st.launcher) {
             if (!_showGameMode) { return null; }
@@ -7612,7 +7584,7 @@ export default function App() {
     );
   } else if (primaryTab === "more") {
     subTabBar = (
-      <div style={{ display:"flex", gap:"4px", padding:"8px 12px 4px", background:C.cream, borderBottom:"1px solid " + C.border }}>
+      <div style={{ display:"flex", gap:"4px", padding:"8px 12px 4px", background:tokens.color.surface.cream, borderBottom:"1px solid " + C.border }}>
         {MORE_SUBTABS.map(function(st) {
           return (
             <button key={st.key}
@@ -7901,7 +7873,7 @@ export default function App() {
   // ── Always column: header + top tabs + scrollable content ──────────────
   // TODO: extract — deferred (Header depends on syncStatus, isLandscape, screen, activeTeam, isOnline, activeTeamId — extract after OfflineIndicator is stable and state prop drilling pattern is established)
   return (
-    <div style={{ height: isStandalone ? "100dvh" : "100svh", display:"flex", flexDirection:"column", overflow:"hidden", background: primaryTab === "more" ? "linear-gradient(160deg,#0f1f3d 0%,#1a3260 55%,#2a0a0a 100%)" : C.cream, fontFamily:"Georgia,'Times New Roman',serif", color:C.text }}>
+    <div style={{ height: isStandalone ? "100dvh" : "100svh", display:"flex", flexDirection:"column", overflow:"hidden", background: primaryTab === "more" ? "linear-gradient(160deg,#0f1f3d 0%,#1a3260 55%,#2a0a0a 100%)" : tokens.color.surface.cream, fontFamily:"Georgia,'Times New Roman',serif", color:tokens.color.text.ink }}>
       <Toast
         open={toast.open}
         message={toast.message}
@@ -7915,7 +7887,7 @@ export default function App() {
         }}>
           <BrandMark size={isLandscape ? 30 : 42} />
           {screen === "app" && primaryTab !== "more" && activeTeam ? (
-            <div style={Object.assign({}, S.logoCircle, { background:C.navy, border:"2px solid "+C.gold }, isLandscape ? { width:"24px", height:"24px", fontSize:"11px" } : { width:"30px", height:"30px", fontSize:"14px" })}>{activeTeam.name.charAt(0).toUpperCase()}</div>
+            <div style={Object.assign({}, S.logoCircle, { background:tokens.color.brand.navy, border:"2px solid "+tokens.color.brand.gold }, isLandscape ? { width:"24px", height:"24px", fontSize:"11px" } : { width:"30px", height:"30px", fontSize:"14px" })}>{activeTeam.name.charAt(0).toUpperCase()}</div>
           ) : null}
           <div>
             <div style={Object.assign({}, S.logoTitle, isLandscape ? { fontSize:"14px" } : {})}>{screen === "app" && primaryTab !== "more" && activeTeam ? activeTeam.name : "Dugout Lineup"}</div>

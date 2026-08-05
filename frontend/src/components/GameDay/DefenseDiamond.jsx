@@ -19,6 +19,7 @@
 
 import { useState } from "react";
 import { tokens } from "../../theme/tokens";
+import { Text } from "../ui/Text";
 
 var textMuted = "#6b7280"; // drift: text.secondary (#64748b)
 var red       = tokens.color.brand.red;
@@ -209,8 +210,8 @@ export function DefenseDiamond({ roster, grid, innings, selectedInning, onSelect
       {/* ── Inning selector — single scrollable row ────── */}
       <div style={{ display:"flex", flexWrap:"nowrap", gap:"4px", alignItems:"center",
         marginBottom:"12px", overflowX:"auto", WebkitOverflowScrolling:"touch", paddingBottom:"2px" }}>
-        <span style={{ fontSize:tokens.font.size.xs, color:textMuted, fontWeight:"bold",
-          textTransform:"uppercase", letterSpacing:"0.08em", flexShrink:0 }}>Inn</span>
+        <Text weight="bold" uppercase style={{ fontSize:tokens.font.size.xs, color:textMuted,
+          letterSpacing:"0.08em", flexShrink:0 }}>Inn</Text>
         <button
           onClick={function() { setDiamondInning(null); }}
           style={{ padding:"3px 8px", borderRadius:"10px", // drift: radius.md (8px)
@@ -242,19 +243,19 @@ export function DefenseDiamond({ roster, grid, innings, selectedInning, onSelect
 
       {/* ── Bench strip ─────────────────────────────── */}
       <div style={{ borderTop:tokens.borderWidth.medium + " solid " + tokens.color.overlay.navyMedium, paddingTop:"10px" }}>
-        <div style={{ fontSize:"10px", fontWeight:"bold", color:"#555",
-          textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"6px" }}>Bench</div>
+        <Text as="div" weight="bold" uppercase style={{ fontSize:"10px", color:"#555",
+          letterSpacing:"0.1em", marginBottom:"6px" }}>Bench</Text>
         <div style={{ overflowX:"auto" }}>
           <table style={{ borderCollapse:"collapse", fontSize:tokens.font.size.xs, width:"100%" }}>
             <thead>
               <tr style={{ background:tokens.color.surface.tableHeader }}>
                 {benchInnLabels.map(function(i) {
                   return (
-                    <th key={i} style={{ padding:"4px 10px", textAlign:"center", fontSize:"10px",
-                      color:"#555", fontWeight:"bold", letterSpacing:"0.08em",
+                    <Text as="th" key={i} weight="bold" style={{ padding:"4px 10px", textAlign:"center", fontSize:"10px",
+                      color:"#555", letterSpacing:"0.08em",
                       borderBottom:tokens.borderWidth.medium + " solid " + tokens.color.overlay.navyMedium, minWidth:"52px" }}>
                       Inn {i + 1}
-                    </th>
+                    </Text>
                   );
                 })}
               </tr>
@@ -291,13 +292,13 @@ export function DefenseDiamond({ roster, grid, innings, selectedInning, onSelect
                     <tr key="out-hdr">
                       {benchInnLabels.map(function(i) {
                         return (
-                          <td key={i} style={{ padding:"3px 10px", textAlign:"center",
+                          <Text as="td" key={i} weight="bold" uppercase style={{ padding:"3px 10px", textAlign:"center",
                             borderTop:tokens.borderWidth.medium + " solid " + tokens.color.overlay.errorMedium,
                             background:tokens.color.overlay.errorFaint,
-                            fontSize:tokens.font.size.xs, fontWeight:"bold", color:tokens.color.status.error,
-                            letterSpacing:"0.08em", textTransform:"uppercase" }}>
+                            fontSize:tokens.font.size.xs, color:tokens.color.status.error,
+                            letterSpacing:"0.08em" }}>
                             Out
-                          </td>
+                          </Text>
                         );
                       })}
                     </tr>

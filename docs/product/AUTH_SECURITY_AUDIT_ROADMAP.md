@@ -1,8 +1,8 @@
 # Auth / Security / Audit Roadmap
 
-**Status:** v1.1
+**Status:** v1.2
 **Owner:** Kaushik
-**Last Updated:** 2026-07-13
+**Last Updated:** 2026-08-04 (role-model + WS-3 status corrected against live prod re-verification - Doc Audit Spike Story 2, originally captured 2026-07-13)
 **Location:** `docs/product/AUTH_SECURITY_AUDIT_ROADMAP.md`
 
 ---
@@ -40,26 +40,46 @@ written to `team_memberships`. `normalizeRole()` throws `ROLE_FORBIDDEN` if
 anything tries.
 
 **Axis 2 - Team scope (PER-TEAM).**
-`team_memberships.role` holds exactly one of **four canonical strings**, enforced
-by the CHECK constraint in `003_create_team_memberships.sql`:
+`normalizeRole()` targets exactly **four canonical strings** at the code layer:
 
     admin | coach | scorekeeper | viewer
 
+**!! CORRECTED 2026-07-13, re-verified live 2026-08-04 - this is NOT what the
+database enforces.** `team_memberships.role`'s live CHECK constraint (verified via
+direct `pg_constraint` query against prod, and matching `docs/db/schema.sql`)
+allows **SEVEN** values, not four:
+
+    admin | viewer | team_admin | coordinator | coach | scorekeeper | parent
+
+The four-string list above is the code-level normalization *target*
+(`normalizeRole()`), not a database-enforced fact. The DB tolerates the extra
+three (`team_admin`, `coordinator`, `parent`) because ~596 existing rows hold
+them - narrowing the CHECK constraint to four is a **data migration**, not a doc
+edit. Treating the four-string list as DB-enforced is the exact error that broke
+the public signup form once already (migration 009: `access_requests` rejected
+`admin`/`viewer` until its own CHECK was widened to match the real seven-value
+set). Do not reintroduce that assumption anywhere in this document or in code.
+
 ### The label layer
 
-What a user SEES is richer than what we STORE. Labels are a presentation concern;
-the four strings above are the storage vocabulary.
+What a user SEES is richer than what we STORE, and what we STORE is richer than
+what `normalizeRole()` TARGETS. Three layers, not two:
 
-| UI label          | Stored value | Notes                                       |
-|-------------------|--------------|---------------------------------------------|
-| Head Coach        | `admin`      | Runs the team. RLS grants team-management.  |
-| Assistant Coach   | `coach`      |                                             |
-| Team Coordinator  | `coach`      | Coach-tier in authz terms. Label only.      |
-| Viewer / Parent   | `viewer`     | Read-only team seat.                        |
+| UI label          | Stored value (DB, 7 possible) | `normalizeRole()` target (4) | Notes |
+|-------------------|--------------------------------|-------------------------------|-------|
+| Head Coach        | `admin`                        | `admin`                       | Runs the team. RLS grants team-management. |
+| Assistant Coach   | `coach`                        | `coach`                       | |
+| Team Coordinator  | `coordinator` (legacy rows) or `coach` | `coach`                | Coach-tier in authz terms. `coordinator` is a real, DB-tolerated legacy value, not just a label. |
+| Viewer / Parent   | `viewer` or `parent` (legacy rows) | `viewer`                  | Read-only team seat. |
+| *(legacy only)*   | `team_admin`                   | `admin`                       | Tolerated for existing rows; not offered as a request-access option. |
 
-**Two labels legitimately map to one canonical value.** This is not a bug. Do NOT
-"fix" it by adding a `coordinator` role to the CHECK constraint. A Coordinator is
-coach-tier in authorization terms; the distinction is a label.
+**Two labels legitimately map to one canonical `normalizeRole()` target.** This is
+not a bug. Do NOT "fix" it by trying to remove `coordinator`/`team_admin`/`parent`
+from the CHECK constraint on the assumption they're an accidental drift - they are
+live, populated, legacy-tolerated values today. If the DB-level vocabulary is ever
+narrowed to match the four-string target, that is a deliberate data migration
+(reassign or reject the ~596 legacy rows first), tracked as its own workstream -
+not a side effect of editing this document.
 
 Because of this, `RequestAccessScreen.jsx` tracks an option **`id`** in state and
 resolves `id -> value` at submit. `value` cannot serve as the React key or the
@@ -99,7 +119,7 @@ weaken the contract.
 |----|-------|---------|------|----------|--------|
 | WS-1 | Role vocabulary normalization | *(new)* | A | T1 | **DONE** (#336) |
 | WS-2 | Approve-link HMAC + `reviewed_by` | SF-1.11 | A | T1 | Open (#337) |
-| WS-3 | `requireAuth` cutover + RLS 004 | Charter P2 | B (spine) | T1 | **P0 - REMEDIATION, NOT A ROADMAP ITEM.** Six teams' rosters are readable and destructible with the public anon key RIGHT NOW (#342). Four backdoors let anyone rewrite the Mud Hens' live score (#355). **Neither is fixable without this.** |
+| WS-3 | `requireAuth` cutover + RLS 004 | Charter P2 | B (spine) | T1 | **SPLIT STATUS - re-verified live 2026-08-04.** #342 (team-data/teams/roster_snapshots RLS) is **DONE** - shipped v2.6.0 (2026-07-20), confirmed live: all three tables now show `relrowsecurity = true` with real `auth.uid()`-scoped policies (see `docs/db/schema.sql` §8). #355 (the scoring tables) is **STILL OPEN** - confirmed live, unchanged: `live_game_state`/`game_scoring_sessions`/`scoring_audit_log` each carry an `allow_scorer_writes` policy (`roles: public, cmd: ALL, qual: true`) that permits unrestricted read/write/delete on every team's scoring data, platform-wide - broader than the "four backdoors, Mud Hens-only" framing this row previously carried; the team-scoped `*_anon_test` policies are redundant given `allow_scorer_writes` already grants everything to everyone. #355 is not fixable without WS-4 (below). |
 | WS-4 | FK restore + WHO/WHEN columns | SF-2.1-adj | rides B | T1 | Not started |
 | WS-5 | Agreement gate (backend + UI) | *(new)* | C | T1 + T2 | Not started |
 | WS-6 | Ownership-check middleware | SF-1.2 | rides B | T1 | Not started |
@@ -161,7 +181,7 @@ asserting on the INSERT PAYLOAD, not just the response).
 
 **Known gaps, deliberately deferred:**
 
-- `App.jsx:2313` (`role: team.role || "team_admin"`) - an analytics default, not an
+- `App.jsx:2304` (`role: team.role || "team_admin"`) - an analytics default, not an
   authz value. Moves together with `ANALYTICS.md`'s four matching refs.
 - No `RequestAccessScreen` frontend test exists. The `id`/`value` indirection is
   exactly what a future refactor breaks silently.

@@ -142,26 +142,18 @@ before documenting it as canonical.
 
 ## 3. Locked Files Registry
 
-**Current session locks (until App.jsx gate phrase):**
-
-| File | Reason locked | Who owns it |
-|------|--------------|-------------|
-| `frontend/src/App.jsx` | 9,800 lines; parallel Game Day session edits it | Parallel session / Phase 4 |
-| `frontend/src/utils/migrations.js` | Parallel session territory | Parallel session |
-| `frontend/src/utils/formatters.js` | Parallel session territory | Parallel session |
-| `frontend/src/utils/flagBootstrap.js` | Parallel session territory | Parallel session |
-| `frontend/src/components/game-mode/*` | Parallel session owns Game Mode behavioral changes | Parallel session |
-| `frontend/src/components/ScoringMode/*` | Parallel session territory | Parallel session |
-| `frontend/package.json` | No version bumps until v2.4.x umbrella closes | KK-directed only |
-| `backend/package.json` | No version bumps until v2.4.x umbrella closes | KK-directed only |
-| `CLAUDE.md` | No version history edits until umbrella closes | KK-directed only |
-| `docs/product/ROADMAP.md` | No version history edits; new sections OK | KK-directed only |
-
-**In-scope exception for this session:**
-
-| File | Why unlocked |
-|------|-------------|
-| `frontend/src/config/featureFlags.js` | Phase 1a explicitly requires the `ACCESSIBILITY_V1` flag flip |
+> **Corrected 2026-08-04 (Doc Audit Spike Story 8).** This section described a
+> point-in-time arrangement from the Phase 1/2 era — a "parallel session" owning
+> specific files, and a "v2.4.x umbrella" version-closure gate. Both are long
+> since closed (current version is v2.8.4/v2.8.3), and the whole framing
+> contradicts the gate-phrase convention that's been the actual live mechanism
+> since. Keeping a second, drifted copy here risks a fresh session trusting this
+> table over the real one. **Canonical source: root `CLAUDE.md` § Locked Files.**
+> It uses per-file gate phrases (e.g. `"all clear — App.jsx editing approved"`)
+> rather than session-based ownership, and is the one that's actually
+> maintained. `MEMORY.md`'s `project_locked_files.md` note adds the practical
+> caveat: only `App.jsx` genuinely requires its gate phrase before editing;
+> the others mean "edit carefully," not "hard-blocked."
 
 ---
 
@@ -396,11 +388,18 @@ stopped. Pick up from the last completed step.
 
 ---
 
-### Phase 3 Step 5+ — additional call-site migrations (open)
+### Phase 3 Step 5+ — additional call-site migrations (COMPLETE)
 
-**Status:** ⏭️ Next. Continue Phase 3 consumer migration of inline-styled components onto `components/ui/` primitives. Each step is a single-component (or small bundle) migration with characterization-test discipline established in Steps 3-4.
+**Status:** ✅ Complete (2026-08-03). All 7 files in the candidate pool migrated onto `components/ui/` primitives, each its own scoped PR with build/lint/full-suite verification:
+- `FairnessCheck.jsx` (PR #519) — Card primitive, dropped its `C` prop entirely
+- `NowBattingStrip.jsx` (PR #520) — Text primitive for pill name/label
+- `MaintenanceScreen.jsx` (PR #521) — Stack + Text primitives
+- `GameDay/ParentView.jsx` (PR #522) — recon confirmed already substantially migrated (Story 82); finished remaining Text migration
+- `BattingOrderStrip/` (PR #524) — Text primitive; confirmed not used in App.jsx at all (only `game-mode/DugoutView.jsx`)
+- `LockFlow.jsx` (PR #525) — Text primitive for all step content
+- `GameDay/DefenseDiamond.jsx` (PR #526) — Text primitive for the handful of HTML text elements; the SVG field rendering (most of the file) has no primitive-adoption opportunity at all
 
-**Subsequent candidate pool:** `BattingOrderStrip/`, `GameDay/DefenseDiamond.jsx`, `FairnessCheck.jsx`, `LockFlow.jsx`, `NowBattingStrip.jsx`, `Shared/MaintenanceScreen.jsx`. `GameDay/ParentView.jsx` needs recon (no Phase 1 audit touch on record).
+**Recurring finding across the bundle:** the `Button`/`Pill` primitives' fixed contracts (44px touch-target floor, fixed variant colors, single-Text-child) did not fit several call sites — non-interactive display "pills" with two text lines, buttons needing colors outside the existing variant set, custom disabled-state treatments. Each mismatch is documented inline in its PR rather than forced. This mirrors the `BattingHandSelector`/Pill deferral (Story 66) — not a one-off.
 
 **Deferred (see Story 66):** `BattingHandSelector` Pill migration — already tokens-wired, not a regression risk. Reassess once Pill grows a `tone` API.
 
