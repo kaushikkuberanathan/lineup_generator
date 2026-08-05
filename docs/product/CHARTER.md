@@ -1,6 +1,6 @@
 # Dugout Lineup — Product Charter
 
-> Version 1.1 — April 27, 2026 — App v2.5.1
+> Version 1.2 — 2026-08-04 — App v2.8.3 (prod; develop is ahead at v2.8.4, not yet promoted)
 > Owner: KK (Product + Engineering)
 
 ---
@@ -55,14 +55,14 @@ Every product decision is evaluated against this principle first.
 - Out Tonight — absent players shown with red indicators across all 11 lineup surfaces
 - Live scoring — real-time at-bat tracking, scorer lock, game state sync via Supabase Realtime (v2.5.9)
 
-### Phase 2 — In Progress
+### Phase 2 — Shipped (corrected 2026-08-04; was listed "In Progress")
 
-- Phase 4 auth: email magic link + Google OAuth, no passwords, no SMS
-- Admin UI (`admin.html`) — team management, user management, approval routing
+- Phase 4 auth: email magic link + Google OAuth, no passwords, no SMS — live since **v2.6.0** (2026-07-20); Google Sign-In added v2.7.0
+- Admin UI (`admin.html`) — team management, user management, approval routing — live, verified with all six tabs present
 
 ### Phase 3 — Later
 
-- Multi-coach invite flow (role-based access: Coach / Assistant Coach / Viewer)
+- Multi-coach invite flow (role-based access — see `docs/product/AUTH_SECURITY_AUDIT_ROADMAP.md` § THE ROLE MODEL for the actual current vocabulary: DB enforces 7 role values today; `normalizeRole()` targets 4 at the code layer; multi-membership infrastructure already exists — Stan Hoover holds an invited `coach` membership per root `CLAUDE.md`. What's still missing here is the invite UI flow, not the underlying role model.)
 - Season-long position fairness tracking across all games
 - Push notifications for lineup changes
 - Practice session log (drills, attendance, notes)
@@ -88,8 +88,8 @@ Eight distinct roles interact with Dugout Lineup. All personas operate in real-w
 
 | # | Persona | Role | Auth Required | Primary Need |
 |---|---------|------|---------------|--------------|
-| 1 | **Head Coach** | Team owner, primary user | Phase 3 | Create fair lineup fast, share it instantly |
-| 2 | **Dugout Parent** | Volunteer in-dugout assistant | Phase 3 | See current lineup, help manage substitutions |
+| 1 | **Head Coach** | Team owner, primary user | Active (live since v2.6.0) | Create fair lineup fast, share it instantly |
+| 2 | **Dugout Parent** | Volunteer in-dugout assistant | Active if editing; none if only viewing via share link | See current lineup, help manage substitutions |
 | 3 | **DJ Parent** | Controls walk-up music | None (share link) | Know the batting order and song info per player |
 | 4 | **Catcher Parent** | Supports catcher warmup between innings | None (share link) | Know who is catching which inning |
 | 5 | **Base Coach** | First/third base volunteer | None (share link) | Know the batting order and who is on deck |
@@ -164,7 +164,7 @@ Success metric: fix any data problem using admin.html or Supabase SQL Editor wit
 
 | Metric | Target | Source |
 |--------|--------|--------|
-| Frontend test suite | 257 passed / 1 skipped / 0 failed | `npm test` (Vitest) |
+| Frontend test suite | 975 passed / 1 skipped / 0 failed (as of v2.8.4, 2026-08-04; 1086 total incl. 111 backend) | `npm test` (Vitest) |
 | Build clean (zero errors) | 100% before every deploy | `npm run build` |
 | Share link renders without login | 100% | Manual + health-check.yml |
 | Auth never blocks Game Mode | 100% | Manual QA |
@@ -243,32 +243,39 @@ team_data  (team_id, roster, schedule, practices, batting_order, grid, innings, 
 
 ### Data Protection
 
-> **!! CORRECTED 2026-07-13. THIS SECTION PREVIOUSLY CLAIMED THREE GUARDS PREVENT
-> ROSTER WIPE. THEY DO NOT COVER THE ACTUAL WRITE PATH.**
->
-> **All three guards live in the BACKEND.** The React app does not use the backend
-> for roster writes - it writes `team_data` **directly to Supabase with the anon
-> key** (`frontend/src/supabase.js:71`). It goes around **all three**.
->
-> And RLS is **DISABLED** on `team_data`. The anon key ships in the frontend bundle.
-> Anyone can read every roster, overwrite any roster, or **`TRUNCATE` the table**.
-> `TRUNCATE` is granted to `anon` and RLS would not restrict it anyway.
->
-> **This is #342. It cannot be fixed until WS-3** moves roster writes behind the
-> backend - at which point these three guards start actually guarding.
+> **CORRECTED 2026-08-04 (Doc Audit Spike Story 8).** This section previously
+> said RLS on `team_data` is disabled and that the anon key can read/overwrite/
+> `TRUNCATE` every roster (#342). That was true when written (2026-07-13); it
+> shipped a fix a week later. Re-verified live via a direct `pg_policies`/grants
+> query against prod (2026-08-04, see `docs/db/schema.sql` §8-9): `team_data`
+> now has RLS **enabled** with membership-scoped policies, and `TRUNCATE`/`DELETE`
+> are revoked from `anon` on this table. The app's direct-to-Supabase write path
+> (`frontend/src/supabase.js`) still bypasses the two backend-side guards below —
+> that part of the original finding was correct and still holds — but it no
+> longer bypasses RLS, because RLS itself is now enforced independent of which
+> path (backend or direct) the write takes.
 
-Three guards exist. **They protect the backend path, which the app does not use:**
+Three guards exist, two of them backend-side:
 
 1. **Postgres trigger** — every write to `team_data` is snapshotted into
-   `team_data_history` (last 20 per team). **This one DOES fire** on anon writes -
-   it is attached to the table, not the route. It is the only guard currently doing
-   anything. (It must be `SECURITY DEFINER` or it breaks; see `docs/TROUBLESHOOTING.md`.)
+   `team_data_history` (last 20 per team). Fires on any write regardless of path
+   — it is attached to the table, not a route. (Must be `SECURITY DEFINER` or it
+   breaks; see `docs/TROUBLESHOOTING.md`.)
 2. **Backend write guard** — `POST /api/teams/:teamId/data` returns
-   `409 ROSTER_WIPE_GUARD` on an empty-roster write. **The app never calls this route.**
-3. **Recovery endpoint** — `GET /api/teams/:teamId/history`. Works, but it is recovery
-   after the fact, not prevention.
+   `409 ROSTER_WIPE_GUARD` on an empty-roster write. The app's own coach-facing
+   write path does not call this route (it writes directly to Supabase) — this
+   guard only protects callers that go through the backend.
+3. **Recovery endpoint** — `GET /api/teams/:teamId/history`. Recovery after the
+   fact, not prevention.
+4. **RLS (live since v2.6.0)** — `team_data` now requires an active
+   `admin`/`coach` team membership to INSERT/UPDATE, and active membership of
+   any role to SELECT. This is the guard that actually covers the app's real
+   write path, independent of the three above.
 
-**Net: one of three guards is live. Recovery is possible; prevention is not.**
+**Net: RLS closes the gap the original #342 finding identified. The Postgres
+trigger and RLS are both live on the real write path today; the backend write
+guard and recovery endpoint remain backend-path-only, which is fine — RLS, not
+the backend guard, is now the primary defense for direct writes.**
 
 ### Feature Flags
 
@@ -300,15 +307,23 @@ Roadmap is organized by exit criteria, not dates. A phase ships when its criteri
 
 Core single-coach lineup and schedule management. Auto-assign engine, batting order, diamond view, share links, PDF export, PWA, offline-first. Live at dugoutlineup.com as of March 24, 2026.
 
-### Phase 2 — In Progress
+### Phase 2 — Mostly shipped (corrected 2026-08-04)
 
 | Item | Status | Exit Criteria |
 |------|--------|---------------|
 | Live scoring (at-bat tracking, scorer lock) | ✅ Shipped (v2.5.9) | Scorer can track full game from dugout device |
-| Phase 4 auth (magic link + Google OAuth) | Parked — shims in place | Auth ships without blocking any existing viewer/share link |
-| Admin UI — six management tabs | In progress | KK can provision teams and manage users from admin.html |
-| RLS cutover (`004_rls_fixes.sql`) | Parked | Run only after Phase 4 auth confirmed end-to-end |
+| Phase 4 auth (magic link + Google OAuth) | ✅ Shipped (v2.6.0, 2026-07-20) | Auth ships without blocking any existing viewer/share link — confirmed: viewing/share links never gated |
+| Admin UI — six management tabs | ✅ Shipped | KK provisions teams and manages users from admin.html — verified live, all six tabs present |
+| RLS cutover (`004_rls_fixes.sql`) | ✅ Shipped (v2.6.0, WS-3) | Ran as part of the auth cutover; re-verified live 2026-08-04 |
 | Score reporting automation | Backlog | n8n webhook orchestration replaces manual checkbox |
+
+Still genuinely open, scoped narrower than "Phase 2 incomplete": the live-scoring
+tables' RLS (`live_game_state`/`game_scoring_sessions`/`scoring_audit_log`) is
+**not** part of the WS-3 fix above — those three tables still carry an
+unrestricted `allow_scorer_writes` policy, confirmed live 2026-08-04. See
+`docs/product/AUTH_SECURITY_AUDIT_ROADMAP.md` WS-3 row (#355) — this is real,
+current, and distinct from the roster/team-data exposure this roadmap item
+originally tracked.
 
 ### Phase 3 — Later (Backlog)
 
@@ -327,7 +342,7 @@ Multi-coach invite, role-based access (Coach / Assistant / Viewer), season-long 
 
 | # | Risk | Likelihood | Impact | Mitigation |
 |---|------|-----------|--------|-----------|
-| 1 | Roster wipe due to empty write | **HIGH** | Critical | **!! THE GUARD DOES NOT COVER THE ACTUAL PATH. See Data Protection below. RLS is OFF on `team_data`; the public anon key can TRUNCATE it. (#342)** |
+| 1 | Roster wipe due to empty write | **RESOLVED** (was HIGH) | Critical | **Closed v2.6.0.** RLS is now enabled on `team_data` with membership-scoped policies; `TRUNCATE`/`DELETE` revoked from anon — re-verified live 2026-08-04. See Data Protection above. The distinct, still-open scoring-table exposure (#355) is tracked separately, not under this risk. |
 | 2 | Share link blocked by auth | Medium | High | Auth principle enforced in code: share/Game Mode paths never check session |
 | 3 | Backend availability during game day | Low | High | Resolved by Render Starter plan upgrade (April 27, 2026); UptimeRobot pings `/ping` every 5 min with email + push notification alerting; coach bypass URL for maintenance window |
 | 4 | localStorage vs Supabase state drift | Medium | Medium | Additive merge on boot: Supabase teams not in localStorage are appended, never overwrite |

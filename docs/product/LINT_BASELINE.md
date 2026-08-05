@@ -1,4 +1,18 @@
-# ESLint Baseline — Phase 1b
+# ESLint Baseline — Phase 1b — ✅ RESOLVED (Story 77, v2.5.23, 2026-05-30)
+
+> **Archived 2026-08-04 (Doc Audit Spike Story 9).** This entire baseline (144
+> problems: 49 errors, 95 warnings) is fully closed. Live re-run of this file's
+> own baseline command (`eslint src --ext .js,.jsx --max-warnings 0` from
+> `frontend/`) returns **exit code 0, zero output** — 144 → 0. Story 77 (v2.5.23,
+> 2026-05-30, PRs #237/#244/#245) closed it in a 5-phase cleanup, ~650 net lines
+> removed from App.jsx. The "DEFER-TO-V2.7.0 (Auth re-skin)" bucket below (5
+> `react/no-unescaped-entities` findings) is also fixed — confirmed directly,
+> e.g. `PendingApprovalScreen.jsx` already uses `&apos;` — but there's no
+> evidence a dedicated "Auth re-skin" phase ever shipped as such; this was very
+> likely swept up in the same Story 77 pass rather than a separate re-skin.
+> Don't attribute the fix to a phase that may not have happened as planned.
+> Kept below as historical record — no fix needed here, this file just
+> documents a debt load that no longer exists.
 
 **Date:** 2026-05-02  
 **Branch:** `develop` (baseline established on `feature/design-tokens`; carried forward)  

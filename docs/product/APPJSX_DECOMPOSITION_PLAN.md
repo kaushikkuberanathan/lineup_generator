@@ -11,6 +11,18 @@
 > develop `ca9bd0a`. Line numbers are a snapshot and will drift; anchor on
 > function names, not line numbers, when executing.
 
+> **Disambiguation note (added 2026-08-04, Doc Audit Spike Story 9):** this
+> document's "Phase 4" (component/Context extraction, slices 4.0–4.7 below) is
+> a **completely different initiative** from the "Phase 4 `var C` legacy
+> color-object retirement, region slices 1-9" referenced in root `CLAUDE.md`'s
+> v2.8.4 changelog and `docs/product/DESIGN_AUDIT.md`'s "Legacy `C` Object"
+> section. Both reuse "Phase 4" and "slice N" vocabulary for unrelated scope,
+> files, and owners — do not read "3 of 9 region slices done" (the color-token
+> retirement) as progress on this decomposition plan. As of this note, this
+> plan is 1 of 8 slices done (4.0 — see below), and that one shipped
+> incidentally via an unrelated storage-extraction story, not as an execution
+> step of this plan.
+
 ---
 
 ## 1. Why this plan exists
@@ -127,7 +139,7 @@ Each slice = one PR, one 24h develop soak, then bundled into a release-prep prom
 
 | Slice | What | Risk | Why this order | Test gate |
 |---|---|---|---|---|
-| **4.0** | Extract pure top-level helpers `loadJSON`/`saveJSON` → `utils/storage.js` | 🟢 Lowest | Zero App-state coupling; already top-level; pure pilot to prove the workflow | Unit tests for storage round-trip; build clean |
+| **4.0** | ✅ **DONE (v2.8.1, #416)** — Extract pure top-level helpers `loadJSON`/`saveJSON` → `utils/storage.js` | 🟢 Lowest | Zero App-state coupling; already top-level; pure pilot to prove the workflow | Unit tests for storage round-trip; build clean — shipped, confirmed live: `App.jsx` imports both functions from `./utils/storage`, no local definitions remain |
 | **4.1** | Extract `PlayerFilterToggle` → `screens/Roster/PlayerFilterToggle.jsx` | 🟢 Low | Already a props-only component; ~30 lines; smallest component extraction | Render/smoke test |
 | **4.2** | Extract V1 engine (`scorePosition`/`autoAssign`/`autoAssignWithRetryFallback`/`validateGrid`/`initGrid`) → `utils/lineupEngineLegacy.js` | 🟡 Low-Med | Pure & top-level, but **behavior-bearing fallback path** — characterize first | Characterization tests for V1 assign + validate + initGrid (thinner existing coverage — add before moving) |
 | **4.3** | Extract `SharedView` → `screens/Share/SharedView.jsx` | 🟡 Med | Clean props boundary, **but share link is P0-bulletproof** — extra care | Render test + **real-device share-link smoke** (unauthenticated) |

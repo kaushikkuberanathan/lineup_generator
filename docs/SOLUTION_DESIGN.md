@@ -274,100 +274,157 @@ Returns server version and uptime. Used for deploy verification.
 
 ---
 
-## Auth Architecture (Phase 2)
+## Auth Architecture
 
-The auth system is **deployed but not yet gated** — backend infrastructure is live on Render, frontend cutover pending.
+> **Rewritten 2026-08-04 (Doc Audit Spike Story 5).** This section previously
+> described auth as "deployed but not yet gated," with the gate "bypassed in
+> production pending Phase 2 cutover." That was true once; it has not been true
+> since **v2.6.0 (2026-07-20)**. The auth gate is live in prod: **editing requires
+> a session; viewing and share links never do.** Two further releases shipped on
+> top of the cutover before this rewrite: Google Sign-In + an Account tab
+> (v2.7.0), and self-serve profile names via `PATCH /me` (v2.8.0). None of that
+> was reflected here until now.
 
 ### Strategy
 
-- **Supabase email magic link + Google OAuth** — no passwords, no SMS
+- **Supabase email magic link + Google OAuth** — no passwords, no SMS. Both are
+  live sign-in options today, not a planned Option A/B.
 - Twilio / phone OTP permanently removed — no phone or SMS dependency anywhere in the stack
 - **Supabase service role key** lives only in the backend — never sent to the client
-- Frontend continues using the anon key for all existing data operations
+- Frontend uses the anon key for reads/writes; once a coach is signed in, the
+  same shared Supabase client (`frontend/src/supabase.js`) attaches the session
+  JWT to every subsequent `.from()` call automatically — so writes go through as
+  `authenticated`, not `anon`, for any logged-in coach. `useAuth.js` establishes
+  the session via `supabase.auth.getSession()` / `onAuthStateChange()`.
 
-### Auth Flow
+### Auth Flow (live)
 
 ```
 Coach visits app
     ↓
-POST /api/v1/auth/request-access  ← name + email → creates access_request row
-    ↓
-Admin reviews at /admin.html       ← approves or rejects request
-    ↓
-POST /api/v1/admin/approve         ← creates team_memberships row, activates profile
+App renders LoginScreen (viewing/share-links skip this entirely - never gated)
     ↓
 Coach signs in:
   ┌─────────────────────────────────────────────┐
   │  Option A: Email magic link                  │
-  │  POST /api/v1/auth/request-magic-link        │
+  │  POST /api/v1/auth/magic-link (rate-limited) │
   │  → Supabase sends magic link email           │
-  │  → Coach clicks link                         │
-  │  → GET /api/v1/auth/callback                 │
+  │  → Coach clicks link → session established   │
   └─────────────────────────────────────────────┘
   ┌─────────────────────────────────────────────┐
   │  Option B: Google OAuth                      │
   │  → Supabase OAuth redirect → Google          │
-  │  → Callback with access_token                │
-  │  → GET /api/v1/auth/callback                 │
+  │  → Session established on return             │
   └─────────────────────────────────────────────┘
     ↓
-GET  /api/v1/auth/me               ← returns user profile + team memberships
+Session established → does this user have an active team_memberships row?
+    │
+    ├── YES → Home screen, their team(s) visible, can edit
+    │
+    └── NO  → NoMembershipScreen
+                  ↓
+              Coach taps "Request Access" → RequestAccessScreen
+                  ↓
+              POST /api/v1/auth/request-access → creates access_requests row
+                  ↓
+              PendingApprovalScreen shown until reviewed
+                  ↓
+              platform_admin reviews at /admin.html (icoachyouthball@gmail.com)
+              → GET /api/v1/admin/approve-link (1-tap email link) or the
+                admin.html dashboard → POST /api/v1/approve
+                  ↓
+              team_memberships row activated (or created, for a brand-new team -
+              team provisioning is still admin-side, per the Phase 4 MVP model)
+                  ↓
+              Coach signs in again → Home screen, team visible
 ```
+
+Once signed in, `GET /api/v1/auth/me` returns the profile + memberships shape;
+`PATCH /api/v1/auth/me` (v2.8.0) lets a coach set their display name; `POST
+/api/v1/auth/logout` ends the session.
 
 ### Database Tables (Auth)
 
 ```sql
 access_requests (
-  id          uuid PRIMARY KEY,
-  name        text,
-  email       text,           -- used for magic link delivery
-  status      text,           -- 'pending' | 'approved' | 'rejected'
-  team_id     text,
-  created_at  timestamptz
+  id              uuid PRIMARY KEY,
+  first_name      text NOT NULL,
+  last_name       text NOT NULL,
+  email           text,
+  phone_e164      text,          -- contact_required CHECK: email OR phone_e164
+  status          text NOT NULL, -- 'pending' | 'approved' | 'denied' | 'ignored'
+  team_id         text,
+  requested_role  text,          -- 7 allowed values, same set as team_memberships.role
+  reviewed_at     timestamptz,
+  reviewed_by     uuid REFERENCES auth.users(id),
+  requested_at    timestamptz NOT NULL DEFAULT now()
+  -- + device/platform/app_version telemetry columns, see docs/db/schema.sql
 )
 
 profiles (
   id          uuid PRIMARY KEY REFERENCES auth.users(id),
-  first_name  text,
-  last_name   text,
-  created_at  timestamptz
+  first_name  text NOT NULL,
+  last_name   text NOT NULL,
+  email       text,
+  phone_e164  text,
+  created_at  timestamptz NOT NULL DEFAULT now(),
+  updated_at  timestamptz NOT NULL DEFAULT now()
 )
 
 team_memberships (
-  id          uuid PRIMARY KEY,
-  user_id     uuid REFERENCES auth.users(id),
-  team_id     text,
-  role        text,           -- 'admin' | 'coach' | 'viewer'
-  status      text,           -- 'active' | 'invited' | 'suspended'
-  created_at  timestamptz
+  id           uuid PRIMARY KEY,
+  user_id      uuid REFERENCES auth.users(id),
+  team_id      text NOT NULL,
+  role         text NOT NULL,   -- 7 values live: admin/viewer/team_admin/coordinator/coach/scorekeeper/parent
+                                 -- normalizeRole() targets 4 (admin/coach/scorekeeper/viewer) at the code layer -
+                                 -- see docs/product/AUTH_SECURITY_AUDIT_ROADMAP.md § THE ROLE MODEL
+  status       text NOT NULL,   -- 'invited' | 'active' | 'suspended'
+  invited_at   timestamptz NOT NULL DEFAULT now(),
+  activated_at timestamptz
 )
 
 feedback (
-  id          uuid PRIMARY KEY,
-  type        text,           -- 'feedback' | 'bug'
-  message     text,
-  user_id     uuid,
-  created_at  timestamptz
+  id           uuid PRIMARY KEY,
+  type         text NOT NULL,   -- 'feedback' | 'bug'
+  body         text NOT NULL,
+  coach_id     uuid REFERENCES auth.users(id),
+  category     text, location text, severity text, app_version text,
+  submitted_at timestamptz NOT NULL DEFAULT now()
 )
 ```
 
 ### Backend Route Inventory
 
+> Regenerated 2026-08-04 directly from `backend/src/routes/*.js` — the previous
+> table was hand-transcribed and had drifted on both path names and completeness.
+> See `backend/CLAUDE.md` § Routes for the canonical, maintained version of this
+> table (including the admin.js mount-path gotcha below); this copy should be
+> treated as a snapshot of it, not a second source of truth.
+
 | Method | Path | Auth Required | Purpose |
 |--------|------|--------------|---------|
-| POST | `/api/v1/auth/request-access` | No | Submit access request (email) |
-| POST | `/api/v1/auth/request-magic-link` | No | Send magic link email (rate-limited) |
-| GET | `/api/v1/auth/callback` | No | Handle Supabase auth callback |
-| GET | `/api/v1/auth/me` | Yes | Current user + memberships |
-| GET | `/api/v1/admin/requests` | Admin | List pending access requests |
-| POST | `/api/v1/admin/approve` | Admin | Approve request, activate membership |
-| POST | `/api/v1/admin/reject` | Admin | Reject access request |
-| GET | `/api/v1/admin/members` | Admin | List all team members |
-| POST | `/api/v1/admin/update-role` | Admin | Change member role |
-| POST | `/api/v1/admin/reset-access` | Admin | Reset member to invited state |
-| POST | `/api/v1/admin/suspend` | Admin | Suspend member access |
-| GET | `/api/v1/admin/feedback` | Admin | View submitted feedback |
-| POST | `/api/v1/feedback` | No | Submit coach feedback |
+| POST | `/api/v1/auth/request-access` | No | Submit access request |
+| POST | `/api/v1/auth/magic-link` | No (rate-limited) | Send magic link email — replaces the old two-step OTP flow |
+| GET | `/api/v1/auth/me` | Yes | Current user profile + memberships |
+| PATCH | `/api/v1/auth/me` | Yes | Set display name (v2.8.0) |
+| POST | `/api/v1/auth/logout` | Yes | End session |
+| GET | `/api/v1/admin/approve-link` | No (public, 1-tap email link) | Approve an access request from the admin's inbox |
+| GET | `/api/v1/admin/deny-link` | No (public, 1-tap email link) | Deny an access request from the admin's inbox |
+| GET | `/api/v1/requests` | Admin | List pending access requests |
+| POST | `/api/v1/approve` | Admin | Approve request, activate/create membership |
+| POST | `/api/v1/reject` | Admin | Reject access request |
+| GET | `/api/v1/members` | Admin | List all team members |
+| POST | `/api/v1/update-role` | Admin | Change member role |
+| POST | `/api/v1/reset-access` | Admin | Reset member to invited state |
+| POST | `/api/v1/suspend` | Admin | Suspend member access |
+| POST | `/api/v1/feedback` | Yes (any signed-in coach) | Submit coach feedback or bug report |
+
+**⚠️ Admin route paths are NOT under `/api/v1/admin/`** except the two public
+1-tap email links above — the rest mount bare at `/api/v1` (`admin.js`'s
+`router.use(requireAuth, requireAdmin)` gate is path-agnostic and sits after the
+two public links). `feedbackRouter` must mount before `adminRouter` on the
+shared `/api/v1` base, or every feedback submission 403s against the admin
+gate — this exact regression shipped and was fixed in v2.8.3 (see backend/CLAUDE.md).
 
 ### Admin UI
 
@@ -377,62 +434,49 @@ Six-tab admin interface: Pending Requests | Members | Feedback | Teams | Setting
 
 Login via Google OAuth or email magic link. Checks `/me` for `memberships[0].role === 'admin'`.
 
-### RLS Policy Map (Phase 4 target state)
+### RLS Policy Map (live, re-verified 2026-08-04)
 
-> **!! CORRECTED 2026-07-13.** "Permissive (or disabled)" reads like a bounded,
-> deliberate choice. **It was neither.**
->
-> RLS was **fully DISABLED** on five tables, with `anon` holding
-> `SELECT, INSERT, UPDATE, DELETE, **TRUNCATE**`. The anon key ships in the frontend
-> bundle. Anyone who viewed source could read every child's name on every roster,
-> overwrite any roster, delete any team, or empty the tables outright. (#342)
->
-> `auth_events` and `team_data_history` are now **locked** (migrations 005, 006).
-> `team_data`, `teams` and `roster_snapshots` **remain exposed** - they cannot be
-> locked until WS-3, because the app writes them directly with the anon key.
->
-> **Also: `004_rls_fixes.sql` cannot be run as written.** It claimed
-> `snapshot_team_data()` was `SECURITY DEFINER`. **It was not.** Running it would have
-> blocked the trigger's insert and **failed every coach's roster save.** Fixed in
-> migration 006; the file now carries a correction.
->
-> **Ground truth for the CURRENT policy set is `docs/db/schema.sql`**, read from the
-> live database. The table below is the Phase 4 TARGET, not what exists.
+> **This section previously described RLS on `team_data`/`teams`/`roster_snapshots`
+> as a "Phase 4 target state," not yet applied.** That shipped in **v2.6.0**
+> (WS-3, 2026-07-20) and was re-verified directly against live prod via a
+> `pg_policies` query on 2026-08-04 (see `docs/db/schema.sql` §8, Doc Audit Spike
+> Story 1). The table below reflects what is actually enforced today, not a plan.
 
-All frontend data calls use the anon Supabase key. After the WS-3 cutover,
-`004_rls_fixes.sql` (corrected) applies the following target policy set:
-
-| Table | anon SELECT | anon INSERT | auth SELECT | auth INSERT/UPDATE | Notes |
-|-------|-------------|-------------|-------------|---------------------|-------|
-| `share_links` | ✓ (all rows) | ✗ | ✓ | ✓ | Token entropy (~4.3B) is enumeration guard |
-| `teams` | ✗ | ✗ | ✓ own team | ✓ | Gated via team_memberships join |
-| `team_data` | ✗ | ✗ | ✓ own team | ✓ coach/admin only | Highest-risk table — direct frontend writes |
-| `roster_snapshots` | ✗ | ✗ | ✓ own team | ✓ coach/admin only | Snapshot safety net |
+| Table | anon SELECT | anon INSERT/UPDATE | auth SELECT | auth INSERT/UPDATE | Notes |
+|-------|-------------|---------------------|-------------|---------------------|-------|
+| `share_links` | ✓ (all rows) | ✓ INSERT only | ✓ | ✓ | Token entropy (~4.3B) is enumeration guard - correct, non-negotiable per Auth Principle |
+| `teams` | ✗ (no anon policy - RLS default-denies despite a leftover GRANT) | ✗ | ✓ own team | ✓ (INSERT unconditional - first-team creation; UPDATE/DELETE admin-only) | Gated via `team_memberships` join |
+| `team_data` | ✗ (no anon policy) | ✗ | ✓ own team | ✓ coach/admin only | Highest-risk table — direct frontend writes, now RLS-gated not just app-gated |
+| `roster_snapshots` | ✗ (no anon policy) | ✗ | ✓ own team | ✓ INSERT coach/admin only (no UPDATE/DELETE policy for anyone but service_role) | Snapshot safety net |
 | `team_data_history` | ✗ | ✗ | ✗ | ✗ | service_role + trigger only; no REST access |
-| Auth tables | ✗ | anon INSERT (request-access) | ✓ own row | via backend only | RLS from migrations 001/003 |
+| `live_game_state` / `game_scoring_sessions` / `scoring_audit_log` | ✓ (public read policy) | **✓ ALL commands, unrestricted** (`allow_scorer_writes`, `qual: true`) | same | same | **STILL OPEN — #355, not fixed.** Unlike the rows above, RLS here does not meaningfully restrict anything: `roles: public, cmd: ALL, qual: true` permits any unauthenticated caller to read/write/delete any team's live scoring data. See `docs/product/AUTH_SECURITY_AUDIT_ROADMAP.md` WS-3 row. |
+| Auth tables (`access_requests`, `team_memberships`, `profiles`) | ✗ | anon INSERT (request-access only) | ✓ own row | via backend only | RLS from migrations 001/003/007 |
 
 **Key architectural insight for viewer mode:** Share links store the full lineup payload
 inline in `share_links.payload`. Viewer mode reads `share_links` by id — it never reads
-`team_data` directly. This means anon SELECT on `team_data` can be fully blocked post-Phase 4
-without breaking the viewer experience.
+`team_data` directly. `team_data`'s anon SELECT was already blocked by RLS before this
+rewrite, and the viewer experience is unaffected, confirming this design held up.
 
 **Backend bypasses RLS entirely:** All routes in `src/routes/` use `supabaseAdmin`
 (service role key). Service role bypasses RLS. Application-level auth is enforced by
 `requireAuth` and `requireAdmin` middleware — RLS is defence-in-depth, not the
 primary gate for backend routes.
 
-Migration file: `backend/migrations/004_rls_fixes.sql`
-Pre-cutover checklist: `docs/ops/PHASE4_PRECHECK.md`
+Migration file: `backend/migrations/004_rls_fixes.sql` (idempotent, safe to
+re-run — its policies are already live, so re-running is a no-op, not a re-application)
 
-### Current Blockers
+### Auth Shims Still Outstanding (Phase 4C, scoring tables only)
 
-| Blocker | Status |
-|---------|--------|
-| Phase 2 auth cutover (add `requireAuth` to existing routes) | Pending 2–3 coach pilot users |
+The auth cutover above is complete for `team_data`/`teams`/`roster_snapshots` and
+the sign-in flow generally. What's still deferred is narrower than "auth isn't
+done" — it's specifically the live-scoring tables:
 
-### Workaround (Prod — Pre-Cutover)
+- `_effectiveUserId`/`_effectiveUserName` fallback in `useLiveScoring.js` (marked `AUTH TESTING SHIM`)
+- `scoringUserId`/`scoringUserName` fallback + `isAdminTestMode` in `ScoringMode/`
+- `var isEnabled = liveScoringEnabled || true` in `DugoutView.jsx` — forces live scoring on regardless of the real per-team flag (see Feature Flag System § `live_scoring` below)
+- The scoring tables' own RLS (#355, table above) is not gated by `auth.uid()` yet
 
-Auth gate is currently bypassed in production (v2.2.22 hotfix) pending Phase 2 cutover. Editing works unauthenticated for now using the `_effectiveUserId` shim in `useLiveScoring.js` and `ScoringMode/index.jsx`. These shims are marked `AUTH TESTING SHIM` and must be removed at cutover — see removal checklist in `CLAUDE.md`.
+All four are scoped to Phase 4C, tracked in `docs/ops/PHASE4C_CUTOVER.md` and root `CLAUDE.md`'s Phase 4C checklist. Do not remove without walking that checklist.
 
 ---
 
@@ -486,16 +530,21 @@ frontend/src/
     └── Viewer/
 ```
 
-### Navigation Structure (v2.5.9+)
+### Navigation Structure
 
-4 primary tabs in a fixed bottom nav bar (portrait) / sidebar (landscape):
+> **Corrected 2026-08-04** — this table previously listed a "Season" tab that
+> does not exist, and put Songs under "My Team" when it's actually a Game Day
+> sub-tab. Regenerated directly from `PRIMARY_TABS`/`TEAM_SUBTABS`/
+> `GAMEDAY_SUBTABS`/`MORE_SUBTABS` in `App.jsx`.
+
+**4 primary tabs** in a fixed bottom nav bar (portrait) / sidebar (landscape): **Home, My Team, Game Day, Support.**
 
 | Primary Tab | Sub-tabs | Responsibility |
 |---|---|---|
-| **My Team** | Players / Songs | Player cards with V2 attribute editing, add/remove, constraints; Walk-up song management per player |
+| **Home** | — | Dashboard, team switcher, Create New Team |
+| **My Team** | Roster / Schedule / Snacks | Player cards with V2 attribute editing, add/remove, constraints; game list + AI import + result logging + batting stat entry; per-game snack duty assignment |
 | **Game Day** | Lineups / Songs / Dugout View | Lineups as default (v2.2.24 restructure); Songs sub-tab filtered to tonight's active batting order; Dugout View — unified game-day surface (lineup + live scoring) |
-| **Season** | Schedule / Snacks | Game list, AI import, result logging, batting stat entry; Per-game snack duty assignment |
-| **More** | About / Updates / Links / Feedback / Legal / FAQ | App description + info; Version history; External resources; Coach feedback + bug reports; Legal docs (Privacy + Terms); FAQ |
+| **Support** | Account / FAQ / Feedback / Links / About / Updates / Legal | Sign-out + per-team cards (v2.7.0); FAQ; coach feedback + bug reports; external resources; app description + version history; legal docs (Privacy + Terms) |
 
 ### State Management
 
@@ -547,6 +596,20 @@ A UI primitive in this codebase is an atomic, token-bound rendering component wi
 | Pill | `components/ui/Pill.jsx` | `Pill.test.jsx` | v2.5.14 | Compact toggle-chip; non-44px-floor by design |
 | ListRow | `components/ui/ListRow.jsx` | `ListRow.test.jsx` | v2.5.14 | Full-width tappable row with 44px floor + optional divider |
 | BottomSheet | `components/ui/BottomSheet.jsx` | `BottomSheet.test.jsx` | v2.5.21 | Overlay + focus trap + slide-up; scrim dismiss; LockFlow is first consumer |
+
+### Adoption status
+
+**Added 2026-08-04.** Phase 3 (call-site migration onto the primitives above —
+no new primitive types were introduced) completed in **v2.8.4**: FairnessCheck,
+NowBattingStrip, MaintenanceScreen, ParentView, BattingOrderStrip, LockFlow, and
+DefenseDiamond all migrated to `Card`/`Text`/`Stack` (PRs #519–#526), and the
+legacy `S.card` style object was retired across all 17 `App.jsx` call sites
+(Story 117, #515). A related, separately-tracked effort — retiring the legacy
+`var C` color-object in `App.jsx` region-by-region — has completed 3 of 9
+planned regions (header/nav chrome, Roster tab, Defense/Batting grid tabs).
+**`(develop only — not yet promoted to main as of this writing; main is still
+v2.8.3)`.** Do not assume either is live in prod without checking `origin/main`'s
+`APP_VERSION` first.
 
 ### BottomSheet pattern
 
@@ -666,53 +729,83 @@ feature_flags (
 
 Evaluation priority: compile-time default → localStorage per-user override → Supabase table per-team override (highest).
 
----
+### `live_scoring` is architecturally different from every other flag
 
-### COMBINED_GAMEMODE_AND_SCORING — mutual-exclusion gating pattern
+**Added 2026-08-04.** The two-level (`FEATURE_FLAGS` object + localStorage) model
+above describes 7 of the 8 flags. `live_scoring` does not follow it: it is read
+through a separate hook, `useFeatureFlag('live_scoring', teamId)`, which queries
+the Supabase `feature_flags` table directly per-team — it has no
+`FEATURE_FLAGS.LIVE_SCORING` bundled-JS entry at all (confirmed: zero grep hits
+for `LIVE_SCORING` anywhere in `frontend/src`). It fails closed (`false`) if the
+table read fails or the row is absent — the only flag with that property. Two
+call sites also hardcode `Mud Hens`/`Demo All-Stars` to always-true regardless
+of the table (`App.jsx` ~line 1454, `DugoutView.jsx` ~line 58).
 
-Introduced in v2.5.4 (Slice 0). The combined Game View feature replaces the legacy multi-tab scoring UX with a single DugoutView surface. During the rollout window (Slices 0–3), both surfaces coexist in the codebase. To prevent dual-surface user confusion, the COMBINED_GAMEMODE_AND_SCORING flag enforces strict mutual exclusion at three sites in App.jsx.
-
-**Three invariants — must hold at all times, future slices must not break:**
-
-1. **Flag OFF → ScoringMode + Scoring tab** are reachable; **DugoutView via the GameDay pill is NOT reachable**. This is the legacy path. Production users land here today.
-2. **Flag ON → DugoutView + DUGOUT VIEW pill** are reachable; **ScoringMode + Scoring tab are NOT reachable**. This is the future path.
-3. The two states are mutually exclusive — at no flag combination should both surfaces be simultaneously reachable. Both reachable would mean two scoring sessions could be claimed for the same game from different entry points, with attendant double-write and double-subscribe risks.
-
-**Three enforcement sites in App.jsx:**
-
-| Site | Code shape | Behavior |
-|---|---|---|
-| PRIMARY_TABS array | `liveScoringEnabled && !combinedGamemodeAndScoringEnabled ? { key:"scoring", ... } : null` | Hides Scoring bottom-nav tab when flag ON |
-| GAMEDAY_SUBTABS array | `combinedGamemodeAndScoringEnabled ? { key:"dugout", label:"DUGOUT VIEW", launcher:true } : null` | Hides DUGOUT VIEW pill when flag OFF |
-| ScoringMode render branch | `{primaryTab === "scoring" && liveScoringEnabled && !combinedGamemodeAndScoringEnabled ? <ScoringMode ... /> : null}` | Blocks ScoringMode mount when flag ON, even if user navigated via stale URL or refresh |
-
-**Flag mechanics:**
-
-COMBINED_GAMEMODE_AND_SCORING is a static FEATURE_FLAGS object value plus localStorage override (`flag:combined_gamemode_and_scoring=1`). It is NOT Supabase-backed (unlike `live_scoring`). This means flipping it in production requires a redeploy. See Story 30 (P2 backlog) for the runtime-flip limitation and Story 41 (P1 backlog) for the local-test-gate constraint that affects flag deployment validation.
-
-**Slice rollout context:**
-
-- Slice 0 (v2.5.4, shipped) — DugoutView lift, flag default-OFF, prod unchanged
-- Slice 1 (v2.5.5, shipped) — BattingOrderStrip integration + currentBatterIndex prop wiring; ScoreboardRow test coverage; D017 resolved
-- Slice 2 (v2.5.7, shipped) — DugoutView layout shell + dugoutFocusMode state machine; ScoreboardRow inning/halfInning props; BattingOrderStrip batter-source fix (Bug 8); 375px flex-column layout fix (Bugs 9/10); Story 46 + Story 50 resolved. See sections below.
-- Slice 3 (planned) — Flag flip default-ON in prod; legacy GameModeScreen path deprecation; ScoringMode/index.jsx deletion.
-- Post-Slice 3 — flag flips ON, ScoringMode deleted from repo
-
-Until ScoringMode is deleted, all three invariants must be preserved. Any change touching PRIMARY_TABS, GAMEDAY_SUBTABS, or the ScoringMode render branch must be evaluated against the invariants above.
+**Currently, none of this matters in practice:** `DugoutView.jsx` has
+`var isEnabled = liveScoringEnabled || true` with a comment marking it an `AUTH
+TESTING SHIM` pending removal — so live scoring is functionally on for every
+team today, regardless of what the DB flag or team-name hardcode say. The real
+gating scaffolding is still there, just bypassed. Do not remove the shim without
+walking the Phase 4C checklist (root `CLAUDE.md`) — the DB flag and hardcode are
+what take back over once it's gone. `docs/TROUBLESHOOTING.md` documents this
+same distinction from the debugging-a-flag-that-won't-flip angle; this section
+is the architectural-reference version of the same fact.
 
 ---
 
-### dugoutFocusMode state machine (v2.5.7)
+### COMBINED_GAMEMODE_AND_SCORING — rollout complete, section now historical
+
+> **Corrected 2026-08-04.** This section described an in-progress rollout with
+> "Slice 3 (planned)" and a live mutual-exclusion invariant between ScoringMode
+> and DugoutView. The rollout finished in **v2.5.9** (Slice 3): the flag is GA
+> default-on, the legacy Scoring tab and `ScoringMode/index.jsx` root component
+> are deleted (Slice 4, v2.5.11), and `PRIMARY_TABS` is now a fixed 4-entry array
+> with no `scoring` key at all — the three-site mutual-exclusion machinery below
+> no longer exists in the code. Kept as historical record of the rollout
+> mechanism; do not use it to reason about current behavior.
+
+Introduced in v2.5.4 (Slice 0). During the rollout window (Slices 0–3), the legacy multi-tab ScoringMode UX and the new combined DugoutView surface coexisted in the codebase, and the flag enforced strict mutual exclusion between them at three sites in App.jsx (PRIMARY_TABS array, GAMEDAY_SUBTABS array, ScoringMode render branch) to prevent two scoring sessions being claimable for the same game from different entry points.
+
+**Slice rollout history (complete):**
+
+- Slice 0 (v2.5.4) — DugoutView lift, flag default-OFF, prod unchanged
+- Slice 1 (v2.5.5) — BattingOrderStrip integration + currentBatterIndex prop wiring; ScoreboardRow test coverage; D017 resolved
+- Slice 2 (v2.5.7) — DugoutView layout shell + dugoutFocusMode state machine; ScoreboardRow inning/halfInning props; BattingOrderStrip batter-source fix (Bug 8); 375px flex-column layout fix (Bugs 9/10); Story 46 + Story 50 resolved
+- Slice 3 (v2.5.9) — flag flipped default-ON in prod; legacy ScoringMode tab retired
+- Slice 4 (v2.5.11) — `ScoringMode/index.jsx` root component + `ViewerMode.jsx` deleted from the repo (7 live child components preserved, still imported directly by DugoutView — see root CLAUDE.md's Active Tracks note on the pending directory restructure)
+
+DugoutView (Game Day → Dugout View) is now the sole game-day surface for every team.
+
+---
+
+### dugoutFocusMode state machine (v2.5.7, revised v2.5.13)
+
+> **Updated 2026-08-04** — the snippet below previously showed only the v2.5.7
+> original, missing the `scorerClaimed` clause added in the v2.5.13 revision.
 
 Derived state inside `DugoutView.jsx`:
 
 ```js
-var dugoutFocusMode = currentAtBat !== null ? 'scoring' : 'lineup';
+var dugoutFocusMode = (currentAtBat !== null || scorerClaimed) ? 'scoring' : 'lineup';
 ```
 
 - System-driven, NOT user-toggled. The coach does not pick a mode; it follows scoring engine state.
 - `'lineup'` renders DefenseDiamond (visible by default and between at-bats)
-- `'scoring'` renders LiveScoringPanel (visible during active at-bat)
+- `'scoring'` renders LiveScoringPanel (visible during active at-bat, and for the
+  whole session once a scorer claims the seat)
+
+**Why the v2.5.13 revision (Story 16):** the original v2.5.7 machine created a
+deadlock. A coach could claim scorer with `currentAtBat` still `null` — mode
+resolved to `'lineup'`, LiveScoringPanel stayed hidden, and there was no UI
+control to call `scoring.startAtBat()` from the lineup view. Mode got stuck on
+`'lineup'` forever. Surfaced as Story 16 ("No batting order set") — the
+empty-state copy was a misleading downstream symptom of the panel never
+becoming startable. Adding `|| scorerClaimed` fixed it: a scorer stays in
+`'scoring'` mode for the entire session once claimed, not just during an active
+at-bat. Behavior by role:
+- **Scorer** (`scorerClaimed = true`) — `'scoring'` for the whole session.
+- **Viewer** (`viewerMode = true`, `scorerClaimed = false`) — original machine
+  still applies: `'lineup'` between at-bats, `'scoring'` during.
 
 ### Panel mount convention (v2.5.7)
 

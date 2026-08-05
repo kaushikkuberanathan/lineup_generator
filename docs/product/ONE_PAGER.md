@@ -1,6 +1,6 @@
 # Dugout Lineup — 1-Pager
 
-> v2.0 — April 27, 2026 — App v2.5.1
+> v2.1 — 2026-08-04 — App v2.8.3 (prod; develop is ahead at v2.8.4, not yet promoted)
 
 ---
 
@@ -45,13 +45,13 @@ Dugout Lineup eliminates the pre-game scramble for recreational youth baseball a
 
 ## Tech Stack
 
-React 18 + Vite PWA on Vercel (auto-deploys from main); Node.js / Express backend on Render (Starter plan $7/mo, no spin-down; UptimeRobot availability monitoring); Supabase (Postgres + JSONB) for cloud sync and short link storage; Claude API (`claude-sonnet-4-6`) proxied through backend for AI schedule import; Mixpanel (47 events) + Vercel Analytics for usage tracking; localStorage as primary store with Supabase as async background sync.
+React 18 + Vite PWA on Vercel (auto-deploys from main); Node.js / Express backend on Render (Starter plan $7/mo, no spin-down; UptimeRobot availability monitoring); Supabase (Postgres + JSONB) for cloud sync and short link storage; Claude API (`claude-sonnet-4-6`) proxied through backend for AI schedule import; Mixpanel (32+ events) + Vercel Analytics for usage tracking; localStorage as primary store with Supabase as async background sync.
 
 ---
 
 ## Data Protection
 
-Four-layer defense against data loss: (1) Postgres trigger snapshots every write to `team_data_history` (last 20 per team); (2) backend write guard returns `409 ROSTER_WIPE_GUARD` if an incoming write would zero out an existing roster; (3) in-app recovery UI with up to 5 restore points; (4) manual export/import backup always available to the coach with no admin required.
+**Corrected 2026-08-04** — reconciled with `CHARTER.md` § Data Protection. Four-layer defense against data loss: (1) Postgres trigger snapshots every write to `team_data_history` (last 20 per team) — fires regardless of write path; (2) RLS on `team_data` (live since v2.6.0) requires an active coach/admin membership to write — this, not the backend guard, is what actually covers the app's real write path, since the app writes directly to Supabase rather than through the backend; (3) in-app recovery UI with up to 5 restore points; (4) manual export/import backup always available to the coach with no admin required. The backend's `409 ROSTER_WIPE_GUARD` route exists but isn't in the app's actual write path — it protects other callers of that route, not the coach-facing app.
 
 ---
 
@@ -65,10 +65,10 @@ Sideline-first, fairness is the product, zero friction for viewers, one-tap core
 
 For the authoritative roadmap including current release status, v2.5.1 features, v2.6.0 backlog, and longer-term planning, see [docs/product/ROADMAP.md](ROADMAP.md). This section is intentionally minimal here to avoid drift between docs.
 
-| Snapshot (April 27, 2026) | Status |
+| Snapshot (2026-08-04) | Status |
 |---|---|
-| Production version | v2.5.1 (shipped April 27, 2026) |
-| Live scoring | Shipped (Mud Hens + Demo All-Stars team gating) |
+| Production version | v2.8.3 (develop is ahead at v2.8.4, not yet promoted) |
+| Live scoring | Shipped — functionally on for every team via an active testing shim; per-team DB flag + Mud Hens/Demo All-Stars hardcode still in code but bypassed (corrected 2026-08-04) |
 | Magic link + Google OAuth auth | Shipped |
 | Admin UI | Shipped |
 | Multi-coach invite, role-based access, season fairness, practice log, push notifications | Backlog (v2.6.0+) |
@@ -79,7 +79,7 @@ For the authoritative roadmap including current release status, v2.5.1 features,
 
 - Lineup generated in < 60 seconds (p50)
 - Share link opens on mobile without login: 100% success rate
-- Test suite: 421 passed / 1 skipped / 0 failed before every deploy
+- Test suite: 975 passed / 1 skipped / 0 failed before every deploy (as of v2.8.4, 2026-08-04; 1086 total incl. 111 backend)
 - Zero roster wipe incidents (three guards in place)
 - Rollback to stable production: < 10 minutes from detection
 

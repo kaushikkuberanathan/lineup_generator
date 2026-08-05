@@ -1,6 +1,6 @@
 # Lineup Generator — Master Development & Deployment Reference
 
-> **Last Updated:** April 27, 2026 (v2.5.1 — post-deploy infrastructure cleanup)
+> **Last Updated:** 2026-08-04 (Doc Audit Spike Story 8 — label count + taxonomy + stale cross-reference fixes; substantive content last revised 2026-06-12, RED→GREEN test-first workflow). The header previously said "April 27, 2026" — provably false by this file's own git history even before today's pass; don't trust a header claim over `git log -- <file>`.
 
 ## Core Principles (Non-Negotiable)
 - **Local-first always.** Local validation is a gate, not a suggestion. Never push to main without a clean local build confirmed.
@@ -291,7 +291,7 @@ docs/product/CHARTER.md                 — product charter (vision, scope, pers
 docs/product/ONE_PAGER.md              — single-page scannable product summary
 docs/product/FEATURE_MAP.md             — authoritative feature-to-doc-to-test mapping (18 features)
 docs/product/DOC_TEST_DEBT.md           — documentation and test debt ledger (P0/P1/P2 items)
-scripts/setup-github-labels.ps1         — bootstrap/reset all 28 GitHub labels
+scripts/setup-github-labels.ps1         — bootstrap/reset all 31 GitHub labels
 scripts/sync-stories-to-issues.js       — parse ROADMAP.md → create GitHub Issues → patch <!-- #N --> markers
 docs/process/ISSUE_TRACKING.md          — canonical reference: label taxonomy, story→issue flow, commit/PR conventions
 CLAUDE.md                               — project rules + Ship Gate + version history
@@ -382,18 +382,20 @@ No PR merges without all relevant checklist items checked.
 
 ### Labels
 
-Six label dimensions applied to all issues and PRs:
+> **Corrected 2026-08-04.** This section used to describe a six-dimension label
+> taxonomy (`type:`, `area:`, `priority:`, `status:`, plus `user:` and `release:`
+> prefix families) that does not exist anywhere in the repo today — no `user:*`
+> or `release:*` label has ever been created, and the `area:` values listed
+> (`lineup-engine`, `mobile-ux`, `deployment`, etc.) don't match the live label
+> set either. This was a drifted second copy of the taxonomy, not a second
+> source of truth — it likely predates the Story 78 relabeling and was never
+> updated. The canonical taxonomy lives in one place:
 
-| Dimension | Prefix | Purpose |
-|---|---|---|
-| Type | `type:` | bug, feature, ux, tech-debt, docs, compliance |
-| Area | `area:` | lineup-engine, game-mode, roster, team-management, batting, positions, auth, pwa, mobile-ux, backend, frontend, deployment |
-| Priority | `priority:` | critical, high, medium, low |
-| Status | `status:` | triage, ready, in-progress, blocked, testing, ready-for-deploy |
-| User persona | `user:` | coach, parent, scorekeeper |
-| Release type | `release:` | hotfix, patch, minor |
-
-Game-day labels (`game-day`, `speed-critical`, `mobile-only`) are first-class — apply these immediately on any issue that impacts live game operation.
+**Canonical label taxonomy: `docs/process/ISSUE_TRACKING.md` § Label Taxonomy.**
+Root `CLAUDE.md`'s Issue & Backlog Hygiene section also carries a quick-reference
+copy. Both describe the actual **31 labels across 5 groups** (Priority, Type,
+Area, Status, Meta) using the `prefix:name` convention — verified live against
+the repo's label list, 2026-08-04.
 
 → [View all labels](https://github.com/kaushikkuberanathan/lineup_generator/labels)
 
@@ -624,7 +626,7 @@ End-to-end ordered sequence for promoting work from develop to production. Follo
 6. **Make changes, run all local gates** — Tests pass, build clean, manual UI verification per surface area changed.
 7. **Stage with explicit paths** — Never `git add -A` or `git add .`. List specific files. See ## Git Staging Discipline.
 8. **Commit with descriptive message** — Multi-line message describing user impact + technical detail. See VERSION_HISTORY schema for guidance on userChanges vs internalChanges framing.
-9. **Push feature branch** — Pre-push hook runs full test suite. If hook OOM-cascades on Windows, follow workaround in ### Known issue: Windows Vitest cold-start OOM.
+9. **Push feature branch** — the pre-push hook validates the branch guard (rejects direct pushes to `develop`/`main`) only; it no longer runs the Vitest suite (removed Story 75, PR #155) — CI (GitHub Actions) is the sole authoritative test gate. The "Known issue: Windows Vitest cold-start OOM" heading this step used to point to was never written in this file (or was removed without updating this cross-reference) — the actual workaround for that flake (Bug #7, `fileParallelism:false`) is documented in root `CLAUDE.md` § Infrastructure notes; go there instead.
 
 ### Phase 3: PR to develop
 
@@ -648,7 +650,7 @@ End-to-end ordered sequence for promoting work from develop to production. Follo
 21. **Confirm ## Ship Gate** — All four questions answered.
 22. **Open PR develop → main as DRAFT** — Same draft-first discipline.
 23. **Verify CI green on develop's preview** — Vercel auto-deploys per branch.
-24. **Mark ready, merge** — Squash-merge or merge-commit (squash recommended). Render auto-deploy fires for backend; Vercel auto-deploy fires for frontend.
+24. **Mark ready, merge** — **Create a merge commit — never squash** for this develop → main promote (Story 79, 2026-05-21: squashing collapses develop's PR-level history into one commit on main). Render auto-deploy fires for backend; Vercel auto-deploy fires for frontend.
 
 ### Phase 6: Production verification (within 10 min of merge)
 
