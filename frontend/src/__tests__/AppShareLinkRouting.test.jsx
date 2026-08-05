@@ -31,6 +31,22 @@
 // is NOT mocked: it's a lightweight named export off App.jsx (see
 // SharedView.test.jsx) and asserting on its real rendered text is a stronger
 // routing-decision signal than a marker div would be.
+//
+// DOC_TEST_DEBT.md P0 (#535, Story 121) — this file's `../supabase.js` mock
+// used to spread `importOriginal()`'s `actual` and only override
+// `dbLoadShareLink`, so every write/delete export (`dbSaveTeams`,
+// `dbSaveTeamData`, `dbDeleteTeam`, `dbSnapshotRoster`, ...) fell through to
+// the REAL implementation. App.jsx's boot-hydration effect
+// (`!window._lineupDbBooted && isSupabaseEnabled`) runs unconditionally on
+// the first render of a fresh `<App/>` and, when local `app:teams` storage is
+// empty, seeds/migrates real hardcoded team IDs — a real live-data-mutation
+// risk on any machine with a valid Supabase key in `frontend/.env`. Spreading
+// `actual` does NOT get fixed by only overriding the `isSupabaseEnabled`/
+// `supabase` export names either — `actual.dbSaveTeams` etc. are the real
+// functions, closed over the real module's own internal `supabase` binding,
+// unaffected by what this factory returns under those names. The only robust
+// fix is what's below: a fully self-contained mock with no `importOriginal`
+// spread at all, so no code path in this file can ever reach a real client.
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
@@ -48,12 +64,20 @@ vi.mock("../hooks/useAuth", () => ({
 }));
 
 const mockDbLoadShareLink = vi.fn();
-vi.mock("../supabase.js", async (importOriginal) => {
-  const actual = await importOriginal();
-  return Object.assign({}, actual, {
-    dbLoadShareLink: (...args) => mockDbLoadShareLink(...args),
-  });
-});
+vi.mock("../supabase.js", () => ({
+  supabase: null,
+  isSupabaseEnabled: false,
+  dbSaveTeams: vi.fn(() => Promise.resolve()),
+  dbDeleteTeam: vi.fn(() => Promise.resolve()),
+  dbLoadTeams: vi.fn(() => Promise.resolve(null)),
+  dbSaveTeamData: vi.fn(() => Promise.resolve()),
+  dbLoadTeamData: vi.fn(() => Promise.resolve(null)),
+  dbSnapshotRoster: vi.fn(() => Promise.resolve()),
+  dbGetRosterSnapshots: vi.fn(() => Promise.resolve([])),
+  dbSaveShareLink: vi.fn(() => Promise.resolve()),
+  SHARE_LINK_FETCH_TIMEOUT_MS: 10000,
+  dbLoadShareLink: (...args) => mockDbLoadShareLink(...args),
+}));
 
 vi.mock("../components/game-mode/DugoutView", () => ({
   DugoutView: function MockDugoutView(props) {
