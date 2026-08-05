@@ -1,7 +1,22 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: 2026-08-01 (v2.8.3 - backend test coverage closure, RLS hardening, two silent bugs fixed)
+> Last updated: 2026-08-04 (v2.8.4 - Phase 3 completion, Phase 4 slices 1-3, Bug #7 permanent fix)
 > MVP launched: March 24, 2026
+
+---
+
+## v2.8.4 - 2026-08-04 - Phase 3 primitives completion, Phase 4 color-token retirement (slices 1-3), Bug #7 permanent fix
+- Internal only, no user-facing change.
+- **Phase 3 UI-primitives migration completed**: remaining hand-styled components (FairnessCheck, NowBattingStrip, MaintenanceScreen, ParentView, BattingOrderStrip, LockFlow, DefenseDiamond) migrated to Card/Text/Stack primitives (PRs #519-#526).
+- **Story 117 - `S.card` fully retired** across all 17 App.jsx call sites, replaced with the Card primitive (#515); a related dead style object (`S.app`) found and deleted (Story 115, #523).
+- **Phase 4 `var C` legacy color-object retirement started** - 3 of 9 planned App.jsx regions migrated to the shared design-token system, all zero-visible-change reference swaps: header/nav chrome (slice 1, #528), Roster tab (slice 2, #529), Defense/Batting grid tabs (slice 3, #537).
+- **Bug #7 fixed permanently** (Story 118, #517): the Windows Vitest worker-spawn cold-start flake that intermittently dropped test files from local/CI runs. `fileParallelism:false` is now the standing default in both worktrees' `vite.config.js` (#533, #534) - reduces, does not eliminate, the flake rate.
+- Regression test coverage added for share-link payload construction, Game Mode rendering/state, live-scoring session security, and auth routing decisions (#504, #505, #506, #507, #511, #512, #513).
+- **Story 121 (P0) filed, not fixed**: `AppShareLinkRouting.test.jsx`'s incomplete Supabase mock fires real network writes/deletes during local test runs (#535) - a live-data-mutation risk, flagged for the Dugout track's ownership, patched into `DOC_TEST_DEBT.md`'s P0 dashboard (#538).
+- **Story 119/120 filed, not implemented**: app-shell gradient-token naming and a dedicated SharedView region slice (slice 9), both awaiting a naming/scoping decision.
+- **Dependabot reviewed live**: 4 open alerts (2 dev-only `vite`, 2 backend-runtime `ip-address` via `express-rate-limit`) - shipped with all open; the two backend-runtime ones tracked separately (Story 122, #539).
+- Full audit: `docs/product/RELEASE_AUDIT_2026-08-04.md`.
+- Patch bump 2.8.3 to 2.8.4.
 
 ---
 
