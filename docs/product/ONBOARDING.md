@@ -14,27 +14,42 @@
 4. You'll now have a Lineup Generator icon on your home screen for quick access
 
 > The app works offline after the first load — no internet needed at the field.
+> **Viewing a shared lineup never requires signing in** — if you're a parent, scorekeeper, or base coach opening a share link, skip straight to it; nothing below in this guide applies to you. The sign-in steps that follow are only for coaches who will *edit* a team.
 
 ---
 
-## Step 2 — Create Your Team
+## Step 2 — Sign In
 
-When you open the app for the first time you'll land on the Home screen.
+Editing a team's roster, schedule, or lineup requires a signed-in session. Viewing never does — but as a coach setting up your team, you'll sign in first.
 
-1. Tap **"Create New Team"**
-2. Fill in:
-   - **Team Name** — e.g. `Mud Hens`
-   - **Age Group** — e.g. `8U`
-   - **Season Year** — e.g. `2026`
-3. Tap **Save**
+1. Tap **Sign in**
+2. Choose one:
+   - **Sign in with Google** — one tap, no password
+   - **Email magic link** — enter your email, tap the link sent to your inbox
+3. You're signed in — no password to remember either way
 
-Your team is created and you're taken straight to the Roster tab.
-
-> If you coach multiple teams, you can create additional teams from the Home screen anytime. Switch between them using the team cards.
+**What happens next depends on whether you're already on a team:**
+- **Already a member of a team** (invited by your head coach, or provisioned earlier) → you land on the Home screen with your team(s) visible. Skip to Step 4.
+- **No team yet** → continue to Step 3.
 
 ---
 
-## Step 3 — Build Your Roster
+## Step 3 — Get Access to Your Team
+
+If you signed in and don't see any teams, you'll land on a screen telling you no team is linked to your account yet.
+
+1. Tap **Request Access**
+2. Fill in your name and which team you're requesting (new team, or an existing one your league already runs)
+3. Submit — your request routes to the platform administrator for review
+4. You'll see a **pending approval** screen until it's reviewed. Once approved, sign back in and your team will appear on the Home screen
+
+> Today, a brand-new team is provisioned by the platform administrator on the backend as part of approving your request — it isn't a fully self-serve "create your own team" flow yet. If your approval is taking a while, reach out directly rather than assuming something's broken.
+>
+> **If you already have at least one team** and want to add a second one yourself, the Home screen has a **"Create New Team"** option — no approval wait to create the team shell itself. **Known issue (confirmed 2026-08-04, #561):** this flow doesn't currently grant you membership on the new team, so your first roster or schedule save for it will fail. If you hit a save error right after creating an additional team, that's this bug, not something you did wrong — contact KK rather than troubleshooting further on your own.
+
+---
+
+## Step 4 — Build Your Roster
 
 Add each player on your team one at a time.
 
@@ -42,8 +57,6 @@ Add each player on your team one at a time.
 1. Tap **"Add Player"**
 2. Enter the player's first name and last name in the two separate fields, then tap Add. Names are automatically capitalized.
 3. Repeat for all players. For an 8U rec team, you'll typically have 10–12 players.
-
-Repeat for all players. For an 8U rec team, you'll typically have 10–12 players.
 
 ### Set Player Profiles (Recommended)
 
@@ -84,9 +97,9 @@ The lineup engine uses all of these attributes to assign positions and batting o
 
 ---
 
-## Step 4 — Set Your Schedule
+## Step 5 — Set Your Schedule
 
-1. Tap the **Schedule tab**
+1. Tap **My Team** in the bottom nav, then the **Schedule** sub-tab
 2. Tap **"Add Game"**
 3. Choose your preferred method:
    - **AI Photo Import** — take a photo of your printed schedule; the app parses it automatically
@@ -98,7 +111,7 @@ The lineup engine uses all of these attributes to assign positions and batting o
 
 ---
 
-## Step 5 — Generate Your First Lineup
+## Step 6 — Generate Your First Lineup
 
 1. Tap **Game Day** in the bottom nav, then **Defense**
 2. Set the number of innings (4, 5, or 6) using the innings selector
@@ -121,21 +134,21 @@ Switch to the **position view** to see a visual diamond layout per inning. Usefu
 
 ---
 
-## Step 6 — Set the Batting Order
+## Step 7 — Set the Batting Order
 
 1. Tap the **Batting tab**
 2. Tap **"Suggest Order"** — the engine ranks players by batting skill score
 3. Drag cards to reorder (desktop) or use the **up/down arrows** (mobile)
 4. The order is saved automatically
 
-> After logging game stats (Step 8), tap Suggest Order again — it will use cumulative batting averages to recommend an improved order for the next game.
+> After logging game stats (Step 9), tap Suggest Order again — it will use cumulative batting averages to recommend an improved order for the next game.
 
 ---
 
-## Step 7 — Share the Lineup
+## Step 8 — Share the Lineup
 
 ### Share with Parents or Scorekeepers
-1. From the **Schedule tab**, tap the game
+1. From **My Team → Schedule**, tap the game
 2. Tap **"Share Lineup"**
 3. Copy the link and send it via text or group chat
 
@@ -143,7 +156,7 @@ The link opens a **read-only view** showing:
 - The defensive diamond by inning
 - The batting order
 
-No account needed for the recipient — just a browser.
+No account needed for the recipient — just a browser. This is true even while the auth gate is active for editing: viewing and share links never require signing in.
 
 ### Print or PDF
 1. Tap the **Print tab**
@@ -154,11 +167,11 @@ No account needed for the recipient — just a browser.
 
 ---
 
-## Step 8 — Log Game Results
+## Step 9 — Log Game Results
 
 After the game:
 
-1. Tap the **Schedule tab** → tap the completed game
+1. Tap **My Team → Schedule** → tap the completed game
 2. Enter the final score (your team / opponent)
 3. Log each player's batting stats:
    - AB (at bats), H (hits), R (runs scored), RBI
@@ -169,14 +182,13 @@ Stats accumulate across the season and feed into the **Suggest Order** engine fo
 
 ---
 
+## Step 9.5 — (Optional) Live Scoring
 
-## Step 8.5 — (Optional) Live Scoring
+Live scoring tracks full game state — pitches, runs, batter advancement, and inning flow — directly in the app during a game, right alongside your lineup.
 
-Live scoring is a feature for coaches who want to track full game state — pitches, runs, batter advancement, and inning flow — directly in the app during a game.
+### Where it lives
 
-### Is live scoring enabled for my team?
-
-Live scoring is currently rolled out to a small set of teams behind a feature flag (`liveScoringEnabled`). If your team has it enabled, you'll see a fifth tab called **Scoring** in the bottom nav. If you don't see the Scoring tab, your team isn't in the rollout.
+Live scoring is not a separate tab — it's built into **Game Day → Dugout**, the same full-screen view you use to run the lineup on game day. Tap **Game Day**, then the **Dugout View** launcher.
 
 ### What live scoring does
 
@@ -187,11 +199,13 @@ Live scoring is currently rolled out to a small set of teams behind a feature fl
 
 ### Getting access
 
-If you want live scoring enabled for your team, contact KK directly — there's no in-app self-enroll today.
+Live scoring is rolling out gradually; not every team has it available yet. If you don't see scoring controls in Dugout View, contact KK directly — there's no in-app self-enroll today.
 
-If you've reached this section without the Scoring tab visible, skip ahead to Step 9 — backup is recommended for everyone, scoring or not.
+If your team doesn't have it yet, skip ahead to Step 10 — backup is recommended for everyone, scoring or not.
 
-## Step 9 — Back Up Your Data
+---
+
+## Step 10 — Back Up Your Data
 
 Before switching devices or clearing your browser:
 
@@ -210,17 +224,14 @@ To restore on a new device:
 
 ## Tab Reference
 
-The app has a 5-tab bottom nav. Tap any tab to switch:
+The app has a **4-tab** bottom nav. Tap any tab to switch:
 
 | Tab | Icon | What's there |
 |---|---|---|
-| **Home** | 🏠 | Dashboard. Quick access to the active team and recent activity. |
-| **My Team** | 👥 | Roster, batting hand setup, walk-up song info, attendance, and team settings. |
-| **Game Day** | 🏟 | Field grid (Defense), batting order (Batting), walk-up songs (Songs), and lineup share/print. |
-| **Scoring** | ⚾ | Live scoring mode (gated — only visible if your team has live scoring enabled). |
-| **Support** | ⚙️ | FAQ, feedback, version history, and About. |
-
-> **Note on the Scoring tab:** This tab only appears for teams with the live scoring feature enabled. If you don't see it, that's expected — your team isn't currently in the live scoring rollout. See Step 8.5 below for context.
+| **Home** | 🏠 | Dashboard. Quick access to your team(s), Create New Team, and recent activity. |
+| **My Team** | 👥 | Roster, Schedule, Snacks, batting hand setup, walk-up song info, attendance, and team settings. |
+| **Game Day** | 🏟 | Field grid (Defense), batting order (Batting), walk-up songs (Songs), lineup share/print, and Dugout View (combined game-mode + live scoring, see Step 9.5). |
+| **Support** | ⚙️ | Account (sign-out, switch teams), FAQ, feedback, version history, and About. |
 
 ---
 
@@ -241,4 +252,4 @@ This app was built for 8U recreational baseball. If something doesn't look right
 
 ---
 
-*Last updated: April 27, 2026 (v2.5.1) — Tab Reference table aligned with current 5-tab nav; Step 8.5 added for Live Scoring*
+*Last updated: 2026-08-04 (Doc Audit Spike Story 3) — added the sign-in / request-access flow (live since v2.6.0, previously undocumented), removed the retired standalone Scoring tab (removed v2.5.9; live scoring now lives in Game Day → Dugout View), corrected Tab Reference to the real 4-tab nav, fixed Schedule references to My Team → Schedule.*
