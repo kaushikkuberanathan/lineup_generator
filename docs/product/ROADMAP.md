@@ -4293,9 +4293,25 @@ correctly, as a first diagnostic step).
 
 ---
 ### Story 122 (P1) - Dependabot #61/#62/#63: ip-address SSRF/trust-boundary bypass via express-rate-limit <!-- #539 -->
-Status: Open - tracked separately per KK's explicit go/no-go decision on the
-v2.8.4 release audit (2026-08-04): ship v2.8.4 with these alerts open, address
-here rather than blocking that release.
+Status: Resolved (2026-08-05), per KK's explicit go decision after a
+decision-ready writeup (severity, exploitability, and fix-cost analysis).
+Investigated reachability directly against source before deciding fix
+approach: `ipKeyGenerator(req.ip)` in `backend/src/routes/auth.js`'s
+loginLimiter IS the vulnerable code path, but only as a documented
+"defensive only" fallback branch (the code's own existing comment) - the
+happy path keys on email, not IP. Even if hit, this is an IP-classification
+bug used only for rate-limit bucket keying here, not a trust/access
+decision - narrower than the advisory's generic SSRF framing for this
+specific usage. Confirmed `express-rate-limit`'s own latest version (8.6.2)
+still declares `"ip-address": "^10.2.0"` - never bumped its own constraint -
+so the fix does NOT require an express-rate-limit bump at all: added
+`"overrides": { "ip-address": "^10.4.0" }` to `backend/package.json` (a
+locked file, gate phrase granted same session). `npm install` confirmed the
+resolved version: `node_modules/ip-address` now pins exactly `10.4.0`
+(satisfies `>=10.3.1`, closing #61/#62/#63 together). Verified no
+regression: `loginLimiter.test.js` 3/3 pass, full backend unit suite 111/111
+pass, 0 fail. `npm install` also reported "found 0 vulnerabilities".
+Branch: `issue/539-ip-address-override-fix`.
 Update 2026-08-05: a third alert, #63 (HIGH), appeared seconds after v2.8.4's
 version-bump merged to develop - same ip-address package/dependency chain
 (express-rate-limit), but a more severe, broader-reaching SSRF bypass
