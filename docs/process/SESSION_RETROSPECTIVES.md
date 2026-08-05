@@ -10,6 +10,70 @@
 
 ---
 
+## 2026-08-04-A — Doc Audit Spike remediation (autonomous execution)
+
+**Date:** August 4, 2026
+**Session ID:** 2026-08-04-A (T1 — Dugout Track)
+**Duration:** Single continuous autonomous run, Phase 1 (recon + one consolidated question round) then Phase 2 (zero-pause execution)
+**Versions shipped to production:** None — docs-only, PR opened but not merged
+**PRs opened:** #559 (`feature/docs-product-audit-spike` → `develop`, **not merged**, held for KK review)
+**Issues filed:** #549–#558 (Stories 1-6, 8-9, all closed via squash-merge into the feature branch; #555/#556 backfilled-and-closed retroactive markers for already-shipped Stories 61/67)
+
+### Overview
+
+A prior session (same day) ran a discovery-only spike auditing all 19 `docs/product/*.md` files plus `docs/SOLUTION_DESIGN.md` and `docs/TROUBLESHOOTING.md` against live prod, producing `docs/product/DOC_AUDIT_SPIKE_2026-08-04.md`. This session executed that spike's 9-story remediation plan end to end, autonomously, per a handoff document designed for a fresh Claude Code session (run instead in the session that already held the spike's context).
+
+### What Was Planned
+
+Execute all 9 stories in priority order (P0 → P1 → P2/P3), each behind its own GitHub Issue + `issue/[N]-slug` branch, squash-merged into `feature/docs-product-audit-spike`; hold the final promotion to `develop` for explicit review.
+
+### What Shipped
+
+| Story | Priority | Files | Issue | Status |
+|---|---|---|---|---|
+| 1 | P0 | `docs/db/schema.sql` | #549 | Merged to feature branch |
+| 2 | P0 | `AUTH_SECURITY_AUDIT_ROADMAP.md` | #550 | Merged to feature branch |
+| 3 | P0 | `ONBOARDING.md` | #551 | Merged to feature branch |
+| 4 | P0 | `PRODUCT_OPS.md`, `MASTER_DEV_REFERENCE.md` | #552 | Merged to feature branch |
+| 5 | P1 | `docs/SOLUTION_DESIGN.md` | #553 | Merged to feature branch |
+| 6 | P1 | `PERSONAS.md`, `ONE_PAGER.md`, `FEATURE_MAP.md` | #554 | Merged to feature branch |
+| 7 | P2 | `RELEASE_NOTES.md`, `CLAUDE.md`, `VERSION_HISTORY_SCHEMA.md` | — | **Skipped** — gated on v2.8.4 promoting to main; main still v2.8.3 |
+| 8 | P2 | `CHARTER.md`, `ONE_PAGER.md`, `MASTER_DEV_REFERENCE.md`, `ROADMAP.md`, `UX_REFACTOR_ROADMAP.md`, `DOC_TEST_DEBT.md` | #557 | Merged to feature branch |
+| 9 | P2/P3 | `A11Y_AUDIT.md`, `DESIGN_AUDIT.md`, `LINT_BASELINE.md`, `APPJSX_DECOMPOSITION_PLAN.md`, `SECURITY_FRAMEWORK.md`, `docs/TROUBLESHOOTING.md`, `CLAUDE.md` | #558 | Merged to feature branch |
+
+### What Didn't Happen
+
+- Story 7 — explicitly gated by the handoff on v2.8.4 being live on `main`. Confirmed via `origin/main`'s `APP_VERSION` that it is still v2.8.3. Skipped per the handoff's own stated default, not silently dropped — logged, and the Phase-1-confirmed CLAUDE.md checklist wording (Systemic Issue #1 template) is flagged in the execution log for KK's independent consideration, since it's a general process fix that doesn't actually need to wait on the v2.8.4 promotion.
+- The actual fix for the live-scoring-tables' `allow_scorer_writes` RLS exposure (see below) — out of scope for a docs-only run; escalated directly instead.
+
+### Key Events
+
+**1. Live security finding surfaced during Phase 1, escalated before continuing**
+
+The Phase-1 SQL query (run by KK directly against prod, since no Supabase MCP tool was connected this session) showed `allow_scorer_writes` (`roles: public, cmd: ALL, qual: true`) on all three live-scoring tables — unrestricted read/write/delete for every team, not just the two hardcoded team IDs the existing docs described. This is real and currently exploitable. Flagged to KK directly in chat before Phase 2 began, and documented precisely (not fixed) everywhere the docs touch it. KK's reply (the two gate-phrase/push-authorization confirmations, no objection to proceeding) was read as "proceed with docs-only remediation, I'll handle the real fix separately" — an inference, not an explicit instruction, logged as such.
+
+**2. No Supabase MCP tool available — KK ran the verification query directly**
+
+Phase 1 recon found no live database query tool connected to the session. Rather than reconstruct current RLS/policy state by analytically replaying migration files onto the stale `docs/db/schema.sql` capture (the fallback method), KK opted to run the exact introspection query in the Supabase SQL Editor and paste results back — higher-fidelity ground truth for Story 1 and everything downstream of it (Stories 2, 5, 9).
+
+**3. Branch rebase caught before it caused a conflict**
+
+`feature/docs-product-audit-spike` was 2 commits behind `origin/develop` by the time Phase 2 started (one of which touched `docs/product/ROADMAP.md`, a Story 8 target file). Rebased onto latest `develop` before any edits began, per KK's confirmed preference in the Phase 1 question round.
+
+**4. One app-code question surfaced and logged, not chased**
+
+While rewriting ONBOARDING.md's onboarding flow (Story 3), investigation of `createTeam()` suggested it may not provision a `team_memberships` row for a coach's additional team — a real app-code question, outside a docs remediation's scope. Logged in the execution log rather than investigated further or silently assumed either way.
+
+**5. Two batch stories (8, 9) each touched 6+ files in a single commit**
+
+Both governance-batch stories bundled multiple files per the handoff's own grouping. Each file's fix was independently verified against live source before editing (schema.sql re-verification, live eslint run, direct grep counts for the `var C` retirement progress) rather than trusting the original spike doc's line numbers or counts as still current.
+
+### Standing takeaway
+
+The handoff's two-phase structure (recon + one consolidated question round, then zero-pause autonomous execution) worked cleanly for a docs-only run with pre-established context from the same session's own spike — the real friction point was environmental (no DB query tool), not procedural, and got resolved by asking a single well-scoped Phase-1 question instead of surfacing it mid-run.
+
+---
+
 ## 2026-08-01-A — develop git-integrity check (closed-with-caveat)
 
 **Date:** August 1, 2026
