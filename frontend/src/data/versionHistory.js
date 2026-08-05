@@ -1,5 +1,24 @@
 export var VERSION_HISTORY = [
   {
+    version: '2.8.4',
+    date: 'August 2026',
+    headline: 'Under-the-hood improvements to reliability and code quality',
+    techNote: 'Minor fixes and internal improvements',
+    userChanges: [
+      'Behind-the-scenes reliability and stability improvements. No changes to how the app works for you.',
+    ],
+    internalChanges: [
+      'Completed the Phase 3 UI-primitives migration — the remaining hand-styled components (FairnessCheck, NowBattingStrip, MaintenanceScreen, ParentView, BattingOrderStrip, LockFlow, DefenseDiamond) now use the shared Card/Text/Stack primitives instead of one-off inline styles.',
+      'Retired the legacy S.card style object across all 17 App.jsx call sites in favor of the Card primitive; deleted a related dead style object found along the way (#514, #501).',
+      'Started retiring the legacy color object (var C) in App.jsx region by region: three of nine planned regions done so far — header/nav chrome, the Roster tab, and the Defense/Batting grid tabs — all zero-visible-change token swaps (#296, #497, #503).',
+      'Fixed a Windows-specific test-runner flake that intermittently dropped test files from local and CI runs; the fix is now the permanent default in both development environments (#517).',
+      'Added regression test coverage for share-link payload construction, Game Mode rendering and state, live-scoring session security, and auth routing decisions.',
+      'Identified and flagged (not yet fixed) a test-only issue where one share-link test can make real database network calls instead of using a mock — tracked for follow-up; does not affect the production app (#535).',
+      'Reviewed all current dependency security alerts — two lower-risk, development-only ones and two backend ones (sitting behind the login rate-limiter, tracked for follow-up) remain open by deliberate choice, not oversight (#539).',
+      'Patch bump 2.8.3 to 2.8.4.',
+    ],
+  },
+  {
     version: '2.8.3',
     date: 'August 2026',
     headline: 'Two silent bugs fixed, backend security hardened',
