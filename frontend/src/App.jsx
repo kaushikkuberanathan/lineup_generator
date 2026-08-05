@@ -3589,10 +3589,10 @@ export default function App() {
         )}
 
         {recoverMode && (
-          <div style={{ position:'fixed', top:0, left:0, right:0, bottom:0, background:'rgba(0,0,0,0.5)', zIndex:10000, display:'flex', alignItems:'center', justifyContent:'center', padding:'20px' }}>
-            <div style={{ background:'white', borderRadius:'12px', padding:'20px', maxWidth:'480px', width:'100%', maxHeight:'80vh', overflowY:'auto' }}>
+          <div style={{ position:'fixed', top:0, left:0, right:0, bottom:0, background:tokens.color.overlay.scrimLight, zIndex:10000, display:'flex', alignItems:'center', justifyContent:'center', padding:'20px' }}>
+            <div style={{ background:tokens.color.surface.card, borderRadius:'12px', padding:'20px', maxWidth:'480px', width:'100%', maxHeight:'80vh', overflowY:'auto' }}>
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'16px' }}>
-                <div style={{ fontWeight:'bold', fontSize:'16px', color:'#0f1f3d' }}>Restore Previous Roster</div>
+                <div style={{ fontWeight:'bold', fontSize:'16px', color:tokens.color.brand.navy }}>Restore Previous Roster</div>
                 <button onClick={function(){setRecoverMode(false); setSnapshots([]);}} style={{ background:'none', border:'none', fontSize:'20px', cursor:'pointer', color:'#94a3b8' }}>&#xd7;</button>
               </div>
               {snapshots.map(function(snap) {
@@ -3602,7 +3602,7 @@ export default function App() {
                   <div key={snap.id} style={{ border:'1px solid #e5e7eb', borderRadius:'8px', padding:'12px', marginBottom:'10px' }}>
                     <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                       <div>
-                        <div style={{ fontWeight:'bold', fontSize:'13px', color:'#0f1f3d' }}>{snap.player_count} players</div>
+                        <div style={{ fontWeight:'bold', fontSize:'13px', color:tokens.color.brand.navy }}>{snap.player_count} players</div>
                         <div style={{ fontSize:'11px', color:'#94a3b8', marginTop:'2px' }}>{label} &middot; {snap.trigger_event}</div>
                       </div>
                       <button
@@ -3615,7 +3615,7 @@ export default function App() {
                           setRestoreBanner('Roster restored \u2014 ' + restored.length + ' players recovered');
                           setTimeout(function() { setRestoreBanner(''); }, 5000);
                         }; }(snap)}
-                        style={{ background:'#0f1f3d', color:'white', border:'none', borderRadius:'6px', padding:'6px 12px', fontSize:'12px', cursor:'pointer', fontWeight:'bold' }}>
+                        style={{ background:tokens.color.brand.navy, color:tokens.color.text.onDark, border:'none', borderRadius:'6px', padding:'6px 12px', fontSize:'12px', cursor:'pointer', fontWeight:'bold' }}>
                         Restore
                       </button>
                     </div>
@@ -6350,7 +6350,7 @@ export default function App() {
         </div>
 
         {showShare ? (
-          <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:100, padding:"20px" }}>
+          <div style={{ position:"fixed", inset:0, background:tokens.color.overlay.scrimLight, display:"flex", alignItems:"center", justifyContent:"center", zIndex:100, padding:"20px" }}>
             <Card padding="24px" radius="md" style={{ border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px", maxWidth:"420px", width:"100%" }}>
               <div style={{ fontWeight:"bold", fontSize:"15px", marginBottom:"12px" }}>Share Lineup</div>
               <div style={{ fontSize:"11px", color:tokens.color.text.muted, marginBottom:"8px" }}>View-only link for coaches and parents:</div>
@@ -7780,10 +7780,10 @@ export default function App() {
     return (
       <div
         onClick={function() { setShowExitSheet(false); }}
-        style={{ position:"fixed", inset:0, zIndex:1500, background:"rgba(0,0,0,0.5)", display:"flex", flexDirection:"column", justifyContent:"flex-end" }}>
+        style={{ position:"fixed", inset:0, zIndex:1500, background:tokens.color.overlay.scrimLight, display:"flex", flexDirection:"column", justifyContent:"flex-end" }}>
         <div
           onClick={function(e) { e.stopPropagation(); }}
-          style={{ background:C.navy, borderTop:"2px solid " + C.red, borderRadius:"16px 16px 0 0", padding:"20px 20px 0", paddingBottom:"max(20px, env(safe-area-inset-bottom, 20px))", fontFamily:"Georgia,serif" }}>
+          style={{ background:tokens.color.brand.navy, borderTop:"2px solid " + tokens.color.brand.red, borderRadius:"16px 16px 0 0", padding:"20px 20px 0", paddingBottom:"max(20px, env(safe-area-inset-bottom, 20px))", fontFamily:"Georgia,serif" }}>
           <div style={{ textAlign:"center", marginBottom:"4px" }}>
             <div style={{ width:"36px", height:"4px", borderRadius:"2px", background:"rgba(255,255,255,0.2)", margin:"0 auto 16px" }} />
             <div style={{ fontSize:"11px", color:"rgba(255,255,255,0.45)", textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:"4px" }}>
@@ -7804,7 +7804,7 @@ export default function App() {
           <div style={{ display:"flex", flexDirection:"column", gap:"10px", marginBottom:"12px" }}>
             <button
               onClick={function() { setShowExitSheet(false); }}
-              style={{ width:"100%", padding:"14px", borderRadius:"10px", background:C.gold, border:"none", color:C.navy, fontSize:"15px", fontWeight:"bold", fontFamily:"Georgia,serif", cursor:"pointer" }}>
+              style={{ width:"100%", padding:"14px", borderRadius:"10px", background:tokens.color.brand.gold, border:"none", color:tokens.color.brand.navy, fontSize:"15px", fontWeight:"bold", fontFamily:"Georgia,serif", cursor:"pointer" }}>
               Keep Working
             </button>
             <button
