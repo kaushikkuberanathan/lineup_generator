@@ -79,7 +79,7 @@ All issues use `prefix:name` convention (no spaces). Full taxonomy in `docs/proc
 - `type:bug` / `type:feature` / `type:chore` / `type:governance`
 
 ### Recommended (add when known)
-- `area:*` — which part of the system (scoring, auth, ux, backend, ci-ops, share-link, roster, supabase, analytics)
+- `area:*` — which part of the system (scoring, auth, ux, backend, ci-ops, game-mode, share-link, roster, supabase, analytics)
 - `status:in-progress` — when work starts
 - `status:deferred` — when explicitly pushed to a future phase
 
@@ -161,14 +161,15 @@ Remove-Item commit_msg.txt
 | Scenario | Merge type |
 |---|---|
 | Feature/fix/chore/docs branch → develop | **Squash merge** (one clean commit per PR) |
-| develop → main (release) | **Squash merge** |
+| develop → main (release) | **Create a merge commit — never squash** (Story 79, 2026-05-21) |
 | main → develop (post-release sync) | **Regular merge** (preserves merge commit on develop) |
 
-**Never squash a sync PR** (main → develop). The merge commit is required so develop's ancestry stays intact for future conflict resolution.
+**Never squash the develop → main promote, or the main → develop sync.** Squashing a promote collapses develop's entire PR-level history into one commit on main, losing per-story granularity (Story 79 - this was tried once and reverted). The sync merge commit is required so develop's ancestry stays intact for future conflict resolution.
 
 ### PR smoke test (before opening)
 - [ ] `npm run build` clean
 - [ ] Full Vitest suite passing
+- [ ] Backend changes: `cd backend && npm run test:unit` passing (CI `backend-unit` job) *and* the integration runner (`backend/scripts/tests/test-runner.js`) passing
 - [ ] Vercel preview deployed
 - [ ] Phone smoke test on preview URL (not DevTools simulation)
 

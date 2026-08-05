@@ -648,7 +648,7 @@ End-to-end ordered sequence for promoting work from develop to production. Follo
 21. **Confirm ## Ship Gate** — All four questions answered.
 22. **Open PR develop → main as DRAFT** — Same draft-first discipline.
 23. **Verify CI green on develop's preview** — Vercel auto-deploys per branch.
-24. **Mark ready, merge** — Squash-merge or merge-commit (squash recommended). Render auto-deploy fires for backend; Vercel auto-deploy fires for frontend.
+24. **Mark ready, merge** — **Create a merge commit — never squash** for this develop → main promote (Story 79, 2026-05-21: squashing collapses develop's PR-level history into one commit on main). Render auto-deploy fires for backend; Vercel auto-deploy fires for frontend.
 
 ### Phase 6: Production verification (within 10 min of merge)
 
