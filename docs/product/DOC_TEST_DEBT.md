@@ -150,22 +150,12 @@
 | | |
 |---|---|
 | **Area** | Governance |
-| **Status** | Open |
+| **Status** | Open — deferred to a dedicated session |
 | **Type** | Refactor |
 | **Opened** | 2026-04-17 |
-| **Target** | v2.3.4 |
+| **Target** | Needs re-targeting when picked up (2026-08-05: deliberately not started this session) |
 | **Summary** | FEATURE_MAP.md currently uses a flat numbered table (`\| 1 \| **Feature Name** \| MVP \|`). Adjacency tooling and AI cross-referencing require per-feature sections with structured fields: Code Surfaces, Doc Surfaces, FAQ Categories, Personas, Test Surfaces. Restructure adds `### <Feature Title>` sections below the existing summary table; table becomes TOC, sections become data. Same information, parseable by scripts. Required prerequisite for v2.2.41 Backlog Adjacency System. |
-
-### 🟠 P1 — FEATURE_MAP.md Missing Feature Rows (Analytics, PWA, Governance)
-
-| | |
-|---|---|
-| **Area** | Governance |
-| **Status** | Open |
-| **Type** | Doc gap |
-| **Opened** | 2026-04-17 |
-| **Target** | v2.3.4 |
-| **Summary** | Three Area values in DOC_TEST_DEBT.md have no matching row in FEATURE_MAP.md: "Analytics (Mixpanel + Vercel Analytics + UTM)", "PWA Setup", and "Governance" (exists as "Governance infrastructure" — not exact match, breaks mechanical lookup). Add dedicated rows for each during the restructure. Each row must include full Code Surfaces, Doc Surfaces, FAQ Categories, Personas, Test Surfaces fields so adjacency tooling works mechanically. Note: v2.3.3 hygiene patch added Practice Mode, Runner Placement, and Opponent Half Tracking rows — remaining gap is Analytics, PWA, and exact Governance match. |
+| **2026-08-05 scope check** | Re-read against current `FEATURE_MAP.md` (now 37 rows) before starting: 2 of the 5 proposed fields (Doc Surfaces, Test Surfaces) map directly from existing columns, but Code Surfaces, FAQ Categories, and Personas exist nowhere in the current table — each needs real per-feature investigation, not a reformat. Comparable in size to the App.jsx decomposition work this repo already treats as its own dedicated session (Story 104). Deferred per KK's explicit decision rather than attempted or silently shrunk within this batch. Issue: [#577](https://github.com/kaushikkuberanathan/lineup_generator/issues/577). |
 
 ### 🟡 P2 — SOLUTION_DESIGN.md §Test Suite Inventory
 
@@ -305,6 +295,10 @@
 
 *(Items move here once shipped. Format: date, version, original description summary, resolution commit.)*
 
+### August 5, 2026 — FEATURE_MAP.md Missing Feature Rows (Analytics, PWA, Governance)
+
+- ✅ **P1 — FEATURE_MAP.md Missing Feature Rows** — Resolved, structural-restructure half deliberately split off and deferred (see the still-open entry above). Added row 36 (Analytics — Mixpanel + Vercel Analytics + UTM) and row 37 (PWA Setup — install prompt + service worker), both citing existing doc sections (`docs/analytics/ANALYTICS.md` + `SOLUTION_DESIGN.md` §§ Analytics Architecture / PWA Setup) and both correctly marked `❌ None` for tests (confirmed by direct file search — no `analytics.test.js`/`pwaInstall.test.js` exists; PWA install logic lives inline in `App.jsx` around lines 1608–1774, no dedicated file). Renamed row 22 from "Governance infrastructure" to "Governance" for the exact Area-value string match the original ticket asked for — no other change to that row. Recounted `FEATURE_MAP.md`'s own Coverage Summary by direct tally against the table, not propagated arithmetic: 35→37 rows, Doc Current 30→32, No Tests 11→13, Doc Stale/Doc Missing/Tests Exist/Tests Partial unchanged. Issue: [#576](https://github.com/kaushikkuberanathan/lineup_generator/issues/576).
+
 ### August 5, 2026 — Box-score AI parser test coverage (teamName fix, PR #229)
 
 - ✅ **P1 — Box-score AI parser test coverage** — Resolved. The parser's `systemPrompt`/`userContent` construction was inline in `App.jsx`'s `parseGameResult()`, closure-scoped over `activeTeam`/`roster` state, with no way to unit-test it independently of rendering the whole App — exactly the extraction gap this item's proposed test called out. Extracted to `frontend/src/utils/buildBoxScorePrompt.js` (App.jsx locked-file edit, gate phrase granted this session), mirroring `buildSharePayload.js`'s established pattern for this repo's App.jsx-testability problem. `parseGameResult()` itself is now a two-line call to the extracted function plus the existing fetch/AbortController/timeout plumbing, which was left untouched (out of scope — that's network wiring, not the teamName resolution logic this item was about). Added `frontend/src/utils/buildBoxScorePrompt.test.js` (8 tests): happy-path teamName extraction into the system prompt; a direct regression guard that `activeTeam === null` never produces the literal string `"undefined"` (the exact v2.5.20 bug shape Story 84/PR #178→#228→#229 fixed) in either the system prompt or user content; the same guard for `activeTeam` present but `.name` falsy; empty-roster handling; and userContent shape correctness for all three `sourceType` variants (`image` incl. default `media_type` fallback, `pdf`, `text`). **Mutation-test RED checkpoint** (file is untracked, so a `git stash` RED check doesn't apply — mutation substitute used, per this doc's own rule): reverted the `teamName` guard from `(activeTeam && activeTeam.name) ? activeTeam.name : ""` to a bare `activeTeam.name` — the null-guard test failed RED with a real `TypeError: Cannot read properties of null` (a stronger failure signature than a silent `"undefined"` string, and arguably a better regression trap than the original bug shape). Reverted, confirmed `git diff --stat` on the util file empty, re-ran and confirmed 8/8 green again. Also ran `npx eslint src/App.jsx src/utils/buildBoxScorePrompt.js` (clean) and `npm run build` (clean production build, pre-existing chunk-size warning unrelated) to verify the extraction didn't regress anything beyond the unit tests. No real production bug found in the current (already-fixed) behavior — this closes a coverage gap only. Branch: `issue/10-boxscore-parser-coverage`. Issue: [#570](https://github.com/kaushikkuberanathan/lineup_generator/issues/570) (filed retroactively, closed same session).
@@ -398,9 +392,11 @@
 | Priority | Test Gaps | Doc Gaps | Process Gaps | Total |
 |---|---|---|---|---|
 | 🔴 P0 | 1 | 0 | 0 | **1** |
-| 🟠 P1 | 0 | 2 | 0 | **2** |
+| 🟠 P1 | 0 | 1 | 0 | **1** |
 | 🟡 P2 | 8 | 5 | 7 | **20** |
-| **Total** | **9** | **7** | **7** | **23** |
+| **Total** | **9** | **6** | **7** | **22** |
+
+*(2026-08-05: FEATURE_MAP.md Missing Feature Rows — resolved, see Resolved section (Structural Restructure deliberately split off, still open — see its own entry above). Direct count of every `### 🟠` heading actually present in Open — Doc Gaps immediately before this edit: 2 P1 (both FEATURE_MAP items) — matched the prior table exactly. Doc Gaps P1 2→1, Doc Gaps total 7→6, P1 Total 2→1, Grand Total 23→22.)*
 
 *(2026-08-05, branch-hygiene audit: corrected an arithmetic error in the prior entry below — its Test Gaps column total and Grand Total both dropped the existing P0 item (`AppShareLinkRouting.test.jsx` mock) when recomputing after item 10's closure, undercounting both by exactly 1. Direct recount of every `### 🔴`/`### 🟠`/`### 🟡` heading actually present in Open — Test Gaps: 1 P0 + 0 P1 + 8 P2 = 9 (not 8). Doc Gaps (7) and Process Gaps (7) were already correct. Corrected: Total row 9/7/7 = 23, not 8/7/7 = 22. This was a column-sum-vs-row-sum mismatch inside the table itself (P0 1 + P1 2 + P2 20 = 23 by row, but the old Total row said 22) — exactly the kind of drift this ledger's own standing practice exists to catch.)*
 
