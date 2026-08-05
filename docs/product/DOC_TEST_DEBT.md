@@ -24,6 +24,19 @@
 
 ## Open — Test Gaps
 
+### 🟡 P2 — useAuth.js `onAuthStateChange` silently strands user on failed `/me` call after `SIGNED_IN`
+
+| | |
+|---|---|
+| **Area** | Auth system (magic link + Google OAuth) |
+| **Description** | `frontend/src/hooks/useAuth.js`'s `onAuthStateChange` listener has a bare `if (res.ok)` guard around the backend `GET /me` call it makes after Supabase fires `SIGNED_IN`. If that call fails (network error, non-2xx), the entire state-update block is skipped — no `authState` change, no error surfaced, no retry. The user is left exactly where they were (typically the login screen) with a live Supabase session and zero feedback. |
+| **Risk if unfixed** | Not a security bypass — no unauthorized access results. A reliability/UX stall: a coach who clicks a magic link or completes Google OAuth during a transient backend hiccup gets silently stuck, likely reads it as "the link didn't work," and may re-request during the `loginLimiter`'s rate-limit window. |
+| **Proposed test/fix** | Surface an error to the user (toast/banner) and/or retry the `/me` call with backoff. `frontend/src/tests/auth.test.js` test B4 already documents the current (broken) behavior — extend or replace it with a fix-verifying test once a fix approach is chosen. |
+| **Opened** | 2026-08-05 — found while adding `auth.test.js` (test B4) during Sprint 2's Story 6 (Auth Flow End-to-End, #566/PR #567); flagged in execution logs across two sessions the same day without being filed as its own tracked item until now. |
+| **Age** | 0 days |
+| **Target** | Opportunistic — no hard deadline, but should be fixed before treating "no error shown after clicking the link" coach reports as unrelated confusion. |
+| **Issue** | [#579](https://github.com/kaushikkuberanathan/lineup_generator/issues/579) |
+
 ### 🟡 P2 — Walk-Up Song Navigation
 
 | | |
@@ -385,10 +398,10 @@
 |---|---|---|---|---|
 | 🔴 P0 | 0 | 0 | 0 | **0** |
 | 🟠 P1 | 0 | 1 | 0 | **1** |
-| 🟡 P2 | 8 | 5 | 7 | **20** |
-| **Total** | **8** | **6** | **7** | **21** |
+| 🟡 P2 | 9 | 5 | 7 | **21** |
+| **Total** | **9** | **6** | **7** | **22** |
 
-*(2026-08-05: table repaired after a squash-merge left two overlapping table fragments in this file (PR #574/#575/#578 all landed via squash, each carrying its own dashboard edit against a diverging base — the merge combined the fragments incorrectly, breaking the markdown table itself, not just the arithmetic). Replaced with a single table, values confirmed by direct count of every `### 🔴`/`### 🟠`/`### 🟡` heading actually present in Open just now: 0 P0; 1 P1 (FEATURE_MAP.md Structural Restructure — the only item still open after Missing Feature Rows closed and the AppShareLinkRouting/AppNoMembershipRouting P0 closed); 20 P2 (8 Test Gaps + 5 Doc Gaps + 7 Process Gaps). Grand Total 21. This also clears the `debt-p0` gate — zero open P0 items.)*
+*(2026-08-05: table repaired after a squash-merge left two overlapping, malformed table fragments in this file (PR #574/#575/#578 each carried their own dashboard edit against a diverging base, all landed via squash). This merge additionally folds in PR #580's useAuth.js P2 test-gap addition (#579), which landed on `develop` after the table-repair branch was cut. Values confirmed by direct count of every `### 🔴`/`### 🟠`/`### 🟡` heading actually present in Open just now — not propagated from either side's own arithmetic: 0 P0; 1 P1 (FEATURE_MAP.md Structural Restructure, the only item still open); 21 P2 (9 Test Gaps incl. the useAuth.js finding + 5 Doc Gaps + 7 Process Gaps). Grand Total 22. Clears the `debt-p0` gate — zero open P0 items.)*
 
 *(2026-08-05, branch-hygiene audit: corrected an arithmetic error in the prior entry below — its Test Gaps column total and Grand Total both dropped the existing P0 item (`AppShareLinkRouting.test.jsx` mock) when recomputing after item 10's closure, undercounting both by exactly 1. Direct recount of every `### 🔴`/`### 🟠`/`### 🟡` heading actually present in Open — Test Gaps: 1 P0 + 0 P1 + 8 P2 = 9 (not 8). Doc Gaps (7) and Process Gaps (7) were already correct. Corrected: Total row 9/7/7 = 23, not 8/7/7 = 22. This was a column-sum-vs-row-sum mismatch inside the table itself (P0 1 + P1 2 + P2 20 = 23 by row, but the old Total row said 22) — exactly the kind of drift this ledger's own standing practice exists to catch.)*
 
