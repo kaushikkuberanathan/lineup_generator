@@ -2996,7 +2996,20 @@ removable before committing.
 
 ### Story 86 (P1) — Post-promote sync: add main → develop sync step to Release Ritual <!-- #189 -->
 
-Status: Open
+Status: Resolved (2026-08-05). Re-verified directly against current source
+rather than trusting this entry's own "Open" status: the proposed fix already
+shipped, just was never closed out here. `CLAUDE.md`'s "Release Ritual —
+Develop to Main Promotion" section (line ~225) carries the one-liner —
+"**Post-promote sync (required):** After every develop → main promote
+merges, immediately open a `sync/main-into-develop` PR to absorb the merge
+commit back into develop. Skipping causes 8-file conflict on the next
+promote. (Story 86, 2026-05-23)" — and `docs/product/MASTER_DEV_REFERENCE.md`
+carries the full rule as step 29 of the Release Ritual phase sequence plus a
+"don't skip this" callout in its pitfalls list, both citing "(Story 86,
+2026-05-23)" already. `DOC_TEST_DEBT.md` has no separate entry for this
+Story — nothing to close there. No doc content changed by this closure;
+this is a stale status-marker fix only, same pattern as the share/print and
+Auto-Staging Git Hook items closed as stale in prior sessions.
 Discovered: May 23, 2026 — promote PR #175 had 8-file conflict
 because post-promote sync was skipped after PR #159
 Target: Next governance pass
