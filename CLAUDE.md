@@ -36,6 +36,8 @@ Default base for new work: develop.
 
 **Enforcement: every change starts on a feature/fix/hotfix branch.** Direct commits to develop or main are not permitted except for declared hotfixes that branch off main. The branch strategy applies to docs-only changes too — small commits on develop have caused real release-notes coordination bugs (see PR #29 retrospective). No exceptions because the work feels small.
 
+**Merge-type policy (feature/\*→develop AND develop→main):** Always select **"Create a merge commit"** on the PR merge dropdown — never squash. GitHub's merge-button default is sticky per-repo/session and cannot be trusted to reflect intent just because it was correct last time; after merging, verify the actual commit shape (`git show -s --format=%P HEAD` — should show 2 parents) rather than trusting the dropdown. This has recurred twice despite stated intent: PR #100 / v2.5.15 (2026-05-19) and the Sprint 2 P1 debt-closure PRs #567/#569/#571 (2026-08-05) all squash-landed anyway. A CI guardrail Action to catch this automatically at merge time is proposed but **not yet built** — see [#573](https://github.com/kaushikkuberanathan/lineup_generator/issues/573).
+
 ### Infrastructure notes
 
 - Vitest v4 pool: `pool: 'threads'`, `maxWorkers: 1` — switched from `pool: 'forks'` + `singleFork: true` in Story 41 fix. Cox Defender endpoint security blocked child_process.fork IPC in git hook context; worker_threads are intra-process and unaffected. `maxWorkers: 1` enforces single-worker execution to prevent thread-race test isolation failures (same safety rationale as the former `singleFork: true`).
