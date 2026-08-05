@@ -1189,7 +1189,7 @@ Game Mode polish release covering three themes:
 
 ## 🔴 P0 — Critical / Blocking
 
-### Story 61 (P0) — Share-link viewer routing broken in prod
+### Story 61 (P0) — Share-link viewer routing broken in prod <!-- #555 -->
 
 **Status:** Resolved — v2.5.16 (shipped 2026-05-19)
 **Discovered:** April 30, 2026 during Slice 0 (combined game view) dev test on Vercel preview
@@ -1222,7 +1222,7 @@ Tests: `src/tests/shareLink.test.js` — 3 new specs (timeout-stall, happy path,
 
 **Blocks:** Final merge of feature/combined-game-view to main is NOT blocked — note in PR body that share-link viewer is broken in prod regardless of this change.
 
-### Story 67 (P0) — Share CTA orphaned: shareCurrentLineup() unreachable from Lineups tab
+### Story 67 (P0) — Share CTA orphaned: shareCurrentLineup() unreachable from Lineups tab <!-- #556 -->
 Status: Resolved — v2.5.15 (2026-05-19)
 Resolved: renderPrint() action bar lifted into renderLineups() via PR #99 (commit a355b1a). shareCurrentLineup() now reachable from Lineups tab. All three share paths confirmed working in local smoke test and dev.dugoutlineup.com overnight soak.
 Discovered: May 18, 2026 — root cause confirmed via code grep

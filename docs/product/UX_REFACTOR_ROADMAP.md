@@ -142,26 +142,18 @@ before documenting it as canonical.
 
 ## 3. Locked Files Registry
 
-**Current session locks (until App.jsx gate phrase):**
-
-| File | Reason locked | Who owns it |
-|------|--------------|-------------|
-| `frontend/src/App.jsx` | 9,800 lines; parallel Game Day session edits it | Parallel session / Phase 4 |
-| `frontend/src/utils/migrations.js` | Parallel session territory | Parallel session |
-| `frontend/src/utils/formatters.js` | Parallel session territory | Parallel session |
-| `frontend/src/utils/flagBootstrap.js` | Parallel session territory | Parallel session |
-| `frontend/src/components/game-mode/*` | Parallel session owns Game Mode behavioral changes | Parallel session |
-| `frontend/src/components/ScoringMode/*` | Parallel session territory | Parallel session |
-| `frontend/package.json` | No version bumps until v2.4.x umbrella closes | KK-directed only |
-| `backend/package.json` | No version bumps until v2.4.x umbrella closes | KK-directed only |
-| `CLAUDE.md` | No version history edits until umbrella closes | KK-directed only |
-| `docs/product/ROADMAP.md` | No version history edits; new sections OK | KK-directed only |
-
-**In-scope exception for this session:**
-
-| File | Why unlocked |
-|------|-------------|
-| `frontend/src/config/featureFlags.js` | Phase 1a explicitly requires the `ACCESSIBILITY_V1` flag flip |
+> **Corrected 2026-08-04 (Doc Audit Spike Story 8).** This section described a
+> point-in-time arrangement from the Phase 1/2 era — a "parallel session" owning
+> specific files, and a "v2.4.x umbrella" version-closure gate. Both are long
+> since closed (current version is v2.8.4/v2.8.3), and the whole framing
+> contradicts the gate-phrase convention that's been the actual live mechanism
+> since. Keeping a second, drifted copy here risks a fresh session trusting this
+> table over the real one. **Canonical source: root `CLAUDE.md` § Locked Files.**
+> It uses per-file gate phrases (e.g. `"all clear — App.jsx editing approved"`)
+> rather than session-based ownership, and is the one that's actually
+> maintained. `MEMORY.md`'s `project_locked_files.md` note adds the practical
+> caveat: only `App.jsx` genuinely requires its gate phrase before editing;
+> the others mean "edit carefully," not "hard-blocked."
 
 ---
 

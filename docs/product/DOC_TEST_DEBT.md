@@ -42,23 +42,11 @@
 |---|---|
 | **Area** | Auth system (magic link + Google OAuth) |
 | **Description** | No tests cover the magic link request → callback handling → team membership hydration flow. Same for Google OAuth. |
-| **Risk if unfixed** | Phase 2 auth cutover (planned) cannot ship safely without regression coverage. An auth-gate re-activation that silently blocks unauthenticated viewers would reproduce the v2.2.22 hotfix scenario. |
+| **Risk if unfixed** | **Corrected 2026-08-04: the auth cutover this item originally gated on already shipped (v2.6.0, 2026-07-20), without this coverage landing first.** The gap is now about regressing already-live behavior, not blocking a future cutover — an auth-gate change that silently blocks unauthenticated viewers would reproduce the v2.2.22 hotfix scenario, live in prod, not in a pre-launch check. |
 | **Proposed test** | `frontend/src/tests/auth.test.js` — mock Supabase client, simulate magic link flow, assert `useAuth` state transitions correctly through `pending → authenticated`. Also test: share link renders when `authState === unauthenticated`. |
 | **Opened** | 2026-04-17 |
-| **Age** | 43 days |
-| **Target** | Before Phase 2 auth cutover (not version-pinned) |
-
-### 🟠 P1 — Roster-Wipe Guard + Recovery Endpoint
-
-| | |
-|---|---|
-| **Area** | Roster backup/restore |
-| **Description** | The backend `POST /api/teams/:teamId/data` has a wipe-guard (409 on empty roster over existing). The `GET /api/teams/:teamId/history` has `X-Admin-Key` auth. Neither path is tested. |
-| **Risk if unfixed** | Two roster-wipe incidents already happened (Jan, Feb 2026). The guard is the primary prevention; if it silently stops working, we're back to paper recovery. |
-| **Proposed test** | `backend/src/__tests__/teamData.test.js` — test the guard returns 409, test force-override returns 200, test history endpoint rejects without ADMIN_KEY, test history endpoint returns snapshots with ADMIN_KEY. |
-| **Opened** | 2026-04-17 |
-| **Age** | 43 days |
-| **Target** | v2.6.x |
+| **Age** | 109 days (corrected 2026-08-04 — was stale at "43 days," same drift class the Game Mode Rendering + State item caught and fixed 2026-08-01) |
+| **Target** | Not version-pinned — should be re-scoped as a live-regression risk now that the auth system it covers is in prod, not a pre-cutover gate |
 
 ### 🟡 P2 — Walk-Up Song Navigation
 
@@ -318,20 +306,13 @@
 | **Opened** | 2026-04-17 |
 | **Target** | v2.4.0 |
 
-### 🟠 P1 — Windows Vitest pre-push hook OOM cascade
-
-- **What:** Pre-push hook running full vitest suite OOM-cascades on Windows when module cache is cold (22 worker timeouts, 5/27 files run). Currently mitigated by warm-up workaround in CLAUDE.md.
-- **Real fix paths:** (a) reduce vitest worker count for hook runs, (b) skip pre-push test and rely on CI gate, (c) configure vitest pool to avoid worker-thread cold-start, (d) move hook to pre-commit instead of pre-push (amortize cost across smaller commits).
-- **Target:** v2.6.0 P1
-- **Source:** Surfaced during scoring-updates branch deletion, April 27, 2026.
-
 ### 🟠 P1 — Box-score AI parser test coverage (teamName fix, PR #229)
 
 - **What:** The box-score AI parser code path in `App.jsx` was patched in v2.5.20/v2.5.21 to replace undefined `teamName` references with `activeTeam.name` (Story 84, PR #178; chore cleanup PR #228; fix PR #229). No regression test exists for this code path — a future refactor that re-introduces the `teamName` undefined reference, or breaks the `activeTeam.name` fallback, would ship silently because the parser is invoked only when a coach uploads a box-score image (low-frequency manual flow).
 - **What it is NOT:** Not a test for the Anthropic API call itself — that path is covered indirectly by backend integration tests. Specifically the parser's local variable resolution inside App.jsx's response-handling block.
 - **Proposed test:** Mock the Anthropic API response shape, invoke the parser function (currently inline in App.jsx; will need light extraction to be testable), assert `teamName` extracts correctly from `activeTeam.name` for the happy path and from explicit response fields when present. Vitest with `vi.mock('fetch')` is sufficient — no API key required at test time.
 - **Why deferred from v2.5.22:** The fix landed via three PRs (#178, #228, #229) with manual validation against real box-score images during the chore-sprint. The test gap was not caught at the time. For a patch release (Z bump), manual validation is acceptable; the full test scaffold (parser extraction + mock harness) is more work than v2.5.22 scope allows. Sets a debt-with-justification precedent for parser-path coverage in v2.6.0.
-- **Target:** v2.6.0 P1 (alongside the App.jsx component split — parser extraction is a natural piece of that work).
+- **Target:** v2.9.0 P1 (re-targeted 2026-08-04 — original "v2.6.0" target is 3 major versions behind current; still genuinely open, no test file exists for this path today. Alongside the App.jsx component split — parser extraction is a natural piece of that work.)
 - **Source:** Ship Gate Q1 verification during v2.5.22 release packaging, 2026-05-29.
 
 ### 🟡 P2 — CI workflow `BACKEND_URL` audit
@@ -354,6 +335,14 @@
 ## Resolved
 
 *(Items move here once shipped. Format: date, version, original description summary, resolution commit.)*
+
+### August 4, 2026 — Windows Vitest pre-push hook OOM cascade
+
+- ✅ **P1 — Pre-push hook running full vitest suite OOM-cascades on Windows** — Resolved on two independent fronts. First, Story 75 (PR #155, v2.5.18) removed the Vitest/lint run from `.husky/pre-push` entirely — the hook now only validates the branch guard, so the specific failure mode this item described (pre-push OOM-cascading) can no longer happen; CI (GitHub Actions) is the sole authoritative test gate. Second, the underlying flake this item's mitigations were reaching for (cold-start worker-spawn timeouts, Bug #7) got a permanent mitigation via `fileParallelism: false` in `frontend/vite.config.js`'s `test:` block (Story 118/#517) — **this second fix is currently develop-only (v2.8.4), not yet promoted to main** as of this entry. The pre-push-specific resolution (front one) is live everywhere already and is sufficient on its own to close this exact item.
+
+### August 4, 2026 — Roster-Wipe Guard + Recovery Endpoint test coverage
+
+- ✅ **P1 — Backend wipe-guard and recovery/history endpoint were untested** — Resolved via Story 99 Phase 2 tranche 1 (PR #282, landed by v2.5.26). `backend/src/__tests__/teamData.guard.test.js` (12 tests) covers the `rosterWipeGuard` unit behavior and the `isAdminRequest` truth table directly. `backend/src/__tests__/teamData.routes.test.js` (6 tests) covers the route-level `POST/GET /api/v1/teams/:id` (+ legacy `/api/teams` dual-mount): 409 wipe-guard, `force` override, DB-error 500, and history-limit clamp. This closes the item's originally-proposed test scope (guard returns 409, force-override returns 200, history endpoint's `ADMIN_KEY` accept/reject truth table) — all four cases are covered, just not in a single file named exactly as the original ticket suggested. **Not covered by this closure:** the frontend's "Restore Previous Roster" UI itself remains untested — tracked separately in `FEATURE_MAP.md` row 18.
 
 ### August 2, 2026 — Live Scoring Scorer-Lock Regression (scorer_user_id null-safety)
 
@@ -428,9 +417,11 @@
 | Priority | Test Gaps | Doc Gaps | Process Gaps | Total |
 |---|---|---|---|---|
 | 🔴 P0 | 1 | 0 | 0 | **1** |
-| 🟠 P1 | 2 | 2 | 3 | **7** |
+| 🟠 P1 | 1 | 2 | 2 | **5** |
 | 🟡 P2 | 8 | 5 | 7 | **20** |
-| **Total** | **11** | **7** | **10** | **28** |
+| **Total** | **10** | **7** | **9** | **26** |
+
+*(2026-08-04, Doc Audit Spike Story 8: two P1 items resolved — Roster-Wipe Guard + Recovery Endpoint (Test Gaps; tests exist via PR #282) and Windows Vitest pre-push hook OOM cascade (Process Gaps; pre-push no longer runs Vitest at all, Story 75) — both moved to Resolved section. Direct recount of every `### 🔴`/`### 🟠`/`### 🟡` heading actually present in each Open section immediately before this edit matched the prior table exactly (1/2/8 Test Gaps, 0/2/5 Doc Gaps, 0/3/7 Process Gaps = 28), so this is a clean two-item removal, not a correction of pre-existing drift. Test Gaps P1 2→1 (11→10 total); Process Gaps P1 3→2 (10→9 total); P1 row 7→5; Grand Total 28→26. Also re-targeted the Box-score AI parser item's stale "v2.6.0" Target to "v2.9.0" (current version is v2.8.4/v2.8.3) — no count change, still open.)*
 
 *(2026-08-04: new P0 test gap added — `AppShareLinkRouting.test.jsx` incomplete Supabase mock, live-data-mutation risk, discovered while diagnosing an unrelated Vitest flake (Story 118/#517) on the Dugout worktree. Direct count re-verified against every `### 🔴`/`### 🟠`/`### 🟡` heading actually present in Open — Test Gaps before this edit (0 P0, 3 P1, 8 P2 = 11 unchanged aside from the new P0), matching this table's prior state exactly. Test Gaps 10→11, P0 Total 0→1, Grand Total 27→28. This item's own priority definition ("Cannot ship a minor version with P0 debt open") does not block the release this was filed ahead of — that release is a PATCH bump (v2.8.3→v2.8.4), not a minor bump (x.Y.0); the project's own `debt-p0` gate is explicitly scoped to minor bumps only. Logged here per KK's explicit instruction to patch the ledger before that release, not because the release itself required it.)*
 
