@@ -212,18 +212,24 @@ silently accept junk.
 
 ---
 
-## SECURITY: THINGS THAT ARE STILL BROKEN
+## SECURITY: THINGS THAT WERE BROKEN — #342 NOW FIXED, #355 STILL OPEN
 
-### RLS is OFF on `team_data`, `teams`, `roster_snapshots`. (#342)
+### ✅ RESOLVED — RLS is now ON for `team_data`, `teams`, `roster_snapshots`. (#342, shipped v2.6.0)
 
-The anon key **ships in the frontend bundle**. With RLS off and full grants, anyone can
-read every child's name on every roster, overwrite any roster, delete any team, or
-**`TRUNCATE`** the lot.
+**Corrected 2026-08-04.** This section used to say RLS was off on these three tables and
+"cannot be turned on until WS-3" — that was true when written (this file was added
+2026-07-13, six days before the fix). WS-3 shipped in **v2.6.0 (2026-07-20)**: the
+React app's write path now works as `authenticated` (not `anon`) for any signed-in
+coach, because the auth gate landing the same release means every write goes through
+a real session. Re-verified live 2026-08-04 via a direct `pg_policies`/grants query
+against prod: all three tables show `relrowsecurity = true` with real
+`auth.uid()`-scoped policies, and `TRUNCATE`/`DELETE` are revoked from `anon`. See
+`docs/db/schema.sql` §8-9 for the full policy/grant detail. **Do not treat this as
+still-open — it's a different item from #355 below, which genuinely still is.**
 
-**It cannot be turned on until WS-3.** The React app writes all three **directly** with
-the anon key, so any `auth.uid()` policy breaks **every coach's save**.
+### 🔴 STILL OPEN — Four hardcoded backdoors on the live scoring tables. (#355)
 
-### Four hardcoded backdoors on the live scoring tables. (#355)
+**Re-verified live 2026-08-04 — unchanged from this file's original description.**
 
 ```sql
 at_bats_anon_test / game_state_anon_test / scorer_lock_anon_test / audit_log_anon_test

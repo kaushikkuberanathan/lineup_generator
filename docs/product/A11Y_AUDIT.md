@@ -15,11 +15,25 @@
 `game-mode/*`, `ScoringMode/*`, `frontend/package.json`, `backend/package.json`)
 cannot be edited until KK types the gate phrase `all clear — App.jsx editing approved`.
 
+> **Updated 2026-08-04 (Doc Audit Spike Story 9).** `frontend/src/components/Viewer/ViewerMode.jsx`
+> was deleted in Slice 4 (v2.5.11) — its 5 S1 + 3 S3 findings below are removed,
+> not fixed-in-place. `Shared/PlayerHandBadge.jsx` and the root-level
+> `PlayerHandBadge.jsx` "duplicate" question is resolved: only one file remains
+> (`components/PlayerHandBadge.jsx`), now delegating to the `Badge` primitive
+> with no inline `fontSize` at all — both S1 rows removed. One genuine gap the
+> original regex-based recon missed: it only matched JS-object-literal
+> `fontSize:"Npx"`, so it never saw `DefenseDiamond.jsx`'s raw SVG `fontSize="N"`
+> attributes, which are real, still-live sub-floor violations — added below.
+> Recount: S1 262 → 257 (removed 5, all from `ViewerMode.jsx`) → 255 (removed 2
+> more, both `PlayerHandBadge` rows) → **257** (added 2 new `DefenseDiamond` SVG
+> findings). S3 153 → **150** (removed 3, all from `ViewerMode.jsx`, all
+> already-noted false positives).
+
 ---
 
 ## S1 — Font Sizes Below 12px Floor
 
-**Total hits: 262 [components: 30 | App.jsx (defer): 232]**
+**Total hits: 257 [components: 25 | App.jsx (defer): 232]** (corrected 2026-08-04, see note above)
 
 The 12px floor is the WCAG minimum for readable text at standard zoom. Values at
 9px and below are hard WCAG violations (SC 1.4.4). Values at 10–11px are near-floor
@@ -27,7 +41,13 @@ and belong to the v2.5.x migration backlog unless they appear in critical UI con
 
 ### Component Files
 
-**`frontend/src/components/GameDay/DefenseDiamond.jsx`** — 7 hits
+**`frontend/src/components/GameDay/DefenseDiamond.jsx`** — 9 hits
+
+> **2 new hits added 2026-08-04.** The original recon regex matched JS-object-literal
+> `fontSize:"Npx"` only, so it missed this file's raw SVG `fontSize="N"` attributes
+> (JSX/SVG attribute form, no `px` suffix, no colon-object shape). These are real,
+> still-live violations that predate this correction — flagging the recon-method
+> gap so a future audit doesn't assume attribute-form fontSize was ever in scope.
 
 | Line | Value | Context | Category |
 |------|-------|---------|----------|
@@ -37,6 +57,8 @@ and belong to the v2.5.x migration backlog unless they appear in critical UI con
 | L254 | `fontSize:"10px"` | Bold text in bench/table header area | Defer-v2.5.x (near-floor) |
 | L257 | `fontSize:"11px"` | Table element font-size base | Defer-v2.5.x (xs token) |
 | L262 | `fontSize:"10px"` | `<th>` inning column header ("Inn 1", "Inn 2"...) | Defer-v2.5.x (near-floor) |
+| ~L118 | `fontSize="10"` / `fontSize="8.5"` (ternary on `isSingle`) | Raw SVG text attribute, multi-inning header labels | **New 2026-08-04** — Defer-v2.5.x (near-floor, SVG attribute form) |
+| ~L174 | `fontSize="7.5"` | Raw SVG `<text>` attribute, multi-inning grid cell labels, `fill="white"` | **New 2026-08-04** — **WCAG VIOLATION — FIX-NOW** (below the 9px hard floor, same tier as L225/L306) |
 | L306 | `fontSize:"9px"` | Bold red text, likely "OUT" or error state indicator | **WCAG VIOLATION — FIX-NOW** |
 
 **`frontend/src/components/GameDay/LockFlow.jsx`** — 3 hits
@@ -74,12 +96,6 @@ and belong to the v2.5.x migration backlog unless they appear in critical UI con
 |------|-------|---------|----------|
 | L30 | `fontSize:"10px"` | Span: "Offline" or "Reconnecting..." status text visible to coach during connectivity issues | **FIX-NOW** (critical status text at near-floor size) |
 
-**`frontend/src/components/Shared/PlayerHandBadge.jsx`** — 1 hit
-
-| Line | Value | Context | Category |
-|------|-------|---------|----------|
-| L20 | `fontSize:"10px"` | Inline "L" / "R" badge displayed next to player names | Defer-v2.5.x (intentional compact badge; near-floor but design-intentional) |
-
 **`frontend/src/components/Support/FAQSection.jsx`** — 2 hits
 
 | Line | Value | Context | Category |
@@ -95,22 +111,6 @@ and belong to the v2.5.x migration backlog unless they appear in critical UI con
 | L56 | `fontSize:"11px"` | Footer note inside legal document view | Defer-v2.5.x (xs token) |
 | L102 | `fontSize:"11px"` | Body text in legal document | Defer-v2.5.x (xs token) |
 | L151 | `fontSize:"11px"` | Footer text in legal document | Defer-v2.5.x (xs token) |
-
-**`frontend/src/components/Viewer/ViewerMode.jsx`** — 5 hits
-
-| Line | Value | Context | Category |
-|------|-------|---------|----------|
-| L72 | `fontSize:"10px"` | "Game Day — Read-Only" header label | Defer-v2.5.x (near-floor) |
-| L112 | `fontSize:"11px"` | Position abbreviation ("P", "SS", "1B"...) in player card | Defer-v2.5.x (xs token) |
-| L116 | `fontSize:"10px"` | Full position label ("Pitcher", "Shortstop"...) in player card | Defer-v2.5.x (near-floor) |
-| L123 | `fontSize:"10px"` | "Bench" section uppercase label | Defer-v2.5.x (near-floor) |
-| L138 | `fontSize:"10px"` | "Batting Order" section uppercase label | Defer-v2.5.x (near-floor) |
-
-**`frontend/src/components/PlayerHandBadge.jsx`** (root-level copy) — 1 hit
-
-| Line | Value | Context | Category |
-|------|-------|---------|----------|
-| L18 | `fontSize:"10px"` | Same badge as Shared/PlayerHandBadge.jsx — root-level copy | Defer-v2.5.x (same rationale as above; also: root copy may be a stale duplicate — verify which is imported) |
 
 ### App.jsx Summary (read-only — defer to v2.5.x)
 
@@ -171,7 +171,7 @@ indicator elements — not interactive tap targets. Representative examples:
 
 ## S3 — `<button>` Elements Without `aria-label`
 
-**Total hits: 153 [components: 27 | App.jsx (defer): 126]**
+**Total hits: 150 [components: 24 | App.jsx (defer): 126]** (corrected 2026-08-04, see note at top of file)
 
 Note: The recon is a single-line heuristic. Multi-line JSX props (aria-label on the
 line after `<button`) produce false positives. All flagged lines were manually
@@ -247,13 +247,6 @@ a false positive. If it's icon-only, it needs `aria-label="Back"`.
 L86: Action button — renders `{actionLabel}` prop as text content. Self-labeled.
 L111: Dismiss button — `aria-label="Dismiss notification"` is on L113 (next line).
 Multi-line JSX caused the recon false positive. **Both false positives.**
-
-**`Viewer/ViewerMode.jsx`** — 3 hits (L81, L156, L164)
-
-L81: Inning tab buttons — `INN {i+1}` ("INN 1", "INN 2"...). Self-labeled.
-L156: `← Prev` navigation. Self-labeled.
-L164: `Next →` navigation. Self-labeled.
-**All false positives.**
 
 **`BattingHandSelector.jsx`** — 1 hit (L41)
 

@@ -602,10 +602,20 @@ Everything in this table is intentionally NOT tokenized. It belongs to the v2.5.
 
 ## A. Concrete Drift Examples Surfaced During Audit
 
-### A.1 — Duplicate `fontSize` Key in LockFlow.jsx (Build Warning)
+### A.1 — Duplicate `fontSize` Key in LockFlow.jsx (Build Warning) — ✅ FIXED (v2.8.4 Phase 3 primitives migration)
+
+> **Corrected 2026-08-04.** No longer a live bug. `LockFlow.jsx` was migrated onto
+> the `Text` primitive as part of the v2.8.4 Phase 3 primitives work — confirmed
+> directly: the div this section describes is now `<Text as="div" uppercase
+> style={{ fontSize:"10px", color:textMuted, marginBottom:"6px",
+> letterSpacing:"0.05em" }}>` (line 129) — a single `fontSize` key, matching
+> exactly the "why tokens + primitives prevent it" mechanism this section already
+> predicted. **(develop only as of this writing — main is still v2.8.3; this fix
+> has not yet promoted.)** Kept below as the historical illustration of why
+> primitives matter — no longer describes a live defect.
 
 **File:** `frontend/src/components/GameDay/LockFlow.jsx`
-**Line:** 130
+**Line:** 130 (historical — pre-migration)
 
 **Build warning (verbatim):**
 ```
@@ -625,7 +635,7 @@ Duplicate key "fontSize" in object literal
 
 **Why tokens + primitives prevent it:** A `<Text size="body" transform="uppercase" spacing="wide" />` primitive owns the `fontSize` prop. There is no object literal at the call site — the consumer cannot produce a duplicate key because they don't write style objects at all. The primitive maps `size` to `font.size.body` internally, once, in one place.
 
-**Backlog disposition:** Tracked in v2.5.x call-site replacement. Fix: remove the first `fontSize:"13px"` (which was presumably the intended value), set `fontSize:"13px"`, verify the label renders correctly. Do not fix in this PR — the component is out of scope and the fix needs visual verification.
+**Backlog disposition (historical):** Was tracked for v2.5.x call-site replacement. **Resolved via the v2.8.4 Phase 3 primitives migration** (see correction note above) — the component now renders via `<Text>`, eliminating the duplicate-key class of bug entirely rather than patching the one instance.
 
 Also note: the inline style on line 130 contains several drift values that will resolve automatically once a `<Text>` primitive is in place:
 - `rgba(15,31,61,0.04)` → `color.overlay.navyWash`
@@ -640,20 +650,25 @@ This one div is a microcosm of the full drift inventory.
 
 ## B. Pipeline / Tooling Observations
 
-### B.1 — ESLint Configuration Missing from Repository
+### B.1 — ESLint Configuration Missing from Repository — ✅ RESOLVED (Story 77, v2.5.23)
 
-**Finding:** `git ls-files | grep -i eslint` returns empty. No `.eslintrc`, `eslint.config.js`, `.eslintrc.cjs`, or equivalent is tracked in the repository. The `npm run lint` script in `frontend/package.json` fails with:
+> **Corrected 2026-08-04.** This finding is fully obsolete. `frontend/.eslintrc.cjs`
+> exists and is tracked. Live re-run of `npm run lint` (`eslint src --ext .js,.jsx
+> --max-warnings 0`) from `frontend/`: **exit code 0, zero output** — 0 errors, 0
+> warnings. Story 77 (v2.5.23, 2026-05-30, PRs #237/#244/#245) closed this gap
+> with a 5-phase cleanup (~650 net lines removed from App.jsx). Kept below as
+> historical record of the original finding; do not treat as a current gap.
+
+**Finding (historical, 2026-05-01):** `git ls-files | grep -i eslint` returned empty. No `.eslintrc`, `eslint.config.js`, `.eslintrc.cjs`, or equivalent was tracked in the repository. The `npm run lint` script in `frontend/package.json` failed with:
 
 ```
 ESLint couldn't find a configuration file.
 ESLint looked for configuration files in frontend/src and its ancestors.
 ```
 
-**Confirmed pre-existing:** This gap predates the design tokens work. The ESLint packages (`eslint`, `eslint-plugin-react`, `eslint-plugin-react-hooks`) are present in `devDependencies` and the lint script is defined, but the configuration was never committed — or was lost at some point and never restored.
+**Confirmed pre-existing (at the time):** This gap predated the design tokens work. The ESLint packages (`eslint`, `eslint-plugin-react`, `eslint-plugin-react-hooks`) were present in `devDependencies` and the lint script was defined, but the configuration had never been committed — or was lost at some point and never restored.
 
-**Impact:** `npm run lint` (referenced in `CLAUDE.md` and the pre-deploy checklist) fails on a fresh clone or in any worktree. The lint step of Step B of this session was skipped on this basis.
-
-**Backlog disposition:** Restoring the lint pipeline is a separate `v2.4.x` backlog item. It requires deliberate rule choices affecting the entire codebase and is out of scope for the design tokens session. When restoring, the config should encode at minimum: `eslint-plugin-react` recommended rules, `eslint-plugin-react-hooks` rules, `no-unused-vars`, and `no-console`. The token files (`tokens.js`, `index.js`) have no JSX, no hooks, and no complex patterns — their lint risk is effectively zero even without a config.
+**Impact (at the time):** `npm run lint` (referenced in `CLAUDE.md` and the pre-deploy checklist) failed on a fresh clone or in any worktree. The lint step of Step B of the originating session was skipped on this basis.
 
 ### B.2 — Vitest Fork Pool Worker Timeouts on Windows (Missing-Module Shape)
 
@@ -716,11 +731,11 @@ Specific values are anchored in this document (§7, Token Mapping Table). The co
 
 **Recon date:** 2026-06-08 (T2 UX track)
 **Status:** Decision recorded — migration deferred, multi-branch. **Update 2026-08-01 (Story 110 / #296):** all 8 DIVERGENT/ORPHAN keys resolved — see per-key disposition table below. `tokens.js` updated with provenance; no App.jsx edits (per #296's own scope). #296 was briefly, accidentally auto-closed by PR #298 on 2026-06-08 (GitHub's closing-keyword parser matched the substring "close #296" inside a sentence that read "does NOT close #296/#297" — negation isn't parsed) and has been reopened; the decisions below were never actually made until now. **Update 2026-08-02 (sweep-scoping session):** re-verified everything below against the *current* `App.jsx`, not the April 30 recon snapshot. Two corrections: (1) the "20 keys" figure was right but this table only ever disposed 19 of them — `cream` was never audited at all, filed as **Story 113 / #496**; (2) real call-site count today is **310, not 437** (App.jsx has shrunk via Stories 87/92/93/94/77 since the original audit — genuinely less remaining work, not a miscount). Also: `text`'s token-layer decision (Story 110, resolved) and its App.jsx call-site risk are two different things — the latter is now its own verification story, **Story 114 / #497**, because App.jsx's own root render node sets `color:C.text` directly (confirmed at the literal root `<div>` App returns, not just the `S.app` style constant) — a region slice cannot safely assume this key is free.
-**Scope:** The flat `var C = {...}` color object defined in App.jsx (STYLES section). 20 keys, **310 `C.` reference sites** in App.jsx as of 2026-08-02 (was 437 at the 2026-04-30 recon; see update above). This predates the semantic token system in `theme/tokens.js` and was never migrated when the nested tokens landed. This section records the per-key disposition so the eventual sweep is mechanical, not investigative.
+**Scope:** The flat `var C = {...}` color object defined in App.jsx (STYLES section). 20 keys, **227 `C.` reference sites** in App.jsx as of 2026-08-04 (was 310 at 2026-08-02, 437 at the 2026-04-30 recon — the drop reflects region slices 1-3 shipping, see the annotated slice list below; verified via `grep -oE '\bC\.[a-zA-Z]+' frontend/src/App.jsx | wc -l` directly against the current working tree, Doc Audit Spike Story 9). This predates the semantic token system in `theme/tokens.js` and was never migrated when the nested tokens landed. This section records the per-key disposition so the eventual sweep is mechanical, not investigative.
 
 ### Why this is deferred, not done now
 
-- **310 call sites** (verified 2026-08-02) in a single 8,000+ line file. This is the migration backlog the token authors parked, not a slice. One PR cannot soak-test that many visual touch points against Game Mode / share-link surfaces safely.
+- **227 call sites** (re-verified 2026-08-04; was 310 at the 2026-08-02 count this section previously cited) in a single 8,000+ line file. This is the migration backlog the token authors parked, not a slice — even with slices 1-3 shipped, one PR cannot soak-test the remaining touch points against Game Mode / share-link surfaces safely.
 - **Primitives-first sequencing.** `tokens.js` header states consumers arrive via primitives (v2.5.0+), not by App.jsx reaching directly into `tokens.color.*`. `shadow.elevated` is explicitly tagged "App.jsx call sites (locked); migration deferred to v2.5.x." Migrating `C` direct-to-token would violate that intended consumer path.
 - **Values genuinely diverge.** Several `C` keys have no token equivalent or differ from the nearest token (see table). Migration is therefore a design decision per orphan key, not a rename.
 
@@ -757,9 +772,9 @@ Specific values are anchored in this document (§7, Token Mapping Table). The co
    - **Story 114 / #497 — `text` App.jsx call-site verification.** Token-layer decision already made (Story 110); this is the separate, still-open question of whether the App.jsx root-render risk is actually safe to swap. A full visual smoke pass across every screen, not a snapshot — because inheritance means an untouched region could silently depend on this value without its own explicit `color`.
 3. **Migrate by App.jsx region, not by key** — `textMuted` (125 sites) and most of the other ADOPT keys aren't concentrated in one tab; they're spread across nearly the whole file. Slicing by region (not by key) is what makes each slice's snapshot tractable. Proposed region order, one branch per slice, each RED→GREEN with a snapshot pinning pre/post hex equivalence, each soaked overnight:
    - **Binding obligation, not a suggestion:** each slice below must run Story 114's Step 1/2 methodology (structural inheritance-candidate search + `getComputedStyle` verification — see §Story 114 evidence below) against its own tab's content before that slice can claim the `text.ink` swap is safe there. Story 114 itself only covers the chrome that's always present regardless of tab (done, see below) — every region slice inherits the *obligation*, not the *result*. A slice that skips this and just assumes `text` is free reintroduces exactly the assumption Story 114 exists to eliminate.
-   1. Header + nav chrome (`S.header`, `S.logoWrap`, ~lines 677–900) — small, high-visibility, proves the snapshot-pinning pattern first. Bundle `navyLight`'s literal-hex header-gradient sites here.
-   2. Roster tab
-   3. Defense/Batting grid tabs
+   1. ~~Header + nav chrome (`S.header`, `S.logoWrap`, ~lines 677–900) — small, high-visibility, proves the snapshot-pinning pattern first. Bundle `navyLight`'s literal-hex header-gradient sites here.~~ **DONE (region slice 1, #528, v2.8.4)** — added 2026-08-04.
+   2. ~~Roster tab~~ **DONE (region slice 2, #529, v2.8.4)** — added 2026-08-04.
+   3. ~~Defense/Batting grid tabs~~ **DONE (region slice 3, #537, v2.8.4)** — added 2026-08-04. **(Slices 1-3: develop only as of this writing — main is still v2.8.3, not yet promoted.)**
    4. Schedule tab — bundle `greenField`'s literal-hex "Ready" status-badge site here (or split to its own Home-adjacent slice — open call)
    5. Print/Share/Links tabs
    6. Feedback/About tabs

@@ -22,8 +22,8 @@ Each item is structured for direct conversion into a Claude Code paste prompt or
 | Master Dev Reference | `docs/product/MASTER_DEV_REFERENCE.md` | Source of truth for ops & deploy gates — security work updates this |
 | Product Roadmap | `docs/product/ROADMAP.md` | Schedule security phases as labeled epics here |
 | Claude.md | `CLAUDE.md` | Update with any new patterns, conventions, or non-negotiable rules introduced by security work |
-| Auth Principle | `docs/product/MASTER_DEV_REFERENCE.md#auth-principle` | Anchors share-link & game-mode no-auth requirements that constrain solution design |
-| Game-Day Validation | `docs/product/MASTER_DEV_REFERENCE.md#game-day-validation` | Every security change touching lineup/share/game mode must still pass this |
+| Auth Principle | `docs/product/MASTER_DEV_REFERENCE.md#auth-principle-non-negotiable` | Anchors share-link & game-mode no-auth requirements that constrain solution design |
+| Game-Day Validation | `docs/product/MASTER_DEV_REFERENCE.md#game-day-validation-non-negotiable-before-every-deploy` | Every security change touching lineup/share/game mode must still pass this |
 | Rollback Procedure | `docs/product/MASTER_DEV_REFERENCE.md#rollback-procedure` | Used as escape hatch if a security change breaks prod |
 
 > **Documentation rule:** When any item below is implemented, update `CLAUDE.md` (if a new convention is set), `ROADMAP.md` (mark item shipped), and append the change to `VERSION_HISTORY` per the standard deployment checklist.
@@ -78,6 +78,7 @@ The risks we are defending against, in priority order:
 | **Phase 1** | MVP Security Floor | 2–4 weeks | Establishes baseline that an indie production app should have |
 | **Phase 2** | Hardening | 1–2 months | Defense-in-depth, observability, audit trail |
 | **Phase 3** | Scale & Compliance | Pre-broader-launch | COPPA readiness, MFA, pen test, formal incident response |
+| **Phase 4** | Emergency Remediation (added 2026-08-04) | Out-of-sequence, as-forced | P0 fire-drill work forced by live incidents #342/#351/#355 — not part of the planned Phase 0-3 menu, but real, shipped security work. See Status Tracker below for the four items. **Root `CLAUDE.md`'s "no Standing Practice items have shipped" line refers only to the 6 enumerated Cross-Phase Standing Practice candidates (still `☐ Not started` as of this writing) — it does not mean no security work has shipped. This row exists so that distinction isn't lost on a reader who only sees the Phase Overview.** |
 
 ---
 
@@ -195,7 +196,7 @@ This is the "you wouldn't ship a real product without this" baseline.
 - **What:** Replace UUID-only approve/deny links in admin emails with HMAC-signed tokens carrying a 24hr expiry. Server validates signature + expiry before honoring the action.
 - **Why:** Current UUID-only links are guessable/forwardable indefinitely. Anyone with the link — leaked from email forwarding, screenshots, or enumeration — can approve or deny. HMAC signing binds the token to a server secret; expiry caps blast radius.
 - **Where:** Backend approve/deny handler; admin email template.
-- **Implementation spec:** See `docs/TODO_approve_link_security.md` for the existing implementation plan.
+- **Implementation spec:** ~~See `docs/TODO_approve_link_security.md`~~ — **that file does not exist anywhere in the repo** (confirmed via filesystem search, 2026-08-04). WS-2 in `docs/product/AUTH_SECURITY_AUDIT_ROADMAP.md` (#337) is the doc actually tracking this work now — see that file for current status.
 - **Validation:** Tampered token → 401. Expired token (>24h) → 410 with friendly "link expired, request a new one" message. Valid unexpired token → action proceeds.
 - **Blocks:** Required before opening to multiple teams.
 - **Origin:** Absorbed from legacy ROADMAP.md "Phase 5 — Security Hardening" section.
