@@ -396,20 +396,12 @@
 
 | Priority | Test Gaps | Doc Gaps | Process Gaps | Total |
 |---|---|---|---|---|
-| 🔴 P0 | 1 | 0 | 0 | **1** |
+| 🔴 P0 | 0 | 0 | 0 | **0** |
 | 🟠 P1 | 0 | 1 | 0 | **1** |
-| 🟡 P2 | 8 | 5 | 7 | **20** |
+| 🟡 P2 | 9 | 5 | 7 | **21** |
 | **Total** | **9** | **6** | **7** | **22** |
 
-*(2026-08-05: FEATURE_MAP.md Missing Feature Rows — resolved, see Resolved section (Structural Restructure deliberately split off, still open — see its own entry above). Direct count of every `### 🟠` heading actually present in Open — Doc Gaps immediately before this edit: 2 P1 (both FEATURE_MAP items) — matched the prior table exactly. Doc Gaps P1 2→1, Doc Gaps total 7→6, P1 Total 2→1, Grand Total 23→22.)*
-| 🔴 P0 | 0 | 0 | 0 | **0** |
-| 🟠 P1 | 0 | 2 | 0 | **2** |
-| 🟡 P2 | 9 | 5 | 7 | **21** |
-| **Total** | **9** | **7** | **7** | **23** |
-
-*(2026-08-05: new P2 test gap added — useAuth.js `onAuthStateChange` silent-strand finding (#579), filed after being flagged verbally across two sessions without a tracked issue. Test Gaps P2 8→9, Test Gaps total 8→9, P2 Total 20→21, Grand Total 22→23.)*
-
-*(2026-08-05: P0 — AppShareLinkRouting.test.jsx / AppNoMembershipRouting.test.jsx incomplete Supabase mocks — resolved, see Resolved section. Direct count of every `### 🔴` heading actually present in Open — Test Gaps immediately before this edit: exactly 1 (this item), matching the prior table. Test Gaps P0 1→0, Test Gaps total 9→8, P0 Total 1→0, Grand Total 23→22. This clears the `debt-p0` gate again — zero open P0 items.)*
+*(2026-08-05: table repaired after a squash-merge left two overlapping, malformed table fragments in this file (PR #574/#575/#578 each carried their own dashboard edit against a diverging base, all landed via squash). This merge additionally folds in PR #580's useAuth.js P2 test-gap addition (#579), which landed on `develop` after the table-repair branch was cut. Values confirmed by direct count of every `### 🔴`/`### 🟠`/`### 🟡` heading actually present in Open just now — not propagated from either side's own arithmetic: 0 P0; 1 P1 (FEATURE_MAP.md Structural Restructure, the only item still open); 21 P2 (9 Test Gaps incl. the useAuth.js finding + 5 Doc Gaps + 7 Process Gaps). Grand Total 22. Clears the `debt-p0` gate — zero open P0 items.)*
 
 *(2026-08-05, branch-hygiene audit: corrected an arithmetic error in the prior entry below — its Test Gaps column total and Grand Total both dropped the existing P0 item (`AppShareLinkRouting.test.jsx` mock) when recomputing after item 10's closure, undercounting both by exactly 1. Direct recount of every `### 🔴`/`### 🟠`/`### 🟡` heading actually present in Open — Test Gaps: 1 P0 + 0 P1 + 8 P2 = 9 (not 8). Doc Gaps (7) and Process Gaps (7) were already correct. Corrected: Total row 9/7/7 = 23, not 8/7/7 = 22. This was a column-sum-vs-row-sum mismatch inside the table itself (P0 1 + P1 2 + P2 20 = 23 by row, but the old Total row said 22) — exactly the kind of drift this ledger's own standing practice exists to catch.)*
 
