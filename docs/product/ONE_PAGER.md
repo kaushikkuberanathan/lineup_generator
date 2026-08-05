@@ -68,7 +68,7 @@ For the authoritative roadmap including current release status, v2.5.1 features,
 | Snapshot (April 27, 2026) | Status |
 |---|---|
 | Production version | v2.5.1 (shipped April 27, 2026) |
-| Live scoring | Shipped (Mud Hens + Demo All-Stars team gating) |
+| Live scoring | Shipped — functionally on for every team via an active testing shim; per-team DB flag + Mud Hens/Demo All-Stars hardcode still in code but bypassed (corrected 2026-08-04) |
 | Magic link + Google OAuth auth | Shipped |
 | Admin UI | Shipped |
 | Multi-coach invite, role-based access, season fairness, practice log, push notifications | Backlog (v2.6.0+) |
