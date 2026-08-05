@@ -4304,6 +4304,41 @@ hasn't picked up the bump yet. Verify loginLimiter behavior is unchanged
 after the bump (existing rate-limit tests should cover this).
 
 ---
+### Story 123 (P0) - RESOLVED: 004_rls_fixes.sql missing idempotency guards blocked v2.8.4 promote <!-- #564 -->
+Status: RESOLVED - merged to develop and main same session (PR #562, #560).
+Discovered: 2026-08-05, while promoting v2.8.4 (PR #560, develop -> main) - the
+RLS Policy Suite (ephemeral) CI check failed deterministically on develop's
+current tip.
+Symptom: psql:.../004_rls_fixes.sql:150: ERROR: policy "teams_auth_select" for
+table "teams" already exists. Root cause: the Doc Audit Spike's Story 1 (#549)
+correctly updated docs/db/schema.sql to document that WS-3's RLS policies
+(teams/team_data/roster_snapshots) are live in prod - with proper DROP POLICY
+IF EXISTS guards. But backend/scripts/apply-rls-bootstrap.sh still
+unconditionally replays backend/migrations/004_rls_fixes.sql after schema.sql
+on the header's own now-outdated assumption that schema.sql didn't yet
+contain 004's policies. Every CREATE POLICY in 004 lacked a self-referential
+DROP POLICY IF EXISTS guard (only older catch-all policy names were guarded),
+so the replay collided.
+Impact: Blocked the v2.8.4 promote for approximately 30 minutes. Not a live
+security exposure - the actual RLS policies enforced in prod were correct
+throughout (T1 verified them directly against prod via pg_policies for
+Story 1); this was a CI-harness idempotency bug that temporarily removed the
+ability to validate RLS on a fresh ephemeral database.
+Fix: PR #562. Read 004_rls_fixes.sql in full, cross-referenced all 12 CREATE
+POLICY statements against schema.sql's actual current content (not just the
+one error line) - 9 of 12 currently collided (teams x4, team_data x3,
+roster_snapshots x2); added guards to all 12 for consistency, since partial
+idempotency is exactly what caused this. Updated apply-rls-bootstrap.sh's
+header comment to document the now-partially-false assumption. Verified via
+the real ephemeral-DB CI job (no local Docker available) - green on first
+re-run. Backend unit suite 111/111 unaffected.
+Cross-team coordination: T1 notified via a comment on Story 1's issue (#549).
+Flagged that migrations 013-017 (also in apply-rls-bootstrap.sh's replay
+list) haven't been individually audited for the same guard-completeness -
+worth a look before assuming they're immune to the same class of failure if
+schema.sql gets re-captured again in the future.
+
+---
 ### Automated Score Reporting (County Integration)
 **Status:** Architecture finalized, implementation pending
 **Trigger:** Coach taps "Report Score" on a completed game
