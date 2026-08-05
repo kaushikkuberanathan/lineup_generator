@@ -706,7 +706,7 @@ var S = {
   body: { flex:1, overflowY:"auto", WebkitOverflowScrolling:"touch", display:"flex", flexDirection:"column", alignItems:"center", width:"100%", maxWidth:"600px", marginLeft:"auto", marginRight:"auto", paddingBottom:"80px" },
   sectionTitle: {
     fontSize:"11px", letterSpacing:"0.18em", textTransform:"uppercase",
-    color:C.red, fontWeight:"bold", marginBottom:"14px"
+    color:tokens.color.brand.red, fontWeight:"bold", marginBottom:"14px"
   },
   btn: function(v) {
     var bg = "rgba(15,31,61,0.08)";
@@ -6413,18 +6413,18 @@ export default function App() {
       <div>
 
         {/* ── Section 1: General Feedback ───────────────────── */}
-        <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
+        <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
           <div style={S.sectionTitle}>Share Feedback</div>
-          <div style={{ color:C.textMuted, fontSize:"12px", marginBottom:"14px" }}>
+          <div style={{ color:tokens.color.text.muted, fontSize:"12px", marginBottom:"14px" }}>
             Help us improve the app. Tell us what’s working and what isn’t.
           </div>
 
-          <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"6px" }}>Category</div>
+          <div style={{ fontSize:"10px", color:tokens.color.text.muted, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"6px" }}>Category</div>
           <div style={{ display:"flex", flexWrap:"wrap", gap:"4px", marginBottom:"14px" }}>
             {fbCats.map(function(cat) {
               var active = fbCategory === cat;
               return (
-                <span key={cat} style={S.badge(C.navy, active)}
+                <span key={cat} style={S.badge(tokens.color.brand.navy, active)}
                   onClick={function(c) { return function() { setFbCategory(c); }; }(cat)}>
                   {cat}
                 </span>
@@ -6432,7 +6432,7 @@ export default function App() {
             })}
           </div>
 
-          <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"4px" }}>Your Feedback</div>
+          <div style={{ fontSize:"10px", color:tokens.color.text.muted, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"4px" }}>Your Feedback</div>
           <textarea
             placeholder="Describe your feedback, suggestion, or idea..."
             value={fbBody}
@@ -6440,7 +6440,7 @@ export default function App() {
             style={{ ...S.input, minHeight:"120px", resize:"vertical", lineHeight:"1.5", display:"block", marginBottom:"12px" }}
           />
 
-          <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"6px" }}>What would you like to see changed?</div>
+          <div style={{ fontSize:"10px", color:tokens.color.text.muted, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"6px" }}>What would you like to see changed?</div>
           <div style={{ display:"flex", flexWrap:"wrap", gap:"4px", marginBottom:"14px" }}>
             {fbChangePills.map(function(ct) {
               var active = fbChangeTypes.indexOf(ct) >= 0;
@@ -6465,18 +6465,18 @@ export default function App() {
         </Card>
 
         {/* ── Section 2: Report a Bug ──────────────────────── */}
-        <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
+        <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
           <div style={S.sectionTitle}>Report an Issue</div>
-          <div style={{ color:C.textMuted, fontSize:"12px", marginBottom:"14px" }}>
+          <div style={{ color:tokens.color.text.muted, fontSize:"12px", marginBottom:"14px" }}>
             Something not working right? Tell us what happened.
           </div>
 
-          <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"6px" }}>Where did this happen?</div>
+          <div style={{ fontSize:"10px", color:tokens.color.text.muted, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"6px" }}>Where did this happen?</div>
           <div style={{ display:"flex", flexWrap:"wrap", gap:"4px", marginBottom:"14px" }}>
             {bugLocs.map(function(loc) {
               var active = bugLocation === loc;
               return (
-                <span key={loc} style={S.badge(C.navy, active)}
+                <span key={loc} style={S.badge(tokens.color.brand.navy, active)}
                   onClick={function(l) { return function() { setBugLocation(l); }; }(loc)}>
                   {loc}
                 </span>
@@ -6484,7 +6484,7 @@ export default function App() {
             })}
           </div>
 
-          <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"4px" }}>What happened?</div>
+          <div style={{ fontSize:"10px", color:tokens.color.text.muted, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"4px" }}>What happened?</div>
           <textarea
             placeholder="Describe what happened and what you expected instead..."
             value={bugBody}
@@ -6492,11 +6492,11 @@ export default function App() {
             style={{ ...S.input, minHeight:"100px", resize:"vertical", lineHeight:"1.5", display:"block", marginBottom:"12px" }}
           />
 
-          <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"6px" }}>Severity</div>
+          <div style={{ fontSize:"10px", color:tokens.color.text.muted, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"6px" }}>Severity</div>
           <div style={{ display:"flex", flexWrap:"wrap", gap:"4px", marginBottom:"14px" }}>
             {bugSevs.map(function(sev) {
               var active = bugSeverity === sev;
-              var sevColor = sev === "Blocks me completely" ? C.red : sev === "Annoying but I can work around it" ? "#d4a017" : "#6b7280";
+              var sevColor = sev === "Blocks me completely" ? tokens.color.brand.red : sev === "Annoying but I can work around it" ? "#d4a017" : "#6b7280";
               return (
                 <span key={sev} style={S.badge(sevColor, active)}
                   onClick={function(s) { return function() { setBugSeverity(s); }; }(sev)}>
@@ -6513,18 +6513,18 @@ export default function App() {
         </Card>
 
         {/* ── Submitted Feedback History ─────────────────────── */}
-        <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
+        <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", cursor:"pointer" }}
             onClick={function() { setFbHistoryOpen(!fbHistoryOpen); }}>
-            <div style={{ fontSize:"11px", fontWeight:"bold", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.1em" }}>
+            <div style={{ fontSize:"11px", fontWeight:"bold", color:tokens.color.text.muted, textTransform:"uppercase", letterSpacing:"0.1em" }}>
               {"Submitted Feedback" + (allSubs.length > 0 ? " (" + allSubs.length + " recent)" : "")}
             </div>
-            <span style={{ fontSize:"11px", color:C.textMuted }}>{fbHistoryOpen ? "▲" : "▼"}</span>
+            <span style={{ fontSize:"11px", color:tokens.color.text.muted }}>{fbHistoryOpen ? "▲" : "▼"}</span>
           </div>
           {fbHistoryOpen ? (
             <div style={{ marginTop:"12px" }}>
               {allSubs.length === 0 ? (
-                <div style={{ color:C.textMuted, fontSize:"12px" }}>No submissions yet.</div>
+                <div style={{ color:tokens.color.text.muted, fontSize:"12px" }}>No submissions yet.</div>
               ) : (
                 <div>
                   {allSubs.map(function(sub) {
@@ -6534,14 +6534,14 @@ export default function App() {
                     return (
                       <div key={sub.id} style={{ borderBottom:"1px solid rgba(15,31,61,0.06)", paddingBottom:"8px", marginBottom:"8px" }}>
                         <div style={{ display:"flex", gap:"8px", alignItems:"center", marginBottom:"2px" }}>
-                          <span style={{ fontSize:"10px", color:C.textMuted }}>{dt}</span>
-                          {label ? <span style={{ fontSize:"10px", padding:"1px 6px", borderRadius:"4px", background:"rgba(15,31,61,0.08)", color:C.navy, fontWeight:"bold" }}>{label}</span> : null}
+                          <span style={{ fontSize:"10px", color:tokens.color.text.muted }}>{dt}</span>
+                          {label ? <span style={{ fontSize:"10px", padding:"1px 6px", borderRadius:"4px", background:"rgba(15,31,61,0.08)", color:tokens.color.brand.navy, fontWeight:"bold" }}>{label}</span> : null}
                         </div>
                         <div style={{ fontSize:"11px", color:tokens.color.text.ink }}>{preview}</div>
                       </div>
                     );
                   })}
-                  <button style={{ ...S.btn("ghost"), color:C.red, marginTop:"4px" }}
+                  <button style={{ ...S.btn("ghost"), color:tokens.color.brand.red, marginTop:"4px" }}
                     onClick={function() {
                       if (confirm("Clear all saved feedback? This cannot be undone.")) {
                         try { localStorage.removeItem("feedback:submissions"); } catch(e2) { /* ignored */ }
@@ -7136,7 +7136,7 @@ export default function App() {
   function renderAbout() {
     return <AboutTab aboutGuideOpen={aboutGuideOpen}
       setAboutGuideOpen={setAboutGuideOpen}
-      APP_VERSION={APP_VERSION} C={C} S={S} />;
+      APP_VERSION={APP_VERSION} />;
   }
 
   function renderAccount() {
@@ -7144,11 +7144,11 @@ export default function App() {
     var _memberships = memberships || [];
     var _rolePill = {
       fontSize:"10px", fontWeight:"700", letterSpacing:"0.05em", textTransform:"uppercase",
-      padding:"3px 9px", borderRadius:"10px", background:C.navy + "12", color:C.navy,
-      border:"1px solid " + C.navy + "22", whiteSpace:"nowrap", flexShrink:0
+      padding:"3px 9px", borderRadius:"10px", background:tokens.color.brand.navy + "12", color:tokens.color.brand.navy,
+      border:"1px solid " + tokens.color.brand.navy + "22", whiteSpace:"nowrap", flexShrink:0
     };
     return (
-      <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
+      <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
         <div style={S.sectionTitle}>Your Account</div>
 
         {/* #405 — editable name, extracted #407 (component owns its state). */}
@@ -7156,19 +7156,18 @@ export default function App() {
           updateProfileName={updateProfileName}
           initialFirstName={user && user.profile ? user.profile.first_name : ''}
           initialLastName={user && user.profile ? user.profile.last_name : ''}
-          C={C}
           S={S}
         />
 
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline", gap:"12px", padding:"9px 0", borderBottom:"1px solid " + C.border, marginBottom:"14px" }}>
-          <span style={{ fontSize:"11px", letterSpacing:"0.08em", textTransform:"uppercase", color:C.textMuted, whiteSpace:"nowrap" }}>Signed in as</span>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline", gap:"12px", padding:"9px 0", borderBottom:"1px solid " + tokens.color.border.neutral, marginBottom:"14px" }}>
+          <span style={{ fontSize:"11px", letterSpacing:"0.08em", textTransform:"uppercase", color:tokens.color.text.muted, whiteSpace:"nowrap" }}>Signed in as</span>
           <span style={{ fontSize:"13px", color:tokens.color.text.ink, fontWeight:"600", textAlign:"right", wordBreak:"break-word" }}>{_email}</span>
         </div>
 
-        <div style={{ fontSize:"11px", letterSpacing:"0.08em", textTransform:"uppercase", color:C.textMuted, marginBottom:"8px" }}>Your teams</div>
+        <div style={{ fontSize:"11px", letterSpacing:"0.08em", textTransform:"uppercase", color:tokens.color.text.muted, marginBottom:"8px" }}>Your teams</div>
 
         {_memberships.length === 0 ? (
-          <div style={{ fontSize:"13px", color:C.textMuted, fontStyle:"italic", padding:"4px 0 8px" }}>Not on any team yet</div>
+          <div style={{ fontSize:"13px", color:tokens.color.text.muted, fontStyle:"italic", padding:"4px 0 8px" }}>Not on any team yet</div>
         ) : _memberships.map(function(m) {
           var _t = teams.find(function(t) { return t.id === m.team_id; });
           var _role = roleLabel(m.role);
@@ -7178,15 +7177,15 @@ export default function App() {
               <div key={m.id} onClick={function() { loadTeam(_t); }}
                 style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:"12px",
                   padding:"12px 14px", marginBottom:"8px", borderRadius:"10px",
-                  border:"1px solid " + C.border, background:C.white, cursor:"pointer",
+                  border:"1px solid " + tokens.color.border.neutral, background:tokens.color.surface.card, cursor:"pointer",
                   boxShadow:"0 1px 3px rgba(15,31,61,0.05)" }}>
                 <div style={{ minWidth:0 }}>
-                  <div style={{ fontSize:"14px", fontWeight:"700", color:C.navy, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{_t.name}</div>
-                  {_meta ? <div style={{ fontSize:"11px", color:C.textMuted, marginTop:"2px" }}>{_meta}</div> : null}
+                  <div style={{ fontSize:"14px", fontWeight:"700", color:tokens.color.brand.navy, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{_t.name}</div>
+                  {_meta ? <div style={{ fontSize:"11px", color:tokens.color.text.muted, marginTop:"2px" }}>{_meta}</div> : null}
                 </div>
                 <div style={{ display:"flex", alignItems:"center", gap:"10px", flexShrink:0 }}>
                   <span style={_rolePill}>{_role}</span>
-                  <span aria-hidden="true" style={{ fontSize:"20px", color:C.textMuted, lineHeight:1 }}>›</span>
+                  <span aria-hidden="true" style={{ fontSize:"20px", color:tokens.color.text.muted, lineHeight:1 }}>›</span>
                 </div>
               </div>
             );
@@ -7195,12 +7194,12 @@ export default function App() {
             <div key={m.id}
               style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:"12px",
                 padding:"12px 14px", marginBottom:"8px", borderRadius:"10px",
-                border:"1px dashed " + C.border, background:"rgba(15,31,61,0.03)" }}>
+                border:"1px dashed " + tokens.color.border.neutral, background:"rgba(15,31,61,0.03)" }}>
               <div style={{ minWidth:0 }}>
-                <div style={{ fontSize:"14px", fontWeight:"600", color:C.textMuted, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{"Team " + m.team_id}</div>
-                <div style={{ fontSize:"11px", color:C.textMuted, marginTop:"2px", fontStyle:"italic" }}>Not loaded</div>
+                <div style={{ fontSize:"14px", fontWeight:"600", color:tokens.color.text.muted, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{"Team " + m.team_id}</div>
+                <div style={{ fontSize:"11px", color:tokens.color.text.muted, marginTop:"2px", fontStyle:"italic" }}>Not loaded</div>
               </div>
-              <span style={Object.assign({}, _rolePill, { background:"rgba(15,31,61,0.06)", color:C.textMuted, border:"1px solid " + C.border })}>{_role}</span>
+              <span style={Object.assign({}, _rolePill, { background:"rgba(15,31,61,0.06)", color:tokens.color.text.muted, border:"1px solid " + tokens.color.border.neutral })}>{_role}</span>
             </div>
           );
         })}
@@ -7208,7 +7207,7 @@ export default function App() {
         <button style={Object.assign({}, S.btn("danger"), { marginTop:"16px", width:"100%" })} onClick={logout}>
           Sign out
         </button>
-        <div style={{ fontSize:"11px", color:C.textMuted, marginTop:"12px", lineHeight:"1.5", textAlign:"center" }}>
+        <div style={{ fontSize:"11px", color:tokens.color.text.muted, marginTop:"12px", lineHeight:"1.5", textAlign:"center" }}>
           Your teams and lineups stay saved on this device. You&apos;ll need to sign in again to make changes.
         </div>
       </Card>
@@ -7217,7 +7216,7 @@ export default function App() {
 
   function renderUpdates() {
     return (
-      <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
+      <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
         <div style={S.sectionTitle}>What&#x27;s New</div>
         {VERSION_HISTORY.map(function(v, vi) {
           var isCurrent = v.version === APP_VERSION;
@@ -7233,10 +7232,10 @@ export default function App() {
               <div
                 onClick={function(ver) { return function() { setExpandedVersion(expandedVersion === ver ? null : ver); }; }(v.version)}
                 style={{ display:"flex", gap:"10px", alignItems:"baseline", marginBottom: isOpen ? "8px" : "0", flexWrap:"wrap", cursor:"pointer" }}>
-                <span style={{ fontSize:"14px", fontWeight:"bold", color:C.navy }}>v{v.version}</span>
-                <span style={{ fontSize:"11px", color:C.textMuted }}>{v.date}</span>
+                <span style={{ fontSize:"14px", fontWeight:"bold", color:tokens.color.brand.navy }}>v{v.version}</span>
+                <span style={{ fontSize:"11px", color:tokens.color.text.muted }}>{v.date}</span>
                 {isCurrent ? <span style={{ fontSize:"10px", padding:"1px 7px", borderRadius:"10px", background:"#27ae60", color:"#fff", fontWeight:"bold" }}>Current</span> : null}
-                <span style={{ marginLeft:"auto", fontSize:"11px", color:C.textMuted }}>{isOpen ? "▲" : "▼"}</span>
+                <span style={{ marginLeft:"auto", fontSize:"11px", color:tokens.color.text.muted }}>{isOpen ? "▲" : "▼"}</span>
               </div>
               {isOpen ? (
                 <div>
@@ -7245,7 +7244,7 @@ export default function App() {
                     <ul style={{ margin:"0 0 6px 0", paddingLeft:"0", listStyle:"none" }}>
                       {v.userChanges.map(function(ch, ci) {
                         return (
-                          <li key={ci} style={{ fontSize:"0.875rem", color:C.textMuted, marginBottom:"3px", lineHeight:"1.5", display:"flex", gap:"6px" }}>
+                          <li key={ci} style={{ fontSize:"0.875rem", color:tokens.color.text.muted, marginBottom:"3px", lineHeight:"1.5", display:"flex", gap:"6px" }}>
                             <span style={{ color:"#b8a040", flexShrink:0 }}>✦</span>
                             <span>{ch}</span>
                           </li>

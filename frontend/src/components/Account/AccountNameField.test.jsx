@@ -7,8 +7,9 @@ import { AccountNameField } from './AccountNameField';
 // AccountNameField golden-path tests (#407, extracted from App.jsx renderAccount).
 //
 // updateProfileName is a vi.fn() returning controlled results so we can drive
-// all three feedback states. C/S are minimal mocks (the component reads
-// C.border/C.textMuted/C.red and S.input/S.btn).
+// all three feedback states. S is a minimal mock (the component reads
+// S.input/S.btn; border/textMuted/red colors now come from tokens directly,
+// not a passed-in C prop — Phase 4 slice 6 dropped C entirely).
 //
 // AF3 is the acceptance-critical one: it pins the stringly-typed
 // 'could not refresh' branch (kind:'refresh', amber) so a future reword of
@@ -20,17 +21,17 @@ import { AccountNameField } from './AccountNameField';
 
 var REFRESH_MSG = 'Saved, but could not refresh — reload to see the change.';
 
-// C.red / refresh-amber / success-green as authored in the component + fixture.
+// success/refresh colors as authored in the component; red is
+// tokens.color.brand.red (#c8102e), the real value the component renders.
 var GREEN  = /#065f46|rgb\(6,95,70\)/i;      // success
 var AMBER  = /#92620a|rgb\(146,98,10\)/i;    // refresh
-var RED    = /#c0392b|rgb\(192,57,43\)/i;    // error (fixture C.red)
+var RED    = /#c8102e|rgb\(200,16,46\)/i;    // error (tokens.color.brand.red)
 
 function renderField(overrides) {
   var props = Object.assign({
     updateProfileName: vi.fn().mockResolvedValue({ success: true }),
     initialFirstName: '',
     initialLastName: '',
-    C: { border: '#e5e7eb', textMuted: '#6b7280', red: '#c0392b' },
     S: { input: {}, btn: function () { return {}; } },
   }, overrides || {});
   return Object.assign({ props: props }, render(<AccountNameField {...props} />));

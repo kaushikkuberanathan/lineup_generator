@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { tokens } from '../../theme/tokens';
 
 /**
  * AccountNameField
@@ -17,7 +18,7 @@ import { useState, useEffect } from 'react';
  *   success                          → { kind: 'success', text: 'Saved' }   (#065f46)
  *   updateProfileName resolved false
  *     with "could not refresh" copy  → { kind: 'refresh', text: <as-is> }   (#92620a)
- *     any other failure              → { kind: 'error',   text: <msg> }     (C.red)
+ *     any other failure              → { kind: 'error',   text: <msg> }     (tokens.color.brand.red)
  * The 'refresh' branch is stringly-typed on purpose: that path means the write
  * DID land but the re-fetch failed, so it must never read as a lost-save error.
  *
@@ -25,10 +26,9 @@ import { useState, useEffect } from 'react';
  *   updateProfileName  fn     — useAuth's PATCH /me; (firstName, lastName) => { success, error }
  *   initialFirstName   string — prefill + re-sync source (user.profile.first_name)
  *   initialLastName    string — prefill + re-sync source (user.profile.last_name)
- *   C                  object — legacy color palette (App.jsx) — uses C.border, C.textMuted, C.red
  *   S                  object — legacy style objects (App.jsx) — uses S.input, S.btn
  */
-export function AccountNameField({ updateProfileName, initialFirstName, initialLastName, C, S }) {
+export function AccountNameField({ updateProfileName, initialFirstName, initialLastName, S }) {
   const [accountFirstName, setAccountFirstName] = useState(initialFirstName || '');
   const [accountLastName, setAccountLastName] = useState(initialLastName || '');
   const [accountNameSaving, setAccountNameSaving] = useState(false);
@@ -60,8 +60,8 @@ export function AccountNameField({ updateProfileName, initialFirstName, initialL
   }
 
   return (
-    <div style={{ paddingBottom:"14px", borderBottom:"1px solid " + C.border, marginBottom:"14px" }}>
-      <div style={{ fontSize:"11px", letterSpacing:"0.08em", textTransform:"uppercase", color:C.textMuted, marginBottom:"8px" }}>Your name</div>
+    <div style={{ paddingBottom:"14px", borderBottom:"1px solid " + tokens.color.border.neutral, marginBottom:"14px" }}>
+      <div style={{ fontSize:"11px", letterSpacing:"0.08em", textTransform:"uppercase", color:tokens.color.text.muted, marginBottom:"8px" }}>Your name</div>
       <div style={{ display:"flex", gap:"8px", flexWrap:"wrap", marginBottom:"8px" }}>
         <input
           value={accountFirstName}
@@ -86,7 +86,7 @@ export function AccountNameField({ updateProfileName, initialFirstName, initialL
         <div style={{ marginTop:"8px", fontSize:"12px", fontWeight:"600",
           color: accountNameFeedback.kind === 'success' ? "#065f46"
                : accountNameFeedback.kind === 'refresh' ? "#92620a"
-               : C.red }}>
+               : tokens.color.brand.red }}>
           {accountNameFeedback.kind === 'success' ? "✓ " : ""}{accountNameFeedback.text}
         </div>
       ) : null}
