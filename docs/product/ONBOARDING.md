@@ -45,7 +45,7 @@ If you signed in and don't see any teams, you'll land on a screen telling you no
 
 > Today, a brand-new team is provisioned by the platform administrator on the backend as part of approving your request — it isn't a fully self-serve "create your own team" flow yet. If your approval is taking a while, reach out directly rather than assuming something's broken.
 >
-> **If you already have at least one team** and want to add a second one yourself, the Home screen has a **"Create New Team"** option that works immediately, no approval wait — this is for coaches who already have access, adding an additional team they coach.
+> **If you already have at least one team** and want to add a second one yourself, the Home screen has a **"Create New Team"** option — no approval wait to create the team shell itself. **Known issue (confirmed 2026-08-04, #561):** this flow doesn't currently grant you membership on the new team, so your first roster or schedule save for it will fail. If you hit a save error right after creating an additional team, that's this bug, not something you did wrong — contact KK rather than troubleshooting further on your own.
 
 ---
 
