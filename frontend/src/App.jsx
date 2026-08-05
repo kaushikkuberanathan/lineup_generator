@@ -5718,7 +5718,7 @@ export default function App() {
       <div>
         {wins + losses + ties > 0 ? (
           <div style={{ display:"flex", gap:"10px", padding:"12px 16px", borderRadius:"10px", background:"linear-gradient(135deg,#0f1f3d,#1a3260)", marginBottom:"14px" }}>
-            {[["W", wins, C.win], ["L", losses, C.red], ["T", ties, "#d4a017"]].map(function(row) {
+            {[["W", wins, tokens.color.status.success], ["L", losses, tokens.color.brand.red], ["T", ties, "#d4a017"]].map(function(row) {
               return (
                 <div key={row[0]} style={{ textAlign:"center", flex:1 }}>
                   <div style={{ fontSize:"22px", fontWeight:"bold", color:row[2] }}>{row[1]}</div>
@@ -5743,7 +5743,7 @@ export default function App() {
         </div>
 
         {importMode === "choose" ? (
-          <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
+          <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
             <div style={S.sectionTitle}>How do you have your schedule?</div>
             <div style={{ display:"flex", flexDirection:"column", gap:"10px" }}>
               {[
@@ -5763,8 +5763,8 @@ export default function App() {
                       {row[0] === "photo" ? "Cam" : row[0] === "text" ? "Txt" : "Add"}
                     </div>
                     <div>
-                      <div style={{ fontWeight:"bold", fontSize:"14px", color:C.navy, marginBottom:"3px" }}>{row[1]}</div>
-                      <div style={{ fontSize:"12px", color:C.textMuted, lineHeight:"1.4" }}>{row[2]}</div>
+                      <div style={{ fontWeight:"bold", fontSize:"14px", color:tokens.color.brand.navy, marginBottom:"3px" }}>{row[1]}</div>
+                      <div style={{ fontSize:"12px", color:tokens.color.text.muted, lineHeight:"1.4" }}>{row[2]}</div>
                     </div>
                   </div>
                 );
@@ -5774,9 +5774,9 @@ export default function App() {
         ) : null}
 
         {importMode === "image" ? (
-          <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
+          <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
             <div style={S.sectionTitle}>Import from Photo</div>
-            <div style={{ fontSize:"12px", color:C.textMuted, marginBottom:"14px" }}>
+            <div style={{ fontSize:"12px", color:tokens.color.text.muted, marginBottom:"14px" }}>
               Take a photo of your printed schedule, or choose a screenshot from your camera roll.
             </div>
 
@@ -5807,7 +5807,7 @@ export default function App() {
 
                 <label style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:"10px",
                   padding:"16px", borderRadius:"12px", cursor:"pointer", textAlign:"center",
-                  background:"rgba(15,31,61,0.06)", color:C.navy,
+                  background:"rgba(15,31,61,0.06)", color:tokens.color.brand.navy,
                   fontWeight:"bold", fontSize:"14px", fontFamily:"inherit",
                   border:"2px dashed rgba(15,31,61,0.2)" }}>
                   Choose Existing Photo / Screenshot
@@ -5828,7 +5828,7 @@ export default function App() {
                     style={{ display:"none" }} />
                 </label>
 
-                <div style={{ textAlign:"center", fontSize:"11px", color:C.textMuted, padding:"4px 0" }}>
+                <div style={{ textAlign:"center", fontSize:"11px", color:tokens.color.text.muted, padding:"4px 0" }}>
                   Works with printed schedules, screenshots, photos of a whiteboard, or any image with game dates
                 </div>
               </div>
@@ -5837,27 +5837,27 @@ export default function App() {
             {importState.loading ? (
               <div style={{ padding:"24px", borderRadius:"10px", background:"rgba(15,31,61,0.04)", textAlign:"center" }}>
                 <div style={{ fontSize:"22px", marginBottom:"8px" }}>AI</div>
-                <div style={{ fontWeight:"bold", fontSize:"13px", color:C.navy, marginBottom:"4px" }}>Reading your schedule...</div>
-                <div style={{ fontSize:"11px", color:C.textMuted }}>AI is extracting game dates, times, and opponents</div>
+                <div style={{ fontWeight:"bold", fontSize:"13px", color:tokens.color.brand.navy, marginBottom:"4px" }}>Reading your schedule...</div>
+                <div style={{ fontSize:"11px", color:tokens.color.text.muted }}>AI is extracting game dates, times, and opponents</div>
               </div>
             ) : null}
 
             {importState.error ? (
-              <div style={{ color:C.red, fontSize:"12px", padding:"10px 12px", background:"rgba(200,16,46,0.06)", borderRadius:"8px", marginBottom:"8px" }}>
+              <div style={{ color:tokens.color.brand.red, fontSize:"12px", padding:"10px 12px", background:"rgba(200,16,46,0.06)", borderRadius:"8px", marginBottom:"8px" }}>
                 {importState.error} - Try the text import option instead.
               </div>
             ) : null}
 
             {importState.preview && importState.preview.length > 0 ? (
               <div>
-                <div style={{ fontSize:"13px", color:C.win, marginBottom:"10px", fontWeight:"bold" }}>
+                <div style={{ fontSize:"13px", color:tokens.color.status.success, marginBottom:"10px", fontWeight:"bold" }}>
                   Found {importState.preview.length} game{importState.preview.length !== 1 ? "s" : ""}
                 </div>
                 {importState.preview.map(function(g, gi) {
                   return (
                     <div key={gi} style={{ fontSize:"12px", padding:"8px 12px", background:"rgba(39,174,96,0.06)", borderRadius:"8px", marginBottom:"5px", border:"1px solid rgba(39,174,96,0.2)" }}>
                       <div style={{ fontWeight:"bold" }}>{g.opponent}</div>
-                      <div style={{ color:C.textMuted, fontSize:"11px" }}>
+                      <div style={{ color:tokens.color.text.muted, fontSize:"11px" }}>
                         {g.date} {g.time ? "at " + g.time : ""} {g.location ? "| " + g.location : ""}
                       </div>
                     </div>
@@ -5882,9 +5882,9 @@ export default function App() {
         ) : null}
 
         {importMode === "text" ? (
-          <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
+          <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
             <div style={S.sectionTitle}>Paste Schedule Text</div>
-            <div style={{ fontSize:"12px", color:C.textMuted, marginBottom:"10px" }}>
+            <div style={{ fontSize:"12px", color:tokens.color.text.muted, marginBottom:"10px" }}>
               Copy the schedule from an email, GroupMe message, or website and paste it below. Any format works.
             </div>
             <textarea rows={7} value={importState.text}
@@ -5899,17 +5899,17 @@ export default function App() {
               </button>
               <button style={S.btn("ghost")} onClick={function() { setImportMode("choose"); setImportState({ mode:null, text:"", image:null, loading:false, error:"", preview:[] }); }}>Back</button>
             </div>
-            {importState.error ? <div style={{ color:C.red, fontSize:"12px", marginTop:"10px", padding:"8px 12px", background:"rgba(200,16,46,0.06)", borderRadius:"6px" }}>{importState.error}</div> : null}
+            {importState.error ? <div style={{ color:tokens.color.brand.red, fontSize:"12px", marginTop:"10px", padding:"8px 12px", background:"rgba(200,16,46,0.06)", borderRadius:"6px" }}>{importState.error}</div> : null}
             {importState.preview && importState.preview.length > 0 ? (
               <div style={{ marginTop:"14px" }}>
-                <div style={{ fontSize:"13px", color:C.win, marginBottom:"10px", fontWeight:"bold" }}>
+                <div style={{ fontSize:"13px", color:tokens.color.status.success, marginBottom:"10px", fontWeight:"bold" }}>
                   Found {importState.preview.length} game{importState.preview.length !== 1 ? "s" : ""}
                 </div>
                 {importState.preview.map(function(g, gi) {
                   return (
                     <div key={gi} style={{ fontSize:"12px", padding:"8px 12px", background:"rgba(39,174,96,0.06)", borderRadius:"8px", marginBottom:"5px", border:"1px solid rgba(39,174,96,0.2)" }}>
                       <div style={{ fontWeight:"bold" }}>{g.opponent}</div>
-                      <div style={{ color:C.textMuted, fontSize:"11px" }}>{g.date} {g.time ? "at " + g.time : ""} {g.location ? "| " + g.location : ""}</div>
+                      <div style={{ color:tokens.color.text.muted, fontSize:"11px" }}>{g.date} {g.time ? "at " + g.time : ""} {g.location ? "| " + g.location : ""}</div>
                     </div>
                   );
                 })}
@@ -5925,7 +5925,7 @@ export default function App() {
         ) : null}
 
         {showGameForm ? (
-          <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px", borderLeft:"3px solid " + C.red }}>
+          <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px", borderLeft:"3px solid " + tokens.color.brand.red }}>
             <div style={{ fontWeight:"bold", fontSize:"14px", marginBottom:"14px" }}>
               {editingGame ? "Edit Game" : "Add New Game"}
             </div>
@@ -5938,7 +5938,7 @@ export default function App() {
               ].map(function(row) {
                 return (
                   <div key={row[1]}>
-                    <div style={{ fontSize:"10px", color:C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:"4px" }}>{row[0]}</div>
+                    <div style={{ fontSize:"10px", color:tokens.color.text.muted, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:"4px" }}>{row[0]}</div>
                     <input type={row[2]} value={newGame[row[1]] || ""} placeholder={row[0]}
                       maxLength={row[2] === "text" ? 50 : undefined}
                       onChange={function(field) { return function(e) { var g = {}; for (var k in newGame) { g[k]=newGame[k]; } g[field]=e.target.value; setNewGame(g); }; }(row[1])}
@@ -5948,7 +5948,7 @@ export default function App() {
               })}
             </div>
             <div style={{ marginBottom:"10px" }}>
-              <div style={{ fontSize:"10px", color:C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:"4px" }}>Snack Duty</div>
+              <div style={{ fontSize:"10px", color:tokens.color.text.muted, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:"4px" }}>Snack Duty</div>
               <input type="text" value={newGame.snackDuty || ""} placeholder="Parent bringing snacks (e.g. Smith family)"
                 maxLength={80}
                 onChange={function(e) { var g={}; for(var k in newGame){g[k]=newGame[k];} g.snackDuty=e.target.value; setNewGame(g); }}
@@ -5956,7 +5956,7 @@ export default function App() {
             </div>
             {roster.length > 0 ? (
               <div style={{ marginBottom:"10px" }}>
-                <div style={{ fontSize:"10px", color:C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:"6px" }}>Game Ball</div>
+                <div style={{ fontSize:"10px", color:tokens.color.text.muted, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:"6px" }}>Game Ball</div>
                 <input type="text" value={newGame.gameBallSearch || ""} placeholder="Search players..."
                   maxLength={40}
                   onChange={function(e) { var g={}; for(var k in newGame){g[k]=newGame[k];} g.gameBallSearch=e.target.value; setNewGame(g); }}
@@ -6000,7 +6000,7 @@ export default function App() {
               </div>
             ) : null}
             <div style={{ marginBottom:"10px" }}>
-              <div style={{ fontSize:"10px", color:C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:"6px" }}>Result</div>
+              <div style={{ fontSize:"10px", color:tokens.color.text.muted, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:"6px" }}>Result</div>
               <div style={{ display:"flex", gap:"6px" }}>
                 {["W","L","T",""].map(function(r) {
                   var label = r === "" ? "Pending" : r;
@@ -6008,8 +6008,8 @@ export default function App() {
                   return (
                     <button key={label} onClick={function(rv) { return function() { var g={}; for(var k in newGame){g[k]=newGame[k];} g.result=rv; setNewGame(g); }; }(r)}
                       style={{ padding:"6px 14px", borderRadius:"6px", border:"none", cursor:"pointer", fontWeight:"bold", fontSize:"12px", fontFamily:"inherit",
-                        background: active ? (r === "W" ? C.win : r === "L" ? C.red : r === "T" ? "#d4a017" : C.navy) : "rgba(15,31,61,0.06)",
-                        color: active ? "#fff" : C.textMuted }}>
+                        background: active ? (r === "W" ? tokens.color.status.success : r === "L" ? tokens.color.brand.red : r === "T" ? "#d4a017" : tokens.color.brand.navy) : "rgba(15,31,61,0.06)",
+                        color: active ? "#fff" : tokens.color.text.muted }}>
                       {label}
                     </button>
                   );
@@ -6021,7 +6021,7 @@ export default function App() {
                 {[["Our Score","ourScore"],["Their Score","theirScore"]].map(function(row) {
                   return (
                     <div key={row[1]}>
-                      <div style={{ fontSize:"10px", color:C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:"4px" }}>{row[0]}</div>
+                      <div style={{ fontSize:"10px", color:tokens.color.text.muted, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:"4px" }}>{row[0]}</div>
                       <input type="number" min="0" max="99" value={newGame[row[1]] || ""}
                         onChange={function(field) { return function(e) { var g={}; for(var k in newGame){g[k]=newGame[k];} g[field]=e.target.value; setNewGame(g); }; }(row[1])}
                         style={{ ...S.input, width:"80px" }} />
@@ -6033,7 +6033,7 @@ export default function App() {
             {newGame.result && newGame.result !== "" && roster.length > 0 ? (
               <div style={{ marginBottom:"12px" }}>
                 <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"8px" }}>
-                  <div style={{ fontSize:"10px", color:C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase" }}>
+                  <div style={{ fontSize:"10px", color:tokens.color.text.muted, letterSpacing:"0.1em", textTransform:"uppercase" }}>
                     Batting Stats (optional)
                   </div>
                   <div style={{ display:"flex", gap:"6px" }}>
@@ -6125,12 +6125,12 @@ export default function App() {
                   </div>
                 </div>
                 {resultImport.loading ? (
-                  <div style={{ padding:"10px 12px", borderRadius:"8px", background:"rgba(15,31,61,0.04)", color:C.textMuted, fontSize:"12px", marginBottom:"8px", textAlign:"center" }}>
+                  <div style={{ padding:"10px 12px", borderRadius:"8px", background:"rgba(15,31,61,0.04)", color:tokens.color.text.muted, fontSize:"12px", marginBottom:"8px", textAlign:"center" }}>
                     Reading stats with AI...
                   </div>
                 ) : null}
                 {resultImport.error ? (
-                  <div style={{ padding:"8px 12px", borderRadius:"8px", background:"rgba(200,16,46,0.06)", color:C.red, fontSize:"11px", marginBottom:"8px" }}>
+                  <div style={{ padding:"8px 12px", borderRadius:"8px", background:"rgba(200,16,46,0.06)", color:tokens.color.brand.red, fontSize:"11px", marginBottom:"8px" }}>
                     {resultImport.error}
                   </div>
                 ) : null}
@@ -6139,7 +6139,7 @@ export default function App() {
                     <thead>
                       <tr style={{ background:"#f5efe4" }}>
                         {["Player","AB","H","R","RBI","Avg"].map(function(h) {
-                          return <th key={h} style={{ padding:"5px 8px", textAlign: h==="Player" ? "left" : "center", fontSize:"10px", color:C.textMuted, letterSpacing:"0.08em", textTransform:"uppercase", borderBottom:"1px solid rgba(15,31,61,0.1)", whiteSpace:"nowrap" }}>{h}</th>;
+                          return <th key={h} style={{ padding:"5px 8px", textAlign: h==="Player" ? "left" : "center", fontSize:"10px", color:tokens.color.text.muted, letterSpacing:"0.08em", textTransform:"uppercase", borderBottom:"1px solid rgba(15,31,61,0.1)", whiteSpace:"nowrap" }}>{h}</th>;
                         })}
                       </tr>
                     </thead>
@@ -6174,7 +6174,7 @@ export default function App() {
                               );
                             })}
                             <td style={cellStyle}>
-                              <span style={{ fontSize:"12px", fontWeight:"bold", color: perf.ab > 0 ? (perf.h/perf.ab >= 0.300 ? C.win : perf.h/perf.ab >= 0.200 ? "#d4a017" : tokens.color.text.ink) : C.textMuted }}>
+                              <span style={{ fontSize:"12px", fontWeight:"bold", color: perf.ab > 0 ? (perf.h/perf.ab >= 0.300 ? tokens.color.status.success : perf.h/perf.ab >= 0.200 ? "#d4a017" : tokens.color.text.ink) : tokens.color.text.muted }}>
                                 {perf.ab > 0 ? fmtAvg(perf.h, perf.ab) : "—"}
                               </span>
                             </td>
@@ -6197,17 +6197,17 @@ export default function App() {
 
         <div>
           {sorted.length === 0 ? (
-            <div style={{ textAlign:"center", padding:"40px", color:C.textMuted, fontSize:"13px" }}>
+            <div style={{ textAlign:"center", padding:"40px", color:tokens.color.text.muted, fontSize:"13px" }}>
               No games yet. Add your schedule to get started.
             </div>
           ) : null}
           {sorted.map(function(game) {
             var isCanceled = game.result === "X";
             var isPlayed = !!game.result && !isCanceled;
-            var resultColor = game.result === "W" ? C.win : game.result === "L" ? C.red : game.result === "T" ? "#d4a017" : "#888";
-            var cancelColor = C.canceled;
+            var resultColor = game.result === "W" ? tokens.color.status.success : game.result === "L" ? tokens.color.brand.red : game.result === "T" ? "#d4a017" : "#888";
+            var cancelColor = tokens.color.status.neutral;
             return (
-              <Card key={game.id} padding="14px 16px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px", borderLeft:"3px solid " + (isCanceled ? cancelColor : isPlayed ? resultColor : C.red), opacity: isCanceled ? 0.72 : 1 }}>
+              <Card key={game.id} padding="14px 16px" radius="md" style={{ border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px", borderLeft:"3px solid " + (isCanceled ? cancelColor : isPlayed ? resultColor : tokens.color.brand.red), opacity: isCanceled ? 0.72 : 1 }}>
                 <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:"10px" }}>
                   <div style={{ flex:1 }}>
                     <div style={{ display:"flex", alignItems:"center", gap:"8px", marginBottom:"4px", flexWrap:"wrap" }}>
@@ -6228,7 +6228,7 @@ export default function App() {
                           return (
                             <span style={{ display:"inline-flex", gap:"3px", alignItems:"center" }}>
                               {["W","L","T"].map(function(r) {
-                                var rc = r==="W"?C.win:r==="L"?C.red:"#d4a017";
+                                var rc = r==="W"?tokens.color.status.success:r==="L"?tokens.color.brand.red:"#d4a017";
                                 return (
                                   <button key={r} style={{ padding:"2px 10px", borderRadius:"8px", border:"1px solid "+rc+"66", cursor:"pointer", fontWeight:"bold", fontSize:"11px", fontFamily:"inherit", background:rc+"11", color:rc }}
                                     onClick={function(rv) { return function() {
@@ -6248,7 +6248,7 @@ export default function App() {
                             </span>
                           );
                         }
-                        return <span style={{ fontSize:"10px", padding:"2px 8px", borderRadius:"10px", background:"rgba(200,16,46,0.08)", color:C.red, letterSpacing:"0.08em", textTransform:"uppercase" }}>Upcoming</span>;
+                        return <span style={{ fontSize:"10px", padding:"2px 8px", borderRadius:"10px", background:"rgba(200,16,46,0.08)", color:tokens.color.brand.red, letterSpacing:"0.08em", textTransform:"uppercase" }}>Upcoming</span>;
                       })()}
                     </div>
                     {inlineScoreGame === game.id && !isCanceled ? (
@@ -6260,7 +6260,7 @@ export default function App() {
                             persistSchedule(schedule.map(function(x){return x.id===gid?g2:x;}));
                           }; }(game.id)}
                           style={{ width:"56px", padding:"4px 6px", borderRadius:"6px", border:"1px solid rgba(15,31,61,0.15)", fontSize:"13px", fontFamily:"inherit", textAlign:"center" }} />
-                        <span style={{ fontSize:"12px", color:C.textMuted }}>-</span>
+                        <span style={{ fontSize:"12px", color:tokens.color.text.muted }}>-</span>
                         <input type="number" min="0" max="99" placeholder="Them"
                           defaultValue={game.theirScore || ""}
                           onChange={function(gid) { return function(e) {
@@ -6272,13 +6272,13 @@ export default function App() {
                           onClick={function() { setInlineScoreGame(null); }}>Done</button>
                       </div>
                     ) : null}
-                    <div style={{ fontSize:"12px", color:C.textMuted, display:"flex", gap:"12px", flexWrap:"wrap" }}>
+                    <div style={{ fontSize:"12px", color:tokens.color.text.muted, display:"flex", gap:"12px", flexWrap:"wrap" }}>
                       {game.date ? <span>{new Date(game.date + "T12:00:00").toLocaleDateString("en-US", { weekday:"short", month:"short", day:"numeric" })}</span> : null}
                       {game.time ? <span>{game.time}</span> : null}
                       {game.location ? <span>{game.location}</span> : null}
                     </div>
                     {isPlayed ? (
-                      <div style={{ marginTop:"6px", paddingTop:"6px", borderTop:"1px solid " + C.subtleBorder, display:"flex", alignItems:"center", gap:"8px" }}>
+                      <div style={{ marginTop:"6px", paddingTop:"6px", borderTop:"1px solid " + tokens.color.overlay.neutralWash, display:"flex", alignItems:"center", gap:"8px" }}>
                         <input
                           type="checkbox"
                           id={"county-" + game.id}
@@ -6291,8 +6291,8 @@ export default function App() {
                               return g2;
                             }));
                           }; }(game.id, !game.scoreReported)}
-                          style={{ width:"15px", height:"15px", accentColor:C.gold, cursor:"pointer", flexShrink:0 }} />
-                        <label htmlFor={"county-" + game.id} style={{ fontSize:"12px", color: game.scoreReported ? tokens.color.text.ink : C.textMuted, cursor:"pointer", userSelect:"none" }}>
+                          style={{ width:"15px", height:"15px", accentColor:tokens.color.brand.gold, cursor:"pointer", flexShrink:0 }} />
+                        <label htmlFor={"county-" + game.id} style={{ fontSize:"12px", color: game.scoreReported ? tokens.color.text.ink : tokens.color.text.muted, cursor:"pointer", userSelect:"none" }}>
                           {game.scoreReported ? "✓ Score reported to the County" : "Report score to the County"}
                         </label>
                       </div>
@@ -6301,15 +6301,15 @@ export default function App() {
                       var sa = { playerName: game.snackDuty || "", note: game.snackNote || "" };
                       var hasSa = !!sa.playerName;
                       return (
-                        <div style={{ marginTop:"6px", paddingTop:"6px", borderTop:"1px solid " + C.subtleBorder }}>
+                        <div style={{ marginTop:"6px", paddingTop:"6px", borderTop:"1px solid " + tokens.color.overlay.neutralWash }}>
                           <div style={{ display:"flex", gap:"6px", alignItems:"center", flexWrap:"wrap" }}>
-                            <span style={{ fontSize:"11px", color:C.textMuted, flexShrink:0 }}>🍎 Snack Duty</span>
+                            <span style={{ fontSize:"11px", color:tokens.color.text.muted, flexShrink:0 }}>🍎 Snack Duty</span>
                             <select
                               value={sa.playerName || ""}
                               onChange={function(gid) { return function(e) {
                                 updateSnackField(gid, "playerName", e.target.value);
                               }; }(game.id)}
-                              style={{ flex:"1 1 110px", minWidth:"100px", padding:"3px 6px", borderRadius:"5px", border:"1px solid rgba(15,31,61,0.15)", fontSize:"12px", fontFamily:"inherit", background:C.cardBg, color: hasSa ? tokens.color.text.ink : C.textMuted }}>
+                              style={{ flex:"1 1 110px", minWidth:"100px", padding:"3px 6px", borderRadius:"5px", border:"1px solid rgba(15,31,61,0.15)", fontSize:"12px", fontFamily:"inherit", background:tokens.color.surface.card, color: hasSa ? tokens.color.text.ink : tokens.color.text.muted }}>
                               <option value="">— Assign —</option>
                               {roster.slice().sort(function(a,b){ return (a.firstName||a.name||'').toLowerCase().localeCompare((b.firstName||b.name||'').toLowerCase()); }).map(function(p) {
                                 return <option key={p.name} value={p.firstName || p.name}>{p.firstName || p.name}</option>;
@@ -6317,7 +6317,7 @@ export default function App() {
                             </select>
                             {hasSa && (
                               <button onClick={function(gid) { return function() { clearSnackAssignment(gid); }; }(game.id)}
-                                style={{ background:"none", border:"none", cursor:"pointer", fontSize:"12px", color:C.textMuted, padding:"1px 3px", lineHeight:1 }} title="Clear">✕</button>
+                                style={{ background:"none", border:"none", cursor:"pointer", fontSize:"12px", color:tokens.color.text.muted, padding:"1px 3px", lineHeight:1 }} title="Clear">✕</button>
                             )}
                             <div style={{marginTop:'6px'}}>
                               <span style={{fontSize:'12px',color:'#666',fontWeight:500}}>🏆 Game Ball: </span>
@@ -6360,7 +6360,7 @@ export default function App() {
                     })()}
                     <button style={S.btn("ghost")} onClick={function() { handleShareGame(game); }}>Share</button>
                     <button style={S.btn("ghost")} onClick={function(g) { return function() { startEdit(g); }; }(game)}>Edit</button>
-                    <button style={{ ...S.btn("ghost"), color:C.red }} onClick={function(id) { return function() { if (confirm("Delete game?")) { deleteGame(id); } }; }(game.id)}>Del</button>
+                    <button style={{ ...S.btn("ghost"), color:tokens.color.brand.red }} onClick={function(id) { return function() { if (confirm("Delete game?")) { deleteGame(id); } }; }(game.id)}>Del</button>
                   </div>
                 </div>
               </Card>
@@ -6370,9 +6370,9 @@ export default function App() {
 
         {showShare ? (
           <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:100, padding:"20px" }}>
-            <Card padding="24px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px", maxWidth:"420px", width:"100%" }}>
+            <Card padding="24px" radius="md" style={{ border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px", maxWidth:"420px", width:"100%" }}>
               <div style={{ fontWeight:"bold", fontSize:"15px", marginBottom:"12px" }}>Share Lineup</div>
-              <div style={{ fontSize:"11px", color:C.textMuted, marginBottom:"8px" }}>View-only link for coaches and parents:</div>
+              <div style={{ fontSize:"11px", color:tokens.color.text.muted, marginBottom:"8px" }}>View-only link for coaches and parents:</div>
               <div style={{ padding:"10px", background:"#f8f4ee", borderRadius:"6px", fontSize:"11px", wordBreak:"break-all", marginBottom:"12px", border:"1px solid rgba(15,31,61,0.08)" }}>
                 {shareGame ? shareGame.url : ""}
               </div>
