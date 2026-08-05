@@ -4260,10 +4260,18 @@ AppNoMembershipRouting.test.jsx - check whether those siblings already do this
 correctly, as a first diagnostic step).
 
 ---
-### Story 122 (P1) - Dependabot #61/#62: ip-address SSRF/trust-boundary bypass via express-rate-limit <!-- #539 -->
+### Story 122 (P1) - Dependabot #61/#62/#63: ip-address SSRF/trust-boundary bypass via express-rate-limit <!-- #539 -->
 Status: Open - tracked separately per KK's explicit go/no-go decision on the
 v2.8.4 release audit (2026-08-04): ship v2.8.4 with these alerts open, address
 here rather than blocking that release.
+Update 2026-08-05: a third alert, #63 (HIGH), appeared seconds after v2.8.4's
+version-bump merged to develop - same ip-address package/dependency chain
+(express-rate-limit), but a more severe, broader-reaching SSRF bypass
+(leading-zero octal/decimal decode mismatch - new URL('http://012.0.0.1/').hostname
+resolves to 10.0.0.1), affecting ALL ip-address versions <=10.3.0, fixed in
+10.3.1. Per KK's explicit decision (2026-08-05): folded into this same Story
+rather than escalated separately or blocking the v2.8.4 promote - the fix
+should now target >=10.3.1 to close #61, #62, AND #63 together in one pass.
 Discovered: 2026-08-04, during the v2.8.4 release audit's live Dependabot
 check (docs/product/RELEASE_AUDIT_2026-08-04.md - superseded the previously
 assumed "2 known alerts" with the actual live count of 4).
@@ -4290,10 +4298,10 @@ transitive via vitest@4.1.2's own bundled vite@8.0.14 (a
 devDependency-of-a-devDependency, never reaches a deployed build) - separate,
 lower-relevance, not tracked by this issue.
 Proposed fix: Bump express-rate-limit to a version that pulls a patched
-ip-address (>=10.2.2), or add an npm overrides/resolutions entry pinning
-ip-address directly if express-rate-limit hasn't picked up the bump yet.
-Verify loginLimiter behavior is unchanged after the bump (existing rate-limit
-tests should cover this).
+ip-address (>=10.3.1, covers #61/#62/#63 together), or add an npm
+overrides/resolutions entry pinning ip-address directly if express-rate-limit
+hasn't picked up the bump yet. Verify loginLimiter behavior is unchanged
+after the bump (existing rate-limit tests should cover this).
 
 ---
 ### Automated Score Reporting (County Integration)
