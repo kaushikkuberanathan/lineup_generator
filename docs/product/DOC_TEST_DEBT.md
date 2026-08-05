@@ -284,15 +284,6 @@
 | **Opened** | 2026-04-17 |
 | **Target** | v2.4.0 |
 
-### 🟠 P1 — Box-score AI parser test coverage (teamName fix, PR #229)
-
-- **What:** The box-score AI parser code path in `App.jsx` was patched in v2.5.20/v2.5.21 to replace undefined `teamName` references with `activeTeam.name` (Story 84, PR #178; chore cleanup PR #228; fix PR #229). No regression test exists for this code path — a future refactor that re-introduces the `teamName` undefined reference, or breaks the `activeTeam.name` fallback, would ship silently because the parser is invoked only when a coach uploads a box-score image (low-frequency manual flow).
-- **What it is NOT:** Not a test for the Anthropic API call itself — that path is covered indirectly by backend integration tests. Specifically the parser's local variable resolution inside App.jsx's response-handling block.
-- **Proposed test:** Mock the Anthropic API response shape, invoke the parser function (currently inline in App.jsx; will need light extraction to be testable), assert `teamName` extracts correctly from `activeTeam.name` for the happy path and from explicit response fields when present. Vitest with `vi.mock('fetch')` is sufficient — no API key required at test time.
-- **Why deferred from v2.5.22:** The fix landed via three PRs (#178, #228, #229) with manual validation against real box-score images during the chore-sprint. The test gap was not caught at the time. For a patch release (Z bump), manual validation is acceptable; the full test scaffold (parser extraction + mock harness) is more work than v2.5.22 scope allows. Sets a debt-with-justification precedent for parser-path coverage in v2.6.0.
-- **Target:** v2.9.0 P1 (re-targeted 2026-08-04 — original "v2.6.0" target is 3 major versions behind current; still genuinely open, no test file exists for this path today. Alongside the App.jsx component split — parser extraction is a natural piece of that work.)
-- **Source:** Ship Gate Q1 verification during v2.5.22 release packaging, 2026-05-29.
-
 ### 🟡 P2 — CI workflow `BACKEND_URL` audit
 
 - **What:** Both backend integration test job and smoke test job hardcode prod URL in `.github/workflows/ci.yml`. Smoke job has misleading variable named `DEV_BACKEND_URL` that points to prod URL.
@@ -313,6 +304,10 @@
 ## Resolved
 
 *(Items move here once shipped. Format: date, version, original description summary, resolution commit.)*
+
+### August 5, 2026 — Box-score AI parser test coverage (teamName fix, PR #229)
+
+- ✅ **P1 — Box-score AI parser test coverage** — Resolved. The parser's `systemPrompt`/`userContent` construction was inline in `App.jsx`'s `parseGameResult()`, closure-scoped over `activeTeam`/`roster` state, with no way to unit-test it independently of rendering the whole App — exactly the extraction gap this item's proposed test called out. Extracted to `frontend/src/utils/buildBoxScorePrompt.js` (App.jsx locked-file edit, gate phrase granted this session), mirroring `buildSharePayload.js`'s established pattern for this repo's App.jsx-testability problem. `parseGameResult()` itself is now a two-line call to the extracted function plus the existing fetch/AbortController/timeout plumbing, which was left untouched (out of scope — that's network wiring, not the teamName resolution logic this item was about). Added `frontend/src/utils/buildBoxScorePrompt.test.js` (8 tests): happy-path teamName extraction into the system prompt; a direct regression guard that `activeTeam === null` never produces the literal string `"undefined"` (the exact v2.5.20 bug shape Story 84/PR #178→#228→#229 fixed) in either the system prompt or user content; the same guard for `activeTeam` present but `.name` falsy; empty-roster handling; and userContent shape correctness for all three `sourceType` variants (`image` incl. default `media_type` fallback, `pdf`, `text`). **Mutation-test RED checkpoint** (file is untracked, so a `git stash` RED check doesn't apply — mutation substitute used, per this doc's own rule): reverted the `teamName` guard from `(activeTeam && activeTeam.name) ? activeTeam.name : ""` to a bare `activeTeam.name` — the null-guard test failed RED with a real `TypeError: Cannot read properties of null` (a stronger failure signature than a silent `"undefined"` string, and arguably a better regression trap than the original bug shape). Reverted, confirmed `git diff --stat` on the util file empty, re-ran and confirmed 8/8 green again. Also ran `npx eslint src/App.jsx src/utils/buildBoxScorePrompt.js` (clean) and `npm run build` (clean production build, pre-existing chunk-size warning unrelated) to verify the extraction didn't regress anything beyond the unit tests. No real production bug found in the current (already-fixed) behavior — this closes a coverage gap only. Branch: `issue/10-boxscore-parser-coverage`. Issue: [#570](https://github.com/kaushikkuberanathan/lineup_generator/issues/570) (filed retroactively, closed same session).
 
 ### August 5, 2026 — Auto-Staging Git Hook re-triaged as stale
 
@@ -403,11 +398,11 @@
 | Priority | Test Gaps | Doc Gaps | Process Gaps | Total |
 |---|---|---|---|---|
 | 🔴 P0 | 1 | 0 | 0 | **1** |
-| 🟠 P1 | 0 | 2 | 1 | **3** |
+| 🟠 P1 | 0 | 2 | 0 | **2** |
 | 🟡 P2 | 8 | 5 | 7 | **20** |
-| **Total** | **9** | **7** | **8** | **24** |
+| **Total** | **8** | **7** | **7** | **22** |
 
-*(2026-08-05, merge-conflict resolution combining two independently-authored closures (PR #567 Auth Flow End-to-End, already merged to `develop`; this branch's Auto-Staging Git Hook): direct recount of every `### 🟠`/`### 🟡` heading actually present in each Open section on this branch, post-merge — Test Gaps 0 P1 (Auth Flow End-to-End closed) + 8 P2 = 8; Doc Gaps 2 P1 + 5 P2 = 7 (untouched by either closure); Process Gaps 1 P1 (Auto-Staging Git Hook closed, Box-score AI parser test coverage still open) + 7 P2 = 8. Neither branch's own dashboard edit is correct in isolation post-merge — each only accounted for its own closure against the pre-merge baseline (26). Combined: P1 0/2/1 = 3, P2 8/5/7 = 20, Totals 9/7/8 = 24.)*
+*(2026-08-05, merge-conflict resolution combining item 10's own closure (Box-score AI parser test coverage) with the already-merged closures of items 6 (Auth Flow End-to-End, PR #567) and 8 (Auto-Staging Git Hook, PR #569) inherited via this merge from `develop`: direct recount of every `### 🟠`/`### 🟡` heading actually present in each Open section on this branch, post-merge — Test Gaps 0 P1 + 8 P2 = 8 (unchanged by this item); Doc Gaps 2 P1 + 5 P2 = 7 (untouched by any of the three closures); Process Gaps 0 P1 (Box-score AI parser test coverage now closed, Auto-Staging Git Hook already closed) + 7 P2 = 7. Neither this branch's nor `develop`'s pre-merge dashboard edit was correct in isolation post-merge — each only accounted for its own closure against a now-stale baseline. Combined: P1 0/2/0 = 2, P2 8/5/7 = 20, Totals 8/7/7 = 22.)*
 
 *(2026-08-04, Doc Audit Spike Story 8: two P1 items resolved — Roster-Wipe Guard + Recovery Endpoint (Test Gaps; tests exist via PR #282) and Windows Vitest pre-push hook OOM cascade (Process Gaps; pre-push no longer runs Vitest at all, Story 75) — both moved to Resolved section. Direct recount of every `### 🔴`/`### 🟠`/`### 🟡` heading actually present in each Open section immediately before this edit matched the prior table exactly (1/2/8 Test Gaps, 0/2/5 Doc Gaps, 0/3/7 Process Gaps = 28), so this is a clean two-item removal, not a correction of pre-existing drift. Test Gaps P1 2→1 (11→10 total); Process Gaps P1 3→2 (10→9 total); P1 row 7→5; Grand Total 28→26. Also re-targeted the Box-score AI parser item's stale "v2.6.0" Target to "v2.9.0" (current version is v2.8.4/v2.8.3) — no count change, still open.)*
 

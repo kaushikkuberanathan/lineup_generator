@@ -45,6 +45,7 @@ import { PendingApprovalScreen } from './components/Auth/PendingApprovalScreen';
 import { NoMembershipScreen }    from './components/Auth/NoMembershipScreen';
 import { roleLabel } from './utils/roleLabels';
 import { buildSharePayload } from './utils/buildSharePayload';
+import { buildBoxScorePrompt } from './utils/buildBoxScorePrompt';
 import Toast from './components/ui/Toast';
 import { Card } from './components/ui/Card';
 import { useAuth } from './hooks/useAuth';
@@ -2762,29 +2763,9 @@ export default function App() {
   function parseGameResult(sourceType, sourceData, mediaType) {
     // sourceType: "image" | "pdf" | "text"
     // Parses a box score / game result and returns { result, ourScore, theirScore, battingPerf }
-    var rosterNames = roster.map(function(r) { return r.name; }).join(", ");
-    var systemPrompt = "You are a baseball box score parser. " +
-      "Extract game result and individual batting stats. " +
-      "Team name is " + (activeTeam && activeTeam.name ? activeTeam.name : "") + ". Players to look for: " + rosterNames + ". " +
-      "Return ONLY valid JSON with this structure: " +
-      '{ "result": "W" or "L" or "T", "ourScore": "7", "theirScore": "3", ' +
-      '"battingPerf": { "PlayerName": { "ab": 3, "h": 2, "r": 1, "rbi": 1, "bb": 0 } } }. ' +
-      "Only include players you find stats for. No markdown, no explanation.";
-
-    var userContent;
-    if (sourceType === "image") {
-      userContent = [
-        { type:"image", source:{ type:"base64", media_type: mediaType || "image/png", data: sourceData } },
-        { type:"text", text:"Parse this box score or game result image. Extract the final score and individual batting stats for " + ((activeTeam && activeTeam.name) || "") + " players." }
-      ];
-    } else if (sourceType === "pdf") {
-      userContent = [
-        { type:"document", source:{ type:"base64", media_type:"application/pdf", data: sourceData } },
-        { type:"text", text:"Parse this box score or game result PDF. Extract the final score and individual batting stats for " + ((activeTeam && activeTeam.name) || "") + " players." }
-      ];
-    } else {
-      userContent = "Parse this game result. Extract final score and batting stats for " + ((activeTeam && activeTeam.name) || "") + " players.\n\n" + sourceData;
-    }
+    var prompt = buildBoxScorePrompt(sourceType, sourceData, mediaType, activeTeam, roster);
+    var systemPrompt = prompt.systemPrompt;
+    var userContent = prompt.userContent;
 
     var BACKEND = "https://lineup-generator-backend.onrender.com";
     var _ctrl = new AbortController();
