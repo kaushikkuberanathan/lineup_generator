@@ -97,6 +97,7 @@ DROP POLICY IF EXISTS "Allow authenticated insert" ON public.share_links;
 DROP POLICY IF EXISTS "share_links_open"          ON public.share_links;
 
 -- S1/S5: Anon can read share links (viewer mode via ?s=XXXXXXXX)
+DROP POLICY IF EXISTS "share_links_anon_select" ON public.share_links;
 CREATE POLICY "share_links_anon_select"
   ON public.share_links FOR SELECT
   TO anon
@@ -104,6 +105,7 @@ CREATE POLICY "share_links_anon_select"
 -- Rollback: DROP POLICY "share_links_anon_select" ON public.share_links;
 
 -- Authenticated coaches can also read (e.g., verify their own link)
+DROP POLICY IF EXISTS "share_links_auth_select" ON public.share_links;
 CREATE POLICY "share_links_auth_select"
   ON public.share_links FOR SELECT
   TO authenticated
@@ -111,6 +113,7 @@ CREATE POLICY "share_links_auth_select"
 -- Rollback: DROP POLICY "share_links_auth_select" ON public.share_links;
 
 -- Authenticated coaches can create share links
+DROP POLICY IF EXISTS "share_links_auth_insert" ON public.share_links;
 CREATE POLICY "share_links_auth_insert"
   ON public.share_links FOR INSERT
   TO authenticated
@@ -137,6 +140,7 @@ DROP POLICY IF EXISTS "teams_open"      ON public.teams;
 DROP POLICY IF EXISTS "teams_anon_all"  ON public.teams;
 
 -- S2: Active coach can read their own team
+DROP POLICY IF EXISTS "teams_auth_select" ON public.teams;
 CREATE POLICY "teams_auth_select"
   ON public.teams FOR SELECT
   TO authenticated
@@ -154,6 +158,7 @@ CREATE POLICY "teams_auth_select"
 -- (only rows where team_memberships links auth.uid() to that team_id are visible)
 
 -- Coaches can create new teams
+DROP POLICY IF EXISTS "teams_auth_insert" ON public.teams;
 CREATE POLICY "teams_auth_insert"
   ON public.teams FOR INSERT
   TO authenticated
@@ -161,6 +166,7 @@ CREATE POLICY "teams_auth_insert"
 -- Rollback: DROP POLICY "teams_auth_insert" ON public.teams;
 
 -- Active coach/admin can update their team details
+DROP POLICY IF EXISTS "teams_auth_update" ON public.teams;
 CREATE POLICY "teams_auth_update"
   ON public.teams FOR UPDATE
   TO authenticated
@@ -176,6 +182,7 @@ CREATE POLICY "teams_auth_update"
 -- Rollback: DROP POLICY "teams_auth_update" ON public.teams;
 
 -- Admin-role coach can delete their team
+DROP POLICY IF EXISTS "teams_auth_delete" ON public.teams;
 CREATE POLICY "teams_auth_delete"
   ON public.teams FOR DELETE
   TO authenticated
@@ -208,6 +215,7 @@ DROP POLICY IF EXISTS "team_data_open"   ON public.team_data;
 DROP POLICY IF EXISTS "team_data_anon_all" ON public.team_data;
 
 -- S2 + S3: Active member of this team can read (coaches AND viewers)
+DROP POLICY IF EXISTS "team_data_auth_select" ON public.team_data;
 CREATE POLICY "team_data_auth_select"
   ON public.team_data FOR SELECT
   TO authenticated
@@ -222,6 +230,7 @@ CREATE POLICY "team_data_auth_select"
 -- Rollback: DROP POLICY "team_data_auth_select" ON public.team_data;
 
 -- S4: Only admin/coach can INSERT (first-time create for a team)
+DROP POLICY IF EXISTS "team_data_auth_insert" ON public.team_data;
 CREATE POLICY "team_data_auth_insert"
   ON public.team_data FOR INSERT
   TO authenticated
@@ -237,6 +246,7 @@ CREATE POLICY "team_data_auth_insert"
 -- Rollback: DROP POLICY "team_data_auth_insert" ON public.team_data;
 
 -- S4: Only admin/coach can UPDATE (roster edits, schedule, grid, lock/unlock)
+DROP POLICY IF EXISTS "team_data_auth_update" ON public.team_data;
 CREATE POLICY "team_data_auth_update"
   ON public.team_data FOR UPDATE
   TO authenticated
@@ -275,6 +285,7 @@ DROP POLICY IF EXISTS "Allow all"             ON public.roster_snapshots;
 DROP POLICY IF EXISTS "roster_snapshots_open" ON public.roster_snapshots;
 
 -- S2 + S3: Active member can read their team's snapshots
+DROP POLICY IF EXISTS "roster_snapshots_auth_select" ON public.roster_snapshots;
 CREATE POLICY "roster_snapshots_auth_select"
   ON public.roster_snapshots FOR SELECT
   TO authenticated
@@ -289,6 +300,7 @@ CREATE POLICY "roster_snapshots_auth_select"
 -- Rollback: DROP POLICY "roster_snapshots_auth_select" ON public.roster_snapshots;
 
 -- S4: Only admin/coach can insert snapshots
+DROP POLICY IF EXISTS "roster_snapshots_auth_insert" ON public.roster_snapshots;
 CREATE POLICY "roster_snapshots_auth_insert"
   ON public.roster_snapshots FOR INSERT
   TO authenticated
