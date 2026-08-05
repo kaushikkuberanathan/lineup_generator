@@ -15,22 +15,25 @@ import { BrandMark } from "../BrandMark";
  *   1. What Is Dugout Lineup?   (token-driven; feature bullets + Share CTA)
  *   2. Built by a Coach         (token-driven; navy top-accent signature card)
  *   3. Open to Partnerships     (token-driven; email + LinkedIn buttons)
- *   4. App Info                 (verbatim from original — C/S styled; Share button removed per Story 105)
- *   5. How to Use (collapsible) (verbatim from original — C/S styled)
+ *   4. App Info                 (Share button removed per Story 105)
+ *   5. How to Use (collapsible)
  *
- * Cards 1–3 are tokens.* only. Cards 4–5 keep the legacy C (color) + S (style)
- * props so they render identically to the pre-overhaul version (Card 4's
- * redundant "Share App Now" button removed — the Card 1 CTA is now the single
- * home for that action).
+ * Cards 1–3 are tokens.* only. Cards 4–5 were originally C (color) + S (style)
+ * styled via App.jsx props, kept deliberately visually identical to the
+ * pre-overhaul version; both now use `legacyCard` below (Phase 4 slice 6) —
+ * an exact token-driven reproduction of the old S.card object (background,
+ * borderRadius, padding, boxShadow, marginBottom, border all pixel-for-pixel
+ * matched), since S.card itself was deleted from App.jsx by Story 117 and
+ * this component's `style={S.card}` reference had been silently rendering
+ * unstyled ever since — found and fixed in the same pass as the C.*
+ * retirement below, not a separate concern.
  *
  * Props:
  *   aboutGuideOpen    bool   — "How to Use" collapsible open state
  *   setAboutGuideOpen fn     — toggle for the collapsible
  *   APP_VERSION       string — app version label
- *   C                 object — legacy color palette (App.jsx)
- *   S                 object — legacy style objects (App.jsx)
  */
-export function AboutTab({ aboutGuideOpen, setAboutGuideOpen, APP_VERSION, C, S }) {
+export function AboutTab({ aboutGuideOpen, setAboutGuideOpen, APP_VERSION }) {
   // ── Token-driven card styles (Cards 1–3) ───────────────────────────────
   var cardBase = {
     background: tokens.color.surface.card,
@@ -43,6 +46,18 @@ export function AboutTab({ aboutGuideOpen, setAboutGuideOpen, APP_VERSION, C, S 
   var cardAccent = {
     ...cardBase,
     borderTop: tokens.borderWidth.heavy + " solid " + tokens.color.brand.navy, // 4px navy signature accent (Card 2 only)
+  };
+
+  // ── Legacy card style for Cards 4-5 (exact reproduction of the deleted
+  // S.card object, not the Story 105 cardBase redesign - these two cards are
+  // meant to stay visually identical to the pre-overhaul version) ─────────
+  var legacyCard = {
+    background: tokens.color.surface.card, // was C.white, exact #FFFFFF match
+    borderRadius: "10px",
+    padding: "16px 18px",
+    boxShadow: tokens.shadow.subtleCard, // exact match to the deleted S.card's boxShadow
+    marginBottom: "14px",
+    border: "1px solid " + tokens.color.border.neutral, // was C.border, exact rgba(0,0,0,0.06) match
   };
 
   // Eyebrows
@@ -256,32 +271,32 @@ export function AboutTab({ aboutGuideOpen, setAboutGuideOpen, APP_VERSION, C, S 
         </div>
       </div>
 
-      {/* ── Card 4: App Info (verbatim from original; Share button removed) ── */}
-      <div style={S.card}>
-        <div style={{ fontSize:"20px", fontWeight:"bold", color:C.navy, marginBottom:"4px" }}>Dugout Lineup <span style={{ display:"inline-block", verticalAlign:"middle", margin:"0 4px" }}><BrandMark size={18} /></span><span style={{ fontSize:"13px", fontWeight:"normal", color:C.textMuted }}>v{APP_VERSION}</span></div>
-        <div style={{ fontSize:"12px", color:C.textMuted, marginBottom:"12px" }}>Built for youth baseball coaches. Runs at the field.</div>
+      {/* ── Card 4: App Info (Share button removed) ── */}
+      <div style={legacyCard}>
+        <div style={{ fontSize:"20px", fontWeight:"bold", color:tokens.color.brand.navy, marginBottom:"4px" }}>Dugout Lineup <span style={{ display:"inline-block", verticalAlign:"middle", margin:"0 4px" }}><BrandMark size={18} /></span><span style={{ fontSize:"13px", fontWeight:"normal", color:tokens.color.text.muted }}>v{APP_VERSION}</span></div>
+        <div style={{ fontSize:"12px", color:tokens.color.text.muted, marginBottom:"12px" }}>Built for youth baseball coaches. Runs at the field.</div>
         <div>
           <a href="https://dugoutlineup.com" target="_blank" rel="noopener noreferrer"
-            style={{ fontSize:"12px", color:C.red, fontWeight:"bold", textDecoration:"none" }}>
+            style={{ fontSize:"12px", color:tokens.color.brand.red, fontWeight:"bold", textDecoration:"none" }}>
             Open in Browser ↗
           </a>
         </div>
       </div>
 
-      {/* ── Card 5: How to Use (collapsible, verbatim) ───────── */}
-      <div style={S.card}>
+      {/* ── Card 5: How to Use (collapsible) ───────── */}
+      <div style={legacyCard}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", cursor:"pointer" }}
           onClick={function() { setAboutGuideOpen(!aboutGuideOpen); }}>
-          <div style={S.sectionTitle}>How to Use This App</div>
-          <span style={{ fontSize:"12px", color:C.textMuted, marginBottom:"14px" }}>{aboutGuideOpen ? "▲" : "▼"}</span>
+          <div style={{ fontSize:"11px", letterSpacing:"0.18em", textTransform:"uppercase", color:tokens.color.brand.red, fontWeight:"bold", marginBottom:"14px" }}>How to Use This App</div>
+          <span style={{ fontSize:"12px", color:tokens.color.text.muted, marginBottom:"14px" }}>{aboutGuideOpen ? "▲" : "▼"}</span>
         </div>
         {aboutGuideOpen ? (
           <div>
             {onboardingSteps.map(function(step, si) {
               return (
                 <div key={si} style={{ marginBottom:"14px", paddingBottom:"14px", borderBottom: si < onboardingSteps.length - 1 ? "1px solid rgba(15,31,61,0.07)" : "none" }}>
-                  <div style={{ fontSize:"12px", fontWeight:"bold", color:C.navy, marginBottom:"4px" }}>{step.title}</div>
-                  <div style={{ fontSize:"12px", color:C.text, lineHeight:"1.6" }}>{step.body}</div>
+                  <div style={{ fontSize:"12px", fontWeight:"bold", color:tokens.color.brand.navy, marginBottom:"4px" }}>{step.title}</div>
+                  <div style={{ fontSize:"12px", color:tokens.color.text.ink, lineHeight:"1.6" }}>{step.body}</div>
                 </div>
               );
             })}
