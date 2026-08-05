@@ -437,8 +437,8 @@
 - 60+ days: not recomputed this pass (see above)
 
 **Ship blockers:**
-- **1 P0 open as of 2026-08-04** — `AppShareLinkRouting.test.jsx` incomplete Supabase mock (see Open — Test Gaps above). Does NOT block the v2.8.4 patch release this was filed ahead of — the `debt-p0` gate only applies to minor version bumps (x.Y.0), not patches. **Will block the next minor version bump (v2.9.0 or later)** until resolved — run `debt-p0` before that bump, per the project's own minor-version-gate rule, and expect it to fail until this item closes.
-- Prior to this: none open. The previous minor version bump was gated on both P0 items — Share Link Payload Integrity and Game Mode Rendering + State, both resolved 2026-08-02 (see Resolved section) — plus D-S411b and D-S348a, both resolved same-day 2026-08-01 (see Resolved section).
+- **0 P0 open as of 2026-08-05** — the one open P0, `AppShareLinkRouting.test.jsx` / `AppNoMembershipRouting.test.jsx` incomplete Supabase mocks (Story 121, #535), is now resolved — see the Resolved section entry for full evidence (both files' mocks fully self-contained, real RED→GREEN via `git stash`, confirmed not an active incident since the anon key has been dead since 2026-07-14). Matches the Debt Summary Dashboard table above (0/0/0/**0**), which this section had drifted out of sync with. `debt-p0` gate is clear again for the next minor version bump.
+- Prior to this: **1 P0 open as of 2026-08-04** — the same `AppShareLinkRouting.test.jsx` item, filed that day, did not block the v2.8.4 patch release (the `debt-p0` gate only applies to minor version bumps, not patches). Before that: none open — the previous minor version bump was gated on both P0 items — Share Link Payload Integrity and Game Mode Rendering + State, both resolved 2026-08-02 (see Resolved section) — plus D-S411b and D-S348a, both resolved same-day 2026-08-01 (see Resolved section).
 
 ---
 
