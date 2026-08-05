@@ -522,6 +522,7 @@ Before opening a `develop → main` PR, walk through these items. For each, answ
 16. Branch protection on `main` enforces CI checks + preview deployment green — no bypass
 17. On the PR merge dropdown — select **Create a merge commit**, not Squash and merge. Promote PRs (develop → main) must preserve the individual develop commit history on main. Squash collapses all develop work into one commit, losing PR-level granularity. (Story 79, 2026-05-21)
 18. Run `node scripts/sync-stories-to-issues.js` — confirm all `<!-- #N -->` markers in ROADMAP.md are patched with real issue numbers before promote. Commit any patches as a docs-only PR to develop first.
+19. Any roadmap/changelog entry describing work that hasn't promoted from develop to main must carry a `(develop only — not yet promoted)` tag until the next promote lands. (Added 2026-08-04, Doc Audit Spike Systemic Issue #1 — several docs described v2.8.4-era work as flatly shipped while main was still on v2.8.3, with no way for a reader to tell the difference.)
 
 If any relevant item is "no" — **stop**. Open a docs patch first. This patch was introduced because v2.3.3 shipped without docs updates, requiring a catch-up hygiene patch (commit `2652ed7`, April 24 2026).
 
