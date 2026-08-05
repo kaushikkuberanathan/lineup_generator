@@ -36,18 +36,6 @@
 | **Age** | 0 days |
 | **Target** | Flagged for Dugout/main track ownership (T1) — not fixed in the session that found it. See Story 121, ROADMAP.md, and [#535](https://github.com/kaushikkuberanathan/lineup_generator/issues/535). |
 
-### 🟠 P1 — Auth Flow End-to-End (Magic Link + Google OAuth)
-
-| | |
-|---|---|
-| **Area** | Auth system (magic link + Google OAuth) |
-| **Description** | No tests cover the magic link request → callback handling → team membership hydration flow. Same for Google OAuth. |
-| **Risk if unfixed** | **Corrected 2026-08-04: the auth cutover this item originally gated on already shipped (v2.6.0, 2026-07-20), without this coverage landing first.** The gap is now about regressing already-live behavior, not blocking a future cutover — an auth-gate change that silently blocks unauthenticated viewers would reproduce the v2.2.22 hotfix scenario, live in prod, not in a pre-launch check. |
-| **Proposed test** | `frontend/src/tests/auth.test.js` — mock Supabase client, simulate magic link flow, assert `useAuth` state transitions correctly through `pending → authenticated`. Also test: share link renders when `authState === unauthenticated`. |
-| **Opened** | 2026-04-17 |
-| **Age** | 109 days (corrected 2026-08-04 — was stale at "43 days," same drift class the Game Mode Rendering + State item caught and fixed 2026-08-01) |
-| **Target** | Not version-pinned — should be re-scoped as a live-regression risk now that the auth system it covers is in prod, not a pre-cutover gate |
-
 ### 🟡 P2 — Walk-Up Song Navigation
 
 | | |
@@ -336,6 +324,10 @@
 
 *(Items move here once shipped. Format: date, version, original description summary, resolution commit.)*
 
+### August 5, 2026 — Auth Flow End-to-End test coverage (magic link + Google OAuth)
+
+- ✅ **P1 — Auth Flow End-to-End (Magic Link + Google OAuth)** — Resolved. `frontend/src/hooks/useAuth.js` had zero coverage for its session-hydration effect, its `onAuthStateChange` listener, or `sendMagicLink` — `AppShareLinkRouting.test.jsx` and `AppNoMembershipRouting.test.jsx` both mock `useAuth` entirely, so none of the hook's internal logic had ever run under test. Magic link and Google OAuth converge on the exact same post-redirect code path (both land back via Supabase with a session that fires `SIGNED_IN`), so one file covers both providers' shared hydration logic. Added `frontend/src/tests/auth.test.js` (15 tests, mirroring `useAuth.updateProfileName.test.js`'s `vi.hoisted` Supabase-mock + `renderHook` harness): Group A (7) — mount-time `checkSession()` for no-session/authenticated/no_membership/backend-401-signs-out/magic-link-hash-error-short-circuits/magic-link-hash-success-falls-through/network-throw-doesn't-hang-on-loading. Group B (4) — `onAuthStateChange` SIGNED_IN (with and without memberships) and SIGNED_OUT. Group C (4) — `sendMagicLink` success/`NOT_AUTHORIZED`/other-error/network-throw. Also added `frontend/src/components/Auth/LoginScreen.test.jsx` (6 tests) — the actual click-triggered Google OAuth entry point (`handleGoogleSignIn` → `supabase.auth.signInWithOAuth`) that `auth.test.js` starts downstream of; plus 2 magic-link submit-form tests. **Verified the Auth Principle directly against source rather than assuming it**: `App.jsx` calls `useAuth()` unconditionally on every mount, but the render tree checks `sharePayload` (share-link routing) before it ever checks `authState` — confirmed by reading the actual render order (share-link branches return early at lines ~7382/7403, the `authState==='loading'`/`'unauthenticated'` gates don't appear until ~7414+). Auth's async effects run in parallel with share-link rendering but never block it; this is the same invariant Story 61's `AppShareLinkRouting.test.jsx` already asserts from the App.jsx side, now corroborated from the hook side too. **No live/exploitable auth gap found** — the elevated-caution threshold from this item's D-S355-adjacent risk framing was not triggered. **One reliability gap found and flagged, not fixed** (test B4, `auth.test.js`): if Supabase fires `SIGNED_IN` but the backend `/me` call then fails, the `onAuthStateChange` handler's bare `if (res.ok)` guard means no state update happens at all — the user is left on the login screen with a live Supabase session and no error shown, silently. This is a UX/reliability stall, not an auth bypass (no unauthorized access results) — FLAGGED FOR KK REVIEW in `SPRINT2_EXECUTION_LOG.md`, out of scope for this coverage-only item. **Mutation-test RED checkpoints** (both new files are untracked and so cannot use a `git stash` RED check per this doc's own rule — mutation substitutes used instead): (1) inverted `useAuth.js`'s `memberships.length === 0` membership-gate check — 4 of 15 `auth.test.js` tests went red (A2, A3, A6, B3 — exactly the ones touching that branch), reverted, confirmed `git diff --stat` empty, re-ran 15/15 green. (2) inverted `LoginScreen.jsx`'s `handleGoogleSignIn` error-guard (`if (error)` → `if (!error)`) — 2 of 6 `LoginScreen.test.jsx` tests went red, reverted, confirmed `git diff --stat` empty, re-ran 6/6 green. Full frontend suite re-run after both reverts: 82 files / 996 passed + 1 skipped (exactly baseline 975+1 plus the 21 new tests) — the one nonzero-exit retry hit the documented Bug #7-adjacent unhandled-rejection noise from `AppNoMembershipRouting.test.jsx`'s mock, unrelated to this change; all tests passed both times. Branch: `issue/6-auth-flow-e2e-coverage`. Issue: [#566](https://github.com/kaushikkuberanathan/lineup_generator/issues/566) (filed retroactively — this item predates the issue-per-debt-item convention, resolved same session it was filed in).
+
 ### August 4, 2026 — Windows Vitest pre-push hook OOM cascade
 
 - ✅ **P1 — Pre-push hook running full vitest suite OOM-cascades on Windows** — Resolved on two independent fronts. First, Story 75 (PR #155, v2.5.18) removed the Vitest/lint run from `.husky/pre-push` entirely — the hook now only validates the branch guard, so the specific failure mode this item described (pre-push OOM-cascading) can no longer happen; CI (GitHub Actions) is the sole authoritative test gate. Second, the underlying flake this item's mitigations were reaching for (cold-start worker-spawn timeouts, Bug #7) got a permanent mitigation via `fileParallelism: false` in `frontend/vite.config.js`'s `test:` block (Story 118/#517) — **this second fix is currently develop-only (v2.8.4), not yet promoted to main** as of this entry. The pre-push-specific resolution (front one) is live everywhere already and is sufficient on its own to close this exact item.
@@ -417,9 +409,11 @@
 | Priority | Test Gaps | Doc Gaps | Process Gaps | Total |
 |---|---|---|---|---|
 | 🔴 P0 | 1 | 0 | 0 | **1** |
-| 🟠 P1 | 1 | 2 | 2 | **5** |
+| 🟠 P1 | 0 | 2 | 2 | **4** |
 | 🟡 P2 | 8 | 5 | 7 | **20** |
-| **Total** | **10** | **7** | **9** | **26** |
+| **Total** | **9** | **7** | **9** | **25** |
+
+*(2026-08-05: Auth Flow End-to-End — resolved, see Resolved section. Direct count of every `### 🟠`/`### 🟡` heading actually present in Open — Test Gaps immediately before this edit: 1 P1 (Auth Flow End-to-End) + 8 P2 — matched the prior table exactly, no drift found this pass. Test Gaps P1 1→0, Test Gaps total 10→9, P1 Total 5→4, Grand Total 26→25.)*
 
 *(2026-08-04, Doc Audit Spike Story 8: two P1 items resolved — Roster-Wipe Guard + Recovery Endpoint (Test Gaps; tests exist via PR #282) and Windows Vitest pre-push hook OOM cascade (Process Gaps; pre-push no longer runs Vitest at all, Story 75) — both moved to Resolved section. Direct recount of every `### 🔴`/`### 🟠`/`### 🟡` heading actually present in each Open section immediately before this edit matched the prior table exactly (1/2/8 Test Gaps, 0/2/5 Doc Gaps, 0/3/7 Process Gaps = 28), so this is a clean two-item removal, not a correction of pre-existing drift. Test Gaps P1 2→1 (11→10 total); Process Gaps P1 3→2 (10→9 total); P1 row 7→5; Grand Total 28→26. Also re-targeted the Box-score AI parser item's stale "v2.6.0" Target to "v2.9.0" (current version is v2.8.4/v2.8.3) — no count change, still open.)*
 
