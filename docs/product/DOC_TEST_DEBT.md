@@ -266,16 +266,6 @@
 | **Target** | Opportunistic — flag only, do not fix without a decision (KK's explicit instruction) |
 | **Issue** | [#502](https://github.com/kaushikkuberanathan/lineup_generator/issues/502) |
 
-### 🟠 P1 — Auto-Staging Git Hook
-
-| | |
-|---|---|
-| **Area** | Governance |
-| **Description** | During v2.2.31 session, a git hook silently staged files that were intentionally unstaged. The scope-creep was caught at the gate but would have shipped otherwise. |
-| **Proposed action** | Investigate `.git/hooks/pre-commit`, husky config, or Claude Code hook config. Remove auto-staging. If a hook is needed, restrict it to the deploy-checklist files only. |
-| **Opened** | 2026-04-17 |
-| **Target** | v2.3.4 |
-
 ### 🟡 P2 — Orphan Stash Cleanup
 
 | | |
@@ -335,6 +325,10 @@
 ## Resolved
 
 *(Items move here once shipped. Format: date, version, original description summary, resolution commit.)*
+
+### August 5, 2026 — Auto-Staging Git Hook re-triaged as stale
+
+- ✅ **P1 — Auto-Staging Git Hook** — Closed as stale, not fixed fresh. Opened 2026-04-17 against a git hook that "silently staged files that were intentionally unstaged" during the v2.2.31 session. Re-verified directly against current source: `.husky/pre-commit` does not exist at all (only `.husky/pre-push` exists, and per Story 75/PR #155 it validates the branch guard only — it does not touch the index). `.claude/settings.local.json` has no `hooks` key of any kind — no Claude-Code-level hook config exists either. Neither of the two mechanisms the original ticket's proposed action named as suspects (`.git/hooks`/husky, or Claude Code hook config) is present today; no git or tooling mechanism in this repo currently stages files on a user's behalf. The actual root cause — Claude Code's own file-creation/edit side effects landing in the working tree, then getting swept up by a blanket `git add -A`/`git add .` — was independently addressed by policy, not by removing a hook: root `CLAUDE.md`'s "Git Staging Discipline" section (mandatory explicit-path `git add`, `git add -A`/`git add .` banned outright) traces to the same v2.2.31→v2.2.36 governance-activation window (`d66eba9`, "governance activation: enhanced debt ledger, staging discipline, shell helpers") and has been the enforced convention in every commit since, including every Sprint 1/2 item this session and the prior one. No code change made — this closes a stale debt entry whose originally-suspected technical cause no longer exists and whose actual root cause was already fixed by a standing rule, years of commits deep, never cross-referenced back to this ticket. Investigated per KK's explicit direction (Sprint 2 continuation, 2026-08-05) before assuming a hook fix was still needed. Issue: [#568](https://github.com/kaushikkuberanathan/lineup_generator/issues/568) (filed retroactively, closed same session). Branch: `issue/8-auto-staging-hook-stale`.
 
 ### August 4, 2026 — Windows Vitest pre-push hook OOM cascade
 
@@ -417,9 +411,11 @@
 | Priority | Test Gaps | Doc Gaps | Process Gaps | Total |
 |---|---|---|---|---|
 | 🔴 P0 | 1 | 0 | 0 | **1** |
-| 🟠 P1 | 1 | 2 | 2 | **5** |
+| 🟠 P1 | 1 | 2 | 1 | **4** |
 | 🟡 P2 | 8 | 5 | 7 | **20** |
-| **Total** | **10** | **7** | **9** | **26** |
+| **Total** | **10** | **7** | **8** | **25** |
+
+*(2026-08-05: Auto-Staging Git Hook — resolved as stale, see Resolved section. Direct count of every `### 🟠`/`### 🟡` heading actually present in Open — Process Gaps immediately before this edit: 2 P1 (Auto-Staging Git Hook, Box-score AI parser test coverage) + 7 P2 — matched the prior table exactly, no drift found this pass. Process Gaps P1 2→1, Process Gaps total 9→8, P1 Total 5→4, Grand Total 26→25.)*
 
 *(2026-08-04, Doc Audit Spike Story 8: two P1 items resolved — Roster-Wipe Guard + Recovery Endpoint (Test Gaps; tests exist via PR #282) and Windows Vitest pre-push hook OOM cascade (Process Gaps; pre-push no longer runs Vitest at all, Story 75) — both moved to Resolved section. Direct recount of every `### 🔴`/`### 🟠`/`### 🟡` heading actually present in each Open section immediately before this edit matched the prior table exactly (1/2/8 Test Gaps, 0/2/5 Doc Gaps, 0/3/7 Process Gaps = 28), so this is a clean two-item removal, not a correction of pre-existing drift. Test Gaps P1 2→1 (11→10 total); Process Gaps P1 3→2 (10→9 total); P1 row 7→5; Grand Total 28→26. Also re-targeted the Box-score AI parser item's stale "v2.6.0" Target to "v2.9.0" (current version is v2.8.4/v2.8.3) — no count change, still open.)*
 
