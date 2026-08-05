@@ -41,6 +41,29 @@
 #   either (same 2026-07-13 reasoning as 005-009/012 above), but noted for
 #   anyone auditing the numbering gap.
 #
+#   CORRECTED 2026-08-05: "004 is NOT yet in schema.sql" above is now only
+#   partially true. Doc Audit Spike Story 1 (#549) re-verified schema.sql's
+#   RLS section against LIVE PROD and updated the teams/team_data/
+#   roster_snapshots policies (004's own scope) to their current, real state
+#   — schema.sql's RLS section is no longer uniformly a 2026-07-13 snapshot;
+#   those three tables' policies now reflect a 2026-08-04 re-verification.
+#   This broke the ephemeral CI run (#560/rls-004-idempotency): schema.sql
+#   and 004 both created the same 9 policy names, and 004's own CREATE
+#   POLICY statements had no DROP POLICY IF EXISTS guard for themselves
+#   (only for older catch-all policy names from initial setup), so the
+#   second CREATE threw "already exists". Fixed in 004 itself — every
+#   CREATE POLICY there now has its own matching DROP POLICY IF EXISTS
+#   immediately before it, so replaying 004 is safe whether or not
+#   schema.sql already contains its policies. This makes 004 (and this
+#   script's unconditional replay of it) tolerant of exactly this class of
+#   drift, so a future schema.sql re-capture of these same tables — or any
+#   other migration file gaining the same partial overlap — won't
+#   reproduce this failure, PROVIDED that file's own CREATE POLICY
+#   statements are similarly self-guarded. Not yet fully general: files
+#   03/13-017 haven't been audited for the same guard-completeness this
+#   fix gave 004 specifically — that's a reasonable follow-up, not required
+#   for this fix to be correct.
+#
 # USAGE
 #   DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres \
 #     backend/scripts/apply-rls-bootstrap.sh
