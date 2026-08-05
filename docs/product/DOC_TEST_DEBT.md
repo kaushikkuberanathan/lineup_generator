@@ -24,6 +24,19 @@
 
 ## Open — Test Gaps
 
+### 🟡 P2 — useAuth.js `onAuthStateChange` silently strands user on failed `/me` call after `SIGNED_IN`
+
+| | |
+|---|---|
+| **Area** | Auth system (magic link + Google OAuth) |
+| **Description** | `frontend/src/hooks/useAuth.js`'s `onAuthStateChange` listener has a bare `if (res.ok)` guard around the backend `GET /me` call it makes after Supabase fires `SIGNED_IN`. If that call fails (network error, non-2xx), the entire state-update block is skipped — no `authState` change, no error surfaced, no retry. The user is left exactly where they were (typically the login screen) with a live Supabase session and zero feedback. |
+| **Risk if unfixed** | Not a security bypass — no unauthorized access results. A reliability/UX stall: a coach who clicks a magic link or completes Google OAuth during a transient backend hiccup gets silently stuck, likely reads it as "the link didn't work," and may re-request during the `loginLimiter`'s rate-limit window. |
+| **Proposed test/fix** | Surface an error to the user (toast/banner) and/or retry the `/me` call with backoff. `frontend/src/tests/auth.test.js` test B4 already documents the current (broken) behavior — extend or replace it with a fix-verifying test once a fix approach is chosen. |
+| **Opened** | 2026-08-05 — found while adding `auth.test.js` (test B4) during Sprint 2's Story 6 (Auth Flow End-to-End, #566/PR #567); flagged in execution logs across two sessions the same day without being filed as its own tracked item until now. |
+| **Age** | 0 days |
+| **Target** | Opportunistic — no hard deadline, but should be fixed before treating "no error shown after clicking the link" coach reports as unrelated confusion. |
+| **Issue** | [#579](https://github.com/kaushikkuberanathan/lineup_generator/issues/579) |
+
 ### 🟡 P2 — Walk-Up Song Navigation
 
 | | |
@@ -391,8 +404,10 @@
 *(2026-08-05: FEATURE_MAP.md Missing Feature Rows — resolved, see Resolved section (Structural Restructure deliberately split off, still open — see its own entry above). Direct count of every `### 🟠` heading actually present in Open — Doc Gaps immediately before this edit: 2 P1 (both FEATURE_MAP items) — matched the prior table exactly. Doc Gaps P1 2→1, Doc Gaps total 7→6, P1 Total 2→1, Grand Total 23→22.)*
 | 🔴 P0 | 0 | 0 | 0 | **0** |
 | 🟠 P1 | 0 | 2 | 0 | **2** |
-| 🟡 P2 | 8 | 5 | 7 | **20** |
-| **Total** | **8** | **7** | **7** | **22** |
+| 🟡 P2 | 9 | 5 | 7 | **21** |
+| **Total** | **9** | **7** | **7** | **23** |
+
+*(2026-08-05: new P2 test gap added — useAuth.js `onAuthStateChange` silent-strand finding (#579), filed after being flagged verbally across two sessions without a tracked issue. Test Gaps P2 8→9, Test Gaps total 8→9, P2 Total 20→21, Grand Total 22→23.)*
 
 *(2026-08-05: P0 — AppShareLinkRouting.test.jsx / AppNoMembershipRouting.test.jsx incomplete Supabase mocks — resolved, see Resolved section. Direct count of every `### 🔴` heading actually present in Open — Test Gaps immediately before this edit: exactly 1 (this item), matching the prior table. Test Gaps P0 1→0, Test Gaps total 9→8, P0 Total 1→0, Grand Total 23→22. This clears the `debt-p0` gate again — zero open P0 items.)*
 
