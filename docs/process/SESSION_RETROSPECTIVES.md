@@ -10,6 +10,59 @@
 
 ---
 
+## 2026-08-05-C — Overnight autonomous run: Phase 4b region slices (Story 120 + Story 104 slice 4.1)
+
+**Date:** August 5-6, 2026
+**Session ID:** 2026-08-05-C (T2, UX Track, `lineup-generator-ux` worktree)
+**Duration:** Single continuous unattended run per a handoff document, KK unavailable at start; KK rejoined live partway through (merged PR #591 directly, asked follow-up questions, gave two mid-run corrections, then directed session-close cleanup)
+**Versions shipped to production:** None — three PRs opened, two merged to `develop`, one held for review
+**PRs opened:** #591 (Story 120, merged), #597 (Story 104 slice 4.1, merged), #600 (Bug #7 log-precision cherry-pick, open, held)
+**Issues filed:** #592 (Story 104 slice 4.1, scoped sub-issue — parent #279 was closed prematurely), #599 (Bug #7 count-precision correction)
+**Note on identifier collision:** This date already had two `-A` entries before this session started (this worktree's own prior session, and T1's first overnight run) plus a `-B` (T1's second run) — see that section's own note below. This entry takes `-C`, next in sequence; the `-A` duplication itself was flagged for KK, not silently renumbered.
+
+### Overview
+
+Handoff specified a 4-item fallback chain (Story 116 → 119 → 120 → 104/115) with instructions to drop through and log every transition rather than pause for input. Both viable items in the chain shipped; the two higher-priority items were correctly identified as blocked rather than forced. KK came online mid-run, live-merged PR #591, asked a direct question about Bug #7's recurrence rate (answered from documented history, not guessed), gave two corrections (surface a merge-conflict finding more prominently; then later, correct an imprecise flake count), and closed the session out with branch hygiene + a sync check + this retrospective.
+
+### What Shipped
+
+| Item | Scope | PR/Issue | Status |
+|---|---|---|---|
+| Story 120 (region slice 9) | All 21 legacy `var C` refs + 2 companion literal-hex duplicates in `SharedView()` migrated to already-minted `tokens.color.*` values; new `SharedViewColorTokens.test.jsx` (12 tests), mutation-tested | #531 / PR #591 | Merged to `develop` (regular merge, verified 2-parent) |
+| Story 104 slice 4.1 | `PlayerFilterToggle` extracted from `App.jsx` to `components/Shared/PlayerFilterToggle.jsx`; destination corrected from the story's stale `screens/Roster/` text after verifying the component's only real caller is `SharedView`, not the Roster tab; new characterization test (6 tests) | #592 / PR #597 | Merged to `develop` (regular merge, verified 2-parent) |
+| Bug #7 log-precision fix | Corrected an imprecise flake-count claim in this session's own execution log; orphaned by merge timing (pushed after #597 merged), cherry-picked forward | #599 / PR #600 | Open, held for KK review |
+| Branch hygiene | Deleted 2 fully-merged issue branches (local + remote) + 1 stale local-only ref (another session's, remote already gone); verified via direct content diff against `develop`, not just ancestor checks, since squash-merges break simple ancestor detection | — | Done this session |
+| Issue sync | Ran `sync-stories-to-issues.js --dry-run` against `develop` | — | Zero action needed — every ROADMAP story already has a linked issue |
+
+### What Didn't Happen
+
+- **Story 116** (GameModeScreen/DugoutView, slice 8) — blocked. Its own ROADMAP text sequences it last specifically because `game-mode/` and `ScoringMode/` each need their own Locked-File gate phrase in addition to App.jsx's; the handoff's pre-granted gate covered App.jsx only. Logged as a genuine judgment call, not guessed past.
+- **Story 119** (app-shell gradient token) — blocked *for this session*: its own text explicitly holds the mint decision on KK's go-ahead, unavailable at the time. **Resolved separately, same night, by a different session** (`issue/530-story119-callsite`, still checked out in the other worktree as of session close) — `color.brand.gradientDark` minted and the App.jsx call site swapped. Discovered during branch-hygiene recon, not assumed; confirmed via the actual token file and a merged, already-remote-deleted branch, not a status flag.
+- **Story 115** (`S.app` dead code) — turned out to already be resolved in code (zero `S.app` references found via direct grep) before this session touched anything; the ROADMAP entry's "Status: Open" is simply stale. Not fixed — `ROADMAP.md` was this session's own explicit exclusion (ceded to T1's concurrent run to avoid a same-file collision).
+- **Story 104 slices 4.2/4.3/4.4** — not started. Each is a larger, multi-hour extraction (V1 lineup engine, SharedView's own file relocation, near-static tab extraction); out of scope for a single overnight fallback pickup.
+
+### Key Events (Chronological)
+
+**1. Fallback-chain execution matched the handoff's own intended shape** — two items correctly identified as blocked (116, 119) rather than forced past a genuine hold, one shipped in full (120), one partially shipped by design (104, one sub-slice only, per "whichever is smaller in scope" once 115 turned out moot).
+
+**2. Three separate stale-doc corrections surfaced by direct verification, not trusted from the doc text** — Story 104's stated `screens/Roster/` destination (the folder convention was never adopted anywhere in the real codebase; verified `PlayerFilterToggle`'s one real call site is inside `SharedView`, not Roster), Story 115's "Status: Open" (already resolved in code), and Story 104's own tracking issue #279 (closed 2026-06-06, before any of its 5 sub-slices shipped — a new, precisely-scoped issue was filed instead of reopening the parent).
+
+**3. `SESSION_RETROSPECTIVES.md` merge conflict against T1's concurrent PRs, explicitly flagged rather than folded into routine re-sync language** — both this session and T1 independently appended a same-day entry at the top of this same file (the `-A` collision noted above). Resolved by stacking both, but KK specifically asked afterward for this to be surfaced front-and-center in the PR body, not buried in a log line — done, and logged as its own distinct finding in `docs/logs/2026-08-05-phase4b-run.md`.
+
+**4. Bug #7 hit persistently — 4 total full-suite runs this session, 3 consecutive flaky ones back-to-back, never landing a fully clean single pass for the Story 104 slice check.** Every flaky run showed zero real test failures, a different file (or pair) dropped each time — consistent with the documented worker-spawn-timeout signature, not a regression. Rather than retry indefinitely, isolated the 5 unique dropped files and ran them directly (5/5 passed), combined with one attempt's own 84/85-file result, to confirm every file in the suite had passed at least once. KK asked directly why the "permanent fix" wasn't holding; answered from `CLAUDE.md`'s own documented history (the shipped fix is a rate-reduction, `fileParallelism: false`, explicitly not framed as elimination — the deeper fix, a Windows Defender exclusion, remains an open, unimplemented Story 118 item requiring admin access this session doesn't have) rather than speculating.
+
+**5. Both merges happened live, mid-session, by KK directly — verified via API each time rather than assumed from a chat message.** "591 merged" and (silently, discovered only when checking CI) #597's merge were both confirmed via `merged_at`/`merge_commit_sha` plus a `git show -s --format=%P` parent-count check, catching the repo's own recurring squash-vs-merge-commit failure mode before treating either as fact.
+
+**6. A precision correction was itself orphaned by merge timing, then explicitly tracked down rather than left as debt.** KK caught an imprecise flake-count claim in the log/summary; the fix commit was pushed to `feature/phase4b-remaining-slices` *after* PR #597 had already merged it out from under itself. Filed a proper issue (#599) and cherry-picked the single commit forward via PR #600 rather than quietly amending history or letting it drop.
+
+**7. Branch hygiene at close used direct content diffs, not git ancestor checks, to decide what was safe to delete** — squash-merges break simple `--is-ancestor` detection, so each candidate branch's actual deliverable (SharedView's C.* count, PlayerFilterToggle's presence and import) was verified directly against `develop`'s real file contents before deleting anything. One stale local-only branch from a different, already-cleaned-up session (`feature/story119-gradient-token`) was pruned; a currently-checked-out branch in the other worktree (`issue/530-story119-callsite`) was left untouched.
+
+### Standing takeaway
+
+Every verification step this session that could have been taken on faith — a chat message claiming a merge happened, a story's stated destination path, an issue's apparent open/closed state, a branch's apparent merge status, even this session's own prior flake-count claim — turned out to need an independent check, and every single check found something worth correcting. None of the corrections were large, but the pattern held all the way through session close: verify against the actual source (API, file content, `git show`), not the nearest available claim, including this session's own.
+
+---
+
 ## 2026-08-05-B — Overnight autonomous run: vite dependency bump + branch topology fixes
 
 **Date:** August 5-6, 2026 (session spans local midnight — commits carry both dates)
