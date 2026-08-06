@@ -10,6 +10,62 @@
 
 ---
 
+## 2026-08-05-A — Overnight autonomous run: backend auth test coverage + fallback chain
+
+**Date:** August 5, 2026
+**Session ID:** 2026-08-05-A (T1 — Dugout Track)
+**Duration:** Single continuous unattended run, per a handoff document pre-answering the Phase 1 question round (KK unavailable)
+**Versions shipped to production:** None — two PRs opened, both held for review
+**PRs opened:** #587 (`issue/586-backend-auth-test-coverage` → `develop`, held), #588 (`issue/573-merge-policy-guard-action` → `develop`, held)
+**Issues filed:** #586 (backend auth test coverage). #573 (merge-policy guardrail) was pre-existing, filed the prior session — not refiled.
+
+### Overview
+
+Handoff specified a primary task (targeted backend magic-link/auth test coverage against prod) plus a four-step fallback chain (CI guardrail Action for #573 → DIVERGENT/ORPHAN token analysis → stale-docs audit), with instructions to drop through the chain and log every transition rather than pause for input. All four steps were attempted; two produced real shipped work, one turned out to be moot (already resolved), one produced an audit finding without an edit.
+
+### What Was Planned
+
+1. Primary: un-skip/extend backend magic-link rate-limiter test coverage against the live prod backend.
+2. Fallback A: build the CI guardrail Action for #573 (design doc pointer provided).
+3. Fallback B: written DIVERGENT/ORPHAN token-decision analysis (Story 110/#296).
+4. Fallback C: stale-docs audit of ROADMAP.md/DOC_TEST_DEBT.md.
+
+### What Shipped
+
+| Issue | PR | What | Status |
+|---|---|---|---|
+| #586 | #587 | Un-skipped `RATE-01b` + added `RATE-01c` in `suite-rate-limits.js` — Story 26's email-keyed rate limiter proven live in prod via direct probe before writing the assertion | CI green (10/10 checks), held for merge |
+| #573 | #588 | New `.github/workflows/merge-policy-guard.yml` — detects a likely squash-merge on `develop`/`main` post-push (message matches `(#NNN)$` + single parent), comments on the originating PR, fails the check | CI green (10/10 checks), held for merge |
+
+### What Didn't Happen
+
+- **Fallback B was skipped as moot, not executed.** #296 (Story 110 DIVERGENT/ORPHAN token decisions) turned out to already be fully resolved on 2026-08-01 (PR #490) — all 8 keys have a recorded disposition with provenance in `DESIGN_AUDIT.md`. Verified before writing anything, rather than producing a redundant analysis of an already-closed decision. The handoff's premise here was stale by four days.
+- **Fallback C found no edit-worthy stale-docs items that were safe to fix unattended.** `ROADMAP.md` and `DOC_TEST_DEBT.md` are both extremely current (edited same-day, with rigorous direct-recount audit trails already in place) — genuine confirmed P0 count is 0. One real gap was found (`FEATURE_MAP.md` row 16, "Auth system," lists Test Status as `❌ None` despite ~7 backend auth test files existing) but fixing it requires recomputing the Coverage Summary denominators, which this file's own revision history flags as a repeated drift source — logged for KK's judgment rather than edited blind.
+
+### Key Events (Chronological)
+
+**1. Handoff's own "Confirmed state" required active verification, not blind trust — caught two stale claims**
+
+The handoff described #296 as an open blocker and pointed to `docs/product/PHASE4_EXECUTION_LOG.md` as #573's design draft location. Neither held up: #296 was closed 2026-08-01 (see above), and `PHASE4_EXECUTION_LOG.md` does not exist anywhere in the repo (confirmed via search) — the pointer inside #573's own body is broken. Built Fallback A from #573's inline "Proposed fix" section instead, which was itself a complete, implementable spec.
+
+**2. Live-probed prod before writing any test assertion**
+
+Before touching `suite-rate-limits.js`, ran the exact 6-request sequence by hand against the live Render backend with a disposable test email, twice (once to confirm the 429 fires, once to confirm a second email is unaffected). Only wrote the test code after confirming the behavior it would assert is actually true against the current deployment — avoided shipping a test that guesses at prod behavior instead of measuring it.
+
+**3. Self-inflicted working-tree incident during Action testing, caught and recovered cleanly**
+
+While validating the merge-policy guard's detection logic against real historical commits, a test loop used `git checkout <sha> -- .` to inspect old commit content — this staged the *entire* diff between that historical commit's tree and the working branch (files from unrelated history: stray SVGs, App.jsx, package-lock.json, etc.), and reverted the just-committed `suite-rate-limits.js` edit in the working tree. Caught immediately via `git status` before any further action. Root-caused: `HEAD` was untouched (still the legitimate last commit, already pushed to origin) and the polluting changes were 100% uncommitted byproducts of the last few minutes' work, not pre-existing state — confirmed via `git diff HEAD --name-only` and `git log -1` before running `git reset --hard HEAD`. The one untracked in-progress file (the new workflow YAML) was unaffected, as `reset --hard` never touches untracked paths. Re-verified working tree matched origin exactly afterward. No data loss; the incident cost time, not correctness — but it's a reminder that `git checkout <ref> -- <path>` is a write operation on the working tree/index even when the intent is read-only inspection, and `git log`/`git show -s` are the actual read-only tools for that job.
+
+**4. Found and fixed a real bug in the Action being built, before it ever ran in CI**
+
+The Action's PR-comment step built its JSON body via `node -e "..." BODY="$BODY"` — passing `BODY=...` as a positional CLI argument, not an environment variable, so `process.env.BODY` would have been `undefined` in the actual GitHub Actions run. Caught by testing the exact snippet standalone before commit; fixed to `BODY="$BODY" node -e "..."`. Declined to test the full comment-posting path end-to-end against a real merged PR (would have spammed a closed PR just to prove the code works) — validated its two components (commit→PR resolution via a real read-only API call, and the corrected JSON escaping) separately instead.
+
+### Standing takeaway
+
+The handoff's fallback-chain structure worked as designed — each step's own verification (not the handoff's assertions) determined whether to build, skip, or just report. Two of four steps turned out to need no code at all (one already solved, one already well-documented); the value there was confirming that cleanly rather than manufacturing work to fill the token budget. The `git checkout <sha> -- .` incident is worth flagging as a specific technique to avoid in future "test this detection logic against real history" work — read-only git commands (`git show`, `git log`) are almost always sufficient for that and carry zero working-tree risk.
+
+---
+
 ## 2026-08-04-A — Doc Audit Spike remediation (autonomous execution)
 
 **Date:** August 4, 2026
