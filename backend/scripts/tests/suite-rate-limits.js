@@ -47,26 +47,47 @@ async function run(test, BASE_URL, state) {
     };
   });
 
-  // RATE-01b: [SKIPPED] — not a flaky-test problem, a suite-scope one. This
-  // integration suite's CI job ("Backend Integration Tests, CI_SAFE prod
-  // read-only" — see .github/workflows/ci.yml) runs against the ALREADY
-  // DEPLOYED prod Render backend, not this branch's code. The email-keying
-  // fix (Story 26/99) this test wants to assert lives only in this PR until
-  // it merges to develop, promotes to main, and Render redeploys — so this
-  // test would fail on every PR that ships the fix itself, then only start
-  // passing after a deploy this suite has no way to wait for. First attempt
-  // at un-skipping this (2026-07-31) confirmed exactly that failure mode:
-  // ran green in backend-unit (hermetic, actual code) but red here against
-  // still-IP-keyed prod. Real RED→GREEN proof for the fix lives in
-  // backend/src/__tests__/loginLimiter.test.js, which exercises the actual
-  // route code in-process via supertest — not the deployed snapshot. Revisit
-  // un-skipping this once the email-keying fix has been live in prod for a
-  // full release cycle.
+  // RATE-01b: un-skipped 2026-08-05 (issue #586). The email-keying fix
+  // (Story 26/99) shipped to prod in v2.8.3 (2026-08-01) and has since
+  // survived the v2.8.4 promote (2026-08-05) — a full release cycle live,
+  // per the original skip condition. Live-probed directly against prod
+  // before writing this assertion: same email, 6 rapid magic-link requests
+  // → 5x 403 NOT_AUTHORIZED, 6th → 429 TOO_MANY_ATTEMPTS; a different email
+  // from the same run immediately after → 403, not 429 (budgets are
+  // per-email, not shared). Both properties now hold against the deployed
+  // snapshot. Real RED→GREEN proof for the fix itself still lives in
+  // backend/src/__tests__/loginLimiter.test.js (hermetic, in-process); this
+  // test additionally confirms the fix is actually live in prod, not just
+  // in code.
   await test('RATE-01b', 'Magic link: 6th rapid attempt within the 5-request budget → 429 from rate limiter', async () => {
+    const email = `ratelimit-b-${process.pid}-${Date.now()}@test.com`;
+    let lastRes;
+    for (let i = 0; i < 6; i++) {
+      lastRes = await post(BASE_URL, '/api/v1/auth/magic-link', {
+        email, teamId: TEAM_ID, deviceContext: DEVICE,
+      });
+    }
+    const body = await lastRes.json().catch(() => ({}));
     return {
-      pass: true,
-      expected: 'N/A',
-      actual: 'SKIPPED — asserts not-yet-deployed behavior; this suite targets already-deployed prod (see comment above); see loginLimiter.test.js for real RED→GREEN coverage',
+      pass: lastRes.status === 429 && body.error === 'TOO_MANY_ATTEMPTS',
+      expected: '429 TOO_MANY_ATTEMPTS on the 6th request',
+      actual: `${lastRes.status} ${body.error || '(no error field)'}`,
+    };
+  });
+
+  // RATE-01c: companion assertion — a different email is unaffected by
+  // RATE-01b's exhausted budget (the actual bug Story 26 fixed: IP-keying
+  // meant every caller behind one IP shared a single 5-request budget).
+  await test('RATE-01c', 'Magic link: different email is unaffected by another email\'s exhausted budget', async () => {
+    const email = `ratelimit-c-${process.pid}-${Date.now()}@test.com`;
+    const res = await post(BASE_URL, '/api/v1/auth/magic-link', {
+      email, teamId: TEAM_ID, deviceContext: DEVICE,
+    });
+    const body = await res.json().catch(() => ({}));
+    return {
+      pass: res.status === 403 && body.error === 'NOT_AUTHORIZED',
+      expected: '403 NOT_AUTHORIZED (not 429 — separate budget)',
+      actual: `${res.status} ${body.error || '(no error field)'}`,
     };
   });
 
