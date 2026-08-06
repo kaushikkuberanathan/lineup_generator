@@ -27,7 +27,12 @@ Key sections within App.jsx:
 - **~458–720**: Lineup engine (`scorePosition`, `autoAssign`)
 - **~720–900**: Helper functions (`validateGrid`, `initGrid`, etc.)
 - **~900–1197**: State initialization and Supabase hydration
-- **~1197+**: JSX render (tabs: Roster, Defense, Batting, Schedule, Print, Share, Links, Feedback, About)
+- **~1197+**: JSX render. Top-level `primaryTab`: `home | team | gameday | more`.
+  - `team` → `teamSubTab`: roster, schedule, snacks
+  - `gameday` → `gameDayTab`: lineups (with inner `lineupsSubTab`: defense, batting), songs
+  - `more` → `moreTab`: account, feedback, links, about, updates, legal, faq
+  - Always-present chrome (not tab-dispatched): PIN modal (`renderPinModal`), Bottom Nav (`renderBottomNav`), Exit Sheet (`renderExitSheet`)
+  - Print and Share are no longer standalone tabs — `renderPrint` was removed; Share is a share-sheet action off the Lineups view
 
 ---
 
