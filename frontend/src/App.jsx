@@ -7819,7 +7819,7 @@ export default function App() {
   // ── Always column: header + top tabs + scrollable content ──────────────
   // TODO: extract — deferred (Header depends on syncStatus, isLandscape, screen, activeTeam, isOnline, activeTeamId — extract after OfflineIndicator is stable and state prop drilling pattern is established)
   return (
-    <div style={{ height: isStandalone ? "100dvh" : "100svh", display:"flex", flexDirection:"column", overflow:"hidden", background: primaryTab === "more" ? "linear-gradient(160deg,#0f1f3d 0%,#1a3260 55%,#2a0a0a 100%)" : tokens.color.surface.cream, fontFamily:"Georgia,'Times New Roman',serif", color:tokens.color.text.ink }}>
+    <div style={{ height: isStandalone ? "100dvh" : "100svh", display:"flex", flexDirection:"column", overflow:"hidden", background: primaryTab === "more" ? "linear-gradient(160deg,#0f1f3d 0%,#1a3260 55%,"+tokens.color.brand.gradientDark+" 100%)" : tokens.color.surface.cream, fontFamily:"Georgia,'Times New Roman',serif", color:tokens.color.text.ink }}>
       <Toast
         open={toast.open}
         message={toast.message}
