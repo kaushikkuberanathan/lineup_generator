@@ -701,7 +701,7 @@ var S = {
       padding:"7px 14px", borderRadius:"6px", border:"none", cursor:"pointer",
       fontSize:"11px", fontWeight:"bold", fontFamily:"Georgia,serif",
       letterSpacing:"0.06em", textTransform:"uppercase", transition:"all 0.12s",
-      background: active ? C.red : "transparent",
+      background: active ? tokens.color.brand.red : "transparent",
       color: active ? "#fff" : "rgba(255,255,255,0.55)"
     };
   },
@@ -715,10 +715,10 @@ var S = {
     var col = tokens.color.text.ink;
     var bdr = "none";
     var shadow = "none";
-    if (v === "primary") { bg = "linear-gradient(135deg,"+C.red+","+C.redDark+")"; col="#fff"; shadow="0 2px 8px rgba(200,16,46,0.3)"; }
+    if (v === "primary") { bg = "linear-gradient(135deg,"+tokens.color.brand.red+","+tokens.color.brand.redDark+")"; col="#fff"; shadow="0 2px 8px rgba(200,16,46,0.3)"; }
     else if (v === "gold")  { bg = "linear-gradient(135deg,#c8902e,#a07010)"; col="#fff"; }
-    else if (v === "ghost") { bg = "transparent"; col = C.textMuted; bdr = "1px solid " + C.border; }
-    else if (v === "danger"){ bg = C.red; col = "#fff"; }
+    else if (v === "ghost") { bg = "transparent"; col = tokens.color.text.muted; bdr = "1px solid " + tokens.color.border.neutral; }
+    else if (v === "danger"){ bg = tokens.color.brand.red; col = "#fff"; }
     return {
       padding:"8px 16px", borderRadius:"6px", border:bdr, cursor:"pointer",
       fontSize:"11px", letterSpacing:"0.08em", textTransform:"uppercase",
@@ -5344,15 +5344,15 @@ export default function App() {
       <div>
         {/* ── Header row ───────────────────────────────────── */}
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"14px", flexWrap:"wrap", gap:"8px" }}>
-          <div style={{ fontWeight:"bold", fontSize:"16px", color:C.navy }}>Walk-Up Songs</div>
+          <div style={{ fontWeight:"bold", fontSize:"16px", color:tokens.color.brand.navy }}>Walk-Up Songs</div>
           <div style={{ display:"flex", gap:"4px", background:"rgba(15,31,61,0.06)", borderRadius:"8px", padding:"3px" }}>
             {(primaryTab === "gameday" && lineupLocked ? [["Game Day View","display"]] : [["Game Day View","display"],["Edit","edit"]]).map(function(opt) {
               var active = songsView === opt[1];
               return (
                 <button key={opt[1]}
                   style={{ padding:"5px 12px", borderRadius:"6px", border:"none", cursor:"pointer", fontSize:"11px", fontWeight:"bold", fontFamily:"inherit",
-                    background: active ? C.white : "transparent",
-                    color: active ? C.navy : C.textMuted,
+                    background: active ? tokens.color.surface.card : "transparent",
+                    color: active ? tokens.color.brand.navy : tokens.color.text.muted,
                     boxShadow: active ? "0 1px 3px rgba(0,0,0,0.1)" : "none" }}
                   onClick={function(v) { return function() { setSongsView(v); }; }(opt[1])}>
                   {opt[0]}
@@ -5364,7 +5364,7 @@ export default function App() {
 
         {songsView === "edit" ? (
           <div>
-            <div style={{ fontSize:"11px", color:C.textMuted, marginBottom:"12px", padding:"8px 10px", background:"rgba(15,31,61,0.04)", borderRadius:"8px" }}>
+            <div style={{ fontSize:"11px", color:tokens.color.text.muted, marginBottom:"12px", padding:"8px 10px", background:"rgba(15,31,61,0.04)", borderRadius:"8px" }}>
               Players are listed in batting order. To change the order, update the Batting tab first.
             </div>
             {battingOrder.map(function(name, idx) {
@@ -5372,9 +5372,9 @@ export default function App() {
               if (!player) return null;
               var _isAbsentEdit = absentTonight.indexOf(name) >= 0;
               return (
-                <Card key={name} padding="16px 18px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"8px", opacity: _isAbsentEdit ? 0.45 : 1, pointerEvents: _isAbsentEdit ? "none" : "auto" }}>
-                  <div style={{ fontWeight:"bold", fontSize:"13px", color:C.navy, marginBottom:"10px" }}>
-                    #{idx + 1} &nbsp; {firstName(name)}{_isAbsentEdit ? <span style={{ fontSize:"11px", color:C.red, marginLeft:"8px", fontWeight:"normal" }}>(Out Tonight)</span> : null}
+                <Card key={name} padding="16px 18px" radius="md" style={{ border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"8px", opacity: _isAbsentEdit ? 0.45 : 1, pointerEvents: _isAbsentEdit ? "none" : "auto" }}>
+                  <div style={{ fontWeight:"bold", fontSize:"13px", color:tokens.color.brand.navy, marginBottom:"10px" }}>
+                    #{idx + 1} &nbsp; {firstName(name)}{_isAbsentEdit ? <span style={{ fontSize:"11px", color:tokens.color.brand.red, marginLeft:"8px", fontWeight:"normal" }}>(Out Tonight)</span> : null}
                   </div>
                   <div style={{ display:"grid", gap:"6px" }}>
                     <input
@@ -5441,9 +5441,9 @@ export default function App() {
               var hasSong = player.walkUpSong || player.walkUpArtist || player.walkUpStart || player.walkUpNotes || player.walkUpLink;
               var showTime = player.walkUpStart && player.walkUpEnd && !isDefaultTime(player.walkUpStart, player.walkUpEnd);
               return (
-                <div key={name} style={{ background:C.white, border:"1px solid #e2e8f0", borderRadius:"10px", padding:"14px", marginBottom:"8px",
+                <div key={name} style={{ background:tokens.color.surface.card, border:"1px solid #e2e8f0", borderRadius:"10px", padding:"14px", marginBottom:"8px",
                   opacity: hasSong ? 1 : 0.5 }}>
-                  <div style={{ fontWeight:"bold", fontSize:"13px", color:C.navy, marginBottom: hasSong ? "8px" : 0 }}>
+                  <div style={{ fontWeight:"bold", fontSize:"13px", color:tokens.color.brand.navy, marginBottom: hasSong ? "8px" : 0 }}>
                     #{idx + 1} &nbsp; {firstName(name)}
                   </div>
                   {hasSong ? (
@@ -5504,7 +5504,7 @@ export default function App() {
 
     if (!schedule.length) {
       return (
-        <div style={{ padding:"24px 16px", textAlign:"center", color:C.textMuted, fontSize:"14px" }}>
+        <div style={{ padding:"24px 16px", textAlign:"center", color:tokens.color.text.muted, fontSize:"14px" }}>
           No games on the schedule yet.<br />
           <span style={{ fontSize:"12px" }}>Add games in the Schedule tab first.</span>
         </div>
@@ -5514,8 +5514,8 @@ export default function App() {
     return (
       <div style={{ padding:"12px 0 32px" }}>
         <div style={{ padding:"0 16px 12px", display:"flex", alignItems:"baseline", gap:"8px" }}>
-          <span style={{ fontSize:"18px", fontWeight:"bold", color:C.navy }}>🍎 Snack Duty</span>
-          <span style={{ fontSize:"12px", color:C.textMuted }}>
+          <span style={{ fontSize:"18px", fontWeight:"bold", color:tokens.color.brand.navy }}>🍎 Snack Duty</span>
+          <span style={{ fontSize:"12px", color:tokens.color.text.muted }}>
             {games.filter(function(g) { return !!g.snackDuty; }).length} of {games.length} assigned
           </span>
         </div>
@@ -5527,30 +5527,30 @@ export default function App() {
           var assignment = { playerName: game.snackDuty || "", note: game.snackNote || "" };
           var hasAssignment = !!assignment.playerName;
 
-          var resultColor = game.result === "W" ? C.win : game.result === "L" ? C.red : C.tie;
+          var resultColor = game.result === "W" ? tokens.color.status.success : game.result === "L" ? tokens.color.brand.red : tokens.color.status.warning;
           var dateStr = gd ? gd.toLocaleDateString("en-US", { weekday:"short", month:"short", day:"numeric" }) : "—";
 
           return (
             <div key={game.id} style={{
               margin:"0 12px 10px",
-              background: isPast && !isToday ? "rgba(15,31,61,0.03)" : C.cardBg,
-              border: "1px solid " + (isToday ? C.gold : C.border),
+              background: isPast && !isToday ? "rgba(15,31,61,0.03)" : tokens.color.surface.card,
+              border: "1px solid " + (isToday ? tokens.color.brand.gold : tokens.color.border.neutral),
               borderRadius:"10px",
               padding:"12px 14px",
               opacity: isPast && !isToday ? 0.7 : 1,
-              boxShadow: isToday ? "0 0 0 2px " + C.gold + "44" : "none"
+              boxShadow: isToday ? "0 0 0 2px " + tokens.color.brand.gold + "44" : "none"
             }}>
               {/* Game header row */}
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"10px" }}>
                 <div>
-                  <div style={{ fontSize:"14px", fontWeight:"bold", color: isPast && !isToday ? C.textMuted : C.navy }}>
-                    {isToday && <span style={{ fontSize:"10px", background:C.gold, color:C.navy, borderRadius:"4px", padding:"1px 6px", fontWeight:"bold", marginRight:"6px", letterSpacing:"0.06em" }}>TODAY</span>}
+                  <div style={{ fontSize:"14px", fontWeight:"bold", color: isPast && !isToday ? tokens.color.text.muted : tokens.color.brand.navy }}>
+                    {isToday && <span style={{ fontSize:"10px", background:tokens.color.brand.gold, color:tokens.color.brand.navy, borderRadius:"4px", padding:"1px 6px", fontWeight:"bold", marginRight:"6px", letterSpacing:"0.06em" }}>TODAY</span>}
                     📅 {dateStr}
-                    {game.time ? <span style={{ fontWeight:"normal", color:C.textMuted, fontSize:"12px", marginLeft:"8px" }}>• {game.time}</span> : null}
+                    {game.time ? <span style={{ fontWeight:"normal", color:tokens.color.text.muted, fontSize:"12px", marginLeft:"8px" }}>• {game.time}</span> : null}
                   </div>
-                  <div style={{ fontSize:"13px", color: isPast && !isToday ? C.textMuted : tokens.color.text.ink, marginTop:"2px" }}>
+                  <div style={{ fontSize:"13px", color: isPast && !isToday ? tokens.color.text.muted : tokens.color.text.ink, marginTop:"2px" }}>
                     {game.home ? "vs " : "@ "}<strong>{game.opponent || "TBD"}</strong>
-                    {game.location ? <span style={{ fontWeight:"normal", color:C.textMuted, fontSize:"12px" }}> — {game.location}</span> : null}
+                    {game.location ? <span style={{ fontWeight:"normal", color:tokens.color.text.muted, fontSize:"12px" }}> — {game.location}</span> : null}
                   </div>
                 </div>
                 <div>
@@ -5559,21 +5559,21 @@ export default function App() {
                       {game.result}{game.ourScore ? " " + game.ourScore + "-" + game.theirScore : ""}
                     </span>
                   ) : (
-                    <span style={{ fontSize:"11px", color:C.subtleText }}>—</span>
+                    <span style={{ fontSize:"11px", color:tokens.color.text.disabled }}>—</span>
                   )}
                 </div>
               </div>
 
               {/* Snack assignment row */}
               <div style={{ display:"flex", gap:"8px", alignItems:"center", flexWrap:"wrap" }}>
-                <span style={{ fontSize:"12px", color:C.textMuted, flexShrink:0 }}>🍎 Snack Duty:</span>
+                <span style={{ fontSize:"12px", color:tokens.color.text.muted, flexShrink:0 }}>🍎 Snack Duty:</span>
                 <select
                   value={assignment.playerName || ""}
                   onChange={function(gid) { return function(e) {
                     updateSnackField(gid, "playerName", e.target.value);
                   }; }(game.id)}
                   disabled={lineupLocked}
-                  style={{ flex:"1 1 140px", minWidth:"120px", padding:"5px 8px", borderRadius:"6px", border:"1px solid rgba(15,31,61,0.15)", fontSize:"13px", fontFamily:"inherit", background:C.cardBg, color: hasAssignment ? tokens.color.text.ink : C.textMuted, opacity: lineupLocked ? 0.5 : 1 }}>
+                  style={{ flex:"1 1 140px", minWidth:"120px", padding:"5px 8px", borderRadius:"6px", border:"1px solid rgba(15,31,61,0.15)", fontSize:"13px", fontFamily:"inherit", background:tokens.color.surface.card, color: hasAssignment ? tokens.color.text.ink : tokens.color.text.muted, opacity: lineupLocked ? 0.5 : 1 }}>
                   <option value="">— select player —</option>
                   {roster.slice().sort(function(a,b){ return (a.firstName||a.name||'').toLowerCase().localeCompare((b.firstName||b.name||'').toLowerCase()); }).map(function(p) {
                     return <option key={p.name} value={p.firstName || p.name}>{p.firstName || p.name}</option>;
@@ -5582,7 +5582,7 @@ export default function App() {
                 {hasAssignment && (
                   <button
                     onClick={function(gid) { return function() { clearSnackAssignment(gid); }; }(game.id)}
-                    style={{ background:"none", border:"none", cursor:"pointer", fontSize:"14px", color:C.textMuted, padding:"2px 4px", lineHeight:1 }}
+                    style={{ background:"none", border:"none", cursor:"pointer", fontSize:"14px", color:tokens.color.text.muted, padding:"2px 4px", lineHeight:1 }}
                     title="Clear">✕</button>
                 )}
               </div>
@@ -7264,8 +7264,8 @@ export default function App() {
       <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.65)", zIndex:9999, display:"flex", alignItems:"center", justifyContent:"center", padding:"20px" }}
         onClick={function(e) { if (e.target === e.currentTarget) { setPinModal(null); setPinInput(""); setPinConfirm(""); setPinError(""); } }}>
         <div style={{ background:"#fff", borderRadius:"16px", padding:"24px", maxWidth:"300px", width:"100%", boxShadow:"0 20px 60px rgba(0,0,0,0.3)" }}>
-          <div style={{ fontSize:"17px", fontWeight:"bold", color:C.navy, marginBottom:"6px" }}>{title}</div>
-          <div style={{ fontSize:"12px", color:C.textMuted, marginBottom:"16px", lineHeight:"1.5" }}>{subtitle}</div>
+          <div style={{ fontSize:"17px", fontWeight:"bold", color:tokens.color.brand.navy, marginBottom:"6px" }}>{title}</div>
+          <div style={{ fontSize:"12px", color:tokens.color.text.muted, marginBottom:"16px", lineHeight:"1.5" }}>{subtitle}</div>
           <input type="password" inputMode="numeric" maxLength={4} placeholder="· · · ·"
             value={pinInput} onChange={function(e) { setPinInput(e.target.value.replace(/\D/g,"")); setPinError(""); }}
             onKeyDown={function(e) { if (e.key === "Enter") { handlePinSubmit(); } }}
@@ -7277,7 +7277,7 @@ export default function App() {
               onKeyDown={function(e) { if (e.key === "Enter") { handlePinSubmit(); } }}
               style={{ width:"100%", padding:"12px", borderRadius:"8px", border:"1px solid rgba(15,31,61,0.2)", fontSize:"24px", letterSpacing:"12px", textAlign:"center", marginBottom:"8px", fontFamily:"monospace", boxSizing:"border-box" }} />
           ) : null}
-          {pinError ? <div style={{ color:C.red, fontSize:"12px", marginBottom:"10px" }}>{pinError}</div> : null}
+          {pinError ? <div style={{ color:tokens.color.brand.red, fontSize:"12px", marginBottom:"10px" }}>{pinError}</div> : null}
           <div style={{ display:"flex", gap:"8px", marginTop:"4px" }}>
             <button onClick={function() { setPinModal(null); setPinInput(""); setPinConfirm(""); setPinError(""); }}
               style={{ ...S.btn("ghost"), flex:1 }}>Cancel</button>
@@ -7306,7 +7306,7 @@ export default function App() {
   if (flagsLoading) {
     return (
       <div style={{ display:'flex', alignItems:'center', justifyContent:'center',
-        minHeight:'100vh', background:'#0f1f3d' }}>
+        minHeight:'100vh', background:tokens.color.brand.navy }}>
         <div style={{ fontSize:'32px' }}>⚾</div>
       </div>
     );
@@ -7360,7 +7360,7 @@ export default function App() {
     if (authState === 'loading') {
       return (
         <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center',
-                      justifyContent: 'center', backgroundColor: '#f8fafc' }}>
+                      justifyContent: 'center', backgroundColor: tokens.color.surface.page }}>
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: '32px', marginBottom: '12px' }}>⚾</div>
             <p style={{ color: '#64748b', fontSize: '14px' }}>Loading…</p>
@@ -7437,10 +7437,10 @@ export default function App() {
     flex:"0 0 auto", padding:"7px 16px", borderRadius:"6px", border:"none", cursor:"pointer",
     fontSize:"12px", fontWeight:"bold", fontFamily:"Georgia,serif",
     letterSpacing:"0.03em", textTransform:"uppercase", textAlign:"center",
-    background: active ? C.navy : "rgba(15,31,61,0.07)",
-    color: active ? "#fff" : C.textMuted,
+    background: active ? tokens.color.brand.navy : "rgba(15,31,61,0.07)",
+    color: active ? "#fff" : tokens.color.text.muted,
     boxShadow: active ? "0 2px 6px rgba(15,31,61,0.2)" : "none",
-    borderBottom: active ? "2px solid " + C.gold : "2px solid transparent",
+    borderBottom: active ? "2px solid " + tokens.color.brand.gold : "2px solid transparent",
     transform: active ? "translateY(-1px)" : "none"
   }; };
 
@@ -7449,7 +7449,7 @@ export default function App() {
     var _showGameMode = roster.length > 0 && schedule.length > 0;
 
     subTabBar = (
-      <div style={{ display:"flex", gap:"4px", alignItems:"center", padding:"8px 12px 4px", background:tokens.color.surface.cream, borderBottom:"1px solid " + C.border }}>
+      <div style={{ display:"flex", gap:"4px", alignItems:"center", padding:"8px 12px 4px", background:tokens.color.surface.cream, borderBottom:"1px solid " + tokens.color.border.neutral }}>
         {GAMEDAY_SUBTABS.map(function(st) {
           if (st.launcher) {
             if (!_showGameMode) { return null; }
@@ -7461,13 +7461,13 @@ export default function App() {
               <button key={st.key}
                 onClick={handleLaunch}
                 style={{ flex:"0 0 auto", padding: isActive ? "7px 16px" : "7px 14px", borderRadius:"6px",
-                  border: isActive ? "2px solid " + C.gold : "none",
+                  border: isActive ? "2px solid " + tokens.color.brand.gold : "none",
                   cursor:"pointer",
                   fontSize: isActive ? "14px" : "12px",
                   fontWeight:"bold", fontFamily:"Georgia,serif",
                   letterSpacing:"0.04em", textTransform:"uppercase",
-                  background: isActive ? C.gold : "#e05c2a",
-                  color: isActive ? C.navy : "#fff",
+                  background: isActive ? tokens.color.brand.gold : "#e05c2a",
+                  color: isActive ? tokens.color.brand.navy : "#fff",
                   boxShadow: isActive ? "0 3px 10px rgba(245,200,66,0.5)" : "0 2px 6px rgba(224,92,42,0.35)",
                   transform: isActive ? "translateY(-2px)" : "none",
                   transition:"all 0.15s" }}>
@@ -7487,25 +7487,25 @@ export default function App() {
         <button
           onClick={function() { setParentViewActive(!parentViewActive); if (!parentViewActive) setSelectedParentPlayer(null); }}
           style={{ flex:"0 0 auto", marginLeft:"auto", padding:"5px 10px", borderRadius:"6px",
-            border: parentViewActive ? "2px solid " + C.navy : "1px solid rgba(15,31,61,0.18)",
+            border: parentViewActive ? "2px solid " + tokens.color.brand.navy : "1px solid rgba(15,31,61,0.18)",
             cursor:"pointer", fontSize:"11px", fontWeight:"bold", fontFamily:"Georgia,serif",
             letterSpacing:"0.04em",
-            background: parentViewActive ? C.navy : "rgba(15,31,61,0.06)",
-            color: parentViewActive ? "#fff" : C.textMuted,
+            background: parentViewActive ? tokens.color.brand.navy : "rgba(15,31,61,0.06)",
+            color: parentViewActive ? "#fff" : tokens.color.text.muted,
             flexShrink:0 }}>
           {parentViewActive ? "← Back" : "👁 MyPlayer"}
         </button>
         {/* Innings selector — global game setting, always visible on Game Day */}
         <div style={{ display:"flex", alignItems:"center", gap:"4px", flexShrink:0 }}>
-          <span style={{ fontSize:"10px", color:C.textMuted, letterSpacing:"0.04em" }}>Inn:</span>
+          <span style={{ fontSize:"10px", color:tokens.color.text.muted, letterSpacing:"0.04em" }}>Inn:</span>
           {[6,7].map(function(n) {
             return (
               <button key={n}
                 disabled={lineupLocked}
                 style={{ padding:"3px 10px", borderRadius:"6px", border:"none", cursor: lineupLocked ? "default" : "pointer",
                   fontSize:"11px", fontWeight:"bold", fontFamily:"Georgia,serif",
-                  background: innings === n ? C.navy : "rgba(15,31,61,0.07)",
-                  color: innings === n ? "#fff" : C.textMuted,
+                  background: innings === n ? tokens.color.brand.navy : "rgba(15,31,61,0.07)",
+                  color: innings === n ? "#fff" : tokens.color.text.muted,
                   opacity: lineupLocked ? 0.4 : 1 }}
                 onClick={function(nn) { return function() {
                   if (lineupLocked) return;
@@ -7530,7 +7530,7 @@ export default function App() {
     );
   } else if (primaryTab === "more") {
     subTabBar = (
-      <div style={{ display:"flex", gap:"4px", padding:"8px 12px 4px", background:tokens.color.surface.cream, borderBottom:"1px solid " + C.border }}>
+      <div style={{ display:"flex", gap:"4px", padding:"8px 12px 4px", background:tokens.color.surface.cream, borderBottom:"1px solid " + tokens.color.border.neutral }}>
         {MORE_SUBTABS.map(function(st) {
           return (
             <button key={st.key}
@@ -7558,8 +7558,8 @@ export default function App() {
   var tabContent = (
     <div>
       {contextLabel ? (
-        <div style={{ padding:"5px 16px", background:"rgba(15,31,61,0.04)", borderBottom:"1px solid " + C.border,
-          fontSize:"11px", color:C.textMuted, letterSpacing:"0.05em", fontWeight:"600" }}>
+        <div style={{ padding:"5px 16px", background:"rgba(15,31,61,0.04)", borderBottom:"1px solid " + tokens.color.border.neutral,
+          fontSize:"11px", color:tokens.color.text.muted, letterSpacing:"0.05em", fontWeight:"600" }}>
           {contextLabel}
         </div>
       ) : null}
@@ -7568,10 +7568,10 @@ export default function App() {
           background:"rgba(39,174,96,0.08)", borderBottom:"2px solid rgba(39,174,96,0.3)" }}>
           <span style={{ fontSize:"18px" }}>🔒</span>
           <div style={{ flex:1 }}>
-            <div style={{ fontWeight:"bold", fontSize:"13px", color:C.win }}>Lineup Finalized</div>
-            <div style={{ fontSize:"11px", color:C.textMuted }}>Editing is locked. Unlock to make changes.</div>
+            <div style={{ fontWeight:"bold", fontSize:"13px", color:tokens.color.status.success }}>Lineup Finalized</div>
+            <div style={{ fontSize:"11px", color:tokens.color.text.muted }}>Editing is locked. Unlock to make changes.</div>
           </div>
-          <button style={{ ...S.btn("ghost"), fontSize:"11px", color:C.win, border:"1px solid rgba(39,174,96,0.4)" }}
+          <button style={{ ...S.btn("ghost"), fontSize:"11px", color:tokens.color.status.success, border:"1px solid rgba(39,174,96,0.4)" }}
             onClick={function() {
               if (coachPin) { setPinModal("unlock"); setPinInput(""); setPinError(""); }
               else { persistLineupLocked(false); }
@@ -7641,46 +7641,46 @@ export default function App() {
       <div style={{ paddingBottom:"80px" }}>
 
         {/* ── Team dashboard header ──────────────────────────────── */}
-        <div style={{ background:C.white, borderRadius:"12px", padding:"16px",
-          margin:"12px 12px 0", border:"1px solid " + C.border,
+        <div style={{ background:tokens.color.surface.card, borderRadius:"12px", padding:"16px",
+          margin:"12px 12px 0", border:"1px solid " + tokens.color.border.neutral,
           boxShadow:"0 1px 4px rgba(15,31,61,0.06)" }}>
-          <div style={{ fontWeight:"bold", fontSize:"18px", color:C.navy, marginBottom:"2px" }}>
+          <div style={{ fontWeight:"bold", fontSize:"18px", color:tokens.color.brand.navy, marginBottom:"2px" }}>
             {activeTeam ? activeTeam.name : ""}
           </div>
-          <div style={{ fontSize:"12px", color:C.textMuted, marginBottom:"12px" }}>
+          <div style={{ fontSize:"12px", color:tokens.color.text.muted, marginBottom:"12px" }}>
             {activeTeam ? ((activeTeam.ageGroup || "") + (activeTeam.sport ? " \u00b7 " + (activeTeam.sport.charAt(0).toUpperCase() + activeTeam.sport.slice(1)) : "")) : ""}
           </div>
 
           {/* Stats row */}
-          <div style={{ display:"flex", borderTop:"1px solid " + C.border, paddingTop:"12px", marginTop:"4px" }}>
+          <div style={{ display:"flex", borderTop:"1px solid " + tokens.color.border.neutral, paddingTop:"12px", marginTop:"4px" }}>
             <div style={{ flex:1, textAlign:"center" }}>
               <div style={{ fontSize:"16px", marginBottom:"2px" }}>👥</div>
-              <div style={{ fontSize:"20px", fontWeight:"bold", color:C.navy, lineHeight:1 }}>{roster.length}</div>
-              <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.05em", marginTop:"3px" }}>Players</div>
+              <div style={{ fontSize:"20px", fontWeight:"bold", color:tokens.color.brand.navy, lineHeight:1 }}>{roster.length}</div>
+              <div style={{ fontSize:"10px", color:tokens.color.text.muted, textTransform:"uppercase", letterSpacing:"0.05em", marginTop:"3px" }}>Players</div>
             </div>
-            <div style={{ flex:1, textAlign:"center", borderLeft:"1px solid " + C.border }}>
+            <div style={{ flex:1, textAlign:"center", borderLeft:"1px solid " + tokens.color.border.neutral }}>
               <div style={{ fontSize:"16px", marginBottom:"2px" }}>🏆</div>
               <div style={{ fontSize:"20px", fontWeight:"bold", lineHeight:1 }}>
-                <span style={{ color:C.win }}>{wins}</span>
-                <span style={{ color:C.textMuted }}>–</span>
-                <span style={{ color:C.red }}>{losses}</span>
-                {ties > 0 ? <><span style={{ color:C.textMuted }}>–</span><span style={{ color:C.tie }}>{ties}</span></> : null}
+                <span style={{ color:tokens.color.status.success }}>{wins}</span>
+                <span style={{ color:tokens.color.text.muted }}>–</span>
+                <span style={{ color:tokens.color.brand.red }}>{losses}</span>
+                {ties > 0 ? <><span style={{ color:tokens.color.text.muted }}>–</span><span style={{ color:tokens.color.status.warning }}>{ties}</span></> : null}
               </div>
-              <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.05em", marginTop:"3px" }}>Record</div>
+              <div style={{ fontSize:"10px", color:tokens.color.text.muted, textTransform:"uppercase", letterSpacing:"0.05em", marginTop:"3px" }}>Record</div>
             </div>
-            <div style={{ flex:1, textAlign:"center", borderLeft:"1px solid " + C.border }}>
+            <div style={{ flex:1, textAlign:"center", borderLeft:"1px solid " + tokens.color.border.neutral }}>
               <div style={{ fontSize:"16px", marginBottom:"2px" }}>📅</div>
               {nextGame ? (
                 <>
-                  <div style={{ fontSize:"12px", fontWeight:"bold", color:C.navy, lineHeight:1.2 }}>
+                  <div style={{ fontSize:"12px", fontWeight:"bold", color:tokens.color.brand.navy, lineHeight:1.2 }}>
                     {new Date(nextGame.date + "T12:00:00").toLocaleDateString("en-US", { weekday:"short", month:"short", day:"numeric" })}
                   </div>
-                  {nextGame.time ? <div style={{ fontSize:"11px", color:C.textMuted }}>{nextGame.time}</div> : null}
+                  {nextGame.time ? <div style={{ fontSize:"11px", color:tokens.color.text.muted }}>{nextGame.time}</div> : null}
                 </>
               ) : (
-                <div style={{ fontSize:"12px", color:C.textMuted, lineHeight:1.2 }}>–</div>
+                <div style={{ fontSize:"12px", color:tokens.color.text.muted, lineHeight:1.2 }}>–</div>
               )}
-              <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.05em", marginTop:"3px" }}>Next Game</div>
+              <div style={{ fontSize:"10px", color:tokens.color.text.muted, textTransform:"uppercase", letterSpacing:"0.05em", marginTop:"3px" }}>Next Game</div>
             </div>
           </div>
 
@@ -7690,7 +7690,7 @@ export default function App() {
         {(missingPrefs > 0 || noSnacks > 0) ? (
           <div style={{ margin:"8px 12px 0", padding:"12px 14px", borderRadius:"10px",
             background:"rgba(245,200,66,0.12)", border:"1px solid rgba(245,200,66,0.4)" }}>
-            <div style={{ fontWeight:"bold", marginBottom:"8px", color:C.navy, fontSize:"12px", display:"flex", alignItems:"center", gap:"6px" }}>
+            <div style={{ fontWeight:"bold", marginBottom:"8px", color:tokens.color.brand.navy, fontSize:"12px", display:"flex", alignItems:"center", gap:"6px" }}>
               <span style={{ fontSize:"15px" }}>⚠️</span> Needs attention
             </div>
             {missingPrefs > 0 ? (
@@ -7698,8 +7698,8 @@ export default function App() {
                 background:"rgba(255,255,255,0.55)", borderRadius:"6px", padding:"8px 10px" }}>
                 <span style={{ fontSize:"18px", flexShrink:0 }}>{(activeTeam && (activeTeam.sport || "baseball").toLowerCase() === "softball") ? "🥎" : "⚾"}</span>
                 <div>
-                  <div style={{ fontSize:"12px", fontWeight:"600", color:C.navy }}>Missing position preferences</div>
-                  <div style={{ fontSize:"11px", color:C.textMuted }}>{missingPrefs} player{missingPrefs !== 1 ? "s" : ""} — set in Roster tab</div>
+                  <div style={{ fontSize:"12px", fontWeight:"600", color:tokens.color.brand.navy }}>Missing position preferences</div>
+                  <div style={{ fontSize:"11px", color:tokens.color.text.muted }}>{missingPrefs} player{missingPrefs !== 1 ? "s" : ""} — set in Roster tab</div>
                 </div>
               </div>
             ) : null}
@@ -7708,8 +7708,8 @@ export default function App() {
                 background:"rgba(255,255,255,0.55)", borderRadius:"6px", padding:"8px 10px" }}>
                 <span style={{ fontSize:"18px", flexShrink:0 }}>🍎</span>
                 <div>
-                  <div style={{ fontSize:"12px", fontWeight:"600", color:C.navy }}>Snacks unassigned</div>
-                  <div style={{ fontSize:"11px", color:C.textMuted }}>{noSnacks} upcoming game{noSnacks !== 1 ? "s" : ""} — assign in Snacks tab</div>
+                  <div style={{ fontSize:"12px", fontWeight:"600", color:tokens.color.brand.navy }}>Snacks unassigned</div>
+                  <div style={{ fontSize:"11px", color:tokens.color.text.muted }}>{noSnacks} upcoming game{noSnacks !== 1 ? "s" : ""} — assign in Snacks tab</div>
                 </div>
               </div>
             ) : null}
@@ -7786,7 +7786,7 @@ export default function App() {
 
   function renderBottomNav() {
     return (
-      <div style={{ position:"fixed", bottom:0, left:0, right:0, zIndex:200, background:C.navy, borderTop:"2px solid " + C.red, display:"flex", paddingBottom: isStandalone ? "env(safe-area-inset-bottom, 0px)" : "env(safe-area-inset-bottom, 12px)" }}>
+      <div style={{ position:"fixed", bottom:0, left:0, right:0, zIndex:200, background:tokens.color.brand.navy, borderTop:"2px solid " + tokens.color.brand.red, display:"flex", paddingBottom: isStandalone ? "env(safe-area-inset-bottom, 0px)" : "env(safe-area-inset-bottom, 12px)" }}>
         {PRIMARY_TABS.map(function(t) {
           var active = primaryTab === t.key;
           var disabled = (t.key !== "more" && t.key !== "home" && screen !== "app");
@@ -7801,10 +7801,10 @@ export default function App() {
                 setPrimaryTab(k);
                 if (k !== "more") setScreen("app");
               }; }(t.key, disabled)}
-              style={{ flex:1, padding: isLandscape ? "4px 4px" : "10px 4px", border:"none", fontSize:"9px", fontWeight:"bold", fontFamily:"Georgia,serif", letterSpacing:"0.03em", textTransform:"uppercase", textAlign:"center", lineHeight:1.3, background:C.navy,
+              style={{ flex:1, padding: isLandscape ? "4px 4px" : "10px 4px", border:"none", fontSize:"9px", fontWeight:"bold", fontFamily:"Georgia,serif", letterSpacing:"0.03em", textTransform:"uppercase", textAlign:"center", lineHeight:1.3, background:tokens.color.brand.navy,
                 cursor: disabled ? "default" : "pointer",
-                color: active ? C.gold : disabled ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.9)",
-                borderTop: active ? "2px solid " + C.gold : "2px solid transparent",
+                color: active ? tokens.color.brand.gold : disabled ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.9)",
+                borderTop: active ? "2px solid " + tokens.color.brand.gold : "2px solid transparent",
                 opacity: disabled ? 0.4 : 1,
                 marginTop:"-2px" }}>
               <div style={{ fontSize:"18px", marginBottom:"3px" }}>{t.icon}</div>
