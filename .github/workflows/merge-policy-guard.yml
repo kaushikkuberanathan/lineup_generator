@@ -1,0 +1,80 @@
+name: Merge Policy Guard
+
+# Detects a likely merge-policy violation (see CLAUDE.md → "Merge-type
+# policy") immediately after a push lands on develop or main, instead of
+# waiting for the next retro to notice via manual `git show -s --format=%P`.
+#
+# feature/*->develop and develop->main merges must use "Create a merge
+# commit" — never squash. GitHub's merge-button default is sticky per
+# repo/session and has landed squash commits on develop despite stated
+# intent at least twice: PR #100 / v2.5.15 (2026-05-19) and Sprint 2 P1
+# debt-closure PRs #567/#569/#571 (2026-08-05). This cannot prevent a
+# squash merge (the push has already happened by the time this runs) —
+# it can only flag it immediately instead of silently.
+#
+# Design: see issue #573.
+
+on:
+  push:
+    branches: [develop, main]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  check-merge-type:
+    name: Check for squash-merged commit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
+
+      - name: Detect squash-merge signature
+        id: detect
+        run: |
+          MSG=$(git log -1 --format=%s HEAD)
+          PARENTS=$(git show -s --format=%P HEAD)
+          PARENT_COUNT=$(echo "$PARENTS" | wc -w)
+
+          echo "Commit: $(git rev-parse HEAD)"
+          echo "Subject: $MSG"
+          echo "Parent count: $PARENT_COUNT"
+
+          if [[ "$MSG" =~ \(#[0-9]+\)$ ]] && [ "$PARENT_COUNT" -eq 1 ]; then
+            echo "violation=true" >> "$GITHUB_OUTPUT"
+            echo "message=$MSG" >> "$GITHUB_OUTPUT"
+          else
+            echo "violation=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Comment on originating PR
+        if: steps.detect.outputs.violation == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.sha }}
+          REPO: ${{ github.repository }}
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          PR_NUMBER=$(curl -s -H "Authorization: token $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/$REPO/commits/$SHA/pulls" \
+            | node -e "let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{const j=JSON.parse(d);console.log((j[0]&&j[0].number)||'');});")
+
+          if [ -n "$PR_NUMBER" ]; then
+            BODY="⚠️ **Merge policy guard**: this PR landed on \`$BRANCH\` as a single-parent commit whose message matches the squash-suffix pattern \`(#NNN)\`. \`$BRANCH\` merges must use \"Create a merge commit\" — see CLAUDE.md → Merge-type policy and #573. This cannot be undone by this check; please confirm the merge type used and correct the process for the next merge if it was squashed."
+            COMMENT_JSON=$(BODY="$BODY" node -e "console.log(JSON.stringify({body: process.env.BODY}))")
+            curl -s -X POST -H "Authorization: token $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/$REPO/issues/$PR_NUMBER/comments" \
+              -d "$COMMENT_JSON"
+          else
+            echo "No associated PR found for $SHA — skipping comment."
+          fi
+
+      - name: Fail if violation detected
+        if: steps.detect.outputs.violation == 'true'
+        run: |
+          echo "::error::Likely merge-policy violation on ${{ github.ref_name }}: commit ${{ github.sha }} (\"${{ steps.detect.outputs.message }}\") has 1 parent but a squash-suffix commit message. See CLAUDE.md -> Merge-type policy and issue #573."
+          exit 1
