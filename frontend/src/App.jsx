@@ -840,15 +840,15 @@ export function SharedView({ payload, renderFieldSVG }) {
     <div style={{ minHeight:"100vh", background:tokens.color.surface.cream, fontFamily:"Georgia,'Times New Roman',serif", color:tokens.color.text.ink }}>
 
       {/* ── Header ─────────────────────────────────────────────── */}
-      <div style={{ background:"linear-gradient(135deg,#0f1f3d,#1a3260)", borderBottom:"4px solid " + C.red, padding:"14px 20px" }}>
+      <div style={{ background:"linear-gradient(135deg,"+tokens.color.brand.navy+","+tokens.color.brand.navyLight+")", borderBottom:"4px solid " + tokens.color.brand.red, padding:"14px 20px" }}>
         <div style={{ maxWidth:"800px", margin:"0 auto", display:"flex", alignItems:"center", gap:"12px" }}>
           <BrandMark size={42} />
-          <div style={{ width:"30px", height:"30px", borderRadius:"50%", background:C.navy, border:"2px solid "+C.gold,
-            display:"flex", alignItems:"center", justifyContent:"center", fontSize:"13px", fontWeight:"bold", color:C.gold, flexShrink:0 }}>
+          <div style={{ width:"30px", height:"30px", borderRadius:"50%", background:tokens.color.brand.navy, border:"2px solid "+tokens.color.brand.gold,
+            display:"flex", alignItems:"center", justifyContent:"center", fontSize:"13px", fontWeight:"bold", color:tokens.color.brand.gold, flexShrink:0 }}>
             {teamInitial}
           </div>
           <div style={{ flex:1, minWidth:0 }}>
-            <div style={{ fontSize:"17px", fontWeight:"bold", color:C.gold, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+            <div style={{ fontSize:"17px", fontWeight:"bold", color:tokens.color.brand.gold, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
               {payload.team}
             </div>
             {payload.game ? (
@@ -886,16 +886,16 @@ export function SharedView({ payload, renderFieldSVG }) {
         <div style={{ display:"flex", gap:"8px", alignItems:"center", marginBottom:"16px", flexWrap:"wrap" }}>
           {/* Inning pills */}
           <div style={{ display:"flex", flexWrap:"nowrap", gap:"4px", alignItems:"center", overflowX:"auto", WebkitOverflowScrolling:"touch", flex:1, minWidth:0 }}>
-            <span style={{ fontSize:"9px", color:C.textMuted, fontWeight:"bold", textTransform:"uppercase", letterSpacing:"0.08em", flexShrink:0 }}>Inn</span>
+            <span style={{ fontSize:"9px", color:tokens.color.text.muted, fontWeight:"bold", textTransform:"uppercase", letterSpacing:"0.08em", flexShrink:0 }}>Inn</span>
             <button onClick={function() { setSvInn(null); }}
               style={{ padding:"3px 8px", borderRadius:"10px", border:"none", cursor:"pointer", fontSize:"11px", fontWeight:"bold", fontFamily:"inherit", flexShrink:0,
-                background: svInn === null ? C.navy : "rgba(15,31,61,0.08)", color: svInn === null ? "#fff" : C.textMuted }}>All</button>
+                background: svInn === null ? tokens.color.brand.navy : "rgba(15,31,61,0.08)", color: svInn === null ? "#fff" : tokens.color.text.muted }}>All</button>
             {innArr.map(function(i) {
               var active = svInn === i;
               return (
                 <button key={i} onClick={function(idx) { return function() { setSvInn(idx); }; }(i)}
                   style={{ padding:"3px 8px", borderRadius:"10px", border:"none", cursor:"pointer", fontSize:"11px", fontWeight:"bold", fontFamily:"inherit", flexShrink:0,
-                    background: active ? C.red : "rgba(15,31,61,0.08)", color: active ? "#fff" : C.textMuted }}>
+                    background: active ? tokens.color.brand.red : "rgba(15,31,61,0.08)", color: active ? "#fff" : tokens.color.text.muted }}>
                   {i + 1}
                 </button>
               );
@@ -909,7 +909,7 @@ export function SharedView({ payload, renderFieldSVG }) {
                 <button key={opt[1]} onClick={function(v) { return function() { setSvView(v); }; }(opt[1])}
                   title={opt[1] === "diamond" ? "Diamond view" : "Table view"}
                   style={{ padding:"4px 10px", borderRadius:"5px", border:"none", cursor:"pointer", fontSize:"12px", fontFamily:"inherit", fontWeight:"bold",
-                    background: active ? C.white : "transparent", color: active ? C.navy : C.textMuted,
+                    background: active ? tokens.color.surface.card : "transparent", color: active ? tokens.color.brand.navy : tokens.color.text.muted,
                     boxShadow: active ? "0 1px 3px rgba(0,0,0,0.1)" : "none" }}>
                   {opt[0]}
                 </button>
@@ -946,7 +946,7 @@ export function SharedView({ payload, renderFieldSVG }) {
                           <tr key={r}>
                             {benchLabels.map(function(lbl, ci) {
                               var pn = benchDisplay[ci][r] || "";
-                              return <td key={lbl} style={{ padding:"4px 10px", textAlign:"center", borderBottom:"1px solid rgba(15,31,61,0.06)", fontWeight:"bold", color: pn ? C.navy : "#ccc" }}>{pn ? firstName(pn) : "-"}</td>;
+                              return <td key={lbl} style={{ padding:"4px 10px", textAlign:"center", borderBottom:"1px solid rgba(15,31,61,0.06)", fontWeight:"bold", color: pn ? tokens.color.brand.navy : "#ccc" }}>{pn ? firstName(pn) : "-"}</td>;
                             })}
                           </tr>
                         );
@@ -992,9 +992,9 @@ export function SharedView({ payload, renderFieldSVG }) {
               <table style={{ width:"100%", borderCollapse:"collapse", fontSize:"12px" }}>
                 <thead>
                   <tr style={{ background:"#f5efe4" }}>
-                    <th style={{ padding:"7px 12px", textAlign:"left", fontSize:"10px", color:C.textMuted, borderBottom:"2px solid rgba(15,31,61,0.1)", position:"sticky", left:0, background:"#f5efe4" }}>Player</th>
+                    <th style={{ padding:"7px 12px", textAlign:"left", fontSize:"10px", color:tokens.color.text.muted, borderBottom:"2px solid rgba(15,31,61,0.1)", position:"sticky", left:0, background:"#f5efe4" }}>Player</th>
                     {(svInn !== null ? [svInn] : innArr).map(function(i) {
-                      return <th key={i} style={{ padding:"7px 10px", textAlign:"center", fontSize:"10px", color:C.textMuted, borderBottom:"2px solid rgba(15,31,61,0.1)", minWidth:"60px" }}>Inn {i+1}</th>;
+                      return <th key={i} style={{ padding:"7px 10px", textAlign:"center", fontSize:"10px", color:tokens.color.text.muted, borderBottom:"2px solid rgba(15,31,61,0.1)", minWidth:"60px" }}>Inn {i+1}</th>;
                     })}
                   </tr>
                 </thead>
@@ -1004,7 +1004,7 @@ export function SharedView({ payload, renderFieldSVG }) {
                     var rowBg = isSelectedRow ? "rgba(245,166,35,0.12)" : (ri%2===0 ? "#fff" : "#faf8f5");
                     return (
                       <tr key={name} style={{ background: rowBg }}>
-                        <td style={{ padding:"6px 12px", fontWeight:"bold", position:"sticky", left:0, background: rowBg, borderBottom:"1px solid rgba(15,31,61,0.04)", color: isSelectedRow ? "#b45309" : C.navy }}>{firstName(name)}</td>
+                        <td style={{ padding:"6px 12px", fontWeight:"bold", position:"sticky", left:0, background: rowBg, borderBottom:"1px solid rgba(15,31,61,0.04)", color: isSelectedRow ? "#b45309" : tokens.color.brand.navy }}>{firstName(name)}</td>
                         {(svInn !== null ? [svInn] : innArr).map(function(i) {
                           var pos = (payload.grid[name] || [])[i] || "";
                           return (
@@ -1030,7 +1030,7 @@ export function SharedView({ payload, renderFieldSVG }) {
 
         {/* ── Batting order ─────────────────────────────────────── */}
         {payload.batting && payload.batting.length > 0 ? (
-          <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px", marginTop:"4px" }}>
+          <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px", marginTop:"4px" }}>
             <div style={S.sectionTitle}>Batting Order</div>
             <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))", gap:"6px" }}>
               {payload.batting.map(function(name, idx) {
@@ -1054,14 +1054,14 @@ export function SharedView({ payload, renderFieldSVG }) {
                     background: isSelectedBatter ? "rgba(245,166,35,0.08)" : undefined,
                     borderRadius:"6px" }}>
                     <div style={{ width:"20px", height:"20px", borderRadius:"50%",
-                      background: isSelectedBatter ? "#f5a623" : C.navy,
-                      color: isSelectedBatter ? "#0f1f3d" : "#fff",
+                      background: isSelectedBatter ? "#f5a623" : tokens.color.brand.navy,
+                      color: isSelectedBatter ? tokens.color.brand.navy : "#fff",
                       fontSize:"10px", fontWeight:"bold", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{idx+1}</div>
                     <div style={{ minWidth:0 }}>
                       <div style={{ fontWeight:"bold", fontSize:"12px", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",
                         color: isSelectedBatter ? "#b45309" : undefined }}>{firstName(name)}</div>
                       {fieldPos.length > 0 ? (
-                        <div style={{ fontSize:"9px", color:C.textMuted }}>
+                        <div style={{ fontSize:"9px", color:tokens.color.text.muted }}>
                           {fieldPos.map(function(fp, fpi) {
                             return (
                               <span key={fpi} style={{ color: fp === "OUT" ? "#dc2626" : "inherit", fontWeight: fp === "OUT" ? "bold" : "inherit" }}>
@@ -1096,7 +1096,7 @@ export function SharedView({ payload, renderFieldSVG }) {
         ) : null}
 
         {/* ── Footer ─────────────────────────────────────────────── */}
-        <div style={{ textAlign:"center", marginTop:"24px", fontSize:"11px", color:C.textMuted, borderTop:"1px solid rgba(15,31,61,0.08)", paddingTop:"16px" }}>
+        <div style={{ textAlign:"center", marginTop:"24px", fontSize:"11px", color:tokens.color.text.muted, borderTop:"1px solid rgba(15,31,61,0.08)", paddingTop:"16px" }}>
           <div style={{ marginBottom:"4px" }}>View-only lineup · Dugout Lineup</div>
           <div style={{ fontSize:"10px", color:"rgba(15,31,61,0.25)" }}>Tap Print to save as PDF or screenshot this page</div>
         </div>
@@ -3589,10 +3589,10 @@ export default function App() {
         )}
 
         {recoverMode && (
-          <div style={{ position:'fixed', top:0, left:0, right:0, bottom:0, background:'rgba(0,0,0,0.5)', zIndex:10000, display:'flex', alignItems:'center', justifyContent:'center', padding:'20px' }}>
-            <div style={{ background:'white', borderRadius:'12px', padding:'20px', maxWidth:'480px', width:'100%', maxHeight:'80vh', overflowY:'auto' }}>
+          <div style={{ position:'fixed', top:0, left:0, right:0, bottom:0, background:tokens.color.overlay.scrimLight, zIndex:10000, display:'flex', alignItems:'center', justifyContent:'center', padding:'20px' }}>
+            <div style={{ background:tokens.color.surface.card, borderRadius:'12px', padding:'20px', maxWidth:'480px', width:'100%', maxHeight:'80vh', overflowY:'auto' }}>
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'16px' }}>
-                <div style={{ fontWeight:'bold', fontSize:'16px', color:'#0f1f3d' }}>Restore Previous Roster</div>
+                <div style={{ fontWeight:'bold', fontSize:'16px', color:tokens.color.brand.navy }}>Restore Previous Roster</div>
                 <button onClick={function(){setRecoverMode(false); setSnapshots([]);}} style={{ background:'none', border:'none', fontSize:'20px', cursor:'pointer', color:'#94a3b8' }}>&#xd7;</button>
               </div>
               {snapshots.map(function(snap) {
@@ -3602,7 +3602,7 @@ export default function App() {
                   <div key={snap.id} style={{ border:'1px solid #e5e7eb', borderRadius:'8px', padding:'12px', marginBottom:'10px' }}>
                     <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                       <div>
-                        <div style={{ fontWeight:'bold', fontSize:'13px', color:'#0f1f3d' }}>{snap.player_count} players</div>
+                        <div style={{ fontWeight:'bold', fontSize:'13px', color:tokens.color.brand.navy }}>{snap.player_count} players</div>
                         <div style={{ fontSize:'11px', color:'#94a3b8', marginTop:'2px' }}>{label} &middot; {snap.trigger_event}</div>
                       </div>
                       <button
@@ -3615,7 +3615,7 @@ export default function App() {
                           setRestoreBanner('Roster restored \u2014 ' + restored.length + ' players recovered');
                           setTimeout(function() { setRestoreBanner(''); }, 5000);
                         }; }(snap)}
-                        style={{ background:'#0f1f3d', color:'white', border:'none', borderRadius:'6px', padding:'6px 12px', fontSize:'12px', cursor:'pointer', fontWeight:'bold' }}>
+                        style={{ background:tokens.color.brand.navy, color:tokens.color.text.onDark, border:'none', borderRadius:'6px', padding:'6px 12px', fontSize:'12px', cursor:'pointer', fontWeight:'bold' }}>
                         Restore
                       </button>
                     </div>
@@ -6350,7 +6350,7 @@ export default function App() {
         </div>
 
         {showShare ? (
-          <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:100, padding:"20px" }}>
+          <div style={{ position:"fixed", inset:0, background:tokens.color.overlay.scrimLight, display:"flex", alignItems:"center", justifyContent:"center", zIndex:100, padding:"20px" }}>
             <Card padding="24px" radius="md" style={{ border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px", maxWidth:"420px", width:"100%" }}>
               <div style={{ fontWeight:"bold", fontSize:"15px", marginBottom:"12px" }}>Share Lineup</div>
               <div style={{ fontSize:"11px", color:tokens.color.text.muted, marginBottom:"8px" }}>View-only link for coaches and parents:</div>
@@ -7780,10 +7780,10 @@ export default function App() {
     return (
       <div
         onClick={function() { setShowExitSheet(false); }}
-        style={{ position:"fixed", inset:0, zIndex:1500, background:"rgba(0,0,0,0.5)", display:"flex", flexDirection:"column", justifyContent:"flex-end" }}>
+        style={{ position:"fixed", inset:0, zIndex:1500, background:tokens.color.overlay.scrimLight, display:"flex", flexDirection:"column", justifyContent:"flex-end" }}>
         <div
           onClick={function(e) { e.stopPropagation(); }}
-          style={{ background:C.navy, borderTop:"2px solid " + C.red, borderRadius:"16px 16px 0 0", padding:"20px 20px 0", paddingBottom:"max(20px, env(safe-area-inset-bottom, 20px))", fontFamily:"Georgia,serif" }}>
+          style={{ background:tokens.color.brand.navy, borderTop:"2px solid " + tokens.color.brand.red, borderRadius:"16px 16px 0 0", padding:"20px 20px 0", paddingBottom:"max(20px, env(safe-area-inset-bottom, 20px))", fontFamily:"Georgia,serif" }}>
           <div style={{ textAlign:"center", marginBottom:"4px" }}>
             <div style={{ width:"36px", height:"4px", borderRadius:"2px", background:"rgba(255,255,255,0.2)", margin:"0 auto 16px" }} />
             <div style={{ fontSize:"11px", color:"rgba(255,255,255,0.45)", textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:"4px" }}>
@@ -7804,7 +7804,7 @@ export default function App() {
           <div style={{ display:"flex", flexDirection:"column", gap:"10px", marginBottom:"12px" }}>
             <button
               onClick={function() { setShowExitSheet(false); }}
-              style={{ width:"100%", padding:"14px", borderRadius:"10px", background:C.gold, border:"none", color:C.navy, fontSize:"15px", fontWeight:"bold", fontFamily:"Georgia,serif", cursor:"pointer" }}>
+              style={{ width:"100%", padding:"14px", borderRadius:"10px", background:tokens.color.brand.gold, border:"none", color:tokens.color.brand.navy, fontSize:"15px", fontWeight:"bold", fontFamily:"Georgia,serif", cursor:"pointer" }}>
               Keep Working
             </button>
             <button
