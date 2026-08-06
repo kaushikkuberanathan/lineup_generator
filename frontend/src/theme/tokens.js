@@ -27,6 +27,13 @@ export const tokens = {
       // ─── Story 110 (#296) — legacy C-object DIVERGENT/ORPHAN resolution ────
       navyLight: '#1a3260',  // 5x App.jsx — header/nav gradient partner for brand.navy (was C.navyLight; ORPHAN, no prior token — differs from surface.chrome #1E3A5F, not a substitute)
       redDark:   '#9b0c22',  // 3x App.jsx — primary-CTA gradient partner for brand.red (was C.redDark; ORPHAN, no prior token)
+
+      // Story 119 (#530) — 1x App.jsx (line ~7856), third stop of the app-shell
+      // root background gradient shown on the "more" tab (`linear-gradient(160deg,
+      // brand.navy 0%, brand.navyLight 55%, gradientDark 100%)`). No existing
+      // token matched; named by role (dark gradient endpoint), not appearance,
+      // same principle as Story 113's cream mint. Approved 2026-08-05.
+      gradientDark: '#2a0a0a',
     },
 
     surface: {
