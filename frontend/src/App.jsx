@@ -28,6 +28,7 @@ import { EmptyState } from './components/Home/EmptyState';
 import { ValidationBanner } from './components/Shared/ValidationBanner';
 import { OfflineIndicator } from './components/Shared/OfflineIndicator';
 import { MaintenanceScreen } from './components/Shared/MaintenanceScreen';
+import { PlayerFilterToggle } from './components/Shared/PlayerFilterToggle';
 import { DefenseDiamond }  from './components/GameDay/DefenseDiamond';
 import { GameModeScreen }  from './components/game-mode/GameModeScreen';
 import { DugoutView }      from './components/game-mode/DugoutView';
@@ -762,42 +763,7 @@ var S = {
 
 // NowBattingBar — extracted to components/GameDay/NowBattingStrip.jsx
 
-// ============================================================
-// PLAYER FILTER TOGGLE
-// Viewer mode (shared link) — horizontal pill list to filter by player.
-// "All Players" resets the selection.
-// ============================================================
-
-function PlayerFilterToggle({ players, selected, onSelect }) {
-  var pills = ['All Players'].concat(players);
-  return (
-    <div style={{
-      display: 'flex', gap: '6px', overflowX: 'auto', WebkitOverflowScrolling: 'touch',
-      paddingBottom: '4px', scrollbarWidth: 'none', msOverflowStyle: 'none',
-    }}>
-      {pills.map(function(name) {
-        var isSelected = name === 'All Players' ? !selected : selected === name;
-        return (
-          <button
-            key={name}
-            onClick={function() { onSelect(name === 'All Players' ? null : name); }}
-            style={{
-              flex: 'none', padding: '5px 12px', borderRadius: '14px', cursor: 'pointer',
-              fontFamily: "Georgia,'Times New Roman',serif", fontSize: '12px', whiteSpace: 'nowrap',
-              border: isSelected ? '2px solid #f5a623' : '1px solid rgba(15,31,61,0.15)',
-              background: isSelected ? '#f5a623' : '#ffffff',
-              color: isSelected ? '#0f1f3d' : '#555',
-              fontWeight: isSelected ? 'bold' : 'normal',
-              boxShadow: isSelected ? '0 2px 6px rgba(245,166,35,0.3)' : 'none',
-            }}
-          >
-            {name === 'All Players' ? name : firstName(name)}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
+// PLAYER FILTER TOGGLE — extracted to components/Shared/PlayerFilterToggle.jsx (Story 104 slice 4.1, #279)
 
 export function SharedView({ payload, renderFieldSVG }) {
   // Derive inning count from grid
