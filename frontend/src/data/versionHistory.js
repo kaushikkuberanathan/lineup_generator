@@ -1,5 +1,25 @@
 export var VERSION_HISTORY = [
   {
+    version: '2.8.5',
+    date: 'August 2026',
+    headline: 'AboutTab styling fix, App.jsx cleanup, and internal improvements',
+    techNote: 'Bug fixes and performance improvements',
+    userChanges: [
+      "Fixed an issue where the About tab's cards could display without their normal background and spacing.",
+      'Minor performance and reliability improvements under the hood.',
+    ],
+    internalChanges: [
+      'Continued retiring the legacy color object (var C) in App.jsx region by region: modals/overlays, the Schedule tab, the Lineups + Links tabs, the Feedback/About/Account/Updates tabs, and the public SharedView share-link page — all zero-visible-change token swaps (#528, #529, #537, #545, #546, #547, and Story 120/#531).',
+      'Minted color.brand.gradientDark and swapped the app-shell root background gradient\'s third stop to use it (Story 119/#530).',
+      'Fixed a real regression found while migrating the Feedback/About/Account/Updates tabs: AboutTab.jsx\'s two cards had been silently rendering with style={undefined} (no background, padding, border-radius, or shadow) since a prior release deleted the S.card object they referenced — added a token-driven replica that reproduces the original appearance exactly (#547).',
+      'Extracted PlayerFilterToggle from App.jsx into its own component file (Story 104 slice 4.1, #592).',
+      'Pinned the ip-address dependency to ^10.4.0 via overrides, closing three Dependabot alerts (#583).',
+      'Added a CI guardrail Action that detects a likely squash-merge on develop/main after the fact and comments on the originating PR (#573/#588).',
+      'Added 18 new tests across the above changes (mutation-tested where the change was value-preserving, not behavior-changing).',
+      'Patch bump 2.8.4 to 2.8.5.',
+    ],
+  },
+  {
     version: '2.8.4',
     date: 'August 2026',
     headline: 'Under-the-hood improvements to reliability and code quality',
