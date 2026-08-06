@@ -10,6 +10,74 @@
 
 ---
 
+## 2026-08-05-A — Phase 4a promotion + Phase 4b kickoff (region slices remaining)
+
+**Date:** August 5, 2026
+**Session ID:** 2026-08-05-A (UX Track, `lineup-generator-ux` worktree)
+**Duration:** Single continuous run, Phase 1 (recon + one batched question round) then Phase 2 (execution with explicit HOLD points on develop-facing merges)
+**Versions shipped to production:** None — `develop` only, nothing promoted to `main` this session
+**PRs opened:** #581 (`feature/phase4-region-slices-remaining` → `develop`, **merged**, regular merge commit `c598850`)
+**Issues filed:** #573 (governance — merge-type policy gap)
+**Branches:** `feature/phase4-region-slices-remaining` (Phase 4a, merged and done); `feature/phase4b-remaining-slices` (Phase 4b, cut from develop's new tip, holds slice 7)
+
+### Overview
+
+Ran the Phase 4a→develop promotion for region slices 4-6 (already committed on the branch from a prior session), then kicked off Phase 4b by cutting a new branch and completing slice 7 (Modals/overlays). Followed a two-phase handoff structure: batched Phase 1 questions (merge method, push scope, merge authority split, incremental promotion, slices 8/9/Story 119 status), then autonomous execution with one hard HOLD point (the actual Phase 4a→develop merge click) reserved for KK's explicit confirmation regardless of the broader authority granted.
+
+### What Shipped
+
+| Item | Scope | PR/Issue | Status |
+|---|---|---|---|
+| Phase 4a promotion | slices 4-6 (Schedule, Lineups+Links, Feedback/About/Account/Updates) + this session's CLAUDE.md merge-policy note | #581 | Merged to develop, regular merge verified (2-parent) |
+| Slice 7 | Modals/overlays — 9 `var C.*`/literal-hex sites across 3 modals (recoverMode, showShare, showExitSheet) | commit `637de9f` | Merged to `feature/phase4b-remaining-slices`, pushed |
+| CLAUDE.md merge-policy rule | Documents "Create a merge commit" requirement + links #573 | commit `4fcb1f5` | Merged via #581 |
+| Governance issue | Merge-type policy gap (repo-wide squash checkbox can't fix it; CI guardrail proposed) | #573 | Filed, CI guardrail Action drafted not built |
+| Sprint 2 P1 test-debt correction | Memory said 5/10 (then corrected mid-session to 8/10); actual state is 10/10 | — | Memory files corrected, no `DOC_TEST_DEBT.md` edit needed (already correct upstream) |
+
+### What Didn't Happen
+
+- Slice 8 (GameModeScreen/DugoutView) — untouched, per its own standing gate (own Locked-File gate phrase required, no exceptions this run).
+- Slice 9 (SharedView duplicate header, Story 120) — skipped; naming/scoping decision never granted this session.
+- Story 119 (app-shell gradient token naming) — no owner named, logged as still-open.
+- Story 117's live-visual-verification gap — restated, not closed. New requirement added this session: a consolidated authenticated-browser verification pass across all of slices 1-7's touched regions is required before Phase 4b promotes to develop, or before the next release, whichever comes first.
+- The CI guardrail Action for #573 — designed in `PHASE4_EXECUTION_LOG.md`, deliberately not implemented pending review.
+
+### Key Events
+
+**1. Stale-sync re-checks caught real drift twice, not paranoia**
+
+`origin/develop` moved forward three separate times over the course of this run (first +20 commits from an unrelated doc-audit/RLS-hotfix track, then +3 more Sprint-2 debt-closure commits, then +1 more mid-flow) before Phase 4a's merge actually executed. Each was caught by re-fetching immediately before the merge rather than trusting an earlier check, per KK's explicit standing instruction. One of those re-syncs (`bad0633` → `2c8188b`) auto-merged through `App.jsx` cleanly with no conflict markers and no skip-worktree interference (Bug #11 checked, didn't apply).
+
+**2. A KK-directed verification surfaced a real, confirmed squash-merge policy violation**
+
+Asked to verify (not just log) whether "the other track" merged cleanly, `git show -s --format=%P` on PRs #567/#569/#571 showed single-parent commits with GitHub's auto squash-suffix format — inconsistent with every other Sprint-2 item on the same `issue/*→develop` path, which used real two-parent merge commits. This is a recurrence of a repo-level issue first caught 78 days ago (v2.5.15) that evidently was never actually fixed. Filed as #573, documented in CLAUDE.md, and the actual Phase 4a→develop merge was executed via the GitHub API's `merge_method: "merge"` parameter specifically to sidestep the same failure mode (the sticky per-session dropdown default) rather than trust the UI a third time. Verified post-merge: two parent hashes confirmed on `origin/develop`'s new HEAD before reporting success, per KK's explicit require-verification-before-success-report instruction.
+
+**3. A stated test-debt count was corrected twice, in the more-progress direction both times**
+
+KK's message stated Sprint 2 P1 debt at "5/10 → 8/10, 2 remaining" after three PRs closed. Checking `DOC_TEST_DEBT.md` directly (not the memory snapshot) showed the doc itself was already fully reconciled and correct — the actual gap was in the session's memory file, which hadn't picked up two more items (Roster-Wipe Guard, Vitest OOM cascade) that closed on 2026-08-04 via an entirely separate session. True state: **10/10 closed, 0 remaining.** Corrected the memory file rather than editing the already-correct `DOC_TEST_DEBT.md`.
+
+**4. A stated slice-7 scope didn't match the authoritative plan doc**
+
+KK's App.jsx gate-phrase message described slice 7 as "header-nav chrome" — that's slice 1, already shipped in v2.8.4. Checked `DESIGN_AUDIT.md`'s own numbered "Recommended migration shape" table before touching the locked file: slice 7 is actually Modals/overlays. Surfaced the mismatch via a direct question rather than guessing at a high-risk, 10,000+ line locked file. KK confirmed the doc's definition.
+
+**5. A `C.`-only grep missed four already-resolved literal-hex sites in the same modal**
+
+The initial slice-7 edit covered every `C.key` reference and the 3 `overlayBg` literal duplicates, but missed raw `#0f1f3d`/`white` literals inside the recoverMode modal (never `C.key` references, so invisible to a `C.` grep). KK caught this and asked whether they were tracked. Checking `DESIGN_AUDIT.md`'s per-key disposition table confirmed both are already-resolved ADOPT keys (navy: 56 sites; white: context-dependent) — fixed in the same diff rather than filed, since the region was already open. Separately verified `#94a3b8`/`#e5e7eb` in the same modal were never `C` keys at all — genuinely out of scope, not a gap.
+
+**6. Four separate Bug #7 flakes this session, all isolated and confirmed clean, none a real regression**
+
+`SharedView.test.jsx`, `liveStateMerge.test.js`, `a11y-component-fixes.test.jsx`, `AboutTab.test.jsx` — each dropped to a worker-spawn timeout during a different full-suite run, each isolated afterward (one, `AboutTab.test.jsx` and `SharedView.test.jsx`, needed a second isolated attempt after the first also timed out solo) and confirmed passing clean. Consistent with the documented Bug #7 signature — not treated as a regression without verifying first.
+
+**7. Live/authenticated visual verification attempted, honestly reported as not completed**
+
+Started the dev server intending to trigger all 3 slice-7 modals directly. Hit the auth gate (magic link/Google OAuth) with no demo-team data available locally, and stopped rather than push further into that flow. Reported this plainly rather than implying full verification happened — diff-only (exact-value) verification is the actual standard slices 1-7 shipped under, which KK explicitly accepted for this slice while keeping Story 117's broader gap open with a new pre-Phase-4b-promotion requirement attached.
+
+### Standing takeaway
+
+Every verification prompt in this session (stale-sync, merge-type, test-debt count, slice-7 scope, literal-hex completeness) turned up a real, material correction — not one was a false alarm. The pattern that worked: check the authoritative source (git history, the plan doc's own table, the debt ledger's own dashboard note) directly, every time, rather than propagating a prior session's or a stated summary's arithmetic forward, even when the stated summary came from KK directly.
+
+---
+
 ## 2026-08-05-A — Overnight autonomous run: backend auth test coverage + fallback chain
 
 **Date:** August 5, 2026
