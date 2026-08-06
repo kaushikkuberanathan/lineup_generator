@@ -605,11 +605,17 @@ NowBattingStrip, MaintenanceScreen, ParentView, BattingOrderStrip, LockFlow, and
 DefenseDiamond all migrated to `Card`/`Text`/`Stack` (PRs #519–#526), and the
 legacy `S.card` style object was retired across all 17 `App.jsx` call sites
 (Story 117, #515). A related, separately-tracked effort — retiring the legacy
-`var C` color-object in `App.jsx` region-by-region — has completed 3 of 9
-planned regions (header/nav chrome, Roster tab, Defense/Batting grid tabs).
-**`(develop only — not yet promoted to main as of this writing; main is still
-v2.8.3)`.** Do not assume either is live in prod without checking `origin/main`'s
-`APP_VERSION` first.
+`var C` color-object in `App.jsx` region-by-region — is now **complete**:
+all 9 originally-planned regions plus a follow-up slice 10 sweep of 5 render
+functions outside that plan (renderSongs, renderSnackDuty, renderPinModal,
+renderTeamTab, renderBottomNav) — `var C` has zero remaining call sites in
+`App.jsx` as of v2.8.5 (2026-08-06, #606). Slice 8's own carve-out
+(GameModeScreen/DugoutView, Story 116/#503) was not one of slice 10's swept
+functions; whether its separate inheritance-verification methodology still
+needs to run against that surface is unresolved, not claimed done here.
+**`(v2.8.5 develop only as of this writing — not yet promoted to main; main
+is v2.8.4)`.** Do not assume either is live in prod without checking
+`origin/main`'s `APP_VERSION` first.
 
 ### BottomSheet pattern
 
