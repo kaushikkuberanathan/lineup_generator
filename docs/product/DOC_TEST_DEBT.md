@@ -285,8 +285,9 @@
 
 ### 🟡 P2 — `snack_duty` column drop blocked on codebase audit
 
-- **What:** Column verified present in Supabase as jsonb on April 27, 2026 (logged in MASTER_DEV_REFERENCE.md as outstanding manual action).
+- **What:** Column verified present in Supabase as jsonb on April 27, 2026 (logged in MASTER_DEV_REFERENCE.md as outstanding manual action). **Not the same thing as** the live `renderSnackDuty()` UI feature in App.jsx — that feature reads/writes a plain string field (`game.snackDuty`) on each game object in the schedule array, a completely different storage location from this `team_data.snack_duty` jsonb column. Confirmed distinct during the Phase 4b slice 10 scoping spike (`docs/product/PHASE4B_SLICE10_SCOPING.md` § 3) so this item is not accidentally read as "the snack duty feature is being removed."
 - **Prerequisite work:** grep frontend/ and backend/ for any read/write references to `snack_duty`. If clean, run `ALTER TABLE team_data DROP COLUMN snack_duty;` in Supabase SQL Editor. If references exist, remove them first.
+- **Audit re-run 2026-08-06:** `grep -rn "snack_duty" frontend/src backend` returns one unrelated hit (`SNACK_DUTY_TAB: 'snack_duty_tab'`, a Mixpanel analytics event key in `trackingUrl.js`, not a DB read/write). The jsonb column itself is unreferenced in code — prerequisite is satisfied. **Unblocked for the manual `ALTER TABLE` DDL** — not run here (schema-affecting DDL is a manual Supabase SQL Editor action per project convention, not something to execute unattended).
 - **Target:** v2.6.0 P2
 - **Source:** Surfaced during MASTER_DEV_REFERENCE.md audit, April 27, 2026.
 
