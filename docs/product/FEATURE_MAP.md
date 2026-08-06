@@ -2,7 +2,7 @@
 
 > Authoritative mapping of every shipped feature to its documentation and test coverage.
 > Update this file whenever a feature ships, changes behavior, or gains new tests.
-> Owner: KK | Last updated: 2026-08-06 (row 16 Auth system test-coverage fix -- Test File(s)/Test Status corrected from a stale `None`/`❌ None` claim; real frontend auth test files added, backend auth subset cross-referenced from row 33 rather than re-listed, Coverage Summary recounted 32/5/0/10/14/13 -> 32/5/0/10/15/12 over 37; previously updated 2026-08-05 for #576)
+> Owner: KK | Last updated: 2026-08-06 (row 9 Share-links test-coverage fix, v2.8.5 release prep -- Test File(s)/Test Status corrected from a stale `None`/`❌ None` claim; `buildSharePayload.test.js`/`SharedView.test.jsx`/`SharedViewColorTokens.test.jsx` now listed, Coverage Summary recounted 32/5/0/10/15/12 -> 32/5/0/10/16/11 over 37; previously updated same day for row 16 Auth system test-coverage fix, and 2026-08-05 for #576)
 
 ---
 
@@ -29,7 +29,7 @@
 | 6 | **Walk-up songs per player** | MVP | `SOLUTION_DESIGN.md` § Walk-up Songs Architecture; `CHARTER.md` § Scope | ✅ Current | None | ❌ None | — |
 | 7 | **Out Tonight attendance tracking** | MVP | `CLAUDE.md` (as "Out Tonight"); `ROADMAP.md` § v2.2.30 | ✅ Current | `engine.v2.test.js` Group 6, `lineupEngineV2-unit.test.js` Group X, `bench-equity.test.js` absent-player | ⚠ Partial | — |
 | 8 | **Game Mode (full-screen dugout view)** | Removed | `SOLUTION_DESIGN.md` § Navigation Structure | ⚠ Stale | None | ❌ None | ScoringMode render block + Scoring tab removed in Slice 3 (v2.5.9); legacy `ScoringMode/index.jsx` deleted in Slice 4 (v2.5.11). Superseded by #25. |
-| 9 | **Share links (8-char Supabase-backed)** | MVP | `SOLUTION_DESIGN.md` § RLS Policy Map; `CLAUDE.md` Auth Principle | ✅ Current | None | ❌ None | Share CTA restored to Lineups tab — Story 67 (PR #99, v2.5.15) |
+| 9 | **Share links (8-char Supabase-backed)** | MVP | `SOLUTION_DESIGN.md` § RLS Policy Map; `CLAUDE.md` Auth Principle | ✅ Current | `buildSharePayload.test.js` (19), `SharedView.test.jsx` (13), `SharedViewColorTokens.test.jsx` (12) | ⚠ Partial | Payload construction and SharedView rendering both covered; the Supabase persistence layer itself (`dbSaveShareLink`/`dbLoadShareLink`) has no dedicated unit coverage |
 | 10 | **PDF export + print view** | MVP | `ROADMAP.md` § v1.x | ⚠ Stale | None | ❌ None | — |
 | 11 | **Live scoring (scorer lock, inning entry, game finalization)** | MVP | `ROADMAP.md` § v2.2.29–v2.3.3; `PERSONAS.md` § Scorekeeper; `MASTER_DEV_REFERENCE.md` § Game Object Shape | ✅ Current | `finalizeSchedule.test.js`, `undoHalfInning.test.js`, `newGameTemplate.test.js`, `practiceModeIsolation.test.js`, `realtimeRaceGuard.test.js`, `runnerPlacement.test.js` | ⚠ Partial | Scoring surfaces through Combined Game View (#25) only. Slice 4 (v2.5.11) deleted legacy `ScoringMode/index.jsx`; the 7 live child components (`ScoringModeEntry`, `LiveScoringPanel`, `RestoreScoreModal`, `FinishGameModal`, `GameModeGearMenu`, `LiveScoreViewer`, `RunnerConflictModal`) remain in `components/ScoringMode/` and are imported by `DugoutView.jsx`. Optional follow-up: relocate to `components/game-mode/scoring/`. |
 | 25 | **Combined Game View (DugoutView — unified scoring surface)** | MVP | `docs/SOLUTION_DESIGN.md` § Feature Flag System | ✅ Current | `BattingOrderStrip.test.jsx` (6), `DugoutView.test.jsx` (5), `ScoreboardRow.test.jsx` (4), `DugoutView.viewport.test.jsx` (3) | ⚠ Partial | GA default-on as of Slice 3 (v2.5.9); mutual-exclusion invariant untested (legacy ScoringMode removed) |
@@ -69,9 +69,11 @@
 | ⚠ Doc Stale | 5 / 37 |
 | ❌ Doc Missing | 0 / 37 |
 | ✅ Tests Exist | 10 / 37 |
-| ⚠ Tests Partial | 15 / 37 |
-| ❌ No Tests | 12 / 37 |
+| ⚠ Tests Partial | 16 / 37 |
+| ❌ No Tests | 11 / 37 |
 
+> **Recounted 2026-08-06** (row 9 Share-links test-coverage fix, v2.8.5 release prep): direct column-scoped tally of all 37 rows' Test Status values, performed *before* editing row 9, to confirm the then-current table (10 Tests Exist / 15 Tests Partial / 12 No Tests) matched this summary exactly — it did, no pre-existing drift going into this edit. Row 9's Test Status then moved `❌ No Tests` → `⚠ Tests Partial` (`buildSharePayload.test.js`, `SharedView.test.jsx`, and the new `SharedViewColorTokens.test.jsx` all exist and cover this feature, but had never been listed on this row). Doc Status axis untouched. Net change: Tests Partial 15→16, No Tests 12→11; Doc Status counts and Tests Exist count all unchanged.
+>
 > **Recounted 2026-08-06** (row 16 auth-coverage fix): direct position-by-position tally of all 37 rows' Doc Status and Test Status columns, performed *before* editing row 16, to confirm the then-current table (32 Doc Current / 5 Doc Stale / 0 Doc Missing; 10 Tests Exist / 14 Tests Partial / 13 No Tests) matched this summary exactly — it did, on both axes, so no pre-existing drift going into this edit. Row 16's Test Status then moved `❌ No Tests` → `⚠ Tests Partial` (real frontend test files existed but had never been listed on this row; see row 16's own note for detail). Doc Status axis is untouched by this edit. Net change: Tests Partial 14→15, No Tests 13→12; Doc Status counts and Tests Exist count all unchanged.
 >
 > **Recounted 2026-08-05** (DOC_TEST_DEBT.md P1 "Missing Feature Rows" closure, #576): rows 36 (Analytics) and 37 (PWA Setup) added, both Doc Current / No Tests — denominator 35→37, Doc Current 30→32, No Tests 11→13, all other categories unchanged. Row 22 renamed "Governance infrastructure" → "Governance" for exact Area-value string match (mechanical-lookup fix, no count change). Direct recount against the table above, not propagated arithmetic.
