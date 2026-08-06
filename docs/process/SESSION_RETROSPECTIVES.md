@@ -10,6 +10,73 @@
 
 ---
 
+## 2026-08-05-B — Overnight autonomous run: vite dependency bump + branch topology fixes
+
+**Date:** August 5-6, 2026 (session spans local midnight — commits carry both dates)
+**Session ID:** 2026-08-05-B (T1 — Dugout Track)
+**Duration:** Single continuous unattended run, second overnight handoff of the evening, direct continuation of 2026-08-05-A below (skipping straight to `-B`, not `-C`, since this is T1's own second session that evening — see the identifier note below)
+**Versions shipped to production:** None — two PRs opened and merged to `develop` same session (with KK's live confirmation mid-run), one issue filed
+**PRs merged:** [#593](https://github.com/kaushikkuberanathan/lineup_generator/pull/593) (`feature/vite-dependency-bump` → `develop`), [#594](https://github.com/kaushikkuberanathan/lineup_generator/pull/594) (`docs/feature-map-auth-row-recount` → `develop`) — both regular merge commits, verified 2-parent
+**Issues filed:** [#595](https://github.com/kaushikkuberanathan/lineup_generator/issues/595) (T2 branch-topology write-up, open)
+
+**Identifier note:** this file already has two entries independently titled `2026-08-05-A` — this one (T1, this session's first overnight run) and a concurrent T2 entry below (`Phase 4a promotion + Phase 4b kickoff`), each picked without knowing about the other. Labeling this session `-B` continues T1's own thread rather than resolve that collision; it isn't fixed retroactively here since both `-A` entries are already committed history.
+
+### Overview
+
+Second overnight handoff of the same evening, following directly from `2026-08-05-A`'s morning report. Primary task (vite dependency bump for #590) plus a four-item fallback chain: rebase a stale-looking branch, fix a flagged FEATURE_MAP.md gap, write up a T2 branch-topology observation, and close a validation gap in the merge-policy guardrail Action shipped the previous session.
+
+### What Was Planned
+
+1. Vite bump (#590) — scoped `frontend/package.json` gate phrase, correct `feature/*` → `issue/*` branch topology this time (explicit fix for the `-A` session's own #587/#588 shortcut).
+2. Rebase `feature/phase4b-remaining-slices` onto `develop` (force-with-lease), after verifying it was safe to touch.
+3. Fix `FEATURE_MAP.md` row 16 (flagged the prior session, not fixed then).
+4. File a write-up-only issue about `issue/531`'s branch topology.
+5. Fallback: validate the merge-policy guardrail's true-positive path (only true-negatives had been tested against real history the prior session).
+
+### What Shipped
+
+| PR/Issue | What | Status |
+|---|---|---|
+| #593 | Scoped `overrides` pinning vitest's nested `vite` (8.0.14→8.2.0); top-level `vite` untouched at 6.4.3. Closes #590. | Merged to `develop`, verified 2-parent |
+| #594 | `FEATURE_MAP.md` row 16 fix + full 37-row Coverage Summary recount, shown in the PR body | Merged to `develop`, verified 2-parent |
+| #595 | T2 branch-topology write-up for `issue/531-...` | Open, informational |
+
+### What Didn't Happen
+
+- **Step 2 (rebase `feature/phase4b-remaining-slices`) — stopped, not executed.** Pre-rebase verification found the branch was T2's *active* session branch, not unused as both this run's handoff and the prior session's recon believed: T2's own PR #591 (from that exact branch) had already merged into `develop` minutes earlier (2026-08-06T00:35:14Z, verified 2-parent), and T2 had pushed 3 more commits to the branch *after* that merge, still unmerged. Force-pushing a rebase would have rewritten history T2 was actively building on. This is exactly the "divergent remote state" stop condition the handoff specified — logged and skipped, not forced past.
+
+### Key Events (Chronological)
+
+**1. Corrected my own prior write-up before acting on it**
+
+Issue #590 (filed the previous session) described alert #30 as a separate `launch-editor` package, going off the GHSA advisory's title text without checking the actual flagged dependency. Before touching `frontend/package.json`, checked live: `security_vulnerability.package.name` for *both* #28 and #30 is `vite` — same nested `vitest/node_modules/vite` instance, not two packages. Fixed the record in the same PR that fixed the dependency.
+
+**2. Self-inflicted-incident-adjacent: caught a genuinely stale local `develop` before branching**
+
+Created `docs/feature-map-auth-row-recount` off a local `develop` that was 10 commits behind `origin/develop` (T2's PR #591 had just landed). Caught it immediately via the branch's own "behind by 10" message before making any edit, fast-forwarded both `develop` and the new branch, then re-verified none of the three target docs files had been touched by the commits just pulled in, before proceeding.
+
+**3. A directory-scoped search missed real test files entirely**
+
+First-pass search for `FEATURE_MAP.md` row 16's actual auth test coverage was scoped to `__tests__/` directories only and came back empty for frontend. The real files (`frontend/src/tests/auth.test.js`, `frontend/src/components/Auth/LoginScreen.test.jsx`, `frontend/src/components/Auth/NoMembershipScreen.test.jsx`) live outside that convention. Found them by reading an already-merged PR's own commit body (#567) rather than trusting an incomplete glob — a second instance, this session, of "the doc's own citations can be wrong even when they look precise" (see `-A`'s Dependabot citation lesson).
+
+**4. Recount discipline paid off exactly as designed**
+
+Before editing `FEATURE_MAP.md`'s Coverage Summary, did a full position-by-position tally of all 37 rows' Doc Status and Test Status columns and confirmed it matched the documented summary exactly on both axes — this file's own revision history warns that skipping this step is how it drifts. One clean, auditable change resulted: Tests Partial 14→15, No Tests 13→12, everything else unchanged.
+
+**5. Fallback chain surfaced a real, unplanned finding instead of completing as scripted**
+
+Step 2's pre-rebase verification (explicitly required by the handoff, not something added unprompted) is what caught the T2-active-branch situation in Key Events item... see "What Didn't Happen" above. The stop was the correct outcome of following the verification step as designed, not a failure of the plan.
+
+**6. Guardrail true-positive validation, and 5 live true-negatives for free**
+
+Built a synthetic single-parent commit with a squash-suffix commit message on a disposable local-only branch (never pushed, deleted after), ran the exact shipped detection logic from `.github/workflows/merge-policy-guard.yml` against it directly: `violation=true`, correctly flagged. Closes the gap from the guardrail's original session, which only validated true-negatives against real history. Bonus, unplanned: the guardrail fired for real 5 times this session on genuine `develop` pushes (`1d586b1`, `4df6be6`, `3687a1b`, `e4f0607`, `cc3d348`) and correctly stayed silent every time — real-world evidence on both sides of its logic now exists, not just historical replay and synthetic construction.
+
+### Standing takeaway
+
+Both fallback-chain runs this evening (`-A` and `-B`) hit at least one moment where the handoff's own stated assumption turned out to be stale by the time execution reached it (`-A`: Story 110/#296 already resolved; `-B`: `feature/phase4b-remaining-slices` no longer unused). In both cases the explicit instruction to verify before acting — rather than trust the handoff's "confirmed state" section as ground truth — is what caught it before any damage. Worth keeping that verification step non-negotiable in every future unattended handoff template, not just as a one-off lesson.
+
+---
+
 ## 2026-08-05-A — Phase 4a promotion + Phase 4b kickoff (region slices remaining)
 
 **Date:** August 5, 2026
