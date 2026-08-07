@@ -53,8 +53,8 @@
 -- (docs/db/schema.sql's team_memberships_role_check) and exists specifically
 -- for this purpose — not yet exercised by any policy in this tree. Including
 -- it here is this migration's only behavior change beyond "what admin/coach
--- already do" — flagged explicitly for KK: confirm scorekeeper-role coaches
--- are an intended near-term user, not dead code, before applying.
+-- already do" — CONFIRMED by KK 2026-08-07: a non-admin/non-coach scorekeeper
+-- is an intended near-term user, not dead code being wired up early.
 --
 -- ---------------------------------------------------------------------------
 -- WITH CHECK identity binding — closes the WS-4 forgeable-identity gap
