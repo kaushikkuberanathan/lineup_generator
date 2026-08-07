@@ -223,7 +223,7 @@ jobs:
       - name: Install postgresql-client (psql)
         run: sudo apt-get update && sudo apt-get install -y postgresql-client
 
-      - uses: supabase/setup-cli@v1
+      - uses: supabase/setup-cli@v3
         with:
           version: 2.84.2
 
