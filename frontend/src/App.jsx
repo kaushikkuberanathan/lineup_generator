@@ -142,7 +142,7 @@ var DISLIKE_PENALTY = -50;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.8.4";
+var APP_VERSION = "2.8.5";
 
 // loadJSON / saveJSON — localStorage with in-memory (_mem) fallback — moved to
 // ./utils/storage (#416). Imported above; call sites unchanged.
@@ -665,18 +665,6 @@ function initGrid(roster, innings) {
 // ============================================================
 // STYLES
 // ============================================================
-
-var C = {
-  navy: "#0f1f3d", navyLight: "#1a3260", red: "#c8102e", redDark: "#9b0c22",
-  gold: "#f5c842", cream: "#fdf6ec", white: "#ffffff", text: "#1a1a2e",
-  textMuted: "#6b7280", border: "rgba(0,0,0,0.06)", cardBg: "#ffffff",
-  // Field/game colors
-  win: "#27ae60", loss: "#c8102e", tie: "#d4a017", canceled: "#7f8c8d",
-  greenField: "#2e7d32",
-  // Common UI values referenced inline throughout
-  overlayBg: "rgba(0,0,0,0.5)", subtleBg: "#f8fafc",
-  subtleBorder: "rgba(0,0,0,0.04)", subtleText: "#9ca3af"
-};
 
 var S = {
   header: {
