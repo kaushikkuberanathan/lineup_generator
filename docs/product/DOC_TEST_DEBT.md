@@ -283,6 +283,18 @@
 - **Source:** Audited during v2.5.1 deploy, April 27, 2026.
 - **Partial mitigation (Story 99, PR #272):** the new `backend-unit` CI job runs in-process supertest tests with no `BACKEND_URL` / prod dependency — admin auth-rejection coverage is now prod-URL-free. The hardcoded-prod-URL concern remains only for the live integration `backend` job and the smoke job.
 
+### 🟡 P2 — Dependency currency: 4 Dependabot bumps held (eslint, jsdom, react-dom, supabase-js)
+
+| | |
+|---|---|
+| **Area** | CI/CD, tooling |
+| **Description** | Methodical PR sweep on 2026-08-07 (post v2.8.5 promote) checked all open Dependabot PRs against required CI before merging any. 4 of 11 failed on distinct, confirmed root causes rather than flakes: `eslint` 8->10 (npm install ERESOLVE against `eslint-plugin-react`'s peer range), `jsdom` 29->30 (`webidl.util.markAsUncloneable is not a function`, kills the Vitest worker pool), `react-dom` 18->19 (partial bump — `react` itself stays at `^18.2.0` in `package.json`, a real major-version mismatch), `@supabase/supabase-js` 2.100->2.112 (pulls in a `realtime-js` requiring native WebSocket, unavailable on CI's pinned Node 20 — breaks the required RLS Policy Suite check). None block a feature or close a security hole (checked: Dependabot alerts #28/#30/#61/#62 are already `state=fixed`, zero currently open). Deliberately deferred as a group rather than chased individually under time pressure. |
+| **Risk if unfixed** | Low and non-urgent by design — Dependabot keeps the 4 PRs current against upstream while they sit open; nothing decays by waiting. Real risk is only if merged blind without the fix each needs. |
+| **Proposed action** | One future "dependency currency" session, grouped: (1) `@supabase/supabase-js` bump + a CI Node-version bump (20->22+, audit every job pinning Node 20 in `ci.yml`, not just `rls`) as its own project; (2) `react-dom` bump + a full React 19 migration (real breaking-change surface beyond aligning version pins) as its own project; (3) `eslint` + `jsdom` bumps as one quick paired fix (bump `eslint-plugin-react` and the Vitest/jsdom-environment version jsdom 30 needs, retry both together — both dev-tooling-only, low-risk once unblocked). |
+| **Opened** | 2026-08-07 |
+| **Target** | Next dedicated tooling session — not opportunistic, scoped as its own work per KK's explicit decision |
+| **Issues** | [#632](https://github.com/kaushikkuberanathan/lineup_generator/issues/632) (eslint), [#633](https://github.com/kaushikkuberanathan/lineup_generator/issues/633) (react-dom), [#634](https://github.com/kaushikkuberanathan/lineup_generator/issues/634) (jsdom), [#635](https://github.com/kaushikkuberanathan/lineup_generator/issues/635) (supabase-js), [#636](https://github.com/kaushikkuberanathan/lineup_generator/issues/636) (umbrella scope) |
+
 ### 🟡 P2 — `snack_duty` column drop blocked on codebase audit
 
 - **What:** Column verified present in Supabase as jsonb on April 27, 2026 (logged in MASTER_DEV_REFERENCE.md as outstanding manual action). **Not the same thing as** the live `renderSnackDuty()` UI feature in App.jsx — that feature reads/writes a plain string field (`game.snackDuty`) on each game object in the schedule array, a completely different storage location from this `team_data.snack_duty` jsonb column. Confirmed distinct during the Phase 4b slice 10 scoping spike (`docs/product/PHASE4B_SLICE10_SCOPING.md` § 3) so this item is not accidentally read as "the snack duty feature is being removed."
@@ -399,8 +411,10 @@
 |---|---|---|---|---|
 | 🔴 P0 | 0 | 0 | 0 | **0** |
 | 🟠 P1 | 0 | 1 | 0 | **1** |
-| 🟡 P2 | 9 | 5 | 7 | **21** |
-| **Total** | **9** | **6** | **7** | **22** |
+| 🟡 P2 | 9 | 5 | 8 | **22** |
+| **Total** | **9** | **6** | **8** | **23** |
+
+*(2026-08-07: new P2 process gap added — Dependency currency: 4 Dependabot bumps held (eslint/jsdom/react-dom/supabase-js), #632-#636 — see the Open — Tooling / Process Gaps section. Direct recount of every `### 🔴`/`### 🟠`/`### 🟡` heading actually present in each Open section immediately before this edit matched the prior table exactly (9/1/7, P2 9/5/7 = 21, Total 9/6/7 = 22), so this is a clean single-item addition, not a correction of pre-existing drift. Process Gaps P2 7→8, Total Process Gaps 7→8, P2 row 21→22, Grand Total 22→23.)*
 
 *(2026-08-05: table repaired after a squash-merge left two overlapping, malformed table fragments in this file (PR #574/#575/#578 each carried their own dashboard edit against a diverging base, all landed via squash). This merge additionally folds in PR #580's useAuth.js P2 test-gap addition (#579), which landed on `develop` after the table-repair branch was cut. Values confirmed by direct count of every `### 🔴`/`### 🟠`/`### 🟡` heading actually present in Open just now — not propagated from either side's own arithmetic: 0 P0; 1 P1 (FEATURE_MAP.md Structural Restructure, the only item still open); 21 P2 (9 Test Gaps incl. the useAuth.js finding + 5 Doc Gaps + 7 Process Gaps). Grand Total 22. Clears the `debt-p0` gate — zero open P0 items.)*
 
