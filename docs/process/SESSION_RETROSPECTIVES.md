@@ -10,6 +10,60 @@
 
 ---
 
+## 2026-08-06-A — v2.8.5 Release Review: freeze, GitHub Actions outage, isolated-worktree incident, promote PR opened
+
+**Date:** August 6-7, 2026 (spans midnight UTC due to a multi-hour external outage)
+**Session ID:** 2026-08-06-A (T2, UX Track — continuation of the same conversation as 2026-08-05-C, new chapter after "check status, kick off new day")
+**Duration:** Single continuous session, KK live and interactive throughout (not an unattended handoff)
+**Versions shipped to production:** None — v2.8.5 promote PR open and held, `main` still on v2.8.4
+**PRs merged:** #616 (release-notes fold-in, KK), #617 (App.jsx dead-code lint fix, merged by me per specific instruction — see incident below), #618 (version bump, merged by me per explicit instruction)
+**PRs opened, held:** #619 (`develop`→`main` promote, v2.8.5)
+**Issues filed:** #612 (active-freeze notice, pinned attempt failed — REST doesn't support it)
+**Branches:** 5 created and merged this session (`docs/release-2.8.5-prep`, `docs/v2.8.5-release-amend`, `docs/claude-md-v2.8.5-line-fixes`, `fix/appjsx-dead-varC-declaration`, `chore/v2.8.5-version-bump`) — all deleted locally post-merge after direct ancestor-verification. New worktree created: `lineup-generator-ux-t2-isolated` (now this session's permanent working directory).
+
+### Overview
+
+Started as a routine "what's sitting in dev, let's plan the release" conversation. Turned into a full Release Review (freeze → audit → soak → promote-prep) once KK issued a formal handoff mid-session, then got substantially more complex when two real incidents surfaced: a self-inflicted authorization-scope mistake (merged a PR without sufficiently explicit go-ahead), and an external one (a different, unidentified process operating in the same shared working directory). Both were corrected in real time rather than papered over. Also rode out a multi-hour GitHub Actions platform outage mid-release, which turned out to have a real teeth: queued CI jobs did not auto-resume when the outage cleared — they were silently cancelled, requiring manual re-triggering discovered only by checking, not assuming.
+
+### What Shipped
+
+| Item | Scope | PR | Status |
+|---|---|---|---|
+| v2.8.5 release-notes fold-in | Folded PR #606 (slice 10, var C retirement complete) and #608 (docs audit) into ROADMAP/versionHistory/CLAUDE.md; also fixed a stale `SOLUTION_DESIGN.md` claim found during the pass | #616 | Merged (KK) |
+| App.jsx dead-code lint fix | Deleted the now-fully-dead `var C = {...}` object left behind by slice 10 — one-line, gate-phrase-scoped exactly to that deletion | #617 | Merged (me, see incident #1) |
+| Version bump 2.8.4→2.8.5 | `frontend/package.json`, `backend/package.json`, `App.jsx APP_VERSION` — 3 separate gate phrases required and obtained individually | #618 | Merged (me, explicit instruction this time) |
+| Promote PR | `develop`(`c382f08`)→`main`, full Ship Gate + Pre-release Docs Checklist walked, 2 items honestly left unchecked (Vercel phone-smoke test, Game-Day Validation) rather than rubber-stamped | #619 | Open, held |
+| Freeze coordination | Issue #612 — declared, updated live through outage/merges/incidents, explicitly marked advisory (no branch-protection enforcement, no cross-terminal messaging channel) | #612 | Open, ongoing until promote ships |
+
+### What Didn't Happen
+
+- **#613/#614/#615 deliberately excluded** from v2.8.5 — different track (Dugout/backend RLS work), never audited into this release's documented scope. Held for a future release cycle at KK's explicit agreement.
+- **Vercel phone-smoke-test on a real device** — flagged unchecked in the promote PR, not something an agent can do.
+- **Game-Day Validation** (lineup <60s, Game Mode, share link) — not performed; reasoning stated in the PR (zero lineup-engine/Game-Mode/share-link code touched) rather than silently skipped, flagged for KK to confirm.
+- **Pinning issue #612** — attempted via REST API, got a 404 (pinning requires GraphQL); not pursued further, noted as a limitation rather than solved.
+
+### Key Events (Chronological)
+
+**1. Freeze + audit (Phase 1) surfaced five separate stale-doc claims, none from memory.** `ROADMAP.md` had no entry at all for six-plus merged PRs; `versionHistory.js` and root `CLAUDE.md` were still at 2.8.4; `DOC_TEST_DEBT.md` didn't list two new test files; `FEATURE_MAP.md` row 9 still said `Test File(s): None` despite three real test files covering it. All caught by direct verification (grep, git log, direct file reads), not assumed clean. Backend unit tests couldn't run locally (`SUPABASE_URL` missing in this worktree, expected for a UX-track checkout) — used CI's own check-run results on the exact frozen commit as the authoritative substitute instead of either faking it or leaving it unverified.
+
+**2. Scope drifted mid-audit and was handled by re-verifying, not assuming.** After KK approved folding #606 (slice 10)/#608 (docs audit) into the release, a fresh `develop` fetch revealed #606's own PR had left a lint-blocking dead-code declaration behind (`var C` fully unused after the last call sites were retired) — found by actually running lint on the new tip, not trusting the prior green state.
+
+**3. Incident — merged a PR without sufficiently explicit authorization.** KK said "merge both 616 and 617 after checks are complete"; I merged #617 myself once its checks passed. KK immediately corrected this: readiness (green CI, correct scope) is not authorization to act — every `develop`/`main` merge requires explicit, in-the-moment instruction, no exceptions, no matter how clean the change looks. Acknowledged without litigating the ambiguity of the original phrasing; held to the stricter standard for the rest of the session (verified: #618's later merge only proceeded after a specific "merge #618 ... AND CONTINUE NEXT STEPS" message, not inferred from a general go-ahead).
+
+**4. Incident — a different, unidentified process was found operating in the shared working directory.** Mid-session, a `git status` turned up a branch checkout (`feature/428-rls-prod-verification`) and a real commit (closing issue #428, unrelated RLS verification work) that I had not made, in the exact physical directory (`lineup-generator-ux`) this session had been using — with only two `git worktree`-registered worktrees existing, meaning whatever did this was sharing the directory outright, not using a separate worktree. No work was lost (nothing of mine was uncommitted at that exact moment), but the risk was real. Reported with full evidence (reflog, worktree list, file mtimes) before taking any further action, rather than guessing at a cause. KK's instructions were direct: set up a genuinely isolated `git worktree add` immediately, before resuming any edit work — not optional hygiene, a prerequisite. Could not determine *who* was in the shared directory (no way to enumerate the user's own terminal windows from inside the repo); reported that limitation honestly rather than speculating. New worktree `lineup-generator-ux-t2-isolated` created and used for all subsequent work this session.
+
+**5. GitHub Actions had a real, multi-hour major outage — and recovery was not automatic.** CI checks sat `queued` with zero jobs actually `in_progress` for an extended period. Verified via `githubstatus.com`'s component API (`Actions: major_outage`) rather than assuming a runner-capacity backlog — a real, external, unfixable-by-us cause, communicated plainly rather than guessed at. When the platform recovered, the standing assumption ("queued jobs auto-resume") turned out to be only partially true: #616's required checks had been silently marked `cancelled` (fixed via `rerun-failed-jobs`), while #617's `pull_request`-triggered CI run had never been created *at all* during the outage (the workflow only triggers on `push`/`pull_request` to `develop`/`main`, no `workflow_dispatch` to fall back on) — fixed by closing and reopening the PR to re-fire the `pull_request` event without a throwaway commit. Neither fix was assumed to have worked; both were verified via fresh check-run queries before proceeding.
+
+**6. Version bump required three separately-scoped gate phrases, obtained one at a time.** `frontend/package.json`, `backend/package.json`, and `App.jsx`'s `APP_VERSION` line are each independently Locked Files — KK's general "proceed with the version bump" was explicitly *not* treated as satisfying the literal phrase requirement for any of the three, matching the same standard just re-established in incident #3. All three phrases requested and granted individually before any edit.
+
+**7. Final pre-soak verification ran on the literal promote-candidate commit, not an assumed-equivalent one.** Checked out `c382f08` (the actual `#618` merge commit) in detached HEAD specifically to verify build/lint/suite against exactly what the promote PR's diff represents, rather than trusting the last branch-level run.
+
+### Standing takeaway
+
+Two of this session's three most consequential moments were self-corrections, not external audits: over-reading a merge instruction as broader authorization than intended, and discovering (rather than assuming) that a "safe" working directory wasn't. Both were caught by checking real state — `git status`, `git reflog`, an explicit re-read of what was actually said — rather than proceeding on the most convenient interpretation. The GitHub outage added a third lesson in the same family: even an external, unfixable event still requires verifying the *actual* recovery behavior (auto-resume vs. silent cancellation) rather than assuming the obvious outcome. The common thread all session: readiness, plausibility, and "it should work this way" are not substitutes for checking.
+
+---
+
 ## 2026-08-05-C — Overnight autonomous run: Phase 4b region slices (Story 120 + Story 104 slice 4.1)
 
 **Date:** August 5-6, 2026
