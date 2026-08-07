@@ -5,6 +5,14 @@ instruction (overnight handoff, 2026-08-06): recon + design only, no code change
 SQL executed against any database. The drafted migration (`backend/migrations/019_scoring_auth_uid_rls.sql`)
 has not been applied anywhere — not prod, not DEV, not even a local ephemeral stack.
 
+**Both open design decisions confirmed by KK (2026-08-07):** (1) `scorekeeper` stays in
+the write-scoping — a non-admin/non-coach scorekeeper is an intended near-term user; (2)
+the four `public_read_*` SELECT policies are un-narrowed leftovers, not a deliberate
+anon-viewer design — proceed with dropping them in Section B. Neither decision changes
+the migration's drafted SQL; both confirm the design as already written. This does
+**not** authorize applying Section A or B — that still requires the shim-removal
+sequence's own gates (§3), including the `game-mode/*` gate phrase for step 2.
+
 This supersedes `docs/ops/PHASE4C_CUTOVER.md` where they conflict — that file has one
 stale file path (see §1) — but does not replace it; both should be read together until
 a future session consolidates them.
@@ -77,10 +85,10 @@ public route was found for live scoring. `LiveScoreViewer.jsx` renders from prop
 `useLiveScoring()` hook's own state, not a standalone public route; `viewerMode` in
 `DugoutView.jsx` is a same-session, already-authenticated team member's UI toggle
 (CLAUDE.md's `dugoutFocusMode` doc: "Viewer (`viewerMode=true`, ...)" refers to a
-teammate's role, not the public). **The four `public_read_*` SELECT policies appear to
-be un-narrowed predecessors of a real `authenticated`-scoped need, not a deliberate
-anon-read design** — flagged for KK to confirm before Section B (below) drops them,
-since being wrong here would silently break a real viewer flow this audit didn't find.
+teammate's role, not the public). **The four `public_read_*` SELECT policies are
+un-narrowed predecessors of a real `authenticated`-scoped need, not a deliberate
+anon-read design — confirmed by KK 2026-08-07.** Proceed with dropping them in Section B
+(below); no public live-scoring viewer is planned.
 
 ---
 
@@ -95,8 +103,8 @@ Full policy language: `backend/migrations/019_scoring_auth_uid_rls.sql` (drafted
 - **Role scoping**: `role IN ('admin', 'coach', 'scorekeeper')` for writes. `scorekeeper`
   is one of the seven canonical `team_memberships` roles (`schema.sql`'s CHECK
   constraint) and exists specifically for this use case, but isn't exercised by any
-  existing policy in this tree — **flagged for KK**: confirm scorekeeper-role coaches
-  are an intended near-term user before applying, not dead code being wired up early.
+  existing policy in this tree — **confirmed by KK 2026-08-07**: a non-admin/non-coach
+  scorekeeper is an intended near-term user, not dead code being wired up early.
 - **Forgeable-identity fix**: `scoring_audit_log`'s and `at_bats`'s INSERT policies bind
   `actor_user_id = auth.uid()::text` / `recorded_by_id = auth.uid()::text` — closing the
   WS-4 gap the LS5/LS6 test comments already name (a coach could otherwise forge another
@@ -136,8 +144,8 @@ if it's done out of turn — see also §5 for the consolidated worst-case list.
    (as text), not `scorer_local_id` values or the zero-UUID.
 4. **Apply migration 019, Section B** (drops the four `*_anon_test` backdoors and three
    `allow_scorer_writes` catch-alls) — **only after step 3's soak is confirmed clean.**
-   This is the actual #355 fix. Confirm the `public_read_*` policies' anon-viewer
-   question (§1.4) with KK before including them in this step.
+   This is the actual #355 fix. The `public_read_*` policies' anon-viewer question
+   (§1.4) is confirmed — include them in this step.
 5. **Un-skip `LS1`-`LS7`** in `policies.test.js` (remove the `{skip: '#355 tracked...'}`
    annotations) — these were committed RED-by-design specifically to go GREEN once this
    step lands; premature un-skipping before step 4 actually ships would fail the
@@ -196,15 +204,13 @@ only `game-mode/*` and possibly `ScoringMode/*`.
   today's `persist()`/heartbeat code, per `useLiveScoring.js`'s existing `.then()`
   handlers) rather than a clean, visible failure. Recommend timing step 4 for a period
   with **zero games in progress** (a mid-week off-day), not "whenever CI is green."
-- **`scorekeeper` role assumption wrong**: if no real user is expected to hold this role
-  soon, including it in the write-scoping is harmless-but-premature; if some other,
-  narrower intent was meant for that role, this proposal's blanket inclusion could be
-  too permissive. Low severity (it's additive to `admin`/`coach`, not a new attack
-  surface on its own), but worth KK's explicit confirmation before step 1.
-- **`public_read_*` policies dropped on a wrong assumption**: if a real anon viewer
-  route does exist somewhere this audit didn't find, dropping these in step 4 breaks it
-  silently (viewers would just see nothing, no error). §1.4 already flags this — treat
-  it as a confirm-before-proceeding item, not a settled fact.
+- **`scorekeeper` role** — confirmed by KK 2026-08-07 as an intended near-term user;
+  no longer an open assumption. Residual risk is low regardless (additive to
+  `admin`/`coach`, not a new attack surface on its own).
+- **`public_read_*` policies** — confirmed by KK 2026-08-07 as un-narrowed leftovers,
+  no real anon viewer route planned; dropping them in step 4 is intentional, not a
+  wrong-assumption risk. If a public live-scoring viewer becomes a real feature later,
+  it needs its own deliberately-scoped policy at that time, not a revival of these four.
 - **No live, currently-exploitable finding *worse* than the already-documented #355
   was surfaced during this audit.** Per tonight's instructions, that means this stays a
   design proposal, not an escalation — but it's worth restating plainly: the four
