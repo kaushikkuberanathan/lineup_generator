@@ -666,18 +666,6 @@ function initGrid(roster, innings) {
 // STYLES
 // ============================================================
 
-var C = {
-  navy: "#0f1f3d", navyLight: "#1a3260", red: "#c8102e", redDark: "#9b0c22",
-  gold: "#f5c842", cream: "#fdf6ec", white: "#ffffff", text: "#1a1a2e",
-  textMuted: "#6b7280", border: "rgba(0,0,0,0.06)", cardBg: "#ffffff",
-  // Field/game colors
-  win: "#27ae60", loss: "#c8102e", tie: "#d4a017", canceled: "#7f8c8d",
-  greenField: "#2e7d32",
-  // Common UI values referenced inline throughout
-  overlayBg: "rgba(0,0,0,0.5)", subtleBg: "#f8fafc",
-  subtleBorder: "rgba(0,0,0,0.04)", subtleText: "#9ca3af"
-};
-
 var S = {
   header: {
     background:"linear-gradient(135deg,"+tokens.color.brand.navy+" 0%,"+tokens.color.brand.navyLight+" 100%)",
