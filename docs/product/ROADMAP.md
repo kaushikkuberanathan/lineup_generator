@@ -1,11 +1,13 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: 2026-08-06 (v2.8.5 - Phase 4 var C legacy color-object retirement complete, Story 104.1, Story 119 - develop only, not yet promoted)
+> Last updated: 2026-08-07 (v2.8.5 promoted to main - Phase 4 var C legacy color-object retirement complete, Story 104.1, Story 119)
 > MVP launched: March 24, 2026
 
 ---
 
-## v2.8.5 - 2026-08-06 - Phase 4 var C legacy color-object retirement complete, Story 104.1, AboutTab regression fix (develop only — not yet promoted)
+## v2.8.5 - 2026-08-06 - Phase 4 var C legacy color-object retirement complete, Story 104.1, AboutTab regression fix
+
+**Promoted to `main` 2026-08-07** (PR #619, regular merge, `06030c1`) — verified as a genuine 2-parent merge. Post-promote sync: PR #630.
 - Internal only, no user-facing change, except one real bug fix (see below).
 - **Phase 4 `var C` legacy color-object retirement complete** - all originally-planned regions plus a follow-up sweep migrated to the shared design-token system, all zero-visible-change reference swaps: Schedule tab (slice 4, #545), Lineups + Links tabs (slice 5, #546), Feedback/About/Account/Updates tabs (slice 6, #547), Modals/overlays (slice 7), SharedView public share-link page (slice 9, Story 120/#531). **Slice 10** (#606) retired the final 89 `C.*` occurrences across 5 render functions never assigned to any of the original 9 planned slices (renderSongs, renderSnackDuty, renderPinModal, renderTeamTab, renderBottomNav) plus 2 literal-hex bypass sites - `var C` now has zero remaining call sites anywhere in `App.jsx`. Slice 8 (GameModeScreen/DugoutView, Story 116/#503) - the one region formally carved out as its own numbered slice - is not itself part of slice 10's swept functions; whether its own separate inheritance-verification methodology (Story 114's Step 1/2) still needs to run against that surface is an open question this release does not resolve.
 - **Story 119 resolved**: minted `color.brand.gradientDark` and swapped the app-shell root background gradient's third stop to use it (#530/#598).
