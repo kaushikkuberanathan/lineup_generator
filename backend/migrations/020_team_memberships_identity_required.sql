@@ -1,0 +1,50 @@
+-- Migration 020: require at least one real identity on every team_memberships row (#375)
+--
+-- APPLIED TO DEV (psqvzppphdedqkpmarwx) AND PROD (hzaajccyurlyeweekvma) 2026-08-07.
+--
+-- ---------------------------------------------------------------------------
+-- WHY
+-- ---------------------------------------------------------------------------
+-- #375 found a DEV row with user_id=NULL AND email=NULL, yet role='admin' and
+-- status='active' on the Mud Hens team — an active admin membership tied to no
+-- identity. Re-checked both DEV and prod on 2026-08-07: zero rows currently
+-- match that pattern in either environment (the original orphan is gone —
+-- likely a DEV rebuild since 2026-07-18, not a deliberate cleanup; prod never
+-- had one). This migration is the preventive half of #375's three action
+-- items (the delete-the-orphans half is moot — nothing to delete right now).
+--
+-- The existing `team_memberships_contact_required` CHECK
+-- (`phone_e164 IS NOT NULL OR email IS NOT NULL`) does NOT cover this case:
+-- phone/SMS auth was permanently removed (root CLAUDE.md Auth Strategy), so
+-- phone_e164 is always NULL on every current-era row, but that constraint is
+-- still satisfiable by email alone — it says nothing about user_id. A row
+-- could have a real email (satisfying that constraint) and still carry
+-- user_id=NULL, which is exactly the "tied to no identity" problem #375
+-- describes for the admin-panel/RLS-join angle. This is a genuinely
+-- independent constraint, not a duplicate of the existing one.
+--
+-- ---------------------------------------------------------------------------
+-- SAFE TO ADD — verified, not assumed
+-- ---------------------------------------------------------------------------
+-- Confirmed zero violating rows on both DEV and prod immediately before
+-- writing this file:
+--   SELECT count(*) FROM team_memberships WHERE user_id IS NULL AND email IS NULL;
+--   -> 0 on both.
+--
+-- Checked every real INSERT/UPDATE path against team_memberships
+-- (backend/src/routes/admin.js's approve/approve-link/reset-access/suspend/
+-- update-role handlers, migration 018's handle_new_team trigger, the RLS test
+-- fixtures) — every insert sets email; reset-access nulls user_id but leaves
+-- the existing email untouched, so it never produces a both-null row. This
+-- constraint does not block any legitimate current write path.
+--
+-- ---------------------------------------------------------------------------
+-- ROLLBACK
+-- ---------------------------------------------------------------------------
+--   ALTER TABLE public.team_memberships DROP CONSTRAINT team_memberships_identity_required;
+--
+-- Related: #375
+
+ALTER TABLE public.team_memberships
+  ADD CONSTRAINT team_memberships_identity_required
+  CHECK (user_id IS NOT NULL OR email IS NOT NULL);
