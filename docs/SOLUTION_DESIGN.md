@@ -613,9 +613,9 @@ renderTeamTab, renderBottomNav) — `var C` has zero remaining call sites in
 (GameModeScreen/DugoutView, Story 116/#503) was not one of slice 10's swept
 functions; whether its separate inheritance-verification methodology still
 needs to run against that surface is unresolved, not claimed done here.
-**`(v2.8.5 develop only as of this writing — not yet promoted to main; main
-is v2.8.4)`.** Do not assume either is live in prod without checking
-`origin/main`'s `APP_VERSION` first.
+**Promoted to `main` 2026-08-07** (PR #619, regular merge, `06030c1`) —
+verified as a genuine 2-parent merge, not squashed. `origin/main`'s
+`APP_VERSION` confirmed at 2.8.5 directly, not assumed.
 
 ### BottomSheet pattern
 
