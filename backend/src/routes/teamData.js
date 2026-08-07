@@ -14,6 +14,7 @@
 const { Router } = require('express');
 const { supabaseAdmin } = require('../lib/supabase');
 const { rejectTestDataInProd } = require('../middleware/envGuard');
+const requireAuth = require('../middleware/requireAuth');
 
 const router = Router();
 
@@ -204,6 +205,55 @@ router.get('/:teamId/history', async (req, res) => {
   } catch (err) {
     console.error('[teamData] GET /:teamId/history uncaught error:', err.message);
     return res.status(500).json({ error: 'INTERNAL_ERROR', message: err.message });
+  }
+});
+
+// ── DELETE /api/teams/:teamId ─────────────────────────────────────────────────
+// #380: routes team deletion through the backend with a service_role client,
+// so the anon/authenticated-key DELETE grant on `teams` can eventually be
+// revoked without breaking this path (see migration TODO in #380 — NOT added
+// here; the revoke must land in its own follow-up migration only after this
+// route has been verified live, per #380's own "why both halves must land
+// together" section).
+
+router.delete('/:teamId', requireAuth, async (req, res) => {
+  try {
+    const { teamId } = req.params;
+    const userId = req.user.id;
+
+    // Per-team admin check — mirrors teams_auth_delete's RLS scoping exactly,
+    // but must be re-implemented here explicitly because supabaseAdmin
+    // (service_role) bypasses RLS entirely.
+    const { data: membership, error: memErr } = await supabaseAdmin
+      .from('team_memberships')
+      .select('id')
+      .eq('team_id', String(teamId))
+      .eq('user_id', userId)
+      .eq('role', 'admin')
+      .eq('status', 'active')
+      .maybeSingle();
+
+    if (memErr) {
+      console.error(`[teamData/delete] membership check error for team ${teamId}:`, memErr.message);
+      return res.status(500).json({ error: 'DB_ERROR', message: memErr.message });
+    }
+    if (!membership) {
+      return res.status(403).json({ error: 'NOT_TEAM_ADMIN' });
+    }
+
+    const { error } = await supabaseAdmin.from('teams').delete().eq('id', teamId);
+
+    if (error) {
+      console.error(`[teamData/delete] delete error for team ${teamId}:`, error.message);
+      return res.status(500).json({ error: 'DB_ERROR', message: error.message });
+    }
+
+    console.log(`[${new Date().toISOString()}] team delete OK — team_id=${teamId} by user_id=${userId}`);
+
+    return res.status(200).json({ ok: true });
+  } catch (err) {
+    console.error('[teamData] DELETE /:teamId uncaught:', err.message, err.stack);
+    return res.status(500).json({ error: 'INTERNAL_ERROR' });
   }
 });
 

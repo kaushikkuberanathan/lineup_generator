@@ -1,78 +1,69 @@
 /**
- * dbDeleteTeam.test.js — coverage for the untested dbDeleteTeam() helper (#424).
+ * dbDeleteTeam.test.js — coverage for the dbDeleteTeam() helper (#424, updated #380).
  *
- * dbDeleteTeam was flagged as fully untested in the #424 survey. Harness
- * mirrors dbSaveTeams.test.js (#424): mock @supabase/supabase-js so the
- * module-level createClient() call returns a controllable chain, force both
- * VITE_SUPABASE_* vars to '' via vi.stubEnv for the guard case (per #431 —
- * frontend/.env carries real anon credentials that Vite's loadEnv supplies
- * by default, so merely leaving env unstubbed does NOT guarantee a null
- * client), and re-import the module per test.
+ * REWRITTEN for #380: dbDeleteTeam() no longer writes directly to Supabase
+ * (`.from('teams').delete().eq(...)`) — it now calls the backend's
+ * `DELETE /api/v1/teams/:teamId` route (service_role, admin-membership
+ * checked server-side), authenticated via the current Supabase session's
+ * access token. Session is read internally via `supabase.auth.getSession()`
+ * so the function's external signature and every call site are unchanged.
  *
- * Chain shape: from('teams').delete().eq('id', teamId) -> fakeResultRef.current
+ * Mock shape: createClient() returns `{ auth: { getSession } }` (no `.from`
+ * needed — this function never touches the DB directly anymore) and
+ * `global.fetch` is stubbed for the backend call.
  */
 
 import { describe, it, expect, vi, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
 
-// ── Hoisted refs so each test controls what the chain terminal resolves to ──
-var { fakeResultRef, eqSpy } = vi.hoisted(function() {
+// ── Hoisted refs so each test controls what each seam resolves to ──
+var { fakeSessionRef, fakeFetchResponseRef, getSessionSpy, fetchSpy } = vi.hoisted(function() {
   return {
-    fakeResultRef: { current: null },
-    eqSpy: vi.fn(),
+    fakeSessionRef: { current: null },
+    fakeFetchResponseRef: { current: null },
+    getSessionSpy: vi.fn(),
+    fetchSpy: vi.fn(),
   };
 });
 
-// Mock @supabase/supabase-js so supabase.js' module-level createClient() call
-// returns a controllable chain. Real Supabase is never contacted.
-//   delete: from('teams').delete().eq('id', teamId) -> fakeResultRef.current
 vi.mock('@supabase/supabase-js', function() {
   return {
     createClient: function() {
       return {
-        from: function() {
-          return {
-            delete: function() {
-              return {
-                eq: function(col, val) {
-                  eqSpy(col, val);
-                  return fakeResultRef.current;
-                },
-              };
-            },
-          };
+        auth: {
+          getSession: function() {
+            getSessionSpy();
+            return Promise.resolve({ data: { session: fakeSessionRef.current } });
+          },
         },
       };
     },
   };
 });
 
-describe('dbDeleteTeam — untested DB helper coverage (#424)', function() {
+describe('dbDeleteTeam — backend-routed delete (#424, #380)', function() {
 
-  // ── Case 1: guard — no supabase client means no-op, never calls delete/eq ──
+  // ── Case 1: guard — no supabase client means no-op, never calls fetch ──
   describe('guard: no supabase client (env forced empty)', function() {
     beforeEach(function() {
-      // frontend/.env carries real (anon, non-secret) Supabase credentials
-      // that Vite's loadEnv supplies to import.meta.env by default — merely
-      // NOT calling vi.stubEnv does not guarantee falsy values (#431). Force
-      // both vars to '' explicitly so supabaseUrl && supabaseKey is falsy
-      // regardless of what real .env files are present on this machine.
       vi.stubEnv('VITE_SUPABASE_URL', '');
       vi.stubEnv('VITE_SUPABASE_ANON_KEY', '');
       vi.resetModules();
-      eqSpy.mockClear();
-      fakeResultRef.current = null;
+      getSessionSpy.mockClear();
+      fetchSpy.mockClear();
+      fakeSessionRef.current = null;
+      global.fetch = fetchSpy;
     });
 
     afterEach(function() {
       vi.unstubAllEnvs();
     });
 
-    it('1: env forced empty → supabase is null, dbDeleteTeam resolves undefined and NEVER calls delete/eq', async function() {
+    it('1: env forced empty → supabase is null, dbDeleteTeam resolves undefined and NEVER calls fetch', async function() {
       var mod = await import('../supabase.js');
 
       var r = await mod.dbDeleteTeam('team-1');
       expect(r).toBeUndefined();
-      expect(eqSpy).not.toHaveBeenCalled();
+      expect(fetchSpy).not.toHaveBeenCalled();
     });
   });
 
@@ -90,18 +81,21 @@ describe('dbDeleteTeam — untested DB helper coverage (#424)', function() {
 
     beforeEach(function() {
       vi.resetModules();
-      eqSpy.mockClear();
-      fakeResultRef.current = null;
+      getSessionSpy.mockClear();
+      fetchSpy.mockClear();
+      fakeSessionRef.current = null;
+      fakeFetchResponseRef.current = null;
       warnSpy = vi.spyOn(console, 'warn').mockImplementation(function() {});
+      global.fetch = fetchSpy;
     });
 
     afterEach(function() {
       warnSpy.mockRestore();
     });
 
-    // ── Case 2: error path → REJECTS with Error carrying .code + .operation, and warns ──
-    it('2: Supabase { error } → promise REJECTS with an Error carrying .code + .operation, and console.warn IS called', async function() {
-      fakeResultRef.current = Promise.resolve({ error: { message: 'boom', code: '42501' } });
+    // ── Case 2: no session → REJECTS with NO_SESSION, fetch NEVER called ──
+    it('2: no active session → promise REJECTS with code NO_SESSION, fetch is NEVER called', async function() {
+      fakeSessionRef.current = null;
       var mod = await import('../supabase.js');
 
       var caught;
@@ -111,39 +105,80 @@ describe('dbDeleteTeam — untested DB helper coverage (#424)', function() {
         caught = e;
       }
       expect(caught).toBeInstanceOf(Error);
-      expect(caught.message).toBe('boom');
-      expect(caught.code).toBe('42501');
+      expect(caught.message).toBe('Not signed in');
+      expect(caught.code).toBe('NO_SESSION');
+      expect(caught.operation).toBe('dbDeleteTeam');
+      expect(fetchSpy).not.toHaveBeenCalled();
+    });
+
+    // ── Case 3: backend error response → REJECTS with Error carrying .code + .operation, and warns ──
+    it('3: backend responds not-ok → promise REJECTS with an Error carrying .code + .operation, and console.warn IS called', async function() {
+      fakeSessionRef.current = { access_token: 'tok-123' };
+      fetchSpy.mockResolvedValue({
+        ok: false,
+        status: 403,
+        json: function() { return Promise.resolve({ error: 'NOT_TEAM_ADMIN' }); },
+      });
+      var mod = await import('../supabase.js');
+
+      var caught;
+      try {
+        await mod.dbDeleteTeam('team-1');
+      } catch (e) {
+        caught = e;
+      }
+      expect(caught).toBeInstanceOf(Error);
+      expect(caught.message).toBe('NOT_TEAM_ADMIN');
+      expect(caught.code).toBe('NOT_TEAM_ADMIN');
       expect(caught.operation).toBe('dbDeleteTeam');
       expect(warnSpy).toHaveBeenCalledTimes(1);
     });
 
-    // ── Case 3: error fallback — missing .message falls back to 'write failed' ──
-    it("3: Supabase { error } with no .message → rejected Error.message falls back to 'write failed'", async function() {
-      fakeResultRef.current = Promise.resolve({ error: { code: 'X' } });
+    // ── Case 4: backend error with no parseable body → falls back to the HTTP status ──
+    it("4: backend responds not-ok with an unparseable body → error code falls back to the HTTP status", async function() {
+      fakeSessionRef.current = { access_token: 'tok-123' };
+      fetchSpy.mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: function() { return Promise.reject(new Error('not json')); },
+      });
       var mod = await import('../supabase.js');
 
       await expect(mod.dbDeleteTeam('team-1')).rejects.toThrow('write failed');
     });
 
-    // ── Case 4: success path → resolves with raw response, console.warn NOT called ──
-    it('4: Supabase { error: null } → promise RESOLVES with the response object, and console.warn is NOT called', async function() {
-      fakeResultRef.current = Promise.resolve({ data: null, error: null });
+    // ── Case 5: success path → resolves with the response body, console.warn NOT called ──
+    it('5: backend responds ok → promise RESOLVES with the response body, and console.warn is NOT called', async function() {
+      fakeSessionRef.current = { access_token: 'tok-123' };
+      fetchSpy.mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: function() { return Promise.resolve({ ok: true }); },
+      });
       var mod = await import('../supabase.js');
 
       var r = await mod.dbDeleteTeam('team-1');
-      expect(r).toEqual({ data: null, error: null });
+      expect(r).toEqual({ ok: true });
       expect(warnSpy).not.toHaveBeenCalled();
     });
 
-    // ── Case 5: argument shape — eq() is called with ('id', teamId) ──
-    it("5: eq() is called with ('id', teamId) — the correct delete target", async function() {
-      fakeResultRef.current = Promise.resolve({ data: null, error: null });
+    // ── Case 6: request shape — correct URL, method, and Authorization header ──
+    it('6: fetch is called with the correct URL, DELETE method, and Bearer token', async function() {
+      fakeSessionRef.current = { access_token: 'tok-xyz' };
+      fetchSpy.mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: function() { return Promise.resolve({ ok: true }); },
+      });
       var mod = await import('../supabase.js');
 
       await mod.dbDeleteTeam('team-42');
 
-      expect(eqSpy).toHaveBeenCalledTimes(1);
-      expect(eqSpy).toHaveBeenCalledWith('id', 'team-42');
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+      var callArgs = fetchSpy.mock.calls[0];
+      expect(callArgs[0]).toContain('/api/v1/teams/team-42');
+      expect(callArgs[1].method).toBe('DELETE');
+      expect(callArgs[1].headers.Authorization).toBe('Bearer tok-xyz');
     });
 
   });

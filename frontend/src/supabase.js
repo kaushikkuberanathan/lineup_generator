@@ -5,6 +5,7 @@ import { createClient } from '@supabase/supabase-js';
 
 var supabaseUrl  = import.meta.env.VITE_SUPABASE_URL  || '';
 var supabaseKey  = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+var BACKEND_URL  = import.meta.env.VITE_BACKEND_URL || 'https://lineup-generator-backend.onrender.com';
 
 export var supabase = supabaseUrl && supabaseKey
   ? createClient(supabaseUrl, supabaseKey)
@@ -56,17 +57,33 @@ export function dbSaveTeams(teams) {
 
 export function dbDeleteTeam(teamId) {
   if (!supabase) { return Promise.resolve(); }
-  return supabase.from('teams').delete().eq('id', teamId)
-    .then(function(r) {
-      if (r.error) {
-        console.warn('[DB] deleteTeam error:', r.error);
-        var err = new Error(r.error.message || 'write failed');
-        err.code = r.error.code;
-        err.operation = 'dbDeleteTeam';
-        throw err;
-      }
-      return r;
+  // Routed through the backend's service_role DELETE route (#380) — not a
+  // direct Supabase write. Session is read internally via supabase.auth
+  // .getSession() so this function's signature/call sites stay unchanged.
+  return supabase.auth.getSession().then(function(sessionResult) {
+    var session = sessionResult.data && sessionResult.data.session;
+    if (!session) {
+      var authErr = new Error('Not signed in');
+      authErr.code = 'NO_SESSION';
+      authErr.operation = 'dbDeleteTeam';
+      throw authErr;
+    }
+    return fetch(BACKEND_URL + '/api/v1/teams/' + teamId, {
+      method: 'DELETE',
+      headers: { Authorization: 'Bearer ' + session.access_token }
+    }).then(function(res) {
+      return res.json().catch(function() { return {}; }).then(function(body) {
+        if (!res.ok) {
+          console.warn('[DB] deleteTeam error:', body);
+          var err = new Error(body.message || body.error || 'write failed');
+          err.code = body.error || String(res.status);
+          err.operation = 'dbDeleteTeam';
+          throw err;
+        }
+        return body;
+      });
     });
+  });
 }
 
 export function dbLoadTeams() {
