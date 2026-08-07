@@ -1,19 +1,20 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: 2026-08-06 (v2.8.5 - Phase 4 color-token retirement slices 4-9, Story 104.1, Story 119 - develop only, not yet promoted)
+> Last updated: 2026-08-06 (v2.8.5 - Phase 4 var C legacy color-object retirement complete, Story 104.1, Story 119 - develop only, not yet promoted)
 > MVP launched: March 24, 2026
 
 ---
 
-## v2.8.5 - 2026-08-06 - Phase 4 color-token retirement (slices 4-9), Story 104.1, AboutTab regression fix (develop only — not yet promoted)
+## v2.8.5 - 2026-08-06 - Phase 4 var C legacy color-object retirement complete, Story 104.1, AboutTab regression fix (develop only — not yet promoted)
 - Internal only, no user-facing change, except one real bug fix (see below).
-- **Phase 4 `var C` legacy color-object retirement continued** - remaining 6 of 9 planned App.jsx regions migrated to the shared design-token system, all zero-visible-change reference swaps: Schedule tab (slice 4, #545), Lineups + Links tabs (slice 5, #546), Feedback/About/Account/Updates tabs (slice 6, #547), Modals/overlays (slice 7), SharedView public share-link page (slice 9, Story 120/#531). Slice 8 (GameModeScreen/DugoutView, Story 116/#503) remains open — blocked on its own Locked-File gate phrases.
+- **Phase 4 `var C` legacy color-object retirement complete** - all originally-planned regions plus a follow-up sweep migrated to the shared design-token system, all zero-visible-change reference swaps: Schedule tab (slice 4, #545), Lineups + Links tabs (slice 5, #546), Feedback/About/Account/Updates tabs (slice 6, #547), Modals/overlays (slice 7), SharedView public share-link page (slice 9, Story 120/#531). **Slice 10** (#606) retired the final 89 `C.*` occurrences across 5 render functions never assigned to any of the original 9 planned slices (renderSongs, renderSnackDuty, renderPinModal, renderTeamTab, renderBottomNav) plus 2 literal-hex bypass sites - `var C` now has zero remaining call sites anywhere in `App.jsx`. Slice 8 (GameModeScreen/DugoutView, Story 116/#503) - the one region formally carved out as its own numbered slice - is not itself part of slice 10's swept functions; whether its own separate inheritance-verification methodology (Story 114's Step 1/2) still needs to run against that surface is an open question this release does not resolve.
 - **Story 119 resolved**: minted `color.brand.gradientDark` and swapped the app-shell root background gradient's third stop to use it (#530/#598).
 - **Real regression found and fixed** during slice 6: `AboutTab.jsx`'s two cards had been silently rendering with `style={undefined}` (no background, padding, border-radius, or shadow) since a prior release deleted the `S.card` object they referenced via a prop — this bug has been live in production since v2.8.4 shipped. Fixed with a token-driven replica that reproduces the original appearance exactly (#547).
 - **Story 104 slice 4.1**: extracted `PlayerFilterToggle` from App.jsx into its own component file, `frontend/src/components/Shared/PlayerFilterToggle.jsx` (#592). Slices 4.2-4.4 remain open.
 - Dependency pin: `ip-address` pinned to `^10.4.0` via overrides, closing three Dependabot alerts (#583).
 - CI guardrail Action added that detects a likely squash-merge on `develop`/`main` after the fact and comments on the originating PR (#573/#588).
-- 18 new/corrected tests added across the above (mutation-tested where the change was value-preserving rather than behavior-changing).
+- Stale-docs audit pass: corrected `frontend/CLAUDE.md`'s test count (to 1022 passed/1 skipped/85 files, backend unit 111/111, total 1133) and its stale flattened tab-list model (now describes the actual `primaryTab`/sub-tab structure); disambiguated the `snack_duty` jsonb column-drop debt item from the live `renderSnackDuty()` UI feature in `DOC_TEST_DEBT.md` (#607/#608, #610/#611).
+- 18 new/corrected tests added across the token-migration and extraction work (mutation-tested where the change was value-preserving rather than behavior-changing); slice 10 itself added no new tests (token-swap only, verified against the unchanged 85-file/1022-test baseline).
 - Patch bump 2.8.4 to 2.8.5.
 
 ## v2.8.4 - 2026-08-04 - Phase 3 primitives completion, Phase 4 color-token retirement (slices 1-3), Bug #7 permanent fix
