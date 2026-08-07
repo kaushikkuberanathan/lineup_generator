@@ -34,8 +34,7 @@
 #   014 (DEV 2026-07-15), 015 (DEV+prod 2026-07-20), 016 (2026-07-21), 017
 #   (#477, authored 2026-08-01 — not yet applied to DEV/prod as of writing;
 #   included here so the ephemeral CI stack validates it before it ships), 018
-#   (#561, authored 2026-08-06 — not yet applied to DEV/prod as of writing;
-#   same reasoning as 017).
+#   (#561, applied to DEV 2026-08-06 and PROD 2026-08-07).
 #
 #   Migration 010 does not exist in this tree by design — see 011's own
 #   header ("010 is taken by docs/db/future/010_pitcher_rest_eligibility.sql,
@@ -93,9 +92,8 @@ FILES=(
   "backend/migrations/017_fix_prune_roster_snapshots_security_definer.sql"
   "backend/migrations/018_auto_provision_team_membership_on_create.sql"
 )
-# 018 (#561, authored 2026-08-06 — not yet applied to DEV/prod as of writing;
-# included here so the ephemeral CI stack validates it, same reasoning as 017
-# above) — its own regression suite is
+# 018 (#561, applied to DEV 2026-08-06 and PROD 2026-08-07 — included here
+# so the ephemeral CI stack validates it too) — its own regression suite is
 # backend/src/__tests__/rls/teamMembershipAutoProvision.test.js.
 # 005, 006, 007, 008, 009, 011, 012 are deliberately NOT here — see WHY THIS
 # EXISTS above. schema.sql's 2026-07-13 capture already contains their effects.

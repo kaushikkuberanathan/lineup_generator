@@ -1,15 +1,21 @@
 -- Migration 018: auto-provision a team_memberships row when a team is created
 --
--- DRAFTED 2026-08-06 (#561). NOT YET APPLIED TO DEV (psqvzppphdedqkpmarwx) OR
---   PROD (hzaajccyurlyeweekvma). Verified only against the local ephemeral
---   `supabase start` stack this session, via the new TM1-TM4 regression suite
---   in backend/src/__tests__/rls/teamMembershipAutoProvision.test.js — RED
---   before this file existed (TM2 failed with an RLS-denied team_data
+-- DRAFTED 2026-08-06 (#561). APPLIED TO DEV (psqvzppphdedqkpmarwx) 2026-08-06
+--   AND PROD (hzaajccyurlyeweekvma) 2026-08-07. Verified on the local
+--   ephemeral `supabase start` stack first, via the new TM1-TM4 regression
+--   suite in backend/src/__tests__/rls/teamMembershipAutoProvision.test.js —
+--   RED before this file existed (TM2 failed with an RLS-denied team_data
 --   INSERT, reproducing #561 exactly), GREEN after applying it locally.
---   Repo record of a trigger authored and locally-verified, committed before
---   a live DEV/prod apply — same "commit first, apply later" convention as
---   013-017, just one step earlier in that sequence given tonight's
---   no-prod-writes constraint.
+--   Prod apply verified read-only (no test writes against prod data, per
+--   this repo's blast-radius convention): pg_trigger confirms `on_team_created`
+--   live on public.teams; pg_proc confirms `handle_new_team` is prosecdef=true
+--   with search_path=public pinned, exactly as designed.
+--   Repo record of a trigger authored, locally-verified, then committed
+--   before its DEV/prod apply — same "commit first, apply later" convention
+--   as 013-017. The commit-before-apply gap here was one session longer than
+--   usual (drafted 2026-08-06 under a no-prod-writes constraint that session;
+--   applied 2026-08-07 once that constraint lifted), not a change in the
+--   convention itself.
 --
 -- ---------------------------------------------------------------------------
 -- WHY

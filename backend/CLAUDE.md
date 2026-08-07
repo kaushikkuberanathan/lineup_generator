@@ -160,6 +160,27 @@ Unit suite total: **111** (verified via `npm run test:unit`, 2026-07-31 — 0 fa
   and confirmed live on PROD via a direct query (KK). PR #486 documented
   PROD as pending at the time it merged; that framing is now corrected —
   see the migration file's own header for the full chain of evidence.
+- **`018_auto_provision_team_membership_on_create.sql` — APPLIED TO DEV
+  2026-08-06 AND PROD 2026-08-07.** Fixes #561: `createTeam()`'s self-serve
+  flow never provisioned a `team_memberships` row for the creator, so a
+  coach's first `team_data` save for a newly-created team was silently
+  RLS-denied by `team_data_auth_insert`'s WITH CHECK. A `SECURITY DEFINER`
+  `AFTER INSERT` trigger (`handle_new_team`) on `public.teams` now
+  auto-provisions `role=admin`/`status=active` membership for `auth.uid()`.
+  A second, more severe bug found investigating this (`dbSaveTeams()`'s
+  `.upsert(onConflict)` call shape was unconditionally RLS-denied for
+  *every* new team, not just a second one — Postgres enforces the UPDATE
+  policy's WITH CHECK for `INSERT ... ON CONFLICT DO UPDATE` even when no
+  conflict occurs) was fixed separately in `frontend/src/supabase.js`
+  (plain INSERT with a conflict-only UPDATE fallback). RED→GREEN verified
+  via the new `backend/src/__tests__/rls/teamMembershipAutoProvision.test.js`
+  (TM1-TM4) against DEV before either fix; prod apply verified read-only
+  (`pg_trigger`/`pg_proc` catalog check, no test writes against prod data).
+  **Not backfilled, and not possible to backfill:** `teams.owner_id` is
+  always `''`, never populated by any write path, so already-broken
+  membership-less teams created before this fix cannot be traced back to
+  their creator automatically — recovering those needs a manual admin
+  action per affected team.
 
 ### !! FIVE NUMERIC COLLISIONS ACROSS THE TWO TREES !!
 
