@@ -1,9 +1,21 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: 2026-08-04 (v2.8.4 - Phase 3 completion, Phase 4 slices 1-3, Bug #7 permanent fix)
+> Last updated: 2026-08-06 (v2.8.5 - Phase 4 var C legacy color-object retirement complete, Story 104.1, Story 119 - develop only, not yet promoted)
 > MVP launched: March 24, 2026
 
 ---
+
+## v2.8.5 - 2026-08-06 - Phase 4 var C legacy color-object retirement complete, Story 104.1, AboutTab regression fix (develop only — not yet promoted)
+- Internal only, no user-facing change, except one real bug fix (see below).
+- **Phase 4 `var C` legacy color-object retirement complete** - all originally-planned regions plus a follow-up sweep migrated to the shared design-token system, all zero-visible-change reference swaps: Schedule tab (slice 4, #545), Lineups + Links tabs (slice 5, #546), Feedback/About/Account/Updates tabs (slice 6, #547), Modals/overlays (slice 7), SharedView public share-link page (slice 9, Story 120/#531). **Slice 10** (#606) retired the final 89 `C.*` occurrences across 5 render functions never assigned to any of the original 9 planned slices (renderSongs, renderSnackDuty, renderPinModal, renderTeamTab, renderBottomNav) plus 2 literal-hex bypass sites - `var C` now has zero remaining call sites anywhere in `App.jsx`. Slice 8 (GameModeScreen/DugoutView, Story 116/#503) - the one region formally carved out as its own numbered slice - is not itself part of slice 10's swept functions; whether its own separate inheritance-verification methodology (Story 114's Step 1/2) still needs to run against that surface is an open question this release does not resolve.
+- **Story 119 resolved**: minted `color.brand.gradientDark` and swapped the app-shell root background gradient's third stop to use it (#530/#598).
+- **Real regression found and fixed** during slice 6: `AboutTab.jsx`'s two cards had been silently rendering with `style={undefined}` (no background, padding, border-radius, or shadow) since a prior release deleted the `S.card` object they referenced via a prop — this bug has been live in production since v2.8.4 shipped. Fixed with a token-driven replica that reproduces the original appearance exactly (#547).
+- **Story 104 slice 4.1**: extracted `PlayerFilterToggle` from App.jsx into its own component file, `frontend/src/components/Shared/PlayerFilterToggle.jsx` (#592). Slices 4.2-4.4 remain open.
+- Dependency pin: `ip-address` pinned to `^10.4.0` via overrides, closing three Dependabot alerts (#583).
+- CI guardrail Action added that detects a likely squash-merge on `develop`/`main` after the fact and comments on the originating PR (#573/#588).
+- Stale-docs audit pass: corrected `frontend/CLAUDE.md`'s test count (to 1022 passed/1 skipped/85 files, backend unit 111/111, total 1133) and its stale flattened tab-list model (now describes the actual `primaryTab`/sub-tab structure); disambiguated the `snack_duty` jsonb column-drop debt item from the live `renderSnackDuty()` UI feature in `DOC_TEST_DEBT.md` (#607/#608, #610/#611).
+- 18 new/corrected tests added across the token-migration and extraction work (mutation-tested where the change was value-preserving rather than behavior-changing); slice 10 itself added no new tests (token-swap only, verified against the unchanged 85-file/1022-test baseline).
+- Patch bump 2.8.4 to 2.8.5.
 
 ## v2.8.4 - 2026-08-04 - Phase 3 primitives completion, Phase 4 color-token retirement (slices 1-3), Bug #7 permanent fix
 - Internal only, no user-facing change.
@@ -2996,7 +3008,20 @@ removable before committing.
 
 ### Story 86 (P1) — Post-promote sync: add main → develop sync step to Release Ritual <!-- #189 -->
 
-Status: Open
+Status: Resolved (2026-08-05). Re-verified directly against current source
+rather than trusting this entry's own "Open" status: the proposed fix already
+shipped, just was never closed out here. `CLAUDE.md`'s "Release Ritual —
+Develop to Main Promotion" section (line ~225) carries the one-liner —
+"**Post-promote sync (required):** After every develop → main promote
+merges, immediately open a `sync/main-into-develop` PR to absorb the merge
+commit back into develop. Skipping causes 8-file conflict on the next
+promote. (Story 86, 2026-05-23)" — and `docs/product/MASTER_DEV_REFERENCE.md`
+carries the full rule as step 29 of the Release Ritual phase sequence plus a
+"don't skip this" callout in its pitfalls list, both citing "(Story 86,
+2026-05-23)" already. `DOC_TEST_DEBT.md` has no separate entry for this
+Story — nothing to close there. No doc content changed by this closure;
+this is a stale status-marker fix only, same pattern as the share/print and
+Auto-Staging Git Hook items closed as stale in prior sessions. PR #575.
 Discovered: May 23, 2026 — promote PR #175 had 8-file conflict
 because post-promote sync was skipped after PR #159
 Target: Next governance pass
@@ -4219,8 +4244,27 @@ C.* -> tokens.* swap for its own header markup.
 
 ---
 ### Story 121 (P0) - AppShareLinkRouting.test.jsx incomplete Supabase mock fires real network writes/deletes <!-- #535 -->
-Status: Open - NOT auto-implemented, flagged for T1/whoever owns this test
-file (Dugout/main track). Deliberately not fixed in the session that found it.
+Status: Resolved (2026-08-05). Treated as a hard-stop investigation before any
+fix per this repo's live-data-mutation severity tier (same as D-S355) - full
+findings reported to KK, explicit go-ahead given, before writing the fix.
+Confirmed NOT an active incident: a read-only probe against the real REST
+endpoint returned 401 "Legacy API keys are disabled" (disabled
+2026-07-14T17:11:14Z, three weeks before this investigation) - no write
+through this path has ever succeeded, past or present. Confirmed CI is not
+exposed at all (frontend/.env is gitignored, CI injects no Supabase secrets
+into the frontend job). Scope grew beyond this ticket's original framing:
+AppNoMembershipRouting.test.jsx had ZERO Supabase mocking (not just an
+incomplete one), and its own real fixture uses the actual Mud Hens team ID.
+Both files fixed with a fully self-contained supabase.js mock (no
+`importOriginal` spread) - see DOC_TEST_DEBT.md's matching Resolved entry for
+full technical detail and the git-stash RED-checkpoint evidence (19 real
+"Legacy API keys are disabled" unhandled rejections with the old mock, 0
+with the fix, same 8/8 tests passing throughout). Also corrects a
+mischaracterization from earlier the same session: several "N errors" lines
+seen during unrelated full-suite runs were wrongly attributed to Bug #7 noise
+without verifying the source - they were these exact 401'd write attempts.
+Clears the debt-p0 gate again (0 open P0 items). Branch:
+issue/535-appsharelinkrouting-mock-fix, PR #574.
 Discovered: 2026-08-04, while diagnosing Bug #7 (Vitest worker-spawn flake,
 Story 118/#517) on the lineup-generator (Dugout/main) worktree.
 Target: should be picked up soon, not routine backlog cadence - see Impact.
@@ -4261,9 +4305,27 @@ correctly, as a first diagnostic step).
 
 ---
 ### Story 122 (P1) - Dependabot #61/#62/#63: ip-address SSRF/trust-boundary bypass via express-rate-limit <!-- #539 -->
-Status: Open - tracked separately per KK's explicit go/no-go decision on the
-v2.8.4 release audit (2026-08-04): ship v2.8.4 with these alerts open, address
-here rather than blocking that release.
+Status: Resolved (2026-08-05), per KK's explicit go decision after a
+decision-ready writeup (severity, exploitability, and fix-cost analysis).
+Investigated reachability directly against source before deciding fix
+approach: `ipKeyGenerator(req.ip)` in `backend/src/routes/auth.js`'s
+loginLimiter IS the vulnerable code path, but only as a documented
+"defensive only" fallback branch (the code's own existing comment) - the
+happy path keys on email, not IP. Even if hit, this is an IP-classification
+bug used only for rate-limit bucket keying here, not a trust/access
+decision - narrower than the advisory's generic SSRF framing for this
+specific usage. Confirmed `express-rate-limit`'s own latest version (8.6.2)
+still declares `"ip-address": "^10.2.0"` - never bumped its own constraint -
+so the fix does NOT require an express-rate-limit bump at all: added
+`"overrides": { "ip-address": "^10.4.0" }` to `backend/package.json` (a
+locked file, gate phrase granted same session). `npm install` confirmed the
+resolved version: `node_modules/ip-address` now pins exactly `10.4.0`
+(satisfies `>=10.3.1`, closing #61/#62/#63 together). Verified no
+regression: `loginLimiter.test.js` 3/3 pass, full backend unit suite 111/111
+pass, 0 fail. `npm install` also reported "found 0 vulnerabilities".
+Branch: `issue/539-ip-address-override-fix`, PR #583. Dependabot alerts
+#61/#62/#63 auto-confirmed `state: fixed` at 2026-08-05T21:51:35Z, matching
+this fix's merge.
 Update 2026-08-05: a third alert, #63 (HIGH), appeared seconds after v2.8.4's
 version-bump merged to develop - same ip-address package/dependency chain
 (express-rate-limit), but a more severe, broader-reaching SSRF bypass
@@ -4302,6 +4364,41 @@ ip-address (>=10.3.1, covers #61/#62/#63 together), or add an npm
 overrides/resolutions entry pinning ip-address directly if express-rate-limit
 hasn't picked up the bump yet. Verify loginLimiter behavior is unchanged
 after the bump (existing rate-limit tests should cover this).
+
+---
+### Story 123 (P0) - RESOLVED: 004_rls_fixes.sql missing idempotency guards blocked v2.8.4 promote <!-- #564 -->
+Status: RESOLVED - merged to develop and main same session (PR #562, #560).
+Discovered: 2026-08-05, while promoting v2.8.4 (PR #560, develop -> main) - the
+RLS Policy Suite (ephemeral) CI check failed deterministically on develop's
+current tip.
+Symptom: psql:.../004_rls_fixes.sql:150: ERROR: policy "teams_auth_select" for
+table "teams" already exists. Root cause: the Doc Audit Spike's Story 1 (#549)
+correctly updated docs/db/schema.sql to document that WS-3's RLS policies
+(teams/team_data/roster_snapshots) are live in prod - with proper DROP POLICY
+IF EXISTS guards. But backend/scripts/apply-rls-bootstrap.sh still
+unconditionally replays backend/migrations/004_rls_fixes.sql after schema.sql
+on the header's own now-outdated assumption that schema.sql didn't yet
+contain 004's policies. Every CREATE POLICY in 004 lacked a self-referential
+DROP POLICY IF EXISTS guard (only older catch-all policy names were guarded),
+so the replay collided.
+Impact: Blocked the v2.8.4 promote for approximately 30 minutes. Not a live
+security exposure - the actual RLS policies enforced in prod were correct
+throughout (T1 verified them directly against prod via pg_policies for
+Story 1); this was a CI-harness idempotency bug that temporarily removed the
+ability to validate RLS on a fresh ephemeral database.
+Fix: PR #562. Read 004_rls_fixes.sql in full, cross-referenced all 12 CREATE
+POLICY statements against schema.sql's actual current content (not just the
+one error line) - 9 of 12 currently collided (teams x4, team_data x3,
+roster_snapshots x2); added guards to all 12 for consistency, since partial
+idempotency is exactly what caused this. Updated apply-rls-bootstrap.sh's
+header comment to document the now-partially-false assumption. Verified via
+the real ephemeral-DB CI job (no local Docker available) - green on first
+re-run. Backend unit suite 111/111 unaffected.
+Cross-team coordination: T1 notified via a comment on Story 1's issue (#549).
+Flagged that migrations 013-017 (also in apply-rls-bootstrap.sh's replay
+list) haven't been individually audited for the same guard-completeness -
+worth a look before assuming they're immune to the same class of failure if
+schema.sql gets re-captured again in the future.
 
 ---
 ### Automated Score Reporting (County Integration)

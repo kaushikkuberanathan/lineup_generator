@@ -27,7 +27,12 @@ Key sections within App.jsx:
 - **~458–720**: Lineup engine (`scorePosition`, `autoAssign`)
 - **~720–900**: Helper functions (`validateGrid`, `initGrid`, etc.)
 - **~900–1197**: State initialization and Supabase hydration
-- **~1197+**: JSX render (tabs: Roster, Defense, Batting, Schedule, Print, Share, Links, Feedback, About)
+- **~1197+**: JSX render. Top-level `primaryTab`: `home | team | gameday | more`.
+  - `team` → `teamSubTab`: roster, schedule, snacks
+  - `gameday` → `gameDayTab`: lineups (with inner `lineupsSubTab`: defense, batting), songs
+  - `more` → `moreTab`: account, feedback, links, about, updates, legal, faq
+  - Always-present chrome (not tab-dispatched): PIN modal (`renderPinModal`), Bottom Nav (`renderBottomNav`), Exit Sheet (`renderExitSheet`)
+  - Print and Share are no longer standalone tabs — `renderPrint` was removed; Share is a share-sheet action off the Lineups view
 
 ---
 
@@ -73,7 +78,7 @@ Located at App.jsx ~458–720. Two-phase auto-assign algorithm:
 ## Test Suite
 
 - **Framework**: Vitest
-- **CI target**: 975 frontend passed / 1 skipped / 0 failed (as of v2.8.4, 2026-08-04; 80 test files; 1086 total incl. 111 backend unit tests)
+- **CI target**: 1022 frontend passed / 1 skipped / 0 failed (as of 2026-08-06 post-#602 develop tip; 85 test files; 1133 total incl. 111 backend unit tests)
 - **Known skip**: bench-equity.test.js test 2.1 (bench rotation fairness — BUG CONFIRMED; identical players, sit-count drift > 1 inning; fix deferred)
 
 #### Test files

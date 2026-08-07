@@ -28,6 +28,7 @@ import { EmptyState } from './components/Home/EmptyState';
 import { ValidationBanner } from './components/Shared/ValidationBanner';
 import { OfflineIndicator } from './components/Shared/OfflineIndicator';
 import { MaintenanceScreen } from './components/Shared/MaintenanceScreen';
+import { PlayerFilterToggle } from './components/Shared/PlayerFilterToggle';
 import { DefenseDiamond }  from './components/GameDay/DefenseDiamond';
 import { GameModeScreen }  from './components/game-mode/GameModeScreen';
 import { DugoutView }      from './components/game-mode/DugoutView';
@@ -45,6 +46,7 @@ import { PendingApprovalScreen } from './components/Auth/PendingApprovalScreen';
 import { NoMembershipScreen }    from './components/Auth/NoMembershipScreen';
 import { roleLabel } from './utils/roleLabels';
 import { buildSharePayload } from './utils/buildSharePayload';
+import { buildBoxScorePrompt } from './utils/buildBoxScorePrompt';
 import Toast from './components/ui/Toast';
 import { Card } from './components/ui/Card';
 import { useAuth } from './hooks/useAuth';
@@ -140,7 +142,7 @@ var DISLIKE_PENALTY = -50;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.8.4";
+var APP_VERSION = "2.8.5";
 
 // loadJSON / saveJSON — localStorage with in-memory (_mem) fallback — moved to
 // ./utils/storage (#416). Imported above; call sites unchanged.
@@ -664,18 +666,6 @@ function initGrid(roster, innings) {
 // STYLES
 // ============================================================
 
-var C = {
-  navy: "#0f1f3d", navyLight: "#1a3260", red: "#c8102e", redDark: "#9b0c22",
-  gold: "#f5c842", cream: "#fdf6ec", white: "#ffffff", text: "#1a1a2e",
-  textMuted: "#6b7280", border: "rgba(0,0,0,0.06)", cardBg: "#ffffff",
-  // Field/game colors
-  win: "#27ae60", loss: "#c8102e", tie: "#d4a017", canceled: "#7f8c8d",
-  greenField: "#2e7d32",
-  // Common UI values referenced inline throughout
-  overlayBg: "rgba(0,0,0,0.5)", subtleBg: "#f8fafc",
-  subtleBorder: "rgba(0,0,0,0.04)", subtleText: "#9ca3af"
-};
-
 var S = {
   header: {
     background:"linear-gradient(135deg,"+tokens.color.brand.navy+" 0%,"+tokens.color.brand.navyLight+" 100%)",
@@ -699,24 +689,24 @@ var S = {
       padding:"7px 14px", borderRadius:"6px", border:"none", cursor:"pointer",
       fontSize:"11px", fontWeight:"bold", fontFamily:"Georgia,serif",
       letterSpacing:"0.06em", textTransform:"uppercase", transition:"all 0.12s",
-      background: active ? C.red : "transparent",
+      background: active ? tokens.color.brand.red : "transparent",
       color: active ? "#fff" : "rgba(255,255,255,0.55)"
     };
   },
   body: { flex:1, overflowY:"auto", WebkitOverflowScrolling:"touch", display:"flex", flexDirection:"column", alignItems:"center", width:"100%", maxWidth:"600px", marginLeft:"auto", marginRight:"auto", paddingBottom:"80px" },
   sectionTitle: {
     fontSize:"11px", letterSpacing:"0.18em", textTransform:"uppercase",
-    color:C.red, fontWeight:"bold", marginBottom:"14px"
+    color:tokens.color.brand.red, fontWeight:"bold", marginBottom:"14px"
   },
   btn: function(v) {
     var bg = "rgba(15,31,61,0.08)";
     var col = tokens.color.text.ink;
     var bdr = "none";
     var shadow = "none";
-    if (v === "primary") { bg = "linear-gradient(135deg,"+C.red+","+C.redDark+")"; col="#fff"; shadow="0 2px 8px rgba(200,16,46,0.3)"; }
+    if (v === "primary") { bg = "linear-gradient(135deg,"+tokens.color.brand.red+","+tokens.color.brand.redDark+")"; col="#fff"; shadow="0 2px 8px rgba(200,16,46,0.3)"; }
     else if (v === "gold")  { bg = "linear-gradient(135deg,#c8902e,#a07010)"; col="#fff"; }
-    else if (v === "ghost") { bg = "transparent"; col = C.textMuted; bdr = "1px solid " + C.border; }
-    else if (v === "danger"){ bg = C.red; col = "#fff"; }
+    else if (v === "ghost") { bg = "transparent"; col = tokens.color.text.muted; bdr = "1px solid " + tokens.color.border.neutral; }
+    else if (v === "danger"){ bg = tokens.color.brand.red; col = "#fff"; }
     return {
       padding:"8px 16px", borderRadius:"6px", border:bdr, cursor:"pointer",
       fontSize:"11px", letterSpacing:"0.08em", textTransform:"uppercase",
@@ -761,42 +751,7 @@ var S = {
 
 // NowBattingBar — extracted to components/GameDay/NowBattingStrip.jsx
 
-// ============================================================
-// PLAYER FILTER TOGGLE
-// Viewer mode (shared link) — horizontal pill list to filter by player.
-// "All Players" resets the selection.
-// ============================================================
-
-function PlayerFilterToggle({ players, selected, onSelect }) {
-  var pills = ['All Players'].concat(players);
-  return (
-    <div style={{
-      display: 'flex', gap: '6px', overflowX: 'auto', WebkitOverflowScrolling: 'touch',
-      paddingBottom: '4px', scrollbarWidth: 'none', msOverflowStyle: 'none',
-    }}>
-      {pills.map(function(name) {
-        var isSelected = name === 'All Players' ? !selected : selected === name;
-        return (
-          <button
-            key={name}
-            onClick={function() { onSelect(name === 'All Players' ? null : name); }}
-            style={{
-              flex: 'none', padding: '5px 12px', borderRadius: '14px', cursor: 'pointer',
-              fontFamily: "Georgia,'Times New Roman',serif", fontSize: '12px', whiteSpace: 'nowrap',
-              border: isSelected ? '2px solid #f5a623' : '1px solid rgba(15,31,61,0.15)',
-              background: isSelected ? '#f5a623' : '#ffffff',
-              color: isSelected ? '#0f1f3d' : '#555',
-              fontWeight: isSelected ? 'bold' : 'normal',
-              boxShadow: isSelected ? '0 2px 6px rgba(245,166,35,0.3)' : 'none',
-            }}
-          >
-            {name === 'All Players' ? name : firstName(name)}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
+// PLAYER FILTER TOGGLE — extracted to components/Shared/PlayerFilterToggle.jsx (Story 104 slice 4.1, #279)
 
 export function SharedView({ payload, renderFieldSVG }) {
   // Derive inning count from grid
@@ -839,15 +794,15 @@ export function SharedView({ payload, renderFieldSVG }) {
     <div style={{ minHeight:"100vh", background:tokens.color.surface.cream, fontFamily:"Georgia,'Times New Roman',serif", color:tokens.color.text.ink }}>
 
       {/* ── Header ─────────────────────────────────────────────── */}
-      <div style={{ background:"linear-gradient(135deg,#0f1f3d,#1a3260)", borderBottom:"4px solid " + C.red, padding:"14px 20px" }}>
+      <div style={{ background:"linear-gradient(135deg,"+tokens.color.brand.navy+","+tokens.color.brand.navyLight+")", borderBottom:"4px solid " + tokens.color.brand.red, padding:"14px 20px" }}>
         <div style={{ maxWidth:"800px", margin:"0 auto", display:"flex", alignItems:"center", gap:"12px" }}>
           <BrandMark size={42} />
-          <div style={{ width:"30px", height:"30px", borderRadius:"50%", background:C.navy, border:"2px solid "+C.gold,
-            display:"flex", alignItems:"center", justifyContent:"center", fontSize:"13px", fontWeight:"bold", color:C.gold, flexShrink:0 }}>
+          <div style={{ width:"30px", height:"30px", borderRadius:"50%", background:tokens.color.brand.navy, border:"2px solid "+tokens.color.brand.gold,
+            display:"flex", alignItems:"center", justifyContent:"center", fontSize:"13px", fontWeight:"bold", color:tokens.color.brand.gold, flexShrink:0 }}>
             {teamInitial}
           </div>
           <div style={{ flex:1, minWidth:0 }}>
-            <div style={{ fontSize:"17px", fontWeight:"bold", color:C.gold, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+            <div style={{ fontSize:"17px", fontWeight:"bold", color:tokens.color.brand.gold, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
               {payload.team}
             </div>
             {payload.game ? (
@@ -885,16 +840,16 @@ export function SharedView({ payload, renderFieldSVG }) {
         <div style={{ display:"flex", gap:"8px", alignItems:"center", marginBottom:"16px", flexWrap:"wrap" }}>
           {/* Inning pills */}
           <div style={{ display:"flex", flexWrap:"nowrap", gap:"4px", alignItems:"center", overflowX:"auto", WebkitOverflowScrolling:"touch", flex:1, minWidth:0 }}>
-            <span style={{ fontSize:"9px", color:C.textMuted, fontWeight:"bold", textTransform:"uppercase", letterSpacing:"0.08em", flexShrink:0 }}>Inn</span>
+            <span style={{ fontSize:"9px", color:tokens.color.text.muted, fontWeight:"bold", textTransform:"uppercase", letterSpacing:"0.08em", flexShrink:0 }}>Inn</span>
             <button onClick={function() { setSvInn(null); }}
               style={{ padding:"3px 8px", borderRadius:"10px", border:"none", cursor:"pointer", fontSize:"11px", fontWeight:"bold", fontFamily:"inherit", flexShrink:0,
-                background: svInn === null ? C.navy : "rgba(15,31,61,0.08)", color: svInn === null ? "#fff" : C.textMuted }}>All</button>
+                background: svInn === null ? tokens.color.brand.navy : "rgba(15,31,61,0.08)", color: svInn === null ? "#fff" : tokens.color.text.muted }}>All</button>
             {innArr.map(function(i) {
               var active = svInn === i;
               return (
                 <button key={i} onClick={function(idx) { return function() { setSvInn(idx); }; }(i)}
                   style={{ padding:"3px 8px", borderRadius:"10px", border:"none", cursor:"pointer", fontSize:"11px", fontWeight:"bold", fontFamily:"inherit", flexShrink:0,
-                    background: active ? C.red : "rgba(15,31,61,0.08)", color: active ? "#fff" : C.textMuted }}>
+                    background: active ? tokens.color.brand.red : "rgba(15,31,61,0.08)", color: active ? "#fff" : tokens.color.text.muted }}>
                   {i + 1}
                 </button>
               );
@@ -908,7 +863,7 @@ export function SharedView({ payload, renderFieldSVG }) {
                 <button key={opt[1]} onClick={function(v) { return function() { setSvView(v); }; }(opt[1])}
                   title={opt[1] === "diamond" ? "Diamond view" : "Table view"}
                   style={{ padding:"4px 10px", borderRadius:"5px", border:"none", cursor:"pointer", fontSize:"12px", fontFamily:"inherit", fontWeight:"bold",
-                    background: active ? C.white : "transparent", color: active ? C.navy : C.textMuted,
+                    background: active ? tokens.color.surface.card : "transparent", color: active ? tokens.color.brand.navy : tokens.color.text.muted,
                     boxShadow: active ? "0 1px 3px rgba(0,0,0,0.1)" : "none" }}>
                   {opt[0]}
                 </button>
@@ -945,7 +900,7 @@ export function SharedView({ payload, renderFieldSVG }) {
                           <tr key={r}>
                             {benchLabels.map(function(lbl, ci) {
                               var pn = benchDisplay[ci][r] || "";
-                              return <td key={lbl} style={{ padding:"4px 10px", textAlign:"center", borderBottom:"1px solid rgba(15,31,61,0.06)", fontWeight:"bold", color: pn ? C.navy : "#ccc" }}>{pn ? firstName(pn) : "-"}</td>;
+                              return <td key={lbl} style={{ padding:"4px 10px", textAlign:"center", borderBottom:"1px solid rgba(15,31,61,0.06)", fontWeight:"bold", color: pn ? tokens.color.brand.navy : "#ccc" }}>{pn ? firstName(pn) : "-"}</td>;
                             })}
                           </tr>
                         );
@@ -991,9 +946,9 @@ export function SharedView({ payload, renderFieldSVG }) {
               <table style={{ width:"100%", borderCollapse:"collapse", fontSize:"12px" }}>
                 <thead>
                   <tr style={{ background:"#f5efe4" }}>
-                    <th style={{ padding:"7px 12px", textAlign:"left", fontSize:"10px", color:C.textMuted, borderBottom:"2px solid rgba(15,31,61,0.1)", position:"sticky", left:0, background:"#f5efe4" }}>Player</th>
+                    <th style={{ padding:"7px 12px", textAlign:"left", fontSize:"10px", color:tokens.color.text.muted, borderBottom:"2px solid rgba(15,31,61,0.1)", position:"sticky", left:0, background:"#f5efe4" }}>Player</th>
                     {(svInn !== null ? [svInn] : innArr).map(function(i) {
-                      return <th key={i} style={{ padding:"7px 10px", textAlign:"center", fontSize:"10px", color:C.textMuted, borderBottom:"2px solid rgba(15,31,61,0.1)", minWidth:"60px" }}>Inn {i+1}</th>;
+                      return <th key={i} style={{ padding:"7px 10px", textAlign:"center", fontSize:"10px", color:tokens.color.text.muted, borderBottom:"2px solid rgba(15,31,61,0.1)", minWidth:"60px" }}>Inn {i+1}</th>;
                     })}
                   </tr>
                 </thead>
@@ -1003,7 +958,7 @@ export function SharedView({ payload, renderFieldSVG }) {
                     var rowBg = isSelectedRow ? "rgba(245,166,35,0.12)" : (ri%2===0 ? "#fff" : "#faf8f5");
                     return (
                       <tr key={name} style={{ background: rowBg }}>
-                        <td style={{ padding:"6px 12px", fontWeight:"bold", position:"sticky", left:0, background: rowBg, borderBottom:"1px solid rgba(15,31,61,0.04)", color: isSelectedRow ? "#b45309" : C.navy }}>{firstName(name)}</td>
+                        <td style={{ padding:"6px 12px", fontWeight:"bold", position:"sticky", left:0, background: rowBg, borderBottom:"1px solid rgba(15,31,61,0.04)", color: isSelectedRow ? "#b45309" : tokens.color.brand.navy }}>{firstName(name)}</td>
                         {(svInn !== null ? [svInn] : innArr).map(function(i) {
                           var pos = (payload.grid[name] || [])[i] || "";
                           return (
@@ -1029,7 +984,7 @@ export function SharedView({ payload, renderFieldSVG }) {
 
         {/* ── Batting order ─────────────────────────────────────── */}
         {payload.batting && payload.batting.length > 0 ? (
-          <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px", marginTop:"4px" }}>
+          <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px", marginTop:"4px" }}>
             <div style={S.sectionTitle}>Batting Order</div>
             <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))", gap:"6px" }}>
               {payload.batting.map(function(name, idx) {
@@ -1053,14 +1008,14 @@ export function SharedView({ payload, renderFieldSVG }) {
                     background: isSelectedBatter ? "rgba(245,166,35,0.08)" : undefined,
                     borderRadius:"6px" }}>
                     <div style={{ width:"20px", height:"20px", borderRadius:"50%",
-                      background: isSelectedBatter ? "#f5a623" : C.navy,
-                      color: isSelectedBatter ? "#0f1f3d" : "#fff",
+                      background: isSelectedBatter ? "#f5a623" : tokens.color.brand.navy,
+                      color: isSelectedBatter ? tokens.color.brand.navy : "#fff",
                       fontSize:"10px", fontWeight:"bold", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{idx+1}</div>
                     <div style={{ minWidth:0 }}>
                       <div style={{ fontWeight:"bold", fontSize:"12px", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",
                         color: isSelectedBatter ? "#b45309" : undefined }}>{firstName(name)}</div>
                       {fieldPos.length > 0 ? (
-                        <div style={{ fontSize:"9px", color:C.textMuted }}>
+                        <div style={{ fontSize:"9px", color:tokens.color.text.muted }}>
                           {fieldPos.map(function(fp, fpi) {
                             return (
                               <span key={fpi} style={{ color: fp === "OUT" ? "#dc2626" : "inherit", fontWeight: fp === "OUT" ? "bold" : "inherit" }}>
@@ -1095,7 +1050,7 @@ export function SharedView({ payload, renderFieldSVG }) {
         ) : null}
 
         {/* ── Footer ─────────────────────────────────────────────── */}
-        <div style={{ textAlign:"center", marginTop:"24px", fontSize:"11px", color:C.textMuted, borderTop:"1px solid rgba(15,31,61,0.08)", paddingTop:"16px" }}>
+        <div style={{ textAlign:"center", marginTop:"24px", fontSize:"11px", color:tokens.color.text.muted, borderTop:"1px solid rgba(15,31,61,0.08)", paddingTop:"16px" }}>
           <div style={{ marginBottom:"4px" }}>View-only lineup · Dugout Lineup</div>
           <div style={{ fontSize:"10px", color:"rgba(15,31,61,0.25)" }}>Tap Print to save as PDF or screenshot this page</div>
         </div>
@@ -2762,29 +2717,9 @@ export default function App() {
   function parseGameResult(sourceType, sourceData, mediaType) {
     // sourceType: "image" | "pdf" | "text"
     // Parses a box score / game result and returns { result, ourScore, theirScore, battingPerf }
-    var rosterNames = roster.map(function(r) { return r.name; }).join(", ");
-    var systemPrompt = "You are a baseball box score parser. " +
-      "Extract game result and individual batting stats. " +
-      "Team name is " + (activeTeam && activeTeam.name ? activeTeam.name : "") + ". Players to look for: " + rosterNames + ". " +
-      "Return ONLY valid JSON with this structure: " +
-      '{ "result": "W" or "L" or "T", "ourScore": "7", "theirScore": "3", ' +
-      '"battingPerf": { "PlayerName": { "ab": 3, "h": 2, "r": 1, "rbi": 1, "bb": 0 } } }. ' +
-      "Only include players you find stats for. No markdown, no explanation.";
-
-    var userContent;
-    if (sourceType === "image") {
-      userContent = [
-        { type:"image", source:{ type:"base64", media_type: mediaType || "image/png", data: sourceData } },
-        { type:"text", text:"Parse this box score or game result image. Extract the final score and individual batting stats for " + ((activeTeam && activeTeam.name) || "") + " players." }
-      ];
-    } else if (sourceType === "pdf") {
-      userContent = [
-        { type:"document", source:{ type:"base64", media_type:"application/pdf", data: sourceData } },
-        { type:"text", text:"Parse this box score or game result PDF. Extract the final score and individual batting stats for " + ((activeTeam && activeTeam.name) || "") + " players." }
-      ];
-    } else {
-      userContent = "Parse this game result. Extract final score and batting stats for " + ((activeTeam && activeTeam.name) || "") + " players.\n\n" + sourceData;
-    }
+    var prompt = buildBoxScorePrompt(sourceType, sourceData, mediaType, activeTeam, roster);
+    var systemPrompt = prompt.systemPrompt;
+    var userContent = prompt.userContent;
 
     var BACKEND = "https://lineup-generator-backend.onrender.com";
     var _ctrl = new AbortController();
@@ -3608,10 +3543,10 @@ export default function App() {
         )}
 
         {recoverMode && (
-          <div style={{ position:'fixed', top:0, left:0, right:0, bottom:0, background:'rgba(0,0,0,0.5)', zIndex:10000, display:'flex', alignItems:'center', justifyContent:'center', padding:'20px' }}>
-            <div style={{ background:'white', borderRadius:'12px', padding:'20px', maxWidth:'480px', width:'100%', maxHeight:'80vh', overflowY:'auto' }}>
+          <div style={{ position:'fixed', top:0, left:0, right:0, bottom:0, background:tokens.color.overlay.scrimLight, zIndex:10000, display:'flex', alignItems:'center', justifyContent:'center', padding:'20px' }}>
+            <div style={{ background:tokens.color.surface.card, borderRadius:'12px', padding:'20px', maxWidth:'480px', width:'100%', maxHeight:'80vh', overflowY:'auto' }}>
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'16px' }}>
-                <div style={{ fontWeight:'bold', fontSize:'16px', color:'#0f1f3d' }}>Restore Previous Roster</div>
+                <div style={{ fontWeight:'bold', fontSize:'16px', color:tokens.color.brand.navy }}>Restore Previous Roster</div>
                 <button onClick={function(){setRecoverMode(false); setSnapshots([]);}} style={{ background:'none', border:'none', fontSize:'20px', cursor:'pointer', color:'#94a3b8' }}>&#xd7;</button>
               </div>
               {snapshots.map(function(snap) {
@@ -3621,7 +3556,7 @@ export default function App() {
                   <div key={snap.id} style={{ border:'1px solid #e5e7eb', borderRadius:'8px', padding:'12px', marginBottom:'10px' }}>
                     <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                       <div>
-                        <div style={{ fontWeight:'bold', fontSize:'13px', color:'#0f1f3d' }}>{snap.player_count} players</div>
+                        <div style={{ fontWeight:'bold', fontSize:'13px', color:tokens.color.brand.navy }}>{snap.player_count} players</div>
                         <div style={{ fontSize:'11px', color:'#94a3b8', marginTop:'2px' }}>{label} &middot; {snap.trigger_event}</div>
                       </div>
                       <button
@@ -3634,7 +3569,7 @@ export default function App() {
                           setRestoreBanner('Roster restored \u2014 ' + restored.length + ' players recovered');
                           setTimeout(function() { setRestoreBanner(''); }, 5000);
                         }; }(snap)}
-                        style={{ background:'#0f1f3d', color:'white', border:'none', borderRadius:'6px', padding:'6px 12px', fontSize:'12px', cursor:'pointer', fontWeight:'bold' }}>
+                        style={{ background:tokens.color.brand.navy, color:tokens.color.text.onDark, border:'none', borderRadius:'6px', padding:'6px 12px', fontSize:'12px', cursor:'pointer', fontWeight:'bold' }}>
                         Restore
                       </button>
                     </div>
@@ -4240,7 +4175,7 @@ export default function App() {
                 background:"rgba(15,31,61,0.04)", cursor:"pointer", userSelect:"none" }}
             >
               <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
-                <span style={{ fontWeight:700, fontSize:"14px", color:C.navy }}>🏟 Tonight&apos;s Attendance</span>
+                <span style={{ fontWeight:700, fontSize:"14px", color:tokens.color.brand.navy }}>🏟 Tonight&apos;s Attendance</span>
                 {absentTonight.length > 0 ? (
                   <span style={{ background:"#fee2e2", color:"#dc2626", fontSize:"11px", fontWeight:700, padding:"2px 7px", borderRadius:"10px" }}>
                     {absentTonight.length} out
@@ -4254,12 +4189,12 @@ export default function App() {
                     disabled={attendanceSyncing}
                     title="Pull latest attendance from cloud"
                     style={{ background:"transparent", border:"none", cursor:attendanceSyncing ? "default" : "pointer",
-                      fontSize:"12px", color:attendanceSyncMsg ? "#27ae60" : C.textMuted, padding:"2px 6px", fontFamily:"inherit" }}
+                      fontSize:"12px", color:attendanceSyncMsg ? "#27ae60" : tokens.color.text.muted, padding:"2px 6px", fontFamily:"inherit" }}
                   >
                     {attendanceSyncing ? "⟳…" : attendanceSyncMsg || "⟳ Sync"}
                   </button>
                 ) : null}
-                <span style={{ fontSize:"12px", color:C.textMuted }}>{_panelOpen ? "▲" : "▼"}</span>
+                <span style={{ fontSize:"12px", color:tokens.color.text.muted }}>{_panelOpen ? "▲" : "▼"}</span>
               </div>
             </div>
             {/* Body */}
@@ -4272,7 +4207,7 @@ export default function App() {
                     <div key={p.name} style={{ display:"flex", alignItems:"center", gap:"6px",
                       width:"calc(50% - 3px)", minWidth:"130px" }}>
                       <span style={{ fontWeight: isAbsent ? 700 : 400, fontSize:"14px",
-                        color: isAbsent ? "#dc2626" : C.navy,
+                        color: isAbsent ? "#dc2626" : tokens.color.brand.navy,
                         flex:1, minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
                         {fn}
                       </span>
@@ -4309,10 +4244,10 @@ export default function App() {
             <div style={{ position:"fixed", bottom:0, left:0, right:0, zIndex:10001,
               background:"#fff", borderRadius:"16px 16px 0 0", padding:"20px 16px 32px",
               boxShadow:"0 -4px 24px rgba(0,0,0,0.15)" }}>
-              <div style={{ fontWeight:"bold", fontSize:"15px", color:C.navy,
+              <div style={{ fontWeight:"bold", fontSize:"15px", color:tokens.color.brand.navy,
                 fontFamily:"Georgia,serif", marginBottom:"12px" }}>Share Lineup</div>
               {backendHealth.status === 'slow' || backendHealth.status === 'down' ? (
-                <div style={{ fontSize:"11px", color:C.textMuted, background:"rgba(180,83,9,0.07)",
+                <div style={{ fontSize:"11px", color:tokens.color.text.muted, background:"rgba(180,83,9,0.07)",
                   border:"1px solid rgba(180,83,9,0.2)", borderRadius:"8px",
                   padding:"8px 10px", marginBottom:"12px" }}>
                   ⏳ Server is warming up — sharing may take up to 30 seconds
@@ -4337,7 +4272,7 @@ export default function App() {
                   onClick={function() { setShowShareSheet(false); generatePDF("download"); }} disabled={pdfLoading || pdfSharing}>
                   ⬇ {pdfLoading ? "Generating..." : "Download PDF"}
                 </button>
-                <button style={{ ...S.btn("ghost"), padding:"11px", fontSize:"13px", color:C.textMuted }}
+                <button style={{ ...S.btn("ghost"), padding:"11px", fontSize:"13px", color:tokens.color.text.muted }}
                   onClick={function() { setShowShareSheet(false); }}>
                   Cancel
                 </button>
@@ -5397,15 +5332,15 @@ export default function App() {
       <div>
         {/* ── Header row ───────────────────────────────────── */}
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"14px", flexWrap:"wrap", gap:"8px" }}>
-          <div style={{ fontWeight:"bold", fontSize:"16px", color:C.navy }}>Walk-Up Songs</div>
+          <div style={{ fontWeight:"bold", fontSize:"16px", color:tokens.color.brand.navy }}>Walk-Up Songs</div>
           <div style={{ display:"flex", gap:"4px", background:"rgba(15,31,61,0.06)", borderRadius:"8px", padding:"3px" }}>
             {(primaryTab === "gameday" && lineupLocked ? [["Game Day View","display"]] : [["Game Day View","display"],["Edit","edit"]]).map(function(opt) {
               var active = songsView === opt[1];
               return (
                 <button key={opt[1]}
                   style={{ padding:"5px 12px", borderRadius:"6px", border:"none", cursor:"pointer", fontSize:"11px", fontWeight:"bold", fontFamily:"inherit",
-                    background: active ? C.white : "transparent",
-                    color: active ? C.navy : C.textMuted,
+                    background: active ? tokens.color.surface.card : "transparent",
+                    color: active ? tokens.color.brand.navy : tokens.color.text.muted,
                     boxShadow: active ? "0 1px 3px rgba(0,0,0,0.1)" : "none" }}
                   onClick={function(v) { return function() { setSongsView(v); }; }(opt[1])}>
                   {opt[0]}
@@ -5417,7 +5352,7 @@ export default function App() {
 
         {songsView === "edit" ? (
           <div>
-            <div style={{ fontSize:"11px", color:C.textMuted, marginBottom:"12px", padding:"8px 10px", background:"rgba(15,31,61,0.04)", borderRadius:"8px" }}>
+            <div style={{ fontSize:"11px", color:tokens.color.text.muted, marginBottom:"12px", padding:"8px 10px", background:"rgba(15,31,61,0.04)", borderRadius:"8px" }}>
               Players are listed in batting order. To change the order, update the Batting tab first.
             </div>
             {battingOrder.map(function(name, idx) {
@@ -5425,9 +5360,9 @@ export default function App() {
               if (!player) return null;
               var _isAbsentEdit = absentTonight.indexOf(name) >= 0;
               return (
-                <Card key={name} padding="16px 18px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"8px", opacity: _isAbsentEdit ? 0.45 : 1, pointerEvents: _isAbsentEdit ? "none" : "auto" }}>
-                  <div style={{ fontWeight:"bold", fontSize:"13px", color:C.navy, marginBottom:"10px" }}>
-                    #{idx + 1} &nbsp; {firstName(name)}{_isAbsentEdit ? <span style={{ fontSize:"11px", color:C.red, marginLeft:"8px", fontWeight:"normal" }}>(Out Tonight)</span> : null}
+                <Card key={name} padding="16px 18px" radius="md" style={{ border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"8px", opacity: _isAbsentEdit ? 0.45 : 1, pointerEvents: _isAbsentEdit ? "none" : "auto" }}>
+                  <div style={{ fontWeight:"bold", fontSize:"13px", color:tokens.color.brand.navy, marginBottom:"10px" }}>
+                    #{idx + 1} &nbsp; {firstName(name)}{_isAbsentEdit ? <span style={{ fontSize:"11px", color:tokens.color.brand.red, marginLeft:"8px", fontWeight:"normal" }}>(Out Tonight)</span> : null}
                   </div>
                   <div style={{ display:"grid", gap:"6px" }}>
                     <input
@@ -5494,9 +5429,9 @@ export default function App() {
               var hasSong = player.walkUpSong || player.walkUpArtist || player.walkUpStart || player.walkUpNotes || player.walkUpLink;
               var showTime = player.walkUpStart && player.walkUpEnd && !isDefaultTime(player.walkUpStart, player.walkUpEnd);
               return (
-                <div key={name} style={{ background:C.white, border:"1px solid #e2e8f0", borderRadius:"10px", padding:"14px", marginBottom:"8px",
+                <div key={name} style={{ background:tokens.color.surface.card, border:"1px solid #e2e8f0", borderRadius:"10px", padding:"14px", marginBottom:"8px",
                   opacity: hasSong ? 1 : 0.5 }}>
-                  <div style={{ fontWeight:"bold", fontSize:"13px", color:C.navy, marginBottom: hasSong ? "8px" : 0 }}>
+                  <div style={{ fontWeight:"bold", fontSize:"13px", color:tokens.color.brand.navy, marginBottom: hasSong ? "8px" : 0 }}>
                     #{idx + 1} &nbsp; {firstName(name)}
                   </div>
                   {hasSong ? (
@@ -5557,7 +5492,7 @@ export default function App() {
 
     if (!schedule.length) {
       return (
-        <div style={{ padding:"24px 16px", textAlign:"center", color:C.textMuted, fontSize:"14px" }}>
+        <div style={{ padding:"24px 16px", textAlign:"center", color:tokens.color.text.muted, fontSize:"14px" }}>
           No games on the schedule yet.<br />
           <span style={{ fontSize:"12px" }}>Add games in the Schedule tab first.</span>
         </div>
@@ -5567,8 +5502,8 @@ export default function App() {
     return (
       <div style={{ padding:"12px 0 32px" }}>
         <div style={{ padding:"0 16px 12px", display:"flex", alignItems:"baseline", gap:"8px" }}>
-          <span style={{ fontSize:"18px", fontWeight:"bold", color:C.navy }}>🍎 Snack Duty</span>
-          <span style={{ fontSize:"12px", color:C.textMuted }}>
+          <span style={{ fontSize:"18px", fontWeight:"bold", color:tokens.color.brand.navy }}>🍎 Snack Duty</span>
+          <span style={{ fontSize:"12px", color:tokens.color.text.muted }}>
             {games.filter(function(g) { return !!g.snackDuty; }).length} of {games.length} assigned
           </span>
         </div>
@@ -5580,30 +5515,30 @@ export default function App() {
           var assignment = { playerName: game.snackDuty || "", note: game.snackNote || "" };
           var hasAssignment = !!assignment.playerName;
 
-          var resultColor = game.result === "W" ? C.win : game.result === "L" ? C.red : C.tie;
+          var resultColor = game.result === "W" ? tokens.color.status.success : game.result === "L" ? tokens.color.brand.red : tokens.color.status.warning;
           var dateStr = gd ? gd.toLocaleDateString("en-US", { weekday:"short", month:"short", day:"numeric" }) : "—";
 
           return (
             <div key={game.id} style={{
               margin:"0 12px 10px",
-              background: isPast && !isToday ? "rgba(15,31,61,0.03)" : C.cardBg,
-              border: "1px solid " + (isToday ? C.gold : C.border),
+              background: isPast && !isToday ? "rgba(15,31,61,0.03)" : tokens.color.surface.card,
+              border: "1px solid " + (isToday ? tokens.color.brand.gold : tokens.color.border.neutral),
               borderRadius:"10px",
               padding:"12px 14px",
               opacity: isPast && !isToday ? 0.7 : 1,
-              boxShadow: isToday ? "0 0 0 2px " + C.gold + "44" : "none"
+              boxShadow: isToday ? "0 0 0 2px " + tokens.color.brand.gold + "44" : "none"
             }}>
               {/* Game header row */}
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"10px" }}>
                 <div>
-                  <div style={{ fontSize:"14px", fontWeight:"bold", color: isPast && !isToday ? C.textMuted : C.navy }}>
-                    {isToday && <span style={{ fontSize:"10px", background:C.gold, color:C.navy, borderRadius:"4px", padding:"1px 6px", fontWeight:"bold", marginRight:"6px", letterSpacing:"0.06em" }}>TODAY</span>}
+                  <div style={{ fontSize:"14px", fontWeight:"bold", color: isPast && !isToday ? tokens.color.text.muted : tokens.color.brand.navy }}>
+                    {isToday && <span style={{ fontSize:"10px", background:tokens.color.brand.gold, color:tokens.color.brand.navy, borderRadius:"4px", padding:"1px 6px", fontWeight:"bold", marginRight:"6px", letterSpacing:"0.06em" }}>TODAY</span>}
                     📅 {dateStr}
-                    {game.time ? <span style={{ fontWeight:"normal", color:C.textMuted, fontSize:"12px", marginLeft:"8px" }}>• {game.time}</span> : null}
+                    {game.time ? <span style={{ fontWeight:"normal", color:tokens.color.text.muted, fontSize:"12px", marginLeft:"8px" }}>• {game.time}</span> : null}
                   </div>
-                  <div style={{ fontSize:"13px", color: isPast && !isToday ? C.textMuted : tokens.color.text.ink, marginTop:"2px" }}>
+                  <div style={{ fontSize:"13px", color: isPast && !isToday ? tokens.color.text.muted : tokens.color.text.ink, marginTop:"2px" }}>
                     {game.home ? "vs " : "@ "}<strong>{game.opponent || "TBD"}</strong>
-                    {game.location ? <span style={{ fontWeight:"normal", color:C.textMuted, fontSize:"12px" }}> — {game.location}</span> : null}
+                    {game.location ? <span style={{ fontWeight:"normal", color:tokens.color.text.muted, fontSize:"12px" }}> — {game.location}</span> : null}
                   </div>
                 </div>
                 <div>
@@ -5612,21 +5547,21 @@ export default function App() {
                       {game.result}{game.ourScore ? " " + game.ourScore + "-" + game.theirScore : ""}
                     </span>
                   ) : (
-                    <span style={{ fontSize:"11px", color:C.subtleText }}>—</span>
+                    <span style={{ fontSize:"11px", color:tokens.color.text.disabled }}>—</span>
                   )}
                 </div>
               </div>
 
               {/* Snack assignment row */}
               <div style={{ display:"flex", gap:"8px", alignItems:"center", flexWrap:"wrap" }}>
-                <span style={{ fontSize:"12px", color:C.textMuted, flexShrink:0 }}>🍎 Snack Duty:</span>
+                <span style={{ fontSize:"12px", color:tokens.color.text.muted, flexShrink:0 }}>🍎 Snack Duty:</span>
                 <select
                   value={assignment.playerName || ""}
                   onChange={function(gid) { return function(e) {
                     updateSnackField(gid, "playerName", e.target.value);
                   }; }(game.id)}
                   disabled={lineupLocked}
-                  style={{ flex:"1 1 140px", minWidth:"120px", padding:"5px 8px", borderRadius:"6px", border:"1px solid rgba(15,31,61,0.15)", fontSize:"13px", fontFamily:"inherit", background:C.cardBg, color: hasAssignment ? tokens.color.text.ink : C.textMuted, opacity: lineupLocked ? 0.5 : 1 }}>
+                  style={{ flex:"1 1 140px", minWidth:"120px", padding:"5px 8px", borderRadius:"6px", border:"1px solid rgba(15,31,61,0.15)", fontSize:"13px", fontFamily:"inherit", background:tokens.color.surface.card, color: hasAssignment ? tokens.color.text.ink : tokens.color.text.muted, opacity: lineupLocked ? 0.5 : 1 }}>
                   <option value="">— select player —</option>
                   {roster.slice().sort(function(a,b){ return (a.firstName||a.name||'').toLowerCase().localeCompare((b.firstName||b.name||'').toLowerCase()); }).map(function(p) {
                     return <option key={p.name} value={p.firstName || p.name}>{p.firstName || p.name}</option>;
@@ -5635,7 +5570,7 @@ export default function App() {
                 {hasAssignment && (
                   <button
                     onClick={function(gid) { return function() { clearSnackAssignment(gid); }; }(game.id)}
-                    style={{ background:"none", border:"none", cursor:"pointer", fontSize:"14px", color:C.textMuted, padding:"2px 4px", lineHeight:1 }}
+                    style={{ background:"none", border:"none", cursor:"pointer", fontSize:"14px", color:tokens.color.text.muted, padding:"2px 4px", lineHeight:1 }}
                     title="Clear">✕</button>
                 )}
               </div>
@@ -5718,7 +5653,7 @@ export default function App() {
       <div>
         {wins + losses + ties > 0 ? (
           <div style={{ display:"flex", gap:"10px", padding:"12px 16px", borderRadius:"10px", background:"linear-gradient(135deg,#0f1f3d,#1a3260)", marginBottom:"14px" }}>
-            {[["W", wins, C.win], ["L", losses, C.red], ["T", ties, "#d4a017"]].map(function(row) {
+            {[["W", wins, tokens.color.status.success], ["L", losses, tokens.color.brand.red], ["T", ties, "#d4a017"]].map(function(row) {
               return (
                 <div key={row[0]} style={{ textAlign:"center", flex:1 }}>
                   <div style={{ fontSize:"22px", fontWeight:"bold", color:row[2] }}>{row[1]}</div>
@@ -5743,7 +5678,7 @@ export default function App() {
         </div>
 
         {importMode === "choose" ? (
-          <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
+          <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
             <div style={S.sectionTitle}>How do you have your schedule?</div>
             <div style={{ display:"flex", flexDirection:"column", gap:"10px" }}>
               {[
@@ -5763,8 +5698,8 @@ export default function App() {
                       {row[0] === "photo" ? "Cam" : row[0] === "text" ? "Txt" : "Add"}
                     </div>
                     <div>
-                      <div style={{ fontWeight:"bold", fontSize:"14px", color:C.navy, marginBottom:"3px" }}>{row[1]}</div>
-                      <div style={{ fontSize:"12px", color:C.textMuted, lineHeight:"1.4" }}>{row[2]}</div>
+                      <div style={{ fontWeight:"bold", fontSize:"14px", color:tokens.color.brand.navy, marginBottom:"3px" }}>{row[1]}</div>
+                      <div style={{ fontSize:"12px", color:tokens.color.text.muted, lineHeight:"1.4" }}>{row[2]}</div>
                     </div>
                   </div>
                 );
@@ -5774,9 +5709,9 @@ export default function App() {
         ) : null}
 
         {importMode === "image" ? (
-          <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
+          <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
             <div style={S.sectionTitle}>Import from Photo</div>
-            <div style={{ fontSize:"12px", color:C.textMuted, marginBottom:"14px" }}>
+            <div style={{ fontSize:"12px", color:tokens.color.text.muted, marginBottom:"14px" }}>
               Take a photo of your printed schedule, or choose a screenshot from your camera roll.
             </div>
 
@@ -5807,7 +5742,7 @@ export default function App() {
 
                 <label style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:"10px",
                   padding:"16px", borderRadius:"12px", cursor:"pointer", textAlign:"center",
-                  background:"rgba(15,31,61,0.06)", color:C.navy,
+                  background:"rgba(15,31,61,0.06)", color:tokens.color.brand.navy,
                   fontWeight:"bold", fontSize:"14px", fontFamily:"inherit",
                   border:"2px dashed rgba(15,31,61,0.2)" }}>
                   Choose Existing Photo / Screenshot
@@ -5828,7 +5763,7 @@ export default function App() {
                     style={{ display:"none" }} />
                 </label>
 
-                <div style={{ textAlign:"center", fontSize:"11px", color:C.textMuted, padding:"4px 0" }}>
+                <div style={{ textAlign:"center", fontSize:"11px", color:tokens.color.text.muted, padding:"4px 0" }}>
                   Works with printed schedules, screenshots, photos of a whiteboard, or any image with game dates
                 </div>
               </div>
@@ -5837,27 +5772,27 @@ export default function App() {
             {importState.loading ? (
               <div style={{ padding:"24px", borderRadius:"10px", background:"rgba(15,31,61,0.04)", textAlign:"center" }}>
                 <div style={{ fontSize:"22px", marginBottom:"8px" }}>AI</div>
-                <div style={{ fontWeight:"bold", fontSize:"13px", color:C.navy, marginBottom:"4px" }}>Reading your schedule...</div>
-                <div style={{ fontSize:"11px", color:C.textMuted }}>AI is extracting game dates, times, and opponents</div>
+                <div style={{ fontWeight:"bold", fontSize:"13px", color:tokens.color.brand.navy, marginBottom:"4px" }}>Reading your schedule...</div>
+                <div style={{ fontSize:"11px", color:tokens.color.text.muted }}>AI is extracting game dates, times, and opponents</div>
               </div>
             ) : null}
 
             {importState.error ? (
-              <div style={{ color:C.red, fontSize:"12px", padding:"10px 12px", background:"rgba(200,16,46,0.06)", borderRadius:"8px", marginBottom:"8px" }}>
+              <div style={{ color:tokens.color.brand.red, fontSize:"12px", padding:"10px 12px", background:"rgba(200,16,46,0.06)", borderRadius:"8px", marginBottom:"8px" }}>
                 {importState.error} - Try the text import option instead.
               </div>
             ) : null}
 
             {importState.preview && importState.preview.length > 0 ? (
               <div>
-                <div style={{ fontSize:"13px", color:C.win, marginBottom:"10px", fontWeight:"bold" }}>
+                <div style={{ fontSize:"13px", color:tokens.color.status.success, marginBottom:"10px", fontWeight:"bold" }}>
                   Found {importState.preview.length} game{importState.preview.length !== 1 ? "s" : ""}
                 </div>
                 {importState.preview.map(function(g, gi) {
                   return (
                     <div key={gi} style={{ fontSize:"12px", padding:"8px 12px", background:"rgba(39,174,96,0.06)", borderRadius:"8px", marginBottom:"5px", border:"1px solid rgba(39,174,96,0.2)" }}>
                       <div style={{ fontWeight:"bold" }}>{g.opponent}</div>
-                      <div style={{ color:C.textMuted, fontSize:"11px" }}>
+                      <div style={{ color:tokens.color.text.muted, fontSize:"11px" }}>
                         {g.date} {g.time ? "at " + g.time : ""} {g.location ? "| " + g.location : ""}
                       </div>
                     </div>
@@ -5882,9 +5817,9 @@ export default function App() {
         ) : null}
 
         {importMode === "text" ? (
-          <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
+          <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
             <div style={S.sectionTitle}>Paste Schedule Text</div>
-            <div style={{ fontSize:"12px", color:C.textMuted, marginBottom:"10px" }}>
+            <div style={{ fontSize:"12px", color:tokens.color.text.muted, marginBottom:"10px" }}>
               Copy the schedule from an email, GroupMe message, or website and paste it below. Any format works.
             </div>
             <textarea rows={7} value={importState.text}
@@ -5899,17 +5834,17 @@ export default function App() {
               </button>
               <button style={S.btn("ghost")} onClick={function() { setImportMode("choose"); setImportState({ mode:null, text:"", image:null, loading:false, error:"", preview:[] }); }}>Back</button>
             </div>
-            {importState.error ? <div style={{ color:C.red, fontSize:"12px", marginTop:"10px", padding:"8px 12px", background:"rgba(200,16,46,0.06)", borderRadius:"6px" }}>{importState.error}</div> : null}
+            {importState.error ? <div style={{ color:tokens.color.brand.red, fontSize:"12px", marginTop:"10px", padding:"8px 12px", background:"rgba(200,16,46,0.06)", borderRadius:"6px" }}>{importState.error}</div> : null}
             {importState.preview && importState.preview.length > 0 ? (
               <div style={{ marginTop:"14px" }}>
-                <div style={{ fontSize:"13px", color:C.win, marginBottom:"10px", fontWeight:"bold" }}>
+                <div style={{ fontSize:"13px", color:tokens.color.status.success, marginBottom:"10px", fontWeight:"bold" }}>
                   Found {importState.preview.length} game{importState.preview.length !== 1 ? "s" : ""}
                 </div>
                 {importState.preview.map(function(g, gi) {
                   return (
                     <div key={gi} style={{ fontSize:"12px", padding:"8px 12px", background:"rgba(39,174,96,0.06)", borderRadius:"8px", marginBottom:"5px", border:"1px solid rgba(39,174,96,0.2)" }}>
                       <div style={{ fontWeight:"bold" }}>{g.opponent}</div>
-                      <div style={{ color:C.textMuted, fontSize:"11px" }}>{g.date} {g.time ? "at " + g.time : ""} {g.location ? "| " + g.location : ""}</div>
+                      <div style={{ color:tokens.color.text.muted, fontSize:"11px" }}>{g.date} {g.time ? "at " + g.time : ""} {g.location ? "| " + g.location : ""}</div>
                     </div>
                   );
                 })}
@@ -5925,7 +5860,7 @@ export default function App() {
         ) : null}
 
         {showGameForm ? (
-          <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px", borderLeft:"3px solid " + C.red }}>
+          <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px", borderLeft:"3px solid " + tokens.color.brand.red }}>
             <div style={{ fontWeight:"bold", fontSize:"14px", marginBottom:"14px" }}>
               {editingGame ? "Edit Game" : "Add New Game"}
             </div>
@@ -5938,7 +5873,7 @@ export default function App() {
               ].map(function(row) {
                 return (
                   <div key={row[1]}>
-                    <div style={{ fontSize:"10px", color:C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:"4px" }}>{row[0]}</div>
+                    <div style={{ fontSize:"10px", color:tokens.color.text.muted, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:"4px" }}>{row[0]}</div>
                     <input type={row[2]} value={newGame[row[1]] || ""} placeholder={row[0]}
                       maxLength={row[2] === "text" ? 50 : undefined}
                       onChange={function(field) { return function(e) { var g = {}; for (var k in newGame) { g[k]=newGame[k]; } g[field]=e.target.value; setNewGame(g); }; }(row[1])}
@@ -5948,7 +5883,7 @@ export default function App() {
               })}
             </div>
             <div style={{ marginBottom:"10px" }}>
-              <div style={{ fontSize:"10px", color:C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:"4px" }}>Snack Duty</div>
+              <div style={{ fontSize:"10px", color:tokens.color.text.muted, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:"4px" }}>Snack Duty</div>
               <input type="text" value={newGame.snackDuty || ""} placeholder="Parent bringing snacks (e.g. Smith family)"
                 maxLength={80}
                 onChange={function(e) { var g={}; for(var k in newGame){g[k]=newGame[k];} g.snackDuty=e.target.value; setNewGame(g); }}
@@ -5956,7 +5891,7 @@ export default function App() {
             </div>
             {roster.length > 0 ? (
               <div style={{ marginBottom:"10px" }}>
-                <div style={{ fontSize:"10px", color:C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:"6px" }}>Game Ball</div>
+                <div style={{ fontSize:"10px", color:tokens.color.text.muted, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:"6px" }}>Game Ball</div>
                 <input type="text" value={newGame.gameBallSearch || ""} placeholder="Search players..."
                   maxLength={40}
                   onChange={function(e) { var g={}; for(var k in newGame){g[k]=newGame[k];} g.gameBallSearch=e.target.value; setNewGame(g); }}
@@ -6000,7 +5935,7 @@ export default function App() {
               </div>
             ) : null}
             <div style={{ marginBottom:"10px" }}>
-              <div style={{ fontSize:"10px", color:C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:"6px" }}>Result</div>
+              <div style={{ fontSize:"10px", color:tokens.color.text.muted, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:"6px" }}>Result</div>
               <div style={{ display:"flex", gap:"6px" }}>
                 {["W","L","T",""].map(function(r) {
                   var label = r === "" ? "Pending" : r;
@@ -6008,8 +5943,8 @@ export default function App() {
                   return (
                     <button key={label} onClick={function(rv) { return function() { var g={}; for(var k in newGame){g[k]=newGame[k];} g.result=rv; setNewGame(g); }; }(r)}
                       style={{ padding:"6px 14px", borderRadius:"6px", border:"none", cursor:"pointer", fontWeight:"bold", fontSize:"12px", fontFamily:"inherit",
-                        background: active ? (r === "W" ? C.win : r === "L" ? C.red : r === "T" ? "#d4a017" : C.navy) : "rgba(15,31,61,0.06)",
-                        color: active ? "#fff" : C.textMuted }}>
+                        background: active ? (r === "W" ? tokens.color.status.success : r === "L" ? tokens.color.brand.red : r === "T" ? "#d4a017" : tokens.color.brand.navy) : "rgba(15,31,61,0.06)",
+                        color: active ? "#fff" : tokens.color.text.muted }}>
                       {label}
                     </button>
                   );
@@ -6021,7 +5956,7 @@ export default function App() {
                 {[["Our Score","ourScore"],["Their Score","theirScore"]].map(function(row) {
                   return (
                     <div key={row[1]}>
-                      <div style={{ fontSize:"10px", color:C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:"4px" }}>{row[0]}</div>
+                      <div style={{ fontSize:"10px", color:tokens.color.text.muted, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:"4px" }}>{row[0]}</div>
                       <input type="number" min="0" max="99" value={newGame[row[1]] || ""}
                         onChange={function(field) { return function(e) { var g={}; for(var k in newGame){g[k]=newGame[k];} g[field]=e.target.value; setNewGame(g); }; }(row[1])}
                         style={{ ...S.input, width:"80px" }} />
@@ -6033,7 +5968,7 @@ export default function App() {
             {newGame.result && newGame.result !== "" && roster.length > 0 ? (
               <div style={{ marginBottom:"12px" }}>
                 <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"8px" }}>
-                  <div style={{ fontSize:"10px", color:C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase" }}>
+                  <div style={{ fontSize:"10px", color:tokens.color.text.muted, letterSpacing:"0.1em", textTransform:"uppercase" }}>
                     Batting Stats (optional)
                   </div>
                   <div style={{ display:"flex", gap:"6px" }}>
@@ -6125,12 +6060,12 @@ export default function App() {
                   </div>
                 </div>
                 {resultImport.loading ? (
-                  <div style={{ padding:"10px 12px", borderRadius:"8px", background:"rgba(15,31,61,0.04)", color:C.textMuted, fontSize:"12px", marginBottom:"8px", textAlign:"center" }}>
+                  <div style={{ padding:"10px 12px", borderRadius:"8px", background:"rgba(15,31,61,0.04)", color:tokens.color.text.muted, fontSize:"12px", marginBottom:"8px", textAlign:"center" }}>
                     Reading stats with AI...
                   </div>
                 ) : null}
                 {resultImport.error ? (
-                  <div style={{ padding:"8px 12px", borderRadius:"8px", background:"rgba(200,16,46,0.06)", color:C.red, fontSize:"11px", marginBottom:"8px" }}>
+                  <div style={{ padding:"8px 12px", borderRadius:"8px", background:"rgba(200,16,46,0.06)", color:tokens.color.brand.red, fontSize:"11px", marginBottom:"8px" }}>
                     {resultImport.error}
                   </div>
                 ) : null}
@@ -6139,7 +6074,7 @@ export default function App() {
                     <thead>
                       <tr style={{ background:"#f5efe4" }}>
                         {["Player","AB","H","R","RBI","Avg"].map(function(h) {
-                          return <th key={h} style={{ padding:"5px 8px", textAlign: h==="Player" ? "left" : "center", fontSize:"10px", color:C.textMuted, letterSpacing:"0.08em", textTransform:"uppercase", borderBottom:"1px solid rgba(15,31,61,0.1)", whiteSpace:"nowrap" }}>{h}</th>;
+                          return <th key={h} style={{ padding:"5px 8px", textAlign: h==="Player" ? "left" : "center", fontSize:"10px", color:tokens.color.text.muted, letterSpacing:"0.08em", textTransform:"uppercase", borderBottom:"1px solid rgba(15,31,61,0.1)", whiteSpace:"nowrap" }}>{h}</th>;
                         })}
                       </tr>
                     </thead>
@@ -6174,7 +6109,7 @@ export default function App() {
                               );
                             })}
                             <td style={cellStyle}>
-                              <span style={{ fontSize:"12px", fontWeight:"bold", color: perf.ab > 0 ? (perf.h/perf.ab >= 0.300 ? C.win : perf.h/perf.ab >= 0.200 ? "#d4a017" : tokens.color.text.ink) : C.textMuted }}>
+                              <span style={{ fontSize:"12px", fontWeight:"bold", color: perf.ab > 0 ? (perf.h/perf.ab >= 0.300 ? tokens.color.status.success : perf.h/perf.ab >= 0.200 ? "#d4a017" : tokens.color.text.ink) : tokens.color.text.muted }}>
                                 {perf.ab > 0 ? fmtAvg(perf.h, perf.ab) : "—"}
                               </span>
                             </td>
@@ -6197,17 +6132,17 @@ export default function App() {
 
         <div>
           {sorted.length === 0 ? (
-            <div style={{ textAlign:"center", padding:"40px", color:C.textMuted, fontSize:"13px" }}>
+            <div style={{ textAlign:"center", padding:"40px", color:tokens.color.text.muted, fontSize:"13px" }}>
               No games yet. Add your schedule to get started.
             </div>
           ) : null}
           {sorted.map(function(game) {
             var isCanceled = game.result === "X";
             var isPlayed = !!game.result && !isCanceled;
-            var resultColor = game.result === "W" ? C.win : game.result === "L" ? C.red : game.result === "T" ? "#d4a017" : "#888";
-            var cancelColor = C.canceled;
+            var resultColor = game.result === "W" ? tokens.color.status.success : game.result === "L" ? tokens.color.brand.red : game.result === "T" ? "#d4a017" : "#888";
+            var cancelColor = tokens.color.status.neutral;
             return (
-              <Card key={game.id} padding="14px 16px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px", borderLeft:"3px solid " + (isCanceled ? cancelColor : isPlayed ? resultColor : C.red), opacity: isCanceled ? 0.72 : 1 }}>
+              <Card key={game.id} padding="14px 16px" radius="md" style={{ border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px", borderLeft:"3px solid " + (isCanceled ? cancelColor : isPlayed ? resultColor : tokens.color.brand.red), opacity: isCanceled ? 0.72 : 1 }}>
                 <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:"10px" }}>
                   <div style={{ flex:1 }}>
                     <div style={{ display:"flex", alignItems:"center", gap:"8px", marginBottom:"4px", flexWrap:"wrap" }}>
@@ -6228,7 +6163,7 @@ export default function App() {
                           return (
                             <span style={{ display:"inline-flex", gap:"3px", alignItems:"center" }}>
                               {["W","L","T"].map(function(r) {
-                                var rc = r==="W"?C.win:r==="L"?C.red:"#d4a017";
+                                var rc = r==="W"?tokens.color.status.success:r==="L"?tokens.color.brand.red:"#d4a017";
                                 return (
                                   <button key={r} style={{ padding:"2px 10px", borderRadius:"8px", border:"1px solid "+rc+"66", cursor:"pointer", fontWeight:"bold", fontSize:"11px", fontFamily:"inherit", background:rc+"11", color:rc }}
                                     onClick={function(rv) { return function() {
@@ -6248,7 +6183,7 @@ export default function App() {
                             </span>
                           );
                         }
-                        return <span style={{ fontSize:"10px", padding:"2px 8px", borderRadius:"10px", background:"rgba(200,16,46,0.08)", color:C.red, letterSpacing:"0.08em", textTransform:"uppercase" }}>Upcoming</span>;
+                        return <span style={{ fontSize:"10px", padding:"2px 8px", borderRadius:"10px", background:"rgba(200,16,46,0.08)", color:tokens.color.brand.red, letterSpacing:"0.08em", textTransform:"uppercase" }}>Upcoming</span>;
                       })()}
                     </div>
                     {inlineScoreGame === game.id && !isCanceled ? (
@@ -6260,7 +6195,7 @@ export default function App() {
                             persistSchedule(schedule.map(function(x){return x.id===gid?g2:x;}));
                           }; }(game.id)}
                           style={{ width:"56px", padding:"4px 6px", borderRadius:"6px", border:"1px solid rgba(15,31,61,0.15)", fontSize:"13px", fontFamily:"inherit", textAlign:"center" }} />
-                        <span style={{ fontSize:"12px", color:C.textMuted }}>-</span>
+                        <span style={{ fontSize:"12px", color:tokens.color.text.muted }}>-</span>
                         <input type="number" min="0" max="99" placeholder="Them"
                           defaultValue={game.theirScore || ""}
                           onChange={function(gid) { return function(e) {
@@ -6272,13 +6207,13 @@ export default function App() {
                           onClick={function() { setInlineScoreGame(null); }}>Done</button>
                       </div>
                     ) : null}
-                    <div style={{ fontSize:"12px", color:C.textMuted, display:"flex", gap:"12px", flexWrap:"wrap" }}>
+                    <div style={{ fontSize:"12px", color:tokens.color.text.muted, display:"flex", gap:"12px", flexWrap:"wrap" }}>
                       {game.date ? <span>{new Date(game.date + "T12:00:00").toLocaleDateString("en-US", { weekday:"short", month:"short", day:"numeric" })}</span> : null}
                       {game.time ? <span>{game.time}</span> : null}
                       {game.location ? <span>{game.location}</span> : null}
                     </div>
                     {isPlayed ? (
-                      <div style={{ marginTop:"6px", paddingTop:"6px", borderTop:"1px solid " + C.subtleBorder, display:"flex", alignItems:"center", gap:"8px" }}>
+                      <div style={{ marginTop:"6px", paddingTop:"6px", borderTop:"1px solid " + tokens.color.overlay.neutralWash, display:"flex", alignItems:"center", gap:"8px" }}>
                         <input
                           type="checkbox"
                           id={"county-" + game.id}
@@ -6291,8 +6226,8 @@ export default function App() {
                               return g2;
                             }));
                           }; }(game.id, !game.scoreReported)}
-                          style={{ width:"15px", height:"15px", accentColor:C.gold, cursor:"pointer", flexShrink:0 }} />
-                        <label htmlFor={"county-" + game.id} style={{ fontSize:"12px", color: game.scoreReported ? tokens.color.text.ink : C.textMuted, cursor:"pointer", userSelect:"none" }}>
+                          style={{ width:"15px", height:"15px", accentColor:tokens.color.brand.gold, cursor:"pointer", flexShrink:0 }} />
+                        <label htmlFor={"county-" + game.id} style={{ fontSize:"12px", color: game.scoreReported ? tokens.color.text.ink : tokens.color.text.muted, cursor:"pointer", userSelect:"none" }}>
                           {game.scoreReported ? "✓ Score reported to the County" : "Report score to the County"}
                         </label>
                       </div>
@@ -6301,15 +6236,15 @@ export default function App() {
                       var sa = { playerName: game.snackDuty || "", note: game.snackNote || "" };
                       var hasSa = !!sa.playerName;
                       return (
-                        <div style={{ marginTop:"6px", paddingTop:"6px", borderTop:"1px solid " + C.subtleBorder }}>
+                        <div style={{ marginTop:"6px", paddingTop:"6px", borderTop:"1px solid " + tokens.color.overlay.neutralWash }}>
                           <div style={{ display:"flex", gap:"6px", alignItems:"center", flexWrap:"wrap" }}>
-                            <span style={{ fontSize:"11px", color:C.textMuted, flexShrink:0 }}>🍎 Snack Duty</span>
+                            <span style={{ fontSize:"11px", color:tokens.color.text.muted, flexShrink:0 }}>🍎 Snack Duty</span>
                             <select
                               value={sa.playerName || ""}
                               onChange={function(gid) { return function(e) {
                                 updateSnackField(gid, "playerName", e.target.value);
                               }; }(game.id)}
-                              style={{ flex:"1 1 110px", minWidth:"100px", padding:"3px 6px", borderRadius:"5px", border:"1px solid rgba(15,31,61,0.15)", fontSize:"12px", fontFamily:"inherit", background:C.cardBg, color: hasSa ? tokens.color.text.ink : C.textMuted }}>
+                              style={{ flex:"1 1 110px", minWidth:"100px", padding:"3px 6px", borderRadius:"5px", border:"1px solid rgba(15,31,61,0.15)", fontSize:"12px", fontFamily:"inherit", background:tokens.color.surface.card, color: hasSa ? tokens.color.text.ink : tokens.color.text.muted }}>
                               <option value="">— Assign —</option>
                               {roster.slice().sort(function(a,b){ return (a.firstName||a.name||'').toLowerCase().localeCompare((b.firstName||b.name||'').toLowerCase()); }).map(function(p) {
                                 return <option key={p.name} value={p.firstName || p.name}>{p.firstName || p.name}</option>;
@@ -6317,7 +6252,7 @@ export default function App() {
                             </select>
                             {hasSa && (
                               <button onClick={function(gid) { return function() { clearSnackAssignment(gid); }; }(game.id)}
-                                style={{ background:"none", border:"none", cursor:"pointer", fontSize:"12px", color:C.textMuted, padding:"1px 3px", lineHeight:1 }} title="Clear">✕</button>
+                                style={{ background:"none", border:"none", cursor:"pointer", fontSize:"12px", color:tokens.color.text.muted, padding:"1px 3px", lineHeight:1 }} title="Clear">✕</button>
                             )}
                             <div style={{marginTop:'6px'}}>
                               <span style={{fontSize:'12px',color:'#666',fontWeight:500}}>🏆 Game Ball: </span>
@@ -6360,7 +6295,7 @@ export default function App() {
                     })()}
                     <button style={S.btn("ghost")} onClick={function() { handleShareGame(game); }}>Share</button>
                     <button style={S.btn("ghost")} onClick={function(g) { return function() { startEdit(g); }; }(game)}>Edit</button>
-                    <button style={{ ...S.btn("ghost"), color:C.red }} onClick={function(id) { return function() { if (confirm("Delete game?")) { deleteGame(id); } }; }(game.id)}>Del</button>
+                    <button style={{ ...S.btn("ghost"), color:tokens.color.brand.red }} onClick={function(id) { return function() { if (confirm("Delete game?")) { deleteGame(id); } }; }(game.id)}>Del</button>
                   </div>
                 </div>
               </Card>
@@ -6369,10 +6304,10 @@ export default function App() {
         </div>
 
         {showShare ? (
-          <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:100, padding:"20px" }}>
-            <Card padding="24px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px", maxWidth:"420px", width:"100%" }}>
+          <div style={{ position:"fixed", inset:0, background:tokens.color.overlay.scrimLight, display:"flex", alignItems:"center", justifyContent:"center", zIndex:100, padding:"20px" }}>
+            <Card padding="24px" radius="md" style={{ border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px", maxWidth:"420px", width:"100%" }}>
               <div style={{ fontWeight:"bold", fontSize:"15px", marginBottom:"12px" }}>Share Lineup</div>
-              <div style={{ fontSize:"11px", color:C.textMuted, marginBottom:"8px" }}>View-only link for coaches and parents:</div>
+              <div style={{ fontSize:"11px", color:tokens.color.text.muted, marginBottom:"8px" }}>View-only link for coaches and parents:</div>
               <div style={{ padding:"10px", background:"#f8f4ee", borderRadius:"6px", fontSize:"11px", wordBreak:"break-all", marginBottom:"12px", border:"1px solid rgba(15,31,61,0.08)" }}>
                 {shareGame ? shareGame.url : ""}
               </div>
@@ -6413,18 +6348,18 @@ export default function App() {
       <div>
 
         {/* ── Section 1: General Feedback ───────────────────── */}
-        <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
+        <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
           <div style={S.sectionTitle}>Share Feedback</div>
-          <div style={{ color:C.textMuted, fontSize:"12px", marginBottom:"14px" }}>
+          <div style={{ color:tokens.color.text.muted, fontSize:"12px", marginBottom:"14px" }}>
             Help us improve the app. Tell us what’s working and what isn’t.
           </div>
 
-          <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"6px" }}>Category</div>
+          <div style={{ fontSize:"10px", color:tokens.color.text.muted, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"6px" }}>Category</div>
           <div style={{ display:"flex", flexWrap:"wrap", gap:"4px", marginBottom:"14px" }}>
             {fbCats.map(function(cat) {
               var active = fbCategory === cat;
               return (
-                <span key={cat} style={S.badge(C.navy, active)}
+                <span key={cat} style={S.badge(tokens.color.brand.navy, active)}
                   onClick={function(c) { return function() { setFbCategory(c); }; }(cat)}>
                   {cat}
                 </span>
@@ -6432,7 +6367,7 @@ export default function App() {
             })}
           </div>
 
-          <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"4px" }}>Your Feedback</div>
+          <div style={{ fontSize:"10px", color:tokens.color.text.muted, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"4px" }}>Your Feedback</div>
           <textarea
             placeholder="Describe your feedback, suggestion, or idea..."
             value={fbBody}
@@ -6440,7 +6375,7 @@ export default function App() {
             style={{ ...S.input, minHeight:"120px", resize:"vertical", lineHeight:"1.5", display:"block", marginBottom:"12px" }}
           />
 
-          <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"6px" }}>What would you like to see changed?</div>
+          <div style={{ fontSize:"10px", color:tokens.color.text.muted, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"6px" }}>What would you like to see changed?</div>
           <div style={{ display:"flex", flexWrap:"wrap", gap:"4px", marginBottom:"14px" }}>
             {fbChangePills.map(function(ct) {
               var active = fbChangeTypes.indexOf(ct) >= 0;
@@ -6465,18 +6400,18 @@ export default function App() {
         </Card>
 
         {/* ── Section 2: Report a Bug ──────────────────────── */}
-        <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
+        <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
           <div style={S.sectionTitle}>Report an Issue</div>
-          <div style={{ color:C.textMuted, fontSize:"12px", marginBottom:"14px" }}>
+          <div style={{ color:tokens.color.text.muted, fontSize:"12px", marginBottom:"14px" }}>
             Something not working right? Tell us what happened.
           </div>
 
-          <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"6px" }}>Where did this happen?</div>
+          <div style={{ fontSize:"10px", color:tokens.color.text.muted, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"6px" }}>Where did this happen?</div>
           <div style={{ display:"flex", flexWrap:"wrap", gap:"4px", marginBottom:"14px" }}>
             {bugLocs.map(function(loc) {
               var active = bugLocation === loc;
               return (
-                <span key={loc} style={S.badge(C.navy, active)}
+                <span key={loc} style={S.badge(tokens.color.brand.navy, active)}
                   onClick={function(l) { return function() { setBugLocation(l); }; }(loc)}>
                   {loc}
                 </span>
@@ -6484,7 +6419,7 @@ export default function App() {
             })}
           </div>
 
-          <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"4px" }}>What happened?</div>
+          <div style={{ fontSize:"10px", color:tokens.color.text.muted, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"4px" }}>What happened?</div>
           <textarea
             placeholder="Describe what happened and what you expected instead..."
             value={bugBody}
@@ -6492,11 +6427,11 @@ export default function App() {
             style={{ ...S.input, minHeight:"100px", resize:"vertical", lineHeight:"1.5", display:"block", marginBottom:"12px" }}
           />
 
-          <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"6px" }}>Severity</div>
+          <div style={{ fontSize:"10px", color:tokens.color.text.muted, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"6px" }}>Severity</div>
           <div style={{ display:"flex", flexWrap:"wrap", gap:"4px", marginBottom:"14px" }}>
             {bugSevs.map(function(sev) {
               var active = bugSeverity === sev;
-              var sevColor = sev === "Blocks me completely" ? C.red : sev === "Annoying but I can work around it" ? "#d4a017" : "#6b7280";
+              var sevColor = sev === "Blocks me completely" ? tokens.color.brand.red : sev === "Annoying but I can work around it" ? "#d4a017" : "#6b7280";
               return (
                 <span key={sev} style={S.badge(sevColor, active)}
                   onClick={function(s) { return function() { setBugSeverity(s); }; }(sev)}>
@@ -6513,18 +6448,18 @@ export default function App() {
         </Card>
 
         {/* ── Submitted Feedback History ─────────────────────── */}
-        <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
+        <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", cursor:"pointer" }}
             onClick={function() { setFbHistoryOpen(!fbHistoryOpen); }}>
-            <div style={{ fontSize:"11px", fontWeight:"bold", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.1em" }}>
+            <div style={{ fontSize:"11px", fontWeight:"bold", color:tokens.color.text.muted, textTransform:"uppercase", letterSpacing:"0.1em" }}>
               {"Submitted Feedback" + (allSubs.length > 0 ? " (" + allSubs.length + " recent)" : "")}
             </div>
-            <span style={{ fontSize:"11px", color:C.textMuted }}>{fbHistoryOpen ? "▲" : "▼"}</span>
+            <span style={{ fontSize:"11px", color:tokens.color.text.muted }}>{fbHistoryOpen ? "▲" : "▼"}</span>
           </div>
           {fbHistoryOpen ? (
             <div style={{ marginTop:"12px" }}>
               {allSubs.length === 0 ? (
-                <div style={{ color:C.textMuted, fontSize:"12px" }}>No submissions yet.</div>
+                <div style={{ color:tokens.color.text.muted, fontSize:"12px" }}>No submissions yet.</div>
               ) : (
                 <div>
                   {allSubs.map(function(sub) {
@@ -6534,14 +6469,14 @@ export default function App() {
                     return (
                       <div key={sub.id} style={{ borderBottom:"1px solid rgba(15,31,61,0.06)", paddingBottom:"8px", marginBottom:"8px" }}>
                         <div style={{ display:"flex", gap:"8px", alignItems:"center", marginBottom:"2px" }}>
-                          <span style={{ fontSize:"10px", color:C.textMuted }}>{dt}</span>
-                          {label ? <span style={{ fontSize:"10px", padding:"1px 6px", borderRadius:"4px", background:"rgba(15,31,61,0.08)", color:C.navy, fontWeight:"bold" }}>{label}</span> : null}
+                          <span style={{ fontSize:"10px", color:tokens.color.text.muted }}>{dt}</span>
+                          {label ? <span style={{ fontSize:"10px", padding:"1px 6px", borderRadius:"4px", background:"rgba(15,31,61,0.08)", color:tokens.color.brand.navy, fontWeight:"bold" }}>{label}</span> : null}
                         </div>
                         <div style={{ fontSize:"11px", color:tokens.color.text.ink }}>{preview}</div>
                       </div>
                     );
                   })}
-                  <button style={{ ...S.btn("ghost"), color:C.red, marginTop:"4px" }}
+                  <button style={{ ...S.btn("ghost"), color:tokens.color.brand.red, marginTop:"4px" }}
                     onClick={function() {
                       if (confirm("Clear all saved feedback? This cannot be undone.")) {
                         try { localStorage.removeItem("feedback:submissions"); } catch(e2) { /* ignored */ }
@@ -7106,7 +7041,7 @@ export default function App() {
       <div>
         {LINKS.map(function(section) {
           return (
-            <Card key={section.group} padding="16px 18px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
+            <Card key={section.group} padding="16px 18px" radius="md" style={{ border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
               <div style={S.sectionTitle}>{section.group}</div>
               {section.items.map(function(link, li) {
                 return (
@@ -7117,8 +7052,8 @@ export default function App() {
                        textDecoration:"none", cursor:"pointer" }}>
                     <span style={{ fontSize:"22px", lineHeight:"1", marginTop:"2px", flexShrink:0 }}>{link.emoji}</span>
                     <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ fontSize:"13px", fontWeight:"700", color:C.navy, marginBottom:"3px" }}>{link.label}</div>
-                      <div style={{ fontSize:"11px", color:C.textMuted, lineHeight:"1.5", marginBottom:"5px" }}>{link.desc}</div>
+                      <div style={{ fontSize:"13px", fontWeight:"700", color:tokens.color.brand.navy, marginBottom:"3px" }}>{link.label}</div>
+                      <div style={{ fontSize:"11px", color:tokens.color.text.muted, lineHeight:"1.5", marginBottom:"5px" }}>{link.desc}</div>
                     </div>
                   </a>
                 );
@@ -7136,7 +7071,7 @@ export default function App() {
   function renderAbout() {
     return <AboutTab aboutGuideOpen={aboutGuideOpen}
       setAboutGuideOpen={setAboutGuideOpen}
-      APP_VERSION={APP_VERSION} C={C} S={S} />;
+      APP_VERSION={APP_VERSION} />;
   }
 
   function renderAccount() {
@@ -7144,11 +7079,11 @@ export default function App() {
     var _memberships = memberships || [];
     var _rolePill = {
       fontSize:"10px", fontWeight:"700", letterSpacing:"0.05em", textTransform:"uppercase",
-      padding:"3px 9px", borderRadius:"10px", background:C.navy + "12", color:C.navy,
-      border:"1px solid " + C.navy + "22", whiteSpace:"nowrap", flexShrink:0
+      padding:"3px 9px", borderRadius:"10px", background:tokens.color.brand.navy + "12", color:tokens.color.brand.navy,
+      border:"1px solid " + tokens.color.brand.navy + "22", whiteSpace:"nowrap", flexShrink:0
     };
     return (
-      <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
+      <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
         <div style={S.sectionTitle}>Your Account</div>
 
         {/* #405 — editable name, extracted #407 (component owns its state). */}
@@ -7156,19 +7091,18 @@ export default function App() {
           updateProfileName={updateProfileName}
           initialFirstName={user && user.profile ? user.profile.first_name : ''}
           initialLastName={user && user.profile ? user.profile.last_name : ''}
-          C={C}
           S={S}
         />
 
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline", gap:"12px", padding:"9px 0", borderBottom:"1px solid " + C.border, marginBottom:"14px" }}>
-          <span style={{ fontSize:"11px", letterSpacing:"0.08em", textTransform:"uppercase", color:C.textMuted, whiteSpace:"nowrap" }}>Signed in as</span>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline", gap:"12px", padding:"9px 0", borderBottom:"1px solid " + tokens.color.border.neutral, marginBottom:"14px" }}>
+          <span style={{ fontSize:"11px", letterSpacing:"0.08em", textTransform:"uppercase", color:tokens.color.text.muted, whiteSpace:"nowrap" }}>Signed in as</span>
           <span style={{ fontSize:"13px", color:tokens.color.text.ink, fontWeight:"600", textAlign:"right", wordBreak:"break-word" }}>{_email}</span>
         </div>
 
-        <div style={{ fontSize:"11px", letterSpacing:"0.08em", textTransform:"uppercase", color:C.textMuted, marginBottom:"8px" }}>Your teams</div>
+        <div style={{ fontSize:"11px", letterSpacing:"0.08em", textTransform:"uppercase", color:tokens.color.text.muted, marginBottom:"8px" }}>Your teams</div>
 
         {_memberships.length === 0 ? (
-          <div style={{ fontSize:"13px", color:C.textMuted, fontStyle:"italic", padding:"4px 0 8px" }}>Not on any team yet</div>
+          <div style={{ fontSize:"13px", color:tokens.color.text.muted, fontStyle:"italic", padding:"4px 0 8px" }}>Not on any team yet</div>
         ) : _memberships.map(function(m) {
           var _t = teams.find(function(t) { return t.id === m.team_id; });
           var _role = roleLabel(m.role);
@@ -7178,15 +7112,15 @@ export default function App() {
               <div key={m.id} onClick={function() { loadTeam(_t); }}
                 style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:"12px",
                   padding:"12px 14px", marginBottom:"8px", borderRadius:"10px",
-                  border:"1px solid " + C.border, background:C.white, cursor:"pointer",
+                  border:"1px solid " + tokens.color.border.neutral, background:tokens.color.surface.card, cursor:"pointer",
                   boxShadow:"0 1px 3px rgba(15,31,61,0.05)" }}>
                 <div style={{ minWidth:0 }}>
-                  <div style={{ fontSize:"14px", fontWeight:"700", color:C.navy, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{_t.name}</div>
-                  {_meta ? <div style={{ fontSize:"11px", color:C.textMuted, marginTop:"2px" }}>{_meta}</div> : null}
+                  <div style={{ fontSize:"14px", fontWeight:"700", color:tokens.color.brand.navy, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{_t.name}</div>
+                  {_meta ? <div style={{ fontSize:"11px", color:tokens.color.text.muted, marginTop:"2px" }}>{_meta}</div> : null}
                 </div>
                 <div style={{ display:"flex", alignItems:"center", gap:"10px", flexShrink:0 }}>
                   <span style={_rolePill}>{_role}</span>
-                  <span aria-hidden="true" style={{ fontSize:"20px", color:C.textMuted, lineHeight:1 }}>›</span>
+                  <span aria-hidden="true" style={{ fontSize:"20px", color:tokens.color.text.muted, lineHeight:1 }}>›</span>
                 </div>
               </div>
             );
@@ -7195,12 +7129,12 @@ export default function App() {
             <div key={m.id}
               style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:"12px",
                 padding:"12px 14px", marginBottom:"8px", borderRadius:"10px",
-                border:"1px dashed " + C.border, background:"rgba(15,31,61,0.03)" }}>
+                border:"1px dashed " + tokens.color.border.neutral, background:"rgba(15,31,61,0.03)" }}>
               <div style={{ minWidth:0 }}>
-                <div style={{ fontSize:"14px", fontWeight:"600", color:C.textMuted, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{"Team " + m.team_id}</div>
-                <div style={{ fontSize:"11px", color:C.textMuted, marginTop:"2px", fontStyle:"italic" }}>Not loaded</div>
+                <div style={{ fontSize:"14px", fontWeight:"600", color:tokens.color.text.muted, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{"Team " + m.team_id}</div>
+                <div style={{ fontSize:"11px", color:tokens.color.text.muted, marginTop:"2px", fontStyle:"italic" }}>Not loaded</div>
               </div>
-              <span style={Object.assign({}, _rolePill, { background:"rgba(15,31,61,0.06)", color:C.textMuted, border:"1px solid " + C.border })}>{_role}</span>
+              <span style={Object.assign({}, _rolePill, { background:"rgba(15,31,61,0.06)", color:tokens.color.text.muted, border:"1px solid " + tokens.color.border.neutral })}>{_role}</span>
             </div>
           );
         })}
@@ -7208,7 +7142,7 @@ export default function App() {
         <button style={Object.assign({}, S.btn("danger"), { marginTop:"16px", width:"100%" })} onClick={logout}>
           Sign out
         </button>
-        <div style={{ fontSize:"11px", color:C.textMuted, marginTop:"12px", lineHeight:"1.5", textAlign:"center" }}>
+        <div style={{ fontSize:"11px", color:tokens.color.text.muted, marginTop:"12px", lineHeight:"1.5", textAlign:"center" }}>
           Your teams and lineups stay saved on this device. You&apos;ll need to sign in again to make changes.
         </div>
       </Card>
@@ -7217,7 +7151,7 @@ export default function App() {
 
   function renderUpdates() {
     return (
-      <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + C.border, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
+      <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
         <div style={S.sectionTitle}>What&#x27;s New</div>
         {VERSION_HISTORY.map(function(v, vi) {
           var isCurrent = v.version === APP_VERSION;
@@ -7233,10 +7167,10 @@ export default function App() {
               <div
                 onClick={function(ver) { return function() { setExpandedVersion(expandedVersion === ver ? null : ver); }; }(v.version)}
                 style={{ display:"flex", gap:"10px", alignItems:"baseline", marginBottom: isOpen ? "8px" : "0", flexWrap:"wrap", cursor:"pointer" }}>
-                <span style={{ fontSize:"14px", fontWeight:"bold", color:C.navy }}>v{v.version}</span>
-                <span style={{ fontSize:"11px", color:C.textMuted }}>{v.date}</span>
+                <span style={{ fontSize:"14px", fontWeight:"bold", color:tokens.color.brand.navy }}>v{v.version}</span>
+                <span style={{ fontSize:"11px", color:tokens.color.text.muted }}>{v.date}</span>
                 {isCurrent ? <span style={{ fontSize:"10px", padding:"1px 7px", borderRadius:"10px", background:"#27ae60", color:"#fff", fontWeight:"bold" }}>Current</span> : null}
-                <span style={{ marginLeft:"auto", fontSize:"11px", color:C.textMuted }}>{isOpen ? "▲" : "▼"}</span>
+                <span style={{ marginLeft:"auto", fontSize:"11px", color:tokens.color.text.muted }}>{isOpen ? "▲" : "▼"}</span>
               </div>
               {isOpen ? (
                 <div>
@@ -7245,7 +7179,7 @@ export default function App() {
                     <ul style={{ margin:"0 0 6px 0", paddingLeft:"0", listStyle:"none" }}>
                       {v.userChanges.map(function(ch, ci) {
                         return (
-                          <li key={ci} style={{ fontSize:"0.875rem", color:C.textMuted, marginBottom:"3px", lineHeight:"1.5", display:"flex", gap:"6px" }}>
+                          <li key={ci} style={{ fontSize:"0.875rem", color:tokens.color.text.muted, marginBottom:"3px", lineHeight:"1.5", display:"flex", gap:"6px" }}>
                             <span style={{ color:"#b8a040", flexShrink:0 }}>✦</span>
                             <span>{ch}</span>
                           </li>
@@ -7318,8 +7252,8 @@ export default function App() {
       <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.65)", zIndex:9999, display:"flex", alignItems:"center", justifyContent:"center", padding:"20px" }}
         onClick={function(e) { if (e.target === e.currentTarget) { setPinModal(null); setPinInput(""); setPinConfirm(""); setPinError(""); } }}>
         <div style={{ background:"#fff", borderRadius:"16px", padding:"24px", maxWidth:"300px", width:"100%", boxShadow:"0 20px 60px rgba(0,0,0,0.3)" }}>
-          <div style={{ fontSize:"17px", fontWeight:"bold", color:C.navy, marginBottom:"6px" }}>{title}</div>
-          <div style={{ fontSize:"12px", color:C.textMuted, marginBottom:"16px", lineHeight:"1.5" }}>{subtitle}</div>
+          <div style={{ fontSize:"17px", fontWeight:"bold", color:tokens.color.brand.navy, marginBottom:"6px" }}>{title}</div>
+          <div style={{ fontSize:"12px", color:tokens.color.text.muted, marginBottom:"16px", lineHeight:"1.5" }}>{subtitle}</div>
           <input type="password" inputMode="numeric" maxLength={4} placeholder="· · · ·"
             value={pinInput} onChange={function(e) { setPinInput(e.target.value.replace(/\D/g,"")); setPinError(""); }}
             onKeyDown={function(e) { if (e.key === "Enter") { handlePinSubmit(); } }}
@@ -7331,7 +7265,7 @@ export default function App() {
               onKeyDown={function(e) { if (e.key === "Enter") { handlePinSubmit(); } }}
               style={{ width:"100%", padding:"12px", borderRadius:"8px", border:"1px solid rgba(15,31,61,0.2)", fontSize:"24px", letterSpacing:"12px", textAlign:"center", marginBottom:"8px", fontFamily:"monospace", boxSizing:"border-box" }} />
           ) : null}
-          {pinError ? <div style={{ color:C.red, fontSize:"12px", marginBottom:"10px" }}>{pinError}</div> : null}
+          {pinError ? <div style={{ color:tokens.color.brand.red, fontSize:"12px", marginBottom:"10px" }}>{pinError}</div> : null}
           <div style={{ display:"flex", gap:"8px", marginTop:"4px" }}>
             <button onClick={function() { setPinModal(null); setPinInput(""); setPinConfirm(""); setPinError(""); }}
               style={{ ...S.btn("ghost"), flex:1 }}>Cancel</button>
@@ -7360,7 +7294,7 @@ export default function App() {
   if (flagsLoading) {
     return (
       <div style={{ display:'flex', alignItems:'center', justifyContent:'center',
-        minHeight:'100vh', background:'#0f1f3d' }}>
+        minHeight:'100vh', background:tokens.color.brand.navy }}>
         <div style={{ fontSize:'32px' }}>⚾</div>
       </div>
     );
@@ -7414,7 +7348,7 @@ export default function App() {
     if (authState === 'loading') {
       return (
         <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center',
-                      justifyContent: 'center', backgroundColor: '#f8fafc' }}>
+                      justifyContent: 'center', backgroundColor: tokens.color.surface.page }}>
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: '32px', marginBottom: '12px' }}>⚾</div>
             <p style={{ color: '#64748b', fontSize: '14px' }}>Loading…</p>
@@ -7491,10 +7425,10 @@ export default function App() {
     flex:"0 0 auto", padding:"7px 16px", borderRadius:"6px", border:"none", cursor:"pointer",
     fontSize:"12px", fontWeight:"bold", fontFamily:"Georgia,serif",
     letterSpacing:"0.03em", textTransform:"uppercase", textAlign:"center",
-    background: active ? C.navy : "rgba(15,31,61,0.07)",
-    color: active ? "#fff" : C.textMuted,
+    background: active ? tokens.color.brand.navy : "rgba(15,31,61,0.07)",
+    color: active ? "#fff" : tokens.color.text.muted,
     boxShadow: active ? "0 2px 6px rgba(15,31,61,0.2)" : "none",
-    borderBottom: active ? "2px solid " + C.gold : "2px solid transparent",
+    borderBottom: active ? "2px solid " + tokens.color.brand.gold : "2px solid transparent",
     transform: active ? "translateY(-1px)" : "none"
   }; };
 
@@ -7503,7 +7437,7 @@ export default function App() {
     var _showGameMode = roster.length > 0 && schedule.length > 0;
 
     subTabBar = (
-      <div style={{ display:"flex", gap:"4px", alignItems:"center", padding:"8px 12px 4px", background:tokens.color.surface.cream, borderBottom:"1px solid " + C.border }}>
+      <div style={{ display:"flex", gap:"4px", alignItems:"center", padding:"8px 12px 4px", background:tokens.color.surface.cream, borderBottom:"1px solid " + tokens.color.border.neutral }}>
         {GAMEDAY_SUBTABS.map(function(st) {
           if (st.launcher) {
             if (!_showGameMode) { return null; }
@@ -7515,13 +7449,13 @@ export default function App() {
               <button key={st.key}
                 onClick={handleLaunch}
                 style={{ flex:"0 0 auto", padding: isActive ? "7px 16px" : "7px 14px", borderRadius:"6px",
-                  border: isActive ? "2px solid " + C.gold : "none",
+                  border: isActive ? "2px solid " + tokens.color.brand.gold : "none",
                   cursor:"pointer",
                   fontSize: isActive ? "14px" : "12px",
                   fontWeight:"bold", fontFamily:"Georgia,serif",
                   letterSpacing:"0.04em", textTransform:"uppercase",
-                  background: isActive ? C.gold : "#e05c2a",
-                  color: isActive ? C.navy : "#fff",
+                  background: isActive ? tokens.color.brand.gold : "#e05c2a",
+                  color: isActive ? tokens.color.brand.navy : "#fff",
                   boxShadow: isActive ? "0 3px 10px rgba(245,200,66,0.5)" : "0 2px 6px rgba(224,92,42,0.35)",
                   transform: isActive ? "translateY(-2px)" : "none",
                   transition:"all 0.15s" }}>
@@ -7541,25 +7475,25 @@ export default function App() {
         <button
           onClick={function() { setParentViewActive(!parentViewActive); if (!parentViewActive) setSelectedParentPlayer(null); }}
           style={{ flex:"0 0 auto", marginLeft:"auto", padding:"5px 10px", borderRadius:"6px",
-            border: parentViewActive ? "2px solid " + C.navy : "1px solid rgba(15,31,61,0.18)",
+            border: parentViewActive ? "2px solid " + tokens.color.brand.navy : "1px solid rgba(15,31,61,0.18)",
             cursor:"pointer", fontSize:"11px", fontWeight:"bold", fontFamily:"Georgia,serif",
             letterSpacing:"0.04em",
-            background: parentViewActive ? C.navy : "rgba(15,31,61,0.06)",
-            color: parentViewActive ? "#fff" : C.textMuted,
+            background: parentViewActive ? tokens.color.brand.navy : "rgba(15,31,61,0.06)",
+            color: parentViewActive ? "#fff" : tokens.color.text.muted,
             flexShrink:0 }}>
           {parentViewActive ? "← Back" : "👁 MyPlayer"}
         </button>
         {/* Innings selector — global game setting, always visible on Game Day */}
         <div style={{ display:"flex", alignItems:"center", gap:"4px", flexShrink:0 }}>
-          <span style={{ fontSize:"10px", color:C.textMuted, letterSpacing:"0.04em" }}>Inn:</span>
+          <span style={{ fontSize:"10px", color:tokens.color.text.muted, letterSpacing:"0.04em" }}>Inn:</span>
           {[6,7].map(function(n) {
             return (
               <button key={n}
                 disabled={lineupLocked}
                 style={{ padding:"3px 10px", borderRadius:"6px", border:"none", cursor: lineupLocked ? "default" : "pointer",
                   fontSize:"11px", fontWeight:"bold", fontFamily:"Georgia,serif",
-                  background: innings === n ? C.navy : "rgba(15,31,61,0.07)",
-                  color: innings === n ? "#fff" : C.textMuted,
+                  background: innings === n ? tokens.color.brand.navy : "rgba(15,31,61,0.07)",
+                  color: innings === n ? "#fff" : tokens.color.text.muted,
                   opacity: lineupLocked ? 0.4 : 1 }}
                 onClick={function(nn) { return function() {
                   if (lineupLocked) return;
@@ -7584,7 +7518,7 @@ export default function App() {
     );
   } else if (primaryTab === "more") {
     subTabBar = (
-      <div style={{ display:"flex", gap:"4px", padding:"8px 12px 4px", background:tokens.color.surface.cream, borderBottom:"1px solid " + C.border }}>
+      <div style={{ display:"flex", gap:"4px", padding:"8px 12px 4px", background:tokens.color.surface.cream, borderBottom:"1px solid " + tokens.color.border.neutral }}>
         {MORE_SUBTABS.map(function(st) {
           return (
             <button key={st.key}
@@ -7612,8 +7546,8 @@ export default function App() {
   var tabContent = (
     <div>
       {contextLabel ? (
-        <div style={{ padding:"5px 16px", background:"rgba(15,31,61,0.04)", borderBottom:"1px solid " + C.border,
-          fontSize:"11px", color:C.textMuted, letterSpacing:"0.05em", fontWeight:"600" }}>
+        <div style={{ padding:"5px 16px", background:"rgba(15,31,61,0.04)", borderBottom:"1px solid " + tokens.color.border.neutral,
+          fontSize:"11px", color:tokens.color.text.muted, letterSpacing:"0.05em", fontWeight:"600" }}>
           {contextLabel}
         </div>
       ) : null}
@@ -7622,10 +7556,10 @@ export default function App() {
           background:"rgba(39,174,96,0.08)", borderBottom:"2px solid rgba(39,174,96,0.3)" }}>
           <span style={{ fontSize:"18px" }}>🔒</span>
           <div style={{ flex:1 }}>
-            <div style={{ fontWeight:"bold", fontSize:"13px", color:C.win }}>Lineup Finalized</div>
-            <div style={{ fontSize:"11px", color:C.textMuted }}>Editing is locked. Unlock to make changes.</div>
+            <div style={{ fontWeight:"bold", fontSize:"13px", color:tokens.color.status.success }}>Lineup Finalized</div>
+            <div style={{ fontSize:"11px", color:tokens.color.text.muted }}>Editing is locked. Unlock to make changes.</div>
           </div>
-          <button style={{ ...S.btn("ghost"), fontSize:"11px", color:C.win, border:"1px solid rgba(39,174,96,0.4)" }}
+          <button style={{ ...S.btn("ghost"), fontSize:"11px", color:tokens.color.status.success, border:"1px solid rgba(39,174,96,0.4)" }}
             onClick={function() {
               if (coachPin) { setPinModal("unlock"); setPinInput(""); setPinError(""); }
               else { persistLineupLocked(false); }
@@ -7695,46 +7629,46 @@ export default function App() {
       <div style={{ paddingBottom:"80px" }}>
 
         {/* ── Team dashboard header ──────────────────────────────── */}
-        <div style={{ background:C.white, borderRadius:"12px", padding:"16px",
-          margin:"12px 12px 0", border:"1px solid " + C.border,
+        <div style={{ background:tokens.color.surface.card, borderRadius:"12px", padding:"16px",
+          margin:"12px 12px 0", border:"1px solid " + tokens.color.border.neutral,
           boxShadow:"0 1px 4px rgba(15,31,61,0.06)" }}>
-          <div style={{ fontWeight:"bold", fontSize:"18px", color:C.navy, marginBottom:"2px" }}>
+          <div style={{ fontWeight:"bold", fontSize:"18px", color:tokens.color.brand.navy, marginBottom:"2px" }}>
             {activeTeam ? activeTeam.name : ""}
           </div>
-          <div style={{ fontSize:"12px", color:C.textMuted, marginBottom:"12px" }}>
+          <div style={{ fontSize:"12px", color:tokens.color.text.muted, marginBottom:"12px" }}>
             {activeTeam ? ((activeTeam.ageGroup || "") + (activeTeam.sport ? " \u00b7 " + (activeTeam.sport.charAt(0).toUpperCase() + activeTeam.sport.slice(1)) : "")) : ""}
           </div>
 
           {/* Stats row */}
-          <div style={{ display:"flex", borderTop:"1px solid " + C.border, paddingTop:"12px", marginTop:"4px" }}>
+          <div style={{ display:"flex", borderTop:"1px solid " + tokens.color.border.neutral, paddingTop:"12px", marginTop:"4px" }}>
             <div style={{ flex:1, textAlign:"center" }}>
               <div style={{ fontSize:"16px", marginBottom:"2px" }}>👥</div>
-              <div style={{ fontSize:"20px", fontWeight:"bold", color:C.navy, lineHeight:1 }}>{roster.length}</div>
-              <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.05em", marginTop:"3px" }}>Players</div>
+              <div style={{ fontSize:"20px", fontWeight:"bold", color:tokens.color.brand.navy, lineHeight:1 }}>{roster.length}</div>
+              <div style={{ fontSize:"10px", color:tokens.color.text.muted, textTransform:"uppercase", letterSpacing:"0.05em", marginTop:"3px" }}>Players</div>
             </div>
-            <div style={{ flex:1, textAlign:"center", borderLeft:"1px solid " + C.border }}>
+            <div style={{ flex:1, textAlign:"center", borderLeft:"1px solid " + tokens.color.border.neutral }}>
               <div style={{ fontSize:"16px", marginBottom:"2px" }}>🏆</div>
               <div style={{ fontSize:"20px", fontWeight:"bold", lineHeight:1 }}>
-                <span style={{ color:C.win }}>{wins}</span>
-                <span style={{ color:C.textMuted }}>–</span>
-                <span style={{ color:C.red }}>{losses}</span>
-                {ties > 0 ? <><span style={{ color:C.textMuted }}>–</span><span style={{ color:C.tie }}>{ties}</span></> : null}
+                <span style={{ color:tokens.color.status.success }}>{wins}</span>
+                <span style={{ color:tokens.color.text.muted }}>–</span>
+                <span style={{ color:tokens.color.brand.red }}>{losses}</span>
+                {ties > 0 ? <><span style={{ color:tokens.color.text.muted }}>–</span><span style={{ color:tokens.color.status.warning }}>{ties}</span></> : null}
               </div>
-              <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.05em", marginTop:"3px" }}>Record</div>
+              <div style={{ fontSize:"10px", color:tokens.color.text.muted, textTransform:"uppercase", letterSpacing:"0.05em", marginTop:"3px" }}>Record</div>
             </div>
-            <div style={{ flex:1, textAlign:"center", borderLeft:"1px solid " + C.border }}>
+            <div style={{ flex:1, textAlign:"center", borderLeft:"1px solid " + tokens.color.border.neutral }}>
               <div style={{ fontSize:"16px", marginBottom:"2px" }}>📅</div>
               {nextGame ? (
                 <>
-                  <div style={{ fontSize:"12px", fontWeight:"bold", color:C.navy, lineHeight:1.2 }}>
+                  <div style={{ fontSize:"12px", fontWeight:"bold", color:tokens.color.brand.navy, lineHeight:1.2 }}>
                     {new Date(nextGame.date + "T12:00:00").toLocaleDateString("en-US", { weekday:"short", month:"short", day:"numeric" })}
                   </div>
-                  {nextGame.time ? <div style={{ fontSize:"11px", color:C.textMuted }}>{nextGame.time}</div> : null}
+                  {nextGame.time ? <div style={{ fontSize:"11px", color:tokens.color.text.muted }}>{nextGame.time}</div> : null}
                 </>
               ) : (
-                <div style={{ fontSize:"12px", color:C.textMuted, lineHeight:1.2 }}>–</div>
+                <div style={{ fontSize:"12px", color:tokens.color.text.muted, lineHeight:1.2 }}>–</div>
               )}
-              <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.05em", marginTop:"3px" }}>Next Game</div>
+              <div style={{ fontSize:"10px", color:tokens.color.text.muted, textTransform:"uppercase", letterSpacing:"0.05em", marginTop:"3px" }}>Next Game</div>
             </div>
           </div>
 
@@ -7744,7 +7678,7 @@ export default function App() {
         {(missingPrefs > 0 || noSnacks > 0) ? (
           <div style={{ margin:"8px 12px 0", padding:"12px 14px", borderRadius:"10px",
             background:"rgba(245,200,66,0.12)", border:"1px solid rgba(245,200,66,0.4)" }}>
-            <div style={{ fontWeight:"bold", marginBottom:"8px", color:C.navy, fontSize:"12px", display:"flex", alignItems:"center", gap:"6px" }}>
+            <div style={{ fontWeight:"bold", marginBottom:"8px", color:tokens.color.brand.navy, fontSize:"12px", display:"flex", alignItems:"center", gap:"6px" }}>
               <span style={{ fontSize:"15px" }}>⚠️</span> Needs attention
             </div>
             {missingPrefs > 0 ? (
@@ -7752,8 +7686,8 @@ export default function App() {
                 background:"rgba(255,255,255,0.55)", borderRadius:"6px", padding:"8px 10px" }}>
                 <span style={{ fontSize:"18px", flexShrink:0 }}>{(activeTeam && (activeTeam.sport || "baseball").toLowerCase() === "softball") ? "🥎" : "⚾"}</span>
                 <div>
-                  <div style={{ fontSize:"12px", fontWeight:"600", color:C.navy }}>Missing position preferences</div>
-                  <div style={{ fontSize:"11px", color:C.textMuted }}>{missingPrefs} player{missingPrefs !== 1 ? "s" : ""} — set in Roster tab</div>
+                  <div style={{ fontSize:"12px", fontWeight:"600", color:tokens.color.brand.navy }}>Missing position preferences</div>
+                  <div style={{ fontSize:"11px", color:tokens.color.text.muted }}>{missingPrefs} player{missingPrefs !== 1 ? "s" : ""} — set in Roster tab</div>
                 </div>
               </div>
             ) : null}
@@ -7762,8 +7696,8 @@ export default function App() {
                 background:"rgba(255,255,255,0.55)", borderRadius:"6px", padding:"8px 10px" }}>
                 <span style={{ fontSize:"18px", flexShrink:0 }}>🍎</span>
                 <div>
-                  <div style={{ fontSize:"12px", fontWeight:"600", color:C.navy }}>Snacks unassigned</div>
-                  <div style={{ fontSize:"11px", color:C.textMuted }}>{noSnacks} upcoming game{noSnacks !== 1 ? "s" : ""} — assign in Snacks tab</div>
+                  <div style={{ fontSize:"12px", fontWeight:"600", color:tokens.color.brand.navy }}>Snacks unassigned</div>
+                  <div style={{ fontSize:"11px", color:tokens.color.text.muted }}>{noSnacks} upcoming game{noSnacks !== 1 ? "s" : ""} — assign in Snacks tab</div>
                 </div>
               </div>
             ) : null}
@@ -7800,10 +7734,10 @@ export default function App() {
     return (
       <div
         onClick={function() { setShowExitSheet(false); }}
-        style={{ position:"fixed", inset:0, zIndex:1500, background:"rgba(0,0,0,0.5)", display:"flex", flexDirection:"column", justifyContent:"flex-end" }}>
+        style={{ position:"fixed", inset:0, zIndex:1500, background:tokens.color.overlay.scrimLight, display:"flex", flexDirection:"column", justifyContent:"flex-end" }}>
         <div
           onClick={function(e) { e.stopPropagation(); }}
-          style={{ background:C.navy, borderTop:"2px solid " + C.red, borderRadius:"16px 16px 0 0", padding:"20px 20px 0", paddingBottom:"max(20px, env(safe-area-inset-bottom, 20px))", fontFamily:"Georgia,serif" }}>
+          style={{ background:tokens.color.brand.navy, borderTop:"2px solid " + tokens.color.brand.red, borderRadius:"16px 16px 0 0", padding:"20px 20px 0", paddingBottom:"max(20px, env(safe-area-inset-bottom, 20px))", fontFamily:"Georgia,serif" }}>
           <div style={{ textAlign:"center", marginBottom:"4px" }}>
             <div style={{ width:"36px", height:"4px", borderRadius:"2px", background:"rgba(255,255,255,0.2)", margin:"0 auto 16px" }} />
             <div style={{ fontSize:"11px", color:"rgba(255,255,255,0.45)", textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:"4px" }}>
@@ -7824,7 +7758,7 @@ export default function App() {
           <div style={{ display:"flex", flexDirection:"column", gap:"10px", marginBottom:"12px" }}>
             <button
               onClick={function() { setShowExitSheet(false); }}
-              style={{ width:"100%", padding:"14px", borderRadius:"10px", background:C.gold, border:"none", color:C.navy, fontSize:"15px", fontWeight:"bold", fontFamily:"Georgia,serif", cursor:"pointer" }}>
+              style={{ width:"100%", padding:"14px", borderRadius:"10px", background:tokens.color.brand.gold, border:"none", color:tokens.color.brand.navy, fontSize:"15px", fontWeight:"bold", fontFamily:"Georgia,serif", cursor:"pointer" }}>
               Keep Working
             </button>
             <button
@@ -7840,7 +7774,7 @@ export default function App() {
 
   function renderBottomNav() {
     return (
-      <div style={{ position:"fixed", bottom:0, left:0, right:0, zIndex:200, background:C.navy, borderTop:"2px solid " + C.red, display:"flex", paddingBottom: isStandalone ? "env(safe-area-inset-bottom, 0px)" : "env(safe-area-inset-bottom, 12px)" }}>
+      <div style={{ position:"fixed", bottom:0, left:0, right:0, zIndex:200, background:tokens.color.brand.navy, borderTop:"2px solid " + tokens.color.brand.red, display:"flex", paddingBottom: isStandalone ? "env(safe-area-inset-bottom, 0px)" : "env(safe-area-inset-bottom, 12px)" }}>
         {PRIMARY_TABS.map(function(t) {
           var active = primaryTab === t.key;
           var disabled = (t.key !== "more" && t.key !== "home" && screen !== "app");
@@ -7855,10 +7789,10 @@ export default function App() {
                 setPrimaryTab(k);
                 if (k !== "more") setScreen("app");
               }; }(t.key, disabled)}
-              style={{ flex:1, padding: isLandscape ? "4px 4px" : "10px 4px", border:"none", fontSize:"9px", fontWeight:"bold", fontFamily:"Georgia,serif", letterSpacing:"0.03em", textTransform:"uppercase", textAlign:"center", lineHeight:1.3, background:C.navy,
+              style={{ flex:1, padding: isLandscape ? "4px 4px" : "10px 4px", border:"none", fontSize:"9px", fontWeight:"bold", fontFamily:"Georgia,serif", letterSpacing:"0.03em", textTransform:"uppercase", textAlign:"center", lineHeight:1.3, background:tokens.color.brand.navy,
                 cursor: disabled ? "default" : "pointer",
-                color: active ? C.gold : disabled ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.9)",
-                borderTop: active ? "2px solid " + C.gold : "2px solid transparent",
+                color: active ? tokens.color.brand.gold : disabled ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.9)",
+                borderTop: active ? "2px solid " + tokens.color.brand.gold : "2px solid transparent",
                 opacity: disabled ? 0.4 : 1,
                 marginTop:"-2px" }}>
               <div style={{ fontSize:"18px", marginBottom:"3px" }}>{t.icon}</div>
@@ -7873,7 +7807,7 @@ export default function App() {
   // ── Always column: header + top tabs + scrollable content ──────────────
   // TODO: extract — deferred (Header depends on syncStatus, isLandscape, screen, activeTeam, isOnline, activeTeamId — extract after OfflineIndicator is stable and state prop drilling pattern is established)
   return (
-    <div style={{ height: isStandalone ? "100dvh" : "100svh", display:"flex", flexDirection:"column", overflow:"hidden", background: primaryTab === "more" ? "linear-gradient(160deg,#0f1f3d 0%,#1a3260 55%,#2a0a0a 100%)" : tokens.color.surface.cream, fontFamily:"Georgia,'Times New Roman',serif", color:tokens.color.text.ink }}>
+    <div style={{ height: isStandalone ? "100dvh" : "100svh", display:"flex", flexDirection:"column", overflow:"hidden", background: primaryTab === "more" ? "linear-gradient(160deg,#0f1f3d 0%,#1a3260 55%,"+tokens.color.brand.gradientDark+" 100%)" : tokens.color.surface.cream, fontFamily:"Georgia,'Times New Roman',serif", color:tokens.color.text.ink }}>
       <Toast
         open={toast.open}
         message={toast.message}

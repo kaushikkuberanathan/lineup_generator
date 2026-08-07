@@ -7,32 +7,27 @@ import { AboutTab } from './AboutTab';
 // AboutTab smoke tests (AT1–AT13) — Story 106 / issue #284
 //
 // AboutTab is the Support → About sub-tab, extracted from App.jsx renderAbout()
-// in Story 105 (#281). 5-card layout:
-//   1. What Is Dugout Lineup?  (token-driven; feature bullets + Share CTA)
-//   2. Built by a Coach        (token-driven; navy top-accent)
-//   3. Open to Partnerships    (token-driven; Email + LinkedIn buttons)
-//   4. App Info                (legacy C/S styled; version + browser link)
-//   5. How to Use (collapsible)(legacy C/S styled)
+// in Story 105 (#281). 5-card layout, all token-driven as of Phase 4 slice 6:
+//   1. What Is Dugout Lineup?  (feature bullets + Share CTA)
+//   2. Built by a Coach        (navy top-accent)
+//   3. Open to Partnerships    (Email + LinkedIn buttons)
+//   4. App Info                (version + browser link)
+//   5. How to Use (collapsible)
 //
 // IMPORTANT — AboutTab is STATELESS. `aboutGuideOpen` / `setAboutGuideOpen`
 // are PROPS (state lifted to App.jsx). Clicking the Card 5 header does NOT
 // re-render the component with steps; it calls setAboutGuideOpen(!aboutGuideOpen).
 // So the toggle test asserts the setter is called with the negated value
 // (AT13), and visibility is driven by the aboutGuideOpen prop (AT11/AT12).
-//
-// Unlike the fully token-driven ParentView, Cards 4 & 5 still consume C/S/
-// APP_VERSION props — the fixture must supply minimal mocks or render throws.
 // ============================================================================
 
-// Minimal prop fixture. C/S are mocked (Cards 4–5 require them); APP_VERSION
-// uses a sentinel "9.9.9" so the version assertion can't false-match real copy.
+// Minimal prop fixture. APP_VERSION uses a sentinel "9.9.9" so the version
+// assertion can't false-match real copy.
 function renderAboutTab(overrides) {
   var props = Object.assign({
     aboutGuideOpen:    false,
     setAboutGuideOpen: vi.fn(),
     APP_VERSION:       "9.9.9",
-    C: { navy: "#0F1F3D", textMuted: "#6b7280", red: "#c0392b", text: "#374151" },
-    S: { card: {}, sectionTitle: {} },
   }, overrides || {});
   return render(<AboutTab {...props} />);
 }

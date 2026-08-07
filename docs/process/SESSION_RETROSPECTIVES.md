@@ -10,6 +10,250 @@
 
 ---
 
+## 2026-08-05-C — Overnight autonomous run: Phase 4b region slices (Story 120 + Story 104 slice 4.1)
+
+**Date:** August 5-6, 2026
+**Session ID:** 2026-08-05-C (T2, UX Track, `lineup-generator-ux` worktree)
+**Duration:** Single continuous unattended run per a handoff document, KK unavailable at start; KK rejoined live partway through (merged PR #591 directly, asked follow-up questions, gave two mid-run corrections, then directed session-close cleanup)
+**Versions shipped to production:** None — three PRs opened, two merged to `develop`, one held for review
+**PRs opened:** #591 (Story 120, merged), #597 (Story 104 slice 4.1, merged), #600 (Bug #7 log-precision cherry-pick, open, held)
+**Issues filed:** #592 (Story 104 slice 4.1, scoped sub-issue — parent #279 was closed prematurely), #599 (Bug #7 count-precision correction)
+**Note on identifier collision:** This date already had two `-A` entries before this session started (this worktree's own prior session, and T1's first overnight run) plus a `-B` (T1's second run) — see that section's own note below. This entry takes `-C`, next in sequence; the `-A` duplication itself was flagged for KK, not silently renumbered.
+
+### Overview
+
+Handoff specified a 4-item fallback chain (Story 116 → 119 → 120 → 104/115) with instructions to drop through and log every transition rather than pause for input. Both viable items in the chain shipped; the two higher-priority items were correctly identified as blocked rather than forced. KK came online mid-run, live-merged PR #591, asked a direct question about Bug #7's recurrence rate (answered from documented history, not guessed), gave two corrections (surface a merge-conflict finding more prominently; then later, correct an imprecise flake count), and closed the session out with branch hygiene + a sync check + this retrospective.
+
+### What Shipped
+
+| Item | Scope | PR/Issue | Status |
+|---|---|---|---|
+| Story 120 (region slice 9) | All 21 legacy `var C` refs + 2 companion literal-hex duplicates in `SharedView()` migrated to already-minted `tokens.color.*` values; new `SharedViewColorTokens.test.jsx` (12 tests), mutation-tested | #531 / PR #591 | Merged to `develop` (regular merge, verified 2-parent) |
+| Story 104 slice 4.1 | `PlayerFilterToggle` extracted from `App.jsx` to `components/Shared/PlayerFilterToggle.jsx`; destination corrected from the story's stale `screens/Roster/` text after verifying the component's only real caller is `SharedView`, not the Roster tab; new characterization test (6 tests) | #592 / PR #597 | Merged to `develop` (regular merge, verified 2-parent) |
+| Bug #7 log-precision fix | Corrected an imprecise flake-count claim in this session's own execution log; orphaned by merge timing (pushed after #597 merged), cherry-picked forward | #599 / PR #600 | Open, held for KK review |
+| Branch hygiene | Deleted 2 fully-merged issue branches (local + remote) + 1 stale local-only ref (another session's, remote already gone); verified via direct content diff against `develop`, not just ancestor checks, since squash-merges break simple ancestor detection | — | Done this session |
+| Issue sync | Ran `sync-stories-to-issues.js --dry-run` against `develop` | — | Zero action needed — every ROADMAP story already has a linked issue |
+
+### What Didn't Happen
+
+- **Story 116** (GameModeScreen/DugoutView, slice 8) — blocked. Its own ROADMAP text sequences it last specifically because `game-mode/` and `ScoringMode/` each need their own Locked-File gate phrase in addition to App.jsx's; the handoff's pre-granted gate covered App.jsx only. Logged as a genuine judgment call, not guessed past.
+- **Story 119** (app-shell gradient token) — blocked *for this session*: its own text explicitly holds the mint decision on KK's go-ahead, unavailable at the time. **Resolved separately, same night, by a different session** (`issue/530-story119-callsite`, still checked out in the other worktree as of session close) — `color.brand.gradientDark` minted and the App.jsx call site swapped. Discovered during branch-hygiene recon, not assumed; confirmed via the actual token file and a merged, already-remote-deleted branch, not a status flag.
+- **Story 115** (`S.app` dead code) — turned out to already be resolved in code (zero `S.app` references found via direct grep) before this session touched anything; the ROADMAP entry's "Status: Open" is simply stale. Not fixed — `ROADMAP.md` was this session's own explicit exclusion (ceded to T1's concurrent run to avoid a same-file collision).
+- **Story 104 slices 4.2/4.3/4.4** — not started. Each is a larger, multi-hour extraction (V1 lineup engine, SharedView's own file relocation, near-static tab extraction); out of scope for a single overnight fallback pickup.
+
+### Key Events (Chronological)
+
+**1. Fallback-chain execution matched the handoff's own intended shape** — two items correctly identified as blocked (116, 119) rather than forced past a genuine hold, one shipped in full (120), one partially shipped by design (104, one sub-slice only, per "whichever is smaller in scope" once 115 turned out moot).
+
+**2. Three separate stale-doc corrections surfaced by direct verification, not trusted from the doc text** — Story 104's stated `screens/Roster/` destination (the folder convention was never adopted anywhere in the real codebase; verified `PlayerFilterToggle`'s one real call site is inside `SharedView`, not Roster), Story 115's "Status: Open" (already resolved in code), and Story 104's own tracking issue #279 (closed 2026-06-06, before any of its 5 sub-slices shipped — a new, precisely-scoped issue was filed instead of reopening the parent).
+
+**3. `SESSION_RETROSPECTIVES.md` merge conflict against T1's concurrent PRs, explicitly flagged rather than folded into routine re-sync language** — both this session and T1 independently appended a same-day entry at the top of this same file (the `-A` collision noted above). Resolved by stacking both, but KK specifically asked afterward for this to be surfaced front-and-center in the PR body, not buried in a log line — done, and logged as its own distinct finding in `docs/logs/2026-08-05-phase4b-run.md`.
+
+**4. Bug #7 hit persistently — 4 total full-suite runs this session, 3 consecutive flaky ones back-to-back, never landing a fully clean single pass for the Story 104 slice check.** Every flaky run showed zero real test failures, a different file (or pair) dropped each time — consistent with the documented worker-spawn-timeout signature, not a regression. Rather than retry indefinitely, isolated the 5 unique dropped files and ran them directly (5/5 passed), combined with one attempt's own 84/85-file result, to confirm every file in the suite had passed at least once. KK asked directly why the "permanent fix" wasn't holding; answered from `CLAUDE.md`'s own documented history (the shipped fix is a rate-reduction, `fileParallelism: false`, explicitly not framed as elimination — the deeper fix, a Windows Defender exclusion, remains an open, unimplemented Story 118 item requiring admin access this session doesn't have) rather than speculating.
+
+**5. Both merges happened live, mid-session, by KK directly — verified via API each time rather than assumed from a chat message.** "591 merged" and (silently, discovered only when checking CI) #597's merge were both confirmed via `merged_at`/`merge_commit_sha` plus a `git show -s --format=%P` parent-count check, catching the repo's own recurring squash-vs-merge-commit failure mode before treating either as fact.
+
+**6. A precision correction was itself orphaned by merge timing, then explicitly tracked down rather than left as debt.** KK caught an imprecise flake-count claim in the log/summary; the fix commit was pushed to `feature/phase4b-remaining-slices` *after* PR #597 had already merged it out from under itself. Filed a proper issue (#599) and cherry-picked the single commit forward via PR #600 rather than quietly amending history or letting it drop.
+
+**7. Branch hygiene at close used direct content diffs, not git ancestor checks, to decide what was safe to delete** — squash-merges break simple `--is-ancestor` detection, so each candidate branch's actual deliverable (SharedView's C.* count, PlayerFilterToggle's presence and import) was verified directly against `develop`'s real file contents before deleting anything. One stale local-only branch from a different, already-cleaned-up session (`feature/story119-gradient-token`) was pruned; a currently-checked-out branch in the other worktree (`issue/530-story119-callsite`) was left untouched.
+
+### Standing takeaway
+
+Every verification step this session that could have been taken on faith — a chat message claiming a merge happened, a story's stated destination path, an issue's apparent open/closed state, a branch's apparent merge status, even this session's own prior flake-count claim — turned out to need an independent check, and every single check found something worth correcting. None of the corrections were large, but the pattern held all the way through session close: verify against the actual source (API, file content, `git show`), not the nearest available claim, including this session's own.
+
+---
+
+## 2026-08-05-B — Overnight autonomous run: vite dependency bump + branch topology fixes
+
+**Date:** August 5-6, 2026 (session spans local midnight — commits carry both dates)
+**Session ID:** 2026-08-05-B (T1 — Dugout Track)
+**Duration:** Single continuous unattended run, second overnight handoff of the evening, direct continuation of 2026-08-05-A below (skipping straight to `-B`, not `-C`, since this is T1's own second session that evening — see the identifier note below)
+**Versions shipped to production:** None — two PRs opened and merged to `develop` same session (with KK's live confirmation mid-run), one issue filed
+**PRs merged:** [#593](https://github.com/kaushikkuberanathan/lineup_generator/pull/593) (`feature/vite-dependency-bump` → `develop`), [#594](https://github.com/kaushikkuberanathan/lineup_generator/pull/594) (`docs/feature-map-auth-row-recount` → `develop`) — both regular merge commits, verified 2-parent
+**Issues filed:** [#595](https://github.com/kaushikkuberanathan/lineup_generator/issues/595) (T2 branch-topology write-up, open)
+
+**Identifier note:** this file already has two entries independently titled `2026-08-05-A` — this one (T1, this session's first overnight run) and a concurrent T2 entry below (`Phase 4a promotion + Phase 4b kickoff`), each picked without knowing about the other. Labeling this session `-B` continues T1's own thread rather than resolve that collision; it isn't fixed retroactively here since both `-A` entries are already committed history.
+
+### Overview
+
+Second overnight handoff of the same evening, following directly from `2026-08-05-A`'s morning report. Primary task (vite dependency bump for #590) plus a four-item fallback chain: rebase a stale-looking branch, fix a flagged FEATURE_MAP.md gap, write up a T2 branch-topology observation, and close a validation gap in the merge-policy guardrail Action shipped the previous session.
+
+### What Was Planned
+
+1. Vite bump (#590) — scoped `frontend/package.json` gate phrase, correct `feature/*` → `issue/*` branch topology this time (explicit fix for the `-A` session's own #587/#588 shortcut).
+2. Rebase `feature/phase4b-remaining-slices` onto `develop` (force-with-lease), after verifying it was safe to touch.
+3. Fix `FEATURE_MAP.md` row 16 (flagged the prior session, not fixed then).
+4. File a write-up-only issue about `issue/531`'s branch topology.
+5. Fallback: validate the merge-policy guardrail's true-positive path (only true-negatives had been tested against real history the prior session).
+
+### What Shipped
+
+| PR/Issue | What | Status |
+|---|---|---|
+| #593 | Scoped `overrides` pinning vitest's nested `vite` (8.0.14→8.2.0); top-level `vite` untouched at 6.4.3. Closes #590. | Merged to `develop`, verified 2-parent |
+| #594 | `FEATURE_MAP.md` row 16 fix + full 37-row Coverage Summary recount, shown in the PR body | Merged to `develop`, verified 2-parent |
+| #595 | T2 branch-topology write-up for `issue/531-...` | Open, informational |
+
+### What Didn't Happen
+
+- **Step 2 (rebase `feature/phase4b-remaining-slices`) — stopped, not executed.** Pre-rebase verification found the branch was T2's *active* session branch, not unused as both this run's handoff and the prior session's recon believed: T2's own PR #591 (from that exact branch) had already merged into `develop` minutes earlier (2026-08-06T00:35:14Z, verified 2-parent), and T2 had pushed 3 more commits to the branch *after* that merge, still unmerged. Force-pushing a rebase would have rewritten history T2 was actively building on. This is exactly the "divergent remote state" stop condition the handoff specified — logged and skipped, not forced past.
+
+### Key Events (Chronological)
+
+**1. Corrected my own prior write-up before acting on it**
+
+Issue #590 (filed the previous session) described alert #30 as a separate `launch-editor` package, going off the GHSA advisory's title text without checking the actual flagged dependency. Before touching `frontend/package.json`, checked live: `security_vulnerability.package.name` for *both* #28 and #30 is `vite` — same nested `vitest/node_modules/vite` instance, not two packages. Fixed the record in the same PR that fixed the dependency.
+
+**2. Self-inflicted-incident-adjacent: caught a genuinely stale local `develop` before branching**
+
+Created `docs/feature-map-auth-row-recount` off a local `develop` that was 10 commits behind `origin/develop` (T2's PR #591 had just landed). Caught it immediately via the branch's own "behind by 10" message before making any edit, fast-forwarded both `develop` and the new branch, then re-verified none of the three target docs files had been touched by the commits just pulled in, before proceeding.
+
+**3. A directory-scoped search missed real test files entirely**
+
+First-pass search for `FEATURE_MAP.md` row 16's actual auth test coverage was scoped to `__tests__/` directories only and came back empty for frontend. The real files (`frontend/src/tests/auth.test.js`, `frontend/src/components/Auth/LoginScreen.test.jsx`, `frontend/src/components/Auth/NoMembershipScreen.test.jsx`) live outside that convention. Found them by reading an already-merged PR's own commit body (#567) rather than trusting an incomplete glob — a second instance, this session, of "the doc's own citations can be wrong even when they look precise" (see `-A`'s Dependabot citation lesson).
+
+**4. Recount discipline paid off exactly as designed**
+
+Before editing `FEATURE_MAP.md`'s Coverage Summary, did a full position-by-position tally of all 37 rows' Doc Status and Test Status columns and confirmed it matched the documented summary exactly on both axes — this file's own revision history warns that skipping this step is how it drifts. One clean, auditable change resulted: Tests Partial 14→15, No Tests 13→12, everything else unchanged.
+
+**5. Fallback chain surfaced a real, unplanned finding instead of completing as scripted**
+
+Step 2's pre-rebase verification (explicitly required by the handoff, not something added unprompted) is what caught the T2-active-branch situation in Key Events item... see "What Didn't Happen" above. The stop was the correct outcome of following the verification step as designed, not a failure of the plan.
+
+**6. Guardrail true-positive validation, and 5 live true-negatives for free**
+
+Built a synthetic single-parent commit with a squash-suffix commit message on a disposable local-only branch (never pushed, deleted after), ran the exact shipped detection logic from `.github/workflows/merge-policy-guard.yml` against it directly: `violation=true`, correctly flagged. Closes the gap from the guardrail's original session, which only validated true-negatives against real history. Bonus, unplanned: the guardrail fired for real 5 times this session on genuine `develop` pushes (`1d586b1`, `4df6be6`, `3687a1b`, `e4f0607`, `cc3d348`) and correctly stayed silent every time — real-world evidence on both sides of its logic now exists, not just historical replay and synthetic construction.
+
+### Standing takeaway
+
+Both fallback-chain runs this evening (`-A` and `-B`) hit at least one moment where the handoff's own stated assumption turned out to be stale by the time execution reached it (`-A`: Story 110/#296 already resolved; `-B`: `feature/phase4b-remaining-slices` no longer unused). In both cases the explicit instruction to verify before acting — rather than trust the handoff's "confirmed state" section as ground truth — is what caught it before any damage. Worth keeping that verification step non-negotiable in every future unattended handoff template, not just as a one-off lesson.
+
+---
+
+## 2026-08-05-A — Phase 4a promotion + Phase 4b kickoff (region slices remaining)
+
+**Date:** August 5, 2026
+**Session ID:** 2026-08-05-A (UX Track, `lineup-generator-ux` worktree)
+**Duration:** Single continuous run, Phase 1 (recon + one batched question round) then Phase 2 (execution with explicit HOLD points on develop-facing merges)
+**Versions shipped to production:** None — `develop` only, nothing promoted to `main` this session
+**PRs opened:** #581 (`feature/phase4-region-slices-remaining` → `develop`, **merged**, regular merge commit `c598850`)
+**Issues filed:** #573 (governance — merge-type policy gap)
+**Branches:** `feature/phase4-region-slices-remaining` (Phase 4a, merged and done); `feature/phase4b-remaining-slices` (Phase 4b, cut from develop's new tip, holds slice 7)
+
+### Overview
+
+Ran the Phase 4a→develop promotion for region slices 4-6 (already committed on the branch from a prior session), then kicked off Phase 4b by cutting a new branch and completing slice 7 (Modals/overlays). Followed a two-phase handoff structure: batched Phase 1 questions (merge method, push scope, merge authority split, incremental promotion, slices 8/9/Story 119 status), then autonomous execution with one hard HOLD point (the actual Phase 4a→develop merge click) reserved for KK's explicit confirmation regardless of the broader authority granted.
+
+### What Shipped
+
+| Item | Scope | PR/Issue | Status |
+|---|---|---|---|
+| Phase 4a promotion | slices 4-6 (Schedule, Lineups+Links, Feedback/About/Account/Updates) + this session's CLAUDE.md merge-policy note | #581 | Merged to develop, regular merge verified (2-parent) |
+| Slice 7 | Modals/overlays — 9 `var C.*`/literal-hex sites across 3 modals (recoverMode, showShare, showExitSheet) | commit `637de9f` | Merged to `feature/phase4b-remaining-slices`, pushed |
+| CLAUDE.md merge-policy rule | Documents "Create a merge commit" requirement + links #573 | commit `4fcb1f5` | Merged via #581 |
+| Governance issue | Merge-type policy gap (repo-wide squash checkbox can't fix it; CI guardrail proposed) | #573 | Filed, CI guardrail Action drafted not built |
+| Sprint 2 P1 test-debt correction | Memory said 5/10 (then corrected mid-session to 8/10); actual state is 10/10 | — | Memory files corrected, no `DOC_TEST_DEBT.md` edit needed (already correct upstream) |
+
+### What Didn't Happen
+
+- Slice 8 (GameModeScreen/DugoutView) — untouched, per its own standing gate (own Locked-File gate phrase required, no exceptions this run).
+- Slice 9 (SharedView duplicate header, Story 120) — skipped; naming/scoping decision never granted this session.
+- Story 119 (app-shell gradient token naming) — no owner named, logged as still-open.
+- Story 117's live-visual-verification gap — restated, not closed. New requirement added this session: a consolidated authenticated-browser verification pass across all of slices 1-7's touched regions is required before Phase 4b promotes to develop, or before the next release, whichever comes first.
+- The CI guardrail Action for #573 — designed in `PHASE4_EXECUTION_LOG.md`, deliberately not implemented pending review.
+
+### Key Events
+
+**1. Stale-sync re-checks caught real drift twice, not paranoia**
+
+`origin/develop` moved forward three separate times over the course of this run (first +20 commits from an unrelated doc-audit/RLS-hotfix track, then +3 more Sprint-2 debt-closure commits, then +1 more mid-flow) before Phase 4a's merge actually executed. Each was caught by re-fetching immediately before the merge rather than trusting an earlier check, per KK's explicit standing instruction. One of those re-syncs (`bad0633` → `2c8188b`) auto-merged through `App.jsx` cleanly with no conflict markers and no skip-worktree interference (Bug #11 checked, didn't apply).
+
+**2. A KK-directed verification surfaced a real, confirmed squash-merge policy violation**
+
+Asked to verify (not just log) whether "the other track" merged cleanly, `git show -s --format=%P` on PRs #567/#569/#571 showed single-parent commits with GitHub's auto squash-suffix format — inconsistent with every other Sprint-2 item on the same `issue/*→develop` path, which used real two-parent merge commits. This is a recurrence of a repo-level issue first caught 78 days ago (v2.5.15) that evidently was never actually fixed. Filed as #573, documented in CLAUDE.md, and the actual Phase 4a→develop merge was executed via the GitHub API's `merge_method: "merge"` parameter specifically to sidestep the same failure mode (the sticky per-session dropdown default) rather than trust the UI a third time. Verified post-merge: two parent hashes confirmed on `origin/develop`'s new HEAD before reporting success, per KK's explicit require-verification-before-success-report instruction.
+
+**3. A stated test-debt count was corrected twice, in the more-progress direction both times**
+
+KK's message stated Sprint 2 P1 debt at "5/10 → 8/10, 2 remaining" after three PRs closed. Checking `DOC_TEST_DEBT.md` directly (not the memory snapshot) showed the doc itself was already fully reconciled and correct — the actual gap was in the session's memory file, which hadn't picked up two more items (Roster-Wipe Guard, Vitest OOM cascade) that closed on 2026-08-04 via an entirely separate session. True state: **10/10 closed, 0 remaining.** Corrected the memory file rather than editing the already-correct `DOC_TEST_DEBT.md`.
+
+**4. A stated slice-7 scope didn't match the authoritative plan doc**
+
+KK's App.jsx gate-phrase message described slice 7 as "header-nav chrome" — that's slice 1, already shipped in v2.8.4. Checked `DESIGN_AUDIT.md`'s own numbered "Recommended migration shape" table before touching the locked file: slice 7 is actually Modals/overlays. Surfaced the mismatch via a direct question rather than guessing at a high-risk, 10,000+ line locked file. KK confirmed the doc's definition.
+
+**5. A `C.`-only grep missed four already-resolved literal-hex sites in the same modal**
+
+The initial slice-7 edit covered every `C.key` reference and the 3 `overlayBg` literal duplicates, but missed raw `#0f1f3d`/`white` literals inside the recoverMode modal (never `C.key` references, so invisible to a `C.` grep). KK caught this and asked whether they were tracked. Checking `DESIGN_AUDIT.md`'s per-key disposition table confirmed both are already-resolved ADOPT keys (navy: 56 sites; white: context-dependent) — fixed in the same diff rather than filed, since the region was already open. Separately verified `#94a3b8`/`#e5e7eb` in the same modal were never `C` keys at all — genuinely out of scope, not a gap.
+
+**6. Four separate Bug #7 flakes this session, all isolated and confirmed clean, none a real regression**
+
+`SharedView.test.jsx`, `liveStateMerge.test.js`, `a11y-component-fixes.test.jsx`, `AboutTab.test.jsx` — each dropped to a worker-spawn timeout during a different full-suite run, each isolated afterward (one, `AboutTab.test.jsx` and `SharedView.test.jsx`, needed a second isolated attempt after the first also timed out solo) and confirmed passing clean. Consistent with the documented Bug #7 signature — not treated as a regression without verifying first.
+
+**7. Live/authenticated visual verification attempted, honestly reported as not completed**
+
+Started the dev server intending to trigger all 3 slice-7 modals directly. Hit the auth gate (magic link/Google OAuth) with no demo-team data available locally, and stopped rather than push further into that flow. Reported this plainly rather than implying full verification happened — diff-only (exact-value) verification is the actual standard slices 1-7 shipped under, which KK explicitly accepted for this slice while keeping Story 117's broader gap open with a new pre-Phase-4b-promotion requirement attached.
+
+### Standing takeaway
+
+Every verification prompt in this session (stale-sync, merge-type, test-debt count, slice-7 scope, literal-hex completeness) turned up a real, material correction — not one was a false alarm. The pattern that worked: check the authoritative source (git history, the plan doc's own table, the debt ledger's own dashboard note) directly, every time, rather than propagating a prior session's or a stated summary's arithmetic forward, even when the stated summary came from KK directly.
+
+---
+
+## 2026-08-05-A — Overnight autonomous run: backend auth test coverage + fallback chain
+
+**Date:** August 5, 2026
+**Session ID:** 2026-08-05-A (T1 — Dugout Track)
+**Duration:** Single continuous unattended run, per a handoff document pre-answering the Phase 1 question round (KK unavailable)
+**Versions shipped to production:** None — two PRs opened, both held for review
+**PRs opened:** #587 (`issue/586-backend-auth-test-coverage` → `develop`, held), #588 (`issue/573-merge-policy-guard-action` → `develop`, held)
+**Issues filed:** #586 (backend auth test coverage). #573 (merge-policy guardrail) was pre-existing, filed the prior session — not refiled.
+
+### Overview
+
+Handoff specified a primary task (targeted backend magic-link/auth test coverage against prod) plus a four-step fallback chain (CI guardrail Action for #573 → DIVERGENT/ORPHAN token analysis → stale-docs audit), with instructions to drop through the chain and log every transition rather than pause for input. All four steps were attempted; two produced real shipped work, one turned out to be moot (already resolved), one produced an audit finding without an edit.
+
+### What Was Planned
+
+1. Primary: un-skip/extend backend magic-link rate-limiter test coverage against the live prod backend.
+2. Fallback A: build the CI guardrail Action for #573 (design doc pointer provided).
+3. Fallback B: written DIVERGENT/ORPHAN token-decision analysis (Story 110/#296).
+4. Fallback C: stale-docs audit of ROADMAP.md/DOC_TEST_DEBT.md.
+
+### What Shipped
+
+| Issue | PR | What | Status |
+|---|---|---|---|
+| #586 | #587 | Un-skipped `RATE-01b` + added `RATE-01c` in `suite-rate-limits.js` — Story 26's email-keyed rate limiter proven live in prod via direct probe before writing the assertion | CI green (10/10 checks), held for merge |
+| #573 | #588 | New `.github/workflows/merge-policy-guard.yml` — detects a likely squash-merge on `develop`/`main` post-push (message matches `(#NNN)$` + single parent), comments on the originating PR, fails the check | CI green (10/10 checks), held for merge |
+
+### What Didn't Happen
+
+- **Fallback B was skipped as moot, not executed.** #296 (Story 110 DIVERGENT/ORPHAN token decisions) turned out to already be fully resolved on 2026-08-01 (PR #490) — all 8 keys have a recorded disposition with provenance in `DESIGN_AUDIT.md`. Verified before writing anything, rather than producing a redundant analysis of an already-closed decision. The handoff's premise here was stale by four days.
+- **Fallback C found no edit-worthy stale-docs items that were safe to fix unattended.** `ROADMAP.md` and `DOC_TEST_DEBT.md` are both extremely current (edited same-day, with rigorous direct-recount audit trails already in place) — genuine confirmed P0 count is 0. One real gap was found (`FEATURE_MAP.md` row 16, "Auth system," lists Test Status as `❌ None` despite ~7 backend auth test files existing) but fixing it requires recomputing the Coverage Summary denominators, which this file's own revision history flags as a repeated drift source — logged for KK's judgment rather than edited blind.
+
+### Key Events (Chronological)
+
+**1. Handoff's own "Confirmed state" required active verification, not blind trust — caught two stale claims**
+
+The handoff described #296 as an open blocker and pointed to `docs/product/PHASE4_EXECUTION_LOG.md` as #573's design draft location. Neither held up: #296 was closed 2026-08-01 (see above), and `PHASE4_EXECUTION_LOG.md` does not exist anywhere in the repo (confirmed via search) — the pointer inside #573's own body is broken. Built Fallback A from #573's inline "Proposed fix" section instead, which was itself a complete, implementable spec.
+
+**2. Live-probed prod before writing any test assertion**
+
+Before touching `suite-rate-limits.js`, ran the exact 6-request sequence by hand against the live Render backend with a disposable test email, twice (once to confirm the 429 fires, once to confirm a second email is unaffected). Only wrote the test code after confirming the behavior it would assert is actually true against the current deployment — avoided shipping a test that guesses at prod behavior instead of measuring it.
+
+**3. Self-inflicted working-tree incident during Action testing, caught and recovered cleanly**
+
+While validating the merge-policy guard's detection logic against real historical commits, a test loop used `git checkout <sha> -- .` to inspect old commit content — this staged the *entire* diff between that historical commit's tree and the working branch (files from unrelated history: stray SVGs, App.jsx, package-lock.json, etc.), and reverted the just-committed `suite-rate-limits.js` edit in the working tree. Caught immediately via `git status` before any further action. Root-caused: `HEAD` was untouched (still the legitimate last commit, already pushed to origin) and the polluting changes were 100% uncommitted byproducts of the last few minutes' work, not pre-existing state — confirmed via `git diff HEAD --name-only` and `git log -1` before running `git reset --hard HEAD`. The one untracked in-progress file (the new workflow YAML) was unaffected, as `reset --hard` never touches untracked paths. Re-verified working tree matched origin exactly afterward. No data loss; the incident cost time, not correctness — but it's a reminder that `git checkout <ref> -- <path>` is a write operation on the working tree/index even when the intent is read-only inspection, and `git log`/`git show -s` are the actual read-only tools for that job.
+
+**4. Found and fixed a real bug in the Action being built, before it ever ran in CI**
+
+The Action's PR-comment step built its JSON body via `node -e "..." BODY="$BODY"` — passing `BODY=...` as a positional CLI argument, not an environment variable, so `process.env.BODY` would have been `undefined` in the actual GitHub Actions run. Caught by testing the exact snippet standalone before commit; fixed to `BODY="$BODY" node -e "..."`. Declined to test the full comment-posting path end-to-end against a real merged PR (would have spammed a closed PR just to prove the code works) — validated its two components (commit→PR resolution via a real read-only API call, and the corrected JSON escaping) separately instead.
+
+### Standing takeaway
+
+The handoff's fallback-chain structure worked as designed — each step's own verification (not the handoff's assertions) determined whether to build, skip, or just report. Two of four steps turned out to need no code at all (one already solved, one already well-documented); the value there was confirming that cleanly rather than manufacturing work to fill the token budget. The `git checkout <sha> -- .` incident is worth flagging as a specific technique to avoid in future "test this detection logic against real history" work — read-only git commands (`git show`, `git log`) are almost always sufficient for that and carry zero working-tree risk.
+
+---
+
 ## 2026-08-04-A — Doc Audit Spike remediation (autonomous execution)
 
 **Date:** August 4, 2026
