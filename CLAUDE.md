@@ -70,6 +70,15 @@ Default base for new work: develop.
 - **Never trust a role constraint written in a doc or a migration file. Query the database.** Full role model: `docs/product/AUTH_SECURITY_AUDIT_ROADMAP.md`. Ground truth: `docs/db/schema.sql`.
 - Phase 4 MVP: platform_admin manually creates teams in Supabase
 - Approval routing: ALL requests → platform_admin (icoachyouthball@gmail.com)
+- **2026-08-08 — Story A (role vocabulary reconciliation) investigated and
+  dropped, not filed.** The role-access-model-evolution initiative's original
+  brief assumed `/admin/approve-link` still 500s on `coordinator`/`team_admin`/
+  `parent` and that `viewer` was missing from `/request-access`'s validator.
+  Recon found both already fixed by WS-1/#336 (`normalizeRole.js`) well before
+  this session — no code change was needed. Coordinator-as-label (Option B,
+  this section's model above) was explicitly reconfirmed rather than reversed;
+  promoting it to a distinct canonical role (Option A) is deferred to Story 125
+  (#656, blocked on Phase 4C) — see that issue for the named precondition.
 
 ### Persistence: Three-Layer Pattern
 ```
