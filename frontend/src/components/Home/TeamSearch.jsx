@@ -151,7 +151,7 @@ export function TeamSearch({ isOnline, onSelectTeam, onBack }) {
 
       {status === 'error' && !isOnline && (
         <Stack direction="col" align="center" gap="sm" style={{ textAlign: 'center', padding: '24px 16px' }}>
-          <Text size="sm" color="secondary">You're offline — team search needs a connection.</Text>
+          <Text size="sm" color="secondary">You&apos;re offline — team search needs a connection.</Text>
           <Text size="xs" color="disabled">Reconnect and try again.</Text>
         </Stack>
       )}
