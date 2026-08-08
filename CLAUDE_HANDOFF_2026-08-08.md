@@ -42,7 +42,7 @@ never force-push over the other side's section.
 | Story 124 (teams search + request-access discovery) | T1 (backend) / T2 (frontend) | **Filed: [#655](https://github.com/kaushikkuberanathan/lineup_generator/issues/655)** | T1 | 2026-08-08 |
 | Story 125 (Phase 4C role-scoped data model) | — | **Filed: [#656](https://github.com/kaushikkuberanathan/lineup_generator/issues/656)**, `status:blocked` | T1 | 2026-08-08 |
 | `GET /api/v1/teams/search` (backend) | T1 | **Done** — squash-merged into working branch via [PR #657](https://github.com/kaushikkuberanathan/lineup_generator/pull/657) (`c40af13`). 120/120 unit tests passing (111 existing + 9 new, `teamsSearch.route.test.js`). `docs/SOLUTION_DESIGN.md` Route Inventory updated. | T1 | 2026-08-08 |
-| Role picker / search UI (frontend) | T2 | In progress locally (2 commits: role-picker vocab fix, Home tab search component) — not yet pushed to origin as of last check | — | 2026-08-08 |
+| Role picker / search UI (frontend) | T2 | In progress locally (2 commits: role-picker vocab fix — **confirmed ships the 5-entry ROLE_OPTIONS incl. parent→viewer** — and Home tab search component) — not yet pushed to origin as of last check. Branch topology settled, no action needed from either side. | — | 2026-08-08 |
 | `CLAUDE.md` role-vocab correction | T1 (holding diff) | **Not committed** — needs literal gate phrase from KK. On inspection the existing section was already accurate; the held diff is additive-only (one closing note), see T1 Notes. | T1 | 2026-08-08 |
 
 ---
@@ -104,11 +104,9 @@ backend implementation only. Will not touch `App.jsx`, `frontend/package.json`,
 - `develop`/`main`: not pushed to, no PR opened, no PR planned this session.
   **PR to develop intentionally not opened — develop is mid soak window,
   awaiting KK's explicit instruction.**
-- Open, for T2 or KK: (1) the branch-name mismatch flagged in `## Requests`
-  below — as of last check T2 has 2 local commits on
-  `claude/story-b-frontend-role-access-f0730f`, not yet pushed anywhere; (2)
-  the CLAUDE.md gate phrase, whenever KK is ready; (3) the parent/viewer
-  frontend gap flagged in `## Requests` below, if T2's Story 124 scope needs it.
+- Open, for KK only: the CLAUDE.md gate phrase, whenever ready. Branch
+  topology and the frontend parent/viewer gap are both resolved (see
+  `## Requests` below) — nothing outstanding for T2 from this side.
 
 ---
 
@@ -120,28 +118,30 @@ backend implementation only. Will not touch `App.jsx`, `frontend/package.json`,
 
 ## Requests
 
-**T1 → T2, 2026-08-08:** Your worktree (`.claude/worktrees/story-b-frontend-role-access-f0730f`)
-is on branch `claude/story-b-frontend-role-access-f0730f`, still at the shared
-base commit (`06030c1`), not yet pushed to origin. KK has designated
-`claude/role-access-model-evolution-8a855d` (my branch) as the **single
-canonical working branch for this whole initiative** — please retarget your
-work to push into that branch (or open your PR against it) rather than your
-own branch name, so everything lands in one place for the eventual (KK-only,
-post-soak) promote to develop. If you've already started committing on your
-own branch, that's fine — just merge/rebase onto
-`claude/role-access-model-evolution-8a855d` before pushing, rather than
-maintaining two parallel branches for one initiative.
+**RESOLVED, 2026-08-08 — branch topology.** Earlier note in this section
+asked T2 to retarget onto a "canonical branch." That was T1 overreaching —
+KK clarified: T2's branch (`claude/story-b-frontend-role-access-f0730f`) is
+intentionally independent and squash-merges into
+`claude/role-access-model-evolution-8a855d` later, the same way T1's
+`issue/655-teams-search-endpoint` did via PR #657. It was never supposed to
+match a shared name. Nothing pending here — topology is settled, not open.
+
+**RESOLVED, 2026-08-08 — frontend parent/viewer gap.** Earlier note below
+flagged that `RequestAccessScreen.jsx`'s `ROLE_OPTIONS` had only 3 entries
+with no parent/viewer path. T2 already shipped this: commit `e363200`
+("fix: request-access role picker vocabulary") expands `ROLE_OPTIONS` to 5
+entries — `head_coach→team_admin` (flagged manual-review), `assistant_coach→coach`,
+`coordinator→coordinator`, `scorekeeper→scorekeeper`, `parent→viewer` — plus
+first test coverage for the component. Confirmed by reading the commit
+directly. Nothing pending here either.
 
 **T1 → T2, 2026-08-08:** Story A is dropped — do not build anything against
 the original handoff's 4-role/5-role assumptions. Current reality (verified
 against live `develop`):
 - Backend already accepts `admin/coach/scorekeeper/viewer/team_admin/coordinator/parent`
   at `/request-access` via `normalizeRole()` — nothing to change there.
-- Frontend `RequestAccessScreen.jsx` `ROLE_OPTIONS` today has only **3** entries
-  (`head_coach→admin`, `assistant_coach→coach`, `coordinator→coach`) — no
-  viewer/parent option exists in the UI. If your Story 124 frontend scope
-  includes exposing a parent/viewer request path, that's a real gap to design,
-  not a wiring bug — flag back here if you want my read on it before building.
+- Frontend `RequestAccessScreen.jsx` `ROLE_OPTIONS` — see the resolved note
+  above; T2 already closed this gap.
 
 ---
 
@@ -180,6 +180,8 @@ against live `develop`):
 - Code-level canonical set (`normalizeRole.js`): 4 values — `admin, coach,
   scorekeeper, viewer`. `team_admin→admin`, `coordinator→coach`, `parent→viewer`.
   This is deliberate (Option B) and stays as-is per KK's 2026-08-08 decision.
-- Frontend `ROLE_OPTIONS` (`RequestAccessScreen.jsx`): 3 entries today, IDs
-  `head_coach`, `assistant_coach`, `coordinator` — values map to `admin`/`coach`/`coach`.
-  No parent/viewer option exists in the UI yet.
+- Frontend `ROLE_OPTIONS` (`RequestAccessScreen.jsx`): **updated 2026-08-08 by
+  T2** (commit `e363200`) to 5 entries — `head_coach→team_admin` (manual-review
+  flagged), `assistant_coach→coach`, `coordinator→coordinator`,
+  `scorekeeper→scorekeeper`, `parent→viewer`. The 3-entry/no-parent-option gap
+  noted earlier in this file is closed.
