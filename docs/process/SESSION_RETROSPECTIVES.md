@@ -10,6 +10,71 @@
 
 ---
 
+## 2026-08-07-B — Overnight handoff execution + #380 close-out, spans midnight into 2026-08-08
+
+**Date:** August 7-8, 2026 (spans midnight UTC; PR #647 merged 02:19 UTC on 2026-08-08)
+**Session ID:** 2026-08-07-B (T1, Dugout Track, `lineup-generator` worktree)
+**Duration:** Single continuous overnight session picked up from a 4-track handoff (#428, App.jsx decomposition, #561, Phase 4C proposal), then extended through a full #380 write-path audit and close-out at KK's direction, running fully autonomously for the final stretch.
+**PRs opened/merged to develop:** #613, #614, #615 (handoff carryover), 7 dependency/doc PRs (#620/#621/#624/#625/#628/#629/#631), #642 (dbDeleteTeam backend route), #646 (admin.html backend route), #647 (migration 021 REVOKE + RLS test updates + CI bootstrap fix) — every one verified as a genuine 2-parent merge via `merge_commit_sha` + `git show -s --format=%P`, never assumed from a stated summary.
+**Issues filed:** #632-636 (held dependency bumps), #645 (admin.html has no DEV-pointed variant)
+**Versions shipped to production:** None — all work landed on `develop` only; `develop→main` promote is explicitly NOT done, see Carry-Forward.
+
+### Overview
+
+Started from a 4-item overnight handoff, executed the safe items, then moved into a full round of PR triage (merged everything CI-clean, held 4 dependency bumps with real evidence rather than assumption), then a deep, methodically-gated closure of #380 (route team-deletion off direct Supabase writes). The #380 work in particular was executed under continuous, explicit KK oversight with escalating verification requirements at every step — each one catching something real. The session closed with KK granting full autonomy for the remaining mechanical work (branch hygiene, issue sync, retrospective, roadmap, T2 handoff), during which a second real near-miss was caught and self-corrected before any lasting damage.
+
+### What Shipped
+
+| Item | Scope | PR/Issue | Status |
+|---|---|---|---|
+| #428 | RLS-live-in-prod precondition — confirmed via read-only query, no write probe needed | #428 | Closed |
+| #561 | `createTeam()` never provisioned `team_memberships` — two stacked bugs (Postgres `ON CONFLICT DO UPDATE` re-checks the UPDATE policy's `WITH CHECK` even on no-conflict; missing trigger). Migration 018 | #561 | Closed |
+| #375 | Orphan `team_memberships` row (both `user_id`/`email` null) — found already clean on both DEV/prod; added preventive CHECK (migration 020) | #375 | Closed |
+| #376 | Root cause diagnosed and documented via comment (`activeTeamId` never reconciled against real `memberships`) — fix needs `App.jsx`, gate phrase not granted this session | #376 | Left open, correctly |
+| #380 (route half) | `dbDeleteTeam()` + `admin.html`'s `deleteTeam()` both rewritten to call the backend's `DELETE /api/v1/teams/:teamId` (service_role, admin-membership-checked) instead of direct Supabase writes — the only two direct-write sites, confirmed via repo-wide grep | #642, #646 | Merged to develop |
+| #380 (grant half) | Migration 021 (`REVOKE DELETE ON teams FROM anon, authenticated`) — closes migration 004's deliberately-carried exception. RLS suite updated (S4b exception filter removed, T6 comment corrected, T7-control rewritten). Applied+verified GREEN on DEV (35/35) | #647 | Merged to develop; **NOT applied to prod** — see near-miss below |
+| #645 | New finding: `admin.html` is hardcoded to the prod Supabase project with no build step — zero safe-testing surface, always has been | #645 | Filed, scoped to the finding only |
+| Dependency bumps | 3 clean (vite/eslint/etc.), 4 held with real evidence (broken builds/tests verified locally, not assumed) | #632-636 | Held, tracked |
+| Branch hygiene | 8 fully-merged local branches deleted from Main; 20 stale remote-tracking refs pruned (all already auto-deleted by GitHub on merge — confirmed clean pattern all night) | — | Done |
+
+### What Didn't Happen
+
+- **`develop→main` promote** — correctly out of scope; #380 stays open until this happens (see near-miss below, which is exactly why it can't be skipped).
+- **App.jsx decomposition (Track 2)** — blocked all session on the literal gate phrase, never granted.
+- **#577** — confirmed via issue body as `status:deferred` by design ("dedicated session... per KK's explicit direction"), correctly not touched.
+- **Full RLS test suite run against prod** — structurally impossible by design (`clients.js`'s hard-coded PROD-rejection fence); prod verification instead used direct read-only `information_schema.role_table_grants` queries.
+
+### Key Events (Chronological)
+
+**1. A worktree-routing process failure was found, root-caused, and the fix was proven, not just stated — twice in one night.** `git -C` alone (the first fix) was necessary but not sufficient: Edit/Write/Read calls and non-git Bash commands each needed their own explicit targeting. KK's instruction was explicit: "don't self-correct, just report back," then required a live write-and-verify proof before trusting the corrected discipline. Both corrected memory files (`reference_worktree_paths.md`, `feedback_t1_scoped_work_via_git_dash_c.md`) were rewritten and the fix was proven empirically before resuming any T1-scoped work.
+
+**2. A content-loss near-miss in `docs/process/SESSION_RETROSPECTIVES.md` was caught by KK demanding the actual diff, not a description of it.** Resolving a same-date-suffix collision between my own pending entry and T2's already-shipped one accidentally deleted a third, unrelated, already-committed T2 entry sitting above the conflict zone. KK's exact words: "Paste the actual diff... the real before/after, not a description." Confirmed via `git show origin/develop:...` that nothing was lost in the real repo (only the local uncommitted resolution was wrong), then rebuilt cleanly from origin/develop's committed state with the addition re-inserted at the correct position.
+
+**3. The #380 write-path audit escalated in scope at every checkpoint, and every escalation found something real.** KK required, in sequence: (a) confirmation the harness-created throwaway team used the real write path, not a bypass; (b) a grep proving `dbDeleteTeam()` was the only direct write before calling it verified; (c) after the admin.html fix was drafted, a check for whether admin.html also wrote directly to `team_memberships` elsewhere (#338); (d) a broader repo-wide grep for every `.from('teams').delete()` call before authorizing the REVOKE. Each check passed, but the discipline of requiring evidence at every step — rather than trusting the previous step's implication — is what made the eventual go/no-go trustworthy.
+
+**4. Verifying the admin.html fix surfaced a real, separate, standing gap: `admin.html` has no DEV-pointed variant and never has.** Attempting to test the fix live (first via a file:// Browser preview, then a locally-served static server with a session-injection plan) was halted by KK before any real click: "don't act on the panel until this is clear." Direct grep + `.env` comparison confirmed `admin.html`'s Supabase client is hardcoded to the **production** project — filed as #645, scoped to the finding only per KK's explicit instruction not to fold in a proposed fix. The fix itself was verified by code review against the already-proven backend route instead, per KK's own reasoning: "the underlying route has already been proven independently and thoroughly."
+
+**5. Applying migration 021 to prod created a real, self-inflicted capability gap, caught before it could matter, by not trusting a green-looking signal.** After DEV verification passed (35/35), the REVOKE was applied to prod. A live curl against the new route returned 401 — which looked like proof the route was live. It was not: `git show origin/main:backend/src/routes/teamData.js` confirmed the route doesn't exist there at all; the 401 came from `admin.js`'s unrelated catch-all auth gate (the same mechanism as the v2.8.3 feedback-routing bug) intercepting the unmatched path. Since `develop→main` hadn't promoted, prod's real backend had no working delete path at all — worse than before, not better. Reverted the prod grant within minutes, restoring exact prior state, and rewrote migration 021's own header with an explicit precondition: do not re-apply until the route is confirmed live in prod. This is precisely the failure mode migration 004's own header warned about for this exact case ("Both halves must land together — revoking first leaves a window where delete-team silently fails") — the warning was written by this same effort, for this exact migration, and was still nearly violated in practice.
+
+**6. The PR #647 CI failure that followed was self-inflicted and quickly root-caused: the ephemeral RLS bootstrap script was never updated to replay migrations 020/021.** `apply-rls-bootstrap.sh`'s replay list stopped at 018; the updated RLS tests correctly expected the REVOKE's effects, which the ephemeral stack never applied. Fixed by extending the replay list with an explanatory comment, verified GREEN on the next CI run.
+
+### Standing takeaway
+
+Two near-misses this session shared the same shape: a signal that looked like confirmation (a green test suite pattern in the worktree incident; a 401 response in the prod REVOKE incident) was trusted one level short of where it needed to be checked. The fix both times was the same reflex this session's whole discipline is built on — verify the specific claim being relied on, not an adjacent one that merely looks similar. "The route returns 401" is not the same claim as "the route exists"; "git -C worked for the commit" is not the same claim as "every tool call touched the right worktree." Worth stating plainly: when a check is about to gate an irreversible or hard-to-reverse action (a prod grant revocation, a merge), the check must test the *exact* precondition, not a nearby one that happens to produce a similar-looking result.
+
+### Carry-Forward Items
+
+| Priority | Story/Issue | Item |
+|---|---|---|
+| P1 | #380 | REVOKE migration (021) merged to develop and DEV-verified, but deliberately NOT applied to prod. Blocked on `develop→main` promoting (normal Release Ritual, with soak — not a hotfix) and the route being confirmed live in prod. Do not re-apply the REVOKE to prod before that. |
+| P2 | #645 | `admin.html` has no safe DEV-testing surface — filed, finding only, no fix proposed |
+| P1 | #376 | Root cause diagnosed; fix needs `App.jsx`, blocked on gate phrase |
+| P2 | #577 | FEATURE_MAP.md restructure — confirmed correctly deferred, dedicated session needed |
+| P2 | #632-636 | 4 held dependency bumps — real evidence gathered, need a dedicated session to fix underlying breakage, not just re-attempt the bump |
+| — | — | `local/develop-tracking` local branch in Main — ambiguous purpose, non-standard naming, left untouched during branch hygiene rather than guessed at |
+
+---
+
 ## 2026-08-07-A — UX worktree baseline, Phase 4C decisions confirmed, two cross-terminal collisions found and fixed at the root
 
 **Date:** August 7, 2026
@@ -127,6 +192,70 @@ Started as a routine "what's sitting in dev, let's plan the release" conversatio
 ### Standing takeaway
 
 Two of this session's three most consequential moments were self-corrections, not external audits: over-reading a merge instruction as broader authorization than intended, and discovering (rather than assuming) that a "safe" working directory wasn't. Both were caught by checking real state — `git status`, `git reflog`, an explicit re-read of what was actually said — rather than proceeding on the most convenient interpretation. The GitHub outage added a third lesson in the same family: even an external, unfixable event still requires verifying the *actual* recovery behavior (auto-resume vs. silent cancellation) rather than assuming the obvious outcome. The common thread all session: readiness, plausibility, and "it should work this way" are not substitutes for checking.
+
+---
+
+## 2026-08-06-B — Phase 4b continuation under active dev freeze: slice 10 completion + doc audit
+
+**Note: relabeled from "-A" to "-B" while resolving a merge conflict** — this entry and the v2.8.5 Release Review entry above were independently authored by different tracks (T1/T2) on the same date, both using suffix "A". The Release Review entry was already committed to `develop` (PR #629) under that label; this one was not yet committed, so it was relabeled rather than touching shipped history. Content below is otherwise unchanged from the original draft.
+
+**Date:** August 6, 2026
+**Session ID:** 2026-08-06-A (T1, Dugout Track, `lineup-generator` worktree)
+**Duration:** Single continuous session, picked up from a prior-session handoff (5-item priority queue) with a two-phase structure: Phase 1 recon + one consolidated question round, Phase 2 execution. KK present throughout, live-merged all three PRs.
+**Versions shipped to production:** None — all work landed on `develop` only, under an active T2-declared release-readiness freeze (no `develop→main` promote this session)
+**PRs opened:** #606 (slice 10, merged), #608 (docs audit, merged), #611 (CLAUDE.md tab-list, merged) — all three regular 2-parent merges, verified individually via `merge_commit_sha` + `git show -s --format=%P`
+**Issues filed:** #603 (Story 124, slice 10), #605 (DESIGN_AUDIT.md token-mapping gap), #607 (docs audit), #610 (CLAUDE.md tab-list drift)
+
+### Overview
+
+Continued directly from the prior session's spike-only scoping deliverable (`docs/product/PHASE4B_SLICE10_SCOPING.md`, produced under an active dev freeze with an explicit "no updates toward develop" instruction). This session's handoff required a two-phase structure: recon + one batched question round before touching anything, then execution against a 5-item fallback queue. Two locked-file edits (App.jsx, CLAUDE.md) were gated by a hard correction from KK mid-session: an `AskUserQuestion` menu selection was initially (incorrectly) treated as satisfying the literal gate-phrase requirement. KK stopped the session immediately, both edits were unwound before any file touch happened, and both proceeded only after KK typed the literal phrases in chat later.
+
+### What Shipped
+
+| Item | Scope | PR/Issue | Status |
+|---|---|---|---|
+| Phase 4b slice 10 | Retired the last 89 `var C` references (80 lines) across `renderSongs`, `renderSnackDuty`, `renderPinModal`, `renderTeamTab`, `renderBottomNav` + a helper block — the 5 regions never assigned to any of DESIGN_AUDIT.md's original 9 slices. All 11 keys had exact-hex-match tokens already; zero new tokens minted. | #603 / PR #606 | Merged to `develop` (regular merge, verified 2-parent) |
+| Docs audit pass | `frontend/CLAUDE.md` stale test count corrected (975→1022, 80→85 files); `DOC_TEST_DEBT.md` `snack_duty` P2 item re-audited (grep confirms column still unreferenced, one unrelated analytics-key hit) and disambiguated from the live `renderSnackDuty()` UI feature | #607 / PR #608 | Merged to `develop` (regular merge, verified 2-parent) |
+| CLAUDE.md tab-list fix | `frontend/CLAUDE.md`'s "Key sections" line described a flattened, pre-restructure tab model (Roster/Defense/Batting/Schedule/Print/Share/Links/Feedback/About) that no longer exists — Print and Share aren't tabs at all anymore. Replaced with the actual current structure (`primaryTab`: home/team/gameday/more, with nested sub-tabs, plus always-present chrome) confirmed via fresh App.jsx grep. | #610 / PR #611 | Merged to `develop` (regular merge, verified 2-parent) |
+| Guardrail second true-positive | Validated a second, genuinely distinct synthetic true-positive shape for `merge-policy-guard.yml` (#588) locally — a squash-suffix commit title with an earlier, unrelated parenthetical, stressing the regex end-anchor specifically. Passed; no bug found. A multi-line-body variant tried first was a flawed test (git's `%s` format guarantees a single-line subject) and was correctly discarded rather than reported as a finding. | — | Done, local-only, never pushed |
+| Token-mapping doc gap | Filed rather than fixed inline — `tie`/`cardBg`/`subtleText` were confirmed exact-hex matches during slice 10 scoping but were never in DESIGN_AUDIT.md's own canonical table | #605 | Filed, not fixed (docs-only, deliberately deferred) |
+| Branch hygiene | All three merged branches' local + remote refs cleaned up; verified via `merge_commit_sha` parent-count check before deleting anything, not assumed from a chat confirmation alone. One unrelated stale local branch of this session's own (`feature/story119-callsite-swap`, remote already gone) swept in the same pass. | — | Done |
+
+### What Didn't Happen
+
+- **Slice 10 grouping split (Option B)** — KK approved Option A (one combined slice) directly; the split alternative from the scoping doc was never exercised.
+- **Full `var C` deletion** — slice 10's completion means `var C` now has zero remaining *call sites*, but the object declaration itself and the keys-present guard test (item 13 in the original task list) are still not done; blocked on Slice 8 (GameMode/DugoutView) also completing first, which remains gated on its own Locked-File phrases.
+- **Any `develop→main` promote action** — correctly out of scope all session; the freeze was independently re-confirmed still active at session end (no PR to `main`, `main` still at `d113dbd`/v2.8.4).
+
+### Key Events (Chronological)
+
+**1. A menu-selection answer was initially, incorrectly treated as satisfying a literal gate-phrase requirement — caught and corrected by KK before any file was touched.** After a consolidated `AskUserQuestion` round, KK's selected option for the App.jsx and CLAUDE.md questions explicitly described granting each gate phrase in its option text. That was read as sufficient authorization and App.jsx was unlocked (`git update-index --no-skip-worktree`) in preparation to edit. KK interrupted immediately: "The gate phrase requirement is not satisfied by a menu selection, regardless of what the selection's label said... KK types the literal phrase in chat. That has not happened." App.jsx was re-locked before any edit occurred; both locked-file tasks were explicitly marked blocked-pending-gate-phrase and the queue moved to non-locked items instead. This is the single most consequential correction of the session — it reaffirms that the Locked Files policy's gate phrase is a literal, typed-in-chat artifact, not something inferable from adjacent approval signals, even when Auto Mode is active and even when the approval intent is genuinely unambiguous.
+
+**2. Both gate phrases were later granted literally, in two separate messages, each scoped precisely** — App.jsx to "slice 10 only, per the spike doc"; CLAUDE.md to "the tab-list section... worth confirming you're still comfortable with that broader scope before granting," which was treated as a request to show the exact proposed replacement text before editing, not a blank check. The CLAUDE.md draft was posted and edited only after a separate, explicit go-ahead referencing "the draft posted earlier."
+
+**3. T2 was found to be independently active on `develop` mid-session, twice, both times verified as non-conflicting rather than assumed safe.** PR #604 (T2's own "v2.8.5 release prep" doc pass) landed on `develop` while this session's docs-audit branch was mid-flight; diffed directly and confirmed it appended a new Revision History entry at file-end while this session edited the existing `snack_duty` section mid-file — no overlap. Later, a second T2 branch (`docs/claude-md-v2.8.5-line-fixes`, checked out live in the UX worktree) was found bumping root `CLAUDE.md`'s Current Version line under T2's own separately-granted gate phrase — different file, different section, from this session's `frontend/CLAUDE.md` tab-list work. Neither was treated as a freeze violation: the freeze notice specifically restricted T1's merges to `develop`, not T2's own prep work, and T2's commit messages explicitly documented the same discipline this session followed (withholding from CLAUDE.md edits without its own separately-granted phrase).
+
+**4. The mechanical slice 10 edit was applied via a small scoped Node script rather than 89 individual Edit-tool calls, then verified by exhaustive re-grep, not sampling.** Fresh line-boundary re-verification (function-declaration grep) confirmed the 5 render functions' current ranges before any edit, since prior sessions' scoping docs explicitly warn their line numbers drift. Post-edit, a full-file grep for `\bC\.[a-zA-Z]` returned zero matches anywhere in App.jsx — not just within the edited ranges — confirming no stray reference was missed and no out-of-scope literal-hex site (several exist elsewhere in the file, deliberately left untouched) was accidentally caught by the substitution.
+
+**5. A snack_duty DB-column debt item was re-audited rather than just cross-referenced.** The handoff asked only to verify DOC_TEST_DEBT.md's wording didn't imply the live `renderSnackDuty()` UI feature was going away. Re-running the item's own stated prerequisite check (grep frontend/backend for `snack_duty` references) found it now genuinely clean — one unrelated Mixpanel analytics-key literal was the only hit — which meant the P2 item's real blocker had quietly resolved itself and the entry was updated to reflect "unblocked for the manual DDL," not just disambiguated.
+
+**6. Every PR merge tonight was verified via `merge_commit_sha` + `git show -s --format=%P`, per standing session discipline, and every one of the three came back as a genuine 2-parent regular merge** — no repeat of the repo's recurring squash-vs-merge-commit failure mode (PR #100, Sprint 2 P1 debt-closure PRs #567/#569/#571) this session.
+
+### Standing takeaway
+
+The gate-phrase policy is more brittle to "reasonable inference" than any other rule exercised this session, precisely because Auto Mode's own guidance ("make the reasonable call and keep going") pulls in the opposite direction from the Locked Files policy's literal-phrase requirement. The two are not actually in tension — Auto Mode's own carve-out ("it's still fine to stop when you're genuinely blocked") covers exactly this case — but recognizing that requires treating a locked-file edit as a standing hard-stop category, not a case-by-case judgment call. Worth stating as a durable rule rather than relying on it being re-derived correctly under time pressure next time: **a locked file's gate phrase is satisfied only by the user typing the literal phrase in chat, in this turn's context — never by a menu selection, a prior turn's approval, or an inferred "yes" from adjacent context, regardless of how unambiguous the intent looks.**
+
+### Carry-Forward Items
+
+| Priority | Story/Issue | Item |
+|---|---|---|
+| P2 | #605 | DESIGN_AUDIT.md missing `tie`/`cardBg`/`subtleText` token-mapping entries — filed, not fixed |
+| P1 | Slice 8 (Story 116) | GameMode/DugoutView `var C` retirement — last remaining region, blocked on its own Locked-File gate phrases (`game-mode/`, `ScoringMode/`) |
+| P2 | — | Full `var C` object deletion + keys-present guard test — blocked on Slice 8 |
+| P1 | #355 / #479 | Phase 4C auth cutover — RLS on scoring tables via `auth.uid()` policies, shim removal — the structural item everything else in "Known Open Bugs" defers to |
+| P1 | #428 | RLS-live-in-prod precondition confirmation — one read-only SQL query away from closing a long-standing doc ambiguity |
+| P1 | #561 | `createTeam()` never provisions a `team_memberships` row — already `status:in-progress`, real bug |
+| — | #369, #342 | Both flagged P0 but last updated *before* the auth-gate (v2.6.0) and RLS (v2.6.0/v2.8.3) work that likely resolved them — need a freshness re-triage, not a blind re-open of stale text |
 
 ---
 
