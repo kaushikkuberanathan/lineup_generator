@@ -10,6 +10,72 @@
 
 ---
 
+## 2026-08-07-A — UX worktree baseline, Phase 4C decisions confirmed, two cross-terminal collisions found and fixed at the root
+
+**Date:** August 7, 2026
+**Session ID:** 2026-08-07-A (T2, UX Track — `lineup-generator-ux` worktree)
+**Duration:** Single continuous session, KK live and interactive throughout
+**Versions shipped to production:** None — all work this session was docs-only (proposal decisions, worktree hygiene, doc corrections)
+**PRs merged:** #639 (UX worktree cleanup — stale handoff-doc deletion + roadmap header fix), #640 (Phase 4C scoring-RLS decision confirmations)
+**PRs opened by T1, merged, observed:** #637 (dependency-currency-tracking), #638 (migration 018 prod-apply doc), #642 (delete-team backend route, first half of #380)
+**Issues updated:** #355 (comment added — design confirmed via #640, implementation still gated on the shim-removal sequence)
+**Branches:** `docs/phase4c-scoring-rls-decisions`, `docs/ux-worktree-cleanup` (v1, abandoned), `docs/ux-worktree-cleanup-v2` (superseded v1) — all deleted locally post-merge after direct ancestor-verification (`git branch -d`, never `-D`)
+
+### Overview
+
+Started as a request for a plain status baseline of the UX worktree — what's done, what's pending on the Phase 3/4 color-token initiative. Found Phase 3 and Phase 4 (`var C` retirement) both fully complete, contradicting a stale `UX_REFACTOR_ROADMAP.md` header. Moved into confirming two open design decisions on the dormant Phase 4C (live-scoring auth cutover) proposal, then into general worktree cleanup (deleting a fully-executed stale handoff doc, fixing the stale header). Both PRs were small, clean, and merged without incident.
+
+What made the session notable was two **separate, real** concurrent-session collisions with T1 (the Dugout-track terminal), sharing this same `.git` across two worktrees — and the fact that the second incident's root-cause investigation produced a genuine, generalizable fix, not just a one-off recovery.
+
+### Incident 1 — stale-branch checkout collision
+
+Mid-task, T1 checked out a branch this session had just created (`docs/ux-worktree-cleanup`), branched off it to `docs/561-migration018-prod-applied`, and committed there — carrying this session's still-uncommitted edits along with the checkout (git preserves compatible working-tree changes across a branch switch). Caught immediately via `git reflog`, recovered with `git stash push -u` without touching T1's commit, re-verified clean via pre-flight checks before resuming on a freshly-cut branch (`-v2`). Zero data loss, T1's work undisturbed throughout.
+
+### Incident 2 — the deeper one: `git -C` was necessary but not sufficient
+
+A routine `git checkout --detach` was blocked by git itself over 5 files this session never touched: a live T1 feature (migration `020_team_memberships_identity_required.sql`, `teamData.js`, `supabase.js`, two test files, tied to issues #375/#380). KK confirmed this was T1's live, in-progress work, already applied to prod, and directed a full stand-down — no git operations of any kind until T1 reported back directly.
+
+T1's own investigation (relayed by KK, then independently verified by reading the corrected memory files in full before treating them as authoritative) found the actual mechanism: **`git -C <path>` only ever scopes git subcommands.** T1 had already adopted `git -C "<Main path>"` for checkout/commit/push after Incident 1's cousin (a first same-night incident where T1-scoped work was committed directly inside the UX worktree) — and that fixed the *commit* step correctly. But every `Edit`/`Write` tool call for that work still targeted the UX-worktree path directly (these tools take an absolute path with no `-C`-equivalent concept at all), and one Supabase-CLI Bash call ran from a bare, unscoped cwd. Git history looked right; the actual files landed in the wrong worktree. Confirmed empirically by T1: the harness's Bash tool resets cwd back to its fixed root after every single call — a bare `cd` never persists, no matter how many times it's run.
+
+Two memory files (`reference_worktree_paths.md`, `feedback_t1_scoped_work_via_git_dash_c.md`) were corrected by T1 with the complete three-part rule (git via `-C`, Edit/Write/Read via direct absolute path, non-git Bash via compound `cd "<path>" && <command>` in one call) before this session's next message even arrived. This session's contribution was verification, not authorship: read both files in full (not just the index one-liners) to confirm the correction was complete and accurate, then swept all 5 memory files repo-wide mentioning `git -C` to confirm no other file still carried the stale, now-dangerous "git -C alone is safe" claim. None did.
+
+**Standing rule going forward, now codified in shared memory:** any cross-worktree scoped work needs the full three-part discipline, every time, for every tool call — not just the commit step. Proof-of-fix (a live write-and-verify against both worktrees, raw output not description) is now a standing requirement before resuming after any correction like this, not just this one.
+
+### What Shipped
+
+| Item | Scope | PR | Status |
+|---|---|---|---|
+| UX worktree cleanup | Deleted `CLAUDE_HANDOFF_2026-08-05.md` (mission fully re-verified against live `develop` before deletion — not memory); fixed `UX_REFACTOR_ROADMAP.md`'s stale "Phase 3 Step 5+ open" header | #639 | Merged, labeled (`area:governance`, `priority:p3`, `status:ready-for-review`, `type:docs`) |
+| Phase 4C decision confirmations | `scorekeeper` role confirmed as intended near-term user; `public_read_*` policies confirmed as un-narrowed leftovers, safe to drop in Section B | #640 | Merged, labeled (`area:backend`, `priority:p2`, `status:ready-for-review`, `type:docs`); #355 updated with the same status |
+
+### What Didn't Happen
+
+- Phase 4C migration 019 was **not** applied anywhere — still proposal-only, still gated behind the full shim-removal sequence and its own `game-mode/*` gate phrase.
+- Branch hygiene, issue sync, and this retro were held for roughly the entire back half of the session pending T1's stand-down clearing — correctly, per KK's explicit instruction, not resumed on inferred safety.
+
+### Key Decisions Made (and Why)
+
+**Hold all worktree-mutating work the instant an unexpected file/branch state is found, rather than investigate-while-continuing.** Both incidents this session were caught because a routine, low-risk command (a branch rename, a detach) was allowed to fail loudly and was treated as a stop signal rather than worked around. Confirmed as the correct instinct twice in one night.
+
+**Verify a memory correction by reading the full file, not the index line, before treating it as authoritative** — even when the correcting party (T1) is trusted and the timestamp confirms it's fresh. The index line is a summary; the actual discipline lives in the file body.
+
+**PR label taxonomy: verify against the live label list before applying "expected" labels.** Two of four expected labels for these exact PRs (`area:documentation`, `status:proposal`) didn't exist in the repo's 39-label set. Applied the six that did exist immediately; for the two gaps, checked for genuine usage precedent (`area:governance`: 74 prior items, real fit) before applying a substitute rather than inventing or force-fitting.
+
+### What Could Have Done Better
+
+1. **A `Invoke-RestMethod` PR body silently corrupted a non-ASCII character (🤖 → `??`) on the first of two near-identical API calls tonight**, and only the second call's outright JSON-parse failure (same root cause, different content) surfaced it. Fixed going forward: always encode PR/issue/comment bodies as explicit UTF-8 bytes before sending, and always re-fetch to confirm the stored content, not just the status code. Saved as `feedback_powershell_utf8_github_api.md`.
+2. **Neither `area:documentation` nor `status:proposal` should have been treated as certainly-real without checking the live label list first** — asking "what labels exist" one call earlier would have saved a round-trip.
+
+### Carry-Forward Items
+
+| Priority | Story | Issue | Item |
+|---|---|---|---|
+| — | — | #355 | Phase 4C migration 019 still not applied — gated on frontend shim flip (`game-mode/*` gate phrase) + full game-day soak before Section B can run |
+| — | — | #380 | REVOKE DELETE half still open by design — deliberate follow-up to PR #642, not yet sent |
+| P2 | — | — | Consider whether PowerShell's `Invoke-RestMethod` UTF-8 encoding requirement should become a standing pre-flight step (a small reusable snippet) rather than a per-call reminder |
+
+---
+
 ## 2026-08-06-A — v2.8.5 Release Review: freeze, GitHub Actions outage, isolated-worktree incident, promote PR opened
 
 **Date:** August 6-7, 2026 (spans midnight UTC due to a multi-hour external outage)
