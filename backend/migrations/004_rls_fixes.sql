@@ -368,6 +368,12 @@ REVOKE TRUNCATE, DELETE  ON public.roster_snapshots  FROM anon, authenticated;
 -- END STATE (tracked separately): route delete-team through a backend
 -- service_role endpoint, THEN revoke DELETE on teams. Both halves must land
 -- together - revoking first leaves a window where delete-team silently fails.
+--
+-- CLOSED 2026-08-08 — see migration 021_revoke_teams_delete.sql. Both halves
+-- (dbDeleteTeam() via PR #642, admin.html's deleteTeam() via PR #646) landed
+-- first; 021 then revoked teams.DELETE from anon/authenticated. This
+-- paragraph is left as-is (historical record of what was true when 004 was
+-- applied) - do not treat "teams keeps its DELETE grant" as still current.
 
 -- Rollback (only if a legitimate path needs these back - it should not):
 --   GRANT DELETE ON public.team_data TO authenticated;

@@ -222,14 +222,13 @@ describe('S4 — anon write protection', () => {
   // would leave this red while every other test goes green — the incomplete
   // fix we are guarding against.
   //
-  // #380 EXCEPTION — DO NOT "fix" this back: anon KEEPS its DELETE grant on
-  // `teams`. dbDeleteTeam() (frontend/src/supabase.js:38) deletes teams
-  // direct-to-Supabase and supabase.js:40 swallows the error to console.warn,
-  // so revoking DELETE would break delete-team SILENTLY. teams_auth_delete
-  // already scopes DELETE to team admins (the correct control). #380 tracks
-  // routing delete-team through a backend service_role endpoint, after which
-  // DELETE on teams gets revoked too. Until then, anon:DELETE on teams is an
-  // allowed, deliberate exception — every OTHER TRUNCATE/DELETE grant must be gone.
+  // #380 CLOSED (migration 021, 2026-08-08): anon/authenticated no longer
+  // hold the DELETE grant on `teams` either. Both direct-write paths
+  // (dbDeleteTeam(), PR #642; admin.html's deleteTeam(), PR #646) now route
+  // through a backend service_role endpoint instead of writing to Supabase
+  // directly, so the exception 004/S4b/T6 carried for teams.DELETE no longer
+  // applies — every TRUNCATE/DELETE grant on these three tables must be gone,
+  // with no per-table carve-out.
   test('S4b: anon holds no ungoverned TRUNCATE/DELETE grant on exposed tables', async () => {
     const admin = adminClient();
     const exposed = ['team_data', 'teams', 'roster_snapshots'];
@@ -241,19 +240,13 @@ describe('S4 — anon write protection', () => {
     assert.equal(error, null, 'grant introspection RPC must not error');
 
     const offending = (data || [])
-      .map((r) => `anon:${r.privilege_type} on ${r.table_name}`)
-      // #380 exception: anon:DELETE on teams is intentional and documented.
-      // dbDeleteTeam() writes direct-to-Supabase; teams_auth_delete scopes it
-      // to team admins. Revoking it before the backend delete route exists would
-      // break delete-team silently. Filtered out so it is not flagged.
-      .filter((g) => g !== 'anon:DELETE on teams');
+      .map((r) => `anon:${r.privilege_type} on ${r.table_name}`);
 
     assert.deepEqual(
       offending,
       [],
       'EXPOSURE: anon holds an ungoverned TRUNCATE/DELETE grant on an exposed ' +
       'table. TRUNCATE bypasses RLS — an RLS-only WS-3 does not close it. ' +
-      '(anon:DELETE on teams is the one allowed exception — see #380.) ' +
       'Found: ' + offending.join(', ')
     );
   });
@@ -504,16 +497,15 @@ describe('T — teams write isolation (UPDATE)', () => {
 describe('T — teams write isolation (DELETE)', () => {
 
   test('T6: anon CANNOT delete teams', async () => {
-    // #380: anon KEEPS its DELETE grant on teams (deliberate — see S4b's
-    // header). So unlike T3/T4's anon cases, a rejection here MUST come from
-    // RLS (no matching policy), not a grant-level 42501 — this is the
-    // closest analog on this table to the roster_snapshots trigger bug: a
-    // control that is only as strong as the RLS policy actually is, because
-    // the grant alone would allow it.
+    // #380 CLOSED (migration 021): anon no longer holds the DELETE grant on
+    // teams at all, so this now rejects at the grant level (42501) the same
+    // way T3/T4's anon cases do — no longer the RLS-only control this test
+    // originally guarded (see policies.test.js history / S4b for the closed
+    // exception this mirrors).
     const res = await anon.from('teams').delete().eq('id', TEAM_A).select();
     assert.ok(
       isWriteBlocked(res) || !returnedRows(res),
-      'EXPOSURE: anon deleted a teams row. RLS did not block a DELETE the grant still allows (#380).'
+      'EXPOSURE: anon deleted a teams row. Neither the grant revocation nor RLS blocked it (#380).'
     );
   });
 
@@ -529,20 +521,40 @@ describe('T — teams write isolation (DELETE)', () => {
     );
   });
 
-  // Positive control: a REAL admin-role member CAN delete their own team.
-  // Without this, T6/T7 alone could pass even if DELETE were broken for
-  // every role including admin — the same blind spot RS5 exposed on
-  // roster_snapshots. Self-contained: seedAdminDeleteFixture() creates a
-  // throwaway team + admin membership that only this test touches; the
-  // DELETE assertion below IS the cleanup for the happy path, with
-  // teardown() as the backstop if this test fails first.
-  test('T7-control: admin-role member CAN delete their own team', async () => {
+  // #380 CLOSED (migration 021), two assertions against ONE fixture —
+  // seedAdminDeleteFixture() is documented single-test-use (fixed TEAM_C /
+  // ADMIN_EMAIL), so both checks run sequentially here rather than from two
+  // tests each re-seeding (which collides on the fixed email/team id).
+  //
+  // 1. A real admin-role member can no longer delete their team via a
+  //    DIRECT authenticated Supabase call — the grant is gone for
+  //    authenticated, not just anon. This used to be the positive control
+  //    (an authenticated admin-role client's delete succeeded, proving
+  //    teams_auth_delete's RLS policy worked). It is now a negative control:
+  //    proves the closure applies to every role, not just anon, and that no
+  //    direct-authenticated path reopened by accident.
+  // 2. service_role — the ONLY remaining path to delete a team, and exactly
+  //    what the backend's DELETE /api/v1/teams/:teamId route (#380/#642/
+  //    #646) uses — is unaffected by the anon/authenticated REVOKE. Without
+  //    this half, the suite could pass even if service_role itself were
+  //    somehow also blocked (e.g. an over-broad future REVOKE), silently
+  //    breaking every real delete in production while every
+  //    anon/authenticated test above stayed green.
+  test('T7-control: direct authenticated delete is blocked, service_role delete still works', async () => {
     const { teamId, adminEmail } = await seedAdminDeleteFixture();
-    const admin = await authedClient(adminEmail);
+    const authed = await authedClient(adminEmail);
 
-    const res = await admin.from('teams').delete().eq('id', teamId).select();
-    assert.equal(res.error, null, 'an admin-role member must be able to delete their own team');
-    assert.equal(res.data.length, 1, 'the delete must return the removed row');
+    const directRes = await authed.from('teams').delete().eq('id', teamId).select();
+    assert.ok(
+      isWriteBlocked(directRes) || !returnedRows(directRes),
+      'EXPOSURE: an admin-role member deleted a team via a direct authenticated ' +
+      'client. Post-021, deletion must only be reachable through the backend ' +
+      'service_role route (#380/#642/#646).'
+    );
+
+    const serviceRes = await adminClient().from('teams').delete().eq('id', teamId).select();
+    assert.equal(serviceRes.error, null, 'service_role must still be able to delete a team');
+    assert.equal(serviceRes.data.length, 1, 'the delete must return the removed row');
   });
 
 });
