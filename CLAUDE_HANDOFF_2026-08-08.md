@@ -38,8 +38,13 @@ earlier-written note.
 | Story 124 (#655) — RequestAccessScreen role picker | T2 | **Done** — 5 options, correct vocab, 7 tests, mutation-verified | T2 | 2026-08-08 |
 | Story 124 (#655) — Home tab TeamSearch component | T2 | **Done** — loading/error/empty/populated/offline, 8 tests, mutation-verified | T2 | 2026-08-08 |
 | Story 124 (#655) — requestAccess() session-safety fix | T2 | **Done** — `preserveSession` option, additive, 5 hook tests, RED->GREEN, App-level smoke check clean | T2 | 2026-08-08 |
-| Story 124 (#655) — wire search entry point into `App.jsx` renderHome() | T2 | **Blocked** — needs literal gate phrase "all clear — App.jsx editing approved" from KK | T2 | 2026-08-08 |
+| Story 124 (#655) — wire search entry point into `App.jsx` renderHome() | T2 | **Done** — gate phrase received, purely additive diff (0 deletions), build+lint clean, role-picker portion live-browser-verified; the auth-gated search→role-picker handoff itself relies on test coverage (26 tests) rather than live browser, per KK — see T2 Notes | T2 | 2026-08-08 |
 | `GET /api/v1/teams/search` (backend) | T1 | See T1's canonical copy | T1 | 2026-08-08 |
+
+**T2's frontend piece of Story 124 (#655) is fully done and committed** on
+`claude/story-b-frontend-role-access-f0730f`. Whether the backend route is
+also ready is T1's call, not inferred here — if it is, this is a coordination
+point to raise with KK, not something to act on unilaterally either way.
 
 ---
 
@@ -92,11 +97,29 @@ earlier-written note.
    (in-session call, not deferred, no schema implications) and the
    session-safety acceptance criterion for the search+request flow.
 
-**Still blocked, waiting on KK directly (not inferable, not relayable):**
-"all clear — App.jsx editing approved" — needed to wire the "Don't see your
-team? Search for one" entry point into `renderHome()`. Everything else this
-session's scope requires is done and committed on
-`claude/story-b-frontend-role-access-f0730f`.
+6. Wired the search entry point into `App.jsx`'s `renderHome()` after
+   receiving the literal gate phrase from KK: two new `homeMode` branches
+   ("search" -> `TeamSearch`, "requestAccess" -> `RequestAccessScreen` with
+   the tapped team preselected and `preserveSession={true}`), plus a
+   `discoveredTeam` state var and the `TeamSearch` import. Purely additive
+   diff (0 deletions) — confirmed via `git diff`. `npm run build` and
+   `npm run lint` both clean (two `react/no-unescaped-entities` errors from
+   raw apostrophes in JSX text, fixed with `&apos;`, re-verified clean).
+
+   Live-browser-verified the role-picker portion via the unauthenticated
+   `/request-access` path (Google/magic-link screen -> "Request access") —
+   all 5 options render, Head Coach's manual-review note shows correctly.
+   Could not live-browser-verify the authenticated search -> select-team ->
+   role-picker handoff itself: reaching it needs a session, and the app's
+   documented dev-only `auth_bypass` localStorage flag couldn't be set via
+   browser automation in this session (blocked by the harness's own
+   permission classifier, not a code issue). Asked KK directly; accepted
+   test coverage (26 passing component/hook tests + 41 App-level smoke
+   tests) as sufficient rather than working around the block.
+
+**Story 124's (#655) frontend piece is fully done and committed** on
+`claude/story-b-frontend-role-access-f0730f`. No outstanding blockers on
+T2's side.
 
 ---
 
