@@ -249,17 +249,48 @@ describe('scorer_local_id generation (crypto.randomUUID fix)', function() {
     spy.mockRestore();
   });
 
-  it('falls back to the Math.random()-based generator when crypto.randomUUID is unavailable', function() {
+  it('falls back to crypto.getRandomValues() (not Math.random()) when crypto.randomUUID is unavailable, and still produces a valid v4 UUID', function() {
     var original = globalThis.crypto.randomUUID;
-    // Simulate an older browser without crypto.randomUUID.
+    // Simulate an older browser without crypto.randomUUID. randomUUID is
+    // defined on the Crypto prototype (writable/configurable), so this
+    // direct assignment creates a shadowing own-property that reads back
+    // as undefined — verified empirically, not assumed.
     // eslint-disable-next-line no-param-reassign
     globalThis.crypto.randomUUID = undefined;
 
+    // Precondition: fail loudly here, before rendering, if the override
+    // above didn't take (e.g. a future crypto polyfill makes randomUUID
+    // non-configurable). Without this, a silently-failed override would
+    // let the real crypto.randomUUID() run and this test would still
+    // "pass" for the wrong reason - it would never touch the fallback
+    // branch this test exists to cover.
+    expect(globalThis.crypto.randomUUID).toBeUndefined();
+
+    var getRandomValuesSpy = vi.spyOn(globalThis.crypto, 'getRandomValues');
+
     render(<DugoutView {...defaultProps} />);
 
-    var stored = localStorage.getItem('scorer_local_id');
-    expect(stored).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+    // The fallback branch must be the one that actually ran. Can't also
+    // spy on crypto.randomUUID here to assert "not called" - it's been set
+    // to undefined above (vi.spyOn requires an existing function to wrap),
+    // and it doesn't need to be: the precondition assertion above already
+    // guarantees crypto.randomUUID is genuinely falsy, so the source's
+    // ternary condition short-circuits without ever evaluating
+    // crypto.randomUUID() as a call in the first place.
+    expect(getRandomValuesSpy).toHaveBeenCalledTimes(1);
 
+    var stored = localStorage.getItem('scorer_local_id');
+    // Full UUID v4 shape check, not just "hex string of the right length":
+    // version nibble must be '4' (13th hex digit), variant nibble must be
+    // one of 8/9/a/b (17th hex digit) — this is what CodeQL's insecure-
+    // randomness rule actually cares about not being predictable/degraded.
+    expect(stored).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+    var versionNibble = stored.charAt(14);
+    var variantNibble = stored.charAt(19);
+    expect(versionNibble).toBe('4');
+    expect(['8', '9', 'a', 'b']).toContain(variantNibble.toLowerCase());
+
+    getRandomValuesSpy.mockRestore();
     globalThis.crypto.randomUUID = original;
   });
 });
