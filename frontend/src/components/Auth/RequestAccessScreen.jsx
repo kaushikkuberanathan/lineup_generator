@@ -34,12 +34,18 @@ const ROLE_OPTIONS = [
   { id: 'parent',          value: 'viewer',       label: 'Parent / Family' },
 ];
 
-export function RequestAccessScreen({ onBack, requestAccess }) {
+export function RequestAccessScreen({
+  onBack,
+  requestAccess,
+  preselectedTeam = null,
+  preserveSession = false,
+  backLabel = '← Back to login',
+}) {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName]   = useState('');
   const [email, setEmail]         = useState('');
   const [roleId, setRoleId]       = useState('assistant_coach');
-  const [teamId, setTeamId]       = useState('');
+  const [teamId, setTeamId]       = useState(preselectedTeam ? preselectedTeam.id : '');
   const [loading, setLoading]     = useState(false);
   const [error, setError]         = useState('');
 
@@ -71,7 +77,7 @@ export function RequestAccessScreen({ onBack, requestAccess }) {
       email:     email.trim().toLowerCase(),
       role:      selectedRoleOption.value,
       tid:       teamId.trim() || TEAM_ID,
-    });
+    }, { preserveSession });
 
     setLoading(false);
 
@@ -141,18 +147,28 @@ export function RequestAccessScreen({ onBack, requestAccess }) {
             />
           </div>
 
-          <div>
-            <label style={styles.label}>Team ID <span style={{ color: '#94a3b8', fontWeight: 400 }}>(optional — leave blank for Mud Hens)</span></label>
-            <input
-              type="text"
-              value={teamId}
-              onChange={e => { setTeamId(e.target.value); setError(''); }}
-              placeholder={TEAM_ID}
-              style={styles.input}
-              autoComplete="off"
-              disabled={loading}
-            />
-          </div>
+          {preselectedTeam ? (
+            <div>
+              <label style={styles.label}>Team</label>
+              <div style={styles.preselectedTeam}>
+                {preselectedTeam.name}
+                {preselectedTeam.age_group ? <span style={{ color: '#64748b', fontWeight: 400 }}> · {preselectedTeam.age_group}</span> : null}
+              </div>
+            </div>
+          ) : (
+            <div>
+              <label style={styles.label}>Team ID <span style={{ color: '#94a3b8', fontWeight: 400 }}>(optional — leave blank for Mud Hens)</span></label>
+              <input
+                type="text"
+                value={teamId}
+                onChange={e => { setTeamId(e.target.value); setError(''); }}
+                placeholder={TEAM_ID}
+                style={styles.input}
+                autoComplete="off"
+                disabled={loading}
+              />
+            </div>
+          )}
 
           <div>
             <label style={styles.label} htmlFor="request-access-role">Your role</label>
@@ -179,7 +195,7 @@ export function RequestAccessScreen({ onBack, requestAccess }) {
           </button>
 
           <button type="button" style={styles.linkBtn} onClick={onBack}>
-            ← Back to login
+            {backLabel}
           </button>
 
         </form>
@@ -281,6 +297,16 @@ const styles = {
     margin: '6px 0 0',
     fontSize: '12px',
     color: '#92400e',
+  },
+  preselectedTeam: {
+    padding: '11px 13px',
+    fontSize: '15px',
+    border: '1.5px solid #e2e8f0',
+    borderRadius: '10px',
+    width: '100%',
+    boxSizing: 'border-box',
+    color: '#0f172a',
+    backgroundColor: '#f8fafc',
   },
   primaryBtn: {
     padding: '13px',

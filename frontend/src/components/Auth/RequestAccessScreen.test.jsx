@@ -66,3 +66,74 @@ describe('RequestAccessScreen — role picker', function () {
     expect(requestAccess.mock.calls[0][0].role).toBe(storedValue);
   });
 });
+
+// ============================================================================
+// Story 124 (#655) — Home tab "add a second team" flow. RequestAccessScreen
+// is reused for this flow via three additive props (all default to prior
+// behavior — no existing call site passes any of them).
+// ============================================================================
+describe('RequestAccessScreen — additive props for the Home tab discovery flow', function () {
+
+  var TEAM = { id: '999', name: 'Bananas', age_group: '9U', sport: 'baseball', year: 2026 };
+
+  test('default (no preselectedTeam): still shows the editable Team ID input', function () {
+    render(<RequestAccessScreen {...baseProps()} />);
+    expect(screen.getByText(/team id/i)).toBeInTheDocument();
+    expect(screen.queryByText('Bananas')).not.toBeInTheDocument();
+  });
+
+  test('preselectedTeam: shows a read-only team confirmation, not the editable Team ID input', function () {
+    render(<RequestAccessScreen {...baseProps({ preselectedTeam: TEAM })} />);
+    expect(screen.getByText('Bananas')).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText('1774297491626')).not.toBeInTheDocument();
+  });
+
+  test('preselectedTeam: submitting sends the preselected team id as tid, without requiring manual entry', async function () {
+    var requestAccess = vi.fn().mockResolvedValue({ success: true });
+    render(<RequestAccessScreen {...baseProps({ requestAccess, preselectedTeam: TEAM })} />);
+
+    fillRequiredFields();
+    fireEvent.click(screen.getByRole('button', { name: /request access/i }));
+
+    await waitFor(function () {
+      expect(requestAccess).toHaveBeenCalledTimes(1);
+    });
+    expect(requestAccess.mock.calls[0][0].tid).toBe('999');
+  });
+
+  test('preserveSession defaults to false when omitted', async function () {
+    var requestAccess = vi.fn().mockResolvedValue({ success: true });
+    render(<RequestAccessScreen {...baseProps({ requestAccess })} />);
+
+    fillRequiredFields();
+    fireEvent.click(screen.getByRole('button', { name: /request access/i }));
+
+    await waitFor(function () {
+      expect(requestAccess).toHaveBeenCalledTimes(1);
+    });
+    expect(requestAccess.mock.calls[0][1]).toEqual({ preserveSession: false });
+  });
+
+  test('preserveSession:true is forwarded to requestAccess as the second argument', async function () {
+    var requestAccess = vi.fn().mockResolvedValue({ success: true });
+    render(<RequestAccessScreen {...baseProps({ requestAccess, preserveSession: true })} />);
+
+    fillRequiredFields();
+    fireEvent.click(screen.getByRole('button', { name: /request access/i }));
+
+    await waitFor(function () {
+      expect(requestAccess).toHaveBeenCalledTimes(1);
+    });
+    expect(requestAccess.mock.calls[0][1]).toEqual({ preserveSession: true });
+  });
+
+  test('backLabel defaults to "← Back to login"; a custom value overrides it', function () {
+    var { unmount } = render(<RequestAccessScreen {...baseProps()} />);
+    expect(screen.getByRole('button', { name: /back to login/i })).toBeInTheDocument();
+    unmount();
+
+    render(<RequestAccessScreen {...baseProps({ backLabel: '← Back to search' })} />);
+    expect(screen.getByRole('button', { name: /back to search/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /back to login/i })).not.toBeInTheDocument();
+  });
+});
