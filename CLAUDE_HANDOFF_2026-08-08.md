@@ -43,7 +43,7 @@ never force-push over the other side's section.
 | Story 125 (Phase 4C role-scoped data model) | — | **Filed: [#656](https://github.com/kaushikkuberanathan/lineup_generator/issues/656)**, `status:blocked` | T1 | 2026-08-08 |
 | `GET /api/v1/teams/search` (backend) | T1 | **Done** — squash-merged into working branch via [PR #657](https://github.com/kaushikkuberanathan/lineup_generator/pull/657) (`c40af13`). 120/120 unit tests passing (111 existing + 9 new, `teamsSearch.route.test.js`). `docs/SOLUTION_DESIGN.md` Route Inventory updated. | T1 | 2026-08-08 |
 | Role picker / search UI (frontend) | T2 | In progress locally (2 commits: role-picker vocab fix — **confirmed ships the 5-entry ROLE_OPTIONS incl. parent→viewer** — and Home tab search component) — not yet pushed to origin as of last check. Branch topology settled, no action needed from either side. | — | 2026-08-08 |
-| `CLAUDE.md` role-vocab correction | T1 (holding diff) | **Not committed** — needs literal gate phrase from KK. On inspection the existing section was already accurate; the held diff is additive-only (one closing note), see T1 Notes. | T1 | 2026-08-08 |
+| `CLAUDE.md` role-vocab correction | T1 | **Done** — KK gave the gate phrase, additive closing note committed (`7e660e8`, refs #655). No correction was needed; existing section was already accurate. | T1 | 2026-08-08 |
 
 ---
 
