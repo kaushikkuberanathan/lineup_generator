@@ -91,10 +91,23 @@ FILES=(
   "backend/migrations/016_profile_name_from_metadata.sql"
   "backend/migrations/017_fix_prune_roster_snapshots_security_definer.sql"
   "backend/migrations/018_auto_provision_team_membership_on_create.sql"
+  "backend/migrations/020_team_memberships_identity_required.sql"
+  "backend/migrations/021_revoke_teams_delete.sql"
 )
 # 018 (#561, applied to DEV 2026-08-06 and PROD 2026-08-07 — included here
 # so the ephemeral CI stack validates it too) — its own regression suite is
 # backend/src/__tests__/rls/teamMembershipAutoProvision.test.js.
+# 020 (#375, applied to DEV+PROD 2026-08-07) has no dedicated RLS-suite test
+# but is included for consistency with every other applied migration here.
+# 021 (#380, applied to DEV 2026-08-08 — see its own header for prod status,
+# deliberately NOT yet re-applied to prod) MUST be here: S4b and T7-control
+# in policies.test.js assert teams.DELETE is revoked for anon/authenticated,
+# which is false until 021 runs. Omitting it here is exactly what caused the
+# ephemeral CI job to fail red on PR #647's first push — schema.sql's own
+# 2026-07-13 capture predates 021 by a month, so there is no fallback source
+# for this state the way there is for 005-012.
+# 019 is deliberately NOT here — Phase 4C scoring RLS, drafted/unapplied, no
+# current test depends on it.
 # 005, 006, 007, 008, 009, 011, 012 are deliberately NOT here — see WHY THIS
 # EXISTS above. schema.sql's 2026-07-13 capture already contains their effects.
 
