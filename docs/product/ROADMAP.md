@@ -4401,6 +4401,55 @@ worth a look before assuming they're immune to the same class of failure if
 schema.sql gets re-captured again in the future.
 
 ---
+### Story 124 (P2) - Home tab team search + request-access discovery <!-- #655 -->
+Status: Open - backend route in progress (T1), frontend UI in progress (T2).
+Branch: `claude/role-access-model-evolution-8a855d`.
+Discovered: 2026-08-08, product/architecture review session.
+Symptom: Home tab only shows teams the user is already linked to. No way to
+discover a team by name/age-group/sport and request access - requires a
+manually-shared raw team ID.
+Impact: Onboarding friction for parents, scorekeepers, coordinators, and new
+coaches.
+Root cause: N/A - feature gap.
+Proposed fix: New `GET /api/v1/teams/search` backend route (service-role
+mediated, returns `id`/`name`/`age_group`/`sport`/`year` only - never
+`owner_id`), Home tab search entry point, role picker submitting into the
+existing `POST /request-access`.
+Recommendation: Ship as proposed. This issue covers both the backend route
+(T1) and the frontend UI (T2) - same issue number, split across two parallel
+sessions; see `CLAUDE_HANDOFF_2026-08-08.md` for the route contract.
+Note: This initiative's original handoff also scoped a "Story A" (role
+vocabulary reconciliation, premised on a bug in `/admin/approve-link` and a
+missing `viewer` option in `/request-access`). Recon on 2026-08-08 found that
+bug already fixed by WS-1/#336 (`backend/src/lib/normalizeRole.js`) well
+before this session - Story A was dropped, not filed as an issue.
+
+---
+### Story 125 (P2) - Phase 4C: role-scoped data model (Coordinator/Scorekeeper grants) <!-- #656 -->
+Status: Blocked - filed, not built.
+Discovered: 2026-08-08, product/architecture review session.
+Symptom: `team_data` is one JSONB row per team with one RLS write rule
+(admin/coach only). No way to grant Coordinator write access to
+schedule/snacks/songs or Scorekeeper write access to batting order without
+also granting full `team_data` access.
+Impact: Coordinator and Scorekeeper roles exist but can't be given real
+scoped permissions until this lands.
+Root cause: N/A - architecture gap, matches already-documented PERSONAS.md
+Phase 3 items ("scoped write access") that were never built.
+Proposed fix: Extract `walk_up_songs`, `team_schedule` (+ snack duty), and
+batting order into their own tables with per-domain RLS policies, mirroring
+the live-scoring table pattern.
+Recommendation: BLOCKED. Requires Phase 4 auth cutover to be live first -
+building field-level RLS before the app can authenticate a role is inert
+work. Do not schedule ahead of Phase 4.
+Named precondition - Option A/B decision (2026-08-08): Coordinator currently
+normalizes to coach-tier access per `normalizeRole.js` (Option B, WS-1/#336).
+Promoting coordinator to a distinct canonical role (Option A) is required
+before differentiated grants are possible, and was deliberately deferred, not
+resolved, on 2026-08-08. Revisit this decision explicitly when Phase 4
+unblocks - do not silently reverse Option B as part of unrelated work.
+
+---
 ### Automated Score Reporting (County Integration)
 **Status:** Architecture finalized, implementation pending
 **Trigger:** Coach taps "Report Score" on a completed game
