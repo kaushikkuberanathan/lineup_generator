@@ -1463,6 +1463,31 @@ export default function App() {
   // auth state - useAuth owns "am I authenticated", App owns "which form".
   const [authScreen, setAuthScreen] = useState('login');
 
+  // #376 - activeTeamId is seeded from localStorage at mount and is never
+  // otherwise reconciled against the signed-in user's real memberships. Once
+  // authenticated, if the current activeTeamId isn't one of the user's real
+  // memberships, auto-select when exactly one membership exists (reusing the
+  // existing loadTeam() path); with more than one, leave it to the existing
+  // Account-tab picker. Zero-membership routing (#394) is a separate gate
+  // and untouched here.
+  useEffect(function() {
+    if (authState !== 'authenticated') { return; }
+    if (!memberships || memberships.length === 0) { return; }
+    var hasActiveMembership = memberships.some(function(m) {
+      return String(m.team_id) === String(activeTeamId);
+    });
+    if (hasActiveMembership) { return; }
+    if (memberships.length === 1) {
+      var targetId = memberships[0].team_id;
+      var targetTeam = null;
+      for (var i = 0; i < teams.length; i++) {
+        if (String(teams[i].id) === String(targetId)) { targetTeam = teams[i]; break; }
+      }
+      if (targetTeam) { loadTeam(targetTeam); }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- deliberately gated on [authState, memberships] only; loadTeam/teams are re-created every render, activeTeamId is read-only for the stale-check
+  }, [authState, memberships]);
+
   // Online/offline detection
   useEffect(function() {
     var goOnline  = function() { setIsOnline(true);  };
