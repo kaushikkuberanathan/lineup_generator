@@ -17,13 +17,21 @@ import { tokens } from "../../theme/tokens";
 const TEAM_ID = import.meta.env.VITE_DEFAULT_TEAM_ID || '1774297491626';
 
 // Label layer (WS-1 #336): what the coach SEES is richer than what we STORE.
-// `value` is the canonical team_memberships role written to the DB; `id` is
-// the React key + URL-param token, because two labels legitimately map to the
-// same canonical role (a Coordinator is coach-tier in authz terms).
+// `value` is sent to POST /request-access as `requestedRole`; the backend's
+// normalizeRole() (backend/src/lib/normalizeRole.js) translates it to one of
+// 4 DB canonicals (admin/coach/scorekeeper/viewer). team_admin -> admin and
+// coordinator -> coach is the deliberate, accepted state (Option B) — NOT a
+// gap awaiting a backend fix. Promoting coordinator to its own canonical
+// role (Option A) is a real decision, explicitly deferred to Story 125
+// (#656) until Phase 4C unblocks it. Do not "fix" this mapping as part of
+// unrelated work.
 const ROLE_OPTIONS = [
-  { id: 'head_coach',      value: 'admin', label: 'Head Coach' },
-  { id: 'assistant_coach', value: 'coach', label: 'Assistant Coach' },
-  { id: 'coordinator',     value: 'coach', label: 'Team Coordinator' },
+  { id: 'head_coach',      value: 'team_admin',  label: 'Head Coach',
+    note: 'Requires manual review before approval' },
+  { id: 'assistant_coach', value: 'coach',        label: 'Assistant Coach' },
+  { id: 'coordinator',     value: 'coordinator',  label: 'Team Coordinator' },
+  { id: 'scorekeeper',     value: 'scorekeeper',  label: 'Scorekeeper' },
+  { id: 'parent',          value: 'viewer',       label: 'Parent / Family' },
 ];
 
 export function RequestAccessScreen({ onBack, requestAccess }) {
@@ -34,6 +42,8 @@ export function RequestAccessScreen({ onBack, requestAccess }) {
   const [teamId, setTeamId]       = useState('');
   const [loading, setLoading]     = useState(false);
   const [error, setError]         = useState('');
+
+  const selectedRoleOption = ROLE_OPTIONS.find(r => r.id === roleId);
 
   // Pre-fill from URL params
   useEffect(() => {
@@ -55,12 +65,11 @@ export function RequestAccessScreen({ onBack, requestAccess }) {
     setError('');
     setLoading(true);
 
-    const selectedRole = ROLE_OPTIONS.find(r => r.id === roleId);
     const result = await requestAccess({
       firstName: firstName.trim(),
       lastName:  lastName.trim(),
       email:     email.trim().toLowerCase(),
-      role:      selectedRole.value,
+      role:      selectedRoleOption.value,
       tid:       teamId.trim() || TEAM_ID,
     });
 
@@ -146,8 +155,9 @@ export function RequestAccessScreen({ onBack, requestAccess }) {
           </div>
 
           <div>
-            <label style={styles.label}>Your role</label>
+            <label style={styles.label} htmlFor="request-access-role">Your role</label>
             <select
+              id="request-access-role"
               value={roleId}
               onChange={e => setRoleId(e.target.value)}
               style={styles.select}
@@ -157,6 +167,9 @@ export function RequestAccessScreen({ onBack, requestAccess }) {
                 <option key={r.id} value={r.id}>{r.label}</option>
               ))}
             </select>
+            {selectedRoleOption?.note && (
+              <p style={styles.roleNote}>{selectedRoleOption.note}</p>
+            )}
           </div>
 
           {error && <p style={styles.error}>{error}</p>}
@@ -263,6 +276,11 @@ const styles = {
     color: '#0f172a',
     backgroundColor: '#fff',
     cursor: 'pointer',
+  },
+  roleNote: {
+    margin: '6px 0 0',
+    fontSize: '12px',
+    color: '#92400e',
   },
   primaryBtn: {
     padding: '13px',
