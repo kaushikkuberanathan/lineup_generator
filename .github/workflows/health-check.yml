@@ -26,6 +26,8 @@ jobs:
   health-check:
     name: Functional Health Check
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
 
