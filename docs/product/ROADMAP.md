@@ -1,7 +1,24 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: 2026-08-07 (v2.8.5 promoted to main - Phase 4 var C legacy color-object retirement complete, Story 104.1, Story 119)
+> Last updated: 2026-08-08 (v2.8.6 merged to develop - security hardening batch 1, 24h soak in progress before main promote)
 > MVP launched: March 24, 2026
+
+---
+
+## v2.8.6 - 2026-08-08 - Security hardening batch 1 (develop only — not yet promoted to main)
+
+**Merged to `develop`** (PR [#652](https://github.com/kaushikkuberanathan/lineup_generator/pull/652), regular merge, `495cd5d`) — verified as a genuine 2-parent merge (manual check + the repo's own squash-merge CI guardrail, both green). **Not yet promoted to `main` — 24h soak in progress per standing policy, no override.**
+
+- Resolved 12 of 14 open CodeQL security alerts:
+  - **Rate limiting** — `POST /request-access` had none; added an email-keyed limiter (10 req/60min), mirroring `loginLimiter`'s proven design (alert #10).
+  - **Log injection (CWE-134)** — 5 sites in `backend/src/routes/teamData.js` interpolated an attacker-controlled `teamId` into the first argument of `console.error` alongside a second argument; Node's `util.format` substitution could corrupt the logged error field. Changed to pass `{ teamId, error }` as a structured object (alerts #6, #7, #8, #18, #19).
+  - **Insecure randomness** — `DugoutView.jsx`'s `scorer_local_id` generator used `Math.random()`. Replaced with `crypto.randomUUID()` (alert #9). **CI caught a fresh alert** on the legacy-browser fallback branch (deliberately kept per spec) — the fallback also used `Math.random()`, and CodeQL's taint tracking flags that regardless of whether the branch is a fallback. Fixed by using `crypto.getRandomValues()` in the fallback too, eliminating the insecure path entirely rather than dismissing the alert.
+  - **CI workflow permissions** — 8 jobs across `.github/workflows/{ci,health-check,health}.yml` had no explicit `permissions:` block; added `contents: read` to each after tracing every step to confirm none need broader scope (alerts #1, #3, #14, #16, #17).
+- **Deliberately deferred, tracked as open follow-up, NOT silently dropped**: 2 of the 14 alerts (`POST /logout`, `GET /me` — both js/missing-rate-limiting) remain open. Both routes already sit behind `requireAuth`; rate-limiting them needs user-id-keyed limiting with its own budget (GET /me is called on every session resume), not a reuse of `/request-access`'s email-keyed design. Tracked under [#651](https://github.com/kaushikkuberanathan/lineup_generator/issues/651) — that issue stays open until resolved or explicitly re-scoped.
+- **Filed as a separate, standalone finding, NOT fixed here**: the share-link ID generator (`App.jsx:generateShareId`) also uses `Math.random()`. Share IDs are the sole access-control mechanism for unauthenticated team-data viewing per the Auth Principle, so this is a real finding — but `App.jsx` is a locked file and this needs its own dedicated, explicitly-gated session. Filed as [#650](https://github.com/kaushikkuberanathan/lineup_generator/issues/650).
+- Every fix has a dedicated regression test, RED→GREEN-verified against the reverted source (not just "test passes now"). Full suite clean: 1027 frontend (85 files) + 125 backend unit, 0 regressions.
+- **Doc corrections made during this release's docs pass, pre-existing and unrelated to this release's own changes**: `backend/CLAUDE.md` and `docs/product/FEATURE_MAP.md` were both missing `teamData.delete.test.js` (6 tests, pre-existing) from their backend test inventories, and both mislabeled `normalizeRole.test.js`'s count as 13 instead of its actual 34. Both corrected.
+- Patch bump 2.8.5 to 2.8.6.
 
 ---
 

@@ -78,7 +78,7 @@ Located at App.jsx ~458–720. Two-phase auto-assign algorithm:
 ## Test Suite
 
 - **Framework**: Vitest
-- **CI target**: 1022 frontend passed / 1 skipped / 0 failed (as of 2026-08-06 post-#602 develop tip; 85 test files; 1133 total incl. 111 backend unit tests)
+- **CI target**: 1027 frontend passed / 1 skipped / 0 failed (as of 2026-08-08 post-#652 develop tip; 85 test files; 1152 total incl. 125 backend unit tests)
 - **Known skip**: bench-equity.test.js test 2.1 (bench rotation fairness — BUG CONFIRMED; identical players, sit-count drift > 1 inning; fix deferred)
 
 #### Test files
@@ -95,7 +95,7 @@ Located at App.jsx ~458–720. Two-phase auto-assign algorithm:
 | `flagBootstrap.test.js` | Feature flag bootstrap, localStorage override, URL param enable/disable |
 | `trackingUrl.test.js` | UTM outboundLinkProps, CAMPAIGNS registry, medium auto-detection (17 tests) |
 | `BattingOrderStrip.test.jsx` | BattingOrderStrip component: Now Batting / On Deck / In Hole pill rendering, +N more badge, empty state, currentBatterIndex cycling (6 tests) |
-| `DugoutView.test.jsx` | DugoutView smoke tests: entry state renders, active scoring state renders, BattingOrderStrip present in both states, onExit handler (5 tests) |
+| `DugoutView.test.jsx` | DugoutView smoke tests: entry state renders, active scoring state renders, BattingOrderStrip present in both states, onExit handler (5 tests); `scorer_local_id` generation — crypto.randomUUID primary path, localStorage reuse, crypto.getRandomValues legacy-browser fallback with explicit UUID v4 version/variant nibble checks (3 tests, v2.8.6 security hardening) (15 tests total) |
 | `ScoreboardRow.test.jsx` | ScoreboardRow: scores from props, team labels, +1 button visibility (isScorer), default prop fallbacks (4 tests) |
 | `a11y-component-fixes.test.jsx` | F1-F7 a11y assertions: DefenseDiamond font floors (F1/F2), OfflineIndicator font floor (F3), NowBattingStrip aria-labels (F4/F5), LockFlow dialog role (F6), DefenseDiamond inning pill contrast (F7) (11 tests) |
 | `theme.tokens.test.js` | Design token contract shape: top-level groups, color palette, font, spacing, zIndex, barrel exports (34 tests) |
