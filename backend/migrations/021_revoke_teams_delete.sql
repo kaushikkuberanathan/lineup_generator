@@ -1,0 +1,81 @@
+-- Migration 021: close the #380 anon/authenticated DELETE exception on teams
+--
+-- STATUS: APPLIED TO DEV (psqvzppphdedqkpmarwx) 2026-08-08. Applied to PROD
+-- (hzaajccyurlyeweekvma) 2026-08-08, then IMMEDIATELY REVERTED the same
+-- session — see "PROD DEFERRAL" below. NOT currently live on prod.
+--
+-- ---------------------------------------------------------------------------
+-- PROD DEFERRAL — do not re-apply until this precondition is confirmed true
+-- ---------------------------------------------------------------------------
+-- The two PRs this migration depends on (#642, #646) are merged to `develop`
+-- only, not `main`. Render deploys the backend from `main`
+-- (root CLAUDE.md, "Deployment" section), so production's live backend does
+-- NOT have the DELETE /api/v1/teams/:teamId route this migration's rollback
+-- plan depends on. Applying the REVOKE to prod without that route live means
+-- team deletion has NO working path at all in production — not a silent
+-- failure, a total one, for every role. Confirmed directly 2026-08-08: a
+-- `git show origin/main:backend/src/routes/teamData.js` grep for
+-- `router.delete` returned nothing; a live curl DELETE against prod
+-- returned 401 from admin.js's unrelated catch-all auth gate (documented in
+-- backend/CLAUDE.md's "feedbackRouter MUST mount before adminRouter" note),
+-- not from the new route — a false signal that briefly looked like the
+-- route was live. This is exactly the failure mode 004's own header warned
+-- about for this exact migration: "Both halves must land together —
+-- revoking first leaves a window where delete-team silently fails."
+--
+-- Before re-applying to prod: confirm develop -> main has promoted and
+-- Render has redeployed (e.g. the same curl now returns 401 UNAUTHORIZED
+-- with a JSON body shaped like requireAuth's rejection specifically, or a
+-- real authenticated call succeeds) — then re-run this file against prod
+-- and re-verify with the check-teams-grants query in this migration's PR.
+--
+-- ---------------------------------------------------------------------------
+-- WHY
+-- ---------------------------------------------------------------------------
+-- Migration 004 deliberately KEPT the DELETE grant on public.teams for anon
+-- and authenticated (see 004's own "5. REVOKE TRUNCATE + DELETE" section,
+-- lines ~359-370), because at the time dbDeleteTeam()
+-- (frontend/src/supabase.js) deleted teams direct-to-Supabase, and revoking
+-- DELETE would have broken delete-team silently (the caller swallows the
+-- error to console.warn). 004's own header named the end state: "route
+-- delete-team through a backend service_role endpoint, THEN revoke DELETE on
+-- teams. Both halves must land together."
+--
+-- Both halves are now done:
+--   - dbDeleteTeam() rewritten to call the backend's DELETE
+--     /api/v1/teams/:teamId route (service_role, admin-membership-checked) —
+--     PR #642, merged to develop 2026-08-07.
+--   - frontend/public/admin.html's deleteTeam() — the only other direct
+--     write to teams found by a repo-wide grep for .from('teams').delete()
+--     — rewritten the same way — PR #646, merged to develop 2026-08-08.
+--
+-- Nothing else writes to teams via the anon/authenticated grant. The
+-- backend's own DELETE uses supabaseAdmin (service_role), which bypasses
+-- grants and RLS entirely and is UNAFFECTED by this REVOKE.
+--
+-- ---------------------------------------------------------------------------
+-- WHAT THIS DOES NOT CHANGE
+-- ---------------------------------------------------------------------------
+-- teams_auth_delete (migration 004, section 2) already scopes authenticated
+-- DELETE to role='admin' of that team via RLS. That policy is untouched and
+-- becomes unreachable for anon/authenticated after this REVOKE (grant check
+-- happens before RLS is even consulted) — it remains meaningful only for any
+-- future direct-authenticated path, none exists today.
+--
+-- ---------------------------------------------------------------------------
+-- TEST SUITE UPDATE REQUIRED (see backend/src/__tests__/rls/policies.test.js)
+-- ---------------------------------------------------------------------------
+-- S4b's "#380 exception" filter (anon:DELETE on teams) and T6's comment
+-- ("must come from RLS ... not a grant-level 42501") both describe the
+-- pre-021 state and must be updated alongside this migration landing —
+-- see the same PR that applies this file.
+--
+-- ---------------------------------------------------------------------------
+-- ROLLBACK (only if a legitimate direct-write path is reintroduced — it
+-- should not be; route through the backend service_role instead)
+-- ---------------------------------------------------------------------------
+--   GRANT DELETE ON public.teams TO anon, authenticated;
+--
+-- Related: #380
+
+REVOKE DELETE ON public.teams FROM anon, authenticated;
