@@ -85,11 +85,17 @@ export function DugoutView({
       var k = 'scorer_local_id';
       var existing = localStorage.getItem(k);
       if (existing) return existing;
-      var generated = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-        var r = Math.random() * 16 | 0;
-        var v = c === 'x' ? r : (r & 0x3 | 0x8);
-        return v.toString(16);
-      });
+      var generated = (typeof crypto !== 'undefined' && crypto.randomUUID)
+        ? crypto.randomUUID()
+        // Deliberately-degraded fallback — Math.random() is not
+        // cryptographically secure. Exists only to keep browsers without
+        // crypto.randomUUID (very old Safari/iOS) functional; not the
+        // primary path.
+        : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            var r = Math.random() * 16 | 0;
+            var v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+          });
       localStorage.setItem(k, generated);
       return generated;
     } catch(e) {

@@ -225,6 +225,45 @@ describe('dugoutFocusMode state machine', function() {
 
 });
 
+// ── Security hardening batch 1: crypto.randomUUID for scorer_local_id ────────
+
+describe('scorer_local_id generation (crypto.randomUUID fix)', function() {
+  it('uses crypto.randomUUID() when available and persists a valid UUID v4 to localStorage', function() {
+    var spy = vi.spyOn(globalThis.crypto, 'randomUUID');
+    render(<DugoutView {...defaultProps} />);
+    expect(spy).toHaveBeenCalledTimes(1);
+
+    var stored = localStorage.getItem('scorer_local_id');
+    expect(stored).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+    expect(stored).toBe(spy.mock.results[0].value);
+
+    spy.mockRestore();
+  });
+
+  it('reuses an existing scorer_local_id from localStorage without generating a new one', function() {
+    localStorage.setItem('scorer_local_id', 'existing-id-123');
+    var spy = vi.spyOn(globalThis.crypto, 'randomUUID');
+    render(<DugoutView {...defaultProps} />);
+    expect(spy).not.toHaveBeenCalled();
+    expect(localStorage.getItem('scorer_local_id')).toBe('existing-id-123');
+    spy.mockRestore();
+  });
+
+  it('falls back to the Math.random()-based generator when crypto.randomUUID is unavailable', function() {
+    var original = globalThis.crypto.randomUUID;
+    // Simulate an older browser without crypto.randomUUID.
+    // eslint-disable-next-line no-param-reassign
+    globalThis.crypto.randomUUID = undefined;
+
+    render(<DugoutView {...defaultProps} />);
+
+    var stored = localStorage.getItem('scorer_local_id');
+    expect(stored).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+
+    globalThis.crypto.randomUUID = original;
+  });
+});
+
 // ── Slice 2 fix-up: exit affordance across modes (Story 50) ──────────────────
 
 describe('exit affordance across modes', function() {
