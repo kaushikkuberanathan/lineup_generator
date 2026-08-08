@@ -1,5 +1,24 @@
 export var VERSION_HISTORY = [
   {
+    version: '2.8.6',
+    date: 'August 2026',
+    headline: 'Security hardening: rate limiting, log-injection fix, secure randomness, CI permissions',
+    techNote: 'Bug fixes and performance improvements',
+    userChanges: [
+      'Behind-the-scenes security and reliability improvements. No changes to how the app works for you.',
+    ],
+    internalChanges: [
+      'Added rate limiting to the public access-request endpoint (10 requests / 60 minutes, keyed by email) — it had none before, mirroring the existing login rate limiter\'s proven design.',
+      'Fixed a log-injection risk in team-data error logging: an attacker-controlled team ID could be reinterpreted as a format specifier and corrupt the adjacent log field. Five call sites changed to pass the team ID and error safely as a structured object instead of interpolating it into the log message.',
+      'Replaced an insecure random-number source used to generate the live-scoring device identity with a cryptographically secure one (crypto.randomUUID, falling back to crypto.getRandomValues on very old browsers that lack it — never Math.random()).',
+      'Added explicit least-privilege permissions to all 8 CI/health-check GitHub Actions jobs that were missing them.',
+      'Resolved 12 of 14 open CodeQL security alerts from this remediation batch; the remaining 2 (rate limiting on the already-authenticated GET /me and POST /logout routes) need a different design — user-id-keyed, not email-keyed — and are tracked as open follow-up work, not silently dropped (#651).',
+      'Filed, not fixed: the live-scoring share-link ID generator also uses Math.random() and is a separate, standalone finding — it lives in a locked, high-risk file (App.jsx) and needs its own dedicated session (#650).',
+      'Corrected a pre-existing documentation gap unrelated to this release\'s own changes: backend/CLAUDE.md\'s backend unit-test inventory and total were already missing an existing test file (teamData.delete.test.js, 6 tests) from before this release.',
+      'Patch bump 2.8.5 to 2.8.6.',
+    ],
+  },
+  {
     version: '2.8.5',
     date: 'August 2026',
     headline: 'AboutTab styling fix, App.jsx cleanup, and internal improvements',
