@@ -13,6 +13,8 @@ jobs:
   frontend:
     name: Frontend Tests (Vitest)
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v7
 
@@ -60,6 +62,8 @@ jobs:
     name: Backend Integration Tests (CI_SAFE, prod read-only)
     runs-on: ubuntu-latest
     if: github.actor != 'dependabot[bot]'
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v7
 
@@ -262,6 +266,8 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     needs: [frontend, backend, backend-unit]
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v7
 

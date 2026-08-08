@@ -79,7 +79,7 @@ async function rosterWipeGuard(teamId, incomingRoster, force) {
     .maybeSingle();
 
   if (error) {
-    console.error(`[roster-wipe-guard] DB read error for team ${teamId}:`, error.message);
+    console.error('[roster-wipe-guard] DB read error:', { teamId, error: error.message });
     // Fail safe: block the write on read error
     return { blocked: true, currentRosterCount: -1, readError: error.message };
   }
@@ -157,7 +157,7 @@ router.post('/:teamId/data', async (req, res) => {
       .upsert(upsertObj, { onConflict: 'team_id' });
 
     if (error) {
-      console.error(`[teamData/write] DB upsert error for team ${teamId}:`, error.message);
+      console.error('[teamData/write] DB upsert error:', { teamId, error: error.message });
       return res.status(500).json({ error: 'DB_ERROR', message: error.message });
     }
 
@@ -197,7 +197,7 @@ router.get('/:teamId/history', async (req, res) => {
       .limit(limit);
 
     if (error) {
-      console.error(`[teamData/history] DB error for team ${teamId}:`, error.message);
+      console.error('[teamData/history] DB error:', { teamId, error: error.message });
       return res.status(500).json({ error: 'DB_ERROR', message: error.message });
     }
 
@@ -234,7 +234,7 @@ router.delete('/:teamId', requireAuth, async (req, res) => {
       .maybeSingle();
 
     if (memErr) {
-      console.error(`[teamData/delete] membership check error for team ${teamId}:`, memErr.message);
+      console.error('[teamData/delete] membership check error:', { teamId, error: memErr.message });
       return res.status(500).json({ error: 'DB_ERROR', message: memErr.message });
     }
     if (!membership) {
@@ -244,7 +244,7 @@ router.delete('/:teamId', requireAuth, async (req, res) => {
     const { error } = await supabaseAdmin.from('teams').delete().eq('id', teamId);
 
     if (error) {
-      console.error(`[teamData/delete] delete error for team ${teamId}:`, error.message);
+      console.error('[teamData/delete] delete error:', { teamId, error: error.message });
       return res.status(500).json({ error: 'DB_ERROR', message: error.message });
     }
 
