@@ -10,6 +10,30 @@ never force-push over the other side's section.
 
 ---
 
+## Lessons (both sides — read before your next commit/PR)
+
+- **ROADMAP Story numbers and GitHub issue numbers are independent
+  sequences — always resolve the real issue number after filing, never
+  assume they match, before writing any refs/closes in a commit message.**
+  (T2 caught this for their own commits 2026-08-08; T1's commits were checked
+  and were already correct, but the mistake is easy to make either direction.)
+- **Edit/Write/Read tool calls are not automatically scoped to the worktree —
+  verify the absolute path on every call, not just when something looks
+  wrong.** T1 passed a bare-repo path (`C:\Users\...\lineup-generator\backend\...`
+  instead of `C:\Users\...\lineup-generator\.claude\worktrees\
+  role-access-model-evolution-8a855d\backend\...`) to Edit while implementing
+  the `/teams/search` route, landing an uncommitted change on the **main
+  repo's `develop` checkout** — the one branch this whole initiative is
+  forbidden from touching. Caught via `git hash-object` mismatch (Bash-tool
+  git commands stayed correctly scoped to the worktree throughout — only
+  Edit/Read had drifted), swept both worktree commits and the main repo's
+  `develop` status clean afterward on 2026-08-08, nothing was ever committed
+  or pushed on `develop`. From this point on: state the full absolute path
+  out loud before every Edit/Write/Read call and confirm it starts with
+  `...\.claude\worktrees\role-access-model-evolution-8a855d\`.
+
+---
+
 ## Status Table
 
 | Story/Task | Owner | State | Last updated by | Timestamp |
