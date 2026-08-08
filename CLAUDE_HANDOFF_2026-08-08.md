@@ -15,9 +15,9 @@ never force-push over the other side's section.
 | Story/Task | Owner | State | Last updated by | Timestamp |
 |---|---|---|---|---|
 | Story A (role vocab reconciliation) | — | **DROPPED** — recon found WS-1/#336 + `normalizeRole.js` already resolved this; no issue filed | T1 | 2026-08-08 |
-| Story 124 (teams search + request-access discovery) | T1 (backend) / T2 (frontend) | Filing issue | T1 | 2026-08-08 |
-| Story 125 (Phase 4C role-scoped data model) | — | Filing issue, `status:blocked` | T1 | 2026-08-08 |
-| `GET /api/v1/teams/search` (backend) | T1 | Not started | T1 | 2026-08-08 |
+| Story 124 (teams search + request-access discovery) | T1 (backend) / T2 (frontend) | **Filed: [#655](https://github.com/kaushikkuberanathan/lineup_generator/issues/655)** | T1 | 2026-08-08 |
+| Story 125 (Phase 4C role-scoped data model) | — | **Filed: [#656](https://github.com/kaushikkuberanathan/lineup_generator/issues/656)**, `status:blocked` | T1 | 2026-08-08 |
+| `GET /api/v1/teams/search` (backend) | T1 | In progress | T1 | 2026-08-08 |
 | Role picker / search UI (frontend) | T2 | Unknown — see Requests | — | — |
 | `CLAUDE.md` role-vocab correction | T1 (holding diff) | **Not committed** — needs literal gate phrase from KK | T1 | 2026-08-08 |
 
