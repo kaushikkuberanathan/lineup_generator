@@ -148,8 +148,30 @@ reconciliation with T2's branch.**
   API with a comment explaining the manual resolution (the PR's diff was
   fully applied, just not through GitHub's own merge button given the
   conflict).
-- Ran the full frontend suite on this branch's new HEAD after the merge —
-  see the result recorded below once verified.
+- Ran the full frontend suite on this branch's new HEAD after the merge
+  (commit `3a43939`). First run: 87 files / 1003 passed + 1 skipped, plus
+  one `[vitest-pool]` "Timeout waiting for worker to respond" unhandled
+  error on `attendance.test.js` — exactly the documented Bug #7 Windows
+  cold-start flake signature (dropped file count, passing exit code, not a
+  real failure). Retried per the standing convention ("one retry has always
+  cleared it") — clean the second time: **88/88 files, 1048 passed + 1
+  skipped (1049 total), 0 failures, 0 errors.** 87→88 files confirms
+  `attendance.test.js` was the dropped file both times, not a regression
+  from the merge.
+- Diff-completeness check on the squash-equivalent commit (KK asked for
+  this explicitly): compared `3a43939`'s diff against my pre-merge HEAD to
+  T2's full branch diff (`06030c1`..`d280cc4`, their own "7 commits"
+  summary). Every code file matches in both diff stat AND git blob hash —
+  `App.jsx`, `useAuth.js`, `TeamSearch.jsx`+test, `RequestAccessScreen.jsx`
+  +test, `useAuth.requestAccess.test.js` all byte-identical between the two
+  branches' versions. Only this coordination file legitimately differs
+  (hand-reconciled merge of both sides' notes, not a raw copy — expected).
+  Nothing missing, nothing duplicated.
+- PR #658 closed (not merged via the button, since the actual content was
+  already applied via the manual squash commit) with two comments: one
+  explaining the manual resolution, one pointing at the exact final SHA
+  (`3a43939`) with the byte-hash verification result, for anyone auditing
+  PR history later where GitHub shows "Closed" rather than "Merged."
 - `develop`/`main`: still not pushed to, still no PR opened, still none
   planned this session — unchanged, absolute, soak-window-driven.
 
