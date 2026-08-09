@@ -1,6 +1,9 @@
 /**
  * components/Auth/RequestAccessScreen.jsx
- * Access request form for coaches and coordinators.
+ * Access request form — coaches, coordinators, scorekeepers, and parents
+ * requesting view-only access. 5 role options as of 2026-08-08 (Story
+ * 124/#655); see docs/product/AUTH_SECURITY_AUDIT_ROADMAP.md's role-model
+ * table for the full label → stored-value → normalizeRole() mapping.
  * Pre-fills team and role from URL params.
  *
  * URL params:
