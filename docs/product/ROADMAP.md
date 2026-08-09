@@ -1,13 +1,15 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: 2026-08-08 (v2.8.6 merged to develop - security hardening batch 1, 24h soak in progress before main promote)
+> Last updated: 2026-08-08 (v2.9.0 merged to develop - security hardening, team-deletion safety, identity data integrity; not yet promoted to main)
 > MVP launched: March 24, 2026
 
 ---
 
-## v2.8.6 - 2026-08-08 - Security hardening batch 1 (develop only — not yet promoted to main)
+## v2.9.0 - 2026-08-08 - Security hardening, team-deletion safety, identity data integrity (develop only — not yet promoted to main)
 
-**Merged to `develop`** (PR [#652](https://github.com/kaushikkuberanathan/lineup_generator/pull/652), regular merge, `495cd5d`) — verified as a genuine 2-parent merge (manual check + the repo's own squash-merge CI guardrail, both green). **Not yet promoted to `main` — 24h soak in progress per standing policy, no override.**
+**Minor bump, not patch** — this release bundles more than the security-hardening batch it started as: a database schema change (#375), a backend routing change and a security-policy change (#380), on top of the CodeQL remediation batch and routine dependency bumps below. First time this repo has deliberately sized a version bump to the release's actual scope rather than defaulting to the smallest label.
+
+**Security hardening batch merged to `develop`** (PR [#652](https://github.com/kaushikkuberanathan/lineup_generator/pull/652), regular merge, `495cd5d`) — verified as a genuine 2-parent merge (manual check + the repo's own squash-merge CI guardrail, both green). **Not yet promoted to `main` — 24h soak override issued 2026-08-08 (fall season readiness), see version-bump PR for the explicit override log.**
 
 - Resolved 12 of 14 open CodeQL security alerts:
   - **Rate limiting** — `POST /request-access` had none; added an email-keyed limiter (10 req/60min), mirroring `loginLimiter`'s proven design (alert #10).
@@ -18,7 +20,15 @@
 - **Filed as a separate, standalone finding, NOT fixed here**: the share-link ID generator (`App.jsx:generateShareId`) also uses `Math.random()`. Share IDs are the sole access-control mechanism for unauthenticated team-data viewing per the Auth Principle, so this is a real finding — but `App.jsx` is a locked file and this needs its own dedicated, explicitly-gated session. Filed as [#650](https://github.com/kaushikkuberanathan/lineup_generator/issues/650).
 - Every fix has a dedicated regression test, RED→GREEN-verified against the reverted source (not just "test passes now"). Full suite clean: 1027 frontend (85 files) + 125 backend unit, 0 regressions.
 - **Doc corrections made during this release's docs pass, pre-existing and unrelated to this release's own changes**: `backend/CLAUDE.md` and `docs/product/FEATURE_MAP.md` were both missing `teamData.delete.test.js` (6 tests, pre-existing) from their backend test inventories, and both mislabeled `normalizeRole.test.js`'s count as 13 instead of its actual 34. Both corrected.
-- Patch bump 2.8.5 to 2.8.6.
+
+**Team-deletion safety (#380)** — 3 PRs (#642, #646, #647), also on `develop`:
+- Team deletion now routes through a backend `service_role` endpoint instead of the anon/authenticated client SDK; `admin.html` updated to use the same backend route.
+- Migration 021 (revoke the anon/authenticated DELETE grant on `teams`) was applied to **production once, then immediately reverted the same session** — its own header explains why: the backend route it depends on was only live on `develop`, not `main`, and Render deploys from `main`. Applying the revoke without that route live in production would have left team deletion with **no working path at all**, for every role, not a silent partial failure. **Re-applying migration 021 to production is a distinct, later, manual step** — only after this release promotes to `main` and Render has redeployed with the new route confirmed live there. It is explicitly not part of this release.
+- Issue #380 stays open until that re-apply happens.
+
+**Identity data integrity (#375)** — migration 020, **already applied to both DEV and PROD 2026-08-07**: adds a CHECK constraint requiring every `team_memberships` row to carry a real identity (user_id or email) — closes the gap that let an orphaned admin-role row with neither exist. Issue #375 is closed; nothing outstanding.
+
+**Routine dependency updates**: react-icons, csv-parse, libphonenumber-js, and the Supabase CLI GitHub Action.
 
 ---
 

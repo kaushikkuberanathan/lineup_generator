@@ -1,11 +1,11 @@
 export var VERSION_HISTORY = [
   {
-    version: '2.8.6',
+    version: '2.9.0',
     date: 'August 2026',
-    headline: 'Security hardening: rate limiting, log-injection fix, secure randomness, CI permissions',
+    headline: 'Security hardening, team-deletion safety, and identity data integrity',
     techNote: 'Bug fixes and performance improvements',
     userChanges: [
-      'Behind-the-scenes security and reliability improvements. No changes to how the app works for you.',
+      'Behind-the-scenes security, reliability, and dependency updates. No changes to how the app works for you.',
     ],
     internalChanges: [
       'Added rate limiting to the public access-request endpoint (10 requests / 60 minutes, keyed by email) — it had none before, mirroring the existing login rate limiter\'s proven design.',
@@ -15,7 +15,11 @@ export var VERSION_HISTORY = [
       'Resolved 12 of 14 open CodeQL security alerts from this remediation batch; the remaining 2 (rate limiting on the already-authenticated GET /me and POST /logout routes) need a different design — user-id-keyed, not email-keyed — and are tracked as open follow-up work, not silently dropped (#651).',
       'Filed, not fixed: the live-scoring share-link ID generator also uses Math.random() and is a separate, standalone finding — it lives in a locked, high-risk file (App.jsx) and needs its own dedicated session (#650).',
       'Corrected a pre-existing documentation gap unrelated to this release\'s own changes: backend/CLAUDE.md\'s backend unit-test inventory and total were already missing an existing test file (teamData.delete.test.js, 6 tests) from before this release.',
-      'Patch bump 2.8.5 to 2.8.6.',
+      'Team deletion now routes through a backend service_role endpoint instead of the client SDK, with the admin panel updated to use the same path (#380).',
+      'Prepared, but deliberately not yet re-applied to production, the database change that closes the last gap in that same effort: revoking the ability for a logged-in or anonymous client to delete a team directly. It was applied to production once, then immediately reverted in the same session, because the backend route it depends on was not yet live there — revoking without that route in place would have left team deletion with no working path at all in production for every user. Re-applying it is a separate, deliberate step after this release ships and the new route is confirmed live in production, not part of this release.',
+      'Added a database safeguard requiring every team-membership record to be tied to a real person (an email or a linked account) — already applied to both the test and production databases; closes out a data-integrity gap found during an audit (#375).',
+      'Routine dependency updates: react-icons, csv-parse, libphonenumber-js, and the Supabase CLI action used in CI.',
+      'This is the first time we\'ve deliberately sized a version bump to match a release\'s actual scope rather than defaulting to the smallest label — this release bundles more than a routine fix batch (a database schema change, a backend routing change, and a security-policy change alongside the items above), so it\'s versioned accordingly.',
     ],
   },
   {

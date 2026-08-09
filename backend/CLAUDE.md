@@ -116,7 +116,7 @@ A second, hermetic test system runs alongside the integration runner:
 
 Unit suite total: **125** (verified via `npm run test:unit`, 2026-08-08 — 0 fail / 0 skipped). Story 99 closed 2026-07-31; see ROADMAP.md Story 99 for the closure writeup and the new follow-up story for admin.js's remaining success-path gap.
 
-**Two corrections made 2026-08-08 (v2.8.6 release-prep docs pass), both pre-existing and unrelated to that release's own changes:**
+**Two corrections made 2026-08-08 (v2.9.0 release-prep docs pass), both pre-existing and unrelated to that release's own changes:**
 1. `teamData.delete.test.js` (6 tests, covers `DELETE /api/v1/teams/:teamId`, #380) already existed in the repo but was missing from this table entirely — added below.
 2. `normalizeRole.test.js` was labeled `(13)` but actually has **34** tests — node's test runner counts subtests nested under `describe()` blocks, and the per-file label was never updated even though the table's own aggregate total already reflected the correct number. Corrected below.
 
@@ -134,12 +134,12 @@ Per-file counts below verified individually via `node --test <file>` on 2026-08-
 | `approve.role.test.js` (6) | `POST /api/v1/approve` role-transition behavior. Landed between Phase 2 tranche 2 and Story 99's closure without a doc update — backfilled here 2026-07-31. |
 | `approveLink.role.test.js` (7) | `GET /api/v1/admin/approve-link` role-transition behavior (the public 1-tap email link). Backfilled 2026-07-31 — see note above. |
 | `requestAccess.role.test.js` (7) | `POST /api/v1/request-access` role validation. Backfilled 2026-07-31 — see note above. |
-| `requestAccessLimiter.test.js` (3) | **NEW 2026-08-08 (v2.8.6 security hardening).** `requestAccessLimiter` (auth.js) — same email-keyed design as `loginLimiter`, 10 req/60min. Same-email exhaustion (429 on 11th), a different email unaffected by another's exhausted budget, phone-only requests exempt via `skip()`. RED→GREEN verified. |
+| `requestAccessLimiter.test.js` (3) | **NEW 2026-08-08 (v2.9.0 security hardening).** `requestAccessLimiter` (auth.js) — same email-keyed design as `loginLimiter`, 10 req/60min. Same-email exhaustion (429 on 11th), a different email unaffected by another's exhausted budget, phone-only requests exempt via `skip()`. RED→GREEN verified. |
 | `normalizeRole.test.js` (34) | `normalizeRole()` — the code-level enforcement of the four-role model documented in root `CLAUDE.md` → Multi-team design. Backfilled 2026-07-31 — see note above. Count corrected 2026-08-08 (was mislabeled `13`; see correction note above the table). |
 | `loginLimiter.test.js` (3) | **NEW 2026-07-31.** `loginLimiter` (auth.js) keyed by email, not IP — Story 26 fix. Same email exhausts its own budget (429 on the 6th attempt); a different email is unaffected by another's exhausted budget (the actual bug); no-email requests are exempt via `skip()`. RED→GREEN mutation-verified. |
 | `auth.session.test.js` (8) | **NEW 2026-07-31.** `GET /me`, `PATCH /me`, `POST /logout` — zero prior coverage. Hydrated-user happy path, missing-profile non-crash, validation and not-found paths, and 401 rejection for all three routes. |
 | `feedback.test.js` (7) | **NEW 2026-07-31.** `POST /api/v1/feedback` — zero prior coverage. Valid submission, optional fields, validation, DB-error, 401 rejection, and **FB-7**: regression guard for the admin.js mount-order bug this file's authoring discovered (see Zero-Downtime / app.js note below) — a non-admin coach must reach 201, not 403. |
-| `teamData.logInjection.test.js` (5) | **NEW 2026-08-08 (v2.8.6 security hardening).** Log-injection fix (CWE-134) at the 5 `console.error` sites in `teamData.js` — spies on `console.error`, asserts `{ teamId, error }` is passed as a structured second argument (not interpolated into the message string) using a `teamId` containing `%s`. |
+| `teamData.logInjection.test.js` (5) | **NEW 2026-08-08 (v2.9.0 security hardening).** Log-injection fix (CWE-134) at the 5 `console.error` sites in `teamData.js` — spies on `console.error`, asserts `{ teamId, error }` is passed as a structured second argument (not interpolated into the message string) using a `teamId` containing `%s`. |
 
 **CI**: the `backend-unit` job in `.github/workflows/ci.yml` runs `npm run test:unit` on every push/PR — hermetic, no Render dependency (unlike the integration `backend` job that polls prod). It gates the sync-script and main-deploy (smoke) jobs.
 
