@@ -49,6 +49,30 @@ squash-merge time" describes exactly this moment.
   initiative, consider having only the canonical-branch side own the file
   and the other side post updates via `## Requests`-style append-only notes
   instead of a full parallel copy.
+- **"`develop` is clean" is a snapshot, not a standing fact — re-verify it
+  fresh every time, and expect the baseline to move.** 2026-08-08, later in
+  the session: the main repo (`C:\Users\KKUBERANA1\Documents\lineup-generator`)
+  was checked and found NOT on `develop` at all — it was on
+  `chore/v2.9.0-version-bump-and-scope-expansion`, with 9 uncommitted files
+  (`CLAUDE.md`, `backend/CLAUDE.md`, `frontend/CLAUDE.md`,
+  `backend/package.json`, `frontend/package.json`, `frontend/src/App.jsx`,
+  `frontend/src/data/versionHistory.js`, `docs/product/FEATURE_MAP.md`,
+  `docs/product/ROADMAP.md`). Content-verified (diffed, then grepped for
+  every string unique to this session's work — `Story 124`, `#655`,
+  `TeamSearch`, `role picker`, etc.) as a routine, unrelated v2.9.0
+  version-bump chore — zero overlap with anything T1 or T2 touched, not
+  caused by either terminal, not something to fix or clean up. **Not
+  touched, not staged, not committed, not discarded — left exactly as
+  found.** Updated baseline for any future "is develop/the main repo clean"
+  check in this initiative: clean no longer means an empty diff. It means
+  matching this exact observation (these same 9 files, this same content).
+  If a future check shows a 10th file, or different content in any of
+  these 9, THAT is the signal to stop and investigate — not the mere
+  presence of uncommitted changes there. Do not stage/commit/discard
+  anything in the main repo directory under any circumstances — that rule
+  was already standing; this is a reminder that "someone else's WIP sitting
+  right there" is exactly the situation where a well-intentioned cleanup
+  impulse could cause real damage.
 
 ---
 
