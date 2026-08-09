@@ -12,6 +12,8 @@ jobs:
   health-check:
     name: Endpoint Health Check
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
       # ── Check 1: Backend /ping ──────────────────────────────────────────────

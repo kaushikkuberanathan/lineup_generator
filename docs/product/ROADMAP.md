@@ -1,11 +1,40 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: 2026-08-06 (v2.8.5 - Phase 4 var C legacy color-object retirement complete, Story 104.1, Story 119 - develop only, not yet promoted)
+> Last updated: 2026-08-08 (v2.9.0 merged to develop - security hardening, team-deletion safety, identity data integrity; not yet promoted to main)
 > MVP launched: March 24, 2026
 
 ---
 
-## v2.8.5 - 2026-08-06 - Phase 4 var C legacy color-object retirement complete, Story 104.1, AboutTab regression fix (develop only — not yet promoted)
+## v2.9.0 - 2026-08-08 - Security hardening, team-deletion safety, identity data integrity (develop only — not yet promoted to main)
+
+**Minor bump, not patch** — this release bundles more than the security-hardening batch it started as: a database schema change (#375), a backend routing change and a security-policy change (#380), on top of the CodeQL remediation batch and routine dependency bumps below. First time this repo has deliberately sized a version bump to the release's actual scope rather than defaulting to the smallest label.
+
+**Security hardening batch merged to `develop`** (PR [#652](https://github.com/kaushikkuberanathan/lineup_generator/pull/652), regular merge, `495cd5d`) — verified as a genuine 2-parent merge (manual check + the repo's own squash-merge CI guardrail, both green). **Not yet promoted to `main` — 24h soak override issued 2026-08-08 (fall season readiness), see version-bump PR for the explicit override log.**
+
+- Resolved 12 of 14 open CodeQL security alerts:
+  - **Rate limiting** — `POST /request-access` had none; added an email-keyed limiter (10 req/60min), mirroring `loginLimiter`'s proven design (alert #10).
+  - **Log injection (CWE-134)** — 5 sites in `backend/src/routes/teamData.js` interpolated an attacker-controlled `teamId` into the first argument of `console.error` alongside a second argument; Node's `util.format` substitution could corrupt the logged error field. Changed to pass `{ teamId, error }` as a structured object (alerts #6, #7, #8, #18, #19).
+  - **Insecure randomness** — `DugoutView.jsx`'s `scorer_local_id` generator used `Math.random()`. Replaced with `crypto.randomUUID()` (alert #9). **CI caught a fresh alert** on the legacy-browser fallback branch (deliberately kept per spec) — the fallback also used `Math.random()`, and CodeQL's taint tracking flags that regardless of whether the branch is a fallback. Fixed by using `crypto.getRandomValues()` in the fallback too, eliminating the insecure path entirely rather than dismissing the alert.
+  - **CI workflow permissions** — 8 jobs across `.github/workflows/{ci,health-check,health}.yml` had no explicit `permissions:` block; added `contents: read` to each after tracing every step to confirm none need broader scope (alerts #1, #3, #14, #16, #17).
+- **Deliberately deferred, tracked as open follow-up, NOT silently dropped**: 2 of the 14 alerts (`POST /logout`, `GET /me` — both js/missing-rate-limiting) remain open. Both routes already sit behind `requireAuth`; rate-limiting them needs user-id-keyed limiting with its own budget (GET /me is called on every session resume), not a reuse of `/request-access`'s email-keyed design. Tracked under [#651](https://github.com/kaushikkuberanathan/lineup_generator/issues/651) — that issue stays open until resolved or explicitly re-scoped.
+- **Filed as a separate, standalone finding, NOT fixed here**: the share-link ID generator (`App.jsx:generateShareId`) also uses `Math.random()`. Share IDs are the sole access-control mechanism for unauthenticated team-data viewing per the Auth Principle, so this is a real finding — but `App.jsx` is a locked file and this needs its own dedicated, explicitly-gated session. Filed as [#650](https://github.com/kaushikkuberanathan/lineup_generator/issues/650).
+- Every fix has a dedicated regression test, RED→GREEN-verified against the reverted source (not just "test passes now"). Full suite clean: 1027 frontend (85 files) + 125 backend unit, 0 regressions.
+- **Doc corrections made during this release's docs pass, pre-existing and unrelated to this release's own changes**: `backend/CLAUDE.md` and `docs/product/FEATURE_MAP.md` were both missing `teamData.delete.test.js` (6 tests, pre-existing) from their backend test inventories, and both mislabeled `normalizeRole.test.js`'s count as 13 instead of its actual 34. Both corrected.
+
+**Team-deletion safety (#380)** — 3 PRs (#642, #646, #647), also on `develop`:
+- Team deletion now routes through a backend `service_role` endpoint instead of the anon/authenticated client SDK; `admin.html` updated to use the same backend route.
+- Migration 021 (revoke the anon/authenticated DELETE grant on `teams`) was applied to **production once, then immediately reverted the same session** — its own header explains why: the backend route it depends on was only live on `develop`, not `main`, and Render deploys from `main`. Applying the revoke without that route live in production would have left team deletion with **no working path at all**, for every role, not a silent partial failure. **Re-applying migration 021 to production is a distinct, later, manual step** — only after this release promotes to `main` and Render has redeployed with the new route confirmed live there. It is explicitly not part of this release.
+- Issue #380 stays open until that re-apply happens.
+
+**Identity data integrity (#375)** — migration 020, **already applied to both DEV and PROD 2026-08-07**: adds a CHECK constraint requiring every `team_memberships` row to carry a real identity (user_id or email) — closes the gap that let an orphaned admin-role row with neither exist. Issue #375 is closed; nothing outstanding.
+
+**Routine dependency updates**: react-icons, csv-parse, libphonenumber-js, and the Supabase CLI GitHub Action.
+
+---
+
+## v2.8.5 - 2026-08-06 - Phase 4 var C legacy color-object retirement complete, Story 104.1, AboutTab regression fix
+
+**Promoted to `main` 2026-08-07** (PR #619, regular merge, `06030c1`) — verified as a genuine 2-parent merge. Post-promote sync: PR #630.
 - Internal only, no user-facing change, except one real bug fix (see below).
 - **Phase 4 `var C` legacy color-object retirement complete** - all originally-planned regions plus a follow-up sweep migrated to the shared design-token system, all zero-visible-change reference swaps: Schedule tab (slice 4, #545), Lineups + Links tabs (slice 5, #546), Feedback/About/Account/Updates tabs (slice 6, #547), Modals/overlays (slice 7), SharedView public share-link page (slice 9, Story 120/#531). **Slice 10** (#606) retired the final 89 `C.*` occurrences across 5 render functions never assigned to any of the original 9 planned slices (renderSongs, renderSnackDuty, renderPinModal, renderTeamTab, renderBottomNav) plus 2 literal-hex bypass sites - `var C` now has zero remaining call sites anywhere in `App.jsx`. Slice 8 (GameModeScreen/DugoutView, Story 116/#503) - the one region formally carved out as its own numbered slice - is not itself part of slice 10's swept functions; whether its own separate inheritance-verification methodology (Story 114's Step 1/2) still needs to run against that surface is an open question this release does not resolve.
 - **Story 119 resolved**: minted `color.brand.gradientDark` and swapped the app-shell root background gradient's third stop to use it (#530/#598).

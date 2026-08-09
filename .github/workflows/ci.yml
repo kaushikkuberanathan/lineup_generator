@@ -13,6 +13,8 @@ jobs:
   frontend:
     name: Frontend Tests (Vitest)
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v7
 
@@ -60,6 +62,8 @@ jobs:
     name: Backend Integration Tests (CI_SAFE, prod read-only)
     runs-on: ubuntu-latest
     if: github.actor != 'dependabot[bot]'
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v7
 
@@ -223,7 +227,7 @@ jobs:
       - name: Install postgresql-client (psql)
         run: sudo apt-get update && sudo apt-get install -y postgresql-client
 
-      - uses: supabase/setup-cli@v1
+      - uses: supabase/setup-cli@v3
         with:
           version: 2.84.2
 
@@ -262,6 +266,8 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     needs: [frontend, backend, backend-unit]
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v7
 

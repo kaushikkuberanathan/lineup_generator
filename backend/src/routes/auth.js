@@ -68,6 +68,20 @@ const loginLimiter = rateLimit({
   keyGenerator: (req) => (hasEmail(req) ? req.body.email.trim().toLowerCase() : ipKeyGenerator(req.ip)),
 });
 
+// /request-access is a one-time signup action, not a repeated auth flow, so
+// the budget is looser than loginLimiter's — but the keying rationale above
+// (email, not IP; skip() over IP-fallback for the no-email case) applies
+// identically here and is replicated verbatim rather than re-derived.
+const requestAccessLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  message: { error: 'TOO_MANY_ATTEMPTS', message: 'Too many access requests. Please try again in an hour.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => !hasEmail(req),
+  keyGenerator: (req) => (hasEmail(req) ? req.body.email.trim().toLowerCase() : ipKeyGenerator(req.ip)),
+});
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 /**
@@ -99,6 +113,7 @@ function normalizeContact(body, channel) {
 
 router.post(
   '/request-access',
+  requestAccessLimiter,
   [
     body('firstName').notEmpty().trim().escape(),
     body('lastName').notEmpty().trim().escape(),

@@ -85,11 +85,26 @@ export function DugoutView({
       var k = 'scorer_local_id';
       var existing = localStorage.getItem(k);
       if (existing) return existing;
-      var generated = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-        var r = Math.random() * 16 | 0;
-        var v = c === 'x' ? r : (r & 0x3 | 0x8);
-        return v.toString(16);
-      });
+      var generated = (typeof crypto !== 'undefined' && crypto.randomUUID)
+        ? crypto.randomUUID()
+        // Fallback for browsers without crypto.randomUUID (very old
+        // Safari/iOS) — crypto.getRandomValues() has far wider support
+        // (available since ~2011-2013) and is still cryptographically
+        // secure, unlike Math.random(). CodeQL flags any Math.random()
+        // flow into an identity field regardless of whether it's a
+        // fallback branch, so this avoids that path entirely rather than
+        // accepting it as a deliberate risk.
+        : (function() {
+            var bytes = new Uint8Array(16);
+            crypto.getRandomValues(bytes);
+            bytes[6] = (bytes[6] & 0x0f) | 0x40; // version 4
+            bytes[8] = (bytes[8] & 0x3f) | 0x80; // variant 8/9/a/b
+            var hex = Array.prototype.map.call(bytes, function(b) {
+              return b.toString(16).padStart(2, '0');
+            }).join('');
+            return hex.slice(0, 8) + '-' + hex.slice(8, 12) + '-' + hex.slice(12, 16) +
+              '-' + hex.slice(16, 20) + '-' + hex.slice(20);
+          })();
       localStorage.setItem(k, generated);
       return generated;
     } catch(e) {

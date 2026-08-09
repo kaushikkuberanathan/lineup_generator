@@ -114,7 +114,13 @@ A second, hermetic test system runs alongside the integration runner:
 - **Env**: still needs `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` / `SUPABASE_ANON_KEY` set, because `src/lib/env.js` + `src/lib/supabase.js` throw at import. Tests never make a real Supabase or network call — they either short-circuit before the client (auth-rejection in `requireAuth.js`) or monkey-patch the seams (`supabaseAdmin.from` / `supabaseAdmin.rpc` / `supabaseAnon.auth.signInWithOtp` / `global.fetch`). `supabaseAdmin` is a shared singleton, so patching `.from` also intercepts `logAuthEvent`'s `auth_events` write. Dummy non-empty values work anywhere.
 - **File convention**: specs live in `src/__tests__/*.test.js` (the `test:unit` glob) — use this path, **not** `src/tests/`.
 
-Unit suite total: **111** (verified via `npm run test:unit`, 2026-07-31 — 0 fail / 0 skipped). Story 99 closed this date; see ROADMAP.md Story 99 for the closure writeup and the new follow-up story for admin.js's remaining success-path gap.
+Unit suite total: **125** (verified via `npm run test:unit`, 2026-08-08 — 0 fail / 0 skipped). Story 99 closed 2026-07-31; see ROADMAP.md Story 99 for the closure writeup and the new follow-up story for admin.js's remaining success-path gap.
+
+**Two corrections made 2026-08-08 (v2.9.0 release-prep docs pass), both pre-existing and unrelated to that release's own changes:**
+1. `teamData.delete.test.js` (6 tests, covers `DELETE /api/v1/teams/:teamId`, #380) already existed in the repo but was missing from this table entirely — added below.
+2. `normalizeRole.test.js` was labeled `(13)` but actually has **34** tests — node's test runner counts subtests nested under `describe()` blocks, and the per-file label was never updated even though the table's own aggregate total already reflected the correct number. Corrected below.
+
+Per-file counts below verified individually via `node --test <file>` on 2026-08-08, not estimated from source.
 
 | Spec | Covers |
 |------|--------|
@@ -122,15 +128,18 @@ Unit suite total: **111** (verified via `npm run test:unit`, 2026-07-31 — 0 fa
 | `teamData.guard.test.js` (12) | `rosterWipeGuard` unit suite + `isAdminRequest` truth table — direct unit tests (the route-level 403 is unreachable in-process; see `teamData.routes.test.js` header). |
 | `teamData.envGuard.test.js` (2) | Production-mode `FORBIDDEN_TEST_DATA` rejection for test team IDs on POST + GET. |
 | `teamData.routes.test.js` (6) | Route-level `POST/GET /api/v1/teams/:id` (+ legacy `/api/teams`): 409 wipe-guard, `force` override, dual-mount smoke, DB-error 500, history limit clamp. `supabaseAdmin.from`/`.rpc` monkey-patched. |
+| `teamData.delete.test.js` (6) | **Pre-existing, added to this table 2026-08-08 (was undocumented).** Route-level `DELETE /api/v1/teams/:teamId` (#380): no-token 401, non-admin 403, authenticated-admin 200 + delete call, membership-check DB error 500, delete-itself DB error 500, legacy `/api/teams` dual-mount smoke. `requireAuth` stubbed via `supabaseAdmin.auth.getUser`. |
 | `aiProxy.test.js` (6) | `POST /api/ai`: 503 unconfigured, **413 oversize (v2.2.4 regression guard)**, 400 bad type, 200 upstream status/body relay + call-shape (`claude-sonnet-4-6`, max_tokens, content), 504 AbortError, 502 unreachable. `global.fetch` stubbed; `ANTHROPIC_API_KEY` save/restore. |
 | `auth.happy.test.js` (4) | `POST /request-access` 201/409 + `POST /magic-link` 200/403. Hermetic via shared-`supabaseAdmin` patch (also covers `logAuthEvent`), `signInWithOtp` stub, and `global.fetch` stub for the Resend send. |
 | `approve.role.test.js` (6) | `POST /api/v1/approve` role-transition behavior. Landed between Phase 2 tranche 2 and Story 99's closure without a doc update — backfilled here 2026-07-31. |
 | `approveLink.role.test.js` (7) | `GET /api/v1/admin/approve-link` role-transition behavior (the public 1-tap email link). Backfilled 2026-07-31 — see note above. |
 | `requestAccess.role.test.js` (7) | `POST /api/v1/request-access` role validation. Backfilled 2026-07-31 — see note above. |
-| `normalizeRole.test.js` (13) | `normalizeRole()` — the code-level enforcement of the four-role model documented in root `CLAUDE.md` → Multi-team design. Backfilled 2026-07-31 — see note above. |
+| `requestAccessLimiter.test.js` (3) | **NEW 2026-08-08 (v2.9.0 security hardening).** `requestAccessLimiter` (auth.js) — same email-keyed design as `loginLimiter`, 10 req/60min. Same-email exhaustion (429 on 11th), a different email unaffected by another's exhausted budget, phone-only requests exempt via `skip()`. RED→GREEN verified. |
+| `normalizeRole.test.js` (34) | `normalizeRole()` — the code-level enforcement of the four-role model documented in root `CLAUDE.md` → Multi-team design. Backfilled 2026-07-31 — see note above. Count corrected 2026-08-08 (was mislabeled `13`; see correction note above the table). |
 | `loginLimiter.test.js` (3) | **NEW 2026-07-31.** `loginLimiter` (auth.js) keyed by email, not IP — Story 26 fix. Same email exhausts its own budget (429 on the 6th attempt); a different email is unaffected by another's exhausted budget (the actual bug); no-email requests are exempt via `skip()`. RED→GREEN mutation-verified. |
 | `auth.session.test.js` (8) | **NEW 2026-07-31.** `GET /me`, `PATCH /me`, `POST /logout` — zero prior coverage. Hydrated-user happy path, missing-profile non-crash, validation and not-found paths, and 401 rejection for all three routes. |
 | `feedback.test.js` (7) | **NEW 2026-07-31.** `POST /api/v1/feedback` — zero prior coverage. Valid submission, optional fields, validation, DB-error, 401 rejection, and **FB-7**: regression guard for the admin.js mount-order bug this file's authoring discovered (see Zero-Downtime / app.js note below) — a non-admin coach must reach 201, not 403. |
+| `teamData.logInjection.test.js` (5) | **NEW 2026-08-08 (v2.9.0 security hardening).** Log-injection fix (CWE-134) at the 5 `console.error` sites in `teamData.js` — spies on `console.error`, asserts `{ teamId, error }` is passed as a structured second argument (not interpolated into the message string) using a `teamId` containing `%s`. |
 
 **CI**: the `backend-unit` job in `.github/workflows/ci.yml` runs `npm run test:unit` on every push/PR — hermetic, no Render dependency (unlike the integration `backend` job that polls prod). It gates the sync-script and main-deploy (smoke) jobs.
 
@@ -160,6 +169,27 @@ Unit suite total: **111** (verified via `npm run test:unit`, 2026-07-31 — 0 fa
   and confirmed live on PROD via a direct query (KK). PR #486 documented
   PROD as pending at the time it merged; that framing is now corrected —
   see the migration file's own header for the full chain of evidence.
+- **`018_auto_provision_team_membership_on_create.sql` — APPLIED TO DEV
+  2026-08-06 AND PROD 2026-08-07.** Fixes #561: `createTeam()`'s self-serve
+  flow never provisioned a `team_memberships` row for the creator, so a
+  coach's first `team_data` save for a newly-created team was silently
+  RLS-denied by `team_data_auth_insert`'s WITH CHECK. A `SECURITY DEFINER`
+  `AFTER INSERT` trigger (`handle_new_team`) on `public.teams` now
+  auto-provisions `role=admin`/`status=active` membership for `auth.uid()`.
+  A second, more severe bug found investigating this (`dbSaveTeams()`'s
+  `.upsert(onConflict)` call shape was unconditionally RLS-denied for
+  *every* new team, not just a second one — Postgres enforces the UPDATE
+  policy's WITH CHECK for `INSERT ... ON CONFLICT DO UPDATE` even when no
+  conflict occurs) was fixed separately in `frontend/src/supabase.js`
+  (plain INSERT with a conflict-only UPDATE fallback). RED→GREEN verified
+  via the new `backend/src/__tests__/rls/teamMembershipAutoProvision.test.js`
+  (TM1-TM4) against DEV before either fix; prod apply verified read-only
+  (`pg_trigger`/`pg_proc` catalog check, no test writes against prod data).
+  **Not backfilled, and not possible to backfill:** `teams.owner_id` is
+  always `''`, never populated by any write path, so already-broken
+  membership-less teams created before this fix cannot be traced back to
+  their creator automatically — recovering those needs a manual admin
+  action per affected team.
 
 ### !! FIVE NUMERIC COLLISIONS ACROSS THE TWO TREES !!
 

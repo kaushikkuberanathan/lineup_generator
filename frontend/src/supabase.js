@@ -5,6 +5,7 @@ import { createClient } from '@supabase/supabase-js';
 
 var supabaseUrl  = import.meta.env.VITE_SUPABASE_URL  || '';
 var supabaseKey  = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+var BACKEND_URL  = import.meta.env.VITE_BACKEND_URL || 'https://lineup-generator-backend.onrender.com';
 
 export var supabase = supabaseUrl && supabaseKey
   ? createClient(supabaseUrl, supabaseKey)
@@ -16,43 +17,73 @@ export var isSupabaseEnabled = !!(supabaseUrl && supabaseKey);
 
 export function dbSaveTeams(teams) {
   if (!supabase) { return Promise.resolve(); }
-  // Upsert all teams — no-op if already exists with same data
-  return supabase.from('teams').upsert(
-    teams.map(function(t) {
-      return {
-        id:         t.id,
-        name:       t.name,
-        age_group:  t.ageGroup || '',
-        year:       t.year || new Date().getFullYear(),
-        sport:      t.sport || 'baseball'
-      };
-    }),
-    { onConflict: 'id' }
-  ).then(function(r) {
-    if (r.error) {
-      console.warn('[DB] saveTeams error:', r.error);
-      var err = new Error(r.error.message || 'write failed');
-      err.code = r.error.code;
+  // Insert first, fall back to UPDATE only on a real conflict (23505).
+  // NOT upsert(onConflict) — Postgres enforces the UPDATE policy's WITH
+  // CHECK for INSERT ... ON CONFLICT DO UPDATE even when no conflict
+  // occurs (documented Postgres RLS behavior, confirmed empirically
+  // against a real project while investigating #561). teams_auth_update
+  // requires an existing active admin/coach team_memberships row — a
+  // brand-new team never has one yet, so that upsert was unconditionally
+  // RLS-denied for every new team, not just the "second team" case #561
+  // was filed against. A plain INSERT for the new-team case never invokes
+  // the UPDATE policy at all; only a genuine pre-existing row falls back
+  // to an explicit UPDATE, which still correctly requires real membership.
+  return Promise.all(teams.map(function(t) {
+    var row = {
+      id:         t.id,
+      name:       t.name,
+      age_group:  t.ageGroup || '',
+      year:       t.year || new Date().getFullYear(),
+      sport:      t.sport || 'baseball'
+    };
+    return supabase.from('teams').insert(row).then(function(r) {
+      if (r.error && r.error.code === '23505') {
+        return supabase.from('teams').update(row).eq('id', t.id);
+      }
+      return r;
+    });
+  })).then(function(results) {
+    var failed = results.find(function(r) { return r.error; });
+    if (failed) {
+      console.warn('[DB] saveTeams error:', failed.error);
+      var err = new Error(failed.error.message || 'write failed');
+      err.code = failed.error.code;
       err.operation = 'dbSaveTeams';
       throw err;
     }
-    return r;
+    return results;
   });
 }
 
 export function dbDeleteTeam(teamId) {
   if (!supabase) { return Promise.resolve(); }
-  return supabase.from('teams').delete().eq('id', teamId)
-    .then(function(r) {
-      if (r.error) {
-        console.warn('[DB] deleteTeam error:', r.error);
-        var err = new Error(r.error.message || 'write failed');
-        err.code = r.error.code;
-        err.operation = 'dbDeleteTeam';
-        throw err;
-      }
-      return r;
+  // Routed through the backend's service_role DELETE route (#380) — not a
+  // direct Supabase write. Session is read internally via supabase.auth
+  // .getSession() so this function's signature/call sites stay unchanged.
+  return supabase.auth.getSession().then(function(sessionResult) {
+    var session = sessionResult.data && sessionResult.data.session;
+    if (!session) {
+      var authErr = new Error('Not signed in');
+      authErr.code = 'NO_SESSION';
+      authErr.operation = 'dbDeleteTeam';
+      throw authErr;
+    }
+    return fetch(BACKEND_URL + '/api/v1/teams/' + teamId, {
+      method: 'DELETE',
+      headers: { Authorization: 'Bearer ' + session.access_token }
+    }).then(function(res) {
+      return res.json().catch(function() { return {}; }).then(function(body) {
+        if (!res.ok) {
+          console.warn('[DB] deleteTeam error:', body);
+          var err = new Error(body.message || body.error || 'write failed');
+          err.code = body.error || String(res.status);
+          err.operation = 'dbDeleteTeam';
+          throw err;
+        }
+        return body;
+      });
     });
+  });
 }
 
 export function dbLoadTeams() {
