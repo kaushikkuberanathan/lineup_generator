@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-03T13:49:26.282Z",
+  "generatedAt": "2026-08-10T12:01:08.549Z",
   "repository": "kaushikkuberanathan/lineup_generator",
   "sourceBranch": "develop",
   "windowMonths": 6,
@@ -204,74 +204,114 @@
     {
       "key": "2026-08",
       "label": "Aug 2026",
-      "mergedPullRequests": 25,
-      "productImprovements": 2,
-      "productionReleases": 1,
-      "qualityImprovements": 29,
-      "developmentCommits": 31,
-      "otherPullRequests": 24,
+      "mergedPullRequests": 122,
+      "productImprovements": 19,
+      "productionReleases": 4,
+      "qualityImprovements": 126,
+      "developmentCommits": 145,
+      "otherPullRequests": 118,
       "releaseNotes": [
         {
-          "number": 499,
-          "title": "Release 2.8.3 — Non-admin coaches' feedback/bug-report submissions were silently returning 403 since a router mount-order issue",
-          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/499"
+          "number": 661,
+          "title": "Release v2.9.0: security hardening, team-deletion safety, identity data integrity",
+          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/661"
+        },
+        {
+          "number": 619,
+          "title": "Release v2.8.5: Phase 4 var C retirement complete, Story 104.1, AboutTab fix",
+          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/619"
+        },
+        {
+          "number": 560,
+          "title": "release: v2.8.4 - promote develop to main",
+          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/560"
         }
       ],
       "highlights": [
         {
-          "number": 499,
-          "title": "Release 2.8.3 — Non-admin coaches' feedback/bug-report submissions were silently returning 403 since a router mount-order issue",
-          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/499"
+          "number": 661,
+          "title": "Release v2.9.0: security hardening, team-deletion safety, identity data integrity",
+          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/661"
+        },
+        {
+          "number": 619,
+          "title": "Release v2.8.5: Phase 4 var C retirement complete, Story 104.1, AboutTab fix",
+          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/619"
+        },
+        {
+          "number": 560,
+          "title": "release: v2.8.4 - promote develop to main",
+          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/560"
         }
       ]
     }
   ],
   "totals": {
-    "mergedPullRequests": 322,
-    "productImprovements": 147,
-    "productionReleases": 47,
-    "qualityImprovements": 570,
-    "developmentCommits": 717
+    "mergedPullRequests": 419,
+    "productImprovements": 164,
+    "productionReleases": 50,
+    "qualityImprovements": 667,
+    "developmentCommits": 831
   },
   "currentMonth": {
     "key": "2026-08",
     "label": "Aug 2026",
-    "mergedPullRequests": 25,
-    "productImprovements": 2,
-    "productionReleases": 1,
-    "qualityImprovements": 29,
-    "developmentCommits": 31,
-    "otherPullRequests": 24,
+    "mergedPullRequests": 122,
+    "productImprovements": 19,
+    "productionReleases": 4,
+    "qualityImprovements": 126,
+    "developmentCommits": 145,
+    "otherPullRequests": 118,
     "releaseNotes": [
       {
-        "number": 499,
-        "title": "Release 2.8.3 — Non-admin coaches' feedback/bug-report submissions were silently returning 403 since a router mount-order issue",
-        "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/499"
+        "number": 661,
+        "title": "Release v2.9.0: security hardening, team-deletion safety, identity data integrity",
+        "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/661"
+      },
+      {
+        "number": 619,
+        "title": "Release v2.8.5: Phase 4 var C retirement complete, Story 104.1, AboutTab fix",
+        "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/619"
+      },
+      {
+        "number": 560,
+        "title": "release: v2.8.4 - promote develop to main",
+        "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/560"
       }
     ],
     "highlights": [
       {
-        "number": 499,
-        "title": "Release 2.8.3 — Non-admin coaches' feedback/bug-report submissions were silently returning 403 since a router mount-order issue",
-        "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/499"
+        "number": 661,
+        "title": "Release v2.9.0: security hardening, team-deletion safety, identity data integrity",
+        "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/661"
+      },
+      {
+        "number": 619,
+        "title": "Release v2.8.5: Phase 4 var C retirement complete, Story 104.1, AboutTab fix",
+        "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/619"
+      },
+      {
+        "number": 560,
+        "title": "release: v2.8.4 - promote develop to main",
+        "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/560"
       }
     ]
   },
   "latestReleaseNotes": [
     {
-      "number": 499,
-      "title": "Release 2.8.3 — Non-admin coaches' feedback/bug-report submissions were silently returning 403 since a router mount-order issue",
-      "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/499"
+      "number": 661,
+      "title": "Release v2.9.0: security hardening, team-deletion safety, identity data integrity",
+      "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/661"
     },
     {
-      "number": 414,
-      "title": "Release 2.8.0 — Set your name",
-      "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/414"
+      "number": 619,
+      "title": "Release v2.8.5: Phase 4 var C retirement complete, Story 104.1, AboutTab fix",
+      "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/619"
     },
     {
-      "number": 409,
-      "title": "Release 2.7.0 — Google sign-in",
-      "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/409"
+      "number": 560,
+      "title": "release: v2.8.4 - promote develop to main",
+      "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/560"
     }
   ]
 }
