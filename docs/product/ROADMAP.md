@@ -4479,6 +4479,56 @@ resolved, on 2026-08-08. Revisit this decision explicitly when Phase 4
 unblocks - do not silently reverse Option B as part of unrelated work.
 
 ---
+### Story 126 (P2) - RequestAccessScreen: preserveSession success gave no visible confirmation <!-- #665 -->
+Status: Open - fix implemented locally on develop working tree, pending commit/PR.
+Discovered: 2026-08-10, session testing Story 124/#655's preserveSession path.
+Symptom: On a successful `preserveSession=true` submission (an already-
+authenticated coach requesting a 2nd team), the form gave no visible
+feedback - loading flipped back to false, the button reset, and nothing else
+happened. A stale comment (`// On success, useAuth sets authState →
+'pending_approval'`) no longer matched this path, since preserveSession
+keeps the existing session instead of transitioning authState.
+Impact: From the coach's perspective, submitting the request was
+indistinguishable from nothing having happened - no confirmation the
+request was sent.
+Root cause: The preserveSession success branch never diverged from the
+default (pre-auth) success branch, which relies on useAuth's authState
+transition to route to PendingApprovalScreen. That transition doesn't apply
+when the session is preserved.
+Proposed fix: Added `submitted` state, set only on preserveSession success;
+conditionally renders an inline "Request Sent" confirmation card in place of
+the form. Corrected the stale comment to document both paths explicitly.
+File: `frontend/src/components/Auth/RequestAccessScreen.jsx`.
+Recommendation: Ship as implemented. Zero test coverage on the new
+confirmation state - tracked as part of #664 (Story 124 follow-up test
+debt), not blocking since it's UI-only and was verified by eye.
+
+---
+### Story 127 (P3) - Home team card "..." menu (Edit/Delete team) not role-gated <!-- #666 -->
+Status: Open - filed, not built.
+Discovered: 2026-08-11, during local testing of Story 124/#655.
+Symptom: The team card's "..." menu (Edit team, Download backup, Delete
+team) - rendered inline inside `renderHome()`'s team-list map in
+`frontend/src/App.jsx` (~lines 2963-3003) - is shown unconditionally for
+every fully-hydrated card, with no role check anywhere in that block. A
+viewer-role member (read-only by design) sees the exact same Edit/Delete
+options as an admin or coach.
+Impact: Found while testing Story 124's search+request-access flow - after
+being approved as viewer on a team, that team's card showed the full "..."
+menu including Delete team, same as any other role. Any restriction, if one
+exists, would have to live somewhere else in the write path, not in this
+menu's visibility.
+Root cause: Pre-existing - this menu's role-agnostic rendering predates
+Story 124 and isn't something that session introduced.
+Proposed fix: Gate the "..." menu (or at minimum the Delete/Edit actions
+inside it) on the current user's role for that team_id, once memberships
+are available in `renderHome()`'s render scope.
+Recommendation: Not urgent - file and track. Related to the broader
+role-scoped-grants work tracked in Story 125/#656, though this specific gap
+is simpler - it's card-level UI visibility, not the deeper domain-permission
+model Story 125 covers.
+
+---
 ### Automated Score Reporting (County Integration)
 **Status:** Architecture finalized, implementation pending
 **Trigger:** Coach taps "Report Score" on a completed game
