@@ -12,8 +12,10 @@
  *   - The richer conceptual model (Head Coach, Coordinator, etc.) is a LABEL
  *     layer on top of these strings — no DB migration.
  *   - Scoring is a per-game CAPABILITY (scorer lock), not a role. Any viewer
- *     (parent) can score. 'scorekeeper' stays a valid string for legacy rows
- *     but is no longer offered as a request-access option.
+ *     (parent) can score. 'scorekeeper' is a valid canonical string and IS
+ *     offered as a request-access option again as of 2026-08-08 (Story
+ *     124/#655) — see docs/product/AUTH_SECURITY_AUDIT_ROADMAP.md's "Scoring
+ *     is a capability, not a role" section for the reconciliation note.
  *   - platform_admin is a GLOBAL capability, NOT a team-membership role. It must
  *     never be written into team_memberships.
  *
