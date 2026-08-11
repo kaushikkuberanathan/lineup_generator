@@ -51,6 +51,7 @@ export function RequestAccessScreen({
   const [teamId, setTeamId]       = useState(preselectedTeam ? preselectedTeam.id : '');
   const [loading, setLoading]     = useState(false);
   const [error, setError]         = useState('');
+  const [submitted, setSubmitted] = useState(false);
 
   const selectedRoleOption = ROLE_OPTIONS.find(r => r.id === roleId);
 
@@ -92,14 +93,39 @@ export function RequestAccessScreen({
       }
     } else {
       track("access_requested", { team_id: teamId.trim() || TEAM_ID });
+      if (preserveSession) { setSubmitted(true); }
     }
-    // On success, useAuth sets authState → 'pending_approval'
+    // On success: preserveSession=true (already-authenticated coach requesting
+    // a 2nd team) shows the inline confirmation below, added 2026-08-11.
+    // preserveSession=false (the default, pre-auth flow) is unchanged —
+    // useAuth still sets authState → 'pending_approval', which App.jsx
+    // renders as PendingApprovalScreen.
   }
 
   return (
     <div style={styles.container}>
       <div style={styles.card}>
 
+        {preserveSession && submitted ? (
+        <div style={styles.header}>
+          <div style={styles.logoMark}>
+            <img src="/pwa-192x192.png" alt="Dugout Lineup" width="56" height="56" />
+          </div>
+          <h1 style={styles.title}>Request Sent</h1>
+          <p style={styles.subtitle}>
+            {preselectedTeam ? preselectedTeam.name : 'Your request'} · Pending approval
+          </p>
+          <p style={{ ...styles.note, marginTop: '16px' }}>
+            You&apos;ll get an email once your request to join{' '}
+            {preselectedTeam ? preselectedTeam.name : 'this team'} as{' '}
+            {selectedRoleOption.label} is approved — usually within a few hours.
+          </p>
+          <button type="button" style={{ ...styles.primaryBtn, marginTop: '20px' }} onClick={onBack}>
+            Done
+          </button>
+        </div>
+        ) : (
+        <>
         <div style={styles.header}>
           <div style={styles.logoMark}>
             <img src="/pwa-192x192.png" alt="Dugout Lineup" width="56" height="56" />
@@ -207,6 +233,9 @@ export function RequestAccessScreen({
           The head coach will review your request and you&apos;ll receive an email
           when approved — usually within a few hours.
         </p>
+
+        </>
+        )}
 
       </div>
     </div>
