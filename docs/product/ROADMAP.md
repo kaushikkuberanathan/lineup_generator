@@ -4529,6 +4529,27 @@ is simpler - it's card-level UI visibility, not the deeper domain-permission
 model Story 125 covers.
 
 ---
+### Story 128 (P3) - Local backend SUPABASE_TARGET dev/prod toggle <!-- #668 -->
+Status: Open - implemented, PR pending merge to develop.
+Discovered: 2026-08-11, local backend testing session.
+Symptom: Testing the backend locally against dugout-lineup-dev required
+either hardcoding dev Supabase credentials over prod ones in a single
+.env file, or manually swapping values back and forth between test runs -
+easy to leave misconfigured and accidentally point a local process at
+production.
+Impact: Dev-tooling only, no user-facing impact. Reduces risk of a local
+process accidentally writing to production Supabase during testing.
+Root cause: N/A - tooling gap, not a bug.
+Proposed fix: Optional SUPABASE_TARGET env var in `backend/src/lib/env.js`
+selects between SUPABASE_*_DEV and SUPABASE_*_PROD suffixed vars when set;
+falls through unchanged to the plain SUPABASE_* vars when unset, verified
+via isolated `node -e` checks (target unset + plain vars present -> no
+throw, values byte-for-byte untouched). Render never sets SUPABASE_TARGET,
+so production is unaffected regardless.
+Recommendation: Ship as implemented. Dev-tooling only, no test suite impact
+expected.
+
+---
 ### Automated Score Reporting (County Integration)
 **Status:** Architecture finalized, implementation pending
 **Trigger:** Coach taps "Report Score" on a completed game
