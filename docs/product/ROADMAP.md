@@ -4241,7 +4241,7 @@ mint or swap the call site without an explicit go on the proposed name.
 
 ---
 ### Story 120 (P2) - SharedView duplicate header: dedicate as region slice 9 (App.jsx var C sweep) <!-- #531 -->
-Status: Open
+Status: Resolved — shipped via PR #591, part of the v2.8.5 Phase 4b promote to `main` (PR #619, 2026-08-07)
 Discovered: 2026-08-02 (Story 114's Step 1 structural search, DESIGN_AUDIT.md), disposition confirmed 2026-08-04.
 Target: resolve before the App.jsx var C sweep can claim full coverage - sequenced
 after slice 7, does not block slices 1-8.
@@ -4431,7 +4431,7 @@ schema.sql gets re-captured again in the future.
 
 ---
 ### Story 124 (P2) - Home tab team search + request-access discovery <!-- #655 -->
-Status: Open - backend route in progress (T1), frontend UI in progress (T2).
+Status: Resolved — shipped via PR #663, merged to develop.
 Branch: `claude/role-access-model-evolution-8a855d`.
 Discovered: 2026-08-08, product/architecture review session.
 Symptom: Home tab only shows teams the user is already linked to. No way to
@@ -4480,7 +4480,7 @@ unblocks - do not silently reverse Option B as part of unrelated work.
 
 ---
 ### Story 126 (P2) - RequestAccessScreen: preserveSession success gave no visible confirmation <!-- #665 -->
-Status: Open - fix implemented locally on develop working tree, pending commit/PR.
+Status: Resolved — shipped via PR #667, merged to develop.
 Discovered: 2026-08-10, session testing Story 124/#655's preserveSession path.
 Symptom: On a successful `preserveSession=true` submission (an already-
 authenticated coach requesting a 2nd team), the form gave no visible
