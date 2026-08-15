@@ -146,6 +146,20 @@ if it's done out of turn — see also §5 for the consolidated worst-case list.
    `allow_scorer_writes` catch-alls) — **only after step 3's soak is confirmed clean.**
    This is the actual #355 fix. The `public_read_*` policies' anon-viewer question
    (§1.4) is confirmed — include them in this step.
+   **Section B alone does not close the precondition — a separate GRANT-revocation step
+   is required too, confirmed by a direct read-only query against prod (2026-08-15):
+   `anon` and `authenticated` both currently hold full `TRUNCATE`/`DELETE`/`INSERT`/
+   `UPDATE` table-level grants on all four scoring tables** (`live_game_state`,
+   `game_scoring_sessions`, `scoring_audit_log`, `at_bats`) — untouched by anything in
+   this proposal or by tonight's #355 work. RLS policies and table GRANTs are
+   independent Postgres layers; dropping the anon RLS policies in Section B does not
+   revoke these grants. Matching the pattern migration 004 already used for
+   `team_data`/`teams`/`roster_snapshots` (`REVOKE TRUNCATE, DELETE ... FROM anon,
+   authenticated`, then re-grant only what `auth.uid()`-scoped policies should allow),
+   a parallel `REVOKE`/re-`GRANT` step for these four scoring tables needs its own
+   migration, drafted and sequenced alongside (not instead of) Section B before this
+   step can be considered complete. Not drafted as of this note — flagged here so
+   whoever executes step 4 doesn't miss it.
 5. **Un-skip `LS1`-`LS7`** in `policies.test.js` (remove the `{skip: '#355 tracked...'}`
    annotations) — these were committed RED-by-design specifically to go GREEN once this
    step lands; premature un-skipping before step 4 actually ships would fail the
