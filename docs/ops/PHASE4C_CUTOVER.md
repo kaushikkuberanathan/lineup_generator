@@ -7,7 +7,10 @@ When auth goes live, remove these three shims IN ORDER:
    Remove: `_effectiveUserId` and `_effectiveUserName` fallback block
    Restore: all `userId`/`userName` references back to direct param use
 
-2. `frontend/src/components/ScoringMode/index.jsx`
+2. `frontend/src/components/game-mode/DugoutView.jsx` (corrected 2026-08-15 —
+   Slice 4/v2.5.11 removed the legacy `ScoringMode/index.jsx` root this step
+   used to name; the shim now lives here, per root `CLAUDE.md`'s Live Scoring
+   Architecture section)
    Search: `"AUTH TESTING SHIM"`
    Remove: `scoringUserId`/`scoringUserName` fallback
    Change: `isEnabled = liveScoringEnabled || true`
