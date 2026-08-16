@@ -1,15 +1,31 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: 2026-08-08 (v2.9.0 merged to develop - security hardening, team-deletion safety, identity data integrity; not yet promoted to main)
+> Last updated: 2026-08-15 (v2.10.0 prepared for develop → main promotion - team search & request-access discovery, confirmation fix; v2.9.0's stale "not yet promoted" tag corrected - it promoted to main 2026-08-09, PR #661)
 > MVP launched: March 24, 2026
 
 ---
 
-## v2.9.0 - 2026-08-08 - Security hardening, team-deletion safety, identity data integrity (develop only — not yet promoted to main)
+## v2.10.0 - 2026-08-15 - Team search & request-access discovery, confirmation fix (prepared for develop → main promotion)
+
+**Minor bump** — Story 124 is a genuine new user-facing feature (team search + request-access discovery), not just a fix batch, so this follows the same "size the bump to the release's actual scope" convention established at v2.9.0.
+
+**Team search + request-access discovery (#655, Story 124)** — new `GET /api/v1/teams/search` backend route (service-role mediated, returns only `id`/`name`/`age_group`/`sport`/`year`, never `owner_id`), Home tab search entry point, role picker submitting into the existing `POST /request-access`. Frontend + backend shipped together (PR #663, backend route PR #657); see `docs/product/FEATURE_MAP.md` row 38 for test coverage.
+
+**RequestAccessScreen confirmation fix (#665, Story 126)** — `preserveSession=true` submissions (an already-authenticated coach requesting a 2nd team) gave no visible confirmation; the success path relied on a `useAuth` authState transition that doesn't apply when the session is preserved. Added a `submitted` state that renders an inline confirmation card on that path (PR #667). Zero dedicated test coverage on the new state yet — tracked as test debt (#664), not blocking since it's UI-only and was verified by eye.
+
+**Local dev tooling (#668, Story 128)** — optional `SUPABASE_TARGET` env toggle for local backend testing against `dugout-lineup-dev`, avoiding the need to overwrite production credentials in a single local `.env` file (PR #669). No production code path affected — Render never sets this variable.
+
+**Routine dependency updates**: `express-rate-limit`, `@vitest/ui`.
+
+**Docs accuracy pass**: corrected three ROADMAP.md story statuses that still read "Open" after shipping — Stories 120, 124, 126 (PR #675) — and flagged a second, independent grant-level gap on the live-scoring tables separate from the RLS-policy work tracked under #355 (PR #676). Also corrected this file's own and `CLAUDE.md`'s v2.9.0 entries, which still described that release as "not yet promoted to main" a full week after it actually promoted (PR #661, 2026-08-09) — see that entry below for what else was stale as a result.
+
+---
+
+## v2.9.0 - 2026-08-08 - Security hardening, team-deletion safety, identity data integrity (promoted to main 2026-08-09, PR #661)
 
 **Minor bump, not patch** — this release bundles more than the security-hardening batch it started as: a database schema change (#375), a backend routing change and a security-policy change (#380), on top of the CodeQL remediation batch and routine dependency bumps below. First time this repo has deliberately sized a version bump to the release's actual scope rather than defaulting to the smallest label.
 
-**Security hardening batch merged to `develop`** (PR [#652](https://github.com/kaushikkuberanathan/lineup_generator/pull/652), regular merge, `495cd5d`) — verified as a genuine 2-parent merge (manual check + the repo's own squash-merge CI guardrail, both green). **Not yet promoted to `main` — 24h soak override issued 2026-08-08 (fall season readiness), see version-bump PR for the explicit override log.**
+**Security hardening batch merged to `develop`** (PR [#652](https://github.com/kaushikkuberanathan/lineup_generator/pull/652), regular merge, `495cd5d`) — verified as a genuine 2-parent merge (manual check + the repo's own squash-merge CI guardrail, both green). 24h soak override issued 2026-08-08 (fall season readiness). **Promoted to `main` 2026-08-09** (PR [#661](https://github.com/kaushikkuberanathan/lineup_generator/pull/661), regular merge, `832dd7d`) — confirmed a genuine 2-parent merge. This line went uncorrected for a full week; caught during v2.10.0 release prep (2026-08-15).
 
 - Resolved 12 of 14 open CodeQL security alerts:
   - **Rate limiting** — `POST /request-access` had none; added an email-keyed limiter (10 req/60min), mirroring `loginLimiter`'s proven design (alert #10).
@@ -23,8 +39,9 @@
 
 **Team-deletion safety (#380)** — 3 PRs (#642, #646, #647), also on `develop`:
 - Team deletion now routes through a backend `service_role` endpoint instead of the anon/authenticated client SDK; `admin.html` updated to use the same backend route.
-- Migration 021 (revoke the anon/authenticated DELETE grant on `teams`) was applied to **production once, then immediately reverted the same session** — its own header explains why: the backend route it depends on was only live on `develop`, not `main`, and Render deploys from `main`. Applying the revoke without that route live in production would have left team deletion with **no working path at all**, for every role, not a silent partial failure. **Re-applying migration 021 to production is a distinct, later, manual step** — only after this release promotes to `main` and Render has redeployed with the new route confirmed live there. It is explicitly not part of this release.
-- Issue #380 stays open until that re-apply happens.
+- Migration 021 (revoke the anon/authenticated DELETE grant on `teams`) was applied to production once on 2026-08-08, then immediately reverted the same session — its own header explains why: at the time, the backend route it depends on was only live on `develop`, not `main`, and Render deploys from `main`. Applying the revoke without that route live in production would have left team deletion with **no working path at all**, for every role, not a silent partial failure.
+- **Correction, 2026-08-15 (v2.10.0 release-prep recon):** this release promoted to `main` on 2026-08-09 (see above) and Render's live deploy has run that code ever since (confirmed via Render's own deploy history, deploy `dep-d9ruuke417fc73alc5vg`, status `live`). A direct query against prod tonight found `anon`/`authenticated` currently hold **no** DELETE grant on `teams` — the revoke is live, not reverted, contrary to what this entry and migration 021's own header both claimed all week.
+- **Verified end-to-end against DEV the same day, not just via inspection:** created a throwaway team and deleted it through the real `DELETE /api/v1/teams/:teamId` route with a real authenticated session — mirroring `dbSaveTeams()`/`dbDeleteTeam()` exactly (plain insert, no `.select()` read-back; real `Authorization: Bearer` header), not raw SQL. Result: `200 {"ok":true}`, team confirmed gone afterward. Separately, a second throwaway authenticated user's *direct* `.from('teams').delete()` attempt (the old, pre-#380 path) was rejected with `42501 permission denied for table teams` — a genuine grant-layer denial, and the team was confirmed still present. Both throwaway teams/users cleaned up; DEV verified back to zero test artifacts. **Issue #380 is closed** (2026-08-15, full evidence on the issue) — the net state described above is now proven, not just plausible.
 
 **Identity data integrity (#375)** — migration 020, **already applied to both DEV and PROD 2026-08-07**: adds a CHECK constraint requiring every `team_memberships` row to carry a real identity (user_id or email) — closes the gap that let an orphaned admin-role row with neither exist. Issue #375 is closed; nothing outstanding.
 
@@ -4530,7 +4547,7 @@ model Story 125 covers.
 
 ---
 ### Story 128 (P3) - Local backend SUPABASE_TARGET dev/prod toggle <!-- #668 -->
-Status: Open - implemented, PR pending merge to develop.
+Status: Resolved — shipped via PR #669, merged to develop 2026-08-14.
 Discovered: 2026-08-11, local backend testing session.
 Symptom: Testing the backend locally against dugout-lineup-dev required
 either hardcoding dev Supabase credentials over prod ones in a single

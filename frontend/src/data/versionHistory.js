@@ -1,5 +1,23 @@
 export var VERSION_HISTORY = [
   {
+    version: '2.10.0',
+    date: 'August 2026',
+    headline: 'Team search & request-access discovery, confirmation fix',
+    techNote: 'Bug fixes and performance improvements',
+    userChanges: [
+      'You can now search for your team by name from the Home tab and request access, instead of needing a teammate to share a raw team ID with you.',
+      'Fixed a bug where requesting access to a second team while already signed in showed no confirmation that the request was sent.',
+    ],
+    internalChanges: [
+      'New backend route GET /api/v1/teams/search (service-role mediated) returns only id/name/age_group/sport/year for matching teams — never owner_id or other membership data (#655).',
+      'Home tab search entry point and role picker wired into the existing POST /request-access flow; frontend and backend halves shipped together (PR #663, backend route PR #657).',
+      'RequestAccessScreen.jsx: added a submitted state, set only on the preserveSession success path (an already-authenticated coach requesting a 2nd team) — previously that path relied on a useAuth authState transition that does not apply when the session is preserved, so the form silently reset with no feedback (Story 126/#665, PR #667). New confirmation state has no dedicated test yet — tracked as test debt (#664), not blocking since it is UI-only and was verified by eye.',
+      'Added an optional SUPABASE_TARGET env toggle for local backend development, so testing against the DEV Supabase project no longer requires overwriting production credentials in a single local .env file. No production code path is affected — Render never sets this variable (Story 128/#668, PR #669).',
+      'Routine dependency updates: express-rate-limit, @vitest/ui.',
+      'Documentation accuracy pass: corrected three ROADMAP.md story statuses that still read "Open" after shipping (Stories 120, 124, 126 — PR #675), and corrected CLAUDE.md\'s v2.9.0 note, which still described that release as "not yet promoted to main" a week after it actually promoted (PR #661, 2026-08-09).',
+    ],
+  },
+  {
     version: '2.9.0',
     date: 'August 2026',
     headline: 'Security hardening, team-deletion safety, and identity data integrity',
