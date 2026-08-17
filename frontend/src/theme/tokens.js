@@ -89,6 +89,7 @@ export const tokens = {
       warningBg:        '#fef3c7',               // 1x ValidationBanner.jsx — amber-100 card background
       successBorder:    'rgba(16,185,129,0.3)',  // 1x ValidationBanner.jsx — emerald-500 0.3 card border
       warningBorder:    'rgba(217,119,6,0.3)',   // 1x ValidationBanner.jsx — amber-600 0.3 card border
+      errorBorder:      'rgba(220,38,38,0.3)',   // Auth screens (Story 131/#690) — status.error (#DC2626) 0.3, mirrors successBorder's pattern; no existing token expressed an error-banner border role
 
       successText:      '#065f46',               // 1x ValidationBanner.jsx — emerald-800 success heading text
       warningText:      '#92400e',               // 1x ValidationBanner.jsx — amber-800 warning heading text
