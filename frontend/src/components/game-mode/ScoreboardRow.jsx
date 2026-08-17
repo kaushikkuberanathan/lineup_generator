@@ -1,3 +1,5 @@
+import { tokens } from "../../theme/tokens";
+
 function ordinal(n) {
   var s = n % 100;
   if (s >= 11 && s <= 13) return n + 'th';
@@ -26,16 +28,16 @@ export default function ScoreboardRow(props) {
     : null;
 
   var labelStyle = {
-    fontSize: '16px', fontWeight: 700, color: '#e2e8f0',
+    fontSize: '16px', fontWeight: 700, color: tokens.color.gameDay.text.label,
     letterSpacing: '0.08em', textTransform: 'uppercase',
   };
   var scoreStyle = {
-    fontSize: '22px', fontWeight: '800', color: '#fff',
+    fontSize: '22px', fontWeight: '800', color: tokens.color.gameDay.text.primary,
   };
   var plusStyle = {
     background: 'rgba(255,255,255,0.08)',
     border: '1px solid rgba(255,255,255,0.15)',
-    borderRadius: '5px', color: '#94a3b8',
+    borderRadius: '5px', color: tokens.color.gameDay.text.secondary,
     fontSize: '10px', cursor: 'pointer',
     fontFamily: "Georgia,'Times New Roman',serif",
     padding: '2px 6px', lineHeight: '1.4',
@@ -47,7 +49,7 @@ export default function ScoreboardRow(props) {
       position: 'relative',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       gap: '24px', padding: '8px 16px',
-      background: '#0a1628',
+      background: tokens.color.gameDay.surface.scoreboard,
       borderTop: '2px solid rgba(245, 200, 66, 0.4)',
       borderBottom: '1px solid rgba(255,255,255,0.05)',
       flexShrink: 0,
@@ -65,7 +67,7 @@ export default function ScoreboardRow(props) {
             width: '44px', height: '44px',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             background: 'transparent', border: 'none',
-            color: '#94a3b8', fontSize: '18px', cursor: 'pointer',
+            color: tokens.color.gameDay.text.secondary, fontSize: '18px', cursor: 'pointer',
             borderRadius: '8px',
             fontFamily: "Georgia,'Times New Roman',serif",
           }}
@@ -86,10 +88,10 @@ export default function ScoreboardRow(props) {
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
-        <span style={{ color: '#374151', fontSize: '20px' }}>:</span>
+        <span style={{ color: tokens.color.gameDay.text.separator, fontSize: '20px' }}>:</span>
         {inningLabel ? (
           <span style={{
-            fontSize: '10px', fontWeight: 700, color: '#94a3b8',
+            fontSize: '10px', fontWeight: 700, color: tokens.color.gameDay.text.secondary,
             letterSpacing: '0.04em', whiteSpace: 'nowrap',
           }}>{inningLabel}</span>
         ) : null}

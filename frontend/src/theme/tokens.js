@@ -182,6 +182,36 @@ export const tokens = {
       moundLight: '#e8d5b0',  // chalk on base path
       chalk:      '#ffffff',  // foul-line stroke (white at varying opacity)
     },
+
+    // ─── Game-day surface palette (Story 133/#698 — game-mode/ + ScoringMode/) ──
+    // Separate scale from color.text.* / color.surface.*, which were audited
+    // against LIGHT surfaces only (see their own "on light surfaces" doc
+    // comments). Every file under game-mode/ and ScoringMode/ is a dark
+    // surface with no light variant, so this is its own first-class family
+    // rather than aliasing text.secondary/text.tertiary/border.default by
+    // hex-match alone - reusing a light-surface-calibrated token on a dark
+    // surface just because the hex happens to match is a role mismatch, the
+    // same class of problem Story 110's DIVERGENT entries exist to prevent.
+    // Shared umbrella for BOTH game-mode/* and ScoringMode/* (one visual
+    // language across both Locked directories, per #698) - not per-track.
+    gameDay: {
+      surface: {
+        scoreboard: '#0A1628',  // ScoreboardRow.jsx root bg - distinct near-black,
+                                  // drift from surface.dark (#0B1524), not a duplicate
+      },
+      text: {
+        primary:   '#FFFFFF',  // highest emphasis - score numbers
+        label:     '#E2E8F0',  // high-emphasis uppercase labels - team names
+        secondary: '#94A3B8',  // mid-emphasis - bench chip names, icon-button colors, inning label
+                                 // (7.07:1 vs surface.scoreboard - passes WCAG AA)
+        caption:   '#475569',  // low-emphasis section eyebrow - "Bench"
+                                 // KNOWN GAP: 2.39:1 vs surface.scoreboard - FAILS WCAG AA
+                                 // (needs 4.5:1). Pre-existing production value, preserved
+                                 // as-is by this byte-preserving mint. See #704.
+        faint:     '#334155',  // near-invisible - empty-state placeholder dash only
+        separator: '#374151',  // decorative glyph - ScoreboardRow's ":" only
+      },
+    },
   },
 
   // ─── OPACITY (reference scale — positions future tint() helper) ─────────────
