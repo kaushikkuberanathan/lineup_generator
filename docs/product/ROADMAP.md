@@ -1,11 +1,11 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: 2026-08-15 (v2.10.0 prepared for develop → main promotion - team search & request-access discovery, confirmation fix; v2.9.0's stale "not yet promoted" tag corrected - it promoted to main 2026-08-09, PR #661)
+> Last updated: 2026-08-17 (v2.10.0 promoted to main - team search & request-access discovery, confirmation fix, PR #682; v2.9.0's stale "not yet promoted" tag corrected - it promoted to main 2026-08-09, PR #661)
 > MVP launched: March 24, 2026
 
 ---
 
-## v2.10.0 - 2026-08-15 - Team search & request-access discovery, confirmation fix (prepared for develop → main promotion)
+## v2.10.0 - 2026-08-15 - Team search & request-access discovery, confirmation fix (promoted to main 2026-08-17, PR #682)
 
 **Minor bump** — Story 124 is a genuine new user-facing feature (team search + request-access discovery), not just a fix batch, so this follows the same "size the bump to the release's actual scope" convention established at v2.9.0.
 
@@ -20,6 +20,8 @@
 **CI Node 20 → 22 (PR #678)** — `jsdom@30` and the current `@supabase/supabase-js` sub-packages both raised their `engines.node` floor to `>=22`, which the `frontend`/`backend`/`backend-unit`/`sync-script`/`rls` CI jobs (pinned to Node 20) could no longer satisfy — a runtime-floor problem, not a code regression. Verified behavior-neutral before merging: identical pass counts (134/134 backend unit, 1056/1057 frontend) on Node 22 against unmodified `develop`. This unblocked PRs #627 and #670 above, both of which were failing CI for exactly this reason until this landed; both went fully green (CI + both Vercel deployments) once Dependabot auto-rebased them onto it.
 
 **Docs accuracy pass**: corrected three ROADMAP.md story statuses that still read "Open" after shipping — Stories 120, 124, 126 (PR #675) — fixed a stale file path in the Phase 4C shim-removal checklist left over from the Slice 4 ScoringMode refactor, and flagged a second, independent grant-level gap on the live-scoring tables separate from the RLS-policy work tracked under #355 (PR #676). Also corrected this file's own and `CLAUDE.md`'s v2.9.0 entries, which still described that release as "not yet promoted to main" a full week after it actually promoted (PR #661, 2026-08-09) — see that entry below for what else was stale as a result.
+
+**Promoted to `main` 2026-08-17** (PR [#682](https://github.com/kaushikkuberanathan/lineup_generator/pull/682), regular merge, `9401126`) — confirmed a genuine 2-parent merge via direct API check (parents `832dd7d` + `6c52976`), not the merge-button dropdown. Prod smoke test same session: backend `/ping` 200 OK (304ms), frontend loads clean, both Render and Vercel confirmed serving the exact promoted commit (not stale cache) via direct deploy-record queries. Post-promote sync (PR #683) merged the same session. One checklist item not done by a human: real-device phone smoke test on the preview — recommended, not yet performed as of this entry.
 
 ---
 
