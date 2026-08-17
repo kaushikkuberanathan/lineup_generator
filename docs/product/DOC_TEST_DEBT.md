@@ -134,6 +134,19 @@
 | **Target** | Opportunistic, no version target |
 | **Issue** | [#482](https://github.com/kaushikkuberanathan/lineup_generator/issues/482) |
 
+### 🟡 P2 — PendingApprovalScreen has no test coverage
+
+| | |
+|---|---|
+| **Area** | Auth system — Auth screen components |
+| **Description** | `frontend/src/components/Auth/PendingApprovalScreen.jsx` (shown after a user submits an access request) has zero tests — no colocated `PendingApprovalScreen.test.jsx`. The other 3 auth screens in the same directory each have one: `LoginScreen.test.jsx`, `RequestAccessScreen.test.jsx`, `NoMembershipScreen.test.jsx` (the last added under D-S428b, #481, as the direct precedent for this exact gap shape). Found during Phase 5 (UX Auth Re-Skin, Story 131/#690) token-migration work while auditing all 4 auth screens. |
+| **Risk if unfixed** | Low-moderate — cosmetic-only screen (confirmation copy, a 4-step status list, a "Try logging in" link back to `onTryLogin`), no data mutation. But it's an unauthenticated-state screen every access-request coach passes through, and it has zero regression coverage for its own rendering or its one interactive element. |
+| **Proposed test** | Mirror `NoMembershipScreen.test.jsx`'s shape (D-S428b precedent): renders the confirmation heading + step list, shows the pending email from `localStorage.getItem('lg_pending_email')` when present and omits it when absent, wires "Try logging in" → `onTryLogin`. |
+| **Opened** | 2026-08-17 — found during Phase 5 token-migration audit (PR #693) |
+| **Age** | 0 days |
+| **Target** | Before Phase 5's `develop`→`main` promote — Ship Gate asks whether every touched feature has a golden-path test, and this screen was touched (token swap) by that promote. |
+| **Issue** | [#696](https://github.com/kaushikkuberanathan/lineup_generator/issues/696) |
+
 ### ✅ RESOLVED — D017: ScoreboardRow primitive has no test coverage
 
 - **Discovered:** 2026-05-01 (during Slice 0 / v2.5.4 Pre-release Docs Checklist walk)

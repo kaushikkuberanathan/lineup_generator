@@ -156,6 +156,45 @@ belong here — those are the Phase 4C auth cutover items documented in
 **Goal:** Storybook or equivalent living documentation of all primitives,
 tokens, and usage patterns. Component playground for future development.
 
+**Scoping (2026-08-17, Story 132 — proposal only, not yet started):**
+
+**In scope:** the 9 shipped primitives in `frontend/src/components/ui/`
+(Badge, BottomSheet, Button, Card, ListRow, Pill, Stack, Text, Toast — all
+confirmed live on `main`) and the full token system in `theme/tokens.js`
+(~350 lines: color, space, radius, borderWidth, font, zIndex, shadow,
+motion groups). Each primitive already has a colocated `*.test.jsx` with
+characterization tests that double as a de facto usage-example inventory —
+Phase 6's job is making that inventory *browsable*, not re-deriving it.
+
+**Out of scope:** the 4 Auth screens (`components/Auth/*`) — they don't
+consume the primitives today (plain inline `style={}` objects, tokens
+directly), and folding them in prematurely would document a
+still-in-flight surface (Phase 5 isn't promoted to `main` yet as of this
+writing). Revisit once Phase 5 ships and if a future initiative migrates
+Auth onto Card/Stack/Text. Also out of scope: `App.jsx`'s own component
+split — that's `docs/product/APPJSX_DECOMPOSITION_PLAN.md`'s separate,
+already-tracked initiative; Phase 6 documents the primitives App.jsx
+*consumes*, not App.jsx itself.
+
+**Tooling recommendation:** `@storybook/react-vite` — this repo is
+already on Vite 6.4 + React 18, which is Storybook 8's primary supported
+target; no separate bundler config needed. No `.storybook/` directory
+exists yet (checked 2026-08-17) — this would be a from-scratch add, not a
+partial setup to resume. Lighter alternative worth a look before
+committing: Ladle (`@ladle/react`) — same MDX-free story-file model,
+faster cold start, smaller footprint, less community/plugin ecosystem.
+Given this repo's existing pattern of `*.test.jsx` characterization tests
+already serving as informal usage docs, either tool is mostly wiring, not
+new authoring — recommend a 1-day timeboxed spike comparing both against
+2-3 real primitives (Card + Pill + a token-heavy one like Badge) before
+committing repo-wide.
+
+**Rough shape once started:** one story file per primitive (9 total) +
+one token-reference page (rendered swatches/scale, not just the raw
+`tokens.js` export) + a short "how to consume a token" usage-pattern doc
+page. No new component code — this phase only adds `.storybook/` config
+and `*.stories.jsx` files alongside the existing `*.test.jsx` files.
+
 **Dependencies:** Phases 1–5 complete. The design system must be stable
 before documenting it as canonical.
 
