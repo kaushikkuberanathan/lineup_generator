@@ -149,14 +149,14 @@ const styles = {
   },
   header: { textAlign: 'center', marginBottom: '28px' },
   logoMark: { marginBottom: '8px' },
-  title: { margin: 0, fontSize: '22px', fontWeight: '600', color: '#0f172a' },
+  title: { margin: 0, fontSize: '22px', fontWeight: '600', color: tokens.color.text.primary },
   subtitle: { margin: '4px 0 0', fontSize: '14px', color: tokens.color.text.secondary },
   form: { display: 'flex', flexDirection: 'column', gap: '12px' },
   label: { fontSize: '14px', fontWeight: '500', color: tokens.color.text.body, marginBottom: '-4px' },
   input: {
     padding: '12px 14px', fontSize: '16px', border: `1.5px solid ${tokens.color.border.default}`,
     borderRadius: '10px', outline: 'none', width: '100%',
-    boxSizing: 'border-box', color: '#0f172a', backgroundColor: tokens.color.surface.card,
+    boxSizing: 'border-box', color: tokens.color.text.primary, backgroundColor: tokens.color.surface.card,
   },
   primaryBtn: {
     padding: '13px', fontSize: '16px', fontWeight: '600',
@@ -183,14 +183,14 @@ const styles = {
     fontFamily: 'Arial, sans-serif', lineHeight: 1,
   },
   sentBox: {
-    backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0',
+    backgroundColor: tokens.color.status.successBg, border: `1px solid ${tokens.color.status.successBorder}`,
     borderRadius: '10px', padding: '16px', marginBottom: '16px',
   },
-  sentText: { margin: '0 0 8px', fontSize: '15px', color: '#166534', lineHeight: '1.6' },
-  sentNote: { margin: 0, fontSize: '13px', color: '#16a34a' },
+  sentText: { margin: '0 0 8px', fontSize: '15px', color: tokens.color.status.successText, lineHeight: '1.6' },
+  sentNote: { margin: 0, fontSize: '13px', color: tokens.color.status.success },
   error: {
     margin: '0', fontSize: '13px', color: tokens.color.status.error,
-    padding: '8px 12px', backgroundColor: '#fef2f2',
-    borderRadius: '8px', border: '1px solid #fecaca',
+    padding: '8px 12px', backgroundColor: tokens.color.status.errorBg,
+    borderRadius: '8px', border: `1px solid ${tokens.color.status.errorBorder}`,
   },
 };

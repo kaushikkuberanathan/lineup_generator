@@ -80,11 +80,11 @@ const styles = {
     margin: '0 0 12px',
     fontSize: '22px',
     fontWeight: '600',
-    color: '#0f172a',
+    color: tokens.color.text.primary,
   },
   body: {
     fontSize: '15px',
-    color: '#475569',
+    color: tokens.color.text.secondary,
     lineHeight: '1.6',
     margin: '0 0 24px',
   },

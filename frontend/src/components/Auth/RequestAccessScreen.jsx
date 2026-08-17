@@ -273,7 +273,7 @@ const styles = {
     margin: 0,
     fontSize: '22px',
     fontWeight: '600',
-    color: '#0f172a',
+    color: tokens.color.text.primary,
   },
   subtitle: {
     margin: '4px 0 0',
@@ -310,7 +310,7 @@ const styles = {
     outline: 'none',
     width: '100%',
     boxSizing: 'border-box',
-    color: '#0f172a',
+    color: tokens.color.text.primary,
     backgroundColor: tokens.color.surface.card,
   },
   select: {
@@ -321,7 +321,7 @@ const styles = {
     outline: 'none',
     width: '100%',
     boxSizing: 'border-box',
-    color: '#0f172a',
+    color: tokens.color.text.primary,
     backgroundColor: tokens.color.surface.card,
     cursor: 'pointer',
   },
@@ -337,7 +337,7 @@ const styles = {
     borderRadius: '10px',
     width: '100%',
     boxSizing: 'border-box',
-    color: '#0f172a',
+    color: tokens.color.text.primary,
     backgroundColor: tokens.color.surface.page,
   },
   primaryBtn: {
@@ -365,9 +365,9 @@ const styles = {
     fontSize: '13px',
     color: tokens.color.status.error,
     padding: '8px 12px',
-    backgroundColor: '#fef2f2',
+    backgroundColor: tokens.color.status.errorBg,
     borderRadius: '8px',
-    border: '1px solid #fecaca',
+    border: `1px solid ${tokens.color.status.errorBorder}`,
   },
   note: {
     marginTop: '20px',
