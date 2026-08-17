@@ -4,6 +4,15 @@ Read this before starting Dugout-track or Phase 4C work. This is the condensed,
 actionable version of a long session — full detail is in the git history of the
 PRs cited below, not repeated here.
 
+> **Addendum, later the same day (session 2026-08-17-A):** a second, concurrent
+> session picked up the "Open items" below — #681, the 3 dependabot PRs, and
+> branch/worktree state — the same day this file was written. Updated in place
+> rather than left stale; see the `2026-08-17-A` entry in
+> `docs/process/SESSION_RETROSPECTIVES.md` for full detail, including three
+> live collisions between the two sessions and how each was resolved without
+> data loss. The rest of this file (Phase 4C, UX Phase 5, the GRANT-revocation
+> design question) is untouched and still current as T1 left it.
+
 ---
 
 ## What's actually live right now
@@ -13,8 +22,11 @@ PRs cited below, not repeated here.
   confirmation fix (Story 126/#665), local `SUPABASE_TARGET` dev toggle (Story
   128/#668), CI bumped Node 20→22 (PR #678), routine dependency bumps
   (express-rate-limit, @vitest/ui, jsdom, @supabase/supabase-js).
-- **`develop` is at `e35d4a9`**, `main` and `develop` are in sync (post-promote
-  sync PR #683 already landed) — no pending reconciliation.
+- **`develop` is at `20c8323`** as of session 2026-08-17-A's close — 37 commits
+  ahead of `main`, all docs/tooling/dependency-hygiene (#681, #695, #702 below),
+  nothing user-facing pending. `main` and `develop` were in sync right after the
+  promote (post-promote sync PR #683) but have since diverged normally as
+  develop work continued — this is expected, not a gap.
 - Prod smoke test confirmed same session: backend `/ping` 200 OK (304ms),
   frontend loads clean, both Render and Vercel independently confirmed serving
   the exact promoted commit (not stale cache) via direct deploy-record queries,
@@ -86,12 +98,14 @@ PRs cited below, not repeated here.
 
 ---
 
-## Open items (not touched this session, still real)
+## Open items (as of session 2026-08-17-A's close — see addendum above)
 
 | Item | State | Notes |
 |---|---|---|
-| #674, #673, #623 | Open, held | 3 dependabot bumps (`@vitejs/plugin-react`, `eslint`, `react-dom`) — patches drafted and locally verified (build/test/lint clean) in an earlier session's zip, sitting ready. Need the `frontend/package.json` gate phrase before applying. See that earlier session's README for the exact `git am` sequence (0001/0002/0003). |
-| #681 | Open, another session's work | `chore/agent-onboarding-docs` — not reviewed or touched this session, don't assume its content without reading it fresh. |
+| #674 | **Resolved, closed** | Was unmergeable as-is (`npm install` ERESOLVE — plugin-react 6 needs vite ^8, which wasn't bumped). Fixed properly via PR #702 (vite 6.4.2→8.2.1 + plugin-react 4.7.0→6.0.5, one targeted `overrides` entry for a deeper optional babel/rolldown conflict, full local build+lint+test verification). #674 closed with a pointer to #702. |
+| #673 (eslint 8→10) | **Investigated, genuinely blocked** | No published `eslint-plugin-react` release supports eslint 10 (latest `7.37.5` caps at `^9.7`). Not a scope/effort problem — an upstream gap. Findings posted on the PR. Re-check periodically via `npm view eslint-plugin-react peerDependencies`. |
+| #623 (react-dom 18→19) | **Parked deliberately** | Real framework major-version upgrade (React 19 breaking changes) against a 10,000-line locked `App.jsx` — needs its own dedicated, explicitly-scoped session, not a routine dependency-bump pass. |
+| #681 | **Resolved, merged** | Was two already-written but *uncommitted* onboarding docs (`docs/process/CLAUDE_CODE_HANDOFF.md`, `AGENT_ONBOARDING_SUPPLEMENT.md`) sitting only on this machine's disk — invisible to any other session until committed. One factual error caught and fixed before merge: a claimed `issue/* → feature/* → develop` branch tier, disproven against real PR data (see `SESSION_RETROSPECTIVES.md` 2026-08-17-A for the evidence). The stash mentioned below was resolved as its own PR, #695. |
 | GRANT-revocation on scoring tables | **Not drafted** | `anon`/`authenticated` both still hold full TRUNCATE/DELETE/INSERT/UPDATE on all 4 live-scoring tables, DEV and PROD both — confirmed via direct query 2026-08-15 and 2026-08-17. See "Lined-up work" below — this needs its own migration, and it's a real design decision, not a mechanical port of migration 004/021's pattern. |
 | Phase 4C shim-removal, steps 2-7 | Blocked | `game-mode/*` gate phrase not granted; also needs KK actively present for the live-scoring soak step (§3 step 3) — same "supervised session" standard as everywhere else in this repo touching live game-day surfaces. |
 | `spike/phase4b-slice10-scoping` | Stale remote branch | Predates this session. Has unmerged content relative to `develop` (checked, not investigated further) — likely superseded by the real slice 10 work that shipped in v2.8.5, but not confirmed. Housekeeping candidate, not urgent. |
@@ -180,16 +194,21 @@ urgent; bundle with other work rather than a dedicated session.
 
 ---
 
-## Branch/worktree state
+## Branch/worktree state (as of session 2026-08-17-A's close)
 
-- Two worktrees on this machine: `lineup_generator` (main checkout) and
-  `lineup-generator-ux`, both on `develop`, both confirmed in sync as of this
-  handoff.
-- No stray local branches beyond `develop`/`ux-local-base` (worktree-tracking,
-  expected) and `chore/agent-onboarding-docs` (another session's open PR #681
-  — left alone, not reviewed).
-- One stash exists on `chore/agent-onboarding-docs` (local Vercel/Supabase CLI
-  tool-setup artifacts — `.gitignore` additions, not code) — not mine to
-  resolve, belongs to that other session's branch.
-- `sync-stories-to-issues.js` run clean — all `ROADMAP.md` stories already
-  linked to issues, nothing pending.
+- Two worktrees on this machine: `lineup_generator` and `lineup-generator-ux`,
+  both fast-forwarded to `develop` @ `20c8323`, both confirmed clean.
+- UX worktree had drifted onto a since-merged branch
+  (`docs/story-133-scope-expansion`, PR #701) — moved back to its proper
+  `ux-local-base` tracking branch and fast-forwarded 22 commits. Worth a
+  standing reminder: if a worktree isn't on its expected base branch at
+  session start, check whether it's parked on a stale feature branch before
+  assuming anything's wrong with the repo itself.
+- All PRs opened this session (#681, #695, #702) merged and their branches
+  deleted, both locally and on origin (GitHub auto-deletes on merge).
+- The stash on `chore/agent-onboarding-docs` mentioned above was resolved
+  as its own PR (#695) — restored, trimmed a redundant line, shipped.
+- `sync-stories-to-issues.js --dry-run` re-run clean at session close — all
+  `ROADMAP.md` stories still linked to issues, nothing pending.
+- `origin/spike/phase4b-slice10-scoping` — still the same stale remote branch
+  flagged above, still not investigated further. Still not urgent.
