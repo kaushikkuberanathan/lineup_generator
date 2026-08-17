@@ -2,7 +2,7 @@
 
 **Status:** v1.2
 **Owner:** Kaushik
-**Last Updated:** 2026-08-04 (role-model + WS-3 status corrected against live prod re-verification - Doc Audit Spike Story 2, originally captured 2026-07-13)
+**Last Updated:** 2026-08-08 (role-model table, scoring-capability section, and WS-1 known-gaps updated for Story 124/#655 — see inline notes; prior update 2026-08-04 was the role-model + WS-3 correction, Doc Audit Spike Story 2)
 **Location:** `docs/product/AUTH_SECURITY_AUDIT_ROADMAP.md`
 
 ---
@@ -70,7 +70,8 @@ what `normalizeRole()` TARGETS. Three layers, not two:
 | Head Coach        | `admin`                        | `admin`                       | Runs the team. RLS grants team-management. |
 | Assistant Coach   | `coach`                        | `coach`                       | |
 | Team Coordinator  | `coordinator` (legacy rows) or `coach` | `coach`                | Coach-tier in authz terms. `coordinator` is a real, DB-tolerated legacy value, not just a label. |
-| Viewer / Parent   | `viewer` or `parent` (legacy rows) | `viewer`                  | Read-only team seat. |
+| Scorekeeper       | `scorekeeper`                  | `scorekeeper`                 | Re-added to `RequestAccessScreen.jsx` 2026-08-08 (Story 124/#655), reversing this doc's prior "not offered" guidance — see updated note below. |
+| Parent / Family   | `viewer` or `parent` (legacy rows) | `viewer`                  | Read-only team seat. Added as an offered picker option 2026-08-08 (Story 124/#655) — previously a valid mapping with no UI entry; that gap is now closed. |
 | *(legacy only)*   | `team_admin`                   | `admin`                       | Tolerated for existing rows; not offered as a request-access option. |
 
 **Two labels legitimately map to one canonical `normalizeRole()` target.** This is
@@ -89,8 +90,20 @@ resolves `id -> value` at submit. `value` cannot serve as the React key or the
 
 Any user - including a `viewer` parent - can claim the scorer lock for a specific
 game via `game_scoring_sessions` / `scoring_audit_log`. Scoring is orthogonal to
-team role. `scorekeeper` remains a valid CHECK value for legacy rows but is not
-offered as a request-access option.
+team role - this remains true and unchanged.
+
+**Updated 2026-08-08 (Story 124/#655):** `scorekeeper` was re-added to
+`RequestAccessScreen.jsx`'s offered options, reversing the "not offered"
+guidance this section previously stated as settled. This was a deliberate,
+in-session product call, not rediscovered drift - but it sits in real tension
+with the capability-not-role argument above, which was not re-litigated at the
+time. Practical effect: a self-requested Scorekeeper membership is now possible
+alongside the pre-existing, role-independent per-game scorer lock - two
+different mechanisms that both grant scoring ability. Whether a persistent
+Scorekeeper role earns its keep beyond what the capability lock already gives
+(season-long identity, notification routing, etc.) has not been explicitly
+answered. If this doc is revisited, resolve that question explicitly rather
+than quietly removing this note.
 
 ### The translate-vs-reject asymmetry (intentional)
 
@@ -183,8 +196,10 @@ asserting on the INSERT PAYLOAD, not just the response).
 
 - `App.jsx:2304` (`role: team.role || "team_admin"`) - an analytics default, not an
   authz value. Moves together with `ANALYTICS.md`'s four matching refs.
-- No `RequestAccessScreen` frontend test exists. The `id`/`value` indirection is
-  exactly what a future refactor breaks silently.
+- ~~No `RequestAccessScreen` frontend test exists.~~ **Closed 2026-08-08** (Story
+  124/#655) - 13 tests added, including coverage of the `id`/`value` indirection
+  this gap warned about (mutation-tested to confirm the tests actually catch a
+  collapsed-option regression, not just assert against the current shape).
 
 ---
 

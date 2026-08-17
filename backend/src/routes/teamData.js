@@ -1,6 +1,11 @@
 /**
  * Team data routes — data protection layer
  *
+ * GET /api/teams/search
+ *   Public, unauthenticated team discovery for the request-access flow
+ *   (Story 124, #655). Returns only id/name/age_group/sport/year — never
+ *   owner_id.
+ *
  * POST /api/teams/:teamId/data
  *   Safe write with roster-wipe guard. Frontend writes go directly to Supabase
  *   via anon key, so this endpoint is used by scripts, migrations, and future
@@ -12,11 +17,74 @@
  */
 
 const { Router } = require('express');
+const rateLimit = require('express-rate-limit');
+const { ipKeyGenerator } = require('express-rate-limit');
+const { query, validationResult } = require('express-validator');
 const { supabaseAdmin } = require('../lib/supabase');
 const { rejectTestDataInProd } = require('../middleware/envGuard');
 const requireAuth = require('../middleware/requireAuth');
 
 const router = Router();
+
+// ── GET /api/teams/search ────────────────────────────────────────────────────
+// Public route (same risk class as POST /auth/magic-link) — rate-limited by
+// IP since there's no caller identity to key on the way loginLimiter keys on
+// email.
+const searchLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  message: { error: 'TOO_MANY_ATTEMPTS', message: 'Too many search requests. Please try again in 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => ipKeyGenerator(req.ip),
+});
+
+// Team names/age-groups/sports are free text but never need SQL-metacharacter
+// content — reject injection-shaped input outright rather than sanitize it.
+const SAFE_SEARCH_PATTERN = /^[\w\s'&.-]*$/;
+
+router.get(
+  '/search',
+  searchLimiter,
+  [
+    query('q').optional().trim().isLength({ max: 100 }).matches(SAFE_SEARCH_PATTERN)
+      .withMessage('q contains unsupported characters'),
+    query('ageGroup').optional().trim().isLength({ max: 50 }).matches(SAFE_SEARCH_PATTERN)
+      .withMessage('ageGroup contains unsupported characters'),
+    query('sport').optional().trim().isLength({ max: 50 }).matches(SAFE_SEARCH_PATTERN)
+      .withMessage('sport contains unsupported characters'),
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ error: 'VALIDATION_ERROR', details: errors.array() });
+    }
+
+    const { q, ageGroup, sport } = req.query;
+
+    try {
+      let teamsQuery = supabaseAdmin
+        .from('teams')
+        .select('id, name, age_group, sport, year');
+
+      if (q) teamsQuery = teamsQuery.ilike('name', `%${q}%`);
+      if (ageGroup) teamsQuery = teamsQuery.eq('age_group', ageGroup);
+      if (sport) teamsQuery = teamsQuery.eq('sport', sport);
+
+      const { data, error } = await teamsQuery.limit(50);
+
+      if (error) {
+        console.error('[teams/search]', error.message);
+        return res.status(500).json({ error: 'SEARCH_FAILED' });
+      }
+
+      return res.status(200).json(data || []);
+    } catch (err) {
+      console.error('[teams/search]', err.message);
+      return res.status(500).json({ error: 'SEARCH_FAILED' });
+    }
+  }
+);
 
 // ── Env guard — runs before any route with :teamId ───────────────────────────
 router.param('teamId', (req, res, next, teamId) => {

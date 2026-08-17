@@ -405,6 +405,7 @@ feedback (
 |--------|------|--------------|---------|
 | POST | `/api/v1/auth/request-access` | No | Submit access request |
 | POST | `/api/v1/auth/magic-link` | No (rate-limited) | Send magic link email — replaces the old two-step OTP flow |
+| GET | `/api/v1/teams/search` (+ legacy `/api/teams/search`) | No (rate-limited) | Team discovery for the Home tab / request-access flow — `q`/`ageGroup`/`sport` filters, returns `id`/`name`/`age_group`/`sport`/`year` only, never `owner_id` (Story 124, #655) |
 | GET | `/api/v1/auth/me` | Yes | Current user profile + memberships |
 | PATCH | `/api/v1/auth/me` | Yes | Set display name (v2.8.0) |
 | POST | `/api/v1/auth/logout` | Yes | End session |

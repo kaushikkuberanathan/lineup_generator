@@ -253,6 +253,18 @@ export var FAQ_CATEGORIES = [
       {
         q: "Can two coaches use the app on different phones for the same team?",
         a: "With a cloud account, data syncs across devices automatically so both coaches stay in sync. Without an account, each phone is independent — changes on one don't appear on the other. The simplest workaround today is to designate one phone as the primary and share the lineup link to others for read-only viewing."
+      },
+      {
+        q: "I'm not on the team yet — how do I get access?",
+        a: "From the Home screen, tap 'Don't see your team? Search for one,' then search by team name, age group, or sport. Once you find your team, tap it, choose the role that fits (Head Coach, Assistant Coach, Coordinator, Scorekeeper, or Parent / Family for view-only), and submit your request. You'll see a pending-approval screen right after, and get an email once you're approved."
+      },
+      {
+        q: "What's the difference between the roles I can request?",
+        a: "Head Coach and Assistant Coach can edit everything — roster, lineups, schedule. Team Coordinator is coach-tier today too (full edit access), though it's meant for whoever handles schedule, snacks, and songs rather than lineups. Scorekeeper gets a standing team seat for scoring — note that anyone can already claim the in-game scorer role for a single game without requesting anything, so this is only worth requesting if you want that seat long-term. Parent / Family is view-only — see the lineup, schedule, and songs, no editing."
+      },
+      {
+        q: "I requested access — how long until I'm approved?",
+        a: "Your request goes to the team's admin for review, same as any new coach or parent joining. There's no fixed turnaround time, but most requests are reviewed within a few hours. You'll get an email the moment you're approved, and can also check back by trying to sign in again."
       }
     ]
   }

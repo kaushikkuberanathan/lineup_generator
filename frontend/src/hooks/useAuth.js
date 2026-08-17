@@ -188,7 +188,7 @@ export function useAuth() {
 
   // ─── Request Access ───────────────────────────────────────────────────────────
 
-  const requestAccess = useCallback(async ({ firstName, lastName, email, role, tid }) => {
+  const requestAccess = useCallback(async ({ firstName, lastName, email, role, tid }, { preserveSession } = {}) => {
     setError(null);
 
     try {
@@ -209,7 +209,7 @@ export function useAuth() {
 
       if (!res.ok) {
         if (data.error === 'REQUEST_PENDING') {
-          setAuthState('pending_approval');
+          if (!preserveSession) { setAuthState('pending_approval'); }
           return { success: true, pending: true };
         }
         if (data.error === 'ALREADY_APPROVED') {
@@ -218,12 +218,13 @@ export function useAuth() {
         return { success: false, error: data.message || 'Request failed' };
       }
 
-      if (tid || teamId) {
-        localStorage.setItem('lg_team_id', tid || teamId);
+      if (!preserveSession) {
+        if (tid || teamId) {
+          localStorage.setItem('lg_team_id', tid || teamId);
+        }
+        localStorage.setItem('lg_pending_email', email);
+        setAuthState('pending_approval');
       }
-      localStorage.setItem('lg_pending_email', email);
-
-      setAuthState('pending_approval');
       return { success: true };
 
     } catch {

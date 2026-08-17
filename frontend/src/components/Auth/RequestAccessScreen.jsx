@@ -1,6 +1,9 @@
 /**
  * components/Auth/RequestAccessScreen.jsx
- * Access request form for coaches and coordinators.
+ * Access request form — coaches, coordinators, scorekeepers, and parents
+ * requesting view-only access. 5 role options as of 2026-08-08 (Story
+ * 124/#655); see docs/product/AUTH_SECURITY_AUDIT_ROADMAP.md's role-model
+ * table for the full label → stored-value → normalizeRole() mapping.
  * Pre-fills team and role from URL params.
  *
  * URL params:
@@ -17,23 +20,40 @@ import { tokens } from "../../theme/tokens";
 const TEAM_ID = import.meta.env.VITE_DEFAULT_TEAM_ID || '1774297491626';
 
 // Label layer (WS-1 #336): what the coach SEES is richer than what we STORE.
-// `value` is the canonical team_memberships role written to the DB; `id` is
-// the React key + URL-param token, because two labels legitimately map to the
-// same canonical role (a Coordinator is coach-tier in authz terms).
+// `value` is sent to POST /request-access as `requestedRole`; the backend's
+// normalizeRole() (backend/src/lib/normalizeRole.js) translates it to one of
+// 4 DB canonicals (admin/coach/scorekeeper/viewer). team_admin -> admin and
+// coordinator -> coach is the deliberate, accepted state (Option B) — NOT a
+// gap awaiting a backend fix. Promoting coordinator to its own canonical
+// role (Option A) is a real decision, explicitly deferred to Story 125
+// (#656) until Phase 4C unblocks it. Do not "fix" this mapping as part of
+// unrelated work.
 const ROLE_OPTIONS = [
-  { id: 'head_coach',      value: 'admin', label: 'Head Coach' },
-  { id: 'assistant_coach', value: 'coach', label: 'Assistant Coach' },
-  { id: 'coordinator',     value: 'coach', label: 'Team Coordinator' },
+  { id: 'head_coach',      value: 'team_admin',  label: 'Head Coach',
+    note: 'Requires manual review before approval' },
+  { id: 'assistant_coach', value: 'coach',        label: 'Assistant Coach' },
+  { id: 'coordinator',     value: 'coordinator',  label: 'Team Coordinator' },
+  { id: 'scorekeeper',     value: 'scorekeeper',  label: 'Scorekeeper' },
+  { id: 'parent',          value: 'viewer',       label: 'Parent / Family' },
 ];
 
-export function RequestAccessScreen({ onBack, requestAccess }) {
+export function RequestAccessScreen({
+  onBack,
+  requestAccess,
+  preselectedTeam = null,
+  preserveSession = false,
+  backLabel = '← Back to login',
+}) {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName]   = useState('');
   const [email, setEmail]         = useState('');
   const [roleId, setRoleId]       = useState('assistant_coach');
-  const [teamId, setTeamId]       = useState('');
+  const [teamId, setTeamId]       = useState(preselectedTeam ? preselectedTeam.id : '');
   const [loading, setLoading]     = useState(false);
   const [error, setError]         = useState('');
+  const [submitted, setSubmitted] = useState(false);
+
+  const selectedRoleOption = ROLE_OPTIONS.find(r => r.id === roleId);
 
   // Pre-fill from URL params
   useEffect(() => {
@@ -55,14 +75,13 @@ export function RequestAccessScreen({ onBack, requestAccess }) {
     setError('');
     setLoading(true);
 
-    const selectedRole = ROLE_OPTIONS.find(r => r.id === roleId);
     const result = await requestAccess({
       firstName: firstName.trim(),
       lastName:  lastName.trim(),
       email:     email.trim().toLowerCase(),
-      role:      selectedRole.value,
+      role:      selectedRoleOption.value,
       tid:       teamId.trim() || TEAM_ID,
-    });
+    }, { preserveSession });
 
     setLoading(false);
 
@@ -74,14 +93,39 @@ export function RequestAccessScreen({ onBack, requestAccess }) {
       }
     } else {
       track("access_requested", { team_id: teamId.trim() || TEAM_ID });
+      if (preserveSession) { setSubmitted(true); }
     }
-    // On success, useAuth sets authState → 'pending_approval'
+    // On success: preserveSession=true (already-authenticated coach requesting
+    // a 2nd team) shows the inline confirmation below, added 2026-08-11.
+    // preserveSession=false (the default, pre-auth flow) is unchanged —
+    // useAuth still sets authState → 'pending_approval', which App.jsx
+    // renders as PendingApprovalScreen.
   }
 
   return (
     <div style={styles.container}>
       <div style={styles.card}>
 
+        {preserveSession && submitted ? (
+        <div style={styles.header}>
+          <div style={styles.logoMark}>
+            <img src="/pwa-192x192.png" alt="Dugout Lineup" width="56" height="56" />
+          </div>
+          <h1 style={styles.title}>Request Sent</h1>
+          <p style={styles.subtitle}>
+            {preselectedTeam ? preselectedTeam.name : 'Your request'} · Pending approval
+          </p>
+          <p style={{ ...styles.note, marginTop: '16px' }}>
+            You&apos;ll get an email once your request to join{' '}
+            {preselectedTeam ? preselectedTeam.name : 'this team'} as{' '}
+            {selectedRoleOption.label} is approved — usually within a few hours.
+          </p>
+          <button type="button" style={{ ...styles.primaryBtn, marginTop: '20px' }} onClick={onBack}>
+            Done
+          </button>
+        </div>
+        ) : (
+        <>
         <div style={styles.header}>
           <div style={styles.logoMark}>
             <img src="/pwa-192x192.png" alt="Dugout Lineup" width="56" height="56" />
@@ -132,22 +176,33 @@ export function RequestAccessScreen({ onBack, requestAccess }) {
             />
           </div>
 
-          <div>
-            <label style={styles.label}>Team ID <span style={{ color: '#94a3b8', fontWeight: 400 }}>(optional — leave blank for Mud Hens)</span></label>
-            <input
-              type="text"
-              value={teamId}
-              onChange={e => { setTeamId(e.target.value); setError(''); }}
-              placeholder={TEAM_ID}
-              style={styles.input}
-              autoComplete="off"
-              disabled={loading}
-            />
-          </div>
+          {preselectedTeam ? (
+            <div>
+              <label style={styles.label}>Team</label>
+              <div style={styles.preselectedTeam}>
+                {preselectedTeam.name}
+                {preselectedTeam.age_group ? <span style={{ color: '#64748b', fontWeight: 400 }}> · {preselectedTeam.age_group}</span> : null}
+              </div>
+            </div>
+          ) : (
+            <div>
+              <label style={styles.label}>Team ID <span style={{ color: '#94a3b8', fontWeight: 400 }}>(optional — leave blank for Mud Hens)</span></label>
+              <input
+                type="text"
+                value={teamId}
+                onChange={e => { setTeamId(e.target.value); setError(''); }}
+                placeholder={TEAM_ID}
+                style={styles.input}
+                autoComplete="off"
+                disabled={loading}
+              />
+            </div>
+          )}
 
           <div>
-            <label style={styles.label}>Your role</label>
+            <label style={styles.label} htmlFor="request-access-role">Your role</label>
             <select
+              id="request-access-role"
               value={roleId}
               onChange={e => setRoleId(e.target.value)}
               style={styles.select}
@@ -157,6 +212,9 @@ export function RequestAccessScreen({ onBack, requestAccess }) {
                 <option key={r.id} value={r.id}>{r.label}</option>
               ))}
             </select>
+            {selectedRoleOption?.note && (
+              <p style={styles.roleNote}>{selectedRoleOption.note}</p>
+            )}
           </div>
 
           {error && <p style={styles.error}>{error}</p>}
@@ -166,7 +224,7 @@ export function RequestAccessScreen({ onBack, requestAccess }) {
           </button>
 
           <button type="button" style={styles.linkBtn} onClick={onBack}>
-            ← Back to login
+            {backLabel}
           </button>
 
         </form>
@@ -175,6 +233,9 @@ export function RequestAccessScreen({ onBack, requestAccess }) {
           The head coach will review your request and you&apos;ll receive an email
           when approved — usually within a few hours.
         </p>
+
+        </>
+        )}
 
       </div>
     </div>
@@ -263,6 +324,21 @@ const styles = {
     color: '#0f172a',
     backgroundColor: '#fff',
     cursor: 'pointer',
+  },
+  roleNote: {
+    margin: '6px 0 0',
+    fontSize: '12px',
+    color: '#92400e',
+  },
+  preselectedTeam: {
+    padding: '11px 13px',
+    fontSize: '15px',
+    border: '1.5px solid #e2e8f0',
+    borderRadius: '10px',
+    width: '100%',
+    boxSizing: 'border-box',
+    color: '#0f172a',
+    backgroundColor: '#f8fafc',
   },
   primaryBtn: {
     padding: '13px',

@@ -1,15 +1,33 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: 2026-08-08 (v2.9.0 merged to develop - security hardening, team-deletion safety, identity data integrity; not yet promoted to main)
+> Last updated: 2026-08-15 (v2.10.0 prepared for develop → main promotion - team search & request-access discovery, confirmation fix; v2.9.0's stale "not yet promoted" tag corrected - it promoted to main 2026-08-09, PR #661)
 > MVP launched: March 24, 2026
 
 ---
 
-## v2.9.0 - 2026-08-08 - Security hardening, team-deletion safety, identity data integrity (develop only — not yet promoted to main)
+## v2.10.0 - 2026-08-15 - Team search & request-access discovery, confirmation fix (prepared for develop → main promotion)
+
+**Minor bump** — Story 124 is a genuine new user-facing feature (team search + request-access discovery), not just a fix batch, so this follows the same "size the bump to the release's actual scope" convention established at v2.9.0.
+
+**Team search + request-access discovery (#655, Story 124)** — new `GET /api/v1/teams/search` backend route (service-role mediated, returns only `id`/`name`/`age_group`/`sport`/`year`, never `owner_id`), Home tab search entry point, role picker submitting into the existing `POST /request-access`. Frontend + backend shipped together (PR #663, backend route PR #657); see `docs/product/FEATURE_MAP.md` row 38 for test coverage.
+
+**RequestAccessScreen confirmation fix (#665, Story 126)** — `preserveSession=true` submissions (an already-authenticated coach requesting a 2nd team) gave no visible confirmation; the success path relied on a `useAuth` authState transition that doesn't apply when the session is preserved. Added a `submitted` state that renders an inline confirmation card on that path (PR #667). Zero dedicated test coverage on the new state yet — tracked as test debt (#664), not blocking since it's UI-only and was verified by eye.
+
+**Local dev tooling (#668, Story 128)** — optional `SUPABASE_TARGET` env toggle for local backend testing against `dugout-lineup-dev`, avoiding the need to overwrite production credentials in a single local `.env` file (PR #669). No production code path affected — Render never sets this variable.
+
+**Routine dependency updates**: `express-rate-limit` (PR #672), `@vitest/ui` (PR #671), `jsdom` (PR #627), `@supabase/supabase-js` (PR #670).
+
+**CI Node 20 → 22 (PR #678)** — `jsdom@30` and the current `@supabase/supabase-js` sub-packages both raised their `engines.node` floor to `>=22`, which the `frontend`/`backend`/`backend-unit`/`sync-script`/`rls` CI jobs (pinned to Node 20) could no longer satisfy — a runtime-floor problem, not a code regression. Verified behavior-neutral before merging: identical pass counts (134/134 backend unit, 1056/1057 frontend) on Node 22 against unmodified `develop`. This unblocked PRs #627 and #670 above, both of which were failing CI for exactly this reason until this landed; both went fully green (CI + both Vercel deployments) once Dependabot auto-rebased them onto it.
+
+**Docs accuracy pass**: corrected three ROADMAP.md story statuses that still read "Open" after shipping — Stories 120, 124, 126 (PR #675) — fixed a stale file path in the Phase 4C shim-removal checklist left over from the Slice 4 ScoringMode refactor, and flagged a second, independent grant-level gap on the live-scoring tables separate from the RLS-policy work tracked under #355 (PR #676). Also corrected this file's own and `CLAUDE.md`'s v2.9.0 entries, which still described that release as "not yet promoted to main" a full week after it actually promoted (PR #661, 2026-08-09) — see that entry below for what else was stale as a result.
+
+---
+
+## v2.9.0 - 2026-08-08 - Security hardening, team-deletion safety, identity data integrity (promoted to main 2026-08-09, PR #661)
 
 **Minor bump, not patch** — this release bundles more than the security-hardening batch it started as: a database schema change (#375), a backend routing change and a security-policy change (#380), on top of the CodeQL remediation batch and routine dependency bumps below. First time this repo has deliberately sized a version bump to the release's actual scope rather than defaulting to the smallest label.
 
-**Security hardening batch merged to `develop`** (PR [#652](https://github.com/kaushikkuberanathan/lineup_generator/pull/652), regular merge, `495cd5d`) — verified as a genuine 2-parent merge (manual check + the repo's own squash-merge CI guardrail, both green). **Not yet promoted to `main` — 24h soak override issued 2026-08-08 (fall season readiness), see version-bump PR for the explicit override log.**
+**Security hardening batch merged to `develop`** (PR [#652](https://github.com/kaushikkuberanathan/lineup_generator/pull/652), regular merge, `495cd5d`) — verified as a genuine 2-parent merge (manual check + the repo's own squash-merge CI guardrail, both green). 24h soak override issued 2026-08-08 (fall season readiness). **Promoted to `main` 2026-08-09** (PR [#661](https://github.com/kaushikkuberanathan/lineup_generator/pull/661), regular merge, `832dd7d`) — confirmed a genuine 2-parent merge. This line went uncorrected for a full week; caught during v2.10.0 release prep (2026-08-15).
 
 - Resolved 12 of 14 open CodeQL security alerts:
   - **Rate limiting** — `POST /request-access` had none; added an email-keyed limiter (10 req/60min), mirroring `loginLimiter`'s proven design (alert #10).
@@ -23,8 +41,9 @@
 
 **Team-deletion safety (#380)** — 3 PRs (#642, #646, #647), also on `develop`:
 - Team deletion now routes through a backend `service_role` endpoint instead of the anon/authenticated client SDK; `admin.html` updated to use the same backend route.
-- Migration 021 (revoke the anon/authenticated DELETE grant on `teams`) was applied to **production once, then immediately reverted the same session** — its own header explains why: the backend route it depends on was only live on `develop`, not `main`, and Render deploys from `main`. Applying the revoke without that route live in production would have left team deletion with **no working path at all**, for every role, not a silent partial failure. **Re-applying migration 021 to production is a distinct, later, manual step** — only after this release promotes to `main` and Render has redeployed with the new route confirmed live there. It is explicitly not part of this release.
-- Issue #380 stays open until that re-apply happens.
+- Migration 021 (revoke the anon/authenticated DELETE grant on `teams`) was applied to production once on 2026-08-08, then immediately reverted the same session — its own header explains why: at the time, the backend route it depends on was only live on `develop`, not `main`, and Render deploys from `main`. Applying the revoke without that route live in production would have left team deletion with **no working path at all**, for every role, not a silent partial failure.
+- **Correction, 2026-08-15 (v2.10.0 release-prep recon):** this release promoted to `main` on 2026-08-09 (see above) and Render's live deploy has run that code ever since (confirmed via Render's own deploy history, deploy `dep-d9ruuke417fc73alc5vg`, status `live`). A direct query against prod tonight found `anon`/`authenticated` currently hold **no** DELETE grant on `teams` — the revoke is live, not reverted, contrary to what this entry and migration 021's own header both claimed all week.
+- **Verified end-to-end against DEV the same day, not just via inspection:** created a throwaway team and deleted it through the real `DELETE /api/v1/teams/:teamId` route with a real authenticated session — mirroring `dbSaveTeams()`/`dbDeleteTeam()` exactly (plain insert, no `.select()` read-back; real `Authorization: Bearer` header), not raw SQL. Result: `200 {"ok":true}`, team confirmed gone afterward. Separately, a second throwaway authenticated user's *direct* `.from('teams').delete()` attempt (the old, pre-#380 path) was rejected with `42501 permission denied for table teams` — a genuine grant-layer denial, and the team was confirmed still present. Both throwaway teams/users cleaned up; DEV verified back to zero test artifacts. **Issue #380 is closed** (2026-08-15, full evidence on the issue) — the net state described above is now proven, not just plausible.
 
 **Identity data integrity (#375)** — migration 020, **already applied to both DEV and PROD 2026-08-07**: adds a CHECK constraint requiring every `team_memberships` row to carry a real identity (user_id or email) — closes the gap that let an orphaned admin-role row with neither exist. Issue #375 is closed; nothing outstanding.
 
@@ -4241,7 +4260,7 @@ mint or swap the call site without an explicit go on the proposed name.
 
 ---
 ### Story 120 (P2) - SharedView duplicate header: dedicate as region slice 9 (App.jsx var C sweep) <!-- #531 -->
-Status: Open
+Status: Resolved — shipped via PR #591, part of the v2.8.5 Phase 4b promote to `main` (PR #619, 2026-08-07)
 Discovered: 2026-08-02 (Story 114's Step 1 structural search, DESIGN_AUDIT.md), disposition confirmed 2026-08-04.
 Target: resolve before the App.jsx var C sweep can claim full coverage - sequenced
 after slice 7, does not block slices 1-8.
@@ -4428,6 +4447,126 @@ Flagged that migrations 013-017 (also in apply-rls-bootstrap.sh's replay
 list) haven't been individually audited for the same guard-completeness -
 worth a look before assuming they're immune to the same class of failure if
 schema.sql gets re-captured again in the future.
+
+---
+### Story 124 (P2) - Home tab team search + request-access discovery <!-- #655 -->
+Status: Resolved — shipped via PR #663, merged to develop.
+Branch: `claude/role-access-model-evolution-8a855d`.
+Discovered: 2026-08-08, product/architecture review session.
+Symptom: Home tab only shows teams the user is already linked to. No way to
+discover a team by name/age-group/sport and request access - requires a
+manually-shared raw team ID.
+Impact: Onboarding friction for parents, scorekeepers, coordinators, and new
+coaches.
+Root cause: N/A - feature gap.
+Proposed fix: New `GET /api/v1/teams/search` backend route (service-role
+mediated, returns `id`/`name`/`age_group`/`sport`/`year` only - never
+`owner_id`), Home tab search entry point, role picker submitting into the
+existing `POST /request-access`.
+Recommendation: Ship as proposed. This issue covers both the backend route
+(T1) and the frontend UI (T2) - same issue number, split across two parallel
+sessions; see `CLAUDE_HANDOFF_2026-08-08.md` for the route contract.
+Note: This initiative's original handoff also scoped a "Story A" (role
+vocabulary reconciliation, premised on a bug in `/admin/approve-link` and a
+missing `viewer` option in `/request-access`). Recon on 2026-08-08 found that
+bug already fixed by WS-1/#336 (`backend/src/lib/normalizeRole.js`) well
+before this session - Story A was dropped, not filed as an issue.
+
+---
+### Story 125 (P2) - Phase 4C: role-scoped data model (Coordinator/Scorekeeper grants) <!-- #656 -->
+Status: Blocked - filed, not built.
+Discovered: 2026-08-08, product/architecture review session.
+Symptom: `team_data` is one JSONB row per team with one RLS write rule
+(admin/coach only). No way to grant Coordinator write access to
+schedule/snacks/songs or Scorekeeper write access to batting order without
+also granting full `team_data` access.
+Impact: Coordinator and Scorekeeper roles exist but can't be given real
+scoped permissions until this lands.
+Root cause: N/A - architecture gap, matches already-documented PERSONAS.md
+Phase 3 items ("scoped write access") that were never built.
+Proposed fix: Extract `walk_up_songs`, `team_schedule` (+ snack duty), and
+batting order into their own tables with per-domain RLS policies, mirroring
+the live-scoring table pattern.
+Recommendation: BLOCKED. Requires Phase 4 auth cutover to be live first -
+building field-level RLS before the app can authenticate a role is inert
+work. Do not schedule ahead of Phase 4.
+Named precondition - Option A/B decision (2026-08-08): Coordinator currently
+normalizes to coach-tier access per `normalizeRole.js` (Option B, WS-1/#336).
+Promoting coordinator to a distinct canonical role (Option A) is required
+before differentiated grants are possible, and was deliberately deferred, not
+resolved, on 2026-08-08. Revisit this decision explicitly when Phase 4
+unblocks - do not silently reverse Option B as part of unrelated work.
+
+---
+### Story 126 (P2) - RequestAccessScreen: preserveSession success gave no visible confirmation <!-- #665 -->
+Status: Resolved — shipped via PR #667, merged to develop.
+Discovered: 2026-08-10, session testing Story 124/#655's preserveSession path.
+Symptom: On a successful `preserveSession=true` submission (an already-
+authenticated coach requesting a 2nd team), the form gave no visible
+feedback - loading flipped back to false, the button reset, and nothing else
+happened. A stale comment (`// On success, useAuth sets authState →
+'pending_approval'`) no longer matched this path, since preserveSession
+keeps the existing session instead of transitioning authState.
+Impact: From the coach's perspective, submitting the request was
+indistinguishable from nothing having happened - no confirmation the
+request was sent.
+Root cause: The preserveSession success branch never diverged from the
+default (pre-auth) success branch, which relies on useAuth's authState
+transition to route to PendingApprovalScreen. That transition doesn't apply
+when the session is preserved.
+Proposed fix: Added `submitted` state, set only on preserveSession success;
+conditionally renders an inline "Request Sent" confirmation card in place of
+the form. Corrected the stale comment to document both paths explicitly.
+File: `frontend/src/components/Auth/RequestAccessScreen.jsx`.
+Recommendation: Ship as implemented. Zero test coverage on the new
+confirmation state - tracked as part of #664 (Story 124 follow-up test
+debt), not blocking since it's UI-only and was verified by eye.
+
+---
+### Story 127 (P3) - Home team card "..." menu (Edit/Delete team) not role-gated <!-- #666 -->
+Status: Open - filed, not built.
+Discovered: 2026-08-11, during local testing of Story 124/#655.
+Symptom: The team card's "..." menu (Edit team, Download backup, Delete
+team) - rendered inline inside `renderHome()`'s team-list map in
+`frontend/src/App.jsx` (~lines 2963-3003) - is shown unconditionally for
+every fully-hydrated card, with no role check anywhere in that block. A
+viewer-role member (read-only by design) sees the exact same Edit/Delete
+options as an admin or coach.
+Impact: Found while testing Story 124's search+request-access flow - after
+being approved as viewer on a team, that team's card showed the full "..."
+menu including Delete team, same as any other role. Any restriction, if one
+exists, would have to live somewhere else in the write path, not in this
+menu's visibility.
+Root cause: Pre-existing - this menu's role-agnostic rendering predates
+Story 124 and isn't something that session introduced.
+Proposed fix: Gate the "..." menu (or at minimum the Delete/Edit actions
+inside it) on the current user's role for that team_id, once memberships
+are available in `renderHome()`'s render scope.
+Recommendation: Not urgent - file and track. Related to the broader
+role-scoped-grants work tracked in Story 125/#656, though this specific gap
+is simpler - it's card-level UI visibility, not the deeper domain-permission
+model Story 125 covers.
+
+---
+### Story 128 (P3) - Local backend SUPABASE_TARGET dev/prod toggle <!-- #668 -->
+Status: Resolved — shipped via PR #669, merged to develop 2026-08-14.
+Discovered: 2026-08-11, local backend testing session.
+Symptom: Testing the backend locally against dugout-lineup-dev required
+either hardcoding dev Supabase credentials over prod ones in a single
+.env file, or manually swapping values back and forth between test runs -
+easy to leave misconfigured and accidentally point a local process at
+production.
+Impact: Dev-tooling only, no user-facing impact. Reduces risk of a local
+process accidentally writing to production Supabase during testing.
+Root cause: N/A - tooling gap, not a bug.
+Proposed fix: Optional SUPABASE_TARGET env var in `backend/src/lib/env.js`
+selects between SUPABASE_*_DEV and SUPABASE_*_PROD suffixed vars when set;
+falls through unchanged to the plain SUPABASE_* vars when unset, verified
+via isolated `node -e` checks (target unset + plain vars present -> no
+throw, values byte-for-byte untouched). Render never sets SUPABASE_TARGET,
+so production is unaffected regardless.
+Recommendation: Ship as implemented. Dev-tooling only, no test suite impact
+expected.
 
 ---
 ### Automated Score Reporting (County Integration)

@@ -37,6 +37,7 @@ import { LegalSection }       from './components/Support/LegalSection';
 import { FAQSection }         from './components/Support/FAQSection';
 import { AboutTab }           from './components/Support/AboutTab';
 import { HomeNameNudge }      from './components/Home/HomeNameNudge';
+import { TeamSearch }         from './components/Home/TeamSearch';
 import { AccountNameField }   from './components/Account/AccountNameField';
 import { BattingHandSelector } from './components/BattingHandSelector';
 import { PlayerHandBadge }     from './components/PlayerHandBadge';
@@ -142,7 +143,7 @@ var DISLIKE_PENALTY = -50;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.9.0";
+var APP_VERSION = "2.10.0";
 
 // loadJSON / saveJSON — localStorage with in-memory (_mem) fallback — moved to
 // ./utils/storage (#416). Imported above; call sites unchanged.
@@ -1668,6 +1669,8 @@ export default function App() {
   var v2SectionOpen = _v2sec[0]; var setV2SectionOpen = _v2sec[1];
   var _hm = useState("welcome");
   var homeMode = _hm[0]; var setHomeMode = _hm[1];
+  var _discoveredTeam = useState(null);
+  var discoveredTeam = _discoveredTeam[0]; var setDiscoveredTeam = _discoveredTeam[1];
   var _teamSearch = useState("");
   var teamSearch = _teamSearch[0]; var setTeamSearch = _teamSearch[1];
   var _nt = useState({ name:"", ageGroup:"", sport:"", year: new Date().getFullYear() });
@@ -3221,7 +3224,32 @@ export default function App() {
               <div style={{ textAlign:"center" }}>
                 <div style={{ fontSize:"10px", color:"#d1d5db" }}>All data saved locally on this device</div>
               </div>
+              <div style={{ textAlign:"center", marginTop:"10px" }}>
+                <button
+                  onClick={function() { setHomeMode("search"); }}
+                  style={{ background:"none", border:"none", color:"#2f6bff", fontSize:"12px", fontFamily:"Georgia,serif", cursor:"pointer", textDecoration:"underline", padding:"4px" }}>
+                  Don&apos;t see your team? Search for one
+                </button>
+              </div>
             </div>
+          ) : homeMode === "search" ? (
+            <ErrorBoundary fallback="Team Search">
+              <TeamSearch
+                isOnline={isOnline}
+                onBack={function() { setHomeMode("welcome"); }}
+                onSelectTeam={function(team) { setDiscoveredTeam(team); setHomeMode("requestAccess"); }}
+              />
+            </ErrorBoundary>
+          ) : homeMode === "requestAccess" ? (
+            <ErrorBoundary fallback="Request Access">
+              <RequestAccessScreen
+                preselectedTeam={discoveredTeam}
+                preserveSession={true}
+                backLabel="← Back to search"
+                onBack={function() { setDiscoveredTeam(null); setHomeMode("search"); }}
+                requestAccess={requestAccess}
+              />
+            </ErrorBoundary>
           ) : (
             <div style={{ background:"#fff", border:"1px solid #e5e7eb", borderRadius:"14px", padding:"22px" }}>
               <div style={{ fontSize:"15px", fontWeight:"bold", color:"#111827", marginBottom:"16px" }}>Create a New Team</div>
