@@ -1,17 +1,27 @@
 # Phase 4C Auth Cutover — Live Scoring RLS Design Proposal
 
-**Status: PROPOSAL ONLY. Not authorized for implementation.** Written per KK's explicit
-instruction (overnight handoff, 2026-08-06): recon + design only, no code changes, no
-SQL executed against any database. The drafted migration (`backend/migrations/019_scoring_auth_uid_rls.sql`)
-has not been applied anywhere — not prod, not DEV, not even a local ephemeral stack.
+**Status: PROPOSAL, partially applied.** Written per KK's explicit instruction (overnight
+handoff, 2026-08-06): recon + design only, no code changes, no SQL executed against any
+database — that constraint held for this doc's own drafting session. **Correction,
+2026-08-17:** Section A of the drafted migration (`backend/migrations/019_scoring_auth_uid_rls.sql`)
+**was applied to DEV** (`psqvzppphdedqkpmarwx`) on **2026-08-15T23:08:27Z**, per KK
+go-ahead, Section A scope only — confirmed via direct DEV policy query and the raw
+Postgres log of the applying statement (source `POST /mcp`, `created_by
+kaushik.kuberanathan@gmail.com`, the SQL's own embedded comment stating the scope and
+authorization). This was a real, deliberate, attributed action that simply never got
+written back into this doc afterward — not an incident. **PROD has not been touched**
+(confirmed via direct PROD policy query, same session) — still only the original
+anon-test/catch-all policies. Section B (dropping the old permissive policies, on either
+database) has not run anywhere.
 
 **Both open design decisions confirmed by KK (2026-08-07):** (1) `scorekeeper` stays in
 the write-scoping — a non-admin/non-coach scorekeeper is an intended near-term user; (2)
 the four `public_read_*` SELECT policies are un-narrowed leftovers, not a deliberate
 anon-viewer design — proceed with dropping them in Section B. Neither decision changes
-the migration's drafted SQL; both confirm the design as already written. This does
-**not** authorize applying Section A or B — that still requires the shim-removal
-sequence's own gates (§3), including the `game-mode/*` gate phrase for step 2.
+the migration's drafted SQL; both confirm the design as already written. **Section A's
+DEV application above is the only apply that has happened.** Section B anywhere, and
+Section A on PROD, still require the shim-removal sequence's own gates (§3), including
+the `game-mode/*` gate phrase for step 2.
 
 This supersedes `docs/ops/PHASE4C_CUTOVER.md` where they conflict — that file has one
 stale file path (see §1) — but does not replace it; both should be read together until
@@ -129,6 +139,9 @@ if it's done out of turn — see also §5 for the consolidated worst-case list.
 1. **Apply migration 019, Section A only** (additive — new `auth.uid()`-scoped policies
    alongside the existing ones). Safe at any time; changes nothing observable, since the
    old wide-open policies still gate every write more permissively than the new ones.
+   **DEV: done, 2026-08-15T23:08:27Z** (see the status correction at the top of this
+   doc). **PROD: not yet done** — still needed before this step is complete for both
+   environments.
 2. **Flip the frontend shim** (needs the `game-mode/*` gate phrase — not granted
    tonight): remove `useLiveScoring.js`'s `_effectiveUserId`/`_effectiveUserName`
    fallback, restore direct `userId`/`userName` param use; in `DugoutView.jsx`, change
