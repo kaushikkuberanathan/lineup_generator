@@ -4705,55 +4705,108 @@ Recommendation: Do not start implementation until Phase 5 promotes to
 main and this scoping has KK's go-ahead on the tooling choice.
 
 ---
-### Story 133 (P2) - Issue #503 incorrectly closed - slice 8 (GameModeScreen) work never done <!-- #698 -->
-Status: Open - GitHub issue #503 shows CLOSED (manually, 2026-08-06,
-actor kaushikkuberanathan, no state_reason, 4 minutes after PR #591's
-merge cross-referenced it) but the underlying work was never done. Attempted
-to reopen #503 directly and correct it with an evidence comment - blocked
-by the auto-mode permission classifier on both `gh issue reopen` and the
-`$GITHUB_TOKEN` curl fallback. Filed as its own story instead so the gap
-stays tracked pending KK's explicit reopen.
+### Story 133 (P2) - Live game-day surface token migration (game-mode/ + ScoringMode/) <!-- #698 -->
+Status: Open - scoped and phased, not started. #503 reopened by KK
+2026-08-17. Scope expanded the same day past the original ticket (see
+"Scope expansion" below) - KK's explicit call, full-surface option chosen
+over the two narrower alternatives offered.
 Discovered: 2026-08-17, full-review audit answering KK's question "was
 there not some work with previous phases pending because ScoringMode was
 locked?"
-Symptom: Story 116/#503 (the `var C`/token-migration "slice 8" carved out
-for `GameModeScreen`/`DugoutView` specifically because `game-mode/*` and
-`ScoringMode/*` are each their own Locked File) was deliberately sequenced
-last and never run. PR #591's own body is explicit: "Closes #531. Related,
-not closed: #503 (slice 8, still open)." Yet #503 shows closed on GitHub.
-Verified directly against `frontend/src/components/game-mode/GameModeScreen.jsx`
-on `main` today: 0 `var C` references (correct - this file never used the
-`C` proxy object), but 30 occurrences across 13 distinct un-tokenized
-literal hex colors (`#0b1524`, `#0f1f3d`, `#22c55e`, `#475569`, `#64748b`,
-`#94a3b8`, `#d97706`, `#dc2626`, `#e2e8f0`, `#f5c842`, `#fca5a5`, `#fff`,
-`#ffffff`) - none wired to `tokens.js`. Confirmed this file is genuinely
-live, not dead code: `GameModeScreen` is reachable via 3 separate "Game
-Mode" buttons on ready team cards (Home tab, App.jsx lines ~3017/3130/3152
-each call `setGameModeActive(true)`), independent of the `DUGOUT VIEW`
-sub-tab launcher.
+Symptom (original): Story 116/#503 (the `var C`/token-migration "slice 8"
+carved out for `GameModeScreen`/`DugoutView` specifically because
+`game-mode/*` and `ScoringMode/*` are each their own Locked File) was
+deliberately sequenced last and never run. PR #591's own body is explicit:
+"Closes #531. Related, not closed: #503 (slice 8, still open)." Yet #503
+had shown closed on GitHub (manually, 2026-08-06, actor
+kaushikkuberanathan, no state_reason, 4 minutes after PR #591's merge
+cross-referenced it) - root cause: looks like an adjacent-issue mixup
+during that session's cleanup, not an automated commit-keyword closure
+(PR #591's own commits/body never say "closes #503"). Reopened by KK
+2026-08-17 after being flagged via an evidence comment (agent tooling was
+blocked from reopening it directly that session - permission classifier
+denied both `gh issue reopen` and the `$GITHUB_TOKEN` curl fallback).
+**Scope expansion, 2026-08-17:** the original ticket only named
+`GameModeScreen.jsx` (33 literal-hex occurrences). Full survey of both
+Locked directories found the real gap is much larger - **neither
+`game-mode/*` nor `ScoringMode/*` has ever used the token system, not even
+the legacy `var C` proxy**:
+
+| Directory | Files | Literal-hex occurrences | Token refs |
+|---|---|---|---|
+| `game-mode/*` | 7 | 133 | 0 |
+| `ScoringMode/*` | 7 | 251 | 0 |
+| **Total** | **14** | **384** | **0** |
+
+This is the largest untokenized surface remaining anywhere in the
+codebase - bigger than all of Phase 4's App.jsx slices or Phase 5's Auth
+screens combined. Confirmed `GameModeScreen.jsx` is genuinely live (not
+dead code): reachable via 3 separate "Game Mode" buttons on ready team
+cards (Home tab, App.jsx lines ~3017/3130/3152, each calling
+`setGameModeActive(true)`), independent of the `DUGOUT VIEW` sub-tab
+launcher which reaches `DugoutView.jsx` instead.
 Impact: Phase 4 (`var C` retirement) is correctly declared complete for
-`App.jsx` itself (0 `C.*` refs, confirmed directly against `main`), but
-`GameModeScreen.jsx` - a separate, locked, genuinely-live file - was never
-part of that grep's scope in the first place (it never used the `C` proxy;
-it uses literal hex directly), so "Phase 4 complete" never actually implied
-this file's colors were addressed. The doc's "complete" claim is accurate
-for what it measured; the GitHub issue's incorrect closure is what created
-the false impression the *concern itself* was resolved.
-Root cause: Issue #503 was manually closed via the GitHub API/UI 4 minutes
-after PR #591 (which closed #531, not #503) merged - looks like an
-adjacent-issue mixup during that session's cleanup, not an automated
-commit-keyword closure (the PR's own commit messages and body do not
-contain "closes #503").
-Proposed fix: KK to manually reopen https://github.com/kaushikkuberanathan/lineup_generator/issues/503
-(agent tooling blocked from doing this directly this session). Once
-reopened, the actual remaining work is unchanged from the ticket's original
-plan: run Story 114's Step 1 (structural inheritance-candidate search) +
-Step 2 (`getComputedStyle` runtime verification) methodology against
-`GameModeScreen.jsx` specifically, then the mechanical token swap for its
-13 literal hex values - same `game-mode/*` Locked-File gate phrase
-requirement as before.
-Recommendation: Reopen #503, keep it sequenced after Phase 5 given it's
-Dugout-track/game-day-surface work rather than blocking UX-track Phase 5/6.
+`App.jsx` itself (0 `C.*` refs, confirmed directly against `main`) - that
+claim was accurate for what it measured. But the entire live game-day
+surface, across both locked directories, was never in scope for that grep
+in the first place (it never used the `C` proxy; every file here uses
+literal hex directly). "Phase 4 complete" never actually implied this
+surface was addressed.
+Vocabulary reuse is favorable: 58 distinct hex values across 384
+occurrences; the top 10 most-used values account for ~253 occurrences
+(66%), and most of those top values (`#f5c842`->`brand.gold`,
+`#94a3b8`->`text.tertiary`, `#64748b`->`text.secondary`,
+`#dc2626`->`status.error`, `#0f1f3d`->`brand.navy`/`text.primary`,
+`#374151`->`text.body`, `#0b1524`->`surface.dark`, `#fff`/`#ffffff`->
+`surface.card`/`text.onDark` role-dependent) already have exact token
+matches. `#475569` and `#16a34a` repeat the same no-exact-match shape
+Phase 5 already resolved once (converged to `text.secondary` and
+`status.success` respectively, both KK-confirmed) - same call likely
+applies here, subject to KK's per-surface confirmation.
+Root cause: N/A - sequenced roadmap work, correctly saved for last given
+the Locked-File + live-game-day-surface risk profile.
+Proposed fix: Phased slice plan, mirroring Phase 4's proven pattern (prove
+the mechanical/2-commit approach on low-risk files before the largest
+ones). Each slice follows Phase 5's proven shape: commit 1 = exact-match
+safe swaps (mechanical, zero-visible-change, hex-diff verified against
+`tokens.js`); commit 2 = design-decision convergence for non-matching
+literals (KK sign-off per value, same bar as Phase 5's `#475569`/`#16a34a`
+decisions). Given no browser-automation tooling exists in this session
+environment and this is the single highest-stakes surface in the app (live
+games, zero regression tolerance), recommend a stronger visual-verification
+bar than Phase 5 had: KK does a real on-device Game-Day Validation pass
+(per `CLAUDE.md`'s own checklist - generate lineup, open Game Mode, advance
+an inning, positions visible, batting order clear) after each slice merges
+to `develop`, not just once at the end.
+
+**`game-mode/*` track** (7 files, 133 occurrences, gated on the
+`game-mode/*` phrase):
+1. `BenchStrip.jsx` (3) + `ScoreboardRow.jsx` (7) - bundled, trivial, proves
+   the pattern first
+2. `DugoutView.jsx` (10) - small file, but the GA-default live surface
+   (`COMBINED_GAMEMODE_AND_SCORING`), do early once the pattern is proven
+3. `DiamondView.jsx` (15)
+4. `QuickSwap.jsx` (20)
+5. `GameModeScreen.jsx` (33) - the file the original ticket named
+6. `InningModal.jsx` (45) - largest in this directory, last
+
+**`ScoringMode/*` track** (7 files, 251 occurrences, gated on the
+`ScoringMode/*` phrase, separate from the above):
+1. `LiveScoreViewer.jsx` (0) - verification-only, confirm it's genuinely
+   clean, not a real slice
+2. `GameModeGearMenu.jsx` (10)
+3. `RunnerConflictModal.jsx` (12)
+4. `RestoreScoreModal.jsx` (15)
+5. `FinishGameModal.jsx` (16)
+6. `ScoringModeEntry.jsx` (31)
+7. `LiveScoringPanel.jsx` (167) - by far the largest single file (60KB);
+   likely needs its own sub-slicing once in progress. Last, always.
+
+Recommendation: Start with `game-mode/*` slice 1 (BenchStrip +
+ScoreboardRow) once KK grants the `game-mode/*` gate phrase. Each slice is
+its own PR to `develop`, same merge-commit + branch-hygiene discipline as
+every other track. Do not batch multiple slices into one PR - keeps blast
+radius small and each KK visual-check cycle short.
 
 ---
 ### Automated Score Reporting (County Integration)
