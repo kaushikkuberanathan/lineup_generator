@@ -4643,7 +4643,9 @@ not before it and not instead of it, per `PHASE4C_SCORING_RLS_PROPOSAL.md`
 
 ---
 ### Story 131 (P2) - UX Phase 5 kickoff - Auth Re-Skin <!-- #690 -->
-Status: Open - ready to start.
+Status: Open - in progress. Token-adoption groundwork shipped (PR #693,
+merged to `develop` 2026-08-17, 2-parent merge `935af65`); the re-skin pass
+itself is still open.
 Discovered: 2026-08-17, confirming `UX_REFACTOR_ROADMAP.md`'s own Phase 4
 dependency is now satisfied.
 Symptom: N/A - not a bug, a roadmap-sequence unblock. `UX_REFACTOR_ROADMAP.md`
@@ -4651,16 +4653,23 @@ Phase 5 (Auth Re-Skin) lists "Phase 4 complete" as its sole dependency.
 Phase 4 (`var C` legacy color-object retirement) shipped through v2.8.5,
 confirmed zero `C.*` references remain in `App.jsx` - the dependency is
 genuinely satisfied, not just nominally.
-Impact: The auth screens (`#2471A3`/`#2980B9` drift palette, deliberately
-preserved since Phase 1 specifically for this phase) are the last
-un-migrated visual surface in the UX design-token effort.
+Impact: The auth screens are the last un-migrated visual surface in the
+UX design-token effort. **Correction (2026-08-17):** this entry originally
+claimed the drift palette was `#2471A3`/`#2980B9` - verified false by grep;
+those hex values are field-position colors (`color.position['1B']`/`['2B']`
+in `tokens.js`), never used in the auth screens. See
+`UX_REFACTOR_ROADMAP.md`'s Phase 5 section for the corrected palette
+inventory.
 Root cause: N/A - sequenced roadmap work.
 Proposed fix: Per `UX_REFACTOR_ROADMAP.md` §Phase 5 - replace the drift
-palette with the canonical design-token system, cosmetic only. First task:
-inventory every auth-screen component currently using the drift palette,
-cross-reference against existing design tokens, mint a new token if none
-applies (same "mint by role, not appearance" convention as
-`color.brand.gradientDark`).
+palette with the canonical design-token system, cosmetic only. First task
+(done, PR #693): inventory every auth-screen component currently using the
+drift palette, cross-reference against existing design tokens, mint a new
+token if none applies (same "mint by role, not appearance" convention as
+`color.brand.gradientDark`) - `status.errorBorder` minted on that basis.
+Remaining: KK's visual confirmation of PR #693's two intentional appearance
+changes (`#0f172a`->`text.primary`, `#475569`->`text.secondary`), then the
+actual re-skin pass this story is ultimately for.
 Recommendation: Ship as scoped. Explicit scope boundary from the roadmap
 doc itself, worth repeating since it's easy to blur with Phase 4C: cosmetic
 only, no auth behavioral changes - those belong to Phase 4C (Story 129), not
