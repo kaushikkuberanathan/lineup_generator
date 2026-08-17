@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-10T12:01:08.549Z",
+  "generatedAt": "2026-08-17T11:43:28.540Z",
   "repository": "kaushikkuberanathan/lineup_generator",
   "sourceBranch": "develop",
   "windowMonths": 6,
@@ -204,12 +204,12 @@
     {
       "key": "2026-08",
       "label": "Aug 2026",
-      "mergedPullRequests": 122,
-      "productImprovements": 19,
+      "mergedPullRequests": 133,
+      "productImprovements": 20,
       "productionReleases": 4,
-      "qualityImprovements": 126,
-      "developmentCommits": 145,
-      "otherPullRequests": 118,
+      "qualityImprovements": 145,
+      "developmentCommits": 165,
+      "otherPullRequests": 129,
       "releaseNotes": [
         {
           "number": 661,
@@ -247,21 +247,21 @@
     }
   ],
   "totals": {
-    "mergedPullRequests": 419,
-    "productImprovements": 164,
+    "mergedPullRequests": 430,
+    "productImprovements": 165,
     "productionReleases": 50,
-    "qualityImprovements": 667,
-    "developmentCommits": 831
+    "qualityImprovements": 686,
+    "developmentCommits": 851
   },
   "currentMonth": {
     "key": "2026-08",
     "label": "Aug 2026",
-    "mergedPullRequests": 122,
-    "productImprovements": 19,
+    "mergedPullRequests": 133,
+    "productImprovements": 20,
     "productionReleases": 4,
-    "qualityImprovements": 126,
-    "developmentCommits": 145,
-    "otherPullRequests": 118,
+    "qualityImprovements": 145,
+    "developmentCommits": 165,
+    "otherPullRequests": 129,
     "releaseNotes": [
       {
         "number": 661,
