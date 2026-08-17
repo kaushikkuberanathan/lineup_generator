@@ -134,19 +134,6 @@
 | **Target** | Opportunistic, no version target |
 | **Issue** | [#482](https://github.com/kaushikkuberanathan/lineup_generator/issues/482) |
 
-### 🟡 P2 — PendingApprovalScreen has no test coverage
-
-| | |
-|---|---|
-| **Area** | Auth system — Auth screen components |
-| **Description** | `frontend/src/components/Auth/PendingApprovalScreen.jsx` (shown after a user submits an access request) has zero tests — no colocated `PendingApprovalScreen.test.jsx`. The other 3 auth screens in the same directory each have one: `LoginScreen.test.jsx`, `RequestAccessScreen.test.jsx`, `NoMembershipScreen.test.jsx` (the last added under D-S428b, #481, as the direct precedent for this exact gap shape). Found during Phase 5 (UX Auth Re-Skin, Story 131/#690) token-migration work while auditing all 4 auth screens. |
-| **Risk if unfixed** | Low-moderate — cosmetic-only screen (confirmation copy, a 4-step status list, a "Try logging in" link back to `onTryLogin`), no data mutation. But it's an unauthenticated-state screen every access-request coach passes through, and it has zero regression coverage for its own rendering or its one interactive element. |
-| **Proposed test** | Mirror `NoMembershipScreen.test.jsx`'s shape (D-S428b precedent): renders the confirmation heading + step list, shows the pending email from `localStorage.getItem('lg_pending_email')` when present and omits it when absent, wires "Try logging in" → `onTryLogin`. |
-| **Opened** | 2026-08-17 — found during Phase 5 token-migration audit (PR #693) |
-| **Age** | 0 days |
-| **Target** | Before Phase 5's `develop`→`main` promote — Ship Gate asks whether every touched feature has a golden-path test, and this screen was touched (token swap) by that promote. |
-| **Issue** | [#696](https://github.com/kaushikkuberanathan/lineup_generator/issues/696) |
-
 ### ✅ RESOLVED — D017: ScoreboardRow primitive has no test coverage
 
 - **Discovered:** 2026-05-01 (during Slice 0 / v2.5.4 Pre-release Docs Checklist walk)
@@ -321,6 +308,10 @@
 ## Resolved
 
 *(Items move here once shipped. Format: date, version, original description summary, resolution commit.)*
+
+### August 17, 2026 — PendingApprovalScreen test coverage (#696)
+
+- ✅ **P2 — PendingApprovalScreen has no test coverage** — Resolved. Added `frontend/src/components/Auth/PendingApprovalScreen.test.jsx` (5 tests), mirroring `NoMembershipScreen.test.jsx`'s shape (D-S428b/#481 precedent): confirmation heading + step-list render (both "Request submitted" occurrences — the `<h1>` and step 1's own label — selector-scoped since the bare text collides), pending email from `localStorage.getItem('lg_pending_email')` shown when present and its whole clause omitted when absent, `onTryLogin` wiring on "Try logging in", and an affordance-count check (exactly one button). **RED-checkpoint (mutation-test substitute — coverage-after-the-fact for an already-shipped, already-correct component, not a bug fix, so no natural RED state exists to capture)**: two mutations in one pass, matching D-S428b's precedent — inverted the `pendingEmail &&` conditional to `!pendingEmail &&`, and replaced the button's `onClick={onTryLogin}` with a no-op. 3 of 5 tests went red (the two email-presence tests plus the click-wiring test — exactly the ones touching either mutation); the render/step-list test and the button-count test correctly stayed green (neither mutation touches what they assert). Reverted both mutations, confirmed `git diff` on `PendingApprovalScreen.jsx` empty, re-ran and confirmed 5/5 green again. Full Auth suite re-run clean (4 files, 29 tests) and `npm run build` clean. No real production bug found — this closes a coverage gap only. Issue: [#696](https://github.com/kaushikkuberanathan/lineup_generator/issues/696).
 
 ### August 5, 2026 — FEATURE_MAP.md Missing Feature Rows (Analytics, PWA, Governance)
 
