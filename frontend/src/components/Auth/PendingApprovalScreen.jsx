@@ -35,16 +35,16 @@ export function PendingApprovalScreen({ onTryLogin }) {
             <span style={styles.stepIcon}>✓</span>
             <span>Request submitted</span>
           </div>
-          <div style={{ ...styles.step, color: '#94a3b8' }}>
-            <span style={{ ...styles.stepIcon, backgroundColor: '#f1f5f9', color: '#94a3b8' }}>2</span>
+          <div style={{ ...styles.step, color: tokens.color.text.tertiary }}>
+            <span style={{ ...styles.stepIcon, backgroundColor: '#f1f5f9', color: tokens.color.text.tertiary }}>2</span>
             <span>Coach reviews and approves</span>
           </div>
-          <div style={{ ...styles.step, color: '#94a3b8' }}>
-            <span style={{ ...styles.stepIcon, backgroundColor: '#f1f5f9', color: '#94a3b8' }}>3</span>
+          <div style={{ ...styles.step, color: tokens.color.text.tertiary }}>
+            <span style={{ ...styles.stepIcon, backgroundColor: '#f1f5f9', color: tokens.color.text.tertiary }}>3</span>
             <span>You receive an approval email</span>
           </div>
-          <div style={{ ...styles.step, color: '#94a3b8' }}>
-            <span style={{ ...styles.stepIcon, backgroundColor: '#f1f5f9', color: '#94a3b8' }}>4</span>
+          <div style={{ ...styles.step, color: tokens.color.text.tertiary }}>
+            <span style={{ ...styles.stepIcon, backgroundColor: '#f1f5f9', color: tokens.color.text.tertiary }}>4</span>
             <span>Tap the link and log in</span>
           </div>
         </div>
@@ -71,14 +71,14 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: tokens.color.surface.page,
     padding: '24px 16px',
     boxSizing: 'border-box',
   },
   card: {
     width: '100%',
     maxWidth: '400px',
-    backgroundColor: '#ffffff',
+    backgroundColor: tokens.color.surface.card,
     borderRadius: '16px',
     padding: '36px 28px',
     boxShadow: tokens.shadow.card,
@@ -129,7 +129,7 @@ const styles = {
   },
   note: {
     fontSize: '12px',
-    color: '#94a3b8',
+    color: tokens.color.text.tertiary,
     marginBottom: '20px',
     lineHeight: '1.5',
   },
@@ -138,9 +138,9 @@ const styles = {
     padding: '12px',
     fontSize: '15px',
     fontWeight: '500',
-    backgroundColor: '#f8fafc',
-    color: '#2563eb',
-    border: '1.5px solid #e2e8f0',
+    backgroundColor: tokens.color.surface.page,
+    color: tokens.color.status.info,
+    border: `1.5px solid ${tokens.color.border.default}`,
     borderRadius: '10px',
     cursor: 'pointer',
   },

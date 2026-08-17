@@ -181,12 +181,12 @@ export function RequestAccessScreen({
               <label style={styles.label}>Team</label>
               <div style={styles.preselectedTeam}>
                 {preselectedTeam.name}
-                {preselectedTeam.age_group ? <span style={{ color: '#64748b', fontWeight: 400 }}> · {preselectedTeam.age_group}</span> : null}
+                {preselectedTeam.age_group ? <span style={{ color: tokens.color.text.secondary, fontWeight: 400 }}> · {preselectedTeam.age_group}</span> : null}
               </div>
             </div>
           ) : (
             <div>
-              <label style={styles.label}>Team ID <span style={{ color: '#94a3b8', fontWeight: 400 }}>(optional — leave blank for Mud Hens)</span></label>
+              <label style={styles.label}>Team ID <span style={{ color: tokens.color.text.tertiary, fontWeight: 400 }}>(optional — leave blank for Mud Hens)</span></label>
               <input
                 type="text"
                 value={teamId}
@@ -250,14 +250,14 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: tokens.color.surface.page,
     padding: '24px 16px',
     boxSizing: 'border-box',
   },
   card: {
     width: '100%',
     maxWidth: '420px',
-    backgroundColor: '#ffffff',
+    backgroundColor: tokens.color.surface.card,
     borderRadius: '16px',
     padding: '32px 28px',
     boxShadow: tokens.shadow.card,
@@ -278,7 +278,7 @@ const styles = {
   subtitle: {
     margin: '4px 0 0',
     fontSize: '14px',
-    color: '#64748b',
+    color: tokens.color.text.secondary,
   },
   form: {
     display: 'flex',
@@ -298,54 +298,54 @@ const styles = {
   label: {
     fontSize: '13px',
     fontWeight: '500',
-    color: '#374151',
+    color: tokens.color.text.body,
     marginBottom: '4px',
     display: 'block',
   },
   input: {
     padding: '11px 13px',
     fontSize: '16px',
-    border: '1.5px solid #e2e8f0',
+    border: `1.5px solid ${tokens.color.border.default}`,
     borderRadius: '10px',
     outline: 'none',
     width: '100%',
     boxSizing: 'border-box',
     color: '#0f172a',
-    backgroundColor: '#fff',
+    backgroundColor: tokens.color.surface.card,
   },
   select: {
     padding: '11px 13px',
     fontSize: '15px',
-    border: '1.5px solid #e2e8f0',
+    border: `1.5px solid ${tokens.color.border.default}`,
     borderRadius: '10px',
     outline: 'none',
     width: '100%',
     boxSizing: 'border-box',
     color: '#0f172a',
-    backgroundColor: '#fff',
+    backgroundColor: tokens.color.surface.card,
     cursor: 'pointer',
   },
   roleNote: {
     margin: '6px 0 0',
     fontSize: '12px',
-    color: '#92400e',
+    color: tokens.color.status.warningText,
   },
   preselectedTeam: {
     padding: '11px 13px',
     fontSize: '15px',
-    border: '1.5px solid #e2e8f0',
+    border: `1.5px solid ${tokens.color.border.default}`,
     borderRadius: '10px',
     width: '100%',
     boxSizing: 'border-box',
     color: '#0f172a',
-    backgroundColor: '#f8fafc',
+    backgroundColor: tokens.color.surface.page,
   },
   primaryBtn: {
     padding: '13px',
     fontSize: '16px',
     fontWeight: '600',
-    backgroundColor: '#2563eb',
-    color: '#ffffff',
+    backgroundColor: tokens.color.status.info,
+    color: tokens.color.text.onDark,
     border: 'none',
     borderRadius: '10px',
     cursor: 'pointer',
@@ -354,7 +354,7 @@ const styles = {
   linkBtn: {
     background: 'none',
     border: 'none',
-    color: '#2563eb',
+    color: tokens.color.status.info,
     fontSize: '14px',
     cursor: 'pointer',
     padding: '4px 0',
@@ -363,7 +363,7 @@ const styles = {
   error: {
     margin: '0',
     fontSize: '13px',
-    color: '#dc2626',
+    color: tokens.color.status.error,
     padding: '8px 12px',
     backgroundColor: '#fef2f2',
     borderRadius: '8px',
@@ -372,7 +372,7 @@ const styles = {
   note: {
     marginTop: '20px',
     fontSize: '12px',
-    color: '#94a3b8',
+    color: tokens.color.text.tertiary,
     textAlign: 'center',
     lineHeight: '1.5',
   },
