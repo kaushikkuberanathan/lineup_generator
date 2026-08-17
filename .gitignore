@@ -30,6 +30,7 @@ spike-*.js
 backend/spike-*.js
 spike-*.js
 backend/spike-*.js
-.claude/
+.claude/*
 !.claude/settings.json
+!.claude/skills/
 docs/private/
