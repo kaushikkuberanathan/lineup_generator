@@ -4571,7 +4571,7 @@ Recommendation: Ship as implemented. Dev-tooling only, no test suite impact
 expected.
 
 ---
-### Story 129 (P1) - Phase 4C shim-removal sequence, steps 2-7 remaining
+### Story 129 (P1) - Phase 4C shim-removal sequence, steps 2-7 remaining <!-- #688 -->
 Status: Open - blocked, gated.
 Discovered: 2026-08-15/17, Phase 4C recon sessions.
 Symptom: Live scoring's auth shims (`useLiveScoring.js`'s
@@ -4600,7 +4600,7 @@ phrase and KK's active presence for step 3's soak, not something to attempt
 in an unattended session.
 
 ---
-### Story 130 (P1) - Scoring-tables GRANT-revocation migration - design decision needed
+### Story 130 (P1) - Scoring-tables GRANT-revocation migration - design decision needed <!-- #689 -->
 Status: Open - not drafted, needs KK sign-off on design before drafting.
 Discovered: 2026-08-15/17, Phase 4C recon sessions.
 Symptom: `anon` and `authenticated` both currently hold full
@@ -4642,7 +4642,7 @@ not before it and not instead of it, per `PHASE4C_SCORING_RLS_PROPOSAL.md`
 §3 step 4's own note.
 
 ---
-### Story 131 (P2) - UX Phase 5 kickoff - Auth Re-Skin
+### Story 131 (P2) - UX Phase 5 kickoff - Auth Re-Skin <!-- #690 -->
 Status: Open - ready to start.
 Discovered: 2026-08-17, confirming `UX_REFACTOR_ROADMAP.md`'s own Phase 4
 dependency is now satisfied.
