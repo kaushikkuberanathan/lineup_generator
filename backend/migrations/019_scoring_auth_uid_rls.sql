@@ -1,10 +1,9 @@
 -- Migration 019: auth.uid()-scoped RLS for the 4 live-scoring tables (Phase 4C, #355)
 --
--- DRAFTED 2026-08-06. NOT APPLIED — not to prod, not to DEV, not even to a
---   local ephemeral stack. Recon + proposal only (tonight's explicit
---   constraint). Do not run any part of this file until the shim-removal
---   sequence in docs/product/PHASE4C_SCORING_RLS_PROPOSAL.md has reached the
---   step that names it.
+-- DRAFTED 2026-08-06. Section A (lines 88-284) applied to DEV
+--   (psqvzppphdedqkpmarwx) on 2026-08-15T23:08:27Z, per KK go-ahead, Section A
+--   scope only. PROD: not applied. Section B: not applied anywhere. Full
+--   detail: docs/product/PHASE4C_SCORING_RLS_PROPOSAL.md.
 --
 -- Repo record of a migration authored ahead of its own apply — same
 -- "commit first, apply later" convention as every file in this tree, just an
