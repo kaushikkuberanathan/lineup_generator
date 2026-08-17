@@ -4669,11 +4669,91 @@ token if none applies (same "mint by role, not appearance" convention as
 `color.brand.gradientDark`) - `status.errorBorder` minted on that basis.
 Remaining: KK's visual confirmation of PR #693's two intentional appearance
 changes (`#0f172a`->`text.primary`, `#475569`->`text.secondary`), then the
-actual re-skin pass this story is ultimately for.
+standard `develop`->`main` promote ritual (24h soak not yet started).
+**Correction 2026-08-17:** this entry previously implied a separate "actual
+re-skin pass" was still owed beyond PR #693. Re-checked against
+`UX_REFACTOR_ROADMAP.md`'s own Phase 5 goal statement ("converge onto the
+canonical design-token system, align visually with the main app") - that
+goal is exactly what PR #693's two commits did. There is no additional
+scoped re-skin work; PR #693 is Phase 5's full scope, pending the two items
+above.
 Recommendation: Ship as scoped. Explicit scope boundary from the roadmap
 doc itself, worth repeating since it's easy to blur with Phase 4C: cosmetic
 only, no auth behavioral changes - those belong to Phase 4C (Story 129), not
 here.
+
+---
+### Story 132 (P3) - UX Phase 6 - Design System Docs (scoping only) <!-- #697 -->
+Status: Open - scoped, not started. Blocked on Phase 5 fully landing (KK
+visual sign-off + promote to main), per this phase's own stated dependency.
+Discovered: 2026-08-17, full-review audit of all UX migration phases across
+dev and prod.
+Symptom: N/A - forward scoping, not a bug. `UX_REFACTOR_ROADMAP.md`'s Phase
+6 section had only a one-line goal statement and no scoping detail.
+Impact: None yet - this phase hasn't started and nothing depends on it
+starting soon. Scoping now avoids a cold start whenever it does begin.
+Root cause: N/A.
+Proposed fix: See `UX_REFACTOR_ROADMAP.md` Phase 6 section for the full
+scoping writeup. Summary: in scope is the 9 shipped `components/ui/`
+primitives + the token system; out of scope is the 4 Auth screens (don't
+consume primitives yet) and App.jsx's own split (separate tracked
+initiative, `APPJSX_DECOMPOSITION_PLAN.md`). Tooling recommendation:
+`@storybook/react-vite` (this repo is already Vite 6 + React 18, no
+`.storybook/` exists yet - from-scratch add), with a 1-day timeboxed spike
+against Ladle as a lighter alternative before committing repo-wide.
+Recommendation: Do not start implementation until Phase 5 promotes to
+main and this scoping has KK's go-ahead on the tooling choice.
+
+---
+### Story 133 (P2) - Issue #503 incorrectly closed - slice 8 (GameModeScreen) work never done <!-- #698 -->
+Status: Open - GitHub issue #503 shows CLOSED (manually, 2026-08-06,
+actor kaushikkuberanathan, no state_reason, 4 minutes after PR #591's
+merge cross-referenced it) but the underlying work was never done. Attempted
+to reopen #503 directly and correct it with an evidence comment - blocked
+by the auto-mode permission classifier on both `gh issue reopen` and the
+`$GITHUB_TOKEN` curl fallback. Filed as its own story instead so the gap
+stays tracked pending KK's explicit reopen.
+Discovered: 2026-08-17, full-review audit answering KK's question "was
+there not some work with previous phases pending because ScoringMode was
+locked?"
+Symptom: Story 116/#503 (the `var C`/token-migration "slice 8" carved out
+for `GameModeScreen`/`DugoutView` specifically because `game-mode/*` and
+`ScoringMode/*` are each their own Locked File) was deliberately sequenced
+last and never run. PR #591's own body is explicit: "Closes #531. Related,
+not closed: #503 (slice 8, still open)." Yet #503 shows closed on GitHub.
+Verified directly against `frontend/src/components/game-mode/GameModeScreen.jsx`
+on `main` today: 0 `var C` references (correct - this file never used the
+`C` proxy object), but 30 occurrences across 13 distinct un-tokenized
+literal hex colors (`#0b1524`, `#0f1f3d`, `#22c55e`, `#475569`, `#64748b`,
+`#94a3b8`, `#d97706`, `#dc2626`, `#e2e8f0`, `#f5c842`, `#fca5a5`, `#fff`,
+`#ffffff`) - none wired to `tokens.js`. Confirmed this file is genuinely
+live, not dead code: `GameModeScreen` is reachable via 3 separate "Game
+Mode" buttons on ready team cards (Home tab, App.jsx lines ~3017/3130/3152
+each call `setGameModeActive(true)`), independent of the `DUGOUT VIEW`
+sub-tab launcher.
+Impact: Phase 4 (`var C` retirement) is correctly declared complete for
+`App.jsx` itself (0 `C.*` refs, confirmed directly against `main`), but
+`GameModeScreen.jsx` - a separate, locked, genuinely-live file - was never
+part of that grep's scope in the first place (it never used the `C` proxy;
+it uses literal hex directly), so "Phase 4 complete" never actually implied
+this file's colors were addressed. The doc's "complete" claim is accurate
+for what it measured; the GitHub issue's incorrect closure is what created
+the false impression the *concern itself* was resolved.
+Root cause: Issue #503 was manually closed via the GitHub API/UI 4 minutes
+after PR #591 (which closed #531, not #503) merged - looks like an
+adjacent-issue mixup during that session's cleanup, not an automated
+commit-keyword closure (the PR's own commit messages and body do not
+contain "closes #503").
+Proposed fix: KK to manually reopen https://github.com/kaushikkuberanathan/lineup_generator/issues/503
+(agent tooling blocked from doing this directly this session). Once
+reopened, the actual remaining work is unchanged from the ticket's original
+plan: run Story 114's Step 1 (structural inheritance-candidate search) +
+Step 2 (`getComputedStyle` runtime verification) methodology against
+`GameModeScreen.jsx` specifically, then the mechanical token swap for its
+13 literal hex values - same `game-mode/*` Locked-File gate phrase
+requirement as before.
+Recommendation: Reopen #503, keep it sequenced after Phase 5 given it's
+Dugout-track/game-day-surface work rather than blocking UX-track Phase 5/6.
 
 ---
 ### Automated Score Reporting (County Integration)
