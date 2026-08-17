@@ -1377,7 +1377,7 @@ See also: Story 61 (P0) — recipient-side viewer routing broken (separate fix,
 | # | Item | Notes |
 |---|------|-------|
 | 1 | **Auth Phase 4 cutover** | Add requireAuth middleware to existing routes. Auth: email magic-link + Google OAuth (Twilio removed). |
-| 2 | **Scoring: Phase 4C cleanup** | Remove AUTH TESTING SHIM from `useLiveScoring.js` and `index.jsx`; enforce RLS with `auth.uid()` policies on all three scoring tables; restore `scorer_user_id` and `actor_user_id` to uuid + FK. |
+| 2 | **Scoring: Phase 4C cleanup** | See Story 129 (7-step shim-removal sequence, step 1 of 7 done) and Story 130 (GRANT-revocation migration, design decision pending KK sign-off) for the current, detailed state — supersedes this row's older summary. |
 | 3 | **Scoring: persist myTeamHalf** | `myTeamHalf` (top/bottom) currently lives only in ScoringMode React state — lost on page reload. Persist to `live_game_state` and hydrate on mount. |
 | 4 | **Scoring: real-time multi-device sync** | Realtime subscription is wired but only viewers see state changes passively. Scorer and viewer full sync validation needed before broader rollout. |
 
@@ -4569,6 +4569,102 @@ throw, values byte-for-byte untouched). Render never sets SUPABASE_TARGET,
 so production is unaffected regardless.
 Recommendation: Ship as implemented. Dev-tooling only, no test suite impact
 expected.
+
+---
+### Story 129 (P1) - Phase 4C shim-removal sequence, steps 2-7 remaining <!-- #688 -->
+Status: Open - blocked, gated.
+Discovered: 2026-08-15/17, Phase 4C recon sessions.
+Symptom: Live scoring's auth shims (`useLiveScoring.js`'s
+`_effectiveUserId`/`_effectiveUserName` fallback, `DugoutView.jsx`'s
+`isEnabled = liveScoringEnabled || true` and `scoringUserId` fallback chain)
+are still active in production. Migration 019 Section A (additive
+`auth.uid()`-scoped RLS policies) is applied to DEV only, confirmed live via
+direct policy query 2026-08-17; PROD and Section B are both untouched
+anywhere.
+Impact: Live scoring's real security fix (#355) cannot land until this full
+7-step sequence completes. Steps 2-7 are the actual behavior change; step 1
+(Section A on DEV) is done but is additive-only and changes nothing
+observable yet.
+Root cause: N/A - sequenced infrastructure work, not a bug.
+Proposed fix: Full 7-step sequence documented in
+`docs/product/PHASE4C_SCORING_RLS_PROPOSAL.md` §3 - (1) Section A on DEV
+[done], (2) flip the frontend shim [needs `game-mode/*` gate phrase], (3)
+soak in prod with KK actively present for a real game-day cycle, (4) Section
+A on PROD + Section B + the new GRANT-revocation migration (Story 130)
+together, (5) un-skip `LS1`-`LS7` in `policies.test.js`, (6) restore
+`scorer_user_id`/`actor_user_id`/`recorded_by_id` column types to uuid+FK,
+(7) remove `isAdminTestMode`.
+Recommendation: Do not start step 2 solo - same standard as every other
+change to a live game-day surface in this repo. Needs the `game-mode/*` gate
+phrase and KK's active presence for step 3's soak, not something to attempt
+in an unattended session.
+
+---
+### Story 130 (P1) - Scoring-tables GRANT-revocation migration - design decision needed <!-- #689 -->
+Status: Open - not drafted, needs KK sign-off on design before drafting.
+Discovered: 2026-08-15/17, Phase 4C recon sessions.
+Symptom: `anon` and `authenticated` both currently hold full
+TRUNCATE/DELETE/INSERT/UPDATE table-level grants on all 4 live-scoring
+tables (`live_game_state`, `game_scoring_sessions`, `scoring_audit_log`,
+`at_bats`) - confirmed via direct query against both DEV and PROD,
+2026-08-15 and re-confirmed 2026-08-17. Migration 019's RLS work (Section A
+applied to DEV, Section B not yet run anywhere) does not touch this layer at
+all - RLS policies and table GRANTs are independent Postgres mechanisms;
+dropping the anon RLS policies in Section B does not revoke these grants.
+Impact: Even after Section B lands, `anon`/`authenticated`'s GRANT-level
+access remains fully open unless this migration also lands - Section B alone
+would not close #355.
+Root cause: No migration has ever revoked these grants; migration 019 was
+scoped to RLS policies only.
+Proposed fix: A new migration (next number after 021, currently 022)
+modeled on migration 021's REVOKE pattern, but NOT a mechanical copy -
+migration 004/021's established pattern for `team_data`/`teams`/
+`roster_snapshots` is "keep broad `anon`/`authenticated` grants, let RLS do
+the scoping, only revoke the genuinely dangerous ops (TRUNCATE, DELETE)."
+That pattern likely does not fit here: KK already confirmed (2026-08-07,
+`PHASE4C_SCORING_RLS_PROPOSAL.md` §1.4) the `public_read_*` anon-SELECT
+policies are unintentional leftovers, not a deliberate viewer design -
+meaning there is no validated anon use case at all for these tables, unlike
+`teams`/`team_data`. The likely-correct target is `anon` gets zero grants on
+all 4 tables. Per-table `authenticated` grants aren't uniform either -
+migration 019 Section A's own policies imply `game_scoring_sessions` needs
+DELETE (the "Hand off scoring" flow releases the lock), but `live_game_state`,
+`scoring_audit_log`, and `at_bats` have no DELETE or UPDATE policies in
+Section A for the latter two (append-only by design) - grants should follow
+that shape, not a blanket grant. TRUNCATE should be revoked from both roles
+on all 4 tables regardless - no code path calls it.
+Recommendation: Do NOT draft the final SQL until KK explicitly confirms the
+design above (anon-full-lockout vs. keep-broad-rely-on-RLS; per-table
+authenticated shape) - the same explicit-sign-off standard migration 019
+itself used for the scorekeeper-role and `public_read_*` decisions. Once
+confirmed, sequence this migration ALONGSIDE Section B (Story 129 step 4),
+not before it and not instead of it, per `PHASE4C_SCORING_RLS_PROPOSAL.md`
+§3 step 4's own note.
+
+---
+### Story 131 (P2) - UX Phase 5 kickoff - Auth Re-Skin <!-- #690 -->
+Status: Open - ready to start.
+Discovered: 2026-08-17, confirming `UX_REFACTOR_ROADMAP.md`'s own Phase 4
+dependency is now satisfied.
+Symptom: N/A - not a bug, a roadmap-sequence unblock. `UX_REFACTOR_ROADMAP.md`
+Phase 5 (Auth Re-Skin) lists "Phase 4 complete" as its sole dependency.
+Phase 4 (`var C` legacy color-object retirement) shipped through v2.8.5,
+confirmed zero `C.*` references remain in `App.jsx` - the dependency is
+genuinely satisfied, not just nominally.
+Impact: The auth screens (`#2471A3`/`#2980B9` drift palette, deliberately
+preserved since Phase 1 specifically for this phase) are the last
+un-migrated visual surface in the UX design-token effort.
+Root cause: N/A - sequenced roadmap work.
+Proposed fix: Per `UX_REFACTOR_ROADMAP.md` §Phase 5 - replace the drift
+palette with the canonical design-token system, cosmetic only. First task:
+inventory every auth-screen component currently using the drift palette,
+cross-reference against existing design tokens, mint a new token if none
+applies (same "mint by role, not appearance" convention as
+`color.brand.gradientDark`).
+Recommendation: Ship as scoped. Explicit scope boundary from the roadmap
+doc itself, worth repeating since it's easy to blur with Phase 4C: cosmetic
+only, no auth behavioral changes - those belong to Phase 4C (Story 129), not
+here.
 
 ---
 ### Automated Score Reporting (County Integration)
