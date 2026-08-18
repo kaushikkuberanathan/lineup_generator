@@ -23,11 +23,20 @@ deps, env file presence, lint, full test suites, RLS suite), GitHub state
 loads) — all from *this machine*.
 
 **Doesn't cover, by design:** anything requiring the cloud sandbox's own view
-of GitHub/prod (there's a separate daily scheduled cloud routine for that —
-check `https://claude.ai/code/routines` or ask to list routines if you need
-its most recent findings). This skill and that routine are deliberately
-split: this machine can see Docker and both worktrees, the cloud routine
-can't; the cloud routine runs even if this PC is off, this skill can't.
+of GitHub/prod. There's a separate daily cloud routine for that —
+[Dugout Lineup — Daily GitHub + Prod Health Check](https://claude.ai/code/routines/trig_01FMH5WAYUGdEzeoxy1CFnxo)
+(`trig_01FMH5WAYUGdEzeoxy1CFnxo`, fires 11:17 UTC / ~7:17am ET daily). Use
+`RemoteTrigger` (`action: "list_runs"` then `"get_run_log"`) to pull its most
+recent findings rather than re-deriving them locally. This skill and that
+routine are deliberately split: this machine can see Docker and both
+worktrees, the cloud routine can't; the cloud routine runs even if this PC
+is off and can query Render/Vercel/Supabase directly via their connectors,
+this skill can't (no MCP connectors available in a plain local session).
+Notably: the cloud sandbox's network egress is proxied to an allowlist that
+excludes `dugoutlineup.com` and the Render backend domain entirely, so its
+prod-health signal comes from the Render/Vercel/Supabase connectors'
+platform-reported status, not a literal HTTP ping — that's a real, permanent
+constraint of that environment, not a bug to fix.
 
 ## Running it
 
