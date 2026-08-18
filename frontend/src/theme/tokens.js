@@ -196,6 +196,7 @@ export const tokens = {
     // language across both Locked directories, per #698) - not per-track.
     gameDay: {
       surface: {
+        shell:      '#0B1524',  // full-screen game-day shell across game-mode + ScoringMode
         scoreboard: '#0A1628',  // ScoreboardRow.jsx root bg - distinct near-black,
                                   // drift from surface.dark (#0B1524), not a duplicate
       },
@@ -204,6 +205,7 @@ export const tokens = {
         label:     '#E2E8F0',  // high-emphasis uppercase labels - team names
         secondary: '#94A3B8',  // mid-emphasis - bench chip names, icon-button colors, inning label
                                  // (7.07:1 vs surface.scoreboard - passes WCAG AA)
+        muted:     '#64748B',  // subdued supporting text shared across both game-day tracks
         caption:   '#475569',  // low-emphasis section eyebrow - "Bench"
                                  // KNOWN GAP: 2.39:1 vs surface.scoreboard - FAILS WCAG AA
                                  // (needs 4.5:1). Pre-existing production value, preserved

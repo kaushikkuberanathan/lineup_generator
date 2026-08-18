@@ -14,6 +14,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { tokens } from '../../theme/tokens';
 import ScoringModeEntry from '../ScoringMode/ScoringModeEntry';
 import LiveScoringPanel from '../ScoringMode/LiveScoringPanel';
 import RestoreScoreModal from '../ScoringMode/RestoreScoreModal';
@@ -206,7 +207,7 @@ export function DugoutView({
     return (
       <div style={{
         position: 'fixed', inset: 0, zIndex: 1000,
-        background: '#0b1524', color: '#fff',
+        background: tokens.color.gameDay.surface.shell, color: tokens.color.gameDay.text.primary,
         fontFamily: FF,
         display: 'flex', flexDirection: 'column',
         minHeight: '100vh',
@@ -214,23 +215,23 @@ export function DugoutView({
         <div style={{
           display: 'flex', alignItems: 'center', gap: '10px',
           padding: '10px 14px',
-          background: '#0a1628',
+          background: tokens.color.gameDay.surface.scoreboard,
           borderBottom: '1px solid rgba(255,255,255,0.06)',
           flexShrink: 0,
         }}>
           <span style={{
-            fontSize: '14px', fontWeight: 700, color: '#e2e8f0',
+            fontSize: '14px', fontWeight: 700, color: tokens.color.gameDay.text.label,
             letterSpacing: '0.05em', textTransform: 'uppercase',
           }}>{teamName}</span>
           <span style={{
-            marginLeft: 'auto', fontSize: '11px', color: '#64748b',
+            marginLeft: 'auto', fontSize: '11px', color: tokens.color.gameDay.text.muted,
             letterSpacing: '0.05em', textTransform: 'uppercase',
           }}>Viewer</span>
         </div>
         <div style={{
           flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
           flexDirection: 'column', gap: '12px',
-          color: '#475569',
+          color: tokens.color.gameDay.text.caption,
         }}>
           <div style={{ fontSize: '32px' }}>⚾</div>
           <div style={{ fontSize: '14px', letterSpacing: '0.05em' }}>
@@ -248,7 +249,7 @@ export function DugoutView({
     return (
       <div style={{
         position: 'fixed', inset: 0, zIndex: 1000,
-        background: '#0b1524', color: '#fff',
+        background: tokens.color.gameDay.surface.shell, color: tokens.color.gameDay.text.primary,
         fontFamily: FF,
         minHeight: '100vh',
       }}>
@@ -274,7 +275,7 @@ export function DugoutView({
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 1000,
-      background: '#0b1524', color: '#fff',
+      background: tokens.color.gameDay.surface.shell, color: tokens.color.gameDay.text.primary,
       fontFamily: FF,
     }}>
       <div
