@@ -166,14 +166,28 @@ unattended: it's fully deterministic, writes its report to
 A Scheduled Task named **`DugoutLineupHealthCheck`** was registered
 2026-08-17 (`Get-ScheduledTask -TaskName "DugoutLineupHealthCheck"` to
 inspect it), daily at 6:15am local, running
-`scripts/env-health-check.sh` via Git Bash and appending combined
-stdout/stderr to `.claude/health-reports/scheduled-task-stdout.log` as a
-backstop in case the script itself crashes before writing its own report.
+`scripts/env-health-check.sh` via Git Bash and redirecting combined
+stdout/stderr to `.claude/health-reports/scheduled-task-stdout.log`
+(truncated fresh each run, not appended — the script's own timestamped
+reports already keep history) as a backstop in case the script itself
+crashes before writing its own report. `ExecutionTimeLimit` is 30 minutes —
+wider than the ~19-minute worst case if every single per-step timeout below
+were hit on both worktrees at once, so the task's own outer limit never
+preempts the script's more informative per-step timeout reporting.
 `-WakeToRun` is set, so it'll wake the machine from sleep/hibernate to fire —
 **but not from a full power-off.** If the laptop is genuinely shut down
 overnight rather than asleep, the realistic behavior is "runs next time the
 machine is on," not literally 6:15am every day. Say that plainly if asked
 about it rather than overclaiming the schedule.
+
+**Also as of this revision:** lint/test/RLS steps each have their own
+timeout (120s/300s/60s/90s) and report an explicit `[FAIL] ... TIMED OUT`
+rather than letting a hang silently eat the whole run. Timestamped reports
+older than 30 days are pruned automatically at the end of every run.
+`backend/.env.rls.local`'s presence check was upgraded to an actual
+validity check — its URL is compared against a fresh `supabase status -o
+env` (when Docker's up) rather than trusting byte-count alone, since its
+values rotate whenever the local containers get recreated.
 
 The judgment layer runs *next*, at the start of whatever session next opens
 this repo, by reading `.claude/health-reports/latest.log` rather than

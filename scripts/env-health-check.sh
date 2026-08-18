@@ -180,11 +180,11 @@ for WT in "${WORKTREES[@]}"; do
     fi
   fi
 
-  DIRTY=$(git status --porcelain | grep -v -E '^\?\? (supabase/\.branches/|frontend/\.vercel/)' | wc -l)
+  DIRTY=$(git status --porcelain | wc -l)
   if [ "$DIRTY" -eq 0 ]; then
-    pass "working tree clean (aside from known-expected local artifacts)"
+    pass "working tree clean"
   else
-    warn "$DIRTY unexpected uncommitted change(s) — run git status to inspect"
+    warn "$DIRTY uncommitted change(s) — run git status to inspect"
   fi
 
   if [ -f ".husky/_/pre-push" ]; then
@@ -197,7 +197,7 @@ for WT in "${WORKTREES[@]}"; do
     [ -d "$d" ] && pass "$d present" || fail "$d missing — run npm install"
   done
 
-  for f in "frontend/.env" "frontend/.env.development" "backend/.env" "backend/.env.rls.local"; do
+  for f in "frontend/.env" "frontend/.env.development" "backend/.env"; do
     if [ -f "$f" ]; then
       LEN=$(wc -c < "$f" | tr -d ' ')
       pass "$f present (${LEN} bytes)"
@@ -206,17 +206,49 @@ for WT in "${WORKTREES[@]}"; do
     fi
   done
 
+  # backend/.env.rls.local's values (the local ephemeral stack's URL/keys)
+  # rotate whenever its Docker containers get recreated (supabase stop/prune
+  # then start again) - presence and byte count alone can't catch a stale
+  # file, only a live comparison against the current stack can. Only
+  # meaningful when Docker is actually up; falls back to presence-only
+  # otherwise.
+  if [ -f "backend/.env.rls.local" ]; then
+    if [ "$DOCKER_OK" = true ] && command -v supabase >/dev/null 2>&1; then
+      CURRENT_API_URL=$(timeout 15 supabase status -o env 2>/dev/null | grep '^API_URL=' | cut -d= -f2- | tr -d '"')
+      FILE_URL=$(grep '^RLS_TEST_SUPABASE_URL=' backend/.env.rls.local | cut -d= -f2-)
+      if [ -n "$CURRENT_API_URL" ] && [ "$CURRENT_API_URL" = "$FILE_URL" ]; then
+        pass "backend/.env.rls.local present and matches the current local Supabase stack"
+      elif [ -n "$CURRENT_API_URL" ]; then
+        fail "backend/.env.rls.local is STALE — its URL doesn't match the current local Supabase stack (containers were likely recreated since it was written). Regenerate: supabase status -o env, see docs/process/CLAUDE_CODE_HANDOFF.md"
+      else
+        warn "backend/.env.rls.local present but could not get fresh 'supabase status' to validate against"
+      fi
+    else
+      LEN=$(wc -c < "backend/.env.rls.local" | tr -d ' ')
+      pass "backend/.env.rls.local present (${LEN} bytes, not validated — Docker down or supabase CLI unavailable)"
+    fi
+  else
+    warn "backend/.env.rls.local missing"
+  fi
+
   if [ "$QUICK" = false ]; then
     log "  Running frontend lint..."
-    if (cd frontend && npm run lint >/dev/null 2>&1); then
+    LINT_RC=0
+    (cd frontend && timeout 120 npm run lint >/dev/null 2>&1) || LINT_RC=$?
+    if [ "$LINT_RC" -eq 0 ]; then
       pass "frontend lint clean"
+    elif [ "$LINT_RC" -eq 124 ]; then
+      fail "frontend lint TIMED OUT after 120s — likely hung, not just failing. Run 'npm run lint' in $WT/frontend directly to investigate"
     else
       fail "frontend lint FAILED — run 'npm run lint' in $WT/frontend for detail"
     fi
 
     log "  Running frontend test suite (this takes ~1-2 min)..."
-    FRONTEND_TEST_OUT=$(cd frontend && npx vitest run --no-file-parallelism 2>&1)
-    if echo "$FRONTEND_TEST_OUT" | grep -q "Tests.*failed" ; then
+    FRONTEND_TEST_OUT=$(cd frontend && timeout 300 npx vitest run --no-file-parallelism 2>&1)
+    TEST_RC=$?
+    if [ "$TEST_RC" -eq 124 ]; then
+      fail "frontend test suite TIMED OUT after 300s — likely hung (not the known Bug #7 cold-start flake, that fails fast). Run 'npx vitest run' in $WT/frontend directly to investigate"
+    elif echo "$FRONTEND_TEST_OUT" | grep -q "Tests.*failed" ; then
       fail "frontend test suite has failures — see $WT/frontend, run npx vitest run"
     elif echo "$FRONTEND_TEST_OUT" | grep -qE "Test Files.*passed"; then
       SUMMARY=$(echo "$FRONTEND_TEST_OUT" | grep -E "Test Files|Tests " | tr '\n' ' ')
@@ -226,8 +258,12 @@ for WT in "${WORKTREES[@]}"; do
     fi
 
     log "  Running backend unit tests..."
-    if (cd backend && npm run test:unit >/dev/null 2>&1); then
+    UNIT_RC=0
+    (cd backend && timeout 60 npm run test:unit >/dev/null 2>&1) || UNIT_RC=$?
+    if [ "$UNIT_RC" -eq 0 ]; then
       pass "backend unit tests clean"
+    elif [ "$UNIT_RC" -eq 124 ]; then
+      fail "backend unit tests TIMED OUT after 60s — likely hung. Run 'npm run test:unit' in $WT/backend directly to investigate"
     else
       fail "backend unit tests FAILED — run 'npm run test:unit' in $WT/backend for detail"
     fi
@@ -235,8 +271,12 @@ for WT in "${WORKTREES[@]}"; do
     if [ "$DOCKER_OK" = true ]; then
       if [ -f "backend/.env.rls.local" ]; then
         log "  Running RLS ephemeral suite..."
-        if (cd backend && npm run test:rls >/dev/null 2>&1); then
+        RLS_RC=0
+        (cd backend && timeout 90 npm run test:rls >/dev/null 2>&1) || RLS_RC=$?
+        if [ "$RLS_RC" -eq 0 ]; then
           pass "RLS suite clean (7 intentional skips expected, see #355)"
+        elif [ "$RLS_RC" -eq 124 ]; then
+          fail "RLS suite TIMED OUT after 90s — likely hung, possibly a stale local stack. Run 'npm run test:rls' in $WT/backend directly to investigate"
         else
           fail "RLS suite FAILED — run 'npm run test:rls' in $WT/backend for detail"
         fi
@@ -261,8 +301,13 @@ REPORT_DIR="$REPO_ROOT/.claude/health-reports"
 mkdir -p "$REPORT_DIR"
 REPORT_FILE="$REPORT_DIR/$(date -u +%Y-%m-%dT%H%M%SZ).log"
 printf '%s\n' "${REPORT_LINES[@]}" > "$REPORT_FILE"
-echo "latest" > "$REPORT_DIR/.latest-pointer" 2>/dev/null || true
 cp "$REPORT_FILE" "$REPORT_DIR/latest.log"
+
+# Prune timestamped reports older than 30 days — this runs daily, so without
+# pruning that's ~365 small log files a year. latest.log is never touched
+# (it's the same name every run, not a timestamped one this glob matches).
+PRUNED=$(find "$REPORT_DIR" -maxdepth 1 -name "20*.log" -mtime +30 -print -delete 2>/dev/null | wc -l)
+[ "$PRUNED" -gt 0 ] && log "  (pruned $PRUNED report(s) older than 30 days)"
 
 log ""
 log "Full report written to: $REPORT_FILE"

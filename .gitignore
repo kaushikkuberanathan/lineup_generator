@@ -4,6 +4,9 @@
 .env.development
 .env.production
 supabase/.temp/
+# Local Supabase CLI branch metadata (created by `supabase start`/`db branch`
+# commands) - machine-local state, never meant to be committed.
+supabase/.branches/
 
 # Claude Code local settings
 **/.claude/settings.local.json
@@ -30,6 +33,15 @@ spike-*.js
 backend/spike-*.js
 spike-*.js
 backend/spike-*.js
+
+# .claude/ is local Claude Code state by default (settings.local.json, session
+# state, health-check reports) - ignored wholesale via the single-level `*`
+# wildcard, then explicitly un-ignored per path for anything meant to be
+# shared/tracked (settings.json, skills/). A bare `.claude/` (no `*`) instead
+# of this would block the negations below entirely - git will not look inside
+# an already-ignored directory to re-include a nested path. Adding something
+# new under .claude/ that should be tracked (a command, an agent, etc.) needs
+# its own `!.claude/<path>` line here, or it silently stays untracked.
 .claude/*
 !.claude/settings.json
 !.claude/skills/
