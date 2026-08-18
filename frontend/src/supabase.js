@@ -34,7 +34,12 @@ export function dbSaveTeams(teams) {
       name:       t.name,
       age_group:  t.ageGroup || '',
       year:       t.year || new Date().getFullYear(),
-      sport:      t.sport || 'baseball'
+      sport:      t.sport || 'baseball',
+      // No '' fallback, deliberately — teams.season is NOT NULL with a
+      // CHECK (season IN ('Spring','Fall')) (migration 022). A caller that
+      // omits season should fail loudly against that constraint, not
+      // silently persist an unclassified team.
+      season:     t.season
     };
     return supabase.from('teams').insert(row).then(function(r) {
       if (r.error && r.error.code === '23505') {
@@ -92,7 +97,7 @@ export function dbLoadTeams() {
     .then(function(r) {
       if (r.error) { console.warn('[DB] loadTeams error:', r.error.message); return null; }
       return (r.data || []).map(function(row) {
-        return { id: row.id, name: row.name, ageGroup: row.age_group, year: row.year, sport: row.sport };
+        return { id: row.id, name: row.name, ageGroup: row.age_group, year: row.year, sport: row.sport, season: row.season };
       });
     });
 }

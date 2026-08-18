@@ -97,10 +97,12 @@ CREATE TABLE IF NOT EXISTS public.teams (
   age_group   text                     DEFAULT ''::text,
   year        integer                  DEFAULT 2026,
   sport       text                     DEFAULT 'baseball'::text,
+  season      text                     NOT NULL,           -- 'Spring' | 'Fall' only (CHECK constraint), no DEFAULT — see migration 022 header. Paired with `year` above, combined at display time ("Spring 26").
   owner_id    text                     DEFAULT ''::text,   -- NOTE: text, not uuid. Not FK'd to auth.users.
   created_at  timestamp with time zone DEFAULT now(),
   updated_at  timestamp with time zone DEFAULT now(),
-  CONSTRAINT teams_pkey PRIMARY KEY (id)
+  CONSTRAINT teams_pkey PRIMARY KEY (id),
+  CONSTRAINT teams_season_check CHECK (season IN ('Spring', 'Fall'))
 );
 
 CREATE TABLE IF NOT EXISTS public.team_data (

@@ -1062,6 +1062,17 @@ export function SharedView({ payload, renderFieldSVG }) {
 
 // LockFlow — extracted to components/GameDay/LockFlow.jsx
 
+// Sensible default for the season selects below — Jan-Jun -> Spring,
+// Jul-Dec -> Fall. A guess, not a rule: the coach can always override it.
+// Exists so every path that creates a team object (new-team form reset,
+// demo team, legacy migration) supplies a DB-valid 'Spring'/'Fall' value —
+// the teams.season column is NOT NULL with a CHECK constraint (migration
+// 022), so an empty string is a hard write failure, not a soft default.
+function currentSeasonGuess() {
+  var month = new Date().getMonth() + 1;
+  return (month >= 1 && month <= 6) ? "Spring" : "Fall";
+}
+
 // ============================================================
 // MAIN COMPONENT
 // ============================================================
@@ -1306,7 +1317,7 @@ export default function App() {
       if (toCreate.length > 0) {
         // Add new teams to the local list immediately
         var withNew = merged.concat(toCreate.map(function(t) {
-          return { id:t.id, name:t.name, ageGroup:t.ageGroup, year:t.year };
+          return { id:t.id, name:t.name, ageGroup:t.ageGroup, season:t.season || currentSeasonGuess(), year:t.year };
         }));
         saveJSON("app:teams", withNew);
         setTeams(withNew);
@@ -1317,7 +1328,7 @@ export default function App() {
           (function(ct) {
             var migKey2 = "migration:" + ct.id + ":version";
             // Save team record
-            dbSaveTeams([{ id:ct.id, name:ct.name, ageGroup:ct.ageGroup, year:ct.year }]);
+            dbSaveTeams([{ id:ct.id, name:ct.name, ageGroup:ct.ageGroup, season:ct.season || currentSeasonGuess(), year:ct.year }]);
             // Check if data already exists before seeding with empty roster
             // OLD (unsafe): dbSaveTeamData(ct.id, { roster: [], schedule: ct.schedule, ... });
             dbLoadTeamData(ct.id).then(function(existing) {
@@ -1673,7 +1684,7 @@ export default function App() {
   var discoveredTeam = _discoveredTeam[0]; var setDiscoveredTeam = _discoveredTeam[1];
   var _teamSearch = useState("");
   var teamSearch = _teamSearch[0]; var setTeamSearch = _teamSearch[1];
-  var _nt = useState({ name:"", ageGroup:"", sport:"", year: new Date().getFullYear() });
+  var _nt = useState({ name:"", ageGroup:"", sport:"", season:currentSeasonGuess(), year: new Date().getFullYear() });
   var _editingTeam = useState(null);
   var editingTeam = _editingTeam[0]; var setEditingTeam = _editingTeam[1];
   var newTeam = _nt[0]; var setNewTeam = _nt[1];
@@ -2368,20 +2379,21 @@ export default function App() {
   }, [absentTonight.join(','), activeTeamId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function createTeam() {
-    if (!newTeam.name.trim()) { return; }
+    if (!newTeam.name.trim() || !newTeam.season) { return; }
     var t = {
       id: Date.now() + "",
       name: newTeam.name.trim(),
       ageGroup: newTeam.ageGroup,
       year: newTeam.year,
-      sport: newTeam.sport || "baseball"
+      sport: newTeam.sport || "baseball",
+      season: newTeam.season
     };
     var next = teams.concat([t]);
     setTeams(next);
     saveJSON("app:teams", next);
     track("create_team", { age_group: t.ageGroup || "" });
     dbSync(function() { return dbSaveTeams([t]); });
-    setNewTeam({ name:"", ageGroup:"", sport:"", year: new Date().getFullYear() });
+    setNewTeam({ name:"", ageGroup:"", sport:"", season:currentSeasonGuess(), year: new Date().getFullYear() });
     loadTeam(t);
   }
 
@@ -2396,7 +2408,7 @@ export default function App() {
       deleteTeam(oldId);
     }
     var tid = "demo_" + Date.now();
-    var t = { id: tid, name: "Demo All-Stars", ageGroup: DEMO_AGE_GROUP, sport: "baseball", year: new Date().getFullYear(), demoSeedVersion: DEMO_SEED_VERSION };
+    var t = { id: tid, name: "Demo All-Stars", ageGroup: DEMO_AGE_GROUP, sport: "baseball", season: currentSeasonGuess(), year: new Date().getFullYear(), demoSeedVersion: DEMO_SEED_VERSION };
 
     saveJSON("team:" + tid + ":roster",    DEMO_ROSTER);
     saveJSON("team:" + tid + ":schedule",  DEMO_SCHEDULE);
@@ -2411,10 +2423,10 @@ export default function App() {
   }
 
   function saveTeamEdits() {
-    if (!editingTeam || !editingTeam.name.trim()) { return; }
+    if (!editingTeam || !editingTeam.name.trim() || !editingTeam.season) { return; }
     var updated = teams.map(function(t) {
       if (t.id !== editingTeam.id) { return t; }
-      return { id:t.id, name:editingTeam.name.trim(), ageGroup:editingTeam.ageGroup, sport:editingTeam.sport || "baseball", year:t.year };
+      return { id:t.id, name:editingTeam.name.trim(), ageGroup:editingTeam.ageGroup, sport:editingTeam.sport || "baseball", season:editingTeam.season, year:editingTeam.year || t.year };
     });
     setTeams(updated);
     saveJSON("app:teams", updated);
@@ -2927,6 +2939,7 @@ export default function App() {
             <div style={{ minWidth:0, overflow:"hidden" }}>
               <div style={{ fontSize:"15px", fontWeight:"bold", color:"#0f1f3d", fontFamily:"Georgia,serif", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
                 {team.name}
+                {team.season ? <span style={{ fontSize:"10px", color:"#6b7280", fontWeight:"normal", marginLeft:"6px" }}>{team.season + " " + String(team.year || "").slice(-2)}</span> : null}
                 {team.ageGroup ? <span style={{ fontSize:"10px", color:"#6b7280", fontWeight:"normal", marginLeft:"6px" }}>{team.ageGroup}</span> : null}
               </div>
               {statusBadge === "Missing roster" ? (
@@ -2977,7 +2990,7 @@ export default function App() {
                        onMouseLeave={function(e) { e.currentTarget.style.background="transparent"; }}
                        onClick={function(tm) { return function(e) {
                          e.stopPropagation();
-                         setEditingTeam({ id:tm.id, name:tm.name, ageGroup:tm.ageGroup||"", sport:tm.sport||"baseball" });
+                         setEditingTeam({ id:tm.id, name:tm.name, ageGroup:tm.ageGroup||"", sport:tm.sport||"baseball", season:tm.season||currentSeasonGuess(), year:tm.year||new Date().getFullYear() });
                          setOpenMenuTeamId(null);
                        }; }(team)}>
                     ✏ Edit team
@@ -3188,18 +3201,29 @@ export default function App() {
                       ? teams.filter(function(t) {
                           return (t.name || "").toLowerCase().indexOf(q) >= 0 ||
                                  (t.ageGroup || "").toLowerCase().indexOf(q) >= 0 ||
-                                 (t.sport || "").toLowerCase().indexOf(q) >= 0;
+                                 (t.sport || "").toLowerCase().indexOf(q) >= 0 ||
+                                 (t.season || "").toLowerCase().indexOf(q) >= 0 ||
+                                 String(t.year || "").indexOf(q) >= 0;
                         })
                       : teams;
                     if (filtered.length === 0) {
                       return (
                         <EmptyState
                           hasQuery={q.length > 0}
-                          onCreateTeam={function() { setNewTeam({ name:"", ageGroup:"", sport:"", year: new Date().getFullYear() }); setHomeMode("create"); }}
+                          onCreateTeam={function() { setNewTeam({ name:"", ageGroup:"", sport:"", season:currentSeasonGuess(), year: new Date().getFullYear() }); setHomeMode("create"); }}
                         />
                       );
                     }
-                    return filtered.map(function(t) { return TeamCard({ team: t }); });
+                    // Newest season/year first — same year, Fall (later in the
+                    // calendar year) sorts before Spring — so current teams are
+                    // easiest to find while previous ones stay reachable below.
+                    var sorted = filtered.slice().sort(function(a, b) {
+                      var ay = a.year || 0, by = b.year || 0;
+                      if (ay !== by) { return by - ay; }
+                      var seasonRank = function(s) { return s === "Fall" ? 1 : 0; };
+                      return seasonRank(b.season) - seasonRank(a.season);
+                    });
+                    return sorted.map(function(t) { return TeamCard({ team: t }); });
                   })()}
                 </div>
               ) : null}
@@ -3211,12 +3235,12 @@ export default function App() {
                 </button>
               ) : null}
               {teams.length === 0 ? (
-                <button onClick={function() { setNewTeam({ name:"", ageGroup:"", sport:"", year: new Date().getFullYear() }); setHomeMode("create"); }}
+                <button onClick={function() { setNewTeam({ name:"", ageGroup:"", sport:"", season:currentSeasonGuess(), year: new Date().getFullYear() }); setHomeMode("create"); }}
                   style={{ width:"100%", padding:"16px", borderRadius:"12px", background:"linear-gradient(135deg,#c8102e,#a00d25)", color:"#fff", border:"none", fontSize:"16px", fontWeight:"bold", fontFamily:"Georgia,serif", cursor:"pointer", marginBottom:"12px", letterSpacing:"0.04em" }}>
                   ⚾ Create Your First Team
                 </button>
               ) : (
-                <button onClick={function() { setNewTeam({ name:"", ageGroup:"", sport:"", year: new Date().getFullYear() }); setHomeMode("create"); }}
+                <button onClick={function() { setNewTeam({ name:"", ageGroup:"", sport:"", season:currentSeasonGuess(), year: new Date().getFullYear() }); setHomeMode("create"); }}
                   style={{ width:"100%", padding:"10px", borderRadius:"10px", background:"#f8fafc", color:"#374151", border:"1px solid rgba(0,0,0,0.12)", fontSize:"13px", fontWeight:"bold", fontFamily:"Georgia,serif", cursor:"pointer", marginBottom:"12px", letterSpacing:"0.04em" }}>
                   + New Team
                 </button>
@@ -3282,11 +3306,34 @@ export default function App() {
                   </select>
                 </div>
               </div>
+              <div style={{ display:"flex", gap:"10px", marginBottom:"12px" }}>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:"11px", fontWeight:"600", color:"#111827", letterSpacing:"0.05em", textTransform:"uppercase", marginBottom:"6px" }}>Season</div>
+                  <select value={newTeam.season}
+                    onChange={function(e) { var next = {}; for (var k in newTeam) { next[k]=newTeam[k]; } next.season=e.target.value; setNewTeam(next); }}
+                    style={{ width:"100%", background:"#fff", border:"1.5px solid #9ca3af", borderRadius:"8px", padding:"10px 12px", color: newTeam.season ? "#111827" : "#6b7280", fontFamily:"inherit", fontSize:"14px", outline:"none", boxSizing:"border-box", cursor:"pointer" }}>
+                    <option value="">— Season —</option>
+                    <option value="Spring">Spring</option>
+                    <option value="Fall">Fall</option>
+                  </select>
+                </div>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:"11px", fontWeight:"600", color:"#111827", letterSpacing:"0.05em", textTransform:"uppercase", marginBottom:"6px" }}>Year</div>
+                  <select value={newTeam.year}
+                    onChange={function(e) { var next = {}; for (var k in newTeam) { next[k]=newTeam[k]; } next.year=parseInt(e.target.value,10); setNewTeam(next); }}
+                    style={{ width:"100%", background:"#fff", border:"1.5px solid #9ca3af", borderRadius:"8px", padding:"10px 12px", color:"#111827", fontFamily:"inherit", fontSize:"14px", outline:"none", boxSizing:"border-box", cursor:"pointer" }}>
+                    {[-1,0,1,2].map(function(offset) {
+                      var yr = new Date().getFullYear() + offset;
+                      return <option key={yr} value={yr}>{yr}</option>;
+                    })}
+                  </select>
+                </div>
+              </div>
               <div style={{ display:"flex", gap:"10px", marginTop:"8px" }}>
-                <button onClick={createTeam} disabled={!newTeam.name.trim()} style={{ flex:1, padding:"12px", borderRadius:"8px", border:"none", cursor:"pointer", fontWeight:"bold", fontSize:"14px", fontFamily:"inherit", background: newTeam.name.trim() ? "linear-gradient(135deg,#c8102e,#9b0c22)" : "#e5e7eb", color: newTeam.name.trim() ? "#fff" : "#9ca3af" }}>
+                <button onClick={createTeam} disabled={!newTeam.name.trim() || !newTeam.season} style={{ flex:1, padding:"12px", borderRadius:"8px", border:"none", cursor:"pointer", fontWeight:"bold", fontSize:"14px", fontFamily:"inherit", background: (newTeam.name.trim() && newTeam.season) ? "linear-gradient(135deg,#c8102e,#9b0c22)" : "#e5e7eb", color: (newTeam.name.trim() && newTeam.season) ? "#fff" : "#9ca3af" }}>
                   Create Team
                 </button>
-                <button onClick={function() { setNewTeam({ name:"", ageGroup:"", sport:"", year: new Date().getFullYear() }); setHomeMode("welcome"); }} style={{ padding:"12px 16px", borderRadius:"8px", border:"1px solid #d1d5db", background:"transparent", color:"#6b7280", fontSize:"13px", fontFamily:"inherit", cursor:"pointer" }}>
+                <button onClick={function() { setNewTeam({ name:"", ageGroup:"", sport:"", season:currentSeasonGuess(), year: new Date().getFullYear() }); setHomeMode("welcome"); }} style={{ padding:"12px 16px", borderRadius:"8px", border:"1px solid #d1d5db", background:"transparent", color:"#6b7280", fontSize:"13px", fontFamily:"inherit", cursor:"pointer" }}>
                   Cancel
                 </button>
               </div>
@@ -5665,7 +5712,7 @@ export default function App() {
 
     function buildShareUrl(game) {
       var payload = {
-        team: activeTeam ? activeTeam.name + (activeTeam.ageGroup ? " " + activeTeam.ageGroup : "") : "Lineup",
+        team: activeTeam ? activeTeam.name + (activeTeam.ageGroup ? " " + activeTeam.ageGroup : "") + (activeTeam.season ? " " + activeTeam.season + " " + String(activeTeam.year || "").slice(-2) : "") : "Lineup",
         game: game,
         grid: grid,
         batting: battingOrder,
@@ -6959,7 +7006,7 @@ export default function App() {
         doc.setTextColor(150, 160, 175);
         doc.setFontSize(7);
         doc.setFont("helvetica","normal");
-        doc.text("Dugout Lineup - " + teamName + (activeTeam && activeTeam.ageGroup ? " " + activeTeam.ageGroup : ""), margin, pageH - 8);
+        doc.text("Dugout Lineup - " + teamName + (activeTeam && activeTeam.ageGroup ? " " + activeTeam.ageGroup : "") + (activeTeam && activeTeam.season ? " " + activeTeam.season + " " + String(activeTeam.year || "").slice(-2) : ""), margin, pageH - 8);
         doc.text(today, W - margin, pageH - 8, { align:"right" });
 
         // ── Save or Share ────────────────────────────────────────
@@ -7156,11 +7203,21 @@ export default function App() {
 
         {_memberships.length === 0 ? (
           <div style={{ fontSize:"13px", color:tokens.color.text.muted, fontStyle:"italic", padding:"4px 0 8px" }}>Not on any team yet</div>
-        ) : _memberships.map(function(m) {
+        ) : _memberships.slice().sort(function(ma, mb) {
+          // Newest season/year first — same year, Fall (later in the
+          // calendar year) sorts before Spring — so switching teams surfaces
+          // the current team first while previous ones stay reachable below.
+          var ta = teams.find(function(t) { return t.id === ma.team_id; });
+          var tb = teams.find(function(t) { return t.id === mb.team_id; });
+          var ay = (ta && ta.year) || 0, by = (tb && tb.year) || 0;
+          if (ay !== by) { return by - ay; }
+          var seasonRank = function(s) { return s === "Fall" ? 1 : 0; };
+          return seasonRank(tb && tb.season) - seasonRank(ta && ta.season);
+        }).map(function(m) {
           var _t = teams.find(function(t) { return t.id === m.team_id; });
           var _role = roleLabel(m.role);
           if (_t) {
-            var _meta = [_t.ageGroup, _t.year].filter(Boolean).join(" ");
+            var _meta = [_t.ageGroup, _t.season ? _t.season + " " + String(_t.year || "").slice(-2) : _t.year].filter(Boolean).join(" ");
             return (
               <div key={m.id} onClick={function() { loadTeam(_t); }}
                 style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:"12px",
@@ -7689,7 +7746,7 @@ export default function App() {
             {activeTeam ? activeTeam.name : ""}
           </div>
           <div style={{ fontSize:"12px", color:tokens.color.text.muted, marginBottom:"12px" }}>
-            {activeTeam ? ((activeTeam.ageGroup || "") + (activeTeam.sport ? " \u00b7 " + (activeTeam.sport.charAt(0).toUpperCase() + activeTeam.sport.slice(1)) : "")) : ""}
+            {activeTeam ? ((activeTeam.ageGroup || "") + (activeTeam.sport ? " \u00b7 " + (activeTeam.sport.charAt(0).toUpperCase() + activeTeam.sport.slice(1)) : "") + (activeTeam.season ? " \u00b7 " + activeTeam.season + " " + String(activeTeam.year || "").slice(-2) : "")) : ""}
           </div>
 
           {/* Stats row */}
@@ -7878,7 +7935,7 @@ export default function App() {
           ) : null}
           <div>
             <div style={Object.assign({}, S.logoTitle, isLandscape ? { fontSize:"14px" } : {})}>{screen === "app" && primaryTab !== "more" && activeTeam ? activeTeam.name : "Dugout Lineup"}</div>
-            {!isLandscape && <div style={S.logoSub}>{screen === "app" && primaryTab !== "more" && activeTeam ? (activeTeam.ageGroup || "") + " " + (activeTeam.year || "") + "  ⌂" : "Youth Baseball & Softball"}</div>}
+            {!isLandscape && <div style={S.logoSub}>{screen === "app" && primaryTab !== "more" && activeTeam ? (activeTeam.ageGroup || "") + " " + (activeTeam.season ? activeTeam.season + " " + String(activeTeam.year || "").slice(-2) : (activeTeam.year || "")) + "  ⌂" : "Youth Baseball & Softball"}</div>}
             {screen === "app" && primaryTab !== "more" && isSupabaseEnabled ? (
               <div title={syncStatus === "synced" ? "Saved to cloud" : syncStatus === "syncing" ? "Saving..." : syncStatus === "error" ? "Sync error — data saved locally" : ""}
                 style={{ width:"7px", height:"7px", borderRadius:"50%", marginTop:"3px",
@@ -8100,9 +8157,32 @@ export default function App() {
                 </select>
               </div>
             </div>
+            <div style={{ display:"flex", gap:"10px", marginBottom:"20px" }}>
+              <div style={{ flex:1 }}>
+                <div style={{ fontSize:"10px", color:"rgba(255,255,255,0.4)", letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:"5px" }}>Season</div>
+                <select value={editingTeam.season}
+                  onChange={function(e) { var t={}; for(var k in editingTeam){t[k]=editingTeam[k];} t.season=e.target.value; setEditingTeam(t); }}
+                  style={{ width:"100%", background:"#1a2a4a", border:"1px solid rgba(255,255,255,0.18)", borderRadius:"8px", padding:"10px 12px", color: editingTeam.season ? "#fff" : "rgba(255,255,255,0.35)", fontFamily:"Georgia,serif", fontSize:"13px", outline:"none", boxSizing:"border-box", appearance:"none", cursor:"pointer" }}>
+                  <option value="">— Season —</option>
+                  <option value="Spring">Spring</option>
+                  <option value="Fall">Fall</option>
+                </select>
+              </div>
+              <div style={{ flex:1 }}>
+                <div style={{ fontSize:"10px", color:"rgba(255,255,255,0.4)", letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:"5px" }}>Year</div>
+                <select value={editingTeam.year}
+                  onChange={function(e) { var t={}; for(var k in editingTeam){t[k]=editingTeam[k];} t.year=parseInt(e.target.value,10); setEditingTeam(t); }}
+                  style={{ width:"100%", background:"#1a2a4a", border:"1px solid rgba(255,255,255,0.18)", borderRadius:"8px", padding:"10px 12px", color:"#fff", fontFamily:"Georgia,serif", fontSize:"13px", outline:"none", boxSizing:"border-box", appearance:"none", cursor:"pointer" }}>
+                  {[-1,0,1,2].map(function(offset) {
+                    var yr = new Date().getFullYear() + offset;
+                    return <option key={yr} value={yr}>{yr}</option>;
+                  })}
+                </select>
+              </div>
+            </div>
             <div style={{ display:"flex", gap:"10px" }}>
-              <button onClick={saveTeamEdits} disabled={!editingTeam.name.trim()}
-                style={{ flex:1, padding:"12px", borderRadius:"8px", border:"none", cursor: editingTeam.name.trim() ? "pointer" : "default", fontWeight:"bold", fontSize:"14px", fontFamily:"Georgia,serif", background: editingTeam.name.trim() ? "linear-gradient(135deg,#f5c842,#e6a817)" : "rgba(255,255,255,0.1)", color: editingTeam.name.trim() ? "#0f1f3d" : "rgba(255,255,255,0.3)" }}>
+              <button onClick={saveTeamEdits} disabled={!editingTeam.name.trim() || !editingTeam.season}
+                style={{ flex:1, padding:"12px", borderRadius:"8px", border:"none", cursor: (editingTeam.name.trim() && editingTeam.season) ? "pointer" : "default", fontWeight:"bold", fontSize:"14px", fontFamily:"Georgia,serif", background: (editingTeam.name.trim() && editingTeam.season) ? "linear-gradient(135deg,#f5c842,#e6a817)" : "rgba(255,255,255,0.1)", color: (editingTeam.name.trim() && editingTeam.season) ? "#0f1f3d" : "rgba(255,255,255,0.3)" }}>
                 Save
               </button>
               <button onClick={function() { setEditingTeam(null); }}

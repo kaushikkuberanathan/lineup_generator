@@ -53,6 +53,10 @@ router.get(
       .withMessage('ageGroup contains unsupported characters'),
     query('sport').optional().trim().isLength({ max: 50 }).matches(SAFE_SEARCH_PATTERN)
       .withMessage('sport contains unsupported characters'),
+    query('season').optional().trim().isLength({ max: 50 }).matches(SAFE_SEARCH_PATTERN)
+      .withMessage('season contains unsupported characters'),
+    query('year').optional().trim().isInt({ min: 2000, max: 2100 })
+      .withMessage('year must be an integer'),
   ],
   async (req, res) => {
     const errors = validationResult(req);
@@ -60,16 +64,23 @@ router.get(
       return res.status(400).json({ error: 'VALIDATION_ERROR', details: errors.array() });
     }
 
-    const { q, ageGroup, sport } = req.query;
+    const { q, ageGroup, sport, season, year } = req.query;
 
     try {
       let teamsQuery = supabaseAdmin
         .from('teams')
-        .select('id, name, age_group, sport, year');
+        .select('id, name, age_group, sport, year, season');
 
       if (q) teamsQuery = teamsQuery.ilike('name', `%${q}%`);
       if (ageGroup) teamsQuery = teamsQuery.eq('age_group', ageGroup);
       if (sport) teamsQuery = teamsQuery.eq('sport', sport);
+      if (season) teamsQuery = teamsQuery.eq('season', season);
+      if (year) teamsQuery = teamsQuery.eq('year', parseInt(year, 10));
+
+      // Coarse newest-first base order (year only — season's Spring/Fall
+      // ordering isn't alphabetical, so within-year ordering is finished
+      // client-side by callers that need it, e.g. TeamSearch.jsx).
+      teamsQuery = teamsQuery.order('year', { ascending: false });
 
       const { data, error } = await teamsQuery.limit(50);
 
