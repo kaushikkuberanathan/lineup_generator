@@ -109,6 +109,27 @@ squash an `issue/*` merge into anything.
   fails silently; use PowerShell invocation in the correctly scoped worktree.
 - Keep explicit-path staging. Tooling can create files during a session, making
   blanket staging unsafe.
+- **This repo lives inside a OneDrive-synced folder — avoid hosting active
+  `.git` metadata there if you have a choice.** On 2026-08-17 the primary
+  worktree's `.git/config` was found zero-filled (416 bytes, all null bytes)
+  at 23:38 local, one minute after `HEAD` and `index` were both last
+  touched — consistent with a git write racing a OneDrive background sync on
+  this actively-changing directory, on a day with heavy confirmed concurrent
+  multi-session git activity across these same worktrees. **This is a
+  suspected cause and risk factor, not a confirmed root cause** — no
+  process-level or OneDrive sync-log evidence was captured to prove the
+  mechanism, only the timing correlation. No OneDrive version-history or
+  Windows Recycle Bin recovery path was found for the file. Recovered by
+  reconstructing `.git/config` from a fresh independent `git clone`'s
+  generated config (real git-authored baseline, not written from memory)
+  plus two settings only recoverable from session history: `core.hooksPath
+  = .husky/_` and the `ux-local-base` branch's non-default tracking of
+  `origin/develop`. **Process gap, not repeated:** the corrupted (zeroed)
+  file was overwritten during recovery before a copy was saved — losing the
+  one artifact that might have helped confirm or rule out the OneDrive-sync
+  hypothesis. If this happens again: copy the corrupted file aside first,
+  every time, even under pressure to restore quickly. Full incident detail:
+  `docs/process/SESSION_RETROSPECTIVES.md`, session `2026-08-17-A`.
 
 ## Historical Claims Reconciled on 2026-08-17
 
