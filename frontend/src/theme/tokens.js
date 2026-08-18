@@ -213,6 +213,27 @@ export const tokens = {
         faint:     '#334155',  // near-invisible - empty-state placeholder dash only
         separator: '#374151',  // decorative glyph - ScoreboardRow's ":" only
       },
+      diamond: {
+        position: {
+          battery: '#C0392B', infield: '#2980B9', outfield: '#27AE60', fallback: '#555555',
+        },
+        surface: {
+          gradient: 'radial-gradient(circle at center, #1F3D2B 0%, #0F1F3D 60%, #0A1428 100%)',
+        },
+        stroke: {
+          fence: 'rgba(255,255,255,0.12)', basepath: 'rgba(255,255,255,0.13)',
+          mound: 'rgba(255,255,255,0.10)', homePlate: 'rgba(255,255,255,0.15)',
+          foulLine: 'rgba(255,255,255,0.07)', highlight: 'rgba(255,255,255,0.22)',
+          empty: 'rgba(255,255,255,0.18)',
+        },
+        fill: {
+          basepath: 'rgba(255,255,255,0.025)', empty: 'rgba(255,255,255,0.02)',
+        },
+        text: {
+          primary: '#FFFFFF', secondary: 'rgba(255,255,255,0.85)',
+          tertiary: 'rgba(255,255,255,0.55)', empty: 'rgba(255,255,255,0.28)',
+        },
+      },
     },
   },
 
