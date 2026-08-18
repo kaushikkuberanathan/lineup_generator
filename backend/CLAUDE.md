@@ -190,6 +190,29 @@ Per-file counts below verified individually via `node --test <file>` on 2026-08-
   membership-less teams created before this fix cannot be traced back to
   their creator automatically — recovering those needs a manual admin
   action per affected team.
+- **`022_add_team_season.sql` / `023_enforce_team_season_not_null.sql` —
+  APPLIED TO DEV (psqvzppphdedqkpmarwx) 2026-08-18, both in one combined
+  apply (DEV is low-stakes, so both phases ran back to back the same
+  session). NOT YET APPLIED to PROD.** Adds `teams.season` (`'Spring'` |
+  `'Fall'`, paired with the existing `year` column — display sites combine
+  them, e.g. "Spring 26"). Deliberately split into two migrations for the
+  eventual PROD rollout, per the Zero-Downtime Constraint above — running
+  the NOT NULL/CHECK phase before the season-aware release is live in PROD
+  would hard-fail every write from the currently-deployed (season-unaware)
+  frontend/admin.html:
+    1. **022** — add `season` nullable, backfill existing rows to
+       `'Spring'`. Safe to run against PROD any time; the currently-deployed
+       code never references the column.
+    2. Deploy the season-aware release (`feature/team-season-tracking`, once
+       promoted through `develop` → `main`).
+    3. **023** — only after that release has been live in PROD long enough
+       to verify `SELECT count(*) FROM public.teams WHERE season IS NULL`
+       returns `0`, add `NOT NULL` + `CHECK (season IN ('Spring', 'Fall'))`.
+  See each file's own header for the full reasoning. `docs/db/schema.sql`
+  currently reflects PROD's actual state (season nullable, no CHECK) — do
+  not "complete" that column definition until 023 has actually run against
+  PROD, or the ground-truth doc will lie about live PROD schema the same
+  way past drift here caused #342/#351/#355.
 
 ### !! FIVE NUMERIC COLLISIONS ACROSS THE TWO TREES !!
 

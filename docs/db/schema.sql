@@ -97,6 +97,17 @@ CREATE TABLE IF NOT EXISTS public.teams (
   age_group   text                     DEFAULT ''::text,
   year        integer                  DEFAULT 2026,
   sport       text                     DEFAULT 'baseball'::text,
+  -- season: intended 'Spring' | 'Fall' only, paired with `year` above,
+  -- combined at display time ("Spring 26"). Two-phase PROD rollout
+  -- (migrations 022 + 023, see their headers) — this file tracks CURRENT
+  -- PROD ground truth, which as of this PR is still phase 1 (nullable, no
+  -- CHECK): 022 has NOT been applied to PROD yet. DEV already has both
+  -- phases applied (2026-08-18). Once 022 promotes to PROD, this column
+  -- becomes nullable text with no DEFAULT. Once 023 later runs against
+  -- PROD (after verifying zero NULL rows), update this block to NOT NULL +
+  -- the teams_season_check CHECK constraint — do not add either here until
+  -- that has actually happened, or this file stops matching live PROD.
+  season      text,
   owner_id    text                     DEFAULT ''::text,   -- NOTE: text, not uuid. Not FK'd to auth.users.
   created_at  timestamp with time zone DEFAULT now(),
   updated_at  timestamp with time zone DEFAULT now(),

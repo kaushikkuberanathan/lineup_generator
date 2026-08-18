@@ -154,11 +154,11 @@ describe('dbLoadTeams — untested DB helper coverage (#424)', function() {
     });
 
     // ── Case 5: success, rows present → snake_case -> camelCase mapping ──
-    it('5: Supabase rows → each mapped to { id, name, ageGroup, year, sport } (snake_case to camelCase)', async function() {
+    it('5: Supabase rows → each mapped to { id, name, ageGroup, year, sport, season } (snake_case to camelCase)', async function() {
       fakeResultRef.current = Promise.resolve({
         data: [
-          { id: 't1', name: 'Mud Hens', age_group: '8U', year: 2026, sport: 'baseball' },
-          { id: 't2', name: 'Party Animals', age_group: '10U', year: 2026, sport: 'baseball' },
+          { id: 't1', name: 'Mud Hens', age_group: '8U', year: 2026, sport: 'baseball', season: 'Fall' },
+          { id: 't2', name: 'Party Animals', age_group: '10U', year: 2026, sport: 'baseball', season: null },
         ],
         error: null,
       });
@@ -166,8 +166,8 @@ describe('dbLoadTeams — untested DB helper coverage (#424)', function() {
 
       var r = await mod.dbLoadTeams();
       expect(r).toEqual([
-        { id: 't1', name: 'Mud Hens', ageGroup: '8U', year: 2026, sport: 'baseball' },
-        { id: 't2', name: 'Party Animals', ageGroup: '10U', year: 2026, sport: 'baseball' },
+        { id: 't1', name: 'Mud Hens', ageGroup: '8U', year: 2026, sport: 'baseball', season: 'Fall' },
+        { id: 't2', name: 'Party Animals', ageGroup: '10U', year: 2026, sport: 'baseball', season: null },
       ]);
     });
 

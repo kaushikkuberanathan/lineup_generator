@@ -190,7 +190,7 @@ describe('dbSaveTeams — insert-with-conflict-fallback (#424, #561)', function(
       expect(warnSpy).toHaveBeenCalledTimes(1);
     });
 
-    // ── Case 7: mapping/defaults — missing ageGroup/year/sport get defaulted, same row passed to insert AND the update fallback ──
+    // ── Case 7: mapping/defaults — missing ageGroup/year/sport get defaulted, same row passed to insert AND the update fallback. season deliberately does NOT get a '' default (see Case 7b) ──
     it('7: teams missing ageGroup/year/sport → both insert and update-fallback receive defaulted age_group/year/sport', async function() {
       fakeInsertRef.current = Promise.resolve({ error: { code: '23505', message: 'duplicate key' } });
       fakeUpdateRef.current = Promise.resolve({ data: [{}], error: null });
@@ -203,10 +203,32 @@ describe('dbSaveTeams — insert-with-conflict-fallback (#424, #561)', function(
         name:      'Mud Hens',
         age_group: '',
         year:      new Date().getFullYear(),
-        sport:     'baseball'
+        sport:     'baseball',
+        season:    undefined
       };
       expect(insertSpy.mock.calls[0][0]).toEqual(expectedRow);
       expect(updateSpy.mock.calls[0][0]).toEqual(expectedRow);
+    });
+
+    // ── Case 7b: a team with NO season passes season through as undefined, not '' — teams.season is meant to end up NOT NULL + CHECK(season IN ('Spring','Fall')) once migration 023 runs (022 adds it nullable first — see 023's header for the PROD two-phase rollout), so a caller that omits season must fail loudly once that constraint is live, rather than silently write an unclassified team ──
+    it("7b: team missing season → insert row's season is undefined, never a silently-defaulted ''", async function() {
+      fakeInsertRef.current = Promise.resolve({ data: [{}], error: null });
+      var mod = await import('../supabase.js');
+
+      await mod.dbSaveTeams([{ id: 't1', name: 'Mud Hens' }]);
+
+      expect(insertSpy.mock.calls[0][0].season).toBeUndefined();
+      expect(insertSpy.mock.calls[0][0]).not.toHaveProperty('season', '');
+    });
+
+    // ── Case 8: season ('Spring'/'Fall' only — year is tracked separately by the existing year field) passes through as-is ──
+    it('8: team with a season → insert row carries the season string unchanged', async function() {
+      fakeInsertRef.current = Promise.resolve({ data: [{}], error: null });
+      var mod = await import('../supabase.js');
+
+      await mod.dbSaveTeams([{ id: 't1', name: 'Mud Hens', season: 'Fall' }]);
+
+      expect(insertSpy.mock.calls[0][0].season).toBe('Fall');
     });
 
   });
