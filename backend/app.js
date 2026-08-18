@@ -13,7 +13,18 @@ const app = express();
 
 const ALLOWED_ORIGINS = [
   'https://dugoutlineup.com',
+  // Stable Vercel branch-alias URLs for `develop` — always point at the
+  // latest push to that branch, unlike the per-deployment random-ID URLs
+  // below (which the regex covers instead of hardcoding each one).
+  'https://lineup-generator-git-develop-kaushikkuberanathans-projects.vercel.app',
+  'https://line-up-generator-git-develop-kaushikkuberanathans-projects.vercel.app',
 ];
+// Per-deployment Vercel preview URLs (e.g. https://lineup-generator-i9ffbofs9-
+// kaushikkuberanathans-projects.vercel.app) — one random alphanumeric ID per
+// deployment, both current Vercel projects (line-up-generator / lineup-generator).
+// Scoped to this team's project-name pattern, not a bare *.vercel.app suffix
+// match, so it doesn't accept preview domains from other Vercel accounts/teams.
+const VERCEL_PREVIEW_ORIGIN_RE = /^https:\/\/(line-up-generator|lineup-generator)-[a-z0-9]+-kaushikkuberanathans-projects\.vercel\.app$/;
 app.use(cors({
   origin: function(origin, callback) {
     // Allow requests with no origin (mobile apps, curl, etc.)
@@ -21,6 +32,7 @@ app.use(cors({
     // Allow any localhost port for local dev
     if (/^http:\/\/localhost(:\d+)?$/.test(origin)) return callback(null, true);
     if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
+    if (VERCEL_PREVIEW_ORIGIN_RE.test(origin)) return callback(null, true);
     callback(new Error('Not allowed by CORS'));
   }
 }));
