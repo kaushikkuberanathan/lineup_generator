@@ -4706,7 +4706,8 @@ main and this scoping has KK's go-ahead on the tooling choice.
 
 ---
 ### Story 133 (P2) - Live game-day surface token migration (game-mode/ + ScoringMode/) <!-- #698 -->
-Status: Open - scoped and phased, not started. #503 reopened by KK
+Status: In progress - slices 1-3 merged (PRs #705, #707, #709); slice 4
+(`QuickSwap.jsx`) branch cut, ready to start. #503 reopened by KK
 2026-08-17. Scope expanded the same day past the original ticket (see
 "Scope expansion" below) - KK's explicit call, full-surface option chosen
 over the two narrower alternatives offered.
