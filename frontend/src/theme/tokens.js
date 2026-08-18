@@ -234,6 +234,24 @@ export const tokens = {
           tertiary: 'rgba(255,255,255,0.55)', empty: 'rgba(255,255,255,0.28)',
         },
       },
+
+      // ─── QuickSwap.jsx (Story 133 slice 4, #698) ───────────────────────
+      // Role-based, not appearance-based — these three coincide byte-for-byte
+      // with existing text/diamond tokens (gameDay.text.caption/faint,
+      // diamond.position.fallback) but serve a different role here (position-
+      // accent swatch, not text or diamond-SVG fill) and are kept separate on
+      // purpose per the handoff's no-silent-alias rule, even where bytes match.
+      quickSwap: {
+        position: {
+          bench:      '#475569',  // POS_COLORS.Bench swatch (badge border/text)
+          fallback:   '#555555',  // POS_COLORS[position] miss — defensive default
+          unassigned: '#334155',  // POS_COLORS[""] swatch — unassigned position
+        },
+        backdrop:                 'rgba(0,0,0,0.6)',     // full-screen scrim behind the sheet
+        positionBadgeBackground:  'rgba(255,255,255,0.06)', // position badge bg when a position is assigned
+        rowDivider:               'rgba(255,255,255,0.05)', // player-row bottom border
+        currentRowBackground:     'rgba(245,200,66,0.10)',  // highlight for the row of the currently-occupying player
+      },
     },
   },
 
