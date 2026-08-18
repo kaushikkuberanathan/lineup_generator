@@ -38,6 +38,48 @@ prod-health signal comes from the Render/Vercel/Supabase connectors'
 platform-reported status, not a literal HTTP ping — that's a real, permanent
 constraint of that environment, not a bug to fix.
 
+## Cloud routine security posture
+
+The routine's `HARD RULE: take no write actions` in its prompt is not the
+only backstop — as of 2026-08-17 each attached MCP connector
+(`Git-CoPilot-MCP`, `Supabase`, `Vercel`, `Render`) has an explicit
+`permitted_tools` allowlist restricted to `list_*`/`get_*`/`search_*`-style
+read calls. This was a real gap the first test run exposed: connectors were
+initially registered with `permitted_tools: []`, which the platform treats
+as *unrestricted*, not *nothing permitted* — the test run's own transcript
+showed it successfully calling `list_pull_requests`, `get_advisors`,
+`list_deployments`, etc. with no tool-level gate at all, meaning the prompt's
+"don't write" instruction was the *only* thing standing between a
+prompt-injection attempt (this routine reads PR titles, issue text — exactly
+the untrusted content injection attacks target) and an actual
+`apply_migration` / `trigger_deploy` / `merge_pull_request` call. Fixed via
+`RemoteTrigger action: "update"` with explicit `permitted_tools` per
+connector.
+
+**Two things about this fix are unverified, not just "should work":**
+- Whether `permitted_tools` blocks at actual *execution* time (robust) or
+  only at *discovery*/ToolSearch time (weaker — a prompt-injected instruction
+  that already knows an exact tool name wouldn't need discovery). A live
+  test to confirm this was attempted and blocked by the Claude Code
+  safety classifier itself (asking a cloud agent to deliberately call a
+  tool outside its own permission boundary reads as a bypass attempt, even
+  with a harmless target and defensive intent) — correctly refused rather
+  than routed around. KK chose to defer verification to the routine's own
+  settings page (`https://claude.ai/code/routines`) rather than force the
+  test.
+- Whether the `mcp__github__*` tool namespace observed in the first test
+  run's transcript (used for the actual `list_pull_requests`/`get_commit`
+  calls) is the same thing as the explicitly-attached `Git-CoPilot-MCP`
+  connector (in which case the new allowlist covers it) or a separate,
+  always-on integration tied to the session's `git_repository` source (in
+  which case it might not). Not resolved — worth checking next time this
+  routine's config is touched.
+- Whether `{"notifications": {"push": true}}` sent via `update` actually
+  took effect — the API returned 200 and `updated_at` changed, but the
+  field isn't echoed back in the trigger object, so there's no positive
+  confirmation. Check the routine's own settings page to confirm before
+  assuming a push notification will actually fire on a bad finding.
+
 ## Running it
 
 ```bash
@@ -119,9 +161,36 @@ VSCode extension only), so a true unattended *agentic* run isn't possible via
 Windows Task Scheduler — Task Scheduler can only invoke the raw script, not
 this skill's judgment layer. The raw script alone is still useful
 unattended: it's fully deterministic, writes its report to
-`.claude/health-reports/latest.log`, and exits non-zero on a real FAIL. If a
-Scheduled Task is configured (check `schtasks /query /tn DugoutHealthCheck`
-first — see `docs/process/CLAUDE_CODE_HANDOFF.md` for whether one was
-actually set up), the judgment layer runs *next*, at the start of whatever
-session next opens this repo, by reading that report rather than assuming
-it's fine unread.
+`.claude/health-reports/latest.log`, and exits non-zero on a real FAIL.
+
+A Scheduled Task named **`DugoutLineupHealthCheck`** was registered
+2026-08-17 (`Get-ScheduledTask -TaskName "DugoutLineupHealthCheck"` to
+inspect it), daily at 6:15am local, running
+`scripts/env-health-check.sh` via Git Bash and appending combined
+stdout/stderr to `.claude/health-reports/scheduled-task-stdout.log` as a
+backstop in case the script itself crashes before writing its own report.
+`-WakeToRun` is set, so it'll wake the machine from sleep/hibernate to fire —
+**but not from a full power-off.** If the laptop is genuinely shut down
+overnight rather than asleep, the realistic behavior is "runs next time the
+machine is on," not literally 6:15am every day. Say that plainly if asked
+about it rather than overclaiming the schedule.
+
+The judgment layer runs *next*, at the start of whatever session next opens
+this repo, by reading `.claude/health-reports/latest.log` rather than
+assuming it's fine unread.
+
+**Verified, not just configured (2026-08-17):**
+- Fired manually via `Start-ScheduledTask` once — confirmed `LastTaskResult: 0`
+  and real report content written (37 PASS, both worktrees' full test suites
+  actually ran).
+- Docker-down recovery — the actual reason this script exists — was
+  deliberately tested, not just code-reviewed: force-stopped every Docker
+  Desktop process, confirmed `docker ps` genuinely failed, ran the script,
+  confirmed it detected the outage, launched Docker Desktop, polled, and
+  came back with `[PASS] Docker Desktop started successfully (was down, now
+  up)` — then independently confirmed via `docker ps` that the ephemeral RLS
+  containers were really back (`Up 20 seconds`). Recovery was fast (~12s
+  total) because the underlying WSL2 VM was still warm from having just been
+  running; a true cold boot after a full system restart could take longer —
+  the script's 2-minute poll budget is sized for that case, not just the
+  warm-restart case tested here.
