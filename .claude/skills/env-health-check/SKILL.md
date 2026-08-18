@@ -23,62 +23,86 @@ deps, env file presence, lint, full test suites, RLS suite), GitHub state
 loads) — all from *this machine*.
 
 **Doesn't cover, by design:** anything requiring the cloud sandbox's own view
-of GitHub/prod. There's a separate daily cloud routine for that —
+of GitHub/prod. There's a companion cloud routine for that —
 [Dugout Lineup — Daily GitHub + Prod Health Check](https://claude.ai/code/routines/trig_01FMH5WAYUGdEzeoxy1CFnxo)
-(`trig_01FMH5WAYUGdEzeoxy1CFnxo`, fires 11:17 UTC / ~7:17am ET daily). Use
-`RemoteTrigger` (`action: "list_runs"` then `"get_run_log"`) to pull its most
-recent findings rather than re-deriving them locally. This skill and that
-routine are deliberately split: this machine can see Docker and both
-worktrees, the cloud routine can't; the cloud routine runs even if this PC
-is off and can query Render/Vercel/Supabase directly via their connectors,
-this skill can't (no MCP connectors available in a plain local session).
-Notably: the cloud sandbox's network egress is proxied to an allowlist that
-excludes `dugoutlineup.com` and the Render backend domain entirely, so its
-prod-health signal comes from the Render/Vercel/Supabase connectors'
-platform-reported status, not a literal HTTP ping — that's a real, permanent
-constraint of that environment, not a bug to fix.
+(`trig_01FMH5WAYUGdEzeoxy1CFnxo`, cron set for 11:17 UTC / ~7:17am ET) —
+**but it is currently PAUSED (`enabled: false`) and must not be re-enabled
+without reading "Cloud routine security posture" below first.** It was
+found to be overprivileged (its connectors can perform writes despite a
+configured allowlist that was supposed to prevent that) and silent (finish
+notifications are off) — until both are actually fixed, this machine's own
+checks (this script) are the only reliable signal. When it's eventually
+re-enabled: this skill and that routine are deliberately split — this
+machine can see Docker and both worktrees, the cloud routine can't; the
+cloud routine can run even if this PC is off and can query Render/Vercel/
+Supabase directly via their connectors, this skill can't (no MCP connectors
+available in a plain local session). Notably: the cloud sandbox's network
+egress is proxied to an allowlist that excludes `dugoutlineup.com` and the
+Render backend domain entirely, so its prod-health signal would come from
+the Render/Vercel/Supabase connectors' platform-reported status, not a
+literal HTTP ping — that's a real, permanent constraint of that
+environment, not a bug to fix.
 
-## Cloud routine security posture
+## Cloud routine security posture — currently PAUSED, prompt-protected only
 
-The routine's `HARD RULE: take no write actions` in its prompt is not the
-only backstop — as of 2026-08-17 each attached MCP connector
-(`Git-CoPilot-MCP`, `Supabase`, `Vercel`, `Render`) has an explicit
-`permitted_tools` allowlist restricted to `list_*`/`get_*`/`search_*`-style
-read calls. This was a real gap the first test run exposed: connectors were
-initially registered with `permitted_tools: []`, which the platform treats
-as *unrestricted*, not *nothing permitted* — the test run's own transcript
-showed it successfully calling `list_pull_requests`, `get_advisors`,
-`list_deployments`, etc. with no tool-level gate at all, meaning the prompt's
-"don't write" instruction was the *only* thing standing between a
-prompt-injection attempt (this routine reads PR titles, issue text — exactly
-the untrusted content injection attacks target) and an actual
-`apply_migration` / `trigger_deploy` / `merge_pull_request` call. Fixed via
-`RemoteTrigger action: "update"` with explicit `permitted_tools` per
-connector.
+**As of 2026-08-18, [the routine](https://claude.ai/code/routines/trig_01FMH5WAYUGdEzeoxy1CFnxo)
+is disabled (`enabled: false`) and must stay that way until this is actually
+fixed.** Do not re-enable it on the assumption the `permitted_tools` config
+below provides real protection — it doesn't, confirmed directly against the
+routine's own settings page, not inferred from the API.
 
-**Two things about this fix are unverified, not just "should work":**
-- Whether `permitted_tools` blocks at actual *execution* time (robust) or
-  only at *discovery*/ToolSearch time (weaker — a prompt-injected instruction
-  that already knows an exact tool name wouldn't need discovery). A live
-  test to confirm this was attempted and blocked by the Claude Code
-  safety classifier itself (asking a cloud agent to deliberately call a
-  tool outside its own permission boundary reads as a bypass attempt, even
-  with a harmless target and defensive intent) — correctly refused rather
-  than routed around. KK chose to defer verification to the routine's own
-  settings page (`https://claude.ai/code/routines`) rather than force the
-  test.
-- Whether the `mcp__github__*` tool namespace observed in the first test
-  run's transcript (used for the actual `list_pull_requests`/`get_commit`
-  calls) is the same thing as the explicitly-attached `Git-CoPilot-MCP`
-  connector (in which case the new allowlist covers it) or a separate,
-  always-on integration tied to the session's `git_repository` source (in
-  which case it might not). Not resolved — worth checking next time this
-  routine's config is touched.
-- Whether `{"notifications": {"push": true}}` sent via `update` actually
-  took effect — the API returned 200 and `updated_at` changed, but the
-  field isn't echoed back in the trigger object, so there's no positive
-  confirmation. Check the routine's own settings page to confirm before
-  assuming a push notification will actually fire on a bad finding.
+**What actually happened:** the first test run showed all 4 connectors
+(`Git-CoPilot-MCP`, `Supabase`, `Vercel`, `Render`) registered with
+`permitted_tools: []`, and successfully calling `list_pull_requests`,
+`get_advisors`, `list_deployments`, etc. with no tool-level gate — meaning
+the prompt's `HARD RULE: take no write actions` was the *only* thing
+standing between a prompt-injection attempt (this routine reads PR titles
+and issue text — exactly the untrusted content injection attacks target)
+and an actual `apply_migration` / `trigger_deploy` / `merge_pull_request`
+call. An explicit `list_*`/`get_*`/`search_*` allowlist was set per
+connector via `RemoteTrigger action: "update"` to close this — **that fix
+does not work.** KK checked the authenticated routine settings page
+directly and it states outright: *"Claude can use all tools from these
+connectors — including writes — without asking for permission during
+runs."* The `permitted_tools` field accepted by the API either isn't
+enforced at the platform level, or governs something other than what the
+UI's actual runtime behavior is gated on. Either way: **the allowlist
+configured in this routine's `mcp_connections` is not a real access
+boundary.** The prompt-level "don't write" instruction is still in place,
+but a prompt instruction is not an enforcement mechanism against
+prompt-injected content — that's the entire threat model this was supposed
+to close, and it doesn't.
+
+**Notifications are also off, not just unconfirmed.** The earlier
+`{"notifications": {"push": true}}` API call returned 200 with no
+positive confirmation in the response — turned out that's because it did
+nothing. The routine settings page's "Notify me when this routine finishes"
+toggle was checked directly and is switched off. A daily check nobody gets
+notified about isn't a safeguard, it's a diary — fix this before
+re-enabling regardless of the access-control question above.
+
+**Before re-enabling this routine, in order:**
+1. Find or provision genuinely read-only credentials for GitHub/Supabase/
+   Vercel/Render — a scoped PAT, a read-only service role, a connector
+   variant that exposes no write operations at all — rather than relying on
+   an in-product allowlist over full-access connectors. This is a real
+   provisioning task, not a config toggle.
+2. Enable and save "Notify me when this routine finishes" directly in the
+   UI (`https://claude.ai/code/routines/trig_01FMH5WAYUGdEzeoxy1CFnxo`) —
+   don't trust an API call's 200 status as confirmation of anything UI-facing
+   again; verify in the UI itself.
+3. Re-verify both — read-only credentials in place, notifications on — in
+   the UI directly before flipping `enabled: true`.
+
+Separately, still unresolved: whether the `mcp__github__*` tool namespace
+observed in the first test run's transcript (used for the actual
+`list_pull_requests`/`get_commit` calls) is the same thing as the
+explicitly-attached `Git-CoPilot-MCP` connector, or a separate always-on
+integration tied to the session's `git_repository` source. Given the
+allowlist doesn't enforce anything regardless, this question matters less
+than it did — but worth resolving once real read-only credentials are in
+place, so the *new* boundary's actual scope is understood correctly from
+the start.
 
 ## Running it
 
