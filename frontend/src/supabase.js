@@ -35,9 +35,12 @@ export function dbSaveTeams(teams) {
       age_group:  t.ageGroup || '',
       year:       t.year || new Date().getFullYear(),
       sport:      t.sport || 'baseball',
-      // No '' fallback, deliberately — teams.season is NOT NULL with a
-      // CHECK (season IN ('Spring','Fall')) (migration 022). A caller that
-      // omits season should fail loudly against that constraint, not
+      // No '' fallback, deliberately — teams.season is meant to end up
+      // NOT NULL with a CHECK (season IN ('Spring','Fall')): migration 022
+      // adds the column nullable, 023 tightens it once the season-aware
+      // release has verified no NULL rows remain (see 023's header — PROD
+      // two-phase rollout, DEV already has both). A caller that omits
+      // season should fail loudly once that constraint is live, not
       // silently persist an unclassified team.
       season:     t.season
     };

@@ -722,9 +722,11 @@
   }
   // Sensible default for the season select below — Jan-Jun -> Spring,
   // Jul-Dec -> Fall. A guess, not a rule: admins can always override it.
-  // teams.season is NOT NULL with a CHECK constraint (migration 022), so
-  // the add-team form validates this explicitly rather than letting an
-  // empty selection reach the insert.
+  // teams.season is meant to end up NOT NULL with a CHECK constraint
+  // (migration 022 adds it nullable, 023 tightens it later — see 023's
+  // header for the PROD two-phase rollout), so the add-team form validates
+  // this explicitly rather than letting an empty selection reach the
+  // insert.
   function currentSeasonGuess() {
     var month = new Date().getMonth() + 1;
     return (month >= 1 && month <= 6) ? 'Spring' : 'Fall';

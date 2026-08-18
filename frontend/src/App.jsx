@@ -1066,8 +1066,11 @@ export function SharedView({ payload, renderFieldSVG }) {
 // Jul-Dec -> Fall. A guess, not a rule: the coach can always override it.
 // Exists so every path that creates a team object (new-team form reset,
 // demo team, legacy migration) supplies a DB-valid 'Spring'/'Fall' value —
-// the teams.season column is NOT NULL with a CHECK constraint (migration
-// 022), so an empty string is a hard write failure, not a soft default.
+// the teams.season column is meant to end up NOT NULL with a CHECK
+// constraint (migration 022 adds it nullable, 023 tightens it once the
+// season-aware release verifies no NULLs remain — see 023's header for the
+// PROD two-phase rollout), so an empty string will eventually be a hard
+// write failure, not a soft default.
 function currentSeasonGuess() {
   var month = new Date().getMonth() + 1;
   return (month >= 1 && month <= 6) ? "Spring" : "Fall";

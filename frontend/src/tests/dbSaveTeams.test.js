@@ -210,7 +210,7 @@ describe('dbSaveTeams — insert-with-conflict-fallback (#424, #561)', function(
       expect(updateSpy.mock.calls[0][0]).toEqual(expectedRow);
     });
 
-    // ── Case 7b: a team with NO season passes season through as undefined, not '' — teams.season is NOT NULL + CHECK(season IN ('Spring','Fall')) (migration 022), so a caller that omits season must fail loudly against that constraint rather than silently write an unclassified team ──
+    // ── Case 7b: a team with NO season passes season through as undefined, not '' — teams.season is meant to end up NOT NULL + CHECK(season IN ('Spring','Fall')) once migration 023 runs (022 adds it nullable first — see 023's header for the PROD two-phase rollout), so a caller that omits season must fail loudly once that constraint is live, rather than silently write an unclassified team ──
     it("7b: team missing season → insert row's season is undefined, never a silently-defaulted ''", async function() {
       fakeInsertRef.current = Promise.resolve({ data: [{}], error: null });
       var mod = await import('../supabase.js');
