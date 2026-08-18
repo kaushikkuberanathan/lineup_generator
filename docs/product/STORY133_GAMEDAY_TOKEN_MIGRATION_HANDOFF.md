@@ -11,7 +11,8 @@ starting; it is more current than `ROADMAP.md`'s Story 133 entry (see
 "Known doc staleness" below).
 
 **Last updated:** 2026-08-18, after slice 3 merged and slice 4's branch was
-cut (no commits yet).
+cut (no commits yet). Corrected 2026-08-18 per PR #711 review: `develop`
+tip, worktree snapshot, and the git-config-corruption-incident note below.
 
 ---
 
@@ -40,14 +41,18 @@ without changing any rendered pixel.
 | 6 | `InningModal.jsx` | 45 | Not started — largest in `game-mode/*` |
 | 7-13 | `ScoringMode/*` (7 files) | 251 total | Not started — separate Locked-File track, see §5 |
 
-**`develop` is currently at `af8e656`** (post-slice-3-merge). Confirm this
-is still current with `git log origin/develop -1` — multiple concurrent
+**`develop` is currently at `f0e54f1`** (post-slice-3-merge, plus PR #710
+merging the git-config-corruption-incident docs on top). Confirm this is
+still current with `git log origin/develop -1` — multiple concurrent
 sessions have been active on this repo tonight (see §6), so don't assume
 this number is still accurate by the time you read it.
 
 **Both worktrees, as last verified:**
-- `lineup_generator` → `develop` @ `af8e656` (or later)
-- `lineup-generator-ux` → `feature/story133-slice4-quickswap-token-migration`, forked from `develop` @ `af8e656`, 0 commits ahead
+- `lineup_generator` → `develop` @ `f0e54f1`
+- `lineup-generator-ux` → temporarily on `docs/story133-handoff` (this PR);
+  switch back to `feature/story133-slice4-quickswap-token-migration` once
+  it merges. That branch is preserved cleanly, forked from `develop` @
+  `f0e54f1`, 0 commits ahead, zero work lost.
 
 **Gate phrases already granted for this session** (confirm still valid —
 these are per-conversation, not permanent): `"all clear — game-mode editing
@@ -279,24 +284,21 @@ inning, positions visible, batting order clear), then and only then close
    worktree once its files are gone, even though the stale metadata
    directory lingers. Don't keep retrying it; it's cosmetic, not a
    blocker. Leave it.
-5. **A separate, unrelated git-config-corruption incident is being
-   documented on a local-only `docs/git-config-corruption-incident`
-   branch** (not yet pushed) by another concurrent process as of this
-   writing. Unrelated to Story 133. Don't touch it; not investigated
-   further here.
-6. **No per-slice GitHub issues exist, and none should be created** — KK
+5. **No per-slice GitHub issues exist, and none should be created** — KK
    explicitly confirmed `#698` alone is the tracking issue for all 13
    slices (asked directly, 2026-08-18, chose "confirm #698's state" over
    "create a dedicated per-slice issue"). Don't second-guess this and
    start filing individual issues per slice.
 
-## 7. Known doc staleness — fix opportunistically, not urgently
+## 7. Known doc staleness — fixed 2026-08-18 in this PR
 
 `docs/product/ROADMAP.md`'s own Story 133 entry (search for `### Story 133`)
-still says **"Status: Open - scoped and phased, not started"** at the top,
-even though slices 1-3 are merged. This handoff doc (and `#698`'s comment
-log) are the current source of truth, not that line. Worth fixing next
-time that section is touched, not urgent enough to block on.
+used to say **"Status: Open - scoped and phased, not started"** at the top,
+which was stale as of slices 1-3 merging. Corrected in the same commit as
+this handoff doc's own §2 fixes, to **"In progress - slices 1-3 merged;
+slice 4 branch cut, ready to start."** `#698`'s comment log remains the
+most current blow-by-blow source, but the ROADMAP line no longer
+contradicts it.
 
 ---
 
