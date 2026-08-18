@@ -214,14 +214,28 @@ for WT in "${WORKTREES[@]}"; do
   # otherwise.
   if [ -f "backend/.env.rls.local" ]; then
     if [ "$DOCKER_OK" = true ] && command -v supabase >/dev/null 2>&1; then
-      CURRENT_API_URL=$(timeout 15 supabase status -o env 2>/dev/null | grep '^API_URL=' | cut -d= -f2- | tr -d '"')
+      STATUS_OUT=$(timeout 15 supabase status -o env 2>/dev/null)
+      CURRENT_API_URL=$(echo "$STATUS_OUT" | grep '^API_URL=' | cut -d= -f2- | tr -d '"')
+      CURRENT_ANON_KEY=$(echo "$STATUS_OUT" | grep '^ANON_KEY=' | cut -d= -f2- | tr -d '"')
+      CURRENT_SERVICE_KEY=$(echo "$STATUS_OUT" | grep '^SERVICE_ROLE_KEY=' | cut -d= -f2- | tr -d '"')
       FILE_URL=$(grep '^RLS_TEST_SUPABASE_URL=' backend/.env.rls.local | cut -d= -f2-)
-      if [ -n "$CURRENT_API_URL" ] && [ "$CURRENT_API_URL" = "$FILE_URL" ]; then
-        pass "backend/.env.rls.local present and matches the current local Supabase stack"
-      elif [ -n "$CURRENT_API_URL" ]; then
-        fail "backend/.env.rls.local is STALE — its URL doesn't match the current local Supabase stack (containers were likely recreated since it was written). Regenerate: supabase status -o env, see docs/process/CLAUDE_CODE_HANDOFF.md"
-      else
+      FILE_ANON_KEY=$(grep '^RLS_TEST_SUPABASE_ANON_KEY=' backend/.env.rls.local | cut -d= -f2-)
+      FILE_SERVICE_KEY=$(grep '^RLS_TEST_SUPABASE_SERVICE_ROLE_KEY=' backend/.env.rls.local | cut -d= -f2-)
+
+      if [ -z "$CURRENT_API_URL" ]; then
         warn "backend/.env.rls.local present but could not get fresh 'supabase status' to validate against"
+      else
+        MISMATCHES=()
+        [ "$CURRENT_API_URL" != "$FILE_URL" ] && MISMATCHES+=("API_URL")
+        [ "$CURRENT_ANON_KEY" != "$FILE_ANON_KEY" ] && MISMATCHES+=("ANON_KEY")
+        [ "$CURRENT_SERVICE_KEY" != "$FILE_SERVICE_KEY" ] && MISMATCHES+=("SERVICE_ROLE_KEY")
+        # Report only which fields mismatch, never the values themselves.
+        if [ ${#MISMATCHES[@]} -eq 0 ]; then
+          pass "backend/.env.rls.local present and matches the current local Supabase stack (URL, anon key, service-role key all current)"
+        else
+          JOINED=$(IFS=,; echo "${MISMATCHES[*]}")
+          fail "backend/.env.rls.local is STALE — mismatched field(s): $JOINED (containers were likely recreated since it was written). Regenerate: supabase status -o env, see docs/process/CLAUDE_CODE_HANDOFF.md"
+        fi
       fi
     else
       LEN=$(wc -c < "backend/.env.rls.local" | tr -d ' ')
