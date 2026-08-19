@@ -54,6 +54,7 @@ import { Card } from './components/ui/Card';
 import { useAuth } from './hooks/useAuth';
 import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 import { VERSION_HISTORY } from './data/versionHistory';
+import { currentSeasonGuess, formatSeason, compareTeamsNewestFirst } from './utils/season.js';
 
 // ============================================================
 // HELPERS
@@ -1063,19 +1064,8 @@ export function SharedView({ payload, renderFieldSVG }) {
 
 // LockFlow — extracted to components/GameDay/LockFlow.jsx
 
-// Sensible default for the season selects below — Jan-Jun -> Spring,
-// Jul-Dec -> Fall. A guess, not a rule: the coach can always override it.
-// Exists so every path that creates a team object (new-team form reset,
-// demo team, legacy migration) supplies a DB-valid 'Spring'/'Fall' value —
-// the teams.season column is meant to end up NOT NULL with a CHECK
-// constraint (migration 022 adds it nullable, 023 tightens it once the
-// season-aware release verifies no NULLs remain — see 023's header for the
-// PROD two-phase rollout), so an empty string will eventually be a hard
-// write failure, not a soft default.
-function currentSeasonGuess() {
-  var month = new Date().getMonth() + 1;
-  return (month >= 1 && month <= 6) ? "Spring" : "Fall";
-}
+// currentSeasonGuess/formatSeason/compareTeamsNewestFirst -> ./utils/season.js
+// (extracted for test coverage — see that file's header and #718).
 
 // ============================================================
 // MAIN COMPONENT
@@ -2952,7 +2942,7 @@ export default function App() {
             <div style={{ minWidth:0, overflow:"hidden" }}>
               <div style={{ fontSize:"15px", fontWeight:"bold", color:"#0f1f3d", fontFamily:"Georgia,serif", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
                 {team.name}
-                {team.season ? <span style={{ fontSize:"10px", color:"#6b7280", fontWeight:"normal", marginLeft:"6px" }}>{team.season + " " + String(team.year || "").slice(-2)}</span> : null}
+                {team.season ? <span style={{ fontSize:"10px", color:"#6b7280", fontWeight:"normal", marginLeft:"6px" }}>{formatSeason(team.season, team.year)}</span> : null}
                 {team.ageGroup ? <span style={{ fontSize:"10px", color:"#6b7280", fontWeight:"normal", marginLeft:"6px" }}>{team.ageGroup}</span> : null}
               </div>
               {statusBadge === "Missing roster" ? (
@@ -3227,15 +3217,9 @@ export default function App() {
                         />
                       );
                     }
-                    // Newest season/year first — same year, Fall (later in the
-                    // calendar year) sorts before Spring — so current teams are
-                    // easiest to find while previous ones stay reachable below.
-                    var sorted = filtered.slice().sort(function(a, b) {
-                      var ay = a.year || 0, by = b.year || 0;
-                      if (ay !== by) { return by - ay; }
-                      var seasonRank = function(s) { return s === "Fall" ? 1 : 0; };
-                      return seasonRank(b.season) - seasonRank(a.season);
-                    });
+                    // Newest season/year first — current teams are easiest to
+                    // find while previous ones stay reachable below.
+                    var sorted = filtered.slice().sort(compareTeamsNewestFirst);
                     return sorted.map(function(t) { return TeamCard({ team: t }); });
                   })()}
                 </div>
@@ -5725,7 +5709,7 @@ export default function App() {
 
     function buildShareUrl(game) {
       var payload = {
-        team: activeTeam ? activeTeam.name + (activeTeam.ageGroup ? " " + activeTeam.ageGroup : "") + (activeTeam.season ? " " + activeTeam.season + " " + String(activeTeam.year || "").slice(-2) : "") : "Lineup",
+        team: activeTeam ? activeTeam.name + (activeTeam.ageGroup ? " " + activeTeam.ageGroup : "") + (activeTeam.season ? " " + formatSeason(activeTeam.season, activeTeam.year) : "") : "Lineup",
         game: game,
         grid: grid,
         batting: battingOrder,
@@ -7019,7 +7003,7 @@ export default function App() {
         doc.setTextColor(150, 160, 175);
         doc.setFontSize(7);
         doc.setFont("helvetica","normal");
-        doc.text("Dugout Lineup - " + teamName + (activeTeam && activeTeam.ageGroup ? " " + activeTeam.ageGroup : "") + (activeTeam && activeTeam.season ? " " + activeTeam.season + " " + String(activeTeam.year || "").slice(-2) : ""), margin, pageH - 8);
+        doc.text("Dugout Lineup - " + teamName + (activeTeam && activeTeam.ageGroup ? " " + activeTeam.ageGroup : "") + (activeTeam && activeTeam.season ? " " + formatSeason(activeTeam.season, activeTeam.year) : ""), margin, pageH - 8);
         doc.text(today, W - margin, pageH - 8, { align:"right" });
 
         // ── Save or Share ────────────────────────────────────────
@@ -7217,20 +7201,16 @@ export default function App() {
         {_memberships.length === 0 ? (
           <div style={{ fontSize:"13px", color:tokens.color.text.muted, fontStyle:"italic", padding:"4px 0 8px" }}>Not on any team yet</div>
         ) : _memberships.slice().sort(function(ma, mb) {
-          // Newest season/year first — same year, Fall (later in the
-          // calendar year) sorts before Spring — so switching teams surfaces
-          // the current team first while previous ones stay reachable below.
+          // Newest season/year first — switching teams surfaces the current
+          // team first while previous ones stay reachable below.
           var ta = teams.find(function(t) { return t.id === ma.team_id; });
           var tb = teams.find(function(t) { return t.id === mb.team_id; });
-          var ay = (ta && ta.year) || 0, by = (tb && tb.year) || 0;
-          if (ay !== by) { return by - ay; }
-          var seasonRank = function(s) { return s === "Fall" ? 1 : 0; };
-          return seasonRank(tb && tb.season) - seasonRank(ta && ta.season);
+          return compareTeamsNewestFirst(ta, tb);
         }).map(function(m) {
           var _t = teams.find(function(t) { return t.id === m.team_id; });
           var _role = roleLabel(m.role);
           if (_t) {
-            var _meta = [_t.ageGroup, _t.season ? _t.season + " " + String(_t.year || "").slice(-2) : _t.year].filter(Boolean).join(" ");
+            var _meta = [_t.ageGroup, _t.season ? formatSeason(_t.season, _t.year) : _t.year].filter(Boolean).join(" ");
             return (
               <div key={m.id} onClick={function() { loadTeam(_t); }}
                 style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:"12px",
@@ -7759,7 +7739,7 @@ export default function App() {
             {activeTeam ? activeTeam.name : ""}
           </div>
           <div style={{ fontSize:"12px", color:tokens.color.text.muted, marginBottom:"12px" }}>
-            {activeTeam ? ((activeTeam.ageGroup || "") + (activeTeam.sport ? " \u00b7 " + (activeTeam.sport.charAt(0).toUpperCase() + activeTeam.sport.slice(1)) : "") + (activeTeam.season ? " \u00b7 " + activeTeam.season + " " + String(activeTeam.year || "").slice(-2) : "")) : ""}
+            {activeTeam ? ((activeTeam.ageGroup || "") + (activeTeam.sport ? " \u00b7 " + (activeTeam.sport.charAt(0).toUpperCase() + activeTeam.sport.slice(1)) : "") + (activeTeam.season ? " \u00b7 " + formatSeason(activeTeam.season, activeTeam.year) : "")) : ""}
           </div>
 
           {/* Stats row */}
@@ -7948,7 +7928,7 @@ export default function App() {
           ) : null}
           <div>
             <div style={Object.assign({}, S.logoTitle, isLandscape ? { fontSize:"14px" } : {})}>{screen === "app" && primaryTab !== "more" && activeTeam ? activeTeam.name : "Dugout Lineup"}</div>
-            {!isLandscape && <div style={S.logoSub}>{screen === "app" && primaryTab !== "more" && activeTeam ? (activeTeam.ageGroup || "") + " " + (activeTeam.season ? activeTeam.season + " " + String(activeTeam.year || "").slice(-2) : (activeTeam.year || "")) + "  ⌂" : "Youth Baseball & Softball"}</div>}
+            {!isLandscape && <div style={S.logoSub}>{screen === "app" && primaryTab !== "more" && activeTeam ? (activeTeam.ageGroup || "") + " " + (activeTeam.season ? formatSeason(activeTeam.season, activeTeam.year) : (activeTeam.year || "")) + "  ⌂" : "Youth Baseball & Softball"}</div>}
             {screen === "app" && primaryTab !== "more" && isSupabaseEnabled ? (
               <div title={syncStatus === "synced" ? "Saved to cloud" : syncStatus === "syncing" ? "Saving..." : syncStatus === "error" ? "Sync error — data saved locally" : ""}
                 style={{ width:"7px", height:"7px", borderRadius:"50%", marginTop:"3px",
