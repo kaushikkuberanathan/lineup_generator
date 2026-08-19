@@ -100,13 +100,15 @@ CREATE TABLE IF NOT EXISTS public.teams (
   -- season: intended 'Spring' | 'Fall' only, paired with `year` above,
   -- combined at display time ("Spring 26"). Two-phase PROD rollout
   -- (migrations 022 + 023, see their headers) — this file tracks CURRENT
-  -- PROD ground truth, which as of this PR is still phase 1 (nullable, no
-  -- CHECK): 022 has NOT been applied to PROD yet. DEV already has both
-  -- phases applied (2026-08-18). Once 022 promotes to PROD, this column
-  -- becomes nullable text with no DEFAULT. Once 023 later runs against
-  -- PROD (after verifying zero NULL rows), update this block to NOT NULL +
-  -- the teams_season_check CHECK constraint — do not add either here until
-  -- that has actually happened, or this file stops matching live PROD.
+  -- PROD ground truth. As of 2026-08-19, PROD is in phase 1 (nullable, no
+  -- CHECK, no DEFAULT): 022 applied to PROD 2026-08-19, ahead of the
+  -- v2.11.0 main promote (verified 6/6 teams, 0 NULL, all backfilled to
+  -- 'Spring'). DEV already has both phases applied (2026-08-18). Once 023
+  -- later runs against PROD (after the season-aware release has actually
+  -- promoted to main and a fresh zero-NULL check passes), update this
+  -- block to NOT NULL + the teams_season_check CHECK constraint — do not
+  -- add either here until that has actually happened, or this file stops
+  -- matching live PROD.
   season      text,
   owner_id    text                     DEFAULT ''::text,   -- NOTE: text, not uuid. Not FK'd to auth.users.
   created_at  timestamp with time zone DEFAULT now(),

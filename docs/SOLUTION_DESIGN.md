@@ -101,12 +101,18 @@ This means coaches at a field with no signal still have their full lineup and ca
 
 ```sql
 -- Team registry
+-- NOTE: this block has drifted from ground truth on more than just the
+-- field below (e.g. id/owner_id are actually `text`, not `uuid`) — see
+-- docs/db/schema.sql for the authoritative definition. Only `season` is
+-- being added here (v2.11.0); the pre-existing type drift is untouched,
+-- out of scope for this release.
 teams (
   id          uuid PRIMARY KEY,
   name        text,
   age_group   text,
   year        int,
   sport       text,           -- 'baseball' | 'softball'
+  season      text,           -- 'Spring' | 'Fall', paired with `year` (v2.11.0, migration 022/023 — see backend/CLAUDE.md § Migration Notes for PROD rollout phase)
   owner_id    uuid,           -- reserved for Phase 3 auth
   created_at  timestamptz
 )
