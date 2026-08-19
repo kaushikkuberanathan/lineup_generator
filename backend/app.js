@@ -13,6 +13,11 @@ const app = express();
 
 const ALLOWED_ORIGINS = [
   'https://dugoutlineup.com',
+  // Stable custom domain for the DEV frontend/backend pairing (Story
+  // team-season-tracking DEV rollout, 2026-08-18) — distinct from the
+  // Vercel branch-alias URLs below, which point at the same `develop`
+  // build but under the *.vercel.app hostname rather than this domain.
+  'https://dev.dugoutlineup.com',
   // Stable Vercel branch-alias URLs for `develop` — always point at the
   // latest push to that branch, unlike the per-deployment random-ID URLs
   // below (which the regex covers instead of hardcoding each one).

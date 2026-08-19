@@ -36,6 +36,12 @@ describe('CORS allowlist', () => {
     assert.equal(res.headers['access-control-allow-origin'], 'http://localhost:5173');
   });
 
+  test('C3b: DEV custom domain (dev.dugoutlineup.com) — allowed', async () => {
+    const res = await request(app).get('/ping').set('Origin', 'https://dev.dugoutlineup.com');
+    assert.equal(res.status, 200);
+    assert.equal(res.headers['access-control-allow-origin'], 'https://dev.dugoutlineup.com');
+  });
+
   test('C4: stable develop branch-alias URL (lineup-generator project) — allowed', async () => {
     const origin = 'https://lineup-generator-git-develop-kaushikkuberanathans-projects.vercel.app';
     const res = await request(app).get('/ping').set('Origin', origin);
