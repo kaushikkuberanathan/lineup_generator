@@ -24,6 +24,19 @@
 
 ## Open — Test Gaps
 
+### 🟠 P1 — RequestAccessScreen `submitted` confirmation state has no dedicated test coverage
+
+| | |
+|---|---|
+| **Area** | Auth / Request Access (Team Discovery, FEATURE_MAP.md row 38) |
+| **Description** | `RequestAccessScreen.jsx`'s `preserveSession=true` success path (an already-authenticated coach requesting a 2nd team) renders a new inline `submitted` confirmation-card state, added in Story 126/#665 (v2.10.0, PR #667) because the prior `useAuth` authState-transition confirmation doesn't fire when the session is preserved. Verified by eye only at ship time — no automated test exercises the new state. |
+| **Risk if unfixed** | Silent UX regression risk: a future refactor of `RequestAccessScreen.jsx` or `useAuth.requestAccess` could remove or break the `submitted` state with no test to catch it, reintroducing the exact "no visible confirmation" bug #665 fixed. |
+| **Proposed test/fix** | Add a case to `RequestAccessScreen.test.jsx` that submits with `preserveSession=true` and asserts the confirmation card renders (and that the old authState-transition path is not what's being relied on). |
+| **Opened** | 2026-08-15 (v2.10.0 ship) — flagged in that release's PR body and changelog entry but never formally logged in this ledger until now; caught during v2.11.0 release-prep docs pass. |
+| **Age** | 4 days |
+| **Target** | Opportunistic — no hard deadline, not a North Star capability gap. |
+| **Issue** | [#664](https://github.com/kaushikkuberanathan/lineup_generator/issues/664) |
+
 ### 🟡 P2 — useAuth.js `onAuthStateChange` silently strands user on failed `/me` call after `SIGNED_IN`
 
 | | |
@@ -414,9 +427,11 @@
 | Priority | Test Gaps | Doc Gaps | Process Gaps | Total |
 |---|---|---|---|---|
 | 🔴 P0 | 0 | 0 | 0 | **0** |
-| 🟠 P1 | 0 | 1 | 0 | **1** |
+| 🟠 P1 | 1 | 1 | 0 | **2** |
 | 🟡 P2 | 9 | 5 | 8 | **22** |
-| **Total** | **9** | **6** | **8** | **23** |
+| **Total** | **10** | **6** | **8** | **24** |
+
+*(2026-08-19, v2.11.0 release-prep audit: new P1 test gap added — RequestAccessScreen `submitted` confirmation state, #664 — see the Open — Test Gaps section above. Direct recount of every `### 🔴`/`### 🟠`/`### 🟡` heading actually present in each Open section immediately before this edit matched the prior table exactly (0/0/9 Test Gaps, 0/1/5 Doc Gaps, 0/0/8 Process Gaps = 23), so this is a clean single-item addition, not a correction of pre-existing drift. Test Gaps P1 0→1, Total Test Gaps 9→10, P1 Total 1→2, Grand Total 23→24. `debt-p0` gate re-confirmed clear (0 P0) before the v2.11.0 minor version bump.)*
 
 *(2026-08-07: new P2 process gap added — Dependency currency: 4 Dependabot bumps held (eslint/jsdom/react-dom/supabase-js), #632-#636 — see the Open — Tooling / Process Gaps section. Direct recount of every `### 🔴`/`### 🟠`/`### 🟡` heading actually present in each Open section immediately before this edit matched the prior table exactly (9/1/7, P2 9/5/7 = 21, Total 9/6/7 = 22), so this is a clean single-item addition, not a correction of pre-existing drift. Process Gaps P2 7→8, Total Process Gaps 7→8, P2 row 21→22, Grand Total 22→23.)*
 
