@@ -193,7 +193,12 @@ Per-file counts below verified individually via `node --test <file>` on 2026-08-
 - **`022_add_team_season.sql` / `023_enforce_team_season_not_null.sql` —
   APPLIED TO DEV (psqvzppphdedqkpmarwx) 2026-08-18, both in one combined
   apply (DEV is low-stakes, so both phases ran back to back the same
-  session). NOT YET APPLIED to PROD.** Adds `teams.season` (`'Spring'` |
+  session). `022` also APPLIED TO PROD (hzaajccyurlyeweekvma) 2026-08-19,
+  ahead of the v2.11.0 main promote (soak-override day) — verified via
+  direct query: 6/6 teams, 0 NULL season, all backfilled to `'Spring'`.
+  `023` is still NOT applied to PROD — per the sequence below, it cannot
+  run until the season-aware release has actually promoted to `main` and
+  been live for a while.** Adds `teams.season` (`'Spring'` |
   `'Fall'`, paired with the existing `year` column — display sites combine
   them, e.g. "Spring 26"). Deliberately split into two migrations for the
   eventual PROD rollout, per the Zero-Downtime Constraint above — running
@@ -202,9 +207,13 @@ Per-file counts below verified individually via `node --test <file>` on 2026-08-
   frontend/admin.html:
     1. **022** — add `season` nullable, backfill existing rows to
        `'Spring'`. Safe to run against PROD any time; the currently-deployed
-       code never references the column.
+       code never references the column. **Done — applied to PROD
+       2026-08-19.**
     2. Deploy the season-aware release (`feature/team-season-tracking`, once
-       promoted through `develop` → `main`).
+       promoted through `develop` → `main`). **Not yet done as of this
+       entry — 022 was deliberately applied ahead of the promote since it's
+       backward-compatible; the promote itself is separate and still
+       pending.**
     3. **023** — only after that release has been live in PROD long enough
        to verify `SELECT count(*) FROM public.teams WHERE season IS NULL`
        returns `0`, add `NOT NULL` + `CHECK (season IN ('Spring', 'Fall'))`.

@@ -3,8 +3,13 @@
 -- STATUS: APPLIED TO DEV (psqvzppphdedqkpmarwx) 2026-08-18, together with
 -- 023 in a single combined apply — DEV is low-stakes (test data only), so
 -- both phases were run back to back the same session, verified via direct
--- query. NOT YET APPLIED to PROD. Part of the feature/team-season-tracking
--- branch.
+-- query. Part of the feature/team-season-tracking branch.
+--
+-- APPLIED TO PROD (hzaajccyurlyeweekvma) 2026-08-19, ahead of the v2.11.0
+-- main promote per the two-phase sequence below — verified via direct
+-- query: 6/6 teams, 0 NULL season, all backfilled to 'Spring'. 023 still
+-- NOT applied to PROD — do not run it until the season-aware release
+-- (v2.11.0) has actually promoted to main and been live for a while.
 --
 -- PROD rollout is deliberately two-phase, split across 022 (this file) and
 -- 023_enforce_team_season_not_null.sql, per the zero-downtime constraint in
