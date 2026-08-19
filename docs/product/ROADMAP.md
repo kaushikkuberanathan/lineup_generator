@@ -1,7 +1,33 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: 2026-08-17 (v2.10.0 promoted to main - team search & request-access discovery, confirmation fix, PR #682; v2.9.0's stale "not yet promoted" tag corrected - it promoted to main 2026-08-09, PR #661)
+> Last updated: 2026-08-19 (v2.11.0 release-prep merged to develop via PR TBD - team seasons, first-save race fix, Story 133 slices 1-4/13, auth token convergence - develop only, NOT yet promoted to main)
 > MVP launched: March 24, 2026
+
+---
+
+## v2.11.0 - 2026-08-19 - Team seasons, first-save race fix, Story 133 slices 1-4/13 (develop only — not yet promoted to main)
+
+**Minor bump** — team season tracking is a genuine new coach-facing feature (not a fix batch), matching the "size the bump to the release's actual scope" convention established at v2.9.0/v2.10.0.
+
+**Team season tracking (#713, closes #719)** — new `teams.season` column (`Spring`/`Fall`, paired with the existing `year`), surfaced across team creation, editing, display, switching, sharing, PDF export, admin.html, and team search (season/year independent filters, newest-first ordering). Every team write path requires a valid season; Create/Save stay disabled until one is selected.
+
+**⚠️ DEV only — required two-phase PROD rollout not yet run.** Per the Zero-Downtime Constraint, this is split into two migrations (see `backend/CLAUDE.md` § Migration Notes for full detail): `022_add_team_season.sql` (nullable, backfilled — safe against PROD any time) applied to DEV only, 2026-08-18. `023_enforce_team_season_not_null.sql` (adds `NOT NULL` + `CHECK`) must not run until this release has been live in PROD long enough to confirm `SELECT count(*) FROM public.teams WHERE season IS NULL` returns `0`. **Not part of this develop-merge** — a separate, explicit step at PROD-promote time. Also outstanding per PR #713: a manual authenticated "DEV acceptance pass" (create/edit/search/switch/reload) was flagged as not yet completed by a human as of this entry.
+
+**Fixes found during the season rollout:**
+- Legacy division-seed migration (`migrationTargets`) had no `season` field, so it picked up a date-based guess instead of a fixed value — fixed (PR #717).
+- New-team first-save persistence race: `loadTeam()` now waits for the `teams` insert and its membership-provisioning trigger to finish before starting the first RLS-protected `team_data` write, closing a window that produced a real `42501` RLS denial (PR #720).
+
+**Test coverage (PR #722, closes #721)** — extracted `currentSeasonGuess`/`formatSeason`/`compareTeamsNewestFirst` out of `App.jsx` into `frontend/src/utils/season.js` (12 tests, replacing 3 inline copies); `admin.html` behavioral-parity test (extracts its real inline function source via brace-counting, not a hand-copied restatement); backend `INT-06` DB-constraint test (CI_SAFE-skipped, like the rest of that integration suite). Deliberately did not add migration-file tests — no migration in this repo has one; a new pattern for one column would be a separate architectural decision. Frontend 1069→1084 (+15), backend unit unchanged at 147 (INT-06 lives in the integration suite).
+
+**CORS fix (PR #714, closes #715)** — `dev.dugoutlineup.com` added to the backend CORS allowlist; the DEV custom-domain rollout above needed it and every request including `/ping` was being blocked.
+
+**Story 133 — live game-day surface token migration (#698): slices 1-4 of 13 merged**, PRs #705 (slice 1 — mints `color.gameDay.*` namespace, migrates `BenchStrip`/`ScoreboardRow`), #707 (slice 2 — `DugoutView`), #709 (slice 3 — `DiamondView`), #712 (slice 4 — `QuickSwap`). All byte-preserving, zero-intended-visual-change reference migrations. **Status corrected in this entry — the ROADMAP section for Story 133 still read "slice 4 branch cut, ready to start" as of the last edit; slice 4 has since merged.** Full-directory survey (2026-08-17) found the real scope is much larger than the original ticket: `game-mode/*` + `ScoringMode/*` combined have 384 literal-hex color occurrences across 14 files, none previously tokenized — 9 slices remain open, tracked in the Story 133 section below. **Slice 4 validation status: partially validated, not fully tested.** KK's 2026-08-19 release-bar call for this change (a token refactor, not new behavior): proceed given green automated coverage + full frontend CI, no regression found in a partial manual pass, one successful QuickSwap flow confirmed on a real mobile device, and no console/runtime errors — full multi-device/layout visual coverage was explicitly deferred as an accepted residual risk with a follow-up item, not completed. Do not describe slice 4 as fully validated in future release notes.
+
+**Also on develop, unrelated to the above:** Auth screens' remaining exact-match colors converged onto canonical design tokens (PR #693, UX Phase 5). Backend CORS extended to accept this team's Vercel preview domains (PR #706). `PendingApprovalScreen` test coverage added (closes #696, PR #700). `vite` 8.2.1 + `@vitejs/plugin-react` 6.0.5 dependency bump. `env-health-check` skill + script added for verifying local Docker/worktree/test/env health and this repo's GitHub/prod state (prod checks read-only). Routine docs/governance: Story 133 scope-expansion recon and handoff docs, Phase 5/Phase 6 scoping audit (#699), session handoffs, and Stories 129-132 filed for the upcoming UX/Phase 4C work lineup.
+
+**Verification (re-run directly, 2026-08-19):** frontend 1084 passed / 1 skipped (93 files), backend unit 147/147, `npm run build` clean, `debt-p0` gate clear (0 open P0s).
+
+**Not yet done as of this entry:** promotion to `main` (requires its own 24h soak + Ship Gate walk-through + the migration-022-to-PROD step above), and the manual DEV acceptance pass PR #713 flagged as outstanding.
 
 ---
 
@@ -4706,11 +4732,17 @@ main and this scoping has KK's go-ahead on the tooling choice.
 
 ---
 ### Story 133 (P2) - Live game-day surface token migration (game-mode/ + ScoringMode/) <!-- #698 -->
-Status: In progress - slices 1-3 merged (PRs #705, #707, #709); slice 4
-(`QuickSwap.jsx`) branch cut, ready to start. #503 reopened by KK
-2026-08-17. Scope expanded the same day past the original ticket (see
-"Scope expansion" below) - KK's explicit call, full-surface option chosen
-over the two narrower alternatives offered.
+Status: In progress - slices 1-4 of 13 merged (PRs #705, #707, #709, #712).
+**Corrected 2026-08-19 (v2.11.0 release prep): this line previously read
+"slice 4 branch cut, ready to start" — slice 4 (`QuickSwap.jsx`) has since
+merged (PR #712).** 9 slices remain. Slice 4 is partially, not fully,
+validated — automated coverage green, one manual QuickSwap flow confirmed
+working, full device/layout visual coverage deliberately deferred as an
+accepted residual risk (KK's call, 2026-08-19) rather than completed;
+see the v2.11.0 ROADMAP entry above for the full release-bar reasoning.
+#503 reopened by KK 2026-08-17. Scope expanded the same day past the
+original ticket (see "Scope expansion" below) - KK's explicit call,
+full-surface option chosen over the two narrower alternatives offered.
 Discovered: 2026-08-17, full-review audit answering KK's question "was
 there not some work with previous phases pending because ScoringMode was
 locked?"
