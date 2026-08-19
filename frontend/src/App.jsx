@@ -10,6 +10,7 @@ import { track as vaTrack } from '@vercel/analytics';
 import { FEATURE_FLAGS } from '@/config/featureFlags';
 import { generateLineupV2 } from '@/utils/lineupEngineV2';
 import { normalizeBattingHand } from '@/utils/playerUtils';
+import { persistTeamBeforeLoad } from './utils/teamCreationPersistence.js';
 import { outboundLinkProps, CAMPAIGNS, CONTENT } from './utils/trackingUrl';
 import { migrateRoster, migrateSchedule, migrateBattingPerf, mergeLocalScheduleFields } from '@/utils/migrations';
 import { fmtAvg, fmtStat } from '@/utils/formatters';
@@ -2401,9 +2402,12 @@ export default function App() {
     setTeams(next);
     saveJSON("app:teams", next);
     track("create_team", { age_group: t.ageGroup || "" });
-    dbSync(function() { return dbSaveTeams([t]); });
+    dbSync(function() {
+      return persistTeamBeforeLoad(t, function(team) {
+        return dbSaveTeams([team]);
+      }, loadTeam);
+    });
     setNewTeam({ name:"", ageGroup:"", sport:"", season:currentSeasonGuess(), year: new Date().getFullYear() });
-    loadTeam(t);
   }
 
   function loadDemoTeam() {
