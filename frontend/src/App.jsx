@@ -1320,7 +1320,13 @@ export default function App() {
       if (toCreate.length > 0) {
         // Add new teams to the local list immediately
         var withNew = merged.concat(toCreate.map(function(t) {
-          return { id:t.id, name:t.name, ageGroup:t.ageGroup, season:t.season || currentSeasonGuess(), year:t.year };
+          // "Spring" hardcoded, not currentSeasonGuess() — these migrationTargets'
+          // own schedules (MUD_HENS_SCHEDULE etc., ~line 183) run March-May 2026,
+          // unambiguously Spring regardless of what day this migration happens to
+          // run. A date-based guess here would mislabel these fixed division
+          // teams as "Fall" for any coach who first opens the app in the second
+          // half of the year — found via live DEV testing 2026-08-19.
+          return { id:t.id, name:t.name, ageGroup:t.ageGroup, season:t.season || "Spring", year:t.year };
         }));
         saveJSON("app:teams", withNew);
         setTeams(withNew);
@@ -1331,7 +1337,7 @@ export default function App() {
           (function(ct) {
             var migKey2 = "migration:" + ct.id + ":version";
             // Save team record
-            dbSaveTeams([{ id:ct.id, name:ct.name, ageGroup:ct.ageGroup, season:ct.season || currentSeasonGuess(), year:ct.year }]);
+            dbSaveTeams([{ id:ct.id, name:ct.name, ageGroup:ct.ageGroup, season:ct.season || "Spring", year:ct.year }]);
             // Check if data already exists before seeding with empty roster
             // OLD (unsafe): dbSaveTeamData(ct.id, { roster: [], schedule: ct.schedule, ... });
             dbLoadTeamData(ct.id).then(function(existing) {
