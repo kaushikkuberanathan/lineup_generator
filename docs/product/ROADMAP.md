@@ -1,11 +1,37 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: 2026-08-15 (v2.10.0 prepared for develop → main promotion - team search & request-access discovery, confirmation fix; v2.9.0's stale "not yet promoted" tag corrected - it promoted to main 2026-08-09, PR #661)
+> Last updated: 2026-08-19 (v2.11.0 release-prep merged to develop via PR TBD - team seasons, first-save race fix, Story 133 slices 1-4/13, auth token convergence - develop only, NOT yet promoted to main)
 > MVP launched: March 24, 2026
 
 ---
 
-## v2.10.0 - 2026-08-15 - Team search & request-access discovery, confirmation fix (prepared for develop → main promotion)
+## v2.11.0 - 2026-08-19 - Team seasons, first-save race fix, Story 133 slices 1-4/13 (develop only — not yet promoted to main)
+
+**Minor bump** — team season tracking is a genuine new coach-facing feature (not a fix batch), matching the "size the bump to the release's actual scope" convention established at v2.9.0/v2.10.0.
+
+**Team season tracking (#713, closes #719)** — new `teams.season` column (`Spring`/`Fall`, paired with the existing `year`), surfaced across team creation, editing, display, switching, sharing, PDF export, admin.html, and team search (season/year independent filters, newest-first ordering). Every team write path requires a valid season; Create/Save stay disabled until one is selected.
+
+**Two-phase PROD rollout — phase 1 done.** Per the Zero-Downtime Constraint, this is split into two migrations (see `backend/CLAUDE.md` § Migration Notes for full detail): `022_add_team_season.sql` (nullable, backfilled — safe against PROD any time) applied to DEV 2026-08-18, and **applied to PROD 2026-08-19** ahead of the main promote (verified via direct query: 6/6 teams, 0 NULL season, all backfilled to `'Spring'`) — deliberately run early since it's backward-compatible and the currently-deployed code doesn't reference the column. `023_enforce_team_season_not_null.sql` (adds `NOT NULL` + `CHECK`) still must not run until this release has actually promoted to `main` and been live in PROD long enough to reconfirm zero NULL seasons — that step is separate and still pending. **DEV acceptance pass — done, 2026-08-21.** KK ran create/edit/search/switch/reload manually against `dev.dugoutlineup.com` with a real authenticated session. Season create, edit, search (season + year filters), and reload-persistence all passed clean. One real but pre-existing, unrelated, non-blocking bug found and filed: newly created teams don't show up in the Account tab's "Your Teams" list until reload — root-caused to `createTeam()` never refreshing the separate `memberships` array `useAuth.js` uses for that list; server-side data (the membership row itself) was confirmed correct and instant. Filed as [#729](https://github.com/kaushikkuberanathan/lineup_generator/issues/729), logged in `CLAUDE.md`'s Known Open Bugs table (row 12) — deliberately not blocking this promote since it predates and is unrelated to the season-tracking work.
+
+**Fixes found during the season rollout:**
+- Legacy division-seed migration (`migrationTargets`) had no `season` field, so it picked up a date-based guess instead of a fixed value — fixed (PR #717).
+- New-team first-save persistence race: `loadTeam()` now waits for the `teams` insert and its membership-provisioning trigger to finish before starting the first RLS-protected `team_data` write, closing a window that produced a real `42501` RLS denial (PR #720).
+
+**Test coverage (PR #722, closes #721)** — extracted `currentSeasonGuess`/`formatSeason`/`compareTeamsNewestFirst` out of `App.jsx` into `frontend/src/utils/season.js` (12 tests, replacing 3 inline copies); `admin.html` behavioral-parity test (extracts its real inline function source via brace-counting, not a hand-copied restatement); backend `INT-06` DB-constraint test (CI_SAFE-skipped, like the rest of that integration suite). Deliberately did not add migration-file tests — no migration in this repo has one; a new pattern for one column would be a separate architectural decision. Frontend 1069→1084 (+15), backend unit unchanged at 147 (INT-06 lives in the integration suite).
+
+**CORS fix (PR #714, closes #715)** — `dev.dugoutlineup.com` added to the backend CORS allowlist; the DEV custom-domain rollout above needed it and every request including `/ping` was being blocked.
+
+**Story 133 — live game-day surface token migration (#698): slices 1-4 of 13 merged**, PRs #705 (slice 1 — mints `color.gameDay.*` namespace, migrates `BenchStrip`/`ScoreboardRow`), #707 (slice 2 — `DugoutView`), #709 (slice 3 — `DiamondView`), #712 (slice 4 — `QuickSwap`). All byte-preserving, zero-intended-visual-change reference migrations. **Status corrected in this entry — the ROADMAP section for Story 133 still read "slice 4 branch cut, ready to start" as of the last edit; slice 4 has since merged.** Full-directory survey (2026-08-17) found the real scope is much larger than the original ticket: `game-mode/*` + `ScoringMode/*` combined have 384 literal-hex color occurrences across 14 files, none previously tokenized — 9 slices remain open, tracked in the Story 133 section below. **Slice 4 validation status: partially validated, not fully tested.** KK's 2026-08-19 release-bar call for this change (a token refactor, not new behavior): proceed given green automated coverage + full frontend CI, no regression found in a partial manual pass, one successful QuickSwap flow confirmed on a real mobile device, and no console/runtime errors — full multi-device/layout visual coverage was explicitly deferred as an accepted residual risk with a follow-up item, not completed. Do not describe slice 4 as fully validated in future release notes.
+
+**Also on develop, unrelated to the above:** Auth screens' remaining exact-match colors converged onto canonical design tokens (PR #693, UX Phase 5). Backend CORS extended to accept this team's Vercel preview domains (PR #706). `PendingApprovalScreen` test coverage added (closes #696, PR #700). `vite` 8.2.1 + `@vitejs/plugin-react` 6.0.5 dependency bump. `env-health-check` skill + script added for verifying local Docker/worktree/test/env health and this repo's GitHub/prod state (prod checks read-only). Routine docs/governance: Story 133 scope-expansion recon and handoff docs, Phase 5/Phase 6 scoping audit (#699), session handoffs, and Stories 129-132 filed for the upcoming UX/Phase 4C work lineup.
+
+**Verification (re-run directly, 2026-08-19):** frontend 1084 passed / 1 skipped (93 files), backend unit 147/147, `npm run build` clean, `debt-p0` gate clear (0 open P0s).
+
+**24h soak override, 2026-08-21:** KK explicitly authorized promoting to `main` ahead of the standard 24h develop-soak window, citing fall season readiness — coaches need season tagging live before fall rosters start. Not a hotfix; a deliberate exception, same pattern as v2.9.0's override. **Not yet done as of this entry:** promotion to `main` itself (Ship Gate walk-through above is clear; migration-022-to-PROD and the DEV acceptance pass above are both done).
+
+---
+
+## v2.10.0 - 2026-08-15 - Team search & request-access discovery, confirmation fix (promoted to main 2026-08-17, PR #682)
 
 **Minor bump** — Story 124 is a genuine new user-facing feature (team search + request-access discovery), not just a fix batch, so this follows the same "size the bump to the release's actual scope" convention established at v2.9.0.
 
@@ -20,6 +46,8 @@
 **CI Node 20 → 22 (PR #678)** — `jsdom@30` and the current `@supabase/supabase-js` sub-packages both raised their `engines.node` floor to `>=22`, which the `frontend`/`backend`/`backend-unit`/`sync-script`/`rls` CI jobs (pinned to Node 20) could no longer satisfy — a runtime-floor problem, not a code regression. Verified behavior-neutral before merging: identical pass counts (134/134 backend unit, 1056/1057 frontend) on Node 22 against unmodified `develop`. This unblocked PRs #627 and #670 above, both of which were failing CI for exactly this reason until this landed; both went fully green (CI + both Vercel deployments) once Dependabot auto-rebased them onto it.
 
 **Docs accuracy pass**: corrected three ROADMAP.md story statuses that still read "Open" after shipping — Stories 120, 124, 126 (PR #675) — fixed a stale file path in the Phase 4C shim-removal checklist left over from the Slice 4 ScoringMode refactor, and flagged a second, independent grant-level gap on the live-scoring tables separate from the RLS-policy work tracked under #355 (PR #676). Also corrected this file's own and `CLAUDE.md`'s v2.9.0 entries, which still described that release as "not yet promoted to main" a full week after it actually promoted (PR #661, 2026-08-09) — see that entry below for what else was stale as a result.
+
+**Promoted to `main` 2026-08-17** (PR [#682](https://github.com/kaushikkuberanathan/lineup_generator/pull/682), regular merge, `9401126`) — confirmed a genuine 2-parent merge via direct API check (parents `832dd7d` + `6c52976`), not the merge-button dropdown. Prod smoke test same session: backend `/ping` 200 OK (304ms), frontend loads clean, both Render and Vercel confirmed serving the exact promoted commit (not stale cache) via direct deploy-record queries. Post-promote sync (PR #683) merged the same session. One checklist item not done by a human: real-device phone smoke test on the preview — recommended, not yet performed as of this entry.
 
 ---
 
@@ -1375,7 +1403,7 @@ See also: Story 61 (P0) — recipient-side viewer routing broken (separate fix,
 | # | Item | Notes |
 |---|------|-------|
 | 1 | **Auth Phase 4 cutover** | Add requireAuth middleware to existing routes. Auth: email magic-link + Google OAuth (Twilio removed). |
-| 2 | **Scoring: Phase 4C cleanup** | Remove AUTH TESTING SHIM from `useLiveScoring.js` and `index.jsx`; enforce RLS with `auth.uid()` policies on all three scoring tables; restore `scorer_user_id` and `actor_user_id` to uuid + FK. |
+| 2 | **Scoring: Phase 4C cleanup** | See Story 129 (7-step shim-removal sequence, step 1 of 7 done) and Story 130 (GRANT-revocation migration, design decision pending KK sign-off) for the current, detailed state — supersedes this row's older summary. |
 | 3 | **Scoring: persist myTeamHalf** | `myTeamHalf` (top/bottom) currently lives only in ScoringMode React state — lost on page reload. Persist to `live_game_state` and hydrate on mount. |
 | 4 | **Scoring: real-time multi-device sync** | Realtime subscription is wired but only viewers see state changes passively. Scorer and viewer full sync validation needed before broader rollout. |
 
@@ -4567,6 +4595,251 @@ throw, values byte-for-byte untouched). Render never sets SUPABASE_TARGET,
 so production is unaffected regardless.
 Recommendation: Ship as implemented. Dev-tooling only, no test suite impact
 expected.
+
+---
+### Story 129 (P1) - Phase 4C shim-removal sequence, steps 2-7 remaining <!-- #688 -->
+Status: Open - blocked, gated.
+Discovered: 2026-08-15/17, Phase 4C recon sessions.
+Symptom: Live scoring's auth shims (`useLiveScoring.js`'s
+`_effectiveUserId`/`_effectiveUserName` fallback, `DugoutView.jsx`'s
+`isEnabled = liveScoringEnabled || true` and `scoringUserId` fallback chain)
+are still active in production. Migration 019 Section A (additive
+`auth.uid()`-scoped RLS policies) is applied to DEV only, confirmed live via
+direct policy query 2026-08-17; PROD and Section B are both untouched
+anywhere.
+Impact: Live scoring's real security fix (#355) cannot land until this full
+7-step sequence completes. Steps 2-7 are the actual behavior change; step 1
+(Section A on DEV) is done but is additive-only and changes nothing
+observable yet.
+Root cause: N/A - sequenced infrastructure work, not a bug.
+Proposed fix: Full 7-step sequence documented in
+`docs/product/PHASE4C_SCORING_RLS_PROPOSAL.md` §3 - (1) Section A on DEV
+[done], (2) flip the frontend shim [needs `game-mode/*` gate phrase], (3)
+soak in prod with KK actively present for a real game-day cycle, (4) Section
+A on PROD + Section B + the new GRANT-revocation migration (Story 130)
+together, (5) un-skip `LS1`-`LS7` in `policies.test.js`, (6) restore
+`scorer_user_id`/`actor_user_id`/`recorded_by_id` column types to uuid+FK,
+(7) remove `isAdminTestMode`.
+Recommendation: Do not start step 2 solo - same standard as every other
+change to a live game-day surface in this repo. Needs the `game-mode/*` gate
+phrase and KK's active presence for step 3's soak, not something to attempt
+in an unattended session.
+
+---
+### Story 130 (P1) - Scoring-tables GRANT-revocation migration - design decision needed <!-- #689 -->
+Status: Open - not drafted, needs KK sign-off on design before drafting.
+Discovered: 2026-08-15/17, Phase 4C recon sessions.
+Symptom: `anon` and `authenticated` both currently hold full
+TRUNCATE/DELETE/INSERT/UPDATE table-level grants on all 4 live-scoring
+tables (`live_game_state`, `game_scoring_sessions`, `scoring_audit_log`,
+`at_bats`) - confirmed via direct query against both DEV and PROD,
+2026-08-15 and re-confirmed 2026-08-17. Migration 019's RLS work (Section A
+applied to DEV, Section B not yet run anywhere) does not touch this layer at
+all - RLS policies and table GRANTs are independent Postgres mechanisms;
+dropping the anon RLS policies in Section B does not revoke these grants.
+Impact: Even after Section B lands, `anon`/`authenticated`'s GRANT-level
+access remains fully open unless this migration also lands - Section B alone
+would not close #355.
+Root cause: No migration has ever revoked these grants; migration 019 was
+scoped to RLS policies only.
+Proposed fix: A new migration (next number after 021, currently 022)
+modeled on migration 021's REVOKE pattern, but NOT a mechanical copy -
+migration 004/021's established pattern for `team_data`/`teams`/
+`roster_snapshots` is "keep broad `anon`/`authenticated` grants, let RLS do
+the scoping, only revoke the genuinely dangerous ops (TRUNCATE, DELETE)."
+That pattern likely does not fit here: KK already confirmed (2026-08-07,
+`PHASE4C_SCORING_RLS_PROPOSAL.md` §1.4) the `public_read_*` anon-SELECT
+policies are unintentional leftovers, not a deliberate viewer design -
+meaning there is no validated anon use case at all for these tables, unlike
+`teams`/`team_data`. The likely-correct target is `anon` gets zero grants on
+all 4 tables. Per-table `authenticated` grants aren't uniform either -
+migration 019 Section A's own policies imply `game_scoring_sessions` needs
+DELETE (the "Hand off scoring" flow releases the lock), but `live_game_state`,
+`scoring_audit_log`, and `at_bats` have no DELETE or UPDATE policies in
+Section A for the latter two (append-only by design) - grants should follow
+that shape, not a blanket grant. TRUNCATE should be revoked from both roles
+on all 4 tables regardless - no code path calls it.
+Recommendation: Do NOT draft the final SQL until KK explicitly confirms the
+design above (anon-full-lockout vs. keep-broad-rely-on-RLS; per-table
+authenticated shape) - the same explicit-sign-off standard migration 019
+itself used for the scorekeeper-role and `public_read_*` decisions. Once
+confirmed, sequence this migration ALONGSIDE Section B (Story 129 step 4),
+not before it and not instead of it, per `PHASE4C_SCORING_RLS_PROPOSAL.md`
+§3 step 4's own note.
+
+---
+### Story 131 (P2) - UX Phase 5 kickoff - Auth Re-Skin <!-- #690 -->
+Status: Open - in progress. Token-adoption groundwork shipped (PR #693,
+merged to `develop` 2026-08-17, 2-parent merge `935af65`); the re-skin pass
+itself is still open.
+Discovered: 2026-08-17, confirming `UX_REFACTOR_ROADMAP.md`'s own Phase 4
+dependency is now satisfied.
+Symptom: N/A - not a bug, a roadmap-sequence unblock. `UX_REFACTOR_ROADMAP.md`
+Phase 5 (Auth Re-Skin) lists "Phase 4 complete" as its sole dependency.
+Phase 4 (`var C` legacy color-object retirement) shipped through v2.8.5,
+confirmed zero `C.*` references remain in `App.jsx` - the dependency is
+genuinely satisfied, not just nominally.
+Impact: The auth screens are the last un-migrated visual surface in the
+UX design-token effort. **Correction (2026-08-17):** this entry originally
+claimed the drift palette was `#2471A3`/`#2980B9` - verified false by grep;
+those hex values are field-position colors (`color.position['1B']`/`['2B']`
+in `tokens.js`), never used in the auth screens. See
+`UX_REFACTOR_ROADMAP.md`'s Phase 5 section for the corrected palette
+inventory.
+Root cause: N/A - sequenced roadmap work.
+Proposed fix: Per `UX_REFACTOR_ROADMAP.md` §Phase 5 - replace the drift
+palette with the canonical design-token system, cosmetic only. First task
+(done, PR #693): inventory every auth-screen component currently using the
+drift palette, cross-reference against existing design tokens, mint a new
+token if none applies (same "mint by role, not appearance" convention as
+`color.brand.gradientDark`) - `status.errorBorder` minted on that basis.
+Remaining: KK's visual confirmation of PR #693's two intentional appearance
+changes (`#0f172a`->`text.primary`, `#475569`->`text.secondary`), then the
+standard `develop`->`main` promote ritual (24h soak not yet started).
+**Correction 2026-08-17:** this entry previously implied a separate "actual
+re-skin pass" was still owed beyond PR #693. Re-checked against
+`UX_REFACTOR_ROADMAP.md`'s own Phase 5 goal statement ("converge onto the
+canonical design-token system, align visually with the main app") - that
+goal is exactly what PR #693's two commits did. There is no additional
+scoped re-skin work; PR #693 is Phase 5's full scope, pending the two items
+above.
+Recommendation: Ship as scoped. Explicit scope boundary from the roadmap
+doc itself, worth repeating since it's easy to blur with Phase 4C: cosmetic
+only, no auth behavioral changes - those belong to Phase 4C (Story 129), not
+here.
+
+---
+### Story 132 (P3) - UX Phase 6 - Design System Docs (scoping only) <!-- #697 -->
+Status: Open - scoped, not started. Blocked on Phase 5 fully landing (KK
+visual sign-off + promote to main), per this phase's own stated dependency.
+Discovered: 2026-08-17, full-review audit of all UX migration phases across
+dev and prod.
+Symptom: N/A - forward scoping, not a bug. `UX_REFACTOR_ROADMAP.md`'s Phase
+6 section had only a one-line goal statement and no scoping detail.
+Impact: None yet - this phase hasn't started and nothing depends on it
+starting soon. Scoping now avoids a cold start whenever it does begin.
+Root cause: N/A.
+Proposed fix: See `UX_REFACTOR_ROADMAP.md` Phase 6 section for the full
+scoping writeup. Summary: in scope is the 9 shipped `components/ui/`
+primitives + the token system; out of scope is the 4 Auth screens (don't
+consume primitives yet) and App.jsx's own split (separate tracked
+initiative, `APPJSX_DECOMPOSITION_PLAN.md`). Tooling recommendation:
+`@storybook/react-vite` (this repo is already Vite 6 + React 18, no
+`.storybook/` exists yet - from-scratch add), with a 1-day timeboxed spike
+against Ladle as a lighter alternative before committing repo-wide.
+Recommendation: Do not start implementation until Phase 5 promotes to
+main and this scoping has KK's go-ahead on the tooling choice.
+
+---
+### Story 133 (P2) - Live game-day surface token migration (game-mode/ + ScoringMode/) <!-- #698 -->
+Status: In progress - slices 1-4 of 13 merged (PRs #705, #707, #709, #712).
+**Corrected 2026-08-19 (v2.11.0 release prep): this line previously read
+"slice 4 branch cut, ready to start" — slice 4 (`QuickSwap.jsx`) has since
+merged (PR #712).** 9 slices remain. Slice 4 is partially, not fully,
+validated — automated coverage green, one manual QuickSwap flow confirmed
+working, full device/layout visual coverage deliberately deferred as an
+accepted residual risk (KK's call, 2026-08-19) rather than completed;
+see the v2.11.0 ROADMAP entry above for the full release-bar reasoning.
+#503 reopened by KK 2026-08-17. Scope expanded the same day past the
+original ticket (see "Scope expansion" below) - KK's explicit call,
+full-surface option chosen over the two narrower alternatives offered.
+Discovered: 2026-08-17, full-review audit answering KK's question "was
+there not some work with previous phases pending because ScoringMode was
+locked?"
+Symptom (original): Story 116/#503 (the `var C`/token-migration "slice 8"
+carved out for `GameModeScreen`/`DugoutView` specifically because
+`game-mode/*` and `ScoringMode/*` are each their own Locked File) was
+deliberately sequenced last and never run. PR #591's own body is explicit:
+"Closes #531. Related, not closed: #503 (slice 8, still open)." Yet #503
+had shown closed on GitHub (manually, 2026-08-06, actor
+kaushikkuberanathan, no state_reason, 4 minutes after PR #591's merge
+cross-referenced it) - root cause: looks like an adjacent-issue mixup
+during that session's cleanup, not an automated commit-keyword closure
+(PR #591's own commits/body never say "closes #503"). Reopened by KK
+2026-08-17 after being flagged via an evidence comment (agent tooling was
+blocked from reopening it directly that session - permission classifier
+denied both `gh issue reopen` and the `$GITHUB_TOKEN` curl fallback).
+**Scope expansion, 2026-08-17:** the original ticket only named
+`GameModeScreen.jsx` (33 literal-hex occurrences). Full survey of both
+Locked directories found the real gap is much larger - **neither
+`game-mode/*` nor `ScoringMode/*` has ever used the token system, not even
+the legacy `var C` proxy**:
+
+| Directory | Files | Literal-hex occurrences | Token refs |
+|---|---|---|---|
+| `game-mode/*` | 7 | 133 | 0 |
+| `ScoringMode/*` | 7 | 251 | 0 |
+| **Total** | **14** | **384** | **0** |
+
+This is the largest untokenized surface remaining anywhere in the
+codebase - bigger than all of Phase 4's App.jsx slices or Phase 5's Auth
+screens combined. Confirmed `GameModeScreen.jsx` is genuinely live (not
+dead code): reachable via 3 separate "Game Mode" buttons on ready team
+cards (Home tab, App.jsx lines ~3017/3130/3152, each calling
+`setGameModeActive(true)`), independent of the `DUGOUT VIEW` sub-tab
+launcher which reaches `DugoutView.jsx` instead.
+Impact: Phase 4 (`var C` retirement) is correctly declared complete for
+`App.jsx` itself (0 `C.*` refs, confirmed directly against `main`) - that
+claim was accurate for what it measured. But the entire live game-day
+surface, across both locked directories, was never in scope for that grep
+in the first place (it never used the `C` proxy; every file here uses
+literal hex directly). "Phase 4 complete" never actually implied this
+surface was addressed.
+Vocabulary reuse is favorable: 58 distinct hex values across 384
+occurrences; the top 10 most-used values account for ~253 occurrences
+(66%), and most of those top values (`#f5c842`->`brand.gold`,
+`#94a3b8`->`text.tertiary`, `#64748b`->`text.secondary`,
+`#dc2626`->`status.error`, `#0f1f3d`->`brand.navy`/`text.primary`,
+`#374151`->`text.body`, `#0b1524`->`surface.dark`, `#fff`/`#ffffff`->
+`surface.card`/`text.onDark` role-dependent) already have exact token
+matches. `#475569` and `#16a34a` repeat the same no-exact-match shape
+Phase 5 already resolved once (converged to `text.secondary` and
+`status.success` respectively, both KK-confirmed) - same call likely
+applies here, subject to KK's per-surface confirmation.
+Root cause: N/A - sequenced roadmap work, correctly saved for last given
+the Locked-File + live-game-day-surface risk profile.
+Proposed fix: Phased slice plan, mirroring Phase 4's proven pattern (prove
+the mechanical/2-commit approach on low-risk files before the largest
+ones). Each slice follows Phase 5's proven shape: commit 1 = exact-match
+safe swaps (mechanical, zero-visible-change, hex-diff verified against
+`tokens.js`); commit 2 = design-decision convergence for non-matching
+literals (KK sign-off per value, same bar as Phase 5's `#475569`/`#16a34a`
+decisions). Given no browser-automation tooling exists in this session
+environment and this is the single highest-stakes surface in the app (live
+games, zero regression tolerance), recommend a stronger visual-verification
+bar than Phase 5 had: KK does a real on-device Game-Day Validation pass
+(per `CLAUDE.md`'s own checklist - generate lineup, open Game Mode, advance
+an inning, positions visible, batting order clear) after each slice merges
+to `develop`, not just once at the end.
+
+**`game-mode/*` track** (7 files, 133 occurrences, gated on the
+`game-mode/*` phrase):
+1. `BenchStrip.jsx` (3) + `ScoreboardRow.jsx` (7) - bundled, trivial, proves
+   the pattern first
+2. `DugoutView.jsx` (10) - small file, but the GA-default live surface
+   (`COMBINED_GAMEMODE_AND_SCORING`), do early once the pattern is proven
+3. `DiamondView.jsx` (15)
+4. `QuickSwap.jsx` (20)
+5. `GameModeScreen.jsx` (33) - the file the original ticket named
+6. `InningModal.jsx` (45) - largest in this directory, last
+
+**`ScoringMode/*` track** (7 files, 251 occurrences, gated on the
+`ScoringMode/*` phrase, separate from the above):
+1. `LiveScoreViewer.jsx` (0) - verification-only, confirm it's genuinely
+   clean, not a real slice
+2. `GameModeGearMenu.jsx` (10)
+3. `RunnerConflictModal.jsx` (12)
+4. `RestoreScoreModal.jsx` (15)
+5. `FinishGameModal.jsx` (16)
+6. `ScoringModeEntry.jsx` (31)
+7. `LiveScoringPanel.jsx` (167) - by far the largest single file (60KB);
+   likely needs its own sub-slicing once in progress. Last, always.
+
+Recommendation: Start with `game-mode/*` slice 1 (BenchStrip +
+ScoreboardRow) once KK grants the `game-mode/*` gate phrase. Each slice is
+its own PR to `develop`, same merge-commit + branch-hygiene discipline as
+every other track. Do not batch multiple slices into one PR - keeps blast
+radius small and each KK visual-check cycle short.
 
 ---
 ### Automated Score Reporting (County Integration)

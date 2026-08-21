@@ -10,11 +10,13 @@
  *   onTapPosition  {function}  called with position key (e.g. "SS") on tap
  */
 
+import { tokens } from '../../theme/tokens';
+
 // Position group colors (battery / infield / outfield)
 var TOKEN_COLORS = {
-  P:  "#c0392b", C:  "#c0392b",                                   // Battery
-  "1B":"#2980b9","2B":"#2980b9","3B":"#2980b9", SS:"#2980b9",     // Infield
-  LF: "#27ae60", LC: "#27ae60", RC: "#27ae60",  RF: "#27ae60",    // Outfield
+  P: tokens.color.gameDay.diamond.position.battery, C: tokens.color.gameDay.diamond.position.battery,                                   // Battery
+  "1B":tokens.color.gameDay.diamond.position.infield,"2B":tokens.color.gameDay.diamond.position.infield,"3B":tokens.color.gameDay.diamond.position.infield, SS:tokens.color.gameDay.diamond.position.infield,     // Infield
+  LF: tokens.color.gameDay.diamond.position.outfield, LC: tokens.color.gameDay.diamond.position.outfield, RC: tokens.color.gameDay.diamond.position.outfield,  RF: tokens.color.gameDay.diamond.position.outfield,    // Outfield
 };
 
 // SVG coordinate layout — viewBox "0 0 320 310"
@@ -56,7 +58,7 @@ export function DiamondView({ roster, grid, inning, onTapPosition }) {
     <div style={{
       width:"100%", display:"flex", justifyContent:"center",
       alignItems:"center", flex:1, padding:"4px 0",
-      background:"radial-gradient(circle at center, #1f3d2b 0%, #0f1f3d 60%, #0a1428 100%)",
+      background:tokens.color.gameDay.diamond.surface.gradient,
     }}>
       <svg
         viewBox="0 0 320 310"
@@ -69,7 +71,7 @@ export function DiamondView({ roster, grid, inning, onTapPosition }) {
           d={"M " + THIRD.x + " " + THIRD.y + " Q 40 20 " + SECOND.x + " " + SECOND.y +
              " Q 280 20 " + FIRST.x + " " + FIRST.y}
           fill="none"
-          stroke="rgba(255,255,255,0.12)"
+          stroke={tokens.color.gameDay.diamond.stroke.fence}
           strokeWidth="1.2"
           strokeDasharray="5 4" />
 
@@ -81,35 +83,35 @@ export function DiamondView({ roster, grid, inning, onTapPosition }) {
             SECOND.x + "," + SECOND.y + " " +
             THIRD.x + "," + THIRD.y
           }
-          fill="rgba(255,255,255,0.025)"
-          stroke="rgba(255,255,255,0.13)"
+          fill={tokens.color.gameDay.diamond.fill.basepath}
+          stroke={tokens.color.gameDay.diamond.stroke.basepath}
           strokeWidth="1.5" />
 
         {/* Pitcher mound — white outline circle */}
         <circle
           cx="160" cy="192" r="8"
           fill="none"
-          stroke="rgba(255,255,255,0.10)"
+          stroke={tokens.color.gameDay.diamond.stroke.mound}
           strokeWidth="1.5" />
 
         {/* Home plate outline */}
         <polygon
           points="155,274 165,274 167,270 160,265 153,270"
           fill="none"
-          stroke="rgba(255,255,255,0.15)"
+          stroke={tokens.color.gameDay.diamond.stroke.homePlate}
           strokeWidth="1.5" />
 
         {/* Foul lines from home to 1B and 3B corners */}
         <line x1={HOME.x} y1={HOME.y} x2="300" y2="130"
-          stroke="rgba(255,255,255,0.07)" strokeWidth="1" />
+          stroke={tokens.color.gameDay.diamond.stroke.foulLine} strokeWidth="1" />
         <line x1={HOME.x} y1={HOME.y} x2="20"  y2="130"
-          stroke="rgba(255,255,255,0.07)" strokeWidth="1" />
+          stroke={tokens.color.gameDay.diamond.stroke.foulLine} strokeWidth="1" />
 
         {/* Position tokens */}
         {POSITIONS.map(function(pos) {
           var name = playerAt(pos.key, inning, roster, grid);
           var assigned = name !== null;
-          var color = TOKEN_COLORS[pos.key] || "#555";
+          var color = TOKEN_COLORS[pos.key] || tokens.color.gameDay.diamond.position.fallback;
           var fn = assigned ? firstName(name) : null;
           var initial = fn ? fn.charAt(0).toUpperCase() : null;
 
@@ -132,7 +134,7 @@ export function DiamondView({ roster, grid, inning, onTapPosition }) {
                   <circle
                     cx={pos.x} cy={pos.y} r={pos.r}
                     fill="none"
-                    stroke="rgba(255,255,255,0.22)"
+                    stroke={tokens.color.gameDay.diamond.stroke.highlight}
                     strokeWidth="1" />
 
                   {/* Line 1: Player initial — large, bold */}
@@ -142,7 +144,7 @@ export function DiamondView({ roster, grid, inning, onTapPosition }) {
                     fontSize="14"
                     fontWeight="bold"
                     fontFamily="Georgia, serif"
-                    fill="#ffffff"
+                    fill={tokens.color.gameDay.diamond.text.primary}
                     style={{ pointerEvents:"none", userSelect:"none" }}>
                     {initial}
                   </text>
@@ -154,7 +156,7 @@ export function DiamondView({ roster, grid, inning, onTapPosition }) {
                     fontSize={fn && fn.length > 6 ? 6 : 7}
                     fontWeight="normal"
                     fontFamily="Georgia, serif"
-                    fill="rgba(255,255,255,0.85)"
+                    fill={tokens.color.gameDay.diamond.text.secondary}
                     style={{ pointerEvents:"none", userSelect:"none" }}>
                     {fn}
                   </text>
@@ -166,7 +168,7 @@ export function DiamondView({ roster, grid, inning, onTapPosition }) {
                     fontSize="6.5"
                     fontWeight="normal"
                     fontFamily="Georgia, serif"
-                    fill="rgba(255,255,255,0.55)"
+                    fill={tokens.color.gameDay.diamond.text.tertiary}
                     style={{ pointerEvents:"none", userSelect:"none" }}>
                     {"(" + pos.key + ")"}
                   </text>
@@ -176,8 +178,8 @@ export function DiamondView({ roster, grid, inning, onTapPosition }) {
                   {/* Unassigned — dashed outline, faint */}
                   <circle
                     cx={pos.x} cy={pos.y} r={pos.r}
-                    fill="rgba(255,255,255,0.02)"
-                    stroke="rgba(255,255,255,0.18)"
+                    fill={tokens.color.gameDay.diamond.fill.empty}
+                    stroke={tokens.color.gameDay.diamond.stroke.empty}
                     strokeWidth="1.2"
                     strokeDasharray="4 3"
                     opacity="0.6" />
@@ -187,7 +189,7 @@ export function DiamondView({ roster, grid, inning, onTapPosition }) {
                     fontSize="10"
                     fontWeight="bold"
                     fontFamily="Georgia, serif"
-                    fill="rgba(255,255,255,0.28)"
+                    fill={tokens.color.gameDay.diamond.text.empty}
                     style={{ pointerEvents:"none", userSelect:"none" }}>
                     {pos.key}
                   </text>

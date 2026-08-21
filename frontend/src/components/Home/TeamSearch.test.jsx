@@ -102,6 +102,56 @@ describe('TeamSearch — loading, populated, empty', function () {
   });
 });
 
+describe('TeamSearch — season and year filters', function () {
+  test('picking a season alone triggers a search with the season param', async function () {
+    var fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValue({ ok: true, json: () => Promise.resolve([]) });
+    render(<TeamSearch {...baseProps()} />);
+
+    fireEvent.change(screen.getByLabelText(/^season$/i), { target: { value: 'Fall' } });
+    await act(async () => { await vi.advanceTimersByTimeAsync(400); });
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(fetchSpy.mock.calls[0][0]).toContain('season=Fall');
+  });
+
+  test('picking a year alone triggers a search with the year param, independent of season', async function () {
+    var fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValue({ ok: true, json: () => Promise.resolve([]) });
+    render(<TeamSearch {...baseProps()} />);
+
+    fireEvent.change(screen.getByLabelText(/^year$/i), { target: { value: '2025' } });
+    await act(async () => { await vi.advanceTimersByTimeAsync(400); });
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(fetchSpy.mock.calls[0][0]).toContain('year=2025');
+    expect(fetchSpy.mock.calls[0][0]).not.toContain('season=');
+  });
+
+  test('result card combines season + 2-digit year instead of the raw year when season is present', async function () {
+    vi.spyOn(global, 'fetch').mockResolvedValue({ ok: true, json: () => Promise.resolve([
+      { id: '1', name: 'Mud Hens', age_group: '8U', sport: 'baseball', year: 2026, season: 'Fall' },
+    ]) });
+    render(<TeamSearch {...baseProps()} />);
+    await typeAndSettle(screen.getByLabelText(/team name/i), 'Mud');
+    await flush();
+
+    expect(screen.getByText(/Fall 26.*8U.*baseball/)).toBeInTheDocument();
+  });
+
+  test('results are sorted newest season/year first — same year, Fall before Spring; different years, newer year first', async function () {
+    vi.spyOn(global, 'fetch').mockResolvedValue({ ok: true, json: () => Promise.resolve([
+      { id: '1', name: 'Old Spring', age_group: '8U', sport: 'baseball', year: 2025, season: 'Fall' },
+      { id: '2', name: 'This Fall', age_group: '8U', sport: 'baseball', year: 2026, season: 'Fall' },
+      { id: '3', name: 'This Spring', age_group: '8U', sport: 'baseball', year: 2026, season: 'Spring' },
+    ]) });
+    render(<TeamSearch {...baseProps()} />);
+    await typeAndSettle(screen.getByLabelText(/team name/i), 'xx');
+    await flush();
+
+    var names = screen.getAllByText(/^(Old Spring|This Fall|This Spring)$/).map((el) => el.textContent);
+    expect(names).toEqual(['This Fall', 'This Spring', 'Old Spring']);
+  });
+});
+
 describe('TeamSearch — error and retry', function () {
   test('a failed fetch shows an error message with a working Try again retry', async function () {
     var fetchSpy = vi.spyOn(global, 'fetch')

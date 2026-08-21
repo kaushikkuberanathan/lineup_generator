@@ -345,7 +345,17 @@
                 <select id="team-sport"><option value="baseball">Baseball</option><option value="softball">Softball</option></select>
               </div>
             </div>
-            <div class="form-group"><label>Year</label><input type="number" id="team-year" placeholder="2026" value="2026"></div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Season</label>
+                <select id="team-season">
+                  <option value="">— select —</option>
+                  <option>Spring</option>
+                  <option>Fall</option>
+                </select>
+              </div>
+              <div class="form-group"><label>Year</label><input type="number" id="team-year" placeholder="2026" value="2026"></div>
+            </div>
             <div style="display:flex;gap:8px;">
               <button class="btn btn-gold" id="save-team-btn">Save Team</button>
               <button class="btn btn-ghost" id="cancel-team-btn">Cancel</button>
@@ -357,7 +367,7 @@
         <div id="teams-loading" style="text-align:center;padding:20px;"><div class="spinner"></div></div>
         <div id="teams-table" class="table-wrap" style="display:none;">
           <table>
-            <thead><tr><th>Name</th><th>Age</th><th>Sport</th><th>Year</th><th>ID</th><th></th></tr></thead>
+            <thead><tr><th>Name</th><th>Age</th><th>Sport</th><th>Season</th><th>Year</th><th>ID</th><th></th></tr></thead>
             <tbody id="teams-body"></tbody>
           </table>
         </div>
@@ -693,10 +703,39 @@
     if (tab === 'flags')     loadFlagsTab();
   }
 
+  // ── Shared: season/year formatting + newest-first sort ─────────
+  // "Spring" + 2026 -> "Spring 26". Duplicated at each display call site
+  // (App.jsx, TeamSearch.jsx, here) rather than a shared import — matches
+  // this file's existing team-metadata conventions (e.g. age_group labels
+  // built inline per call site, not imported from a shared module).
+  function formatSeason(season, year) {
+    if (!season) return '';
+    return season + (year ? ' ' + String(year).slice(-2) : '');
+  }
+  // Newest season/year first: same year, Fall (later in the calendar year)
+  // sorts before Spring.
+  function seasonRank(season) { return season === 'Fall' ? 1 : 0; }
+  function compareNewestFirst(a, b) {
+    var ay = a.year || 0, by = b.year || 0;
+    if (ay !== by) return by - ay;
+    return seasonRank(b.season) - seasonRank(a.season);
+  }
+  // Sensible default for the season select below — Jan-Jun -> Spring,
+  // Jul-Dec -> Fall. A guess, not a rule: admins can always override it.
+  // teams.season is meant to end up NOT NULL with a CHECK constraint
+  // (migration 022 adds it nullable, 023 tightens it later — see 023's
+  // header for the PROD two-phase rollout), so the add-team form validates
+  // this explicitly rather than letting an empty selection reach the
+  // insert.
+  function currentSeasonGuess() {
+    var month = new Date().getMonth() + 1;
+    return (month >= 1 && month <= 6) ? 'Spring' : 'Fall';
+  }
+
   // ── Shared: load teams ────────────────────────────────────────
   async function loadTeams() {
     var { data } = await sb.from('teams').select('*').order('name');
-    _teams = data || [];
+    _teams = (data || []).slice().sort(compareNewestFirst);
     populateTeamDropdowns();
   }
 
@@ -710,7 +749,8 @@
         ? '<option value="">— select a team —</option>'
         : '<option value="">— select team —</option>';
       el.innerHTML = base + _teams.map(function(t) {
-        return '<option value="' + esc(t.id) + '">' + esc(t.name) + (t.age_group ? ' (' + esc(t.age_group) + ')' : '') + '</option>';
+        var suffix = [formatSeason(t.season, t.year), t.age_group].filter(Boolean).join(', ');
+        return '<option value="' + esc(t.id) + '">' + esc(t.name) + (suffix ? ' (' + esc(suffix) + ')' : '') + '</option>';
       }).join('');
       if (cur) el.value = cur;
     });
@@ -724,7 +764,7 @@
     var { data, error } = await sb.from('teams').select('*').order('name');
     hide('teams-loading');
     if (error) { showMsg('teams-msg', 'Error: ' + error.message, 'error'); return; }
-    _teams = data || [];
+    _teams = (data || []).slice().sort(compareNewestFirst);
     populateTeamDropdowns();
     var tbody = document.getElementById('teams-body');
     tbody.innerHTML = '';
@@ -735,6 +775,7 @@
         '<td><strong>' + esc(t.name) + '</strong></td>' +
         '<td>' + esc(t.age_group || '—') + '</td>' +
         '<td style="text-transform:capitalize">' + esc(t.sport || '—') + '</td>' +
+        '<td>' + esc(formatSeason(t.season, t.year) || '—') + '</td>' +
         '<td>' + esc(t.year || '—') + '</td>' +
         '<td style="font-size:11px;color:var(--muted);">' + esc(t.id) + '</td>' +
         '<td><button class="btn btn-danger btn-sm del-team-btn" data-id="' + esc(t.id) + '" data-name="' + esc(t.name) + '">Delete</button></td>';
@@ -764,7 +805,9 @@
 
   document.getElementById('add-team-btn').addEventListener('click', function() {
     var f = document.getElementById('add-team-form');
-    f.style.display = f.style.display === 'none' ? 'block' : 'none';
+    var opening = f.style.display === 'none';
+    f.style.display = opening ? 'block' : 'none';
+    if (opening) { document.getElementById('team-season').value = currentSeasonGuess(); }
   });
   document.getElementById('cancel-team-btn').addEventListener('click', function() {
     document.getElementById('add-team-form').style.display = 'none';
@@ -773,15 +816,18 @@
     var name = document.getElementById('team-name').value.trim();
     var age  = document.getElementById('team-age').value;
     var sport= document.getElementById('team-sport').value;
+    var season = document.getElementById('team-season').value;
     var year = parseInt(document.getElementById('team-year').value) || new Date().getFullYear();
     if (!name) { showMsg('team-form-msg', 'Team name is required.', 'error'); return; }
+    if (!season) { showMsg('team-form-msg', 'Season is required.', 'error'); return; }
     this.disabled = true;
     var id = genId();
-    var { error } = await sb.from('teams').insert({ id, name, age_group: age, sport, year });
+    var { error } = await sb.from('teams').insert({ id, name, age_group: age, sport, season, year });
     this.disabled = false;
     if (error) { showMsg('team-form-msg', 'Error: ' + error.message, 'error'); return; }
     document.getElementById('team-name').value = '';
     document.getElementById('team-age').value = '';
+    document.getElementById('team-season').value = currentSeasonGuess();
     document.getElementById('add-team-form').style.display = 'none';
     showMsg('teams-msg', 'Team added.', 'success', true);
     loadTeamsTab();

@@ -24,6 +24,19 @@
 
 ## Open — Test Gaps
 
+### 🟠 P1 — RequestAccessScreen `submitted` confirmation state has no dedicated test coverage
+
+| | |
+|---|---|
+| **Area** | Auth / Request Access (Team Discovery, FEATURE_MAP.md row 38) |
+| **Description** | `RequestAccessScreen.jsx`'s `preserveSession=true` success path (an already-authenticated coach requesting a 2nd team) renders a new inline `submitted` confirmation-card state, added in Story 126/#665 (v2.10.0, PR #667) because the prior `useAuth` authState-transition confirmation doesn't fire when the session is preserved. Verified by eye only at ship time — no automated test exercises the new state. |
+| **Risk if unfixed** | Silent UX regression risk: a future refactor of `RequestAccessScreen.jsx` or `useAuth.requestAccess` could remove or break the `submitted` state with no test to catch it, reintroducing the exact "no visible confirmation" bug #665 fixed. |
+| **Proposed test/fix** | Add a case to `RequestAccessScreen.test.jsx` that submits with `preserveSession=true` and asserts the confirmation card renders (and that the old authState-transition path is not what's being relied on). |
+| **Opened** | 2026-08-15 (v2.10.0 ship) — flagged in that release's PR body and changelog entry but never formally logged in this ledger until now; caught during v2.11.0 release-prep docs pass. |
+| **Age** | 4 days |
+| **Target** | Opportunistic — no hard deadline, not a North Star capability gap. |
+| **Issue** | [#664](https://github.com/kaushikkuberanathan/lineup_generator/issues/664) |
+
 ### 🟡 P2 — useAuth.js `onAuthStateChange` silently strands user on failed `/me` call after `SIGNED_IN`
 
 | | |
@@ -309,6 +322,10 @@
 
 *(Items move here once shipped. Format: date, version, original description summary, resolution commit.)*
 
+### August 17, 2026 — PendingApprovalScreen test coverage (#696)
+
+- ✅ **P2 — PendingApprovalScreen has no test coverage** — Resolved. Added `frontend/src/components/Auth/PendingApprovalScreen.test.jsx` (5 tests), mirroring `NoMembershipScreen.test.jsx`'s shape (D-S428b/#481 precedent): confirmation heading + step-list render (both "Request submitted" occurrences — the `<h1>` and step 1's own label — selector-scoped since the bare text collides), pending email from `localStorage.getItem('lg_pending_email')` shown when present and its whole clause omitted when absent, `onTryLogin` wiring on "Try logging in", and an affordance-count check (exactly one button). **RED-checkpoint (mutation-test substitute — coverage-after-the-fact for an already-shipped, already-correct component, not a bug fix, so no natural RED state exists to capture)**: two mutations in one pass, matching D-S428b's precedent — inverted the `pendingEmail &&` conditional to `!pendingEmail &&`, and replaced the button's `onClick={onTryLogin}` with a no-op. 3 of 5 tests went red (the two email-presence tests plus the click-wiring test — exactly the ones touching either mutation); the render/step-list test and the button-count test correctly stayed green (neither mutation touches what they assert). Reverted both mutations, confirmed `git diff` on `PendingApprovalScreen.jsx` empty, re-ran and confirmed 5/5 green again. Full Auth suite re-run clean (4 files, 29 tests) and `npm run build` clean. No real production bug found — this closes a coverage gap only. Issue: [#696](https://github.com/kaushikkuberanathan/lineup_generator/issues/696).
+
 ### August 5, 2026 — FEATURE_MAP.md Missing Feature Rows (Analytics, PWA, Governance)
 
 - ✅ **P1 — FEATURE_MAP.md Missing Feature Rows** — Resolved, structural-restructure half deliberately split off and deferred (see the still-open entry above). Added row 36 (Analytics — Mixpanel + Vercel Analytics + UTM) and row 37 (PWA Setup — install prompt + service worker), both citing existing doc sections (`docs/analytics/ANALYTICS.md` + `SOLUTION_DESIGN.md` §§ Analytics Architecture / PWA Setup) and both correctly marked `❌ None` for tests (confirmed by direct file search — no `analytics.test.js`/`pwaInstall.test.js` exists; PWA install logic lives inline in `App.jsx` around lines 1608–1774, no dedicated file). Renamed row 22 from "Governance infrastructure" to "Governance" for the exact Area-value string match the original ticket asked for — no other change to that row. Recounted `FEATURE_MAP.md`'s own Coverage Summary by direct tally against the table, not propagated arithmetic: 35→37 rows, Doc Current 30→32, No Tests 11→13, Doc Stale/Doc Missing/Tests Exist/Tests Partial unchanged. Issue: [#576](https://github.com/kaushikkuberanathan/lineup_generator/issues/576).
@@ -410,9 +427,11 @@
 | Priority | Test Gaps | Doc Gaps | Process Gaps | Total |
 |---|---|---|---|---|
 | 🔴 P0 | 0 | 0 | 0 | **0** |
-| 🟠 P1 | 0 | 1 | 0 | **1** |
+| 🟠 P1 | 1 | 1 | 0 | **2** |
 | 🟡 P2 | 9 | 5 | 8 | **22** |
-| **Total** | **9** | **6** | **8** | **23** |
+| **Total** | **10** | **6** | **8** | **24** |
+
+*(2026-08-19, v2.11.0 release-prep audit: new P1 test gap added — RequestAccessScreen `submitted` confirmation state, #664 — see the Open — Test Gaps section above. Direct recount of every `### 🔴`/`### 🟠`/`### 🟡` heading actually present in each Open section immediately before this edit matched the prior table exactly (0/0/9 Test Gaps, 0/1/5 Doc Gaps, 0/0/8 Process Gaps = 23), so this is a clean single-item addition, not a correction of pre-existing drift. Test Gaps P1 0→1, Total Test Gaps 9→10, P1 Total 1→2, Grand Total 23→24. `debt-p0` gate re-confirmed clear (0 P0) before the v2.11.0 minor version bump.)*
 
 *(2026-08-07: new P2 process gap added — Dependency currency: 4 Dependabot bumps held (eslint/jsdom/react-dom/supabase-js), #632-#636 — see the Open — Tooling / Process Gaps section. Direct recount of every `### 🔴`/`### 🟠`/`### 🟡` heading actually present in each Open section immediately before this edit matched the prior table exactly (9/1/7, P2 9/5/7 = 21, Total 9/6/7 = 22), so this is a clean single-item addition, not a correction of pre-existing drift. Process Gaps P2 7→8, Total Process Gaps 7→8, P2 row 21→22, Grand Total 22→23.)*
 

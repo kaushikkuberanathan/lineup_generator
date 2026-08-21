@@ -4,9 +4,9 @@
  *
  * Mock pattern follows teamData.routes.test.js — monkey-patch supabaseAdmin.from,
  * restore in afterEach. The stub chain covers this route's exact call shape:
- *   .from('teams').select(cols).ilike().eq().eq().limit(n)
- * (ilike/eq are conditional on which query params are present; limit is always
- * the terminal call.)
+ *   .from('teams').select(cols).ilike().eq().eq().order().limit(n)
+ * (ilike/eq are conditional on which query params are present; order and
+ * limit are always the terminal calls.)
  *
  * CI-safe: no live DB, no network.
  */
@@ -30,6 +30,7 @@ function installStubs({ searchResult = { data: [], error: null } } = {}) {
     selectArg: undefined,
     ilikeArgs: null,
     eqArgs: [],
+    orderArgs: null,
     limitArg: undefined,
   };
 
@@ -46,6 +47,10 @@ function installStubs({ searchResult = { data: [], error: null } } = {}) {
       },
       eq: (col, val) => {
         calls.eqArgs.push({ col, val });
+        return chain;
+      },
+      order: (col, opts) => {
+        calls.orderArgs = { col, opts };
         return chain;
       },
       limit: async (n) => {
@@ -94,7 +99,7 @@ describe('GET /api/v1/teams/search', () => {
     assert.ok(!Object.prototype.hasOwnProperty.call(res.body[0], 'owner_id'));
   });
 
-  test('TS-3: empty query — no filters applied, still bounded by a limit', async () => {
+  test('TS-3: empty query — no filters applied, still bounded by a limit, ordered newest-year-first', async () => {
     installStubs();
 
     const res = await request(app).get('/api/v1/teams/search');
@@ -102,6 +107,7 @@ describe('GET /api/v1/teams/search', () => {
     assert.equal(res.status, 200);
     assert.equal(calls.ilikeArgs, null);
     assert.deepEqual(calls.eqArgs, []);
+    assert.deepEqual(calls.orderArgs, { col: 'year', opts: { ascending: false } });
     assert.equal(calls.limitArg, 50);
   });
 
@@ -115,18 +121,20 @@ describe('GET /api/v1/teams/search', () => {
     assert.deepEqual(calls.eqArgs, []);
   });
 
-  test('TS-5: multi-field filter — q + ageGroup + sport all applied together', async () => {
+  test('TS-5: multi-field filter — q + ageGroup + sport + season + year all applied together', async () => {
     installStubs();
 
     const res = await request(app)
       .get('/api/v1/teams/search')
-      .query({ q: 'Mud', ageGroup: '8U', sport: 'baseball' });
+      .query({ q: 'Mud', ageGroup: '8U', sport: 'baseball', season: 'Fall', year: '2026' });
 
     assert.equal(res.status, 200);
     assert.deepEqual(calls.ilikeArgs, { col: 'name', val: '%Mud%' });
     assert.deepEqual(calls.eqArgs, [
       { col: 'age_group', val: '8U' },
       { col: 'sport', val: 'baseball' },
+      { col: 'season', val: 'Fall' },
+      { col: 'year', val: 2026 },
     ]);
   });
 
@@ -148,6 +156,47 @@ describe('GET /api/v1/teams/search', () => {
     const res = await request(app)
       .get('/api/v1/teams/search')
       .query({ ageGroup: '8U<script>alert(1)</script>' });
+
+    assert.equal(res.status, 400);
+    assert.equal(res.body.error, 'VALIDATION_ERROR');
+    assert.deepEqual(calls.fromTables, []);
+  });
+
+  test('TS-9b: injection-shaped season rejected — 400, DB never queried', async () => {
+    installStubs();
+
+    const res = await request(app)
+      .get('/api/v1/teams/search')
+      .query({ season: 'Fall<script>alert(1)</script>' });
+
+    assert.equal(res.status, 400);
+    assert.equal(res.body.error, 'VALIDATION_ERROR');
+    assert.deepEqual(calls.fromTables, []);
+  });
+
+  test('TS-9c: season-only filter maps to a season eq, select includes season', async () => {
+    installStubs();
+
+    const res = await request(app).get('/api/v1/teams/search').query({ season: 'Spring' });
+
+    assert.equal(res.status, 200);
+    assert.deepEqual(calls.eqArgs, [{ col: 'season', val: 'Spring' }]);
+    assert.ok(/season/.test(calls.selectArg), `select() did not request season: ${calls.selectArg}`);
+  });
+
+  test('TS-9d: year-only filter maps to a year eq (parsed to an integer), independent of season', async () => {
+    installStubs();
+
+    const res = await request(app).get('/api/v1/teams/search').query({ year: '2025' });
+
+    assert.equal(res.status, 200);
+    assert.deepEqual(calls.eqArgs, [{ col: 'year', val: 2025 }]);
+  });
+
+  test('TS-9e: non-integer year rejected — 400, DB never queried', async () => {
+    installStubs();
+
+    const res = await request(app).get('/api/v1/teams/search').query({ year: 'not-a-year' });
 
     assert.equal(res.status, 400);
     assert.equal(res.body.error, 'VALIDATION_ERROR');

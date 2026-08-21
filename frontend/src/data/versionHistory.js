@@ -1,5 +1,31 @@
 export var VERSION_HISTORY = [
   {
+    version: '2.11.0',
+    date: 'August 2026',
+    headline: 'Team seasons (Spring/Fall), first-save reliability fix',
+    techNote: 'Bug fixes and performance improvements',
+    userChanges: [
+      'You can now tag each team with a season (Spring or Fall) alongside the year, so teams like "Spring 26" and "Fall 26" are easy to tell apart when you have more than one on the go.',
+      'Team search now lets you filter by season and year together, with results sorted newest first.',
+      'Fixed a bug where a brand-new team could occasionally fail to save its roster right after creation.',
+      'Fixed a season-display issue on one of the app\'s built-in legacy team setups.',
+    ],
+    internalChanges: [
+      'New teams.season column (Spring/Fall) paired with the existing year column, surfaced across team creation, editing, display, switching, sharing, PDF export, admin.html, and team search (PR #713, closes #719). Split into two migrations for a zero-downtime PROD rollout per the Zero-Downtime Constraint: 022_add_team_season.sql (nullable, backfilled) applied to DEV only 2026-08-18 — NOT yet applied to PROD. 023_enforce_team_season_not_null.sql (NOT NULL + CHECK) cannot run until this release is live in PROD and a zero-NULL-seasons check passes; see backend/CLAUDE.md § Migration Notes for the full sequencing.',
+      'Added dev.dugoutlineup.com to the backend CORS allowlist so the DEV custom domain could reach the backend for season-feature testing (PR #714, closes #715).',
+      'Fixed a season-default bug the season work itself introduced in the pre-existing "seed the whole division" local migration — hardcoded legacy team objects had no season field, so they picked up a date-based guess instead of a fixed value (PR #717).',
+      'Fixed a first-save race for newly created teams: the app now waits for the teams insert and its membership-provisioning trigger to finish before starting the first RLS-protected team_data write, closing a window that could produce a real 42501 RLS denial (PR #720).',
+      'Extracted the season logic (currentSeasonGuess, formatSeason, compareTeamsNewestFirst) out of App.jsx into a tested frontend/src/utils/season.js (12 unit tests), added an admin.html behavioral-parity test (admin.html can\'t import the shared module, so this test extracts its inline copy\'s real source and runs the same assertions against it), and a backend DB-constraint test for invalid season values, CI_SAFE-skipped like the rest of that integration suite (PR #722, closes #721). Deliberately did not add migration-file tests — no migration in this repo has one, and that would be a separate architectural decision.',
+      'Story 133 (live game-day surface design-token migration, #698): slices 1-4 of 13 merged — mints the color.gameDay.* token namespace and migrates BenchStrip/ScoreboardRow (slice 1, #705), DugoutView (slice 2, #707), DiamondView (slice 3, #709), and QuickSwap (slice 4, #712), all byte-preserving reference swaps with no intended visual change. A full-directory survey found the real scope is much larger than the original ticket: game-mode/ and ScoringMode/ combined have 384 literal-hex color occurrences across 14 files, none previously tokenized — 9 slices remain open. Slice 4 status: automated coverage green and one manual QuickSwap flow confirmed working, but full device/layout visual coverage was deliberately deferred as an accepted residual risk rather than completed (KK\'s explicit call) — treat slice 4 as partially, not fully, validated.',
+      'Auth screens (magic-link + Google OAuth flow) converged their remaining exact-match colors onto canonical design tokens (PR #693, UX Phase 5).',
+      'Extended backend CORS to accept this team\'s Vercel preview domains (PR #706).',
+      'Added PendingApprovalScreen test coverage (closes #696, PR #700).',
+      'Dependency bump: vite 8.2.1 + @vitejs/plugin-react 6.0.5.',
+      'Added an env-health-check skill + script for verifying local Docker/worktree/test/env health and repo GitHub/prod state (prod checks are read-only).',
+      'Routine docs/governance: Story 133 scope-expansion recon, Phase 5/Phase 6 scoping audit, session handoffs, and Stories 129-132 filed for the upcoming UX/Phase 4C work lineup.',
+    ],
+  },
+  {
     version: '2.10.0',
     date: 'August 2026',
     headline: 'Team search & request-access discovery, confirmation fix',

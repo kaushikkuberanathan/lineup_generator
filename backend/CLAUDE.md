@@ -114,7 +114,7 @@ A second, hermetic test system runs alongside the integration runner:
 - **Env**: still needs `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` / `SUPABASE_ANON_KEY` set, because `src/lib/env.js` + `src/lib/supabase.js` throw at import. Tests never make a real Supabase or network call — they either short-circuit before the client (auth-rejection in `requireAuth.js`) or monkey-patch the seams (`supabaseAdmin.from` / `supabaseAdmin.rpc` / `supabaseAnon.auth.signInWithOtp` / `global.fetch`). `supabaseAdmin` is a shared singleton, so patching `.from` also intercepts `logAuthEvent`'s `auth_events` write. Dummy non-empty values work anywhere.
 - **File convention**: specs live in `src/__tests__/*.test.js` (the `test:unit` glob) — use this path, **not** `src/tests/`.
 
-Unit suite total: **125** (verified via `npm run test:unit`, 2026-08-08 — 0 fail / 0 skipped). Story 99 closed 2026-07-31; see ROADMAP.md Story 99 for the closure writeup and the new follow-up story for admin.js's remaining success-path gap.
+Unit suite total: **147** (verified via `npm run test:unit`, 2026-08-19, v2.11.0 release prep — 0 fail / 0 skipped; up from 125 as of 2026-08-08, includes the new `teamsSearch.route.test.js` suite from Story 124/#655 plus other backend work landed since — per-file table below not yet re-verified against this new total, flagged rather than guessed). Story 99 closed 2026-07-31; see ROADMAP.md Story 99 for the closure writeup and the new follow-up story for admin.js's remaining success-path gap.
 
 **Two corrections made 2026-08-08 (v2.9.0 release-prep docs pass), both pre-existing and unrelated to that release's own changes:**
 1. `teamData.delete.test.js` (6 tests, covers `DELETE /api/v1/teams/:teamId`, #380) already existed in the repo but was missing from this table entirely — added below.
@@ -190,6 +190,38 @@ Per-file counts below verified individually via `node --test <file>` on 2026-08-
   membership-less teams created before this fix cannot be traced back to
   their creator automatically — recovering those needs a manual admin
   action per affected team.
+- **`022_add_team_season.sql` / `023_enforce_team_season_not_null.sql` —
+  APPLIED TO DEV (psqvzppphdedqkpmarwx) 2026-08-18, both in one combined
+  apply (DEV is low-stakes, so both phases ran back to back the same
+  session). `022` also APPLIED TO PROD (hzaajccyurlyeweekvma) 2026-08-19,
+  ahead of the v2.11.0 main promote (soak-override day) — verified via
+  direct query: 6/6 teams, 0 NULL season, all backfilled to `'Spring'`.
+  `023` is still NOT applied to PROD — per the sequence below, it cannot
+  run until the season-aware release has actually promoted to `main` and
+  been live for a while.** Adds `teams.season` (`'Spring'` |
+  `'Fall'`, paired with the existing `year` column — display sites combine
+  them, e.g. "Spring 26"). Deliberately split into two migrations for the
+  eventual PROD rollout, per the Zero-Downtime Constraint above — running
+  the NOT NULL/CHECK phase before the season-aware release is live in PROD
+  would hard-fail every write from the currently-deployed (season-unaware)
+  frontend/admin.html:
+    1. **022** — add `season` nullable, backfill existing rows to
+       `'Spring'`. Safe to run against PROD any time; the currently-deployed
+       code never references the column. **Done — applied to PROD
+       2026-08-19.**
+    2. Deploy the season-aware release (`feature/team-season-tracking`, once
+       promoted through `develop` → `main`). **Not yet done as of this
+       entry — 022 was deliberately applied ahead of the promote since it's
+       backward-compatible; the promote itself is separate and still
+       pending.**
+    3. **023** — only after that release has been live in PROD long enough
+       to verify `SELECT count(*) FROM public.teams WHERE season IS NULL`
+       returns `0`, add `NOT NULL` + `CHECK (season IN ('Spring', 'Fall'))`.
+  See each file's own header for the full reasoning. `docs/db/schema.sql`
+  currently reflects PROD's actual state (season nullable, no CHECK) — do
+  not "complete" that column definition until 023 has actually run against
+  PROD, or the ground-truth doc will lie about live PROD schema the same
+  way past drift here caused #342/#351/#355.
 
 ### !! FIVE NUMERIC COLLISIONS ACROSS THE TWO TREES !!
 

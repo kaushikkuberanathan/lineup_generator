@@ -28,14 +28,44 @@ const AGE_GROUPS = ['5U', '6U', '7U', '8U', '9U', '10U', '11U', '12U'];
 const MIN_QUERY_LENGTH = 2;
 const DEBOUNCE_MS = 400;
 
-function hasActiveFilter(query, ageGroup, sport) {
-  return query.trim().length >= MIN_QUERY_LENGTH || !!ageGroup || !!sport;
+const SEASONS = ['Spring', 'Fall'];
+
+// Rolling window so this never needs a manual annual edit.
+function buildYearOptions() {
+  var startYear = new Date().getFullYear() - 1;
+  var years = [];
+  for (var i = 0; i < 4; i++) { years.push(startYear + i); }
+  return years;
+}
+const YEARS = buildYearOptions();
+
+// "Spring" + 2026 -> "Spring 26". Duplicated at each display call site
+// (App.jsx, admin.html, here) rather than a shared import — see AGE_GROUPS
+// duplication above for the existing precedent in this codebase.
+function formatSeason(season, year) {
+  if (!season) { return ''; }
+  return season + (year ? ' ' + String(year).slice(-2) : '');
+}
+
+// Newest season/year first: same year, Fall (later in the calendar year)
+// sorts before Spring.
+function seasonRank(season) { return season === 'Fall' ? 1 : 0; }
+function compareNewestFirst(a, b) {
+  var ay = a.year || 0, by = b.year || 0;
+  if (ay !== by) { return by - ay; }
+  return seasonRank(b.season) - seasonRank(a.season);
+}
+
+function hasActiveFilter(query, ageGroup, sport, season, year) {
+  return query.trim().length >= MIN_QUERY_LENGTH || !!ageGroup || !!sport || !!season || !!year;
 }
 
 export function TeamSearch({ isOnline, onSelectTeam, onBack }) {
   const [query, setQuery]       = useState('');
   const [ageGroup, setAgeGroup] = useState('');
   const [sport, setSport]       = useState('');
+  const [season, setSeason]     = useState('');
+  const [year, setYear]         = useState('');
   const [status, setStatus]     = useState('idle'); // idle | loading | error | success
   const [results, setResults]   = useState([]);
   const [retryTick, setRetryTick] = useState(0);
@@ -46,7 +76,7 @@ export function TeamSearch({ isOnline, onSelectTeam, onBack }) {
   useEffect(() => {
     if (debounceRef.current) { clearTimeout(debounceRef.current); }
 
-    if (!hasActiveFilter(query, ageGroup, sport)) {
+    if (!hasActiveFilter(query, ageGroup, sport, season, year)) {
       setStatus('idle');
       setResults([]);
       return;
@@ -66,6 +96,8 @@ export function TeamSearch({ isOnline, onSelectTeam, onBack }) {
       if (query.trim().length >= MIN_QUERY_LENGTH) { params.set('q', query.trim()); }
       if (ageGroup) { params.set('ageGroup', ageGroup); }
       if (sport) { params.set('sport', sport); }
+      if (season) { params.set('season', season); }
+      if (year) { params.set('year', year); }
 
       fetch(`${BACKEND_URL}/api/v1/teams/search?${params.toString()}`)
         .then(function (res) {
@@ -74,7 +106,9 @@ export function TeamSearch({ isOnline, onSelectTeam, onBack }) {
         })
         .then(function (data) {
           if (thisRequestId !== requestIdRef.current) { return; } // stale response
-          setResults(Array.isArray(data) ? data : []);
+          var list = Array.isArray(data) ? data.slice() : [];
+          list.sort(compareNewestFirst);
+          setResults(list);
           setStatus('success');
         })
         .catch(function () {
@@ -87,7 +121,7 @@ export function TeamSearch({ isOnline, onSelectTeam, onBack }) {
     return function () {
       if (debounceRef.current) { clearTimeout(debounceRef.current); }
     };
-  }, [query, ageGroup, sport, isOnline, retryTick]);
+  }, [query, ageGroup, sport, season, year, isOnline, retryTick]);
 
   return (
     <Stack direction="col" gap="md">
@@ -103,7 +137,7 @@ export function TeamSearch({ isOnline, onSelectTeam, onBack }) {
 
       <Text as="h2" size="mdLg" weight="bold" family="serif" color="body">Find a team</Text>
       <Text size="sm" color="secondary">
-        Search by name, age group, or sport to find a team and request access.
+        Search by name, age group, sport, or season to find a team — including past seasons — and request access.
       </Text>
 
       <input
@@ -137,9 +171,30 @@ export function TeamSearch({ isOnline, onSelectTeam, onBack }) {
         </select>
       </Stack>
 
+      <Stack direction="row" gap="sm">
+        <select
+          value={season}
+          onChange={(e) => setSeason(e.target.value)}
+          aria-label="Season"
+          style={{ flex: 1, background: '#fff', border: '1.5px solid #d1d5db', borderRadius: '8px', padding: '9px 10px', fontFamily: 'inherit', fontSize: '14px', color: season ? '#111827' : '#6b7280', outline: 'none', cursor: 'pointer' }}
+        >
+          <option value="">Any season</option>
+          {SEASONS.map((s) => <option key={s} value={s}>{s}</option>)}
+        </select>
+        <select
+          value={year}
+          onChange={(e) => setYear(e.target.value)}
+          aria-label="Year"
+          style={{ flex: 1, background: '#fff', border: '1.5px solid #d1d5db', borderRadius: '8px', padding: '9px 10px', fontFamily: 'inherit', fontSize: '14px', color: year ? '#111827' : '#6b7280', outline: 'none', cursor: 'pointer' }}
+        >
+          <option value="">Any year</option>
+          {YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
+        </select>
+      </Stack>
+
       {status === 'idle' && (
         <Text size="sm" color="disabled" style={{ textAlign: 'center', padding: '12px 0' }}>
-          Enter a team name, or pick an age group / sport, to search.
+          Enter a team name, or pick an age group / sport / season / year, to search.
         </Text>
       )}
 
@@ -185,7 +240,8 @@ export function TeamSearch({ isOnline, onSelectTeam, onBack }) {
               <Stack direction="col" gap="xs" style={{ width: '100%' }}>
                 <Text weight="bold" family="serif" size="body" color="body">{team.name}</Text>
                 <Text size="xs" color="disabled">
-                  {[team.age_group, team.sport, team.year].filter(Boolean).join(' · ')}
+                  {[formatSeason(team.season, team.year) || null, team.age_group, team.sport, team.season ? null : team.year]
+                    .filter(Boolean).join(' · ')}
                 </Text>
               </Stack>
             </ListRow>

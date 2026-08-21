@@ -97,6 +97,31 @@ async function run(test, BASE_URL, supabaseAdmin, state) {
     };
   });
 
+  // teams: invalid season value → rejected by DB. Migration 022+023's
+  // NOT NULL + CHECK(season IN ('Spring','Fall')) is applied to DEV but not
+  // yet to PROD (two-phase rollout — see migration file headers). Run against
+  // DEV (SUPABASE_TARGET=dev), this fails on the CHECK violation itself. Run
+  // against PROD before 023 lands there, it fails instead on "column season
+  // does not exist" — a different error, but the property this suite verifies
+  // ("can bad data land in the table?") still holds either way, so `pass: !!error`
+  // is correct in both states. Cleans up its own throwaway row.
+  await test('INT-06', 'teams: DB rejects invalid season value', async () => {
+    const throwawayId = 'integrity-test-season-' + Date.now();
+    const { error } = await supabaseAdmin
+      .from('teams')
+      .insert({
+        id: throwawayId,
+        name: 'INT-06 throwaway',
+        season: 'Winter',
+      });
+    await supabaseAdmin.from('teams').delete().eq('id', throwawayId);
+    return {
+      pass: !!error,
+      expected: 'DB constraint error (CHECK season IN (Spring, Fall)), or column-missing pre-022/023',
+      actual: error ? `error: ${error.message.slice(0, 80)}` : 'no error — constraint not enforced',
+    };
+  });
+
 }
 
 module.exports = { run };

@@ -89,6 +89,7 @@ export const tokens = {
       warningBg:        '#fef3c7',               // 1x ValidationBanner.jsx — amber-100 card background
       successBorder:    'rgba(16,185,129,0.3)',  // 1x ValidationBanner.jsx — emerald-500 0.3 card border
       warningBorder:    'rgba(217,119,6,0.3)',   // 1x ValidationBanner.jsx — amber-600 0.3 card border
+      errorBorder:      'rgba(220,38,38,0.3)',   // Auth screens (Story 131/#690) — status.error (#DC2626) 0.3, mirrors successBorder's pattern; no existing token expressed an error-banner border role
 
       successText:      '#065f46',               // 1x ValidationBanner.jsx — emerald-800 success heading text
       warningText:      '#92400e',               // 1x ValidationBanner.jsx — amber-800 warning heading text
@@ -180,6 +181,77 @@ export const tokens = {
       mound:      '#c9a070',  // pitcher's mound circle
       moundLight: '#e8d5b0',  // chalk on base path
       chalk:      '#ffffff',  // foul-line stroke (white at varying opacity)
+    },
+
+    // ─── Game-day surface palette (Story 133/#698 — game-mode/ + ScoringMode/) ──
+    // Separate scale from color.text.* / color.surface.*, which were audited
+    // against LIGHT surfaces only (see their own "on light surfaces" doc
+    // comments). Every file under game-mode/ and ScoringMode/ is a dark
+    // surface with no light variant, so this is its own first-class family
+    // rather than aliasing text.secondary/text.tertiary/border.default by
+    // hex-match alone - reusing a light-surface-calibrated token on a dark
+    // surface just because the hex happens to match is a role mismatch, the
+    // same class of problem Story 110's DIVERGENT entries exist to prevent.
+    // Shared umbrella for BOTH game-mode/* and ScoringMode/* (one visual
+    // language across both Locked directories, per #698) - not per-track.
+    gameDay: {
+      surface: {
+        shell:      '#0B1524',  // full-screen game-day shell across game-mode + ScoringMode
+        scoreboard: '#0A1628',  // ScoreboardRow.jsx root bg - distinct near-black,
+                                  // drift from surface.dark (#0B1524), not a duplicate
+      },
+      text: {
+        primary:   '#FFFFFF',  // highest emphasis - score numbers
+        label:     '#E2E8F0',  // high-emphasis uppercase labels - team names
+        secondary: '#94A3B8',  // mid-emphasis - bench chip names, icon-button colors, inning label
+                                 // (7.07:1 vs surface.scoreboard - passes WCAG AA)
+        muted:     '#64748B',  // subdued supporting text shared across both game-day tracks
+        caption:   '#475569',  // low-emphasis section eyebrow - "Bench"
+                                 // KNOWN GAP: 2.39:1 vs surface.scoreboard - FAILS WCAG AA
+                                 // (needs 4.5:1). Pre-existing production value, preserved
+                                 // as-is by this byte-preserving mint. See #704.
+        faint:     '#334155',  // near-invisible - empty-state placeholder dash only
+        separator: '#374151',  // decorative glyph - ScoreboardRow's ":" only
+      },
+      diamond: {
+        position: {
+          battery: '#C0392B', infield: '#2980B9', outfield: '#27AE60', fallback: '#555555',
+        },
+        surface: {
+          gradient: 'radial-gradient(circle at center, #1F3D2B 0%, #0F1F3D 60%, #0A1428 100%)',
+        },
+        stroke: {
+          fence: 'rgba(255,255,255,0.12)', basepath: 'rgba(255,255,255,0.13)',
+          mound: 'rgba(255,255,255,0.10)', homePlate: 'rgba(255,255,255,0.15)',
+          foulLine: 'rgba(255,255,255,0.07)', highlight: 'rgba(255,255,255,0.22)',
+          empty: 'rgba(255,255,255,0.18)',
+        },
+        fill: {
+          basepath: 'rgba(255,255,255,0.025)', empty: 'rgba(255,255,255,0.02)',
+        },
+        text: {
+          primary: '#FFFFFF', secondary: 'rgba(255,255,255,0.85)',
+          tertiary: 'rgba(255,255,255,0.55)', empty: 'rgba(255,255,255,0.28)',
+        },
+      },
+
+      // ─── QuickSwap.jsx (Story 133 slice 4, #698) ───────────────────────
+      // Role-based, not appearance-based — these three coincide byte-for-byte
+      // with existing text/diamond tokens (gameDay.text.caption/faint,
+      // diamond.position.fallback) but serve a different role here (position-
+      // accent swatch, not text or diamond-SVG fill) and are kept separate on
+      // purpose per the handoff's no-silent-alias rule, even where bytes match.
+      quickSwap: {
+        position: {
+          bench:      '#475569',  // POS_COLORS.Bench swatch (badge border/text)
+          fallback:   '#555555',  // POS_COLORS[position] miss — defensive default
+          unassigned: '#334155',  // POS_COLORS[""] swatch — unassigned position
+        },
+        backdrop:                 'rgba(0,0,0,0.6)',     // full-screen scrim behind the sheet
+        positionBadgeBackground:  'rgba(255,255,255,0.06)', // position badge bg when a position is assigned
+        rowDivider:               'rgba(255,255,255,0.05)', // player-row bottom border
+        currentRowBackground:     'rgba(245,200,66,0.10)',  // highlight for the row of the currently-occupying player
+      },
     },
   },
 

@@ -1,7 +1,11 @@
 # UX Architecture Refactor — Canonical Roadmap
 
 **Branch:** `develop` (working trunk; per-phase feature branches off develop)
-**Worktree:** `C:\Users\KKUBERANA1\Documents\lineup-generator-ux`
+**Worktree:** a second git worktree of this repo, conventionally named
+`lineup-generator-ux` as a directory (the branch checked out inside it can
+vary - e.g. a local tracking branch is fine) — exact local path varies by
+machine (confirmed 2026-08-17: this doc previously hardcoded one specific
+machine's path, already stale on a different machine).
 **Owner:** KK (kaushik.kuberanathan@gmail.com)
 **Created:** 2026-05-01
 **Status:** Phases 1.0/1a/1b/1c shipped v2.5.6. R1 Roster Polish shipped `930c9b4` (PR #55). Phase 2 UI Primitives shipped v2.5.10 (PR #61 + release #63). Phase 3 Step 1 PlayerHandBadge → Badge shipped v2.5.10 (PR #62). Phase 3 Step 2 EmptyState → Stack/Text/Button + Story 59 cleanup shipped develop @ `66a4586` (PR #68, pending next promotion). Phase 3 Step 3 — Pill + ListRow primitives + Support page migrations — committed `40ad221` on `feature/ux-phase-3-support-pages` (pending PR). Phase 3 Step 4 — ValidationBanner + OfflineIndicator — committed `6f54757` on the same branch (pending PR). **Phase 3 (UI primitives migration) is now 100% complete**, shipped through v2.8.4 (PRs #519-#526). **Phase 4 (`var C` legacy color-object retirement) is also now 100% complete** — all region slices shipped through v2.8.5, zero `C.*` references remain in `App.jsx` (updated 2026-08-07, verified live against current `develop`, not carried forward from an earlier snapshot).
@@ -117,16 +121,33 @@ before promoting any Phase 4 work to main.
 
 ### Phase 5 — Auth Re-Skin (v2.7.0)
 
-**Goal:** Replace the `#2471A3`/`#2980B9` auth-screen palette (preserved
-as drift in Phase 1 specifically for this phase) with the canonical design
-system. Align auth screens visually with the main app.
+**Goal:** Converge `frontend/src/components/Auth/{LoginScreen,
+RequestAccessScreen,PendingApprovalScreen,NoMembershipScreen}.jsx` onto the
+canonical design-token system. Align auth screens visually with the main app.
 
-**Dependencies:** Phase 4 complete. Auth screens should be isolated
-components before re-skinning.
+**Correction, 2026-08-17 (Story 131/#690 kickoff):** this phase's original
+description named `#2471A3`/`#2980B9` as the drift palette to replace — that
+claim doesn't match the code. Those two hex values only appear in field-
+position colors (defense diamond, batting-skill tags), unrelated to auth.
+The real auth-screen palette is a mostly slate-ramp-adjacent set of literal
+hex values (never wired to `tokens`) — full inventory in Story 131/#690.
+Roughly half already have exact token matches (safe, zero-visible-change
+swaps); the rest need an explicit design decision, since minting a new token
+to preserve every legacy Tailwind shade exactly would just re-create the
+drift this phase exists to eliminate. Prefer converging onto the existing
+semantic families (`status.success`/`successBg`/`successBorder`/
+`successText`, `status.error`/`errorBg`) where the re-skin is intentionally
+allowed to shift appearance; mint new tokens only where an existing semantic
+family genuinely can't express the role.
+
+**Dependencies:** Phase 4 complete (confirmed 2026-08-17 - zero `C.*`
+references remain in `App.jsx`). Auth screens are already isolated
+components (`frontend/src/components/Auth/`), not part of `App.jsx` -
+this phase does not need the `App.jsx` gate phrase.
 
 **Note:** Auth screen re-skin is cosmetic only. No auth behavioral changes
 belong here — those are the Phase 4C auth cutover items documented in
-`CLAUDE.md`.
+`CLAUDE.md` (tracked as Story 129/#688).
 
 ---
 
@@ -134,6 +155,45 @@ belong here — those are the Phase 4C auth cutover items documented in
 
 **Goal:** Storybook or equivalent living documentation of all primitives,
 tokens, and usage patterns. Component playground for future development.
+
+**Scoping (2026-08-17, Story 132 — proposal only, not yet started):**
+
+**In scope:** the 9 shipped primitives in `frontend/src/components/ui/`
+(Badge, BottomSheet, Button, Card, ListRow, Pill, Stack, Text, Toast — all
+confirmed live on `main`) and the full token system in `theme/tokens.js`
+(~350 lines: color, space, radius, borderWidth, font, zIndex, shadow,
+motion groups). Each primitive already has a colocated `*.test.jsx` with
+characterization tests that double as a de facto usage-example inventory —
+Phase 6's job is making that inventory *browsable*, not re-deriving it.
+
+**Out of scope:** the 4 Auth screens (`components/Auth/*`) — they don't
+consume the primitives today (plain inline `style={}` objects, tokens
+directly), and folding them in prematurely would document a
+still-in-flight surface (Phase 5 isn't promoted to `main` yet as of this
+writing). Revisit once Phase 5 ships and if a future initiative migrates
+Auth onto Card/Stack/Text. Also out of scope: `App.jsx`'s own component
+split — that's `docs/product/APPJSX_DECOMPOSITION_PLAN.md`'s separate,
+already-tracked initiative; Phase 6 documents the primitives App.jsx
+*consumes*, not App.jsx itself.
+
+**Tooling recommendation:** `@storybook/react-vite` — this repo is
+already on Vite 6.4 + React 18, which is Storybook 8's primary supported
+target; no separate bundler config needed. No `.storybook/` directory
+exists yet (checked 2026-08-17) — this would be a from-scratch add, not a
+partial setup to resume. Lighter alternative worth a look before
+committing: Ladle (`@ladle/react`) — same MDX-free story-file model,
+faster cold start, smaller footprint, less community/plugin ecosystem.
+Given this repo's existing pattern of `*.test.jsx` characterization tests
+already serving as informal usage docs, either tool is mostly wiring, not
+new authoring — recommend a 1-day timeboxed spike comparing both against
+2-3 real primitives (Card + Pill + a token-heavy one like Badge) before
+committing repo-wide.
+
+**Rough shape once started:** one story file per primitive (9 total) +
+one token-reference page (rendered swatches/scale, not just the raw
+`tokens.js` export) + a short "how to consume a token" usage-pattern doc
+page. No new component code — this phase only adds `.storybook/` config
+and `*.stories.jsx` files alongside the existing `*.test.jsx` files.
 
 **Dependencies:** Phases 1–5 complete. The design system must be stable
 before documenting it as canonical.
