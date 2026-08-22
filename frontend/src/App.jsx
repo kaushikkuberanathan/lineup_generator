@@ -7,6 +7,7 @@ import { isSupabaseEnabled, supabase, dbSaveTeams, dbDeleteTeam,
          dbSaveShareLink, dbLoadShareLink } from './supabase.js';
 import { track, mixpanel, deviceContext } from '@/utils/analytics';
 import { track as vaTrack } from '@vercel/analytics';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import { FEATURE_FLAGS } from '@/config/featureFlags';
 import { generateLineupV2 } from '@/utils/lineupEngineV2';
 import { normalizeBattingHand } from '@/utils/playerUtils';
@@ -8186,6 +8187,7 @@ export default function App() {
           </div>
         </div>
       ) : null}
+      <SpeedInsights />
     </div>
   );
 }
