@@ -4843,7 +4843,8 @@ radius small and each KK visual-check cycle short.
 
 ---
 ### Story 134 (P2) - Home membership teams + unified Find your team entry <!-- #740 -->
-Status: In progress.
+Status: Resolved. Merged to develop via PR #741 (regular merge, `88ff549`,
+2026-08-22).
 Discovered: 2026-08-22, coach feedback on the signed-in Home experience.
 Symptom: Home renders every team cached on the device, while Account correctly
 renders only teams represented by the signed-in coach's memberships. Team
@@ -4854,11 +4855,46 @@ search affordances make it unclear how to find or request access to another
 team.
 Root cause: Home's team list is sourced directly from `teams`; the Account
 screen already has the correct membership-to-team reconciliation pattern.
-Proposed fix: Filter Home cards through `memberships[].team_id`, keep
+Fix: Filter Home cards through `memberships[].team_id`, keep
 newest-season-first sorting and existing card actions, show one always-visible
 "Find your team..." bar that opens the existing Story 124 discovery flow, and
-remove the legacy bottom link. Add App-level golden-path coverage for subscribed
-versus local-only visibility and discovery navigation.
+remove the legacy bottom link. App-level golden-path coverage added for
+subscribed versus local-only visibility and discovery navigation
+(`AppHomeMembershipTeams.test.jsx`).
+**Post-merge review found two gaps, tracked as Story 135 below:** the change
+expanded the blast radius of already-open bug #729 (a just-created team isn't
+in `memberships` yet, so it now vanishes from Home too, not just Account,
+until reload/re-login), and two docs (`faqs.js`, a `TeamSearch.jsx` header
+comment) still referenced the removed "Don't see your team?" link.
+
+---
+### Story 135 (P2) - Refresh memberships after team creation + doc corrections <!-- #742 -->
+Status: Resolved.
+Discovered: 2026-08-22, self-review of Story 134/#740 immediately after merge
+- once Home started filtering by `memberships[].team_id` in addition to
+Account, the existing gap in #729 (createTeam() never updates the client-side
+`memberships` array) got a second, more visible symptom.
+Symptom: A coach creates a team, gets auto-loaded into it (`loadTeam()` still
+fires immediately), but if they navigate back to Home before reloading the
+app, the just-created team is missing from "Your Teams" - the membership row
+is provisioned server-side instantly, but the client's cached `memberships`
+state doesn't know about it yet.
+Impact: Confusing "did my team actually get created?" moment for a coach
+using the team they just made, right after Story 134 made Home
+membership-filtered.
+Fix: Added `refreshMemberships()` to `useAuth.js` - re-fetches `/api/v1/auth/me`
+and updates `memberships`/`membership` only (does not touch `authState` or
+`user`). `createTeam()` in App.jsx now calls it once the team's
+`persistTeamBeforeLoad` save promise resolves, so the new team is visible in
+Home/Account without waiting for a reload. Also fixed two stale docs
+referencing the link Story 134 removed: `faqs.js`'s "not on the team yet" FAQ
+now points at the "Find your team..." bar, and a header comment in
+`TeamSearch.jsx`. RED->GREEN verified for both the hook unit test
+(`useAuth.refreshMemberships.test.js`) and the App-level wiring
+(`AppHomeMembershipTeams.test.jsx`) via mutation checkpoints.
+Note: this does not close the broader #729 (Account tab has the identical gap
+outside the create-team path, e.g. after a membership changes server-side for
+other reasons) - #729 stays open, scoped to that wider case.
 
 ---
 ### Automated Score Reporting (County Integration)

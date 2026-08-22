@@ -1468,6 +1468,7 @@ export default function App() {
     logout,
     memberships,
     updateProfileName,
+    refreshMemberships,
   } = useAuth();
 
   // Which auth screen is showing when unauthenticated. Local UI state, not
@@ -2392,7 +2393,13 @@ export default function App() {
     dbSync(function() {
       return persistTeamBeforeLoad(t, function(team) {
         return dbSaveTeams([team]);
-      }, loadTeam);
+      }, loadTeam).then(function(result) {
+        // The server provisions a membership row for the creator alongside the
+        // team row itself — refresh so this team shows up in membership-filtered
+        // views (Home, Account) without waiting for the next reload/re-login. #729
+        if (typeof refreshMemberships === "function") { refreshMemberships(); }
+        return result;
+      });
     });
     setNewTeam({ name:"", ageGroup:"", sport:"", season:currentSeasonGuess(), year: new Date().getFullYear() });
   }

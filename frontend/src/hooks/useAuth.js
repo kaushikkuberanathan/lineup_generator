@@ -278,6 +278,27 @@ export function useAuth() {
   // in-place patch). Token comes from the current session, never a caller arg.
   // Every failure path leaves existing `user` state untouched.
 
+  // ─── Refresh Memberships ─────────────────────────────────────────────────────
+  // Re-fetches /me and updates memberships/membership only — does not touch
+  // authState or user. Used after a client action that provisions a new
+  // membership row server-side (e.g. team creation) so the newly-created team
+  // becomes visible in membership-filtered views without a full reload. #729
+
+  const refreshMemberships = useCallback(async () => {
+    if (!session) return;
+
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/v1/auth/me`, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      const ms = data.user?.memberships ?? [];
+      setMemberships(ms);
+      setMembership(ms[0] ?? null);
+    } catch { /* best-effort — caller keeps existing membership state on failure */ }
+  }, [session]);
+
   const updateProfileName = useCallback(async (firstName, lastName) => {
     if (!session) return { success: false, error: 'Not signed in' };
 
@@ -331,5 +352,6 @@ export function useAuth() {
     requestAccess,
     logout,
     updateProfileName,
+    refreshMemberships,
   };
 }
