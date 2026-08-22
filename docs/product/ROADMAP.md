@@ -1,17 +1,17 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: 2026-08-19 (v2.11.0 release-prep merged to develop via PR TBD - team seasons, first-save race fix, Story 133 slices 1-4/13, auth token convergence - develop only, NOT yet promoted to main)
+> Last updated: 2026-08-21 (v2.11.0 promoted to main - team seasons, first-save race fix, Story 133 slices 1-4/13, auth token convergence, PR #731; 24h soak explicitly overridden by KK, fall season readiness)
 > MVP launched: March 24, 2026
 
 ---
 
-## v2.11.0 - 2026-08-19 - Team seasons, first-save race fix, Story 133 slices 1-4/13 (develop only — not yet promoted to main)
+## v2.11.0 - 2026-08-19 - Team seasons, first-save race fix, Story 133 slices 1-4/13 (promoted to main 2026-08-21, PR #731)
 
 **Minor bump** — team season tracking is a genuine new coach-facing feature (not a fix batch), matching the "size the bump to the release's actual scope" convention established at v2.9.0/v2.10.0.
 
 **Team season tracking (#713, closes #719)** — new `teams.season` column (`Spring`/`Fall`, paired with the existing `year`), surfaced across team creation, editing, display, switching, sharing, PDF export, admin.html, and team search (season/year independent filters, newest-first ordering). Every team write path requires a valid season; Create/Save stay disabled until one is selected.
 
-**Two-phase PROD rollout — phase 1 done.** Per the Zero-Downtime Constraint, this is split into two migrations (see `backend/CLAUDE.md` § Migration Notes for full detail): `022_add_team_season.sql` (nullable, backfilled — safe against PROD any time) applied to DEV 2026-08-18, and **applied to PROD 2026-08-19** ahead of the main promote (verified via direct query: 6/6 teams, 0 NULL season, all backfilled to `'Spring'`) — deliberately run early since it's backward-compatible and the currently-deployed code doesn't reference the column. `023_enforce_team_season_not_null.sql` (adds `NOT NULL` + `CHECK`) still must not run until this release has actually promoted to `main` and been live in PROD long enough to reconfirm zero NULL seasons — that step is separate and still pending. **Also still outstanding per PR #713:** a manual authenticated "DEV acceptance pass" (create/edit/search/switch/reload) — KK is doing this himself before the main promote; the promote is held until it's confirmed clean.
+**Two-phase PROD rollout — phase 1 done.** Per the Zero-Downtime Constraint, this is split into two migrations (see `backend/CLAUDE.md` § Migration Notes for full detail): `022_add_team_season.sql` (nullable, backfilled — safe against PROD any time) applied to DEV 2026-08-18, and **applied to PROD 2026-08-19** ahead of the main promote (verified via direct query: 6/6 teams, 0 NULL season, all backfilled to `'Spring'`) — deliberately run early since it's backward-compatible and the currently-deployed code doesn't reference the column. `023_enforce_team_season_not_null.sql` (adds `NOT NULL` + `CHECK`) still must not run until this release has actually promoted to `main` and been live in PROD long enough to reconfirm zero NULL seasons — that step is separate and still pending. **DEV acceptance pass — done, 2026-08-21.** KK ran create/edit/search/switch/reload manually against `dev.dugoutlineup.com` with a real authenticated session. Season create, edit, search (season + year filters), and reload-persistence all passed clean. One real but pre-existing, unrelated, non-blocking bug found and filed: newly created teams don't show up in the Account tab's "Your Teams" list until reload — root-caused to `createTeam()` never refreshing the separate `memberships` array `useAuth.js` uses for that list; server-side data (the membership row itself) was confirmed correct and instant. Filed as [#729](https://github.com/kaushikkuberanathan/lineup_generator/issues/729), logged in `CLAUDE.md`'s Known Open Bugs table (row 12) — deliberately not blocking this promote since it predates and is unrelated to the season-tracking work.
 
 **Fixes found during the season rollout:**
 - Legacy division-seed migration (`migrationTargets`) had no `season` field, so it picked up a date-based guess instead of a fixed value — fixed (PR #717).
@@ -27,7 +27,7 @@
 
 **Verification (re-run directly, 2026-08-19):** frontend 1084 passed / 1 skipped (93 files), backend unit 147/147, `npm run build` clean, `debt-p0` gate clear (0 open P0s).
 
-**Not yet done as of this entry:** promotion to `main` (requires its own 24h soak + Ship Gate walk-through + the migration-022-to-PROD step above), and the manual DEV acceptance pass PR #713 flagged as outstanding.
+**24h soak override, 2026-08-21:** KK explicitly authorized promoting to `main` ahead of the standard 24h develop-soak window, citing fall season readiness — coaches need season tagging live before fall rosters start. Not a hotfix; a deliberate exception, same pattern as v2.9.0's override. **Promoted to `main` 2026-08-21** (PR [#731](https://github.com/kaushikkuberanathan/lineup_generator/pull/731), regular merge, `102c8ca4`) — confirmed a genuine 2-parent merge via direct API check. Prod smoke test same session: backend `/ping` 200 OK (0.8s), frontend loads clean with zero console errors, both Render and Vercel confirmed serving the exact promoted commit via direct deploy-record queries. Post-promote sync (PR #732) merged the same session.
 
 ---
 
