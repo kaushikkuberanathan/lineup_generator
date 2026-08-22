@@ -4842,6 +4842,25 @@ every other track. Do not batch multiple slices into one PR - keeps blast
 radius small and each KK visual-check cycle short.
 
 ---
+### Story 134 (P2) - Home membership teams + unified Find your team entry <!-- #740 -->
+Status: In progress.
+Discovered: 2026-08-22, coach feedback on the signed-in Home experience.
+Symptom: Home renders every team cached on the device, while Account correctly
+renders only teams represented by the signed-in coach's memberships. Team
+discovery is also split between a conditional local-filter field and a separate
+"Don't see your team? Search for one" link at the bottom of the page.
+Impact: Coaches can see stale or unrelated device-local teams, and the duplicate
+search affordances make it unclear how to find or request access to another
+team.
+Root cause: Home's team list is sourced directly from `teams`; the Account
+screen already has the correct membership-to-team reconciliation pattern.
+Proposed fix: Filter Home cards through `memberships[].team_id`, keep
+newest-season-first sorting and existing card actions, show one always-visible
+"Find your team..." bar that opens the existing Story 124 discovery flow, and
+remove the legacy bottom link. Add App-level golden-path coverage for subscribed
+versus local-only visibility and discovery navigation.
+
+---
 ### Automated Score Reporting (County Integration)
 **Status:** Architecture finalized, implementation pending
 **Trigger:** Coach taps "Report Score" on a completed game
