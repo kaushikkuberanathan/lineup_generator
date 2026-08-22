@@ -38,6 +38,15 @@ export function useAuth() {
 
   useEffect(() => {
     async function checkSession() {
+      // Tracks whether this load carried a callback token, so the two
+      // silent-fallback branches below can distinguish "never logged in"
+      // (normal, no log needed) from "a callback token didn't produce a
+      // usable session" (an anomaly worth a trace — this is exactly the
+      // class of failure that took real production debugging to diagnose
+      // in 2026-08-22's login incident, precisely because these paths
+      // logged nothing). Never log the token itself, only that one was
+      // present and what happened next.
+      const hadCallbackToken = window.location.hash.includes('access_token');
       try {
         // Handle Supabase auth redirect (magic link callback)
         const hash = window.location.hash;
@@ -59,6 +68,9 @@ export function useAuth() {
         const { data: { session: existingSession } } = await supabase.auth.getSession();
 
         if (!existingSession) {
+          if (hadCallbackToken) {
+            console.error('[useAuth] callback URL had a token but no session was established');
+          }
           setAuthState('unauthenticated');
           return;
         }
@@ -70,6 +82,7 @@ export function useAuth() {
 
         if (!res.ok) {
           // Session expired or invalid — clear it
+          console.error('[useAuth] /me rejected an established session:', res.status);
           await supabase.auth.signOut();
           setAuthState('unauthenticated');
           return;
@@ -92,7 +105,8 @@ export function useAuth() {
           setAuthState('authenticated');
         }
 
-      } catch {
+      } catch (err) {
+        console.error('[useAuth] checkSession threw:', err?.name, err?.message);
         setAuthState('unauthenticated');
       }
     }
