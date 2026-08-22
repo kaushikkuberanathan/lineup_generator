@@ -51,10 +51,12 @@ export function LoginScreen({ onRequestAccess, sendMagicLink }) {
         options: { redirectTo: window.location.origin }
       });
       if (error) {
+        console.error('[LoginScreen] Google sign-in error:', error.name, error.message);
         setError('Google sign-in failed. Try the email link instead.');
       }
       // on success the browser redirects to Google; nothing else to do here
     } catch (e) {
+      console.error('[LoginScreen] Google sign-in threw:', e?.name, e?.message);
       setError('Google sign-in failed. Try the email link instead.');
     }
   }

@@ -210,6 +210,55 @@ silently accept junk.
 
 **This looks like an inconsistency. It is not.** Do not "fix" it.
 
+### Login broken for everyone, everywhere, with zero server-side errors — check the anon key's FORMAT before anything else.
+
+**2026-08-22 production incident.** Both magic-link and Google sign-in stopped
+completing for every browser and device — no code regression, no CSP, no auth-js
+race condition, none of the several hours of theories chased first. The actual
+cause: **Supabase disabled legacy JWT-format API keys for this project, and
+Vercel's `VITE_SUPABASE_ANON_KEY` (Production **and** Preview) still held the old
+`eyJ...`-style key.** Every Supabase REST/Auth call from the browser returned
+`401 Legacy API keys are disabled`.
+
+**Why this was hard to diagnose:** the symptom pattern looked exactly like a
+frontend session-handling bug — zero network requests fired for Google sign-in,
+no console errors on the happy path, reproduced identically across totally
+different browsers and devices. That specific presentation was actually a
+**coincidental, unrelated red herring**: a client-side CSP blocking `eval()`
+(traced to something on the reporter's own device/network, never resolved,
+genuinely unrelated) that happened to also break in a way that looked
+auth-code-shaped. Two real, well-reasoned theories (a `getSession()` /
+hash-parsing race; a `flowType` mismatch) were checked against the actual
+installed `@supabase/supabase-js` source and **both were correctly ruled out** —
+neither was the bug, but chasing them first delayed finding the actual cause by
+hours.
+
+**What actually found it:** the browser's Network tab, on a live login attempt,
+showing `401` responses whose body literally said `"Legacy API keys are
+disabled"` on the `teams`/`team_data`/`feature_flags` REST calls — not the
+`/authorize` or `/verify` Supabase Auth endpoints, which is why earlier
+theorizing about the auth *flow* never landed on it.
+
+**Fix:** Vercel → Settings → Environment Variables → replace `VITE_SUPABASE_ANON_KEY`'s
+value with the **publishable key** (`sb_publishable_...`) from Supabase →
+Settings → API Keys, for **both** Production and Preview environments (the
+variable name stays the same), then redeploy both — Vite bakes this value into
+the JS bundle at build time, so an existing deployment keeps serving the old key
+until it's rebuilt.
+
+**Check this FIRST, before any session-handling code theory, whenever auth
+breaks with no server-side trace:** either extract the key straight from the
+deployed bundle (`grep -o 'sb_publishable_[A-Za-z0-9_-]*\|eyJ[A-Za-z0-9_.-]*' dist/assets/index-*.js`)
+or hit a public table directly with it (`curl -H "apikey: <key>" <SUPABASE_URL>/rest/v1/feature_flags?select=*\&limit=1`) —
+a `401` body mentioning "Legacy API keys" settles it in one request, before
+touching any frontend code.
+
+**Prevention now in place:** `frontend/vite.config.js` fails the build if
+`VITE_SUPABASE_ANON_KEY` starts with `eyJ` (legacy JWT shape) — but **only**
+when `process.env.VERCEL === '1'` (a real Vercel build), never in CI's
+build-sanity step or local dev, both of which intentionally build without these
+vars set.
+
 ---
 
 ## SECURITY: THINGS THAT WERE BROKEN — #342 NOW FIXED, #355 STILL OPEN
