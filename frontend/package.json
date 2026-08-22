@@ -14,16 +14,16 @@
     "predeploy": "npm run build"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.100.0",
+    "@supabase/supabase-js": "^2.112.3",
     "@vercel/analytics": "^2.0.1",
     "jspdf": "^4.2.1",
-    "mixpanel-browser": "^2.76.0",
+    "mixpanel-browser": "^2.82.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-icons": "^5.7.0"
   },
   "devDependencies": {
-    "@testing-library/jest-dom": "^7.0.0",
+    "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.2",
     "@vitejs/plugin-react": "^6.0.5",
     "@vitest/ui": "^4.1.10",

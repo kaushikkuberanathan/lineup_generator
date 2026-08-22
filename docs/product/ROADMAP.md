@@ -1,11 +1,11 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: 2026-08-19 (v2.11.0 release-prep merged to develop via PR TBD - team seasons, first-save race fix, Story 133 slices 1-4/13, auth token convergence - develop only, NOT yet promoted to main)
+> Last updated: 2026-08-21 (v2.11.0 promoted to main - team seasons, first-save race fix, Story 133 slices 1-4/13, auth token convergence, PR #731; 24h soak explicitly overridden by KK, fall season readiness)
 > MVP launched: March 24, 2026
 
 ---
 
-## v2.11.0 - 2026-08-19 - Team seasons, first-save race fix, Story 133 slices 1-4/13 (develop only — not yet promoted to main)
+## v2.11.0 - 2026-08-19 - Team seasons, first-save race fix, Story 133 slices 1-4/13 (promoted to main 2026-08-21, PR #731)
 
 **Minor bump** — team season tracking is a genuine new coach-facing feature (not a fix batch), matching the "size the bump to the release's actual scope" convention established at v2.9.0/v2.10.0.
 
@@ -27,7 +27,7 @@
 
 **Verification (re-run directly, 2026-08-19):** frontend 1084 passed / 1 skipped (93 files), backend unit 147/147, `npm run build` clean, `debt-p0` gate clear (0 open P0s).
 
-**24h soak override, 2026-08-21:** KK explicitly authorized promoting to `main` ahead of the standard 24h develop-soak window, citing fall season readiness — coaches need season tagging live before fall rosters start. Not a hotfix; a deliberate exception, same pattern as v2.9.0's override. **Not yet done as of this entry:** promotion to `main` itself (Ship Gate walk-through above is clear; migration-022-to-PROD and the DEV acceptance pass above are both done).
+**24h soak override, 2026-08-21:** KK explicitly authorized promoting to `main` ahead of the standard 24h develop-soak window, citing fall season readiness — coaches need season tagging live before fall rosters start. Not a hotfix; a deliberate exception, same pattern as v2.9.0's override. **Promoted to `main` 2026-08-21** (PR [#731](https://github.com/kaushikkuberanathan/lineup_generator/pull/731), regular merge, `102c8ca4`) — confirmed a genuine 2-parent merge via direct API check. Prod smoke test same session: backend `/ping` 200 OK (0.8s), frontend loads clean with zero console errors, both Render and Vercel confirmed serving the exact promoted commit via direct deploy-record queries. Post-promote sync (PR #732) merged the same session.
 
 ---
 
