@@ -256,7 +256,7 @@ export var FAQ_CATEGORIES = [
       },
       {
         q: "I'm not on the team yet — how do I get access?",
-        a: "From the Home screen, tap 'Don't see your team? Search for one,' then search by team name, age group, or sport. Once you find your team, tap it, choose the role that fits (Head Coach, Assistant Coach, Coordinator, Scorekeeper, or Parent / Family for view-only), and submit your request. You'll see a pending-approval screen right after, and get an email once you're approved."
+        a: "From the Home screen, tap 'Find your team…' at the top of Your Teams, then search by team name, age group, or sport. Once you find your team, tap it, choose the role that fits (Head Coach, Assistant Coach, Coordinator, Scorekeeper, or Parent / Family for view-only), and submit your request. You'll see a pending-approval screen right after, and get an email once you're approved."
       },
       {
         q: "What's the difference between the roles I can request?",

@@ -1,6 +1,7 @@
 /**
  * TeamSearch
- * Home tab -> "Don't see your team? Search for one" discovery flow (Story 124, #655).
+ * Home tab -> "Find your team…" discovery flow (Story 124, #655; entry point
+ * unified onto the always-visible Find bar in Story 134, #740).
  * Searches GET /api/v1/teams/search (public, unauthenticated) by name/age
  * group/sport. Result tap hands the selected team to the caller, which is
  * expected to route into RequestAccessScreen with that team pre-selected.

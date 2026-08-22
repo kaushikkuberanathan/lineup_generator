@@ -45,9 +45,12 @@ const SUBSCRIBED_TEAM = { id: "team-1", name: "Subscribed Sluggers", ageGroup: "
 const LOCAL_ONLY_TEAM = { id: "team-2", name: "Local Only Legends", ageGroup: "10U", sport: "baseball", year: 2026 };
 
 describe("App Home — membership teams and unified discovery (#740)", function () {
+  let refreshMemberships;
+
   beforeEach(function () {
     localStorage.clear();
     localStorage.setItem("app:teams", JSON.stringify([SUBSCRIBED_TEAM, LOCAL_ONLY_TEAM]));
+    refreshMemberships = vi.fn(() => Promise.resolve());
     mockUseAuth.mockReturnValue({
       session: { user: { email: "coach@example.com" }, access_token: "tok" },
       user: { email: "coach@example.com", profile: { first_name: "Coach" } },
@@ -61,6 +64,7 @@ describe("App Home — membership teams and unified discovery (#740)", function 
         { id: "membership-2", role: "coach", team_id: "not-yet-loaded" },
       ],
       updateProfileName: vi.fn(),
+      refreshMemberships: refreshMemberships,
     });
   });
 
@@ -75,6 +79,20 @@ describe("App Home — membership teams and unified discovery (#740)", function 
 
     await waitFor(function () {
       expect(screen.getByRole("heading", { name: "Find a team" })).toBeInTheDocument();
+    });
+  });
+
+  it("refreshes memberships after creating a team, so the new team doesn't wait for a reload (#729/#740 follow-up)", async function () {
+    render(<App />);
+
+    await screen.findAllByText(SUBSCRIBED_TEAM.name);
+
+    fireEvent.click(screen.getByRole("button", { name: "+ New Team" }));
+    fireEvent.change(screen.getByPlaceholderText("e.g. Mud Hens"), { target: { value: "Brand New Bombers" } });
+    fireEvent.click(screen.getByRole("button", { name: "Create Team" }));
+
+    await waitFor(function () {
+      expect(refreshMemberships).toHaveBeenCalled();
     });
   });
 });
