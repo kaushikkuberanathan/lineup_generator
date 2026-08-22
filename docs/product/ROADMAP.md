@@ -4897,6 +4897,26 @@ outside the create-team path, e.g. after a membership changes server-side for
 other reasons) - #729 stays open, scoped to that wider case.
 
 ---
+### Story 136 (P3) - Delete duplicate Vercel project <!-- #744 -->
+Status: Resolved.
+Discovered: 2026-08-22, while investigating a recurring red "Error" check on
+PRs from a Vercel project named `lineup-generator` (no hyphen).
+Root cause: Two Vercel projects were both linked to this repo's GitHub
+integration - `line-up-generator` (hyphenated, the real one, owns
+`dugoutlineup.com` and serves `dev.dugoutlineup.com`) and `lineup-generator`
+(no hyphen), an orphaned duplicate created ~35 days later that owned no
+custom domain and had inconsistently-configured env vars
+(`VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` missing on several builds).
+Verified before deletion, via direct Vercel API lookups, that neither prod
+nor dev traffic resolved through the duplicate - confirmed `dev.dugoutlineup.com`
+resolves to a `develop`-branch build on `line-up-generator` only.
+Fix: Duplicate project deleted from the Vercel dashboard.
+Note: any local clone/worktree whose `frontend/.vercel/project.json`
+(gitignored) was linked to the deleted project needs `vercel link` re-run
+against `line-up-generator` (`prj_P1ajLGpY6ZezIsNMeTCPXPSnyZEu`) before using
+the `vercel` CLI from that checkout.
+
+---
 ### Automated Score Reporting (County Integration)
 **Status:** Architecture finalized, implementation pending
 **Trigger:** Coach taps "Report Score" on a completed game
