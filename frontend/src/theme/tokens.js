@@ -405,6 +405,43 @@ export const tokens = {
           background: '#334155',
         },
       },
+
+      // ─── GameModeGearMenu.jsx (Story 133 slice 8, #698) ────────────────
+      // First real ScoringMode/* migration slice (slice 7 was a verified
+      // no-op). Component-scoped, one-off values with no reusable role
+      // elsewhere in the gameDay family - same precedent as
+      // gameModeScreen/inningModal above.
+      gearMenu: {
+        handoffModal: {
+          // Full-screen backdrop behind the "Hand off scoring?" confirm
+          // dialog. No existing token at this opacity - sits between
+          // overlay.scrimLight (0.5, reused below for the menu's own
+          // backdrop) and overlay.backdrop (0.97); this dialog wants a
+          // darker scrim than the menu panel's backdrop since it can
+          // render standalone with confirmHandoff true and isOpen false.
+          backdrop: 'rgba(0,0,0,0.8)',
+          // Cancel button bg. Byte-matches gameModeScreen.advanceButton.
+          // mutedBackground and inningModal.divider (both rgba(255,255,
+          // 255,0.06)), but kept separate per the no-cross-component-alias
+          // rule - same reasoning as inningModal.exitButton.background.
+          cancelBackground: 'rgba(255,255,255,0.06)',
+          // "Hand off" confirm button bg - blue-700. No existing token
+          // matches (distinct from status.info #2563EB, a different blue).
+          confirmBackground: '#1d4ed8',
+        },
+        menuPanel: {
+          // Gear-menu dropdown panel bg. No existing token matches
+          // (distinct from brand.navy #0F1F3D and gameDay.surface.shell
+          // #0B1524, both darker/more saturated).
+          background: '#1a2a3a',
+        },
+        // "Finish Game…" menu item text - red-300. Byte-matches
+        // gameDay.gameModeScreen.exitButton.text (#fca5a5) exactly, but
+        // kept separate per the no-cross-component-alias rule even where
+        // bytes match - same role (light-red label on a red-adjacent
+        // affordance) but a different component's own concern.
+        finishGameText: '#fca5a5',
+      },
     },
   },
 
