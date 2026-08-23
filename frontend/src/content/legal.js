@@ -11,7 +11,7 @@ export var LEGAL_DOCS = [
     title: "Privacy Policy",
     emoji: "🔒",
     summary: "What data we collect and how it's used",
-    lastUpdated: "April 2026",
+    lastUpdated: "August 2026",
     sections: [
       {
         type: "p",
@@ -23,7 +23,7 @@ export var LEGAL_DOCS = [
         items: [
           "Team and roster data you enter (names, positions, batting stats)",
           "Schedule and game result data you enter",
-          "App usage analytics (Mixpanel) — anonymous, no personally identifiable information"
+          "App usage analytics (Mixpanel) — includes your coach name, team name, and team ID, used to identify your activity across sessions. Does not include player names, roster contents, or schedule details."
         ]
       },
       { type: "h3", text: "Where It's Stored" },
@@ -39,7 +39,7 @@ export var LEGAL_DOCS = [
       { type: "h3", text: "Analytics" },
       {
         type: "p",
-        text: "We use Mixpanel to track anonymous feature usage (e.g., how many times Auto-Assign is tapped). This helps us improve the app. No names, team data, or roster contents are included in analytics events."
+        text: "We use Mixpanel to track feature usage (e.g., how many times Auto-Assign is tapped) and to identify your account so we can see usage trends per coach and team. Analytics events and your Mixpanel profile include your coach name, team name, team ID, age group, roster size (a count, not names), and your role. They do not include player names, roster contents, schedule details, or game results. We also record basic device and app context (device type, operating system, screen size, whether the app is installed as a PWA, and app version) on every event. This helps us improve the app — it is not shared with advertisers."
       },
       { type: "h3", text: "Contact" },
       {
@@ -180,10 +180,10 @@ export var LEGAL_DOCS = [
         type: "p",
         text: "You can use the app fully offline without an account. Team data is saved to your device. No sign-in is needed to build rosters, generate lineups, or share links."
       },
-      { type: "h3", text: "Cloud Sync (Beta)" },
+      { type: "h3", text: "Cloud Sync" },
       {
         type: "p",
-        text: "To sync data across devices or restore from the cloud, you'll need an approved account. Accounts use email magic link or Google sign-in — no passwords required. Request access using the Feedback form."
+        text: "To sync data across devices or restore from the cloud, you'll need an approved account. Accounts use email magic link or Google sign-in — no passwords required. Request access by tapping \"Find your team…\" on the Home tab, searching for your team, and submitting a request with your role."
       },
       { type: "h3", text: "Account Approval" },
       {

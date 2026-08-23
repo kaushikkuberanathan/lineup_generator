@@ -1,7 +1,16 @@
 # Database Migrations
 
 All migrations are run manually in the **Supabase dashboard → SQL Editor**.
-They are append-only — no migration ever drops a table or removes data.
+They are append-only in intent — no migration in this tree drops a table or
+deletes data — but **idempotency (safety to re-run) varies file by file.**
+See the table below before re-running anything. Do not assume a migration is
+safe to re-run just because an earlier one was.
+
+For the full historical narrative — why files are numbered the way they are,
+the two dangerous files in the old `backend/src/db/migrations/` tree, and the
+five numbers that collide across both trees — see `backend/CLAUDE.md` →
+**## Migration Notes**. That doc is the canonical source for cross-tree
+history; this file tracks only what's in `backend/migrations/` itself.
 
 ---
 
@@ -10,39 +19,46 @@ They are append-only — no migration ever drops a table or removes data.
 1. Open [Supabase dashboard](https://supabase.com/dashboard) → your project
 2. Navigate to **SQL Editor** (left sidebar)
 3. Paste the contents of the migration file
-4. Click **Run**
-5. Verify no errors in the output pane
-
-Migrations are idempotent — `create table if not exists`, `create or replace function`, and `drop trigger if exists` guards mean re-running a migration is safe.
-
----
-
-## Migration Files
-
-### `roster_snapshots.sql`
-**Purpose:** Roster safety net — stores the last 10 roster snapshots per team.
-**When to run:** Already run in production (v1.3.3).
-**Tables created:** `roster_snapshots`
-**Triggers:** `trg_prune_roster_snapshots` (auto-prunes to 10 rows per team after insert)
-**Views:** `roster_snapshots_latest` (most recent snapshot per team)
+4. **Check the "Idempotent?" column below first.** If it says "No — errors on
+   re-run", running it a second time will fail with a real Postgres error
+   (usually "constraint already exists"). That's expected and harmless if the
+   migration was already applied — but confirm that before assuming the error
+   means something else went wrong.
+5. Click **Run**
+6. Verify no unexpected errors in the output pane
 
 ---
 
-### `002_team_data_history.sql`
-**Purpose:** Append-only audit log of every `team_data` write — full snapshot including roster, schedule, grid, and all other fields. Primary recovery mechanism for roster-wipe incidents.
-**When to run:** Run before the next production data operation.
-**Tables created:** `team_data_history (id, team_id, snapshot, roster_count, written_at, write_source)`
-**Triggers:** `trg_snapshot_team_data` — fires `AFTER INSERT OR UPDATE` on `team_data`, inserts a snapshot row
-**Functions:**
-- `snapshot_team_data()` — trigger function; reads `app.write_source` session variable to tag each write
-- `prune_team_data_history()` — keeps last 20 snapshots per team; run weekly or manually via `select prune_team_data_history()`
+## Migration Status
 
-**Views:** `team_data_history_latest` — most recent snapshot metadata per team (no JSONB)
+Status and idempotency below are sourced directly from each file's own header
+comment, cross-checked against `backend/CLAUDE.md` → Migration Notes. Where a
+file doesn't state idempotency explicitly, it was verified here by reading the
+SQL for `IF NOT EXISTS` / `CREATE OR REPLACE` / `DROP ... IF EXISTS` guards.
 
-**Schema corrections from spec:**
-- `team_id` is `text` (not `bigint`) — Mud Hens ID is `1774297491626`, non-UUID
-- Trigger is on `team_data`, not `teams`
-- `NEW.team_id` (not `NEW.id`); snapshot built from individual columns, not `NEW.data`
+| File | Purpose | Idempotent? | DEV | PROD |
+|---|---|---|---|---|
+| `roster_snapshots.sql` | Roster safety net — last 10 snapshots/team | Yes (`IF NOT EXISTS` guards) | Applied | Applied (v1.3.3) |
+| `002_team_data_history.sql` | Append-only audit log of every `team_data` write | Yes (`create table if not exists`) | Applied | Applied |
+| `004_rls_fixes.sql` | RLS on `teams`/`team_data`/`roster_snapshots`; revokes TRUNCATE | Yes — all 12 `CREATE POLICY` statements guarded with `DROP POLICY IF EXISTS` (Story 123/#564 fixed the gap) | Applied | **Applied and confirmed live** (#428, definitively closed 2026-08-06) |
+| `005_p0_lock_auth_events.sql` | P0: lock `auth_events` RLS/grants | Yes (stated in header) | — (prod hotfix) | Applied 2026-07-13 |
+| `006_p0_lock_team_data_history.sql` | P0: lock `team_data_history` RLS/grants | Yes (stated in header) | — | Applied 2026-07-13 |
+| `007_p1_fix_recursive_rls_policy.sql` | Fix infinite recursion in `team_memberships` RLS | Yes (stated in header) | — | Applied 2026-07-13 |
+| `008_p1_add_team_memberships_teams_fk.sql` | Add missing FK, fixed admin Coaches tab | **No — `ADD CONSTRAINT` errors on re-run** (index is `IF NOT EXISTS`; the constraint add is not — header calls the re-run error "harmless," meaning it confirms the constraint is already there) | — | Applied 2026-07-13 |
+| `009_p0_widen_access_requests_role_check.sql` | Widen `access_requests.requested_role` CHECK | Yes (`DROP CONSTRAINT IF EXISTS` guards the re-add) | — | Applied 2026-07-13 |
+| `011_p1_fix_view_rls_bypass.sql` | Fix a VIEW bypassing the RLS lock on `team_data_history` | Yes (stated in header) | — | Applied 2026-07-13 |
+| `012_p1_pin_security_definer_search_path.sql` | Pin `search_path` on `SECURITY DEFINER` fns; drop dead `activate_membership()` | Yes (`CREATE OR REPLACE` + `DROP IF EXISTS`) | — | Applied 2026-07-13 |
+| `013_rls_test_grants_helper.sql` | Read-only grant-introspection RPC for the RLS test suite | Yes (`CREATE OR REPLACE FUNCTION`) | Applied 2026-07-14 | **Not applied** — apply as part of WS-3 verification |
+| `014_handle_new_user_profile_trigger.sql` | Auto-provision a `profiles` row on new auth user | Yes (`CREATE OR REPLACE FUNCTION`) | Applied 2026-07-15 | **Not applied as this standalone file.** Functionally superseded: `016` installed the equivalent `handle_new_user` trigger prod was missing (2026-07-21). Don't apply `014` to prod separately — verify against `016`'s trigger first. |
+| `015_roster_wipe_db_guard.sql` | DB-layer roster-wipe guard trigger on `team_data` | Yes (`DROP TRIGGER IF EXISTS` + `CREATE TRIGGER`) | Applied 2026-07-20 | Applied 2026-07-20 |
+| `016_profile_name_from_metadata.sql` | Resolve profile names from auth metadata; backfill; installs `handle_new_user` trigger | Yes (`CREATE OR REPLACE FUNCTION`, `DROP TRIGGER IF EXISTS`) | Applied 2026-07-21 | Applied 2026-07-21 |
+| `017_fix_prune_roster_snapshots_security_definer.sql` | Pin `SECURITY DEFINER` on `prune_roster_snapshots()` | Yes (`CREATE OR REPLACE FUNCTION`) | Applied 2026-08-01 | Applied 2026-08-01 |
+| `018_auto_provision_team_membership_on_create.sql` | Auto-provision `team_memberships` row when a team is created | Yes (`DROP TRIGGER IF EXISTS` + `CREATE TRIGGER`) | Applied 2026-08-06 | Applied 2026-08-07 |
+| `019_scoring_auth_uid_rls.sql` | `auth.uid()`-scoped RLS for the 4 live-scoring tables (Phase 4C, #355) | Yes (every `CREATE POLICY` guarded with `DROP POLICY IF EXISTS`) | **Section A only**, applied 2026-08-15 | **Not applied.** Section B not applied anywhere. See `docs/product/PHASE4C_SCORING_RLS_PROPOSAL.md`. |
+| `020_team_memberships_identity_required.sql` | CHECK requiring a real identity (`user_id` or `email`) on every `team_memberships` row | **No — `ADD CONSTRAINT` errors on re-run** (no guard; rollback SQL is in the file header) | Applied 2026-08-07 | Applied 2026-08-07 |
+| `021_revoke_teams_delete.sql` | Revoke anon/authenticated `DELETE` on `teams` (#380) | Not stated; REVOKE is naturally idempotent (re-revoking is a no-op) | Applied 2026-08-08 | **Applied 2026-08-08, then reverted the same session. NOT currently live.** Do not re-apply until the compensating `DELETE /api/v1/teams/:teamId` route (#642/#646) is live on `main`, not just `develop` — re-applying without it removes team deletion entirely, for every role. |
+| `022_add_team_season.sql` | Add `teams.season`, nullable + backfilled (phase 1 of 2) | Yes — safe to run any time per header (column starts optional) | Applied 2026-08-18 | Applied 2026-08-19 |
+| `023_enforce_team_season_not_null.sql` | Enforce `teams.season NOT NULL` + CHECK (phase 2 of 2) | **Do not run against PROD** until all 3 preconditions in the file's own header are met (022 live, season-aware release live, zero-NULL query confirmed) | Applied 2026-08-18 | **Not applied — gated, see file header** |
 
 ---
 
@@ -73,4 +89,5 @@ If a roster is wiped:
 
 - **Never** drop or truncate `team_data_history` or `roster_snapshots`
 - **Never** write `roster: []` to a team that has existing players without `force: true`
-- Migrations go in `backend/migrations/` (ops-level) or `backend/src/db/migrations/` (auth schema)
+- Migrations go in `backend/migrations/` (canonical, ops-level). `backend/src/db/migrations/` is historical — do not add to it, and do not rebuild from it without reading `backend/CLAUDE.md` → Migration Notes first (two of its files are actively dangerous to re-apply).
+- Before re-running any migration in the table above, re-check its row here — "safe to re-run" is per-file, not a property of this directory.
