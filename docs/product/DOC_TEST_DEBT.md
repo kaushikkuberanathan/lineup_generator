@@ -40,11 +40,11 @@
 ### ✅ RESOLVED — useAuth.js `onAuthStateChange` silently strands user on failed `/me` call after `SIGNED_IN`
 
 - **Discovered:** 2026-08-05 (Sprint 2 Story 6, Auth Flow End-to-End)
-- **Resolved:** 2026-08-23 (test-coverage-analysis session, feature branch `claude/test-coverage-analysis-ufzbj5`, not yet promoted to develop)
+- **Resolved:** 2026-08-23 (test-coverage-analysis session) — merged to `develop` via PR [#767](https://github.com/kaushikkuberanathan/lineup_generator/pull/767), a genuine 2-parent merge commit (`996640a`), not squashed; feature branch `claude/test-coverage-analysis-ufzbj5` deleted post-merge
 - **Fix:** `frontend/src/hooks/useAuth.js`'s `onAuthStateChange` SIGNED_IN handler now has an explicit `else` branch (mirroring `checkSession`'s existing `/me`-rejected handling) that logs the failure, sets the hook's `error` state to a user-facing message, and explicitly re-settles `authState` to `'unauthenticated'` instead of leaving it unchanged. The same fallback (`setError` + `setAuthState('unauthenticated')`) was added to the surrounding `catch` block for thrown/network errors, which previously only logged.
 - **Test:** `frontend/src/tests/auth.test.js` test B4 rewritten to assert the fixed behavior (RED confirmed against the pre-fix code before applying the fix, then GREEN after).
 - **Known residual gap:** the hook's `error` field is not yet wired into `LoginScreen.jsx`'s UI (that would touch the locked `App.jsx` prop-wiring), so a real user still sees no visible banner today — but `authState` is no longer left stuck in an ambiguous state, and the error is available on the hook for a future UI wire-up.
-- **Issue** | [#579](https://github.com/kaushikkuberanathan/lineup_generator/issues/579) — reopened 2026-08-23: it had been auto-closed by PR #580, which only filed the issue (docs-only) rather than fixing the bug. Will close for real when the PR from this session merges. Tracked alongside the rest of this session's coverage work under [#766](https://github.com/kaushikkuberanathan/lineup_generator/issues/766).
+- **Issue** | [#579](https://github.com/kaushikkuberanathan/lineup_generator/issues/579) — had been auto-closed by PR #580 (docs-only filing, not a fix); reopened 2026-08-23 and closed for real by PR #767's merge. Tracked alongside the rest of this session's coverage work under [#766](https://github.com/kaushikkuberanathan/lineup_generator/issues/766), also closed by #767.
 
 ### 🟡 P2 — Walk-Up Song Navigation
 
