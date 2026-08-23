@@ -691,3 +691,210 @@ commit `93f6950` (genuine 2-parent merge), zero literal colors remaining
 in `RunnerConflictModal.jsx`, build clean, 114/114 tests passing,
 checkpoint logged. Next up per the handoff scope table: slice 10,
 `RestoreScoreModal.jsx` (15 occurrences).
+
+---
+
+## Slice 10 — `RestoreScoreModal.jsx`
+
+**Branch:** `feature/story133-slice10-restorescoremodal-token-migration`
+(forked from `feature/story133-slices5-13-sandbox` @ `7fa4fe2`)
+
+**PR:** [#753](https://github.com/kaushikkuberanathan/lineup_generator/pull/753),
+base = `feature/story133-slices5-13-sandbox`, labels `priority:p2` /
+`type:refactor` / `area:scoring`. Opened and merged via `gh` CLI, same
+approach slices 6/8/9 confirmed works (the GitHub MCP integration's
+`create_pull_request`/`merge_pull_request` still return `403`).
+
+**Commit:** `f355ce7` — "refactor: migrate RestoreScoreModal.jsx off
+literal colors onto tokens.js" (no closing keyword, per handoff rule).
+
+**Merge:** `ff8390a`, genuine 2-parent merge —
+`git show -s --format="%H %P" origin/feature/story133-slices5-13-sandbox`
+→ `ff8390adf6a6ebeca831deb8f36ddb70e269c040 7fa4fe22a1cf94e45b5062a25e20c9ec792ae03d f355ce71bc433e092ecb962fc290378c15257f8d`
+(2 parents — `7fa4fe2` the prior sandbox tip [slice 9's checkpoint
+commit], `f355ce7` this slice's commit — not squashed).
+
+### Scope discrepancy vs. the handoff doc
+
+Both `STORY133_SANDBOX_HANDOFF.md` and
+`STORY133_GAMEDAY_TOKEN_MIGRATION_HANDOFF.md` list this file at **~15**
+occurrences. The actual inventory —
+`grep -noE "#[0-9a-fA-F]{3,6}|rgba?\([^)]+\)" RestoreScoreModal.jsx | wc -l`
+— returned **27**. Logged per the escalation policy; every real migration
+slice's doc count has undershot the true total so far (slice 5: 33→51,
+slice 6: 45→65, slice 8: 10→18, slice 9: 12→18, this slice: 15→27). All
+27 were migrated; post-migration grep on the file returns empty.
+
+### Reachability
+
+Confirmed live, not dead code: `grep -rln "RestoreScoreModal" frontend/src
+--include="*.jsx"` shows it's imported and rendered by
+`LiveScoringPanel.jsx` — one of the 7 live ScoringMode children
+`DugoutView` imports transitively, same reachability chain slices 7/8/9
+confirmed. No dedicated `RestoreScoreModal.test.jsx` exists; the
+`ScoringMode/*` track still has no established per-file test baseline
+(confirmed via `find frontend/src/components/ScoringMode -iname
+"*.test.*"`, zero results, same as slices 8/9).
+
+### Token mapping decisions
+
+**Reused existing tokens (value + role both matched):**
+
+| Literal | Reused token | Role match reasoning |
+|---|---|---|
+| `#0f1f3d` (panel bg) | `brand.navy` | Exact byte match; same role as every prior slice's reuse — dominant dark-navy panel/surface background. |
+| `rgba(255,255,255,0.15)` (panel border) | `overlay.whiteLight` | Exact match; "on-dark borders, highlights." |
+| `#fff` (panel default text color, enabled Restore-button text; 2 sites) | `gameDay.text.primary` | Exact match, "highest emphasis" — same generic opaque-white-on-dark role at both sites. |
+| `#64748b` (close-button icon, at-bat-count wrapper, Cancel-button text; 3 sites) | `gameDay.text.muted` | Exact match, "subdued supporting text." |
+| `#94a3b8` (warning-box body text) | `gameDay.text.secondary` | Exact match, "mid-emphasis." |
+| `#475569` ("No scorebook data found" text) | `gameDay.text.caption` | Exact match; already reused in slices 5/6 for general low-emphasis supporting text beyond just eyebrow labels — consistent with that broader precedent. |
+| `#f5c842` (at-bat count number) | `brand.gold` | Exact match, primary-accent role — same as every prior slice's reuse. |
+| `rgba(220,38,38,0.12)` (error-box bg) | `color.overlay.errorMid` | Exact match. This is a pre-mixed generic alpha tint already reused across multiple surfaces (App.jsx scoring-surface OUT chip bg, DefenseDiamond OUT-row family per its own doc comment) — same "safe to reuse regardless of light/dark-surface distinction" reasoning slices 6/8 used for `overlay.goldTint`/`overlay.scrimLight`, applied here to the red-tint family. First reuse of this specific token in the `gameDay` scale. |
+| `rgba(220,38,38,0.3)` (error-box border) | `color.overlay.errorMedium` | Exact match (0.3 = the token's 0.30), same reasoning as `errorMid` above. |
+| `rgba(255,255,255,0.08)` (disabled-button border) | `overlay.whiteFaint` | Exact match, dark-surface-safe per its own doc comment. |
+| `#dc2626` (armed/default Restore-button bg) | `status.error` | Exact match to the app-wide error/alert semantic color; same reuse precedent slice 5 established for the Out Tonight strip — a destructive-action CTA is the same semantic use. |
+
+**Minted new tokens** (`gameDay.restoreScoreModal.*`, mirroring the
+`gameModeScreen.*`/`inningModal.*`/`gearMenu.*`/`runnerConflictModal.*`
+component-scoped precedent):
+
+- `backdrop` (`rgba(0,0,0,0.72)`) — full-screen root backdrop. No exact
+  match: sits between `overlay.scrimLight` (0.5) and `gearMenu.
+  handoffModal.backdrop`/`runnerConflictModal.backdrop` (0.8/0.82) — a
+  genuine third opacity tier for this component's own scrim.
+- `warningBox.background` (`rgba(245,200,66,0.08)`) — advisory-box gold
+  tint. No exact match (`inningModal.battingCard.background` is 0.05,
+  `overlay.goldTint` is 0.12).
+- `warningBox.border` (`rgba(245,200,66,0.2)`) — byte-matches
+  `inningModal.battingCard.handBadgeBackground` exactly, but that
+  token's role is a batting-hand badge *background* in a different
+  component, not this box's *border* — kept separate per the
+  no-cross-component-alias rule.
+- `disabledText` (`#374151`) — shared within this file, 2 sites
+  ("Checking scorebook…" loading label, disabled Restore-button text;
+  same abstract "inactive/neutral state" text role). Byte-matches
+  `gameDay.text.separator` (`#374151`), but that token's documented role
+  is a single decorative ":" glyph in `ScoreboardRow`, not a text role —
+  kept separate. Also byte-matches the light-surface `color.text.body`
+  (gray-700), which the `gameDay` family never aliases to per its own
+  top-of-block comment.
+- `successBox.{background,border}` (`rgba(22,163,74,0.15)` /
+  `rgba(22,163,74,0.35)`) — no exact match to any existing green tier
+  (closest is `runnerConflictModal.scoreButton.background` at 0.12, a
+  different value).
+- `successBox.text` (`#86efac`) — byte-matches `runnerConflictModal.
+  scoreButton.subtitleText` exactly, but that's a different component's
+  button-subtitle role — kept separate per the no-cross-component-alias
+  rule.
+- `errorBox.text` (`#fca5a5`) — third recurrence of this exact literal
+  across three unrelated components (`gameModeScreen.exitButton.text`,
+  `gearMenu.finishGameText`, now this) — kept separate each time per the
+  established precedent, same reasoning both prior slices used for this
+  same value.
+- `restoreButton.disabledBackground` (`rgba(255,255,255,0.06)`) —
+  fourth recurrence of this 0.06 white-wash value across components
+  (`gameModeScreen.advanceButton.mutedBackground`, `inningModal.divider`,
+  `gearMenu.handoffModal.cancelBackground`), each minted separately per
+  the no-cross-component-alias rule.
+- `restoreButton.confirmBackground` (`#7f1d1d`, red-900) — "tap again to
+  confirm" state background. No existing match anywhere.
+- `restoreButton.border` (`rgba(220,38,38,0.6)`) — no existing match
+  (`gameModeScreen.exitButton.border` is a different rgb triple,
+  `200,16,46` vs `220,38,38` here, despite the shared 0.6 opacity).
+- `cancelButton.border` (`rgba(255,255,255,0.1)`) — no existing
+  0.1-opacity white tier (neighbors are `overlay.whiteFaint` at 0.08 and
+  `overlay.whiteLight` at 0.15) — a genuine gap-fill value.
+
+### Verification
+
+- `grep -oE "#[0-9a-fA-F]{3,6}|rgba?\([^)]+\)"
+  frontend/src/components/ScoringMode/RestoreScoreModal.jsx` → empty
+  (zero literals remain).
+- `cd frontend && npm run build` → clean, no errors, no new warnings.
+- `npx vitest run src/components/game-mode/ src/tests/theme.tokens.test.js --no-file-parallelism`
+  → **114/114 passing** (6 test files), matching the slice-3/5/6/8/9
+  baseline.
+- **Real-DOM computed-style + interaction-wiring verification** (RTL,
+  real component render, real wired `onClose` prop + a real mocked
+  `supabase.from(...).select(...).eq(...).eq(...).eq(...)`/`supabase.rpc(...)`
+  network layer feeding the component's actual async effect and
+  `handleRestore` logic — not a no-op-stub harness): rendered
+  `RestoreScoreModal` across three real states (loaded with at-bats,
+  zero at-bats, RPC error) via a throwaway test file (written, run, then
+  deleted — not committed), read back `getComputedStyle(...)` on the
+  live DOM at each stage:
+
+  | Element / state | Computed value | Expected token | Match |
+  |---|---|---|---|
+  | Root backdrop `background-color` | `rgba(0, 0, 0, 0.72)` | `restoreScoreModal.backdrop` | exact |
+  | Panel `background-color` | `rgb(15, 31, 61)` | `brand.navy` = `#0F1F3D` | exact |
+  | Panel `border-color` | `rgba(255, 255, 255, 0.15)` | `overlay.whiteLight` | exact |
+  | Panel default `color` | `rgb(255, 255, 255)` | `gameDay.text.primary` | exact |
+  | Close button (✕) `color` | `rgb(100, 116, 139)` | `gameDay.text.muted` = `#64748B` | exact |
+  | Warning box `background-color` | `rgba(245, 200, 66, 0.08)` | `restoreScoreModal.warningBox.background` | exact |
+  | Warning box `border-color` | `rgba(245, 200, 66, 0.2)` | `restoreScoreModal.warningBox.border` | exact |
+  | Warning box `color` | `rgb(148, 163, 184)` | `gameDay.text.secondary` = `#94A3B8` | exact |
+  | "Checking scorebook…" `color` (loading state, before count resolves) | `rgb(55, 65, 81)` | `restoreScoreModal.disabledText` = `#374151` | exact |
+  | Restore button (disabled, count still loading) `background-color` | `rgba(255, 255, 255, 0.06)` | `restoreScoreModal.restoreButton.disabledBackground` | exact |
+  | Restore button (disabled) `border-color` | `rgba(255, 255, 255, 0.08)` | `overlay.whiteFaint` | exact |
+  | Restore button (disabled) `color` | `rgb(55, 65, 81)` | `restoreScoreModal.disabledText` | exact |
+  | Cancel button `border-color` | `rgba(255, 255, 255, 0.1)` | `restoreScoreModal.cancelButton.border` | exact |
+  | At-bat count number `color` | `rgb(245, 200, 66)` | `brand.gold` = `#F5C842` | exact |
+  | Restore button (armed, count=5) `background-color` | `rgb(220, 38, 38)` | `status.error` = `#DC2626` | exact |
+  | Restore button (armed) `border-color` | `rgba(220, 38, 38, 0.6)` | `restoreScoreModal.restoreButton.border` | exact |
+  | Restore button (confirm-tap state, after real click #1) `background-color` | `rgb(127, 29, 29)` | `restoreScoreModal.restoreButton.confirmBackground` = `#7f1d1d` | exact |
+  | Success box `background-color` (after real click #2 → real mocked `rpc` resolves ok) | `rgba(22, 163, 74, 0.15)` | `restoreScoreModal.successBox.background` | exact |
+  | Success box `border-color` | `rgba(22, 163, 74, 0.35)` | `restoreScoreModal.successBox.border` | exact |
+  | Success box `color` | `rgb(134, 239, 172)` | `restoreScoreModal.successBox.text` = `#86efac` | exact |
+  | Error box `background-color` (separate render, real mocked `rpc` rejects) | `rgba(220, 38, 38, 0.12)` | `color.overlay.errorMid` | exact |
+  | Error box `border-color` | `rgba(220, 38, 38, 0.3)` | `color.overlay.errorMedium` | exact |
+  | Error box `color` | `rgb(252, 165, 165)` | `restoreScoreModal.errorBox.text` = `#fca5a5` | exact |
+  | "No scorebook data found" `color` (separate render, count=0) | `rgb(71, 85, 105)` | `gameDay.text.caption` = `#475569` | exact |
+
+  All computed values are byte-exact matches to their token's source
+  hex/rgba value. Interaction wiring confirmed with real logic, not
+  stubs: real click #1 flipped `confirmTap` (button text → "Tap again to
+  confirm") without invoking the RPC; real click #2 invoked the real
+  mocked `supabase.rpc('restore_game_state', {...})` call, and on the
+  success path the component's own real `setTimeout(onClose, 2000)` was
+  exercised with `vi.useFakeTimers()` + `vi.advanceTimersByTime(2000)` —
+  `onClose` was asserted uncalled before the advance and called exactly
+  once after, i.e. the real timer-driven close behavior was verified,
+  not just its styling. On the error path, the real `setStatus({error})`
+  + `setConfirmTap(false)` handler was confirmed by watching the button
+  label revert from "Tap again to confirm" back to "Restore from
+  Scorebook" after the real rejected RPC promise resolved. The
+  zero-at-bats case confirmed `canRestore` correctly stays `false`
+  (button `disabled` attribute checked directly, not just appearance).
+
+  One benign `not wrapped in act(...)` React warning appeared from the
+  fake-timer-driven `onClose` call landing after the test's synchronous
+  assertions — did not affect any assertion outcome (all 3 harness tests
+  passed clean); noted here for transparency, not treated as a real
+  issue.
+
+### No behavioral quirks found
+
+No data-driven lookup tables in this file (unlike slice 6's
+`POS_COLORS`) and no divergent-from-shared-palette values — every
+literal was a static style-object value (including the two 3-way
+ternaries driving the Restore button's background/border/text across
+disabled/confirm-tap/armed states) with an unambiguous 1:1 substitution.
+Nothing here rises to the level of a behavioral quirk worth flagging to
+KK beyond the occurrence-count discrepancy already logged above. One
+notable *reuse* decision worth flagging explicitly even though it's not
+a quirk: this is the first slice to reuse `color.overlay.errorMid`/
+`errorMedium` (previously audited only against App.jsx/DefenseDiamond)
+directly on a `gameDay` dark surface — justified by the same
+"pre-mixed alpha tint, not a light-surface-calibrated solid color"
+reasoning slices 6/8 already established for `overlay.goldTint`/
+`overlay.scrimLight`, but flagged here since it's a new instance of that
+reasoning being applied to a different color family for the first time.
+
+### Outcome
+
+Slice 10 complete: merged into `feature/story133-slices5-13-sandbox` as
+commit `ff8390a` (genuine 2-parent merge), zero literal colors remaining
+in `RestoreScoreModal.jsx`, build clean, 114/114 tests passing,
+checkpoint logged. Next up per the handoff scope table: slice 11,
+`FinishGameModal.jsx` (16 occurrences).
