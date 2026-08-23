@@ -6,6 +6,44 @@ real slice 3/4 checkpoints on `develop` — computed values quoted exactly,
 not "looks right." Nothing here has reached `develop`/`main`; all of it
 lives on `feature/story133-slices5-13-sandbox`, for KK's review.
 
+## RUN COMPLETE — all 13 slices done (2026-08-23)
+
+Slices 5-13 all merged into this branch, independently re-verified at every
+step (not just trusting each slice-agent's self-report). Summary:
+
+- **10 PRs** ([#749](https://github.com/kaushikkuberanathan/lineup_generator/pull/749)-[#758](https://github.com/kaushikkuberanathan/lineup_generator/pull/758)),
+  each a genuine 2-parent merge into this branch, base correctly set to
+  this branch (never `develop`).
+- **499 literal color occurrences migrated** across slices 5-13 (every
+  slice's actual count exceeded the handoff doc's estimate — see individual
+  checkpoints below for the pattern).
+- **`ScoringMode/*` is now 100% clean** — zero literal hex/rgba anywhere.
+- **`game-mode/*` has 9 literals remaining**, but all in `BenchStrip.jsx`,
+  `DugoutView.jsx`, `ScoreboardRow.jsx` — slice 1-2 files already merged to
+  `develop` before this sandbox branch existed, outside slices 5-13's
+  scope. Not fixed here; flagged for KK's review of the real `develop`
+  state.
+- **Full frontend suite: 1090 passed / 1 skipped (1091 total), 95 files,
+  zero regressions, zero dropped files** — re-run independently, not just
+  the targeted `game-mode/` subset.
+- **Real findings surfaced along the way** (not migration mechanics —
+  actual product-relevant discoveries):
+  1. `InningModal.jsx`'s `POS_COLORS.LC` is `#27ae60` (green), diverging
+     from the shared `color.position.LC` (`#2980b9`, blue) used everywhere
+     else. Preserved byte-exact rather than silently "fixed." Needs a
+     decision: intentional or a real bug?
+  2. `LiveScoreViewer.jsx` (the "Join as Viewer" destination) is an
+     unimplemented 3-line placeholder. Pre-existing, not caused by this
+     work.
+  3. `#1d4ed8` (action-blue CTA) and `#374151` (muted/disabled text) each
+     independently recurred as component-scoped mints in 5 separate
+     `ScoringMode/*` files — candidates for promotion to shared tokens in
+     a future story. Deliberately not retrofitted here to avoid touching
+     already-merged sandbox work mid-run.
+
+Nothing in slices 5-13 touched `develop` or `main` at any point — confirmed
+independently after every single slice, not just at the end.
+
 ---
 
 ## Slice 5 — `GameModeScreen.jsx`
