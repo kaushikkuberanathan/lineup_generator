@@ -37,18 +37,14 @@
 | **Target** | Opportunistic — no hard deadline, not a North Star capability gap. |
 | **Issue** | [#664](https://github.com/kaushikkuberanathan/lineup_generator/issues/664) |
 
-### 🟡 P2 — useAuth.js `onAuthStateChange` silently strands user on failed `/me` call after `SIGNED_IN`
+### ✅ RESOLVED — useAuth.js `onAuthStateChange` silently strands user on failed `/me` call after `SIGNED_IN`
 
-| | |
-|---|---|
-| **Area** | Auth system (magic link + Google OAuth) |
-| **Description** | `frontend/src/hooks/useAuth.js`'s `onAuthStateChange` listener has a bare `if (res.ok)` guard around the backend `GET /me` call it makes after Supabase fires `SIGNED_IN`. If that call fails (network error, non-2xx), the entire state-update block is skipped — no `authState` change, no error surfaced, no retry. The user is left exactly where they were (typically the login screen) with a live Supabase session and zero feedback. |
-| **Risk if unfixed** | Not a security bypass — no unauthorized access results. A reliability/UX stall: a coach who clicks a magic link or completes Google OAuth during a transient backend hiccup gets silently stuck, likely reads it as "the link didn't work," and may re-request during the `loginLimiter`'s rate-limit window. |
-| **Proposed test/fix** | Surface an error to the user (toast/banner) and/or retry the `/me` call with backoff. `frontend/src/tests/auth.test.js` test B4 already documents the current (broken) behavior — extend or replace it with a fix-verifying test once a fix approach is chosen. |
-| **Opened** | 2026-08-05 — found while adding `auth.test.js` (test B4) during Sprint 2's Story 6 (Auth Flow End-to-End, #566/PR #567); flagged in execution logs across two sessions the same day without being filed as its own tracked item until now. |
-| **Age** | 0 days |
-| **Target** | Opportunistic — no hard deadline, but should be fixed before treating "no error shown after clicking the link" coach reports as unrelated confusion. |
-| **Issue** | [#579](https://github.com/kaushikkuberanathan/lineup_generator/issues/579) |
+- **Discovered:** 2026-08-05 (Sprint 2 Story 6, Auth Flow End-to-End)
+- **Resolved:** 2026-08-23 (test-coverage-analysis session) — merged to `develop` via PR [#767](https://github.com/kaushikkuberanathan/lineup_generator/pull/767), a genuine 2-parent merge commit (`996640a`), not squashed; feature branch `claude/test-coverage-analysis-ufzbj5` deleted post-merge
+- **Fix:** `frontend/src/hooks/useAuth.js`'s `onAuthStateChange` SIGNED_IN handler now has an explicit `else` branch (mirroring `checkSession`'s existing `/me`-rejected handling) that logs the failure, sets the hook's `error` state to a user-facing message, and explicitly re-settles `authState` to `'unauthenticated'` instead of leaving it unchanged. The same fallback (`setError` + `setAuthState('unauthenticated')`) was added to the surrounding `catch` block for thrown/network errors, which previously only logged.
+- **Test:** `frontend/src/tests/auth.test.js` test B4 rewritten to assert the fixed behavior (RED confirmed against the pre-fix code before applying the fix, then GREEN after).
+- **Known residual gap:** the hook's `error` field is not yet wired into `LoginScreen.jsx`'s UI (that would touch the locked `App.jsx` prop-wiring), so a real user still sees no visible banner today — but `authState` is no longer left stuck in an ambiguous state, and the error is available on the hook for a future UI wire-up.
+- **Issue** | [#579](https://github.com/kaushikkuberanathan/lineup_generator/issues/579) — had been auto-closed by PR #580 (docs-only filing, not a fix); reopened 2026-08-23 and closed for real by PR #767's merge. Tracked alongside the rest of this session's coverage work under [#766](https://github.com/kaushikkuberanathan/lineup_generator/issues/766), also closed by #767.
 
 ### 🟡 P2 — Walk-Up Song Navigation
 
