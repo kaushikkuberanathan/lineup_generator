@@ -871,6 +871,170 @@ export const tokens = {
             border: 'rgba(245, 200, 66, 0.3)',
           },
         },
+
+        // ─── LiveScoringPanel.jsx Main body, sub-slice B of 3 (#698) ───────
+        // Covers the non-active-scorer branches of the default-exported Main
+        // function: "Join as Viewer" wrapper (no literal colors of its own -
+        // delegates entirely to LiveScoreViewer.jsx, already verified clean
+        // in slice 7), STATE 1 (no scorer claimed yet) and STATE 3 (someone
+        // else is scoring). STATE 2 (I am scorer) is sub-slice C, untouched
+        // here. Same mint-over-alias precedent as every prior slice -
+        // EXCEPT genuinely generic/umbrella gameDay-level tokens
+        // (surface.shell, surface.scoreboard, text.primary/secondary/muted,
+        // brand.gold, status.error/errorBg, overlay.whiteFaint), which ARE
+        // reused directly here per the precedent already established for
+        // those specific tokens across every prior slice.
+        gameNumberBadge: {
+          // "Game N" pill background - shared verbatim between STATE 1 and
+          // STATE 3 (identical value + role, same file) - one key, not two,
+          // consistent with inningModal.divider's "shared within this file"
+          // precedent. Text color reuses gameDay.text.secondary directly
+          // (see call sites). Close to, but NOT an exact match of,
+          // liveScoringPanel.homeAwayChip.home.background (0.12) - this is
+          // 0.1, a genuinely different opacity, not a rounding.
+          background: 'rgba(148, 163, 184, 0.1)',
+        },
+        noScorerState: {
+          // STATE 1 ("No active scorer" claim screen).
+          //
+          // Header subtitle ("Practice Mode" / "vs {opponent}") - slate-300.
+          // Byte-matches inningModal.header.eyebrowTextA11y exactly, but
+          // that's a different component's a11y-mode-only eyebrow label -
+          // kept separate per the established rule.
+          subheaderText: '#cbd5e1',
+          // "TOP"/"BOT" half-inning micro-label in this state's own header
+          // layout (STATE 3 below uses a differently-styled header with no
+          // equivalent literal at this exact gray - a pre-existing
+          // divergence between the two states' header markup, not
+          // introduced by this migration). No existing token match.
+          halfLabel: '#aaa',
+          claimButton: {
+            // "Claim Scorer Role" primary CTA background - blue-700. FIFTH
+            // recurrence of this exact value across ScoringMode/* (gearMenu.
+            // handoffModal.confirmBackground, runnerConflictModal.
+            // holdButton.border, scoringModeEntry.claimButton.background,
+            // liveScoringPanel.accent.ball from sub-slice A, now here) - the
+            // handoff doc's own note on the 4th recurrence asked to flag a
+            // 5th if one turned up in this section, and one did. Kept as a
+            // component-scoped mint one more time for consistency with all
+            // 4 prior instances (retrofitting 4 already-merged/checkpointed
+            // sites is out of scope for this sub-slice), but this is now
+            // strong signal for the follow-up "promote to gameDay.accent.
+            // actionBlue" story flagged in sub-slice A's checkpoint.
+            background: '#1d4ed8',
+          },
+          // Claim-error advisory box (no dedicated token object - both
+          // background and text reuse color.status.errorBg/color.status.
+          // error directly, same reuse precedent finishGameModal established
+          // for this exact pairing; see component call site).
+          viewerLink: {
+            // "Join as Viewer →" link text - blue-400. Byte-matches
+            // gameDay.scoringModeEntry.viewerLink.color exactly - same
+            // literal text/role ("Join as Viewer" link) but a different
+            // component's own concern - kept separate per the established
+            // no-cross-component-alias rule (same reasoning gearMenu.
+            // finishGameText and restoreScoreModal.errorBox.text already
+            // applied to their own byte-matches).
+            color: '#60a5fa',
+          },
+        },
+        otherScorerState: {
+          // STATE 3 ("{name} is scoring" read-only view).
+          //
+          // Header strip border. Byte-matches 6+ existing 0.06 white-wash
+          // tokens across other components (gameModeScreen.advanceButton.
+          // mutedBackground, inningModal.divider, gearMenu.handoffModal.
+          // cancelBackground, restoreScoreModal.restoreButton.
+          // disabledBackground, finishGameModal.scorePreview.background/
+          // cancelButton.background, scoringModeEntry.claimButton.
+          // disabledBackground) - minted separately per the established
+          // rule, same as every prior recurrence of this value.
+          headerBorder: 'rgba(255,255,255,0.06)',
+          countPill: {
+            // B/S count-pill wrapper background. Same 0.06 white-wash value
+            // as headerBorder immediately above, but a different element/
+            // role within this same file (pill fill vs. header border) -
+            // minted as its own key, same within-file discipline
+            // inningModal applied distinguishing battingCard vs.
+            // defenseCard chrome.
+            background: 'rgba(255,255,255,0.06)',
+            // "BALLS"/"STRIKES" micro-labels, 2 sites, shared value. No
+            // existing token at this exact gray (#cfd8e3 sits close to but
+            // not equal to gameDay.text.label #E2E8F0 or text.secondary
+            // #94A3B8 - matching neither).
+            labelText: '#cfd8e3',
+            // CountPips "active ball" fill color - blue-500. No existing
+            // match (distinct from status.info #2563EB, a darker/more
+            // saturated blue serving a different role, and from
+            // liveScoringPanel.accent.ball #1d4ed8, blue-700, also
+            // distinct). Active "strike" fill color reuses color.status.
+            // error directly (see call site) - same reuse precedent
+            // sub-slice A's accent.hit note already established for red.
+            ballColor: '#3b82f6',
+          },
+          outsPill: {
+            // Outs-pill wrapper background - a distinct orange tint, no
+            // existing match anywhere in tokens.js at this rgb triple
+            // (255,140,66).
+            background: 'rgba(255,140,66,0.12)',
+            // "OUTS" micro-label - light peach. No existing match.
+            labelText: '#FFB89A',
+            // CountPips "active out" fill color - orange. No existing
+            // match (distinct hue from both accent.caution #d97706 and the
+            // background above, despite the shared orange family).
+            color: '#FF8C42',
+          },
+          scorerBanner: {
+            // "{name} is scoring 🟢" banner - green tint, 2 sites (bg +
+            // border) sharing the file's own scale, no existing exact
+            // match at these specific opacities (0.12/0.3) - nearest
+            // neighbors are runnerConflictModal.scoreButton.background
+            // (0.12, a match) — actually IS byte-identical to
+            // runnerConflictModal.scoreButton.background - kept separate
+            // per the no-cross-component-alias rule already applied
+            // throughout this migration.
+            background: 'rgba(22,163,74,0.12)',
+            border: 'rgba(22,163,74,0.3)',
+            // Live-status dot - green-600. Byte-matches liveScoringPanel.
+            // accent.hit exactly (both #16a34a, minted in sub-slice A for
+            // the pitch-chip/outcome "good outcome" role) - a different
+            // role here (a literal status indicator dot, not a pitch/
+            // outcome accent) - kept separate per the established rule,
+            // even within this same liveScoringPanel namespace.
+            dot: '#16a34a',
+          },
+          nowBattingCard: {
+            // "Now Batting" advisory card - gold tint. background (0.08)
+            // byte-matches restoreScoreModal.warningBox.background and
+            // scoringModeEntry.todayGameCard.background exactly; border
+            // (0.2) byte-matches restoreScoreModal.warningBox.border and
+            // inningModal.battingCard.handBadgeBackground exactly - both
+            // now 3rd+ recurrences across unrelated components, kept
+            // separate per the established rule. Label text reuses
+            // brand.gold directly, pitch-count text reuses gameDay.text.
+            // muted directly (see call sites).
+            background: 'rgba(245,200,66,0.08)',
+            border: 'rgba(245,200,66,0.2)',
+          },
+          disabledPitchButtons: {
+            // Disabled (read-only) pitch-button row - 3 sites (bg, border,
+            // text), no existing match for any of the three at these exact
+            // values.
+            background: 'rgba(255,255,255,0.03)',
+            border: 'rgba(255,255,255,0.07)',
+            text: '#2d3748',
+          },
+          // "Only one scorer at a time" footer disclaimer - dark slate.
+          // Byte-matches gameDay.text.separator, restoreScoreModal.
+          // disabledText, finishGameModal.scorePreview.divider, AND
+          // scoringModeEntry.disabledText (all #374151) - FIFTH recurrence
+          // of this exact value across the gameDay family. Kept separate
+          // per the established rule one more time, but flagging: like
+          // #1d4ed8 above, this is now strong signal for a follow-up
+          // consolidation story rather than continuing to mint per-file
+          // forever.
+          disclaimerText: '#374151',
+        },
       },
     },
   },
