@@ -30,6 +30,7 @@ import { DefenseDiamond } from "../../components/GameDay/DefenseDiamond";
 import { InningModal }    from "./InningModal";
 import { QuickSwap }      from "./QuickSwap";
 import { isFlagEnabled }  from "../../config/featureFlags";
+import { tokens }         from "../../theme/tokens";
 
 function firstName(name) {
   if (!name) return name;
@@ -224,7 +225,7 @@ export function GameModeScreen({
   return (
     <div style={{
       position:"fixed", inset:0, zIndex:2000,
-      background:"#0b1524",
+      background:tokens.color.gameDay.surface.shell,
       display:"flex", flexDirection:"column",
       fontFamily:"Georgia,'Times New Roman',serif",
       overflow:"hidden",
@@ -240,18 +241,18 @@ export function GameModeScreen({
             left: '50%',
             transform: 'translateX(-50%)',
             zIndex: 2100,
-            backgroundColor: '#d97706',
-            color: '#ffffff',
+            backgroundColor: tokens.color.gameDay.gameModeScreen.orientationHint.background,
+            color: tokens.color.gameDay.text.primary,
             fontSize: '15px',
             fontWeight: 700,
             padding: '12px 24px',
             borderRadius: '999px',
             whiteSpace: 'nowrap',
             cursor: 'pointer',
-            boxShadow: '0 4px 18px rgba(0,0,0,0.55)',
+            boxShadow: '0 4px 18px ' + tokens.color.gameDay.gameModeScreen.orientationHint.shadow,
             userSelect: 'none',
             letterSpacing: '0.02em',
-            border: '2px solid rgba(255,255,255,0.25)',
+            border: '2px solid ' + tokens.color.gameDay.gameModeScreen.orientationHint.border,
             opacity: 1,
             transition: 'opacity 0.25s ease',
           }}
@@ -265,14 +266,14 @@ export function GameModeScreen({
         display:"flex", alignItems:"center", gap:"10px",
         padding:"10px 16px",
         paddingTop:"max(10px, env(safe-area-inset-top, 10px))",
-        background:"linear-gradient(180deg,#0f1f3d,#0b1524)",
-        borderBottom:"1px solid rgba(255,255,255,0.08)",
+        background:"linear-gradient(180deg," + tokens.color.brand.navy + "," + tokens.color.gameDay.surface.shell + ")",
+        borderBottom:"1px solid " + tokens.color.overlay.whiteFaint,
         flexShrink:0,
       }}>
         {/* Exit */}
         <button onClick={onExit}
-          style={{ padding:"8px 12px", borderRadius:"8px", border:"1px solid rgba(200,16,46,0.6)",
-            background:"rgba(200,16,46,0.15)", color:"#fca5a5", cursor:"pointer",
+          style={{ padding:"8px 12px", borderRadius:"8px", border:"1px solid " + tokens.color.gameDay.gameModeScreen.exitButton.border,
+            background:tokens.color.overlay.redFaint, color:tokens.color.gameDay.gameModeScreen.exitButton.text, cursor:"pointer",
             fontSize:"13px", fontFamily:"Georgia,serif", flexShrink:0 }}>
           ✕ Exit
         </button>
@@ -286,26 +287,26 @@ export function GameModeScreen({
             }
           }}
           title="Reset batting position to top of order, inning 1"
-          style={{ padding:"6px 10px", borderRadius:"8px", border:"1px solid rgba(255,255,255,0.3)",
-            background:"rgba(255,255,255,0.08)", color:"#e2e8f0", cursor:"pointer",
+          style={{ padding:"6px 10px", borderRadius:"8px", border:"1px solid " + tokens.color.gameDay.gameModeScreen.resetButton.border,
+            background:tokens.color.overlay.whiteFaint, color:tokens.color.gameDay.text.label, cursor:"pointer",
             fontSize:"14px", fontFamily:"Georgia,serif", flexShrink:0 }}>
           ↺
         </button>
 
         {/* Title */}
         <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", minWidth:0 }}>
-          <div style={{ fontSize: a11y ? "13px" : "11px", color:"#475569", textTransform:"uppercase",
+          <div style={{ fontSize: a11y ? "13px" : "11px", color:tokens.color.gameDay.text.caption, textTransform:"uppercase",
             letterSpacing:"0.15em", display:"flex", alignItems:"center", gap:"6px" }}>
             Game Mode
             {savedFlash ? (
-              <span style={{ fontSize:"10px", color:"#22c55e", letterSpacing:"0", textTransform:"none" }}>
+              <span style={{ fontSize:"10px", color:tokens.color.gameDay.status.success, letterSpacing:"0", textTransform:"none" }}>
                 ● Saved
               </span>
             ) : null}
           </div>
-          <div style={{ fontSize:"18px", fontWeight:"bold", color:"#f5c842", lineHeight:1 }}>
+          <div style={{ fontSize:"18px", fontWeight:"bold", color:tokens.color.brand.gold, lineHeight:1 }}>
             Inning {currentInning + 1}
-            <span style={{ fontSize: a11y ? "13px" : "11px", color:"#475569", fontWeight:"normal",
+            <span style={{ fontSize: a11y ? "13px" : "11px", color:tokens.color.gameDay.text.caption, fontWeight:"normal",
               marginLeft:"4px" }}>
               of {innings}
             </span>
@@ -324,12 +325,12 @@ export function GameModeScreen({
             minHeight: a11y ? 44 : undefined,
             borderRadius:"8px",
             background: bothHalvesDone
-              ? (isLastInning ? "rgba(255,255,255,0.06)" : "#f5c842")
-              : "rgba(245,200,66,0.18)",
-            border: bothHalvesDone ? "none" : "1px solid rgba(245,200,66,0.3)",
+              ? (isLastInning ? tokens.color.gameDay.gameModeScreen.advanceButton.mutedBackground : tokens.color.brand.gold)
+              : tokens.color.gameDay.gameModeScreen.advanceButton.pendingBackground,
+            border: bothHalvesDone ? "none" : "1px solid " + tokens.color.gameDay.gameModeScreen.advanceButton.pendingBorder,
             color: bothHalvesDone
-              ? (isLastInning ? "#475569" : "#0f1f3d")
-              : "#f5c842",
+              ? (isLastInning ? tokens.color.gameDay.text.caption : tokens.color.brand.navy)
+              : tokens.color.brand.gold,
             cursor:"pointer", fontSize: a11y ? "14px" : "12px", fontWeight:"bold",
             fontFamily:"Georgia,serif", flexShrink:0, textAlign:"center",
             lineHeight:1.2 }}>
@@ -344,14 +345,14 @@ export function GameModeScreen({
         <div style={{
           display:"flex", alignItems:"center", gap:"8px",
           padding:"6px 16px", flexShrink:0,
-          background:"rgba(245,200,66,0.10)",
-          borderBottom:"1px solid rgba(245,200,66,0.25)",
+          background:tokens.color.gameDay.gameModeScreen.resumeBanner.background,
+          borderBottom:"1px solid " + tokens.color.gameDay.gameModeScreen.resumeBanner.border,
         }}>
           <span style={{ fontSize:"16px" }}>↑</span>
           <div>
-            <span style={{ fontSize:"11px", fontWeight:"bold", color:"#f5c842",
+            <span style={{ fontSize:"11px", fontWeight:"bold", color:tokens.color.brand.gold,
               textTransform:"uppercase", letterSpacing:"0.08em" }}>Resumed</span>
-            <span style={{ fontSize:"11px", color:"#94a3b8", marginLeft:"6px" }}>
+            <span style={{ fontSize:"11px", color:tokens.color.gameDay.text.secondary, marginLeft:"6px" }}>
               Inning {(initialInning || 0) + 1} · {firstName(lastBatterName)} last at bat
             </span>
           </div>
@@ -362,13 +363,13 @@ export function GameModeScreen({
       <div style={{
         display:"flex", justifyContent:"center",
         padding:"8px 16px 0",
-        background:"linear-gradient(180deg,#0b1524,#0b1524)",
+        background:"linear-gradient(180deg," + tokens.color.gameDay.surface.shell + "," + tokens.color.gameDay.surface.shell + ")",
         flexShrink:0,
       }}>
         <div style={{
           display:"inline-flex",
           borderRadius:"20px",
-          border:"1px solid rgba(255,255,255,0.12)",
+          border:"1px solid " + tokens.color.gameDay.border.hairline,
           overflow:"hidden",
         }}>
           {/* Defense pill — wrapper gives touch target, pill stays visually compact */}
@@ -385,14 +386,14 @@ export function GameModeScreen({
                 border:"none", cursor:"pointer",
                 fontSize: a11y ? "13px" : "11px", fontWeight:"bold", letterSpacing:"0.1em",
                 fontFamily:"Georgia,serif",
-                background: halfInning === "defense" ? "#0f1f3d" : "transparent",
-                color: defDone ? "#22c55e" : (halfInning === "defense" ? "#f5c842" : "#475569"),
+                background: halfInning === "defense" ? tokens.color.brand.navy : "transparent",
+                color: defDone ? tokens.color.gameDay.status.success : (halfInning === "defense" ? tokens.color.brand.gold : tokens.color.gameDay.text.caption),
                 transition:"background 150ms, color 150ms",
               }}>
               {defDone ? "✓" : ((sport || "baseball").toLowerCase() === "softball" ? "🥎" : <GiBaseballGlove style={{ verticalAlign:"middle" }} />)} DEFENSE
             </button>
           </div>
-          <div style={{ width:"1px", background:"rgba(255,255,255,0.12)", flexShrink:0 }} />
+          <div style={{ width:"1px", background:tokens.color.gameDay.border.hairline, flexShrink:0 }} />
           {/* Batting pill */}
           <div style={ a11y ? { display:"flex", alignItems:"center", minHeight:44 } : {} }>
             <button
@@ -407,10 +408,10 @@ export function GameModeScreen({
                 border:"none", cursor:"pointer",
                 fontSize: a11y ? "13px" : "11px", fontWeight:"bold", letterSpacing:"0.1em",
                 fontFamily:"Georgia,serif",
-                background: halfInning === "batting" ? "#f5c842" : "transparent",
+                background: halfInning === "batting" ? tokens.color.brand.gold : "transparent",
                 color: batDone
-                  ? (halfInning === "batting" ? "#0f1f3d" : "#22c55e")
-                  : (halfInning === "batting" ? "#0f1f3d" : "#475569"),
+                  ? (halfInning === "batting" ? tokens.color.brand.navy : tokens.color.gameDay.status.success)
+                  : (halfInning === "batting" ? tokens.color.brand.navy : tokens.color.gameDay.text.caption),
                 transition:"background 150ms, color 150ms",
               }}>
               {batDone ? "✓" : <GiBaseballBat style={{ verticalAlign:"middle" }} />} BATTING
@@ -451,9 +452,9 @@ export function GameModeScreen({
           }}>
             <div style={{
               padding:"6px 16px", borderRadius:"12px",
-              background:"rgba(11,21,36,0.75)",
-              border:"1px solid rgba(255,255,255,0.12)",
-              fontSize:"10px", fontWeight:"bold", color:"#64748b",
+              background:tokens.color.gameDay.gameModeScreen.onDefenseBadge.background,
+              border:"1px solid " + tokens.color.gameDay.border.hairline,
+              fontSize:"10px", fontWeight:"bold", color:tokens.color.gameDay.text.muted,
               letterSpacing:"0.15em", textTransform:"uppercase",
             }}>
               ON DEFENSE
@@ -470,18 +471,18 @@ export function GameModeScreen({
         if (outTonight.length === 0) return null;
         return (
           <div style={{
-            flexShrink:0, background:"#dc2626",
+            flexShrink:0, background:tokens.color.status.error,
             padding:"4px 16px",
             display:"flex", alignItems:"center", gap:"6px", flexWrap:"wrap",
           }}>
-            <span style={{ fontSize:"10px", fontWeight:"bold", color:"#fff",
+            <span style={{ fontSize:"10px", fontWeight:"bold", color:tokens.color.gameDay.text.primary,
               textTransform:"uppercase", letterSpacing:"0.1em", flexShrink:0 }}>
               Out Tonight
             </span>
             {outTonight.map(function(r) {
               return (
-                <span key={r.name} style={{ fontSize:"11px", fontWeight:"bold", color:"#fff",
-                  background:"rgba(0,0,0,0.25)", borderRadius:"4px", padding:"1px 6px" }}>
+                <span key={r.name} style={{ fontSize:"11px", fontWeight:"bold", color:tokens.color.gameDay.text.primary,
+                  background:tokens.color.gameDay.gameModeScreen.outTonightChip.background, borderRadius:"4px", padding:"1px 6px" }}>
                   {firstName(r.name)}
                 </span>
               );
@@ -495,14 +496,14 @@ export function GameModeScreen({
         opacity: halfInning === "batting" ? 1 : 0.4,
         transition:"opacity 200ms ease",
         borderTop: halfInning === "batting"
-          ? "2px solid rgba(245,200,66,0.5)"
+          ? "2px solid " + tokens.color.gameDay.gameModeScreen.battingFooter.activeBorder
           : "2px solid transparent",
         flexShrink:0,
       }}>
         {halfInning === "defense" ? (
           <div style={{
             textAlign:"center", padding:"4px 0 0",
-            fontSize: a11y ? "12px" : "9px", fontWeight:"bold", color:"#475569",
+            fontSize: a11y ? "12px" : "9px", fontWeight:"bold", color:tokens.color.gameDay.text.caption,
             letterSpacing:"0.15em", textTransform:"uppercase",
           }}>
             BATTING NEXT

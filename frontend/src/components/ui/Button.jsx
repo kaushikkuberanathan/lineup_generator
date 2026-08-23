@@ -13,7 +13,7 @@ var VARIANT_STYLES = {
   },
   secondary: {
     background: tokens.color.brand.navy,
-    color:      '#ffffff',
+    color:      tokens.color.text.onDark,
     border:     'none',
   },
   ghost: {
@@ -25,7 +25,7 @@ var VARIANT_STYLES = {
   },
   danger: {
     background: tokens.color.status.error,
-    color:      '#ffffff',
+    color:      tokens.color.text.onDark,
     border:     'none',
   },
 };

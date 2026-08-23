@@ -1,3 +1,5 @@
+import { tokens } from '../../theme/tokens';
+
 var FF = "Georgia,'Times New Roman',serif";
 
 function baseName(base) {
@@ -29,29 +31,29 @@ export default function RunnerConflictModal(props) {
       aria-label={'Runner conflict at ' + targetLabel}
       style={{
         position: 'fixed', inset: 0,
-        background: 'rgba(0,0,0,0.82)',
+        background: tokens.color.gameDay.runnerConflictModal.backdrop,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         zIndex: 400, fontFamily: FF,
       }}
     >
       <div style={{
-        background: '#0f1f3d',
-        border: '1px solid rgba(255,255,255,0.18)',
+        background: tokens.color.brand.navy,
+        border: `1px solid ${tokens.color.gameDay.runnerConflictModal.border}`,
         borderRadius: '14px',
         padding: '24px 20px',
         width: '100%', maxWidth: '340px',
         margin: '0 16px',
       }}>
         <div style={{
-          fontSize: '11px', color: '#f5c842', fontWeight: 'bold',
+          fontSize: '11px', color: tokens.color.brand.gold, fontWeight: 'bold',
           textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '6px',
         }}>
           Runner conflict at {targetLabel}
         </div>
-        <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#fff', marginBottom: '6px' }}>
+        <div style={{ fontSize: '15px', fontWeight: 'bold', color: tokens.color.gameDay.text.primary, marginBottom: '6px' }}>
           {blockingName} is on {targetLabel}.
         </div>
-        <div style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '20px', lineHeight: '1.4' }}>
+        <div style={{ fontSize: '13px', color: tokens.color.gameDay.text.secondary, marginBottom: '20px', lineHeight: '1.4' }}>
           {incomingName} is also advancing to {targetLabel}. What happened?
         </div>
 
@@ -60,15 +62,15 @@ export default function RunnerConflictModal(props) {
             onClick={function() { onResolve('SCORE_BLOCKING'); }}
             style={{
               width: '100%', minHeight: '44px', padding: '11px 14px',
-              background: 'rgba(22,163,74,0.12)',
-              border: '1.5px solid #16a34a',
-              borderRadius: '10px', color: '#fff',
+              background: tokens.color.gameDay.runnerConflictModal.scoreButton.background,
+              border: `1.5px solid ${tokens.color.gameDay.runnerConflictModal.scoreButton.border}`,
+              borderRadius: '10px', color: tokens.color.gameDay.text.primary,
               fontWeight: 'bold', fontSize: '14px',
               cursor: 'pointer', fontFamily: FF, textAlign: 'left',
             }}>
             Score {blockingName}
             <span style={{
-              fontSize: '11px', color: '#86efac', display: 'block',
+              fontSize: '11px', color: tokens.color.gameDay.runnerConflictModal.scoreButton.subtitleText, display: 'block',
               fontWeight: 'normal', marginTop: '2px',
             }}>
               {blockingName} scores — {incomingName} takes {targetLabel}
@@ -79,15 +81,15 @@ export default function RunnerConflictModal(props) {
             onClick={function() { onResolve('HOLD_INCOMING'); }}
             style={{
               width: '100%', minHeight: '44px', padding: '11px 14px',
-              background: 'rgba(29,78,216,0.12)',
-              border: '1.5px solid #1d4ed8',
-              borderRadius: '10px', color: '#fff',
+              background: tokens.color.gameDay.runnerConflictModal.holdButton.background,
+              border: `1.5px solid ${tokens.color.gameDay.runnerConflictModal.holdButton.border}`,
+              borderRadius: '10px', color: tokens.color.gameDay.text.primary,
               fontWeight: 'bold', fontSize: '14px',
               cursor: 'pointer', fontFamily: FF, textAlign: 'left',
             }}>
             Hold {incomingName}
             <span style={{
-              fontSize: '11px', color: '#93c5fd', display: 'block',
+              fontSize: '11px', color: tokens.color.gameDay.runnerConflictModal.holdButton.subtitleText, display: 'block',
               fontWeight: 'normal', marginTop: '2px',
             }}>
               {incomingName} stays back — {blockingName} holds at {targetLabel}
@@ -98,15 +100,15 @@ export default function RunnerConflictModal(props) {
             onClick={function() { onResolve('CANCEL_PLAY'); }}
             style={{
               width: '100%', minHeight: '44px', padding: '11px 14px',
-              background: 'rgba(255,255,255,0.04)',
-              border: '1px solid rgba(255,255,255,0.18)',
-              borderRadius: '10px', color: '#94a3b8',
+              background: tokens.color.gameDay.runnerConflictModal.cancelButton.background,
+              border: `1px solid ${tokens.color.gameDay.runnerConflictModal.border}`,
+              borderRadius: '10px', color: tokens.color.gameDay.text.secondary,
               fontWeight: 'bold', fontSize: '14px',
               cursor: 'pointer', fontFamily: FF, textAlign: 'left',
             }}>
             Cancel play
             <span style={{
-              fontSize: '11px', color: '#64748b', display: 'block',
+              fontSize: '11px', color: tokens.color.gameDay.text.muted, display: 'block',
               fontWeight: 'normal', marginTop: '2px',
             }}>
               Undo this at-bat and restore the previous state
