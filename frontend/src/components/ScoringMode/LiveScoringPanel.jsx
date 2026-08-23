@@ -296,26 +296,26 @@ export default function LiveScoringPanel(props) {
   if (!scorerName && !inScorerSession) {
     return (
       <div style={{
-        minHeight: '100vh', background: '#0b1524', color: '#fff',
+        minHeight: '100vh', background: tokens.color.gameDay.surface.shell, color: tokens.color.gameDay.text.primary,
         fontFamily: FF, display: 'flex', flexDirection: 'column',
       }}>
           <div style={{
           display: 'flex', alignItems: 'center', padding: '12px 16px',
-          borderBottom: '1px solid rgba(255,255,255,0.08)', flexShrink: 0,
+          borderBottom: '1px solid ' + tokens.color.overlay.whiteFaint, flexShrink: 0,
         }}>
           <button onClick={onExit} style={{
-            background: 'none', border: 'none', color: '#94a3b8',
+            background: 'none', border: 'none', color: tokens.color.gameDay.text.secondary,
             fontSize: '20px', cursor: 'pointer', padding: '4px 8px 4px 0', lineHeight: 1,
           }}>←</button>
           <div style={{ flex: 1, textAlign: 'center' }}>
-            <div style={{ fontSize: '14px', color: '#cbd5e1' }}>
+            <div style={{ fontSize: '14px', color: tokens.color.gameDay.liveScoringPanel.noScorerState.subheaderText }}>
               {isPractice ? 'Practice Mode' : (selectedGame && selectedGame.home === false ? '@ ' : 'vs ') + teamLabel}
             </div>
             <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
-              <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>
+              <span style={{fontSize:'10px',color:tokens.color.gameDay.liveScoringPanel.noScorerState.halfLabel,fontWeight:600,letterSpacing:'0.5px'}}>
                 {gs.halfInning === 'top' ? 'TOP' : 'BOT'}
               </span>
-              <span style={{fontSize:'22px',fontWeight:'800',color:'#f5c842',letterSpacing:'1px'}}>
+              <span style={{fontSize:'22px',fontWeight:'800',color:tokens.color.brand.gold,letterSpacing:'1px'}}>
                 {gs.inning}
               </span>
             </div>
@@ -323,7 +323,7 @@ export default function LiveScoringPanel(props) {
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
             {gameHeader && gameHeader.gameNumber != null
               ? <>
-                  <div style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', fontSize: '10px', fontWeight: 600, color: '#94a3b8', background: 'rgba(148, 163, 184, 0.1)', borderRadius: '10px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Game {gameHeader.gameNumber}</div>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', fontSize: '10px', fontWeight: 600, color: tokens.color.gameDay.text.secondary, background: tokens.color.gameDay.liveScoringPanel.gameNumberBadge.background, borderRadius: '10px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Game {gameHeader.gameNumber}</div>
                   <HomeAwayChip isHome={selectedGame && selectedGame.home} />
                 </>
               : <div style={{ width: '36px' }} />}
@@ -339,7 +339,7 @@ export default function LiveScoringPanel(props) {
           <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '6px' }}>
             No active scorer
           </div>
-          <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '32px', maxWidth: '260px' }}>
+          <div style={{ fontSize: '13px', color: tokens.color.gameDay.text.muted, marginBottom: '32px', maxWidth: '260px' }}>
             {isPractice
               ? 'Claim the scorer role to start recording pitches without saving to the scorebook.'
               : 'Claim the scorer role to start recording live pitches.'}
@@ -348,8 +348,8 @@ export default function LiveScoringPanel(props) {
             onClick={claimScorerLock}
             style={{
               width: '100%', maxWidth: '320px', padding: '16px',
-              background: '#1d4ed8', border: 'none', borderRadius: '10px',
-              color: '#fff', fontSize: '16px', fontWeight: 'bold',
+              background: tokens.color.gameDay.liveScoringPanel.noScorerState.claimButton.background, border: 'none', borderRadius: '10px',
+              color: tokens.color.gameDay.text.primary, fontSize: '16px', fontWeight: 'bold',
               cursor: 'pointer', fontFamily: FF, marginBottom: claimError ? '10px' : '16px',
             }}>
             🎙 Claim Scorer Role
@@ -357,7 +357,7 @@ export default function LiveScoringPanel(props) {
           {claimError ? (
             <div style={{
               width: '100%', maxWidth: '320px',
-              background: '#fee2e2', color: '#dc2626',
+              background: tokens.color.status.errorBg, color: tokens.color.status.error,
               borderRadius: '8px', padding: '10px 14px',
               fontSize: '13px', fontWeight: 600,
               marginBottom: '16px', textAlign: 'center',
@@ -369,7 +369,7 @@ export default function LiveScoringPanel(props) {
             <button
               onClick={function() { setViewerOnly(true); }}
               style={{
-                background: 'none', border: 'none', color: '#60a5fa',
+                background: 'none', border: 'none', color: tokens.color.gameDay.liveScoringPanel.noScorerState.viewerLink.color,
                 fontSize: '14px', cursor: 'pointer', fontFamily: FF, padding: '4px 8px',
               }}>
               Join as Viewer →
@@ -384,7 +384,7 @@ export default function LiveScoringPanel(props) {
   if (scorerName && !inScorerSession) {
     return (
       <div style={{
-        minHeight: '100vh', background: '#0b1524', color: '#fff',
+        minHeight: '100vh', background: tokens.color.gameDay.surface.shell, color: tokens.color.gameDay.text.primary,
         fontFamily: FF, display: 'flex', flexDirection: 'column',
       }}>
         <ScoreboardRow
@@ -398,44 +398,44 @@ export default function LiveScoringPanel(props) {
         <div style={{
           display: 'flex', alignItems: 'center',
           padding: '10px 14px', gap: '10px',
-          background: '#0a1628',
-          borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0,
+          background: tokens.color.gameDay.surface.scoreboard,
+          borderBottom: '1px solid ' + tokens.color.gameDay.liveScoringPanel.otherScorerState.headerBorder, flexShrink: 0,
         }}>
           <button onClick={onExit} style={{
-            background: 'none', border: 'none', color: '#64748b',
+            background: 'none', border: 'none', color: tokens.color.gameDay.text.muted,
             fontSize: '18px', cursor: 'pointer', padding: 0, lineHeight: 1,
           }}>←</button>
           {gameHeader && gameHeader.gameNumber != null && (
             <>
-              <div style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', fontSize: '10px', fontWeight: 600, color: '#94a3b8', background: 'rgba(148, 163, 184, 0.1)', borderRadius: '10px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Game {gameHeader.gameNumber}</div>
+              <div style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', fontSize: '10px', fontWeight: 600, color: tokens.color.gameDay.text.secondary, background: tokens.color.gameDay.liveScoringPanel.gameNumberBadge.background, borderRadius: '10px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Game {gameHeader.gameNumber}</div>
               <HomeAwayChip isHome={selectedGame && selectedGame.home} />
             </>
           )}
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:'3px'}}>
-              <span style={{fontSize:'10px',color:'#f5c842',fontWeight:500,letterSpacing:'0.7px',textTransform:'uppercase'}}>INNING</span>
-              <span style={{fontSize:'22px',fontWeight:'800',color:'#f5c842',letterSpacing:'1px'}}>
+              <span style={{fontSize:'10px',color:tokens.color.brand.gold,fontWeight:500,letterSpacing:'0.7px',textTransform:'uppercase'}}>INNING</span>
+              <span style={{fontSize:'22px',fontWeight:'800',color:tokens.color.brand.gold,letterSpacing:'1px'}}>
                 {halfArrow} {gs.inning}
               </span>
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '11px' }}>
             {/* Count pill: B + S */}
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', background: 'rgba(255,255,255,0.06)', borderRadius: '9999px', padding: '6px 12px' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', background: tokens.color.gameDay.liveScoringPanel.otherScorerState.countPill.background, borderRadius: '9999px', padding: '6px 12px' }}>
               <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:'3px'}}>
-                <span style={{fontSize:'10px',color:'#cfd8e3',fontWeight:500,letterSpacing:'0.7px',textTransform:'uppercase'}}>BALLS</span>
-                <div><CountPips n={isHomeBatting ? gs.balls : (gs.oppBalls || 0)}   max={4} color="#3b82f6" /></div>
+                <span style={{fontSize:'10px',color:tokens.color.gameDay.liveScoringPanel.otherScorerState.countPill.labelText,fontWeight:500,letterSpacing:'0.7px',textTransform:'uppercase'}}>BALLS</span>
+                <div><CountPips n={isHomeBatting ? gs.balls : (gs.oppBalls || 0)}   max={4} color={tokens.color.gameDay.liveScoringPanel.otherScorerState.countPill.ballColor} /></div>
               </div>
               <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:'3px'}}>
-                <span style={{fontSize:'10px',color:'#cfd8e3',fontWeight:500,letterSpacing:'0.7px',textTransform:'uppercase'}}>STRIKES</span>
-                <div><CountPips n={isHomeBatting ? gs.strikes : (gs.oppStrikes || 0)} max={3} color="#dc2626" /></div>
+                <span style={{fontSize:'10px',color:tokens.color.gameDay.liveScoringPanel.otherScorerState.countPill.labelText,fontWeight:500,letterSpacing:'0.7px',textTransform:'uppercase'}}>STRIKES</span>
+                <div><CountPips n={isHomeBatting ? gs.strikes : (gs.oppStrikes || 0)} max={3} color={tokens.color.status.error} /></div>
               </div>
             </div>
             {/* Outs pill */}
-            <div style={{ display: 'flex', alignItems: 'flex-end', background: 'rgba(255,140,66,0.12)', borderRadius: '9999px', padding: '6px 12px' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-end', background: tokens.color.gameDay.liveScoringPanel.otherScorerState.outsPill.background, borderRadius: '9999px', padding: '6px 12px' }}>
               <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:'3px'}}>
-                <span style={{fontSize:'10px',color:'#FFB89A',fontWeight:500,letterSpacing:'0.7px',textTransform:'uppercase'}}>OUTS</span>
-                <div><CountPips n={gs.outs}    max={3} color="#FF8C42" /></div>
+                <span style={{fontSize:'10px',color:tokens.color.gameDay.liveScoringPanel.otherScorerState.outsPill.labelText,fontWeight:500,letterSpacing:'0.7px',textTransform:'uppercase'}}>OUTS</span>
+                <div><CountPips n={gs.outs}    max={3} color={tokens.color.gameDay.liveScoringPanel.otherScorerState.outsPill.color} /></div>
               </div>
             </div>
           </div>
@@ -443,15 +443,15 @@ export default function LiveScoringPanel(props) {
 
         {/* Scorer banner */}
         <div style={{
-          background: 'rgba(22,163,74,0.12)',
-          border: '1px solid rgba(22,163,74,0.3)',
+          background: tokens.color.gameDay.liveScoringPanel.otherScorerState.scorerBanner.background,
+          border: '1px solid ' + tokens.color.gameDay.liveScoringPanel.otherScorerState.scorerBanner.border,
           borderRadius: '8px', margin: '12px 16px 4px',
           padding: '10px 14px',
           display: 'flex', alignItems: 'center', gap: '8px',
         }}>
           <span style={{
             width: 8, height: 8, borderRadius: '50%',
-            background: '#16a34a', display: 'inline-block', flexShrink: 0,
+            background: tokens.color.gameDay.liveScoringPanel.otherScorerState.scorerBanner.dot, display: 'inline-block', flexShrink: 0,
           }} />
           <span style={{ fontSize: '14px', fontWeight: 'bold' }}>
             {scorerName} is scoring 🟢
@@ -465,15 +465,15 @@ export default function LiveScoringPanel(props) {
         {currentBatter ? (
           <div style={{ padding: '0 16px 12px' }}>
             <div style={{
-              background: 'rgba(245,200,66,0.08)',
-              border: '1px solid rgba(245,200,66,0.2)',
+              background: tokens.color.gameDay.liveScoringPanel.otherScorerState.nowBattingCard.background,
+              border: '1px solid ' + tokens.color.gameDay.liveScoringPanel.otherScorerState.nowBattingCard.border,
               borderRadius: '8px', padding: '10px 14px',
             }}>
-              <div style={{ fontSize: '10px', color: '#f5c842', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '2px' }}>
+              <div style={{ fontSize: '10px', color: tokens.color.brand.gold, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '2px' }}>
                 Now Batting
               </div>
               <div style={{ fontSize: '17px', fontWeight: 'bold' }}>{currentBatter.name}</div>
-              <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
+              <div style={{ fontSize: '11px', color: tokens.color.gameDay.text.muted, marginTop: '2px' }}>
                 {pitches.length} pitch{pitches.length !== 1 ? 'es' : ''}
               </div>
             </div>
@@ -481,7 +481,7 @@ export default function LiveScoringPanel(props) {
         ) : null}
 
         <div style={{ padding: '8px 16px', marginTop: 'auto' }}>
-          <div style={{ fontSize: '11px', color: '#374151', marginBottom: '8px', textAlign: 'center' }}>
+          <div style={{ fontSize: '11px', color: tokens.color.gameDay.liveScoringPanel.otherScorerState.disclaimerText, marginBottom: '8px', textAlign: 'center' }}>
             Only one scorer at a time
           </div>
           <div style={{ display: 'flex', gap: '6px' }}>
@@ -489,9 +489,9 @@ export default function LiveScoringPanel(props) {
               return (
                 <button key={btn.type} disabled style={{
                   flex: btn.flex || 1, padding: '13px 4px',
-                  background: 'rgba(255,255,255,0.03)',
-                  border: '1px solid rgba(255,255,255,0.07)',
-                  borderRadius: '10px', color: '#2d3748',
+                  background: tokens.color.gameDay.liveScoringPanel.otherScorerState.disabledPitchButtons.background,
+                  border: '1px solid ' + tokens.color.gameDay.liveScoringPanel.otherScorerState.disabledPitchButtons.border,
+                  borderRadius: '10px', color: tokens.color.gameDay.liveScoringPanel.otherScorerState.disabledPitchButtons.text,
                   fontWeight: 'bold', fontSize: '12px',
                   cursor: 'not-allowed', fontFamily: FF,
                 }}>{btn.label}</button>
