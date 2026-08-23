@@ -1,5 +1,5 @@
 # ⚾ Lineup Generator
-> **Last Updated:** July 31, 2026 (v2.8.2 in production — see [ROADMAP.md](docs/product/ROADMAP.md) for release history)
+> **Last Updated:** August 23, 2026 (v2.12.0 in production — see [ROADMAP.md](docs/product/ROADMAP.md) for release history)
 
 > **Baseball and softball lineup management for youth coaches — built on the sideline, for the sideline.**
 
@@ -125,15 +125,17 @@ This is vibe coding at its best — not generating boilerplate, but genuinely co
 | Short share links (Supabase-backed 8-char ID, mobile share sheet) | ✅ Live |
 | Cloud sync (Supabase) + offline (localStorage) | ✅ Live |
 | PWA — installable on iOS + Android | ✅ Live |
-| Role-based access (Coach / Assistant / Viewer) | 🔵 Phase 3 |
-| Season-long position fairness tracking | 🔵 Phase 3 |
+| Authenticated editing (email magic link + Google OAuth) and team memberships | ✅ Live |
+| Team season tracking (Spring/Fall + year) | ✅ Live |
+| Multi-coach invite flow and scoped collaborator roles | 🟡 Backlog |
+| Season-long position fairness analytics | 🟡 Backlog |
 | Practice session log | 🟡 Backlog |
 
 ---
 
 ## Roadmap
 
-The authoritative roadmap — including v2.5.x release history, current v2.6.0 backlog, and longer-term planning — lives in [docs/product/ROADMAP.md](docs/product/ROADMAP.md). README is intentionally kept minimal here to avoid drift between docs.
+The authoritative roadmap — including release history through v2.12.0, the current backlog, and longer-term planning — lives in [docs/product/ROADMAP.md](docs/product/ROADMAP.md). README is intentionally kept minimal here to avoid drift between docs.
 
 ---
 
@@ -211,8 +213,8 @@ npm run dev                   # http://localhost:5173
 # Backend (separate terminal)
 cd ../backend
 npm install
-cp .env.example .env.local   # add ANTHROPIC_API_KEY
-npm start                     # http://localhost:3001
+cp .env.example .env         # add Supabase keys; ANTHROPIC_API_KEY is optional
+npm start                     # http://localhost:5000 (or PORT from .env)
 ```
 
 ---

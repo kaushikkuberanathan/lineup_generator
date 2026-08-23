@@ -36,7 +36,7 @@ Default base for new work: develop.
 
 **Enforcement: every change starts on a feature/fix/hotfix branch.** Direct commits to develop or main are not permitted except for declared hotfixes that branch off main. The branch strategy applies to docs-only changes too — small commits on develop have caused real release-notes coordination bugs (see PR #29 retrospective). No exceptions because the work feels small.
 
-**Merge-type policy (feature/\*→develop AND develop→main):** Always select **"Create a merge commit"** on the PR merge dropdown — never squash. GitHub's merge-button default is sticky per-repo/session and cannot be trusted to reflect intent just because it was correct last time; after merging, verify the actual commit shape (`git show -s --format=%P HEAD` — should show 2 parents) rather than trusting the dropdown. This has recurred twice despite stated intent: PR #100 / v2.5.15 (2026-05-19) and the Sprint 2 P1 debt-closure PRs #567/#569/#571 (2026-08-05) all squash-landed anyway. A CI guardrail Action to catch this automatically at merge time is proposed but **not yet built** — see [#573](https://github.com/kaushikkuberanathan/lineup_generator/issues/573).
+**Merge-type policy (feature/\*→develop AND develop→main):** Always select **"Create a merge commit"** on the PR merge dropdown — never squash. GitHub's merge-button default is sticky per-repo/session and cannot be trusted to reflect intent just because it was correct last time; after merging, verify the actual commit shape (`git show -s --format=%P HEAD` — should show 2 parents) rather than trusting the dropdown. This has recurred twice despite stated intent: PR #100 / v2.5.15 (2026-05-19) and the Sprint 2 P1 debt-closure PRs #567/#569/#571 (2026-08-05) all squash-landed anyway. `.github/workflows/merge-policy-guard.yml` now detects the likely squash signature after a push, comments on the originating PR, and fails the check; it is a detection guard, not prevention, so manual merge-option selection and parent verification remain required. See [#573](https://github.com/kaushikkuberanathan/lineup_generator/issues/573).
 
 ### Infrastructure notes
 
@@ -202,7 +202,7 @@ If any answer is "no": stop. Document the gap in DOC_TEST_DEBT.md, then decide w
 7. Stage **specific files by path** — never `git add -A` (risks picking up unrelated untracked files)
 8. [x] loginLimiter: 15min window, max 5 — applied to POST /magic-link ✓
 9. [ ] Confirm `RESEND_DOMAIN_VERIFIED=true` in Render env vars (only after domain verified)
-10. [ ] Run `npm test` — confirm 975 passed / 1 skipped / 0 failed (as of v2.8.4, 2026-08-04; 1086 total incl. 111 backend unit tests). Note: Bug #7 worker cold-start flake may drop 1-2 files locally on Windows (passing exit code, not a failure); one retry has always cleared it — `fileParallelism:false` is now the standing default to reduce (not eliminate) this.
+10. [ ] Run `npm test` in `frontend` and `npm run test:unit` in `backend`; record the observed counts in the release PR instead of copying a historical count. Note: Bug #7 worker cold-start flake may drop 1-2 files locally on Windows (passing exit code, not a failure); one retry has always cleared it — `fileParallelism:false` is now the standing default to reduce (not eliminate) this.
 
 ### VERSION_HISTORY Schema
 
@@ -607,7 +607,7 @@ This project runs two parallel tracks. Each has its own roadmap; both promote to
 ### UX Track — accessibility, design tokens, primitives, call-site refactor
 - Tracker: `docs/product/UX_REFACTOR_ROADMAP.md`
 - Worktree: `lineup-generator-ux/` (separate working directory)
-- Recent: Phase 1a–1c + R1 Roster Polish (v2.5.6) · Phase 2 UI Primitives + Phase 3 Step 1 PlayerHandBadge → Badge (v2.5.10, PRs #61–#63) · Phase 3 Step 2 EmptyState → Stack/Text/Button + Story 59 cleanup (PR #68 on develop, pending next promotion) · v2.5.14 — Pill + ListRow primitives, FAQSection/LegalSection/ValidationBanner/OfflineIndicator migrated (PRs #83–#85)
+- UX history: Phase 1a–1c + R1 Roster Polish shipped in v2.5.6; UI primitives and the first consumer migrations shipped through v2.5.14; the full Phase 3 primitives migration shipped through v2.8.4 and Phase 4 legacy `C.*` color retirement through v2.8.5. Current details live in `docs/product/UX_REFACTOR_ROADMAP.md`.
 - Next: Phase 3 — App.jsx component split (post-token + post-primitive work); Support tab P1 behavioral fixes (App.jsx gate required)
 
 ### Cross-track discipline

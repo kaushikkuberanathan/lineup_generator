@@ -5052,4 +5052,4 @@ Source of truth: `docs/product/SECURITY_FRAMEWORK.md`
 - **Storage:** Supabase (primary) + localStorage (offline cache with sync-on-connect)
 - **AI backend:** Render Starter plan ($7/mo) since April 27, 2026 — no spin-down. UptimeRobot monitor #802733786 pings `https://lineup-generator-backend.onrender.com/ping` every 5 minutes for availability monitoring; alerts via email + push notification.
 - **Frontend:** Vercel — auto-deploys on push to `main`
-- **Auth backend deployed (Phase 3):** Email magic-link auth live on Render (Twilio removed). Frontend cutover pending. Until then, all routes remain open (no `requireAuth` middleware on existing routes).
+- **Auth:** Email magic-link auth and Google OAuth are live end to end; editing requires a session. Backend write routes use authentication/authorization middleware where required. The remaining role work is the multi-coach invite UX and finer-grained collaborator permissions, not a frontend auth cutover.
