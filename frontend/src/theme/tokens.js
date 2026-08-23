@@ -489,6 +489,93 @@ export const tokens = {
           background: 'rgba(255,255,255,0.04)',
         },
       },
+
+      // ─── RestoreScoreModal.jsx (Story 133 slice 10, #698) ──────────────
+      // Component-scoped, one-off values with no reusable role elsewhere in
+      // the gameDay family - same precedent as gameModeScreen/inningModal/
+      // gearMenu/runnerConflictModal above (mint rather than alias, even
+      // where a value happens to byte-match another component's token,
+      // because the ROLE is this component's own).
+      restoreScoreModal: {
+        // Full-screen root backdrop. No existing match - sits between
+        // overlay.scrimLight (rgba(0,0,0,0.5)) and gearMenu.handoffModal.
+        // backdrop/runnerConflictModal.backdrop (0.8/0.82, also pure
+        // black); this file's own value, 0.72, is a genuine third tier.
+        backdrop: 'rgba(0,0,0,0.72)',
+        warningBox: {
+          // "This rebuilds the current score..." advisory box - gold tint
+          // bg + border. background (0.08) sits between inningModal.
+          // battingCard.background (0.05) and overlay.goldTint (0.12), no
+          // exact match. border (0.2) byte-matches inningModal.battingCard.
+          // handBadgeBackground exactly, but that token's role is a
+          // batting-hand badge BACKGROUND in a different component, not
+          // this box's border - kept separate per the no-cross-component-
+          // alias rule.
+          background: 'rgba(245,200,66,0.08)',
+          border:     'rgba(245,200,66,0.2)',
+        },
+        // "Checking scorebook..." loading label + disabled Restore-button
+        // text - shared within this file (2 call sites, same abstract
+        // "inactive/neutral state" text role). Byte-matches gameDay.text.
+        // separator (#374151), but that token's documented role is a single
+        // decorative ":" glyph in ScoreboardRow, not a genuine text role -
+        // kept separate. Also byte-matches the light-surface color.text.body
+        // (gray-700), which the gameDay family never aliases to per its own
+        // top-of-block comment.
+        disabledText: '#374151',
+        successBox: {
+          // "Score restored successfully" confirmation box - green tint.
+          // background (0.15) and border (0.35) don't match any existing
+          // green tier (closest is runnerConflictModal.scoreButton.
+          // background at 0.12, a different value). text byte-matches
+          // runnerConflictModal.scoreButton.subtitleText (#86efac) exactly,
+          // but that's a different component's button-subtitle role - kept
+          // separate per the no-cross-component-alias rule.
+          background: 'rgba(22,163,74,0.15)',
+          border:     'rgba(22,163,74,0.35)',
+          text:       '#86efac',
+        },
+        errorBox: {
+          // Restore-failure message text - red-300. Byte-matches
+          // gameModeScreen.exitButton.text AND gearMenu.finishGameText
+          // (both #fca5a5) - third recurrence of this exact value across
+          // three unrelated components; kept separate per the established
+          // no-cross-component-alias precedent (same reasoning both prior
+          // slices used for this same literal). Box background/border reuse
+          // overlay.errorMid/errorMedium directly (see table below) - those
+          // are pre-mixed generic alpha tints already reused across
+          // multiple surfaces (App.jsx, DefenseDiamond, scoring-surface),
+          // not light-surface-calibrated solid colors, so direct reuse is
+          // safe per the same reasoning slice 6/8 applied to overlay.
+          // goldTint/scrimLight.
+          text: '#fca5a5',
+        },
+        restoreButton: {
+          // Primary CTA, 3-state background via ternary: disabled / tap-to-
+          // confirm / default-armed. disabledBackground (0.06) byte-matches
+          // gameModeScreen.advanceButton.mutedBackground, inningModal.
+          // divider, and gearMenu.handoffModal.cancelBackground - a
+          // recurring 0.06 white-wash value across 4 components now, each
+          // minted separately per the no-cross-component-alias rule.
+          // confirmBackground (#7f1d1d, red-900, the "tap again to confirm"
+          // state) has no existing match anywhere. Default-armed state
+          // reuses color.status.error (#DC2626) directly - same semantic
+          // "destructive action" reuse precedent slice 5 established for
+          // the Out Tonight strip. border (0.6) has no existing match
+          // (gameModeScreen.exitButton.border is a different rgb triple,
+          // 200,16,46 vs 220,38,38 here).
+          disabledBackground: 'rgba(255,255,255,0.06)',
+          confirmBackground:  '#7f1d1d',
+          border:              'rgba(220,38,38,0.6)',
+        },
+        cancelButton: {
+          // "Cancel" button border - no existing 0.1-opacity white tier
+          // (neighbors are overlay.whiteFaint at 0.08 and overlay.
+          // whiteLight at 0.15); a genuine gap-fill value, not a rounding
+          // of either.
+          border: 'rgba(255,255,255,0.1)',
+        },
+      },
     },
   },
 
