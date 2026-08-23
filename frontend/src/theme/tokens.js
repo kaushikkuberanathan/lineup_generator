@@ -639,6 +639,103 @@ export const tokens = {
           spinnerTrack: 'rgba(255,255,255,0.4)',
         },
       },
+
+      // ─── ScoringModeEntry.jsx (Story 133 slice 12, #698) ───────────────
+      // Component-scoped, one-off values with no reusable role elsewhere in
+      // the gameDay family - same precedent as gameModeScreen/inningModal/
+      // gearMenu/runnerConflictModal/restoreScoreModal/finishGameModal
+      // above (mint rather than alias, even where a value happens to
+      // byte-match another component's token, because the ROLE is this
+      // component's own). overlay.goldTint and overlay.goldStrong ARE
+      // reused directly (see component call site) - both are generic
+      // pre-mixed cross-app alpha tints, not light-surface-calibrated
+      // solids, same reasoning slices 6/8/9 already established; goldStrong
+      // in particular is documented as "gold wash for selected/active
+      // states", an exact role match for this file's selected-next-game row.
+      scoringModeEntry: {
+        betaBadge: {
+          background: '#7c3aed',  // violet-600 - "BETA" pill bg; no existing match anywhere
+        },
+        closeButton: {
+          border: 'rgba(255,255,255,0.2)',  // no existing 0.2-opacity white tier
+                                              // (overlay.whiteFaint=0.08, whiteLight=0.15,
+                                              // whiteMedium=0.25 are the nearest, neither exact)
+        },
+        // Shared within this file, 2 sites (game-card border, Practice Mode
+        // card border). No existing 0.10-opacity white tier anywhere in
+        // tokens.js (overlay.whiteFaint=0.08 is the nearest, not exact) -
+        // a genuine gap-fill value, not a rounding of either neighbor.
+        cardBorder: 'rgba(255,255,255,0.10)',
+        todayGameCard: {
+          // "Today's Game" advisory card - gold tint bg + border.
+          // background byte-matches restoreScoreModal.warningBox.background
+          // exactly (both rgba(245,200,66,0.08)); border byte-matches
+          // inningModal.battingCard.border AND gameModeScreen.resumeBanner.
+          // border exactly (both rgba(245,200,66,0.25)) - third and second
+          // recurrence respectively of these values across unrelated
+          // components. Kept separate per the established
+          // no-cross-component-alias rule.
+          background: 'rgba(245,200,66,0.08)',
+          border: 'rgba(245,200,66,0.25)',
+        },
+        // Shared within this file, 3 sites ("We bat:" label, both
+        // half-inning-toggle buttons' inactive text). No existing token at
+        // this exact gray (#888 sits between gameDay.text.muted #64748B
+        // and gameDay.text.secondary #94A3B8, matching neither) - a
+        // distinct, lighter-weight muted tone specific to this toggle.
+        mutedText: '#888',
+        // Shared within this file, 2 sites ("No upcoming games scheduled"
+        // text, disabled "Join as Viewer" link text). Byte-matches
+        // restoreScoreModal.disabledText and finishGameModal.scorePreview.
+        // divider exactly (both #374151) - third recurrence of this value
+        // across unrelated components; kept separate per the established
+        // no-cross-component-alias rule, same reasoning both prior slices
+        // used for this same literal.
+        disabledText: '#374151',
+        halfToggle: {
+          // "Top"/"Bottom" half-inning selector, active state bg - shared
+          // 2 sites. No existing match (distinct from brand.navy #0F1F3D
+          // and gameDay.surface.shell #0B1524, both darker/more saturated -
+          // same "distinct lighter navy" pattern gearMenu.menuPanel.
+          // background established in slice 8). Inactive state reuses
+          // overlay.whiteFaint directly (see table above).
+          activeBackground: '#1B2A4A',
+        },
+        // Shared within this file, 2 sites (non-selected next-game row bg,
+        // Practice Mode card bg) - same "generic subtle-wash row/card
+        // background" role inningModal.rowBackground already established
+        // for its own file, byte-matches it exactly (both
+        // rgba(255,255,255,0.04)) but kept separate per the
+        // no-cross-component-alias rule, same reasoning runnerConflictModal.
+        // cancelButton.background used for this identical literal in
+        // slice 9.
+        subtleRowBackground: 'rgba(255,255,255,0.04)',
+        claimButton: {
+          // "Claim Scorer" primary CTA. background (#1d4ed8, blue-700)
+          // byte-matches gearMenu.handoffModal.confirmBackground exactly,
+          // but that's a different component's confirm-button background -
+          // kept separate per the no-cross-component-alias rule, same
+          // reasoning runnerConflictModal.holdButton.border used for this
+          // identical literal in slice 9. disabledBackground
+          // (rgba(255,255,255,0.06)) is the sixth recurrence of this
+          // white-wash value across components (gameModeScreen.
+          // advanceButton.mutedBackground, inningModal.divider, gearMenu.
+          // handoffModal.cancelBackground, restoreScoreModal.restoreButton.
+          // disabledBackground, finishGameModal.scorePreview.background/
+          // cancelButton.background) - minted separately per the same
+          // established rule. shadow (rgba(29,78,216,0.35)) has no
+          // existing match anywhere - a button glow, distinct role from
+          // the flat background above despite sharing the same base hue.
+          background: '#1d4ed8',
+          disabledBackground: 'rgba(255,255,255,0.06)',
+          shadow: 'rgba(29,78,216,0.35)',
+        },
+        viewerLink: {
+          color: '#60a5fa',  // blue-400 - "Join as Viewer →" link text (enabled state);
+                               // no existing match (distinct from status.info #2563EB,
+                               // a darker, more saturated blue serving a different role)
+        },
+      },
     },
   },
 
