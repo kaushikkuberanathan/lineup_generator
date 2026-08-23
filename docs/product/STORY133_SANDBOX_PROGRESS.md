@@ -1612,3 +1612,340 @@ the last section of this file and the last slice of this sandbox run —
 per 13a's estimate (167 total, 47 + 43 = 90 accounted for across 13a/13b),
 likely on the order of 75+ further occurrences, genuinely unknown until
 inventoried.
+
+---
+
+## Slice 13c — `LiveScoringPanel.jsx` (sub-slice C of 3: active-scorer state — FINAL SLICE)
+
+Part C of 3, and the **final slice of the entire 13-slice sandbox run**.
+Scope: the `// ── STATE 2: I am scorer ──` section — source line 506 to
+the end of the file (1302 lines total post-13b) — the actual active
+live-scoring UI: roster-picker/outcome/runner bottom sheets, the header
+strip (game badge, inning, count/outs pills, admin badge, gear/pause
+icons), mercy-rule banners (both halves), the lock-expired banner, the
+batting-area cards (Now Batting / suggested-batter / no-batting-order /
+opponent-batting), the pitch log, my-half pitch buttons (6 states), and
+the opponent-half pitch buttons + manual run counter.
+
+**Branch:** `feature/story133-slice13c-livescoringpanel-activescorer-token-migration`
+(cut from `feature/story133-slices5-13-sandbox`).
+
+**PR:** [#758](https://github.com/kaushikkuberanathan/lineup_generator/pull/758),
+base = `feature/story133-slices5-13-sandbox`, labels `priority:p2` /
+`type:refactor` / `area:scoring`. Opened and merged via `gh` CLI (the
+GitHub MCP integration's `create_pull_request`/`merge_pull_request`
+still return `403`, confirmed once more, consistent with every prior
+slice from 6 onward).
+
+**Commit:** `0f17d57` — "refactor: migrate LiveScoringPanel.jsx STATE 2
+(active scorer) off literal colors onto tokens.js" (no closing keyword,
+per handoff rule).
+
+**Merge:** `48cceeb`, genuine 2-parent merge —
+`git show -s --format="%H %P" origin/feature/story133-slices5-13-sandbox`
+→ `48cceeb8aa55fc9ccce6ded244578047b8b5ca41 c5c6d28f69ea91dcdec096bc4d2a270268ce783e 0f17d577b161cc75c0616e495320181e7447d8d7`
+(2 parents — `c5c6d28` the prior sandbox tip [slice 13b's checkpoint
+commit], `0f17d57` this slice's commit — not squashed).
+
+### Scoping the section
+
+`sed -n '506,$p' LiveScoringPanel.jsx | grep -oE "#[0-9a-fA-F]{3,8}|rgba?\([^)]+\)" | wc -l`
+found **159 occurrences** — matching the task prompt's own estimate for
+this section exactly, the first sub-slice of this file (and one of the
+few slices in the whole run) where the doc's number checked out rather
+than undershooting. Boundary confirmed via `grep -n "STATE 2: I am
+scorer"` → line 506 exactly, matching 13b's own note that the marker
+sits there post-13a's +1-line import shift.
+
+### Inventory and mappings
+
+159 total: **~57 reuse existing tokens directly** (either generic
+gameDay-level tokens already established across every prior slice, or —
+per the task's explicit instruction — the already-minted
+`liveScoringPanel.*` namespace from sub-slices A/B), **~102 mint new
+tokens** under a new `gameDay.liveScoringPanel.scorerState.*` namespace
+(nested under the existing `liveScoringPanel` block, alongside
+`noScorerState`/`otherScorerState` from 13b).
+
+**Reused directly (representative — generic gameDay-level tokens already
+established across every prior slice in this run):** `gameDay.surface.
+shell`/`scoreboard`, `gameDay.text.{primary,secondary,muted,caption}`,
+`brand.{navy,gold}`, `status.error`, `overlay.{whiteFaint,whiteLight,
+goldTint,goldStrong}`, `gameDay.border.hairline`.
+
+**Reused directly from the already-minted `liveScoringPanel.*` namespace
+(sub-slices A/B, per the task's own instruction to check these first):**
+
+| Literal | Site | Reused token | Reasoning |
+|---|---|---|---|
+| `#1d4ed8` | Suggested-batter "✓ Confirm" button bg | `liveScoringPanel.accent.ball` | Exact match, and — unlike sub-slices A/B's own new-mint decisions for this same recurring value — this call site is genuinely IN the same file/namespace already, so reused directly per the task's explicit instruction rather than minting a 6th component-scoped copy. |
+| `#16a34a` | Runner-sheet "Scored ✓" button border | `liveScoringPanel.accent.hit` | Exact match, same file/namespace, reused directly. |
+| `#dc2626` | Runner-sheet "Out ✗" button border; header STRIKES CountPips color | `color.status.error` | Exact match; the STRIKES-pip reuse specifically matches 13b's own documented precedent for the identical call site in STATE 3. |
+| `rgba(148, 163, 184, 0.1)` | Header "Game N" badge bg | `liveScoringPanel.gameNumberBadge.background` | Exact match; STATE 2 makes this the 3rd of 3 states (1/2/3) sharing this one badge token, completing what 13b's checkpoint already called "shared verbatim between STATE 1 and STATE 3." |
+| `rgba(255,255,255,0.06)` (count pill bg), `#cfd8e3` (BALLS/STRIKES labels), `#3b82f6` (active-ball fill), `rgba(255,140,66,0.12)` (outs pill bg), `#FFB89A` (OUTS label), `#FF8C42` (active-out fill) | Header count/outs pills | `liveScoringPanel.otherScorerState.countPill.*` / `outsPill.*` | **Not a byte-match assumption** — read STATE 3's actual JSX (lines 383-502, migrated in 13b) directly before writing this block, confirmed it renders the identical "top pill" widget with the identical token references. STATE 2 and STATE 3 render this same shared widget in mutually-exclusive branches of one component (only one state is ever active at a time), so reusing directly here keeps the codebase's single-render-surface intent backed by one shared token source instead of letting two copies independently drift. See the dedicated single-render-surface note below. |
+
+**Minted (`gameDay.liveScoringPanel.scorerState.*`, ~102 occurrences)** —
+full reasoning for every key lives in `tokens.js`'s comments; summary by
+sub-group:
+
+- `sheetBackdrop` (`rgba(0,0,0,0.75)`) — shared by all 3 bottom sheets
+  (roster picker, outcome, runner). A genuine new opacity tier (0.75),
+  distinct from every other backdrop tier minted in slices 5-13
+  (0.5/0.72/0.8/0.82/0.97).
+- `rosterPicker.row.background`, `rosterPicker.row.secondaryButtonBackground` (aliased for the suggested-batter card's "↓ Different" button too, see correction note below)
+- `outcomeSheet.foulButtonBackground`, `outcomeSheet.optionButtonBackground`
+- `runnerSheet.heldButtonBackground/Border`, `runnerSheet.
+  scoredButtonBackground` (`#16a34a22`), `runnerSheet.outButtonBackground`
+  (`#dc262622`) — the two 8-digit-hex values are the established
+  `accent.hit`/`status.error` base colors with a baked-in `22` alpha
+  suffix, preserved as flat literals (this file's own token rule
+  forbids computed expressions) rather than derived via concatenation.
+- `header.borderBottom`, `header.adminBadge.{background,text}`,
+  `header.iconButton.{background,border}` (shared by both gear and
+  pause buttons — same role, same file).
+- `mercyBanner.{background,text,border,endButtonBackground}` — shared
+  verbatim between the home-half and opponent-half banners (identical
+  markup rendered twice), one key set, same "shared within file, same
+  role" precedent as `gameNumberBadge`.
+- `lockExpiredBanner.{background,border,text}` — no exact match
+  anywhere; sits between `overlay.errorMid` (0.12) and `errorMedium`
+  (0.30) at 0.15/0.35, a genuinely distinct tier.
+- `battingCard.{background,border}` — shared by "Now Batting" (mine)
+  and opponent "BATTING" cards (2 call sites, identical markup).
+  `background` (0.08) byte-matches `otherScorerState.nowBattingCard.
+  background` exactly, but `border` (0.25) does NOT match that token's
+  own border (0.2) — a genuinely different value, so kept as this
+  section's own pair rather than partially reusing one half of an
+  otherwise-matching set.
+- `suggestedBatterCard.{background,secondaryButtonBackground}` — the
+  second key was added mid-slice after an initial pass mistakenly
+  reused `runnerSheet.heldButtonBackground` for the "↓ Different"
+  button purely because the bytes matched (0.06); caught and corrected
+  before committing, since that would have violated this run's own
+  no-cross-role-alias discipline (an unrelated button in an unrelated
+  sheet, same file). Logged here as the one self-caught mapping error
+  this slice made.
+- `noBattingOrder.{background,titleText,bodyText}`
+- `pitchLog.{fallbackChipBackground,emptyText}` — `fallbackChipBackground`
+  is the `PITCH_CHIPS[p.type] || {...}` lookup-miss fallback background
+  (`#475569`), byte-matching `gameDay.text.caption` exactly but a
+  background-role, not text-role, use — kept separate.
+- `coachPitchingBanner.{background,border}`, `ruleWarningBanner.
+  {background,border}`, shared `warningText` (`#f59e0b`) — two amber
+  banners, distinct opacities, one shared text color (same "shared
+  value + shared role = one key" precedent as `gameNumberBadge`/
+  `mercyBanner`). Distinct hue from `liveScoringPanel.accent.caution`
+  (`#d97706`) — a genuinely different orange (amber-500 vs. amber-600).
+- `pitchButtons.{disabledBackground,disabledText}` — shared disabled
+  chrome across all 6 my-half pitch buttons. Distinct values from
+  `otherScorerState.disabledPitchButtons`' own 0.03/`#2d3748` pair —
+  STATE 2's disabled state (mid-at-bat) is a different visual treatment
+  from STATE 3's permanently-read-only row, not the same design renamed.
+- `pitchButtons.{attempt,ball,strike,foul,contact}.{background,border}`
+  — the 6 enabled-state pitch buttons' colors (Called-K and Swing-K
+  share one `strike` pair, identical value + role). Each 8-digit hex is
+  the established `accent.walk`/`accent.ball`/`status.error`/`accent.
+  caution`/`accent.hit` base color with a baked-in `1a`/`66` alpha
+  suffix — preserved as flat literals, documented in `tokens.js`
+  comments as "= accent.X" for traceability, not derived via
+  concatenation (this file's own token rule: no computed expressions).
+- `undoButton.{border,disabledText}` — `disabledText` (`#2d3748`)
+  byte-matches `otherScorerState.disabledPitchButtons.text` exactly but
+  is a different specific element (bottom-of-panel undo link, not the
+  disabled pitch-button row) — kept separate.
+- `opponentPitchButtons.background` — byte-matches `outcomeSheet.
+  optionButtonBackground` exactly (both 0.05) but a distinct role
+  (opponent pitch entry vs. at-bat-outcome selection) — kept separate.
+- `oppRunButton.{background,text}` — `background` (`#7f1d1d`)
+  byte-matches `restoreScoreModal.restoreButton.confirmBackground`
+  exactly (slice 10) — kept separate per the established
+  no-cross-component-alias rule.
+- `myRunButton.{border,text}` — the de-emphasized secondary manual-run
+  button; no existing match for either value.
+
+### The single-render-surface rule — verified, not violated
+
+The task explicitly flagged this section's risk: root `CLAUDE.md`'s Live
+Scoring Architecture note states "Game Mode count and outs render in
+exactly one place — the top pill... Future scoring UI must NOT introduce
+a parallel count display." STATE 2's header (this slice's scope)
+contains its own full count/outs pill markup, structurally identical to
+STATE 3's (`otherScorerState`, migrated in 13b) — at first glance this
+could look like two independent count displays.
+
+**Verified NOT a violation, by reading the code, not assuming:** `gs.
+halfInning === myTeamHalf ? ... : ...` and the three top-level `if`
+returns (`viewerOnly` / STATE 1 / STATE 3) each `return` unconditionally
+— React never renders more than one of STATE 1/2/3 for a given render.
+The count/outs pill exists in two places in the *source* (STATE 2's own
+copy, STATE 3's `otherScorerState` copy) because they're two different
+UI states of the same screen, not two simultaneous displays. This is the
+same "one shared widget, two mutually-exclusive JSX branches" pattern
+already established for `gameNumberBadge` in 13b. Reusing `otherScorerState.
+countPill.*`/`outsPill.*` directly here (rather than minting STATE 2's
+own copies) was the deliberate choice to reinforce this: if the top pill
+ever needs a color change, both states update from one token source
+instead of two independently-drifting literals — consistent with, not
+undermining, the single-render-surface intent.
+
+### Verification
+
+- `sed -n '506,$p' LiveScoringPanel.jsx | grep -oE "#[0-9a-fA-F]{3,8}|rgba?\([^)]+\)"`
+  → empty. Zero literal colors remain in lines 506-end.
+- `grep -oE "#[0-9a-fA-F]{3,8}|rgba?\([^)]+\)" LiveScoringPanel.jsx`
+  (whole file) → empty. **Confirms the entire 3-part `LiveScoringPanel.jsx`
+  migration (13a + 13b + 13c) is complete — zero literal colors remain
+  anywhere in the file.**
+- `cd frontend && npm run build` → clean, no errors, no new warnings.
+- `npx vitest run src/components/game-mode/ src/tests/theme.tokens.test.js --no-file-parallelism`
+  → **114/114 passing** (6 test files), matching the slice-3/5/6/8/9/10/
+  11/12/13a/13b baseline held throughout this entire run.
+- **Real-handler, real-DOM harness** (RTL, real component render, real
+  wired handlers via `vi.fn()` spies asserting actual call args and
+  effects — not no-op stubs, per the auth-boundary rule and per the
+  task's specific reminder that this section has the most real
+  interaction/state logic in the file): built a throwaway test file
+  (`__LiveScoringPanel.throwaway.test.jsx`, written, run, then deleted —
+  not committed), 19 test cases, all passing:
+  - Header/count/outs pills render exactly once each (`BALLS`/`STRIKES`/
+    `OUTS` labels each `toHaveLength(1)`) — direct evidence for the
+    single-render-surface check above, not just a style assertion.
+  - Root shell + Contact pitch button (enabled state) computed colors
+    match tokens; `contactBtn.disabled === false`.
+  - Same button flips to the disabled token pair when `currentAtBat` is
+    null — real prop-driven state, not just two different renders.
+  - Real `recordPitch` handler fires with `'contact'` on click (not a
+    no-op stub).
+  - SWAP button opens the real roster-picker sheet; current-row vs.
+    other-row styling matches `overlay.goldTint`/`goldStrong` vs. the
+    minted `rosterPicker.row.background`.
+  - Real `startAtBat` handler fires with the exact clicked player object
+    from the roster-picker sheet; sheet closes after.
+  - Suggested-batter "✓ Confirm" button's computed background matches
+    `liveScoringPanel.accent.ball` (confirms the direct-reuse decision
+    above); real `startAtBat(player, true)` fires on click.
+  - Mercy banner (home half, `runsThisHalf=6`): computed colors match
+    minted tokens; real `endHalfInning` fires on "End Half" click.
+  - Opponent-half mercy banner (separate render, `oppRunsThisHalf=5`):
+    confirms the SAME `mercyBanner.background` token renders both
+    banners (shared-within-file claim, not just claimed in docs).
+  - Lock-expired banner: real `claimScorerLock` fires on click.
+  - Outcome sheet (after a real Contact pitch in `pitches`): option
+    button background matches the minted token; real `resolveAtBat`
+    fires on click.
+  - Opponent-half footer (with `SCORING_SHEET_V2` forced off via
+    `localStorage`, since it defaults on and hides the manual-run UI):
+    real `recordOppPitch('contact')` and both real `addManualRun('opp')`
+    / `addManualRun('us')` calls confirmed, alongside token matches for
+    the opponent pitch-button background and both run buttons.
+  - No-batting-order empty state, pitch-log fallback chip (deliberately
+    fed an unknown pitch type to exercise the `PITCH_CHIPS[p.type] ||
+    {...}` fallback), and "No pitches yet" empty text all match their
+    minted tokens.
+  - Coach-pitching overlay + rule-warning banner (real `ruleWarnings`
+    prop, not hardcoded): both share the minted `warningText` color, as
+    documented.
+  - Runner-advancement sheet: all 3 buttons (Scored/Out/Stayed 3rd)
+    verified for both computed style AND real `confirmRunnerAdvancement`
+    call args (`('p2', 4, 'scored')` / `('p2', null, 'out')` /
+    `('p2', 3, 'held')` respectively).
+  - Admin badge (`isAdminTestMode=true`) and gear/pause icon buttons
+    (shared `iconButton` token pair; real `onPause` fires on the pause
+    button) all confirmed.
+
+  One assertion initially failed (`opponentPitchButtons` sub-test —
+  `SCORING_SHEET_V2` defaults on in `featureFlags.js`, which hides the
+  manual `+1 Run` buttons in favor of `ScoreboardRow`'s own `+1` chips,
+  so the elements didn't exist to query yet); fixed by forcing the flag
+  off via the documented `localStorage.setItem('flag_SCORING_SHEET_V2',
+  'false')` override before that one render, not by changing any
+  production code. All 19 passed after the fix; harness deleted before
+  commit.
+
+### No behavioral quirks found beyond the self-caught mapping correction
+
+The single-render-surface check above was a deliberate risk called out
+by the task, investigated and confirmed clean (not a violation). The one
+mapping self-correction (`suggestedBatterCard.secondaryButtonBackground`,
+see above) was caught and fixed before committing, not left as a defect.
+No data-driven lookup tables in this section beyond `PITCH_CHIPS`
+(already tokenized in 13a) and no divergent-from-shared-palette values
+like slice 6's `POS_COLORS.LC`.
+
+### Final whole-migration sanity pass (end of the 13-slice run)
+
+Per the task's explicit final-slice instruction, ran a full-scope check
+across the entire original 384-occurrence surface
+(`frontend/src/components/game-mode/*` + `frontend/src/components/
+ScoringMode/*`), not just this slice's own file:
+
+```
+grep -rnoE "#[0-9a-fA-F]{3,8}|rgba?\([^)]+\)" src/components/game-mode/
+grep -rnoE "#[0-9a-fA-F]{3,8}|rgba?\([^)]+\)" src/components/ScoringMode/
+```
+
+- **`ScoringMode/*`: fully clean.** Zero literal colors remain anywhere
+  in the directory (grep returns no matches, exit code 1) — every file
+  in the `ScoringMode/*` track (slices 7-13) is confirmed migrated.
+- **`game-mode/*`: NOT fully clean — 9 literal colors remain**, all
+  **outside this sandbox run's own scope**:
+  - `BenchStrip.jsx` — 4 occurrences (`rgba(0,0,0,0.35)`,
+    `rgba(255,255,255,0.08)` at line 13; `rgba(255,255,255,0.07)`,
+    `rgba(255,255,255,0.12)` at line 30)
+  - `DugoutView.jsx` — 1 occurrence (`rgba(255,255,255,0.06)` at line 219)
+  - `ScoreboardRow.jsx` — 4 occurrences (`rgba(255,255,255,0.08)`,
+    `rgba(255,255,255,0.15)` at lines 38-39; `rgba(245, 200, 66, 0.4)`,
+    `rgba(255,255,255,0.05)` at lines 53-54)
+
+  These three files are **not** part of the `STORY133_SANDBOX_HANDOFF.md`
+  scope table for slices 5-13 (that table lists only `GameModeScreen.jsx`
+  and `InningModal.jsx` for the `game-mode/*` track). Per this repo's
+  `CLAUDE.md` version history, `BenchStrip`/`ScoreboardRow` were slice 1
+  and `DugoutView` was slice 2 of Story 133's *original* numbering —
+  already merged to `develop` in PRs #705/#707, well before this sandbox
+  run started. These 9 literals are either colors those earlier,
+  already-shipped slices didn't fully cover, or were introduced on
+  `develop` afterward and never back-filled — root cause not
+  investigated here, since fixing them is out of this slice's declared
+  scope and touching already-shipped `develop` code from inside this
+  sandbox branch would be its own separate decision. **Flagged here for
+  KK rather than silently fixed or silently ignored** — a real gap
+  exists in the "384 total, fully migrated" claim, isolated to files
+  this sandbox run never touched.
+- **Total remaining across the full original scope: 9 occurrences**,
+  100% in `game-mode/*`, 100% outside slices 5-13's declared file list.
+
+### Full frontend test suite (final health check, not just the targeted subset)
+
+`cd frontend && npx vitest run --no-file-parallelism`:
+
+```
+Test Files  95 passed (95)
+     Tests  1090 passed | 1 skipped (1091)
+  Duration  75.79s
+```
+
+No dropped test files this run (the documented Bug #7 Windows cold-start
+flake did not present — 95/95 files completed on the first attempt, no
+retry needed). All passing, zero regressions anywhere in the frontend
+suite from this slice or any of the 13c changes. (File-count/test-count
+here — 95 files / 1090+1 — differ from the `CLAUDE.md`-cited v2.11.0
+baseline of 93 files / 1084+1, consistent with `develop` having moved
+forward since this sandbox branch was forked; not investigated further
+here as it's outside this slice's scope.)
+
+### Outcome
+
+Slice 13c complete — **the final slice of the entire Story 133 sandbox
+run.** Merged into `feature/story133-slices5-13-sandbox` as commit
+`48cceeb` (genuine 2-parent merge, parents `c5c6d28` + `0f17d57`), zero
+literal colors remaining in `LiveScoringPanel.jsx` (all 3 parts, 13a+13b+
+13c combined), build clean, 114/114 targeted tests passing, 1090/1091
+full-suite tests passing, checkpoint logged. `ScoringMode/*` is fully
+migrated end-to-end (slices 7-13). `game-mode/*` has 9 literal colors
+remaining, all in files outside this run's declared scope (pre-existing
+gaps in already-`develop`-merged slices 1-2, not introduced or touched
+by slices 5-13) — flagged above for KK's review, not fixed here. This
+closes out the sandbox's assigned work; whether/how to promote any of it
+toward `develop` is KK's decision alone, per the handoff doc's own
+closing instruction.
