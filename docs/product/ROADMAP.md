@@ -1,7 +1,25 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: 2026-08-21 (v2.11.0 promoted to main - team seasons, first-save race fix, Story 133 slices 1-4/13, auth token convergence, PR #731; 24h soak explicitly overridden by KK, fall season readiness)
+> Last updated: 2026-08-22 (v2.12.0 release entry added - Home membership visibility, unified team search, prod auth incident hardening; (develop only - not yet promoted))
 > MVP launched: March 24, 2026
+
+---
+
+## v2.12.0 - 2026-08-22 - Home membership visibility, unified team search, prod auth incident hardening (develop only - not yet promoted)
+
+**Minor bump** — Story 134 is a genuine new coach-facing feature (Home redesign to match Account's team visibility), not just a fix batch, following the "size the bump to the release's actual scope" convention established at v2.9.0-v2.11.0.
+
+**Home membership teams + unified Find your team entry (Story 134, #740, PR #741)** — Home's "Your Teams" list now filters through `memberships[].team_id`, matching the Account tab's existing reconciliation pattern, instead of showing every team cached on the device. Replaced the conditional local-filter search field plus a separate "Don't see your team? Search for one" link with one always-visible "Find your team…" bar that opens the existing Story 124 discovery flow. Newest-season-first sorting and existing card actions preserved. App-level golden-path coverage added (`AppHomeMembershipTeams.test.jsx`).
+
+**Post-merge follow-up fix (Story 135, #742, PR #743)** — review of Story 134 found it expanded the blast radius of the pre-existing #729 gap: `createTeam()` never refreshed the client-side `memberships` array, so previously only the Account tab was affected, but once Home started filtering by memberships too, a just-created team briefly vanished from Home as well until reload. Added `refreshMemberships()` to `useAuth.js` (re-fetches `/api/v1/auth/me`, updates `memberships`/`membership` only) and wired it into `createTeam()`'s existing save-then-load chain. Verified live on `dev.dugoutlineup.com` by KK — a newly created test team appeared in "Your Teams" immediately, no reload needed. Also corrected two docs still referencing the removed link (`faqs.js`, a `TeamSearch.jsx` header comment). Does **not** close #729 — that issue's broader Account-tab gap (membership staleness outside the create-team path) stays open. RED→GREEN verified for both the hook unit test (`useAuth.refreshMemberships.test.js`, 4 tests) and the App-level wiring (extended `AppHomeMembershipTeams.test.jsx`, +1 test) via mutation checkpoints.
+
+**Duplicate Vercel project deleted (Story 136, #744)** — `lineup-generator` (no hyphen) was a second Vercel project accidentally linked to this repo's GitHub integration alongside the real `line-up-generator` project, producing a failing check on most PRs since before this release with zero functional impact (it owned no custom domain). Verified via direct Vercel API lookups — `dev.dugoutlineup.com` resolves to a `develop`-branch build on `line-up-generator` only — before deleting the duplicate from the dashboard.
+
+**Production auth incident prevention (PR #739, closes #738)** — 2026-08-22: Supabase disabled legacy JWT-format API keys for this project, but Vercel's `VITE_SUPABASE_ANON_KEY` still held the old key, silently breaking both magic-link and Google sign-in for every user with zero server-side trace. Already fixed live in Vercel directly (key rotated to the `sb_publishable_` format, both Production and Preview, redeployed and verified) before this code landed; this PR is the prevention/observability follow-up — `vite.config.js` now fails real Vercel builds (`VERCEL=1` only, never CI or local dev) if `VITE_SUPABASE_ANON_KEY` looks like a legacy JWT, and three previously-silent auth failure paths in `useAuth.js`/`LoginScreen.jsx` now log sanitized diagnostics (error type/status only, never tokens) instead of swallowing everything. Full incident timeline in `docs/TROUBLESHOOTING.md`. No automated test added — verified manually in both directions (build fails with a legacy-shaped key under `VERCEL=1`, builds clean without it and in CI/local dev).
+
+**Routine dependency updates**: `@supabase/supabase-js` (PR #725), `mixpanel-browser` (PR #727), `libphonenumber-js` backend (PR #726), `@testing-library/jest-dom` (PR #728).
+
+**Verification (re-run directly, 2026-08-22):** frontend 1090 passed / 1 skipped (95 files), lint clean, `npm run build` clean, `debt-p0` gate clear (0 open P0s).
 
 ---
 
