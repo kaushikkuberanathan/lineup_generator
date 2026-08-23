@@ -213,6 +213,28 @@ export const tokens = {
         faint:     '#334155',  // near-invisible - empty-state placeholder dash only
         separator: '#374151',  // decorative glyph - ScoreboardRow's ":" only
       },
+
+      // ─── Story 133 slice 5 (#698) — GameModeScreen.jsx ─────────────────
+      // #22c55e (Tailwind green-500) recurs 3x in GameModeScreen.jsx as a
+      // "done/saved" success signal, distinct in value from the global
+      // color.status.success (#27AE60) - kept as its own gameDay-scoped
+      // token rather than aliased, same reasoning as text/surface above:
+      // this scale is audited against dark game-day surfaces only.
+      status: {
+        success: '#22c55e',  // saved-flash text, defense/batting-done checkmark color
+      },
+
+      // Shared translucent chrome border/divider, common to pills, dividers,
+      // and badge outlines on the dark game-day surface. Not diamond-SVG
+      // specific (that's diamond.stroke.*), and not a single-component
+      // concern (that's gameModeScreen.* below) - genuinely reused 3x
+      // within GameModeScreen.jsx alone (half-inning pill border, the
+      // divider between its two halves, ON DEFENSE badge border), and
+      // likely to recur in InningModal.jsx (slice 6) given the shared
+      // visual language.
+      border: {
+        hairline: 'rgba(255,255,255,0.12)',
+      },
       diamond: {
         position: {
           battery: '#C0392B', infield: '#2980B9', outfield: '#27AE60', fallback: '#555555',
@@ -251,6 +273,60 @@ export const tokens = {
         positionBadgeBackground:  'rgba(255,255,255,0.06)', // position badge bg when a position is assigned
         rowDivider:               'rgba(255,255,255,0.05)', // player-row bottom border
         currentRowBackground:     'rgba(245,200,66,0.10)',  // highlight for the row of the currently-occupying player
+      },
+
+      // ─── GameModeScreen.jsx (Story 133 slice 5, #698) ──────────────────
+      // Component-scoped, one-off values with no reusable role elsewhere in
+      // the gameDay family - same precedent as quickSwap above (mint rather
+      // than alias, even where a value happens to byte-match another
+      // component's token, because the ROLE is this component's own).
+      gameModeScreen: {
+        orientationHint: {
+          background: '#d97706',            // amber-600 - rotate-device toast bg; no existing
+                                               // token matches (distinct from status.warning #D4A017)
+          border:     'rgba(255,255,255,0.25)', // toast border - byte-matches overlay.whiteMedium,
+                                               // kept separate: that token's documented role is dim
+                                               // version-chip TEXT on MaintenanceScreen, not a border
+          shadow:     'rgba(0,0,0,0.55)',    // toast drop shadow - no existing match
+        },
+        exitButton: {
+          border: 'rgba(200,16,46,0.6)',  // brand.red 0.6 - no existing overlay tier at this opacity
+                                            // (overlay.redFaint=0.15, redStrong=0.35)
+          text:   '#fca5a5',               // red-300 - light-red label text on the red-tinted exit button
+        },
+        resetButton: {
+          border: 'rgba(255,255,255,0.3)', // reset-icon-button border - no existing match
+        },
+        advanceButton: {
+          mutedBackground:  'rgba(255,255,255,0.06)', // "End ⏹" bg once both halves are done on the
+                                                        // final inning - subdued/terminal state
+          pendingBackground: 'rgba(245,200,66,0.18)',  // gold-tinted bg while a half is still open -
+                                                        // between overlay.goldTint (0.12) and
+                                                        // goldStrong (0.40), no exact match
+          pendingBorder:      'rgba(245,200,66,0.3)',  // matching border for the pending state above
+        },
+        resumeBanner: {
+          // Background byte-matches quickSwap.currentRowBackground
+          // (both rgba(245,200,66,0.10)) - kept as its own key rather than
+          // referencing quickSwap's namespace from an unrelated component;
+          // role is the same abstract "subtle gold highlight" tint but the
+          // two components have no structural relationship.
+          background: 'rgba(245,200,66,0.10)',
+          border:     'rgba(245,200,66,0.25)', // no existing exact match
+        },
+        onDefenseBadge: {
+          // rgb(11,21,36) is byte-identical to gameDay.surface.shell
+          // (#0B1524) at 0.75 alpha - kept as a dedicated token since the
+          // rgba form (translucent badge overlay) is a distinct usage from
+          // the opaque shell background it's layered on top of.
+          background: 'rgba(11,21,36,0.75)',
+        },
+        outTonightChip: {
+          background: 'rgba(0,0,0,0.25)',  // player-name chip bg on the red "Out Tonight" strip
+        },
+        battingFooter: {
+          activeBorder: 'rgba(245,200,66,0.5)', // top border highlighting the footer while on BATTING half
+        },
       },
     },
   },
