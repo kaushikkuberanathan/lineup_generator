@@ -979,9 +979,26 @@
     document.querySelectorAll('.deny-btn').forEach(function(btn) {
       btn.addEventListener('click', async function() {
         if (!confirm('Deny request from "' + btn.dataset.email + '"?')) return;
-        var { error } = await sb.from('access_requests').update({ status: 'denied' }).eq('id', btn.dataset.id);
-        if (error) { showMsg('requests-msg', 'Error: ' + error.message, 'error'); }
-        else { showMsg('requests-msg', 'Request denied.', 'success', true); loadRequestsTab(); }
+        // Routed through POST /api/v1/reject (was a direct Supabase write) so
+        // the denial gets reviewed_by/reviewed_at attribution and the coach
+        // actually receives a denial email — see #338.
+        var { data: { session } } = await sb.auth.getSession();
+        if (!session) { showMsg('requests-msg', 'Not signed in.', 'error'); return; }
+        this.disabled = true;
+        var res = await fetch(BACKEND_URL + '/api/v1/reject', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token },
+          body: JSON.stringify({ requestId: btn.dataset.id })
+        });
+        var body = await res.json().catch(function() { return {}; });
+        this.disabled = false;
+        if (!res.ok) {
+          var denyMsg = body.error === 'ALREADY_PROCESSED' ? 'This request was already processed.' : (body.message || body.error || 'Deny failed.');
+          showMsg('requests-msg', 'Error: ' + denyMsg, 'error');
+          return;
+        }
+        showMsg('requests-msg', 'Request denied.', 'success', true);
+        loadRequestsTab();
       });
     });
     document.querySelectorAll('.confirm-approve-btn').forEach(function(btn) {
@@ -989,16 +1006,30 @@
         var role   = document.getElementById('approve-role-' + btn.dataset.id).value;
         var teamId = document.getElementById('approve-team-' + btn.dataset.id).value;
         if (!teamId) { showMsg('approve-msg-' + btn.dataset.id, 'Select a team.', 'error'); return; }
+        // Routed through POST /api/v1/approve (was two direct Supabase writes)
+        // so the role is validated against CANONICAL_ROLES, the membership
+        // gets reviewed_by/reviewed_at attribution, and the coach actually
+        // receives an approval email — none of that happened via the direct
+        // writes this replaces. See #338.
+        var { data: { session } } = await sb.auth.getSession();
+        if (!session) { showMsg('approve-msg-' + btn.dataset.id, 'Not signed in.', 'error'); return; }
         this.disabled = true;
-        var insertErr = (await sb.from('team_memberships').insert({
-          email: btn.dataset.email, role, team_id: teamId,
-          status: 'active', activated_at: new Date().toISOString()
-        })).error;
-        if (insertErr) { showMsg('approve-msg-' + btn.dataset.id, 'Error: ' + insertErr.message, 'error'); this.disabled=false; return; }
-        var { error } = await sb.from('access_requests').update({ status: 'approved' }).eq('id', btn.dataset.id);
+        var res = await fetch(BACKEND_URL + '/api/v1/approve', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token },
+          body: JSON.stringify({ requestId: btn.dataset.id, teamId: teamId, role: role })
+        });
+        var body = await res.json().catch(function() { return {}; });
         this.disabled = false;
-        if (error) { showMsg('approve-msg-' + btn.dataset.id, 'Approved but could not update request: ' + error.message, 'error'); }
-        else { showMsg('requests-msg', 'Request approved.', 'success', true); loadRequestsTab(); }
+        if (!res.ok) {
+          var approveMsg = body.error === 'ALREADY_PROCESSED' ? 'This request was already processed.'
+            : body.error === 'VALIDATION_ERROR' ? 'Invalid role or request.'
+            : (body.message || body.error || 'Approve failed.');
+          showMsg('approve-msg-' + btn.dataset.id, 'Error: ' + approveMsg, 'error');
+          return;
+        }
+        showMsg('requests-msg', 'Request approved.', 'success', true);
+        loadRequestsTab();
       });
     });
   }
