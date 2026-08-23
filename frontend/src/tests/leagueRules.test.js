@@ -2,9 +2,14 @@
  * leagueRules.test.js
  *
  * Coverage-analysis follow-up (session 2026-08-23): frontend/src/utils/leagueRules.js
- * had zero test coverage despite being the rule engine that useLiveScoring.js and
- * leagueRules_corrections.js depend on for pitch-count/at-bat/mercy-rule/steal logic
- * across every age-group profile. Not previously tracked in DOC_TEST_DEBT.md.
+ * had zero test coverage despite being the rule engine that useLiveScoring.js depends
+ * on for pitch-count/at-bat/mercy-rule/steal logic across every age-group profile.
+ * Not previously tracked in DOC_TEST_DEBT.md.
+ *
+ * (leagueRules_corrections.js, previously referenced here, was a one-way scratch
+ * notes file of proposed fixes — never imported by anything at runtime. Its
+ * corrections were already incorporated into leagueRules.js; the file itself was
+ * removed as a superseded artifact in the same session, #773.)
  *
  * Groups:
  *   A. getRules / getRulesForTeam / getAgeGroups — profile lookup, aliasing, fallback

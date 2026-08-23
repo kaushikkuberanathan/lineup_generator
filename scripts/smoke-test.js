@@ -6,7 +6,7 @@
 // Reads config from .env.smoke at repo root (never commit .env.smoke).
 // Expected keys in .env.smoke:
 //
-//   DEV_BACKEND_URL=http://localhost:3001
+//   DEV_BACKEND_URL=http://localhost:5000
 //   PROD_BACKEND_URL=https://lineup-generator-backend.onrender.com
 //   DEV_FRONTEND_URL=http://localhost:5173
 //   PROD_FRONTEND_URL=https://dugoutlineup.com

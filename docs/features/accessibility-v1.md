@@ -1,7 +1,7 @@
 # Accessibility Phase 1 — Feature Guide
 
-> Shipped: March 31, 2026 (v1.9.5)
-> Feature flag: `ACCESSIBILITY_V1` (default: off)
+> Shipped: March 31, 2026 (v1.9.5). **GA, default-on** — feature flag: `ACCESSIBILITY_V1` (default: `true`)
+> Corrected 2026-08-23: this doc previously said "default: off." The flag flipped to `true` and this became the standard experience for all coaches; it now exists only as a per-user rollback switch, not a staged rollout gate.
 
 ---
 
@@ -9,8 +9,9 @@
 
 Accessibility Phase 1 targets the Game Mode overlay — the highest-stakes screen coaches
 use on game day, often one-handed under pressure. It improves font legibility, touch target
-size, color contrast, and screen reader support, all gated behind a feature flag so it can
-be tested in production without affecting existing users.
+size, color contrast, and screen reader support. It shipped behind a feature flag for staged
+rollout and is now GA for all coaches; the flag remains as a per-user rollback switch if a
+regression is found (see Enabling the Flag below).
 
 ---
 
@@ -85,24 +86,24 @@ or dismiss without tabbing through the modal content first.
 
 ---
 
-## Enabling the Flag
+## Enabling / Rolling Back the Flag
 
-**For local testing:**
+The flag is `true` by default for everyone. To roll a single user back to
+the pre-Phase-1 experience (e.g. investigating a regression report):
+
 ```js
 // In browser DevTools console:
-localStorage.setItem('flag_ACCESSIBILITY_V1', 'true')
+localStorage.setItem('flag_ACCESSIBILITY_V1', 'false')
 // Hard refresh: Ctrl+Shift+R / Cmd+Shift+R
 ```
 
-**To disable:**
+**To restore the default for that user:**
 ```js
-localStorage.setItem('flag_ACCESSIBILITY_V1', 'false')
-// or remove the override entirely:
 localStorage.removeItem('flag_ACCESSIBILITY_V1')
 ```
 
-**To enable for all users** (production rollout):
-Change `ACCESSIBILITY_V1: false` → `ACCESSIBILITY_V1: true` in `src/config/featureFlags.js`.
+**To kill it globally** (last resort — affects every coach):
+Change `ACCESSIBILITY_V1: true` → `ACCESSIBILITY_V1: false` in `src/config/featureFlags.js`, deploy through the normal branch flow.
 
 ---
 
@@ -121,12 +122,12 @@ Change `ACCESSIBILITY_V1: false` → `ACCESSIBILITY_V1: true` in `src/config/fea
 
 ## Test Coverage
 
-`src/tests/accessibility.v1.test.js` — 19 tests across 4 groups:
+`src/tests/accessibility.v1.test.js` — 24 tests across 4 groups (recounted 2026-08-23; previously documented as 19):
 
 | Group | Tests |
 |-------|-------|
 | **1 — POSITION_LABELS** | Shape, non-empty values, engine coverage, known label values |
-| **2 — FEATURE_FLAGS registry** | ACCESSIBILITY_V1 present and defaults false; existing flags intact |
+| **2 — FEATURE_FLAGS registry** | ACCESSIBILITY_V1 present and defaults `true` (GA default-on); existing flags intact |
 | **3 — isFlagEnabled defaults** | Correct default per flag; false for unknown flag names |
 | **4 — isFlagEnabled localStorage override** | true/false overrides, removeItem fallback, non-interference, arbitrary strings |
 

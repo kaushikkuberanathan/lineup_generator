@@ -1,3 +1,16 @@
+/**
+ * useLiveScore.js — NOT wired into any production component.
+ *
+ * Verified 2026-08-23 (#773): zero production import sites. The live,
+ * actually-shipped scoring hook is `useLiveScoring.js` (plural), documented
+ * in root CLAUDE.md → Live Scoring Architecture and used by App.jsx/DugoutView.
+ *
+ * Deliberately retained as a contract-test substrate rather than deleted —
+ * `useLiveScore.contract.test.js` (its sole consumer) is the resolved item
+ * in root CLAUDE.md → Known Open Bugs #3. Do not delete this file without
+ * also resolving/removing that test and re-checking that bug entry; do not
+ * assume it's dead code to clean up on sight.
+ */
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabase';
 
