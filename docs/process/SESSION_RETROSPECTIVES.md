@@ -10,6 +10,155 @@
 
 ---
 
+## 2026-08-22-A — Story 134 assessed + regression fixed, duplicate Vercel project deleted, v2.12.0 packaged and soaking
+
+**Date:** August 22, 2026 (release-prep and cloud-routine setup carry a forward-looking soak window into 8/23)
+**Session ID:** 2026-08-22-A (`lineup_generator` worktree)
+**Duration:** Single continuous session
+**Versions shipped to production:** None — v2.12.0 packaged and soaking on `develop`, not yet promoted
+**PRs opened/merged to develop:** #743 (Story 135 — `refreshMemberships()` fix + doc corrections), #745 (Story 136 — Vercel duplicate-project cleanup docs), #747 (v2.12.0 version bump + release-prep docs)
+**Issues filed:** #742 (Story 135), #744 (Story 136)
+**Infra changes:** Orphaned duplicate Vercel project (`lineup-generator`, no hyphen) deleted from the dashboard by KK, after this session verified via direct Vercel API calls that neither `dugoutlineup.com` nor `dev.dugoutlineup.com` traffic resolved through it
+**Cloud routine created:** one-shot, `trig_017wnNPBL5PTJAiX9FA6HkVj`, fires 2026-08-23T20:50:00Z — opens the `develop→main` PR once the soak clears, explicitly barred from merging, pushing, or acting on the push-gate phrase itself
+
+### Overview
+
+Started as a request to assess another agent's already-merged work (Story 134/PR #741, Home team list filtered to memberships + a unified "Find your team…" bar) rather than take its four prior turn-summaries at face value. Independent verification against the real diff, merge-commit shape, and CI history confirmed the code matched the claims, but surfaced a real regression the summaries missed: the fix widened an already-open, already-filed bug (#729 — `createTeam()` never refreshes the client-side `memberships` array) from a minor Account-tab annoyance into a visible Home-tab gap, since Home now filtered by the same stale array. Also found zero PR review and no real-device verification before merge (KK's login had been broken; a mocked component test stood in for it). Fixed the regression (Story 135), then a tangential ask ("run this on dev.dugoutlineup.com") ran into a hard standing boundary — no real login flow, ever, even with in-turn consent — and was declined in favor of KK testing it himself, which he did and confirmed working via screenshot. A parallel ask to explain recurring Vercel PR-check failures turned up a genuine second finding unrelated to the day's main thread: an orphaned duplicate Vercel project quietly failing checks on most PRs for weeks, verified safe to delete via direct domain-resolution lookups before KK deleted it. The session closed by packaging all of it (plus an already-merged, previously-undocumented prod auth-incident fix found while scoping the release) into a v2.12.0 minor bump, computing an exact soak window, and setting up a narrowly-scoped one-shot cloud routine to pre-stage the eventual promote PR without ever giving it merge authority.
+
+### What Shipped
+
+| Item | Scope | PR/Issue | Status |
+|---|---|---|---|
+| Story 134 assessment | Independent re-verification of another agent's merged Home-redesign work — diff, merge-commit parentage, CI, and code inspection, not the four prior summaries | — | Assessed, one real regression + two process gaps found |
+| Story 135 — `refreshMemberships()` fix | New `useAuth.js` callback + `createTeam()` wiring so a just-created team shows on Home/Account without a reload; two stale docs corrected (`faqs.js`, `TeamSearch.jsx` comment); RED→GREEN via mutation checkpoints for both the hook unit test and the App-level wiring | #742, PR #743 | Merged to develop |
+| Story 136 — duplicate Vercel project | Verified via direct Vercel API calls (`get_project`, `get_deployment` on the live `dev.dugoutlineup.com` hostname) that the orphaned `lineup-generator` project served no real traffic; KK deleted it from the dashboard | #744, PR #745 | Deleted, documented |
+| v2.12.0 release packaging | Minor bump (2.11.0→2.12.0) per the established "size the bump to scope" convention — bundles Stories 134-136 plus an already-merged, previously-undocumented legacy-anon-key incident fix (PR #739/#738) found while scoping the release; version/VERSION_HISTORY/ROADMAP/FEATURE_MAP/CLAUDE.md all updated, closing a pre-existing FEATURE_MAP.md row-16 doc gap along the way | PR #747 | Merged to develop, soaking |
+| Soak-clear cloud routine | One-shot, fires 2026-08-23T20:50:00Z, opens (never merges) the `develop→main` PR, explicit "DO NOT MERGE" notice requiring KK's device smoke test + the exact push-gate phrase | `trig_017wnNPBL5PTJAiX9FA6HkVj` | Scheduled |
+
+### What Didn't Happen
+
+- **Testing the create-team flow on `dev.dugoutlineup.com` personally** — a real login flow is off-limits by a standing rule (Story 133 auth-testing boundary, recorded in memory) regardless of in-turn consent; KK did it himself and confirmed via screenshot instead.
+- **The `develop→main` promote itself** — the 24h soak hadn't cleared this session; no override was requested or granted, unlike the two most recent prior releases (v2.9.0, v2.11.0).
+- **Closing #673 / #623 (stale Dependabot PRs) or #746 (an AI-authored PR that edited locked files outside the gate-phrase process)** — flagged, not acted on; KK's "okay close" was ambiguous across three PRs with different implications, so a clarifying multi-select question was asked instead of guessing which one(s) — KK dismissed it, asking to wait for a later instruction rather than proceed.
+- **Fixing the broader #729** — Story 135 closed only the create-team-triggered slice of it; the Account tab's staleness outside that path stays open, deliberately, per the issue's own original scope.
+
+### Key Events (Chronological)
+
+**1. Four prior turn-summaries were treated as claims to verify, not a finished assessment to relay.** Rather than restate "Home now shows subscribed teams, tests pass," the actual merge commit's parent count, the real diff, the CI check list, and cross-references against this repo's own known-bugs table were pulled directly — which is what surfaced the #729 blast-radius regression none of the four summaries mentioned.
+
+**2. A found regression was reported with its real severity, then corrected when a follow-up check changed that severity.** The initial read was "a newly created team is invisible on Home immediately" — investigating `loadTeam()`'s call chain showed the user is actually auto-navigated into the new team, not left staring at an empty Home list, so the real-but-narrower bug ("invisible if you tap back to Home before reloading") is what got fixed, not the overstated first read.
+
+**3. Editing a locked file was caught mid-flow and stopped, not finished then disclosed.** While implementing the Story 135 fix, `App.jsx` was edited (destructure + `createTeam()` wiring) before realizing no gate phrase had been requested for that specific edit — work paused before committing, the gate phrase was requested explicitly, and only proceeded once given, rather than treating the session's earlier general "go ahead" as covering it.
+
+**4. A real production-testing boundary was held even though the ask was narrow and reasonable-sounding.** "Test the create team flow on dev.dugoutlineup.com" is exactly the kind of request the Story 133 auth-testing boundary exists for — declined plainly, with the reason (a prior incident where this exact pattern burned through a real email quota) stated rather than just refused.
+
+**5. A tangential research ask turned into a real, verified finding instead of a guess.** "Why do we see Vercel failures" could have been answered by reading one build log and reporting the missing-env-var message. Instead, both Vercel projects' domain ownership was checked directly, and the live `dev.dugoutlineup.com` hostname's actual serving deployment was resolved via the API — which is what turned "env vars are missing" into "this project is a safe-to-delete orphan," a materially different and more useful answer.
+
+**6. KK's explicit ask to double-check before deleting something irreversible was met with new verification, not a restated conclusion.** "Double check before I remove the duplicate Vercel project" got a fresh API call resolving the literal `dev.dugoutlineup.com` deployment (not a repeat of the earlier domain-list check), because "I already said it's safe" isn't the same evidence as "I checked again, specifically, right before you act."
+
+**7. A scope audit for "plan the prod release" found more than the session's own three stories, and said so.** Rather than scope the release plan to just Stories 134-136, `git log main..develop` surfaced an already-merged, previously-undocumented incident-response PR (#739) and four routine dependency bumps — all called out explicitly as part of what "the prod release" actually meant, rather than narrowing to only the work this session had personally touched.
+
+**8. The Ship Gate was answered honestly, including the one item that didn't fully clear.** PR #739's build-time guard has no automated test — flagged as a judgment call for KK to sign off on explicitly, rather than either quietly passing it or blocking the whole release over a defensive/observability-only change.
+
+**9. A self-introduced branch-naming mistake was caught and fixed before it shipped, not left as-is.** The release-prep branch was first cut as `release/v2.12.0-prep` — not one of this repo's three sanctioned prefixes (`feature/`/`fix/`/`hotfix/`) — caught before opening the PR and renamed to `chore/v2.12.0-release-prep`, matching how this session had already used `docs/` successfully for Story 136 without objection.
+
+**10. A scheduling tool built for a different use case was not stretched to fit this one.** `ScheduleWakeup` exists for `/loop` dynamic-mode pacing, not general 24h waits, and was correctly not repurposed for the soak window. The `schedule` skill's cloud-routine option was used instead, but only after explicitly reasoning through what a fresh, context-less cloud session could and couldn't safely be trusted with — it was scoped to open a PR and report, with hard instructions never to merge, push to `main`, or act on a push-gate phrase it has no way of legitimately receiving.
+
+**11. A tool's side effect was disclosed even though it was very likely inert.** Creating the cloud routine auto-attached every one of KK's connected MCP connectors (Gmail, Supabase, Render, etc.) as account-level metadata, despite the routine's `allowed_tools` list only naming `Bash`/`Read`/`Write`/`Edit`/`Glob`/`Grep`. Rather than silently trust that the tool restriction fully neutralizes the attachment, it was named plainly so KK could judge that risk himself.
+
+**12. Branch hygiene surfaced a third-party finding worth flagging on its own, not folded quietly into a routine cleanup summary.** Checking open PRs during hygiene turned up #746 — a PR authored by some other automated agent (not this session, not Claude Code) that had directly edited two of this repo's locked files with zero gate-phrase involvement. Reported as a distinct, separately-worth-reviewing item rather than lumped in with the two ordinary stale Dependabot PRs next to it.
+
+**13. An ambiguous one-word instruction was not resolved by picking the most likely reading.** "okay close" arrived right after three PRs with meaningfully different stakes (two routine dependency bumps vs. an ungated edit to locked files) had been laid out — asked which one(s) rather than assuming "close" meant "close all three," and when the question was dismissed with "wait for next instruction," genuinely stopped rather than defaulting to an interpretation anyway.
+
+### Standing takeaway
+
+The throughline this session was treating "someone already said this is fine" as a prompt to check, not a reason to skip checking. That applied to another agent's four self-reported turn summaries, to KK's own request to "double check" before an irreversible dashboard action, to a scheduling tool that superficially fit the need but was built for something else, and to a one-word instruction that was genuine but under-specified. In every case the response was the same shape: do the concrete, falsifiable check (read the diff, call the API, ask which PR) rather than accept the plausible-sounding gloss, and when a real boundary was hit (the auth-testing rule, the locked-file gate, the push-gate phrase, an ambiguous close instruction), state it plainly and stop rather than either silently comply or silently route around it.
+
+### Carry-Forward Items
+
+| Priority | Story/Issue | Item |
+|---|---|---|
+| — | v2.12.0 promote | Soak clears 2026-08-23T20:47 UTC; cloud routine `trig_017wnNPBL5PTJAiX9FA6HkVj` opens the PR at 20:50 UTC but cannot merge — needs KK's device smoke test + the "confirmed — push to main" phrase |
+| P2 | #729 | Still open, narrower now — Account-tab membership staleness outside the create-team path (Story 135 only fixed the create-team-triggered slice) |
+| — | #673, #623 | Still open, unresolved from prior sessions — both failing CI, both behind `develop`; flagged again this session, still not acted on |
+| — | #746 | AI-authored PR (not this session) that edited locked files (`App.jsx`, `package.json`) outside the gate-phrase process — needs a KK decision: review and take deliberately, or close |
+| — | "okay close" | KK's instruction to close PR(s) — clarifying question dismissed with "wait for next instruction"; still needs a direct answer on which PR(s), if any |
+
+---
+
+## 2026-08-21-A — v2.11.0 shipped to production: team seasons, Story 133 slices 1-4/13, soak override, one real bug found and filed
+
+**Date:** August 19-21, 2026 (spans 3 calendar days — one continuous conversation, resumed after real time gaps rather than a single sitting)
+**Session ID:** 2026-08-21-A (`lineup-generator-ux` worktree)
+**Duration:** Multi-phase across the gap: develop packaging (8/19), then main promote + cleanup (8/21), the second phase run mostly unattended after KK said "own this end to end" and stepped away
+**Versions shipped to production:** **v2.11.0** — promoted `develop → main` (PR #731, merge commit `102c8ca4`), Vercel + Render both confirmed serving that exact commit via direct API query, not assumed from a green merge
+**PRs opened/merged to develop:** #723 (v2.11.0 packaging — version bump, VERSION_HISTORY, ROADMAP/FEATURE_MAP/DOC_TEST_DEBT/CLAUDE.md), #724 (migration 022 applied-to-PROD docs), #730 (DEV acceptance-pass results + #729 filed), #732 (post-promote `sync/main-into-develop`)
+**PRs opened/merged to main:** #731 (the v2.11.0 promote itself)
+**Issues filed:** #729 (P2 — Account tab's "Your Teams" list doesn't refresh after `createTeam()`), #733 (P3 — DEV backend on Render free tier, re-check against the documented free-tier hosting trap)
+**Production DB changes:** `022_add_team_season.sql` applied to PROD (`hzaajccyurlyeweekvma`) ahead of the promote — deliberately, since it's additive/backward-compatible; verified via direct query (6/6 teams, 0 NULL, all backfilled to `'Spring'`) both before and after
+
+### Overview
+
+Picked up a prior session's stalled v2.11.0 release-prep (claimed blocked by a Windows sandbox write issue) by re-verifying the actual repo state rather than trusting the handoff summary — found the claim checked out (an empty prep branch), then did the real packaging work from scratch: version bump across the four locked files (each gate phrase individually requested and obtained), VERSION_HISTORY entry, and a full pass over ROADMAP/FEATURE_MAP/DOC_TEST_DEBT/CLAUDE.md grounded in commits actually read from `git log`, not the prior session's draft. Two days later, picked back up with "let's do main/prod release," which surfaced a hard blocker (the 24h develop-soak hadn't cleared — the release-prep commit was minutes old) and a second, self-imposed one (the DEV acceptance pass PR #713 required hadn't happened). Both were resolved by explicit KK decisions rather than worked around: a stated soak override (fall season readiness) and KK running the acceptance pass himself, since an agent completing a real auth login flow is off-limits by standing rule. That pass surfaced one real bug, root-caused and filed rather than guessed at or silently patched. The promote, prod smoke test, and full post-deploy cleanup (main→develop sync, branch hygiene, issue-sync check) then ran essentially unattended after KK handed off ownership and stepped away.
+
+### What Shipped
+
+| Item | Scope | PR | Status |
+|---|---|---|---|
+| v2.11.0 develop packaging | Version bump (App.jsx, both package.json), VERSION_HISTORY entry (passed `versionHistory.test.js`'s content-rule checks), ROADMAP/FEATURE_MAP/DOC_TEST_DEBT/CLAUDE.md updated from directly-verified git history | #723 | Merged to develop |
+| Migration 022 → PROD | Applied ahead of the promote (additive, backward-compatible); blocked once by the permission classifier on the live apply call, not routed around — succeeded on retry | #724 | Merged to develop |
+| DEV acceptance pass + #729 | KK ran create/edit/search/switch/reload against `dev.dugoutlineup.com` with a real session; season feature clean, one pre-existing unrelated bug found (Account tab team list stale until reload) | #730 | Merged to develop |
+| **v2.11.0 promote** | `develop`→`main`, 84 commits, full Ship Gate + Pre-release Docs Checklist walked and answered honestly (2 items left unchecked: FAQ addition, README — judgment calls, not silently skipped) | #731 | **Merged to main, live in prod** |
+| Post-promote sync | `main` merged back into `develop`, clean `--no-ff`, zero conflicts | #732 | Merged to develop |
+| #729 filed | Root-caused via direct DEV Supabase query (membership row was correct/instant) before writing up as a frontend-only `useAuth.js` staleness bug, not the role-selection issue KK suspected | #729 | Filed, not fixed — deliberately deferred, not blocking |
+| #733 filed | DEV backend found on Render free tier while smoke-testing; matches the exact pattern `CLAUDE.md`'s documented free-tier hosting-trap incident warns about, filed as a check, not an assumed active incident | #733 | Filed |
+
+### What Didn't Happen
+
+- **Fixing #729** — touches locked `App.jsx`; filed instead of fixed, per explicit KK decision to not hold the promote on an unrelated pre-existing gap.
+- **Interactive share-link / Game Mode re-verification against prod post-promote** — no real prod share link on hand, and this release's Game Mode changes are byte-preserving token swaps; infra-level confirmation (both services live on the exact merge commit, no console errors) was treated as sufficient rather than fabricating an interactive check that wasn't actually run.
+- **Deleting the two stale worktree branches** (`release/dev-soak-2026-08-18`, `release/v2.11.0-prep`, both stuck at old commit `168a1f8`) — checked out in other worktrees this session doesn't control; flagged, not touched.
+
+### Key Events (Chronological)
+
+**1. A prior session's handoff claim was checked against live state before being trusted, not repeated.** The incoming context claimed a release-prep branch existed but was blocked by a "Windows managed sandbox" refusing writes. Rather than starting from that claim, `git worktree list` and `git log` confirmed it: the branch existed, sat at the same commit as `develop`, zero local commits — consistent with the claim, but verified rather than assumed.
+
+**2. Every locked-file edit required its own gate phrase, requested explicitly, never inferred from a broader "go ahead."** `App.jsx`, `frontend/package.json`, `backend/package.json`, and root `CLAUDE.md` each got their own phrase before any edit, matching the standing discipline recorded in other sessions' retros.
+
+**3. A genuinely new, pre-existing doc-drift bug was found and fixed while doing routine test-count verification, not chased down separately.** Re-running the full test suite directly (not trusting the last recorded numbers) confirmed 1084/1085 frontend, 147/147 backend — but cross-checking `FEATURE_MAP.md`'s own Coverage Summary against a direct row-by-row recount found its denominator had been stuck at 37 since before row 38 was added in a prior release, unrelated to this session's own changes. Corrected with the same "direct recount, not propagated arithmetic" practice this file's own history already establishes.
+
+**4. "Let's do main/prod release" was met with a computed blocker, not silent compliance or a refusal.** The 24h develop-soak requirement is an explicit "never skip" rule in this repo's own docs. Rather than either proceeding (violating the rule) or just saying no, the exact merge time and soak-clear time were computed and presented, alongside two other gaps found by re-reading PR #713's own body (the required DEV acceptance pass, and migration 022's PROD-apply status) — surfaced together so KK could make one informed decision instead of three separate asks landing one at a time.
+
+**5. The push gate phrase and a separately-negotiated correctness gate were not treated as the same thing.** KK's "confirmed — push to main" satisfies the literal push-gate rule, but the DEV acceptance pass was a distinct commitment ("I'll do it myself before you promote"). Asked directly whether that specific pass had actually happened rather than treating the push phrase as covering it by implication — which surfaced that neither party had done it yet.
+
+**6. Refused to run the DEV acceptance pass personally, even when directly asked "have you?"** — real magic-link/OAuth login against Supabase is off-limits by a standing rule from the Story 133 work (recorded in memory, not re-derived from scratch), regardless of in-turn consent. Explained the boundary plainly and handed back exact numbered manual-test steps instead.
+
+**7. KK's own bug hypothesis ("is it because i didn't select a role?") was checked, not assumed correct or waved off.** A direct query against DEV Supabase's `team_memberships` table showed the row was completely correct — role, status, and timestamps all provisioned instantly by the existing trigger. That ruled out the stated hypothesis before any code was read, then a targeted grep of `useAuth.js` and `createTeam()` found the real mechanism: two separate state arrays (`teams` vs. `memberships`) that only sync on login/reload, not on team creation.
+
+**8. Every deploy claim was verified against the actual serving infrastructure, not inferred from CI green or a merge succeeding.** After PR #731 merged, Vercel's `get_deployment` and Render's `list_deploys` were both queried directly and confirmed the production alias/service were serving the literal merge-commit SHA (`102c8ca4`), not just "a recent deploy."
+
+**9. A tool-call denial (`apply_migration` to PROD) was explained to KK rather than routed around via a different tool.** The Supabase MCP server's `execute_sql` could have run the same DDL, but the classifier's denial on `apply_migration` was treated as a real safety boundary, not an obstacle to engineer around — reported plainly, retried only after (apparent) explicit approval, and succeeded.
+
+**10. A tangential finding (DEV backend on Render's free tier) was filed with its actual confidence level, not inflated into an incident.** No UptimeRobot visibility exists from this session, so the issue was written as "worth checking" against a documented failure pattern, not "this is currently broken."
+
+### Standing takeaway
+
+Nearly every consequential moment this session was a claim getting checked against live state before being acted on or repeated: a prior session's handoff, KK's own bug hypothesis, "CI is green" as a proxy for "the deploy actually landed," and "the push gate phrase was given" as a proxy for "every commitment tied to this promote is satisfied." None of those checks were adversarial — the prior session's claim held up, KK's hypothesis was a reasonable first guess, CI going green did correlate with a real deploy — but in each case the specific fact that mattered (branch state, the membership row's actual content, the serving commit SHA, whether the acceptance pass specifically had happened) got its own direct verification rather than riding on the plausibility of an adjacent one. Every hard gate in this session — locked-file phrases, the 24h soak, the auth-testing boundary, the push confirmation — was surfaced explicitly and either satisfied or explicitly overridden with a stated reason, never silently skipped or silently enforced past what was asked.
+
+### Carry-Forward Items
+
+| Priority | Story/Issue | Item |
+|---|---|---|
+| P2 | #729 | Account tab team list stale until reload after `createTeam()` — root cause identified (`memberships` state never refreshed), fix options written up in the issue, needs `App.jsx` + its gate phrase |
+| P3 | #733 | Confirm whether UptimeRobot (or anything else) pings the DEV backend on a 24/7 cadence; upgrade or de-ping if so |
+| — | migration 023 | Still correctly not applied — gated on v2.11.0 being live in PROD long enough to reconfirm zero NULL `season` rows |
+| — | Story 133 (#698) | 9 of 13 game-day token-migration slices remain (`game-mode/*` + `ScoringMode/*`) |
+| — | #623, #673 | Dependabot PRs (react-dom 18→19, eslint 8→10) still open, not part of this release, pre-existing from an earlier session |
+| — | `release/dev-soak-2026-08-18`, `release/v2.11.0-prep` | Stale branches at old commit `168a1f8` in other worktrees, superseded by the real v2.11.0 work — flag for cleanup next time those worktrees are in use |
+| P3 | — | `backend/CLAUDE.md`'s per-file unit-test breakdown table wasn't re-verified against the new 147 total this session — only the aggregate was corrected, with an honest caveat left in the doc rather than a guessed breakdown |
+
+---
+
 ## 2026-08-17-A — Onboarding-doc reconciliation + dependabot triage, concurrent with a same-day T1 session
 
 **Date:** August 17, 2026

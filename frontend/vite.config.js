@@ -5,6 +5,36 @@ import path from 'path'
 import { readFileSync } from 'fs'
 const pkg = JSON.parse(readFileSync('./package.json', 'utf-8'))
 
+// Only enforced on real Vercel builds (Vercel sets VERCEL=1 automatically) —
+// never in CI's build-sanity step (frontend Vitest job builds with zero
+// secrets on purpose) or local dev, both of which legitimately run without
+// these vars set.
+function validateVercelEnv() {
+  if (process.env.VERCEL !== '1') return
+
+  const required = ['VITE_SUPABASE_URL', 'VITE_SUPABASE_ANON_KEY']
+  const missing = required.filter((k) => !process.env[k])
+  if (missing.length > 0) {
+    throw new Error(
+      `[vite.config] Missing required env var(s) for this Vercel build: ${missing.join(', ')}. ` +
+      `Set them in Vercel -> Settings -> Environment Variables for the ${process.env.VERCEL_ENV || 'unknown'} environment.`
+    )
+  }
+
+  // The exact misconfiguration behind the 2026-08-22 production auth outage:
+  // a legacy JWT-format anon key survived in Vercel env vars after Supabase
+  // disabled legacy API keys for this project. New keys look like
+  // `sb_publishable_...`; legacy keys are three-segment JWTs starting `eyJ`.
+  if (/^eyJ/.test(process.env.VITE_SUPABASE_ANON_KEY)) {
+    throw new Error(
+      '[vite.config] VITE_SUPABASE_ANON_KEY looks like a legacy JWT-format key (starts with "eyJ"). ' +
+      'Supabase has legacy keys disabled for this project -- use the new publishable key ' +
+      '(starts with "sb_publishable_") from Supabase -> Settings -> API Keys instead.'
+    )
+  }
+}
+validateVercelEnv()
+
 export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version)

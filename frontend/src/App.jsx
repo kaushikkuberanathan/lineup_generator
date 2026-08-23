@@ -25,7 +25,6 @@ import { NowBattingBar } from './components/GameDay/NowBattingStrip';
 import { LockFlow } from './components/GameDay/LockFlow';
 import { FairnessCheck } from './components/GameDay/FairnessCheck';
 import { ParentView } from './components/GameDay/ParentView';
-import { EmptyState } from './components/Home/EmptyState';
 import { ValidationBanner } from './components/Shared/ValidationBanner';
 import { OfflineIndicator } from './components/Shared/OfflineIndicator';
 import { MaintenanceScreen } from './components/Shared/MaintenanceScreen';
@@ -145,7 +144,7 @@ var DISLIKE_PENALTY = -50;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.11.0";
+var APP_VERSION = "2.12.0";
 
 // loadJSON / saveJSON — localStorage with in-memory (_mem) fallback — moved to
 // ./utils/storage (#416). Imported above; call sites unchanged.
@@ -1469,6 +1468,7 @@ export default function App() {
     logout,
     memberships,
     updateProfileName,
+    refreshMemberships,
   } = useAuth();
 
   // Which auth screen is showing when unauthenticated. Local UI state, not
@@ -1682,8 +1682,6 @@ export default function App() {
   var homeMode = _hm[0]; var setHomeMode = _hm[1];
   var _discoveredTeam = useState(null);
   var discoveredTeam = _discoveredTeam[0]; var setDiscoveredTeam = _discoveredTeam[1];
-  var _teamSearch = useState("");
-  var teamSearch = _teamSearch[0]; var setTeamSearch = _teamSearch[1];
   var _nt = useState({ name:"", ageGroup:"", sport:"", season:currentSeasonGuess(), year: new Date().getFullYear() });
   var _editingTeam = useState(null);
   var editingTeam = _editingTeam[0]; var setEditingTeam = _editingTeam[1];
@@ -2395,7 +2393,13 @@ export default function App() {
     dbSync(function() {
       return persistTeamBeforeLoad(t, function(team) {
         return dbSaveTeams([team]);
-      }, loadTeam);
+      }, loadTeam).then(function(result) {
+        // The server provisions a membership row for the creator alongside the
+        // team row itself — refresh so this team shows up in membership-filtered
+        // views (Home, Account) without waiting for the next reload/re-login. #729
+        if (typeof refreshMemberships === "function") { refreshMemberships(); }
+        return result;
+      });
     });
     setNewTeam({ name:"", ageGroup:"", sport:"", season:currentSeasonGuess(), year: new Date().getFullYear() });
   }
@@ -3180,50 +3184,31 @@ export default function App() {
 
 
               <ErrorBoundary fallback="Team List">
-              {teams.length > 0 ? (
-                <div style={{ marginBottom:"8px" }}>
-                  <div style={{ fontSize:"9px", color:"#c0c7d0", letterSpacing:"0.15em", textTransform:"uppercase", marginBottom:"6px", paddingLeft:"2px" }}>Your Teams</div>
-                  {teams.length >= 3 ? (
-                    <div style={{ position:"relative", marginBottom:"10px" }}>
-                      <span style={{ position:"absolute", left:"12px", top:"50%", transform:"translateY(-50%)", fontSize:"14px", pointerEvents:"none", opacity:0.4 }}>🔍</span>
-                      <input
-                        type="search"
-                        value={teamSearch}
-                        onChange={function(e) { setTeamSearch(e.target.value); }}
-                        placeholder="Find your team…"
-                        style={{ width:"100%", boxSizing:"border-box", background:"#f8fafc", border:"1px solid rgba(0,0,0,0.08)", borderRadius:"10px", padding:"9px 12px 9px 36px", color:"#374151", fontFamily:"Georgia,serif", fontSize:"13px", outline:"none" }} />
-                      {teamSearch ? (
-                        <button onClick={function() { setTeamSearch(""); }}
-                          style={{ position:"absolute", right:"10px", top:"50%", transform:"translateY(-50%)", background:"none", border:"none", color:"#9ca3af", fontSize:"16px", cursor:"pointer", lineHeight:1, padding:"0 2px" }}>×</button>
-                      ) : null}
-                    </div>
-                  ) : null}
-                  {(function() {
-                    var q = teamSearch.trim().toLowerCase();
-                    var filtered = q
-                      ? teams.filter(function(t) {
-                          return (t.name || "").toLowerCase().indexOf(q) >= 0 ||
-                                 (t.ageGroup || "").toLowerCase().indexOf(q) >= 0 ||
-                                 (t.sport || "").toLowerCase().indexOf(q) >= 0 ||
-                                 (t.season || "").toLowerCase().indexOf(q) >= 0 ||
-                                 String(t.year || "").indexOf(q) >= 0;
-                        })
-                      : teams;
-                    if (filtered.length === 0) {
-                      return (
-                        <EmptyState
-                          hasQuery={q.length > 0}
-                          onCreateTeam={function() { setNewTeam({ name:"", ageGroup:"", sport:"", season:currentSeasonGuess(), year: new Date().getFullYear() }); setHomeMode("create"); }}
-                        />
-                      );
-                    }
-                    // Newest season/year first — current teams are easiest to
-                    // find while previous ones stay reachable below.
-                    var sorted = filtered.slice().sort(compareTeamsNewestFirst);
-                    return sorted.map(function(t) { return TeamCard({ team: t }); });
-                  })()}
-                </div>
-              ) : null}
+              <div style={{ marginBottom:"8px" }}>
+                <div style={{ fontSize:"9px", color:"#c0c7d0", letterSpacing:"0.15em", textTransform:"uppercase", marginBottom:"6px", paddingLeft:"2px" }}>Your Teams</div>
+                <button
+                  type="button"
+                  onClick={function() { setHomeMode("search"); }}
+                  aria-label="Find your team"
+                  style={{ width:"100%", boxSizing:"border-box", display:"flex", alignItems:"center", gap:"10px", background:"#f8fafc", border:"1px solid rgba(0,0,0,0.08)", borderRadius:"10px", padding:"10px 12px", color:"#6b7280", fontFamily:"Georgia,serif", fontSize:"13px", cursor:"pointer", textAlign:"left", marginBottom:"10px" }}>
+                  <span aria-hidden="true" style={{ fontSize:"14px", opacity:0.55 }}>🔍</span>
+                  <span>Find your team…</span>
+                </button>
+                {(function() {
+                  var membershipTeamIds = (memberships || []).map(function(m) { return m.team_id; });
+                  var subscribedTeams = teams.filter(function(t) { return membershipTeamIds.indexOf(t.id) >= 0; });
+                  if (subscribedTeams.length === 0) {
+                    return (
+                      <div style={{ fontSize:"13px", color:tokens.color.text.muted, fontStyle:"italic", padding:"8px 2px 14px" }}>
+                        Your subscribed teams are syncing…
+                      </div>
+                    );
+                  }
+                  // Match the Account screen: only membership-backed teams,
+                  // newest season/year first.
+                  return subscribedTeams.slice().sort(compareTeamsNewestFirst).map(function(t) { return TeamCard({ team: t }); });
+                })()}
+              </div>
               </ErrorBoundary>
               {!teams.find(function(t) { return t.name === "Demo All-Stars"; }) ? (
                 <button onClick={loadDemoTeam}
@@ -3244,13 +3229,6 @@ export default function App() {
               )}
               <div style={{ textAlign:"center" }}>
                 <div style={{ fontSize:"10px", color:"#d1d5db" }}>All data saved locally on this device</div>
-              </div>
-              <div style={{ textAlign:"center", marginTop:"10px" }}>
-                <button
-                  onClick={function() { setHomeMode("search"); }}
-                  style={{ background:"none", border:"none", color:"#2f6bff", fontSize:"12px", fontFamily:"Georgia,serif", cursor:"pointer", textDecoration:"underline", padding:"4px" }}>
-                  Don&apos;t see your team? Search for one
-                </button>
               </div>
             </div>
           ) : homeMode === "search" ? (

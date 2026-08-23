@@ -38,6 +38,15 @@ export function useAuth() {
 
   useEffect(() => {
     async function checkSession() {
+      // Tracks whether this load carried a callback token, so the two
+      // silent-fallback branches below can distinguish "never logged in"
+      // (normal, no log needed) from "a callback token didn't produce a
+      // usable session" (an anomaly worth a trace — this is exactly the
+      // class of failure that took real production debugging to diagnose
+      // in 2026-08-22's login incident, precisely because these paths
+      // logged nothing). Never log the token itself, only that one was
+      // present and what happened next.
+      const hadCallbackToken = window.location.hash.includes('access_token');
       try {
         // Handle Supabase auth redirect (magic link callback)
         const hash = window.location.hash;
@@ -59,6 +68,9 @@ export function useAuth() {
         const { data: { session: existingSession } } = await supabase.auth.getSession();
 
         if (!existingSession) {
+          if (hadCallbackToken) {
+            console.error('[useAuth] callback URL had a token but no session was established');
+          }
           setAuthState('unauthenticated');
           return;
         }
@@ -70,6 +82,7 @@ export function useAuth() {
 
         if (!res.ok) {
           // Session expired or invalid — clear it
+          console.error('[useAuth] /me rejected an established session:', res.status);
           await supabase.auth.signOut();
           setAuthState('unauthenticated');
           return;
@@ -92,7 +105,8 @@ export function useAuth() {
           setAuthState('authenticated');
         }
 
-      } catch {
+      } catch (err) {
+        console.error('[useAuth] checkSession threw:', err?.name, err?.message);
         setAuthState('unauthenticated');
       }
     }
@@ -264,6 +278,27 @@ export function useAuth() {
   // in-place patch). Token comes from the current session, never a caller arg.
   // Every failure path leaves existing `user` state untouched.
 
+  // ─── Refresh Memberships ─────────────────────────────────────────────────────
+  // Re-fetches /me and updates memberships/membership only — does not touch
+  // authState or user. Used after a client action that provisions a new
+  // membership row server-side (e.g. team creation) so the newly-created team
+  // becomes visible in membership-filtered views without a full reload. #729
+
+  const refreshMemberships = useCallback(async () => {
+    if (!session) return;
+
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/v1/auth/me`, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      const ms = data.user?.memberships ?? [];
+      setMemberships(ms);
+      setMembership(ms[0] ?? null);
+    } catch { /* best-effort — caller keeps existing membership state on failure */ }
+  }, [session]);
+
   const updateProfileName = useCallback(async (firstName, lastName) => {
     if (!session) return { success: false, error: 'Not signed in' };
 
@@ -317,5 +352,6 @@ export function useAuth() {
     requestAccess,
     logout,
     updateProfileName,
+    refreshMemberships,
   };
 }

@@ -1,11 +1,29 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: 2026-08-19 (v2.11.0 release-prep merged to develop via PR TBD - team seasons, first-save race fix, Story 133 slices 1-4/13, auth token convergence - develop only, NOT yet promoted to main)
+> Last updated: 2026-08-22 (v2.12.0 release entry added - Home membership visibility, unified team search, prod auth incident hardening; (develop only - not yet promoted))
 > MVP launched: March 24, 2026
 
 ---
 
-## v2.11.0 - 2026-08-19 - Team seasons, first-save race fix, Story 133 slices 1-4/13 (develop only — not yet promoted to main)
+## v2.12.0 - 2026-08-22 - Home membership visibility, unified team search, prod auth incident hardening (develop only - not yet promoted)
+
+**Minor bump** — Story 134 is a genuine new coach-facing feature (Home redesign to match Account's team visibility), not just a fix batch, following the "size the bump to the release's actual scope" convention established at v2.9.0-v2.11.0.
+
+**Home membership teams + unified Find your team entry (Story 134, #740, PR #741)** — Home's "Your Teams" list now filters through `memberships[].team_id`, matching the Account tab's existing reconciliation pattern, instead of showing every team cached on the device. Replaced the conditional local-filter search field plus a separate "Don't see your team? Search for one" link with one always-visible "Find your team…" bar that opens the existing Story 124 discovery flow. Newest-season-first sorting and existing card actions preserved. App-level golden-path coverage added (`AppHomeMembershipTeams.test.jsx`).
+
+**Post-merge follow-up fix (Story 135, #742, PR #743)** — review of Story 134 found it expanded the blast radius of the pre-existing #729 gap: `createTeam()` never refreshed the client-side `memberships` array, so previously only the Account tab was affected, but once Home started filtering by memberships too, a just-created team briefly vanished from Home as well until reload. Added `refreshMemberships()` to `useAuth.js` (re-fetches `/api/v1/auth/me`, updates `memberships`/`membership` only) and wired it into `createTeam()`'s existing save-then-load chain. Verified live on `dev.dugoutlineup.com` by KK — a newly created test team appeared in "Your Teams" immediately, no reload needed. Also corrected two docs still referencing the removed link (`faqs.js`, a `TeamSearch.jsx` header comment). Does **not** close #729 — that issue's broader Account-tab gap (membership staleness outside the create-team path) stays open. RED→GREEN verified for both the hook unit test (`useAuth.refreshMemberships.test.js`, 4 tests) and the App-level wiring (extended `AppHomeMembershipTeams.test.jsx`, +1 test) via mutation checkpoints.
+
+**Duplicate Vercel project deleted (Story 136, #744)** — `lineup-generator` (no hyphen) was a second Vercel project accidentally linked to this repo's GitHub integration alongside the real `line-up-generator` project, producing a failing check on most PRs since before this release with zero functional impact (it owned no custom domain). Verified via direct Vercel API lookups — `dev.dugoutlineup.com` resolves to a `develop`-branch build on `line-up-generator` only — before deleting the duplicate from the dashboard.
+
+**Production auth incident prevention (PR #739, closes #738)** — 2026-08-22: Supabase disabled legacy JWT-format API keys for this project, but Vercel's `VITE_SUPABASE_ANON_KEY` still held the old key, silently breaking both magic-link and Google sign-in for every user with zero server-side trace. Already fixed live in Vercel directly (key rotated to the `sb_publishable_` format, both Production and Preview, redeployed and verified) before this code landed; this PR is the prevention/observability follow-up — `vite.config.js` now fails real Vercel builds (`VERCEL=1` only, never CI or local dev) if `VITE_SUPABASE_ANON_KEY` looks like a legacy JWT, and three previously-silent auth failure paths in `useAuth.js`/`LoginScreen.jsx` now log sanitized diagnostics (error type/status only, never tokens) instead of swallowing everything. Full incident timeline in `docs/TROUBLESHOOTING.md`. No automated test added — verified manually in both directions (build fails with a legacy-shaped key under `VERCEL=1`, builds clean without it and in CI/local dev).
+
+**Routine dependency updates**: `@supabase/supabase-js` (PR #725), `mixpanel-browser` (PR #727), `libphonenumber-js` backend (PR #726), `@testing-library/jest-dom` (PR #728).
+
+**Verification (re-run directly, 2026-08-22):** frontend 1090 passed / 1 skipped (95 files), lint clean, `npm run build` clean, `debt-p0` gate clear (0 open P0s).
+
+---
+
+## v2.11.0 - 2026-08-19 - Team seasons, first-save race fix, Story 133 slices 1-4/13 (promoted to main 2026-08-21, PR #731)
 
 **Minor bump** — team season tracking is a genuine new coach-facing feature (not a fix batch), matching the "size the bump to the release's actual scope" convention established at v2.9.0/v2.10.0.
 
@@ -27,7 +45,7 @@
 
 **Verification (re-run directly, 2026-08-19):** frontend 1084 passed / 1 skipped (93 files), backend unit 147/147, `npm run build` clean, `debt-p0` gate clear (0 open P0s).
 
-**24h soak override, 2026-08-21:** KK explicitly authorized promoting to `main` ahead of the standard 24h develop-soak window, citing fall season readiness — coaches need season tagging live before fall rosters start. Not a hotfix; a deliberate exception, same pattern as v2.9.0's override. **Not yet done as of this entry:** promotion to `main` itself (Ship Gate walk-through above is clear; migration-022-to-PROD and the DEV acceptance pass above are both done).
+**24h soak override, 2026-08-21:** KK explicitly authorized promoting to `main` ahead of the standard 24h develop-soak window, citing fall season readiness — coaches need season tagging live before fall rosters start. Not a hotfix; a deliberate exception, same pattern as v2.9.0's override. **Promoted to `main` 2026-08-21** (PR [#731](https://github.com/kaushikkuberanathan/lineup_generator/pull/731), regular merge, `102c8ca4`) — confirmed a genuine 2-parent merge via direct API check. Prod smoke test same session: backend `/ping` 200 OK (0.8s), frontend loads clean with zero console errors, both Render and Vercel confirmed serving the exact promoted commit via direct deploy-record queries. Post-promote sync (PR #732) merged the same session.
 
 ---
 
@@ -4840,6 +4858,81 @@ ScoreboardRow) once KK grants the `game-mode/*` gate phrase. Each slice is
 its own PR to `develop`, same merge-commit + branch-hygiene discipline as
 every other track. Do not batch multiple slices into one PR - keeps blast
 radius small and each KK visual-check cycle short.
+
+---
+### Story 134 (P2) - Home membership teams + unified Find your team entry <!-- #740 -->
+Status: Resolved. Merged to develop via PR #741 (regular merge, `88ff549`,
+2026-08-22).
+Discovered: 2026-08-22, coach feedback on the signed-in Home experience.
+Symptom: Home renders every team cached on the device, while Account correctly
+renders only teams represented by the signed-in coach's memberships. Team
+discovery is also split between a conditional local-filter field and a separate
+"Don't see your team? Search for one" link at the bottom of the page.
+Impact: Coaches can see stale or unrelated device-local teams, and the duplicate
+search affordances make it unclear how to find or request access to another
+team.
+Root cause: Home's team list is sourced directly from `teams`; the Account
+screen already has the correct membership-to-team reconciliation pattern.
+Fix: Filter Home cards through `memberships[].team_id`, keep
+newest-season-first sorting and existing card actions, show one always-visible
+"Find your team..." bar that opens the existing Story 124 discovery flow, and
+remove the legacy bottom link. App-level golden-path coverage added for
+subscribed versus local-only visibility and discovery navigation
+(`AppHomeMembershipTeams.test.jsx`).
+**Post-merge review found two gaps, tracked as Story 135 below:** the change
+expanded the blast radius of already-open bug #729 (a just-created team isn't
+in `memberships` yet, so it now vanishes from Home too, not just Account,
+until reload/re-login), and two docs (`faqs.js`, a `TeamSearch.jsx` header
+comment) still referenced the removed "Don't see your team?" link.
+
+---
+### Story 135 (P2) - Refresh memberships after team creation + doc corrections <!-- #742 -->
+Status: Resolved.
+Discovered: 2026-08-22, self-review of Story 134/#740 immediately after merge
+- once Home started filtering by `memberships[].team_id` in addition to
+Account, the existing gap in #729 (createTeam() never updates the client-side
+`memberships` array) got a second, more visible symptom.
+Symptom: A coach creates a team, gets auto-loaded into it (`loadTeam()` still
+fires immediately), but if they navigate back to Home before reloading the
+app, the just-created team is missing from "Your Teams" - the membership row
+is provisioned server-side instantly, but the client's cached `memberships`
+state doesn't know about it yet.
+Impact: Confusing "did my team actually get created?" moment for a coach
+using the team they just made, right after Story 134 made Home
+membership-filtered.
+Fix: Added `refreshMemberships()` to `useAuth.js` - re-fetches `/api/v1/auth/me`
+and updates `memberships`/`membership` only (does not touch `authState` or
+`user`). `createTeam()` in App.jsx now calls it once the team's
+`persistTeamBeforeLoad` save promise resolves, so the new team is visible in
+Home/Account without waiting for a reload. Also fixed two stale docs
+referencing the link Story 134 removed: `faqs.js`'s "not on the team yet" FAQ
+now points at the "Find your team..." bar, and a header comment in
+`TeamSearch.jsx`. RED->GREEN verified for both the hook unit test
+(`useAuth.refreshMemberships.test.js`) and the App-level wiring
+(`AppHomeMembershipTeams.test.jsx`) via mutation checkpoints.
+Note: this does not close the broader #729 (Account tab has the identical gap
+outside the create-team path, e.g. after a membership changes server-side for
+other reasons) - #729 stays open, scoped to that wider case.
+
+---
+### Story 136 (P3) - Delete duplicate Vercel project <!-- #744 -->
+Status: Resolved.
+Discovered: 2026-08-22, while investigating a recurring red "Error" check on
+PRs from a Vercel project named `lineup-generator` (no hyphen).
+Root cause: Two Vercel projects were both linked to this repo's GitHub
+integration - `line-up-generator` (hyphenated, the real one, owns
+`dugoutlineup.com` and serves `dev.dugoutlineup.com`) and `lineup-generator`
+(no hyphen), an orphaned duplicate created ~35 days later that owned no
+custom domain and had inconsistently-configured env vars
+(`VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` missing on several builds).
+Verified before deletion, via direct Vercel API lookups, that neither prod
+nor dev traffic resolved through the duplicate - confirmed `dev.dugoutlineup.com`
+resolves to a `develop`-branch build on `line-up-generator` only.
+Fix: Duplicate project deleted from the Vercel dashboard.
+Note: any local clone/worktree whose `frontend/.vercel/project.json`
+(gitignored) was linked to the deleted project needs `vercel link` re-run
+against `line-up-generator` (`prj_P1ajLGpY6ZezIsNMeTCPXPSnyZEu`) before using
+the `vercel` CLI from that checkout.
 
 ---
 ### Automated Score Reporting (County Integration)
