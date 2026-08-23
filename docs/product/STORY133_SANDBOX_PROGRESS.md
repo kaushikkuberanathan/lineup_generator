@@ -1322,3 +1322,133 @@ components — worth checking whether `LiveScoringPanel.jsx` uses this
 same literal anywhere, since a third recurrence might tip the judgment
 call toward promoting it to a shared (non-component-scoped) token
 instead of minting a fourth separate copy.
+
+## Slice 13a — `LiveScoringPanel.jsx` (sub-slice A of 3: sub-components)
+
+`LiveScoringPanel.jsx` is the final, largest slice (1301 lines) and is
+being landed as 3 sub-slice PRs per the handoff doc's explicit
+instruction, rather than one giant diff. This is **part A of 3**: the
+`OUTCOME_ROWS`/`OUTCOME_ROWS_V2` constants and the `CountPips`/
+`DiamondSVG`/`HomeAwayChip` sub-components — source lines 1-201 in the
+pre-migration file, everything above the `// ─── Main ───` marker.
+Parts B and C (the default-exported `LiveScoringPanel` function body)
+are separate, later PRs.
+
+### Scoping the section
+
+`sed -n '1,201p' LiveScoringPanel.jsx | grep -oE "#[0-9a-fA-F]{3,6}|rgba?\([^)]+\)"`
+found **47 occurrences** (doc's whole-file estimate was 167 — every
+slice this run has undershot the doc's estimate, consistent again
+here). The real "Main" marker sits at source line 201 (not exactly
+"line 1-201" as a round number, but very close, per the task's own
+instruction to confirm and adjust slightly) — confirmed no color
+declaration spans the boundary awkwardly; the cut lands cleanly on the
+blank line separating `HomeAwayChip`'s closing brace from the `Main`
+comment. After adding one import line, the marker shifted from source
+line 201 to 202 in the migrated file — expected, not scope creep (git
+diff hunks confirmed below, none reach past original line 197).
+
+### Inventory and mappings
+
+| Literal | Count | Site | Decision |
+|---|---|---|---|
+| `#dc2626` | 9 | `PITCH_CHIPS`/`PITCH_BUTTONS` strike colors, `OUTCOME_ROWS`/`_V2` out/strikeout colors | Reuses `color.status.error` directly — established "destructive/negative-outcome red" precedent from slices 5/10/11 |
+| `#16a34a` | 8 | `PITCH_CHIPS`/`PITCH_BUTTONS` contact color, `OUTCOME_ROWS`/`_V2` hit colors (single/double/triple) | Minted `gameDay.liveScoringPanel.accent.hit` — byte-matches `runnerConflictModal.scoreButton.border` but kept separate per no-cross-component-alias rule |
+| `#f5c842` | 6 | `OUTCOME_ROWS`/`_V2` home-run color, `DiamondSVG` runner-pill text + occupied-base fill/stroke, `HomeAwayChip` away-state color | Reuses `color.brand.gold` directly — established generic-accent precedent |
+| `#d97706` | 4 | `PITCH_CHIPS`/`PITCH_BUTTONS` foul color, `OUTCOME_ROWS`/`_V2` error-reached color | Minted `gameDay.liveScoringPanel.accent.caution` — byte-matches `gameModeScreen.orientationHint.background`, kept separate |
+| `#7c3aed` | 4 | `OUTCOME_ROWS`/`_V2` walk/HBP colors | Minted `gameDay.liveScoringPanel.accent.walk` — byte-matches `scoringModeEntry.betaBadge.background`, kept separate |
+| `#1d4ed8` | 2 | `PITCH_CHIPS`/`PITCH_BUTTONS` ball color | Minted `gameDay.liveScoringPanel.accent.ball` — see recurrence note below |
+| `rgba(255,255,255,0.18)` | 1 | `CountPips` inactive-pip background | Minted `countPips.inactiveBackground` — byte-matches `gameDay.diamond.stroke.empty`, different specific role (DiamondView's empty-base stroke), kept separate |
+| `rgba(255,255,255,0.2)` | 1 | `CountPips` pip border | Minted `countPips.border` — byte-matches `scoringModeEntry.closeButton.border`, kept separate |
+| `rgba(255,255,255,0.1)` | 1 | `DiamondSVG` polygon stroke | Minted `diamondSvg.polygonStroke` — byte-matches `gameDay.diamond.stroke.mound`, different specific role (mound-circle stroke vs. this component's own outline), kept separate |
+| `rgba(255,255,255,0.08)` | 1 | `DiamondSVG` unoccupied-base fill | Reuses `overlay.whiteFaint` directly — generic pre-mixed tint, established precedent |
+| `rgba(255,255,255,0.25)` | 1 | `DiamondSVG` unoccupied-base stroke | Minted `diamondSvg.base.offStroke` — byte-matches `overlay.whiteMedium`, but that token's documented role is text (MaintenanceScreen version chip), not a stroke; same reasoning `gameModeScreen.orientationHint.border` already applied to this identical byte-match in slice 5 |
+| `rgba(255,255,255,0.12)` | 1 | `DiamondSVG` home-plate fill | Minted `diamondSvg.homePlate.fill` — byte-matches `gameDay.border.hairline`, but that's a border/divider role, not a shape fill, kept separate |
+| `rgba(255,255,255,0.28)` | 1 | `DiamondSVG` home-plate stroke | Minted `diamondSvg.homePlate.stroke` — no existing match |
+| `rgba(245,200,66,0.15)` | 1 | `DiamondSVG` runner-pill background | Minted `diamondSvg.runnerPill.background` — no existing match |
+| `rgba(245,200,66,0.35)` | 1 | `DiamondSVG` runner-pill border | Minted `diamondSvg.runnerPill.border` — no existing match |
+| `rgba(148, 163, 184, 0.12)` | 1 | `HomeAwayChip` home-state background | Minted `homeAwayChip.home.background` — no existing pre-mixed tier at this rgb triple |
+| `rgba(148, 163, 184, 0.2)` | 1 | `HomeAwayChip` home-state border | Minted `homeAwayChip.home.border` — no existing match |
+| `#94a3b8` | 1 | `HomeAwayChip` home-state color | Reuses `gameDay.text.secondary` directly — established precedent |
+| `rgba(245, 200, 66, 0.12)` | 1 | `HomeAwayChip` away-state background | Reuses `overlay.goldTint` directly — established precedent |
+| `rgba(245, 200, 66, 0.3)` | 1 | `HomeAwayChip` away-state border | Minted `homeAwayChip.away.border` — byte-matches `gameModeScreen.advanceButton.pendingBorder`, kept separate |
+
+47 total, matching the grep inventory exactly. All new tokens live
+under a new `gameDay.liveScoringPanel` namespace in `tokens.js`.
+
+### The `#1d4ed8` recurrence (carried forward from slice 12's note)
+
+Slice 12's checkpoint flagged that `#1d4ed8` (blue-700) had recurred
+across `gearMenu.handoffModal.confirmBackground`,
+`runnerConflictModal.holdButton.border`, and
+`scoringModeEntry.claimButton.background`, and asked whether a 3rd/4th
+recurrence in `LiveScoringPanel.jsx` should tip the call toward
+promoting it to a shared token instead of minting a 4th copy.
+
+**Judgment call: minted a 4th component-scoped copy
+(`gameDay.liveScoringPanel.accent.ball`) rather than promoting.**
+Reasoning: promoting to a genuine shared token would require also
+retrofitting the 3 already-merged files (`gearMenu.jsx`,
+`RunnerConflictModal.jsx`, `ScoringModeEntry.jsx`) to reference it
+instead of their own copies — that's a cross-file refactor outside
+this sub-slice's declared scope (sub-components section of one file
+only), and touching already-merged, already-checkpointed code without
+a clear go-ahead felt like unnecessary risk for a sandbox run with no
+CI safety net. Kept consistent with the established "mint per
+component, document the byte-match" precedent one more time instead.
+**Flagged explicitly, in both `tokens.js`'s comment and here:** this is
+now a 4-way recurrence and is worth a dedicated follow-up story to
+evaluate consolidating all 4 sites onto one shared `gameDay.accent.*`
+token. Not done in this run.
+
+### Verification
+
+- `npm run build` — clean.
+- `theme.tokens.test.js` + `src/components/game-mode/` suite —
+  114/114, unchanged baseline held.
+- No existing dedicated test file for `LiveScoringPanel.jsx` (`Glob`
+  confirmed) — nothing additional to run there.
+- `sed -n '1,201p' LiveScoringPanel.jsx | grep -oE "#[0-9a-fA-F]{3,6}|rgba?\([^)]+\)"`
+  → empty. Zero literal colors remain in the sub-components section.
+  (Lines 202+ / parts B and C intentionally untouched — not verified
+  clean, that's out of scope for this sub-slice.)
+- **`DiamondSVG` prop-driven state, verified with a real harness, not
+  just static colors:** built a throwaway RTL test rendering the real
+  `DiamondSVG` component (exported directly from `LiveScoringPanel.jsx`
+  for this purpose) with real `runners`/`battingOrder` props — no stub
+  callbacks, matching the handoff doc's warning about the standalone-
+  render-with-no-op-stubs mistake from a prior session (that warning
+  was specifically about *interaction* wiring; this component has no
+  callbacks to wire, only prop-driven visual state, so a real-props
+  render is the correct and sufficient verification here). 3 assertions,
+  all passing:
+  - No runners: all 3 base `<rect>`s render with `overlay.whiteFaint`
+    fill / `diamondSvg.base.offStroke` stroke; 0 runner-name pills.
+  - Runners on 1B and 2B (`battingOrder` with real names "Alex Smith"/
+    "Jordan Lee"): those 2 bases render in `brand.gold` fill+stroke,
+    3B stays in the empty-state colors, and 2 runner-name pills render
+    with the correct first names ("Alex", "Jordan") and the minted
+    `diamondSvg.runnerPill.background`/`brand.gold` text color
+    (confirmed via computed `el.style`, jsdom-normalized rgba/hex
+    comparison).
+  - Home plate renders with the minted `homePlate.fill`/`homePlate.
+    stroke` tokens regardless of runner state.
+  Harness deleted before commit (verification-only, not part of the
+  shipped diff, per the handoff doc's guidance on throwaway harnesses).
+
+### Outcome
+
+Slice 13a complete: PR [#756](https://github.com/kaushikkuberanathan/lineup_generator/pull/756)
+merged into `feature/story133-slices5-13-sandbox` as commit `446a1bf`
+(parents `333bc35` + `cc4b60d` — genuine 2-parent merge, confirmed via
+`git show -s --format="%H %P"`), zero literal colors remaining in
+`LiveScoringPanel.jsx` lines 1-201, build clean, 114/114 tests passing,
+checkpoint logged. No behavioral quirks found (unlike slice 6's LC
+color divergence) — this section is purely presentational constants
+and prop-driven sub-components, no state/interaction wiring to
+misdiagnose. Parts B and C remain: the `Main` `LiveScoringPanel`
+function body (source line 202 onward in the migrated file), which
+per the handoff doc's estimate (167 total, 47 accounted for here)
+likely holds on the order of 100+ further occurrences — genuinely
+unknown until inventoried, given every slice this run has undershot
+the doc's estimates.
