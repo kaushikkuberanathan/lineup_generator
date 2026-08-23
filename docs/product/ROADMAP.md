@@ -4752,10 +4752,33 @@ main and this scoping has KK's go-ahead on the tooling choice.
 
 ---
 ### Story 133 (P2) - Live game-day surface token migration (game-mode/ + ScoringMode/) <!-- #698 -->
-Status: In progress - slices 1-4 of 13 merged (PRs #705, #707, #709, #712).
-**Corrected 2026-08-19 (v2.11.0 release prep): this line previously read
-"slice 4 branch cut, ready to start" — slice 4 (`QuickSwap.jsx`) has since
-merged (PR #712).** 9 slices remain. Slice 4 is partially, not fully,
+Status: **All 13 slices merged to `develop` (2026-08-23, PR #764)** - the
+migration itself is code-complete. **Corrected 2026-08-23: this line
+previously read "slices 1-4 of 13 merged, 9 slices remain."** Slices 5-13
+were developed on an isolated `feature/story133-slices5-13-sandbox`
+branch per KK's explicit instruction (kept off `develop`/`main` during the
+v2.12.0 release soak), independently re-verified after every sub-merge,
+then promoted as a single PR (#764) once the soak cleared - full
+mapping-decision reasoning and verification evidence for every slice is
+preserved in that branch's history and `docs/product/STORY133_SANDBOX_PROGRESS.md`
+(not yet copied into this repo's permanent docs). A bonus, out-of-scope
+`components/ui/*` primitives migration (PR #759) was bundled onto the same
+branch per KK's instruction and merged in the same promotion.
+**Does not close #698** - per the standing rule, closure requires a full
+real on-device Game-Day Validation pass across the complete migration,
+done manually by KK, not yet performed. Two real findings surfaced during
+the migration, not yet acted on: `InningModal.jsx`'s `POS_COLORS.LC` is
+`#27ae60` (green), diverging from the shared `color.position.LC`
+(`#2980b9`, blue) used everywhere else - preserved byte-exact, a fix is
+planned as an immediate follow-up. A broader codebase audit (2026-08-23)
+found ~818 more untokenized occurrences beyond this story's scope
+(`App.jsx` alone: 693) - deliberately not pursued given no customer-facing
+lift and `App.jsx`'s own pending decomposition plan.
+
+<details>
+<summary>Original slice-4 status note (2026-08-19), superseded above</summary>
+
+Slice 4 is partially, not fully,
 validated — automated coverage green, one manual QuickSwap flow confirmed
 working, full device/layout visual coverage deliberately deferred as an
 accepted residual risk (KK's call, 2026-08-19) rather than completed;
@@ -4860,6 +4883,14 @@ ScoreboardRow) once KK grants the `game-mode/*` gate phrase. Each slice is
 its own PR to `develop`, same merge-commit + branch-hygiene discipline as
 every other track. Do not batch multiple slices into one PR - keeps blast
 radius small and each KK visual-check cycle short.
+
+**Superseded 2026-08-23:** slices 5-13 did not follow this per-slice
+recommendation in the end - they were developed on an isolated sandbox
+branch instead (see the status note at the top of this section) so the
+run could proceed without a per-slice stop-and-wait gate, given nothing
+would reach `develop` until explicitly promoted. All 13 slices are done.
+
+</details>
 
 ---
 ### Story 134 (P2) - Home membership teams + unified Find your team entry <!-- #740 -->
