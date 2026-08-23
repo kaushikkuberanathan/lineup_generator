@@ -183,6 +183,31 @@ export const tokens = {
       chalk:      '#ffffff',  // foul-line stroke (white at varying opacity)
     },
 
+    // ─── Shared UI primitives (components/ui/*) — no reusable role elsewhere,
+    // scoped to the primitive itself rather than gameDay (Toast/BottomSheet/
+    // Badge are used app-wide, not exclusive to game-mode/ScoringMode).
+    toast: {
+      border:           'rgba(96,165,250,0.4)',  // blue-400 0.4 — action-row border, no existing match
+      actionBackground: '#1d4ed8',               // blue-700 primary action button — component-scoped
+                                                    // per the established no-cross-component-alias rule;
+                                                    // this exact value has independently recurred as a
+                                                    // component-scoped mint in 6 files now (5 in
+                                                    // ScoringMode/*, this the 6th) — flagged, same as
+                                                    // gameDay's own #1d4ed8/#374151 notes, as a strong
+                                                    // signal for a future shared-token consolidation
+                                                    // story, deliberately not done here.
+    },
+    bottomSheet: {
+      backdrop: 'rgba(0,0,0,0.55)',  // full-screen scrim — no existing match (overlay.scrimLight is
+                                       // 0.5, overlay.backdrop is 0.97; sits between the two)
+    },
+    badge: {
+      // Light-context variants only — dark-context already uses
+      // overlay.whiteLight/text.onDark (Badge.jsx, pre-existing).
+      handL: { background: '#dbeafe', text: '#1d4ed8' },  // blue-100 / blue-700
+      handR: { background: '#f3f4f6', text: '#4b5563' },  // gray-100 / gray-600
+    },
+
     // ─── Game-day surface palette (Story 133/#698 — game-mode/ + ScoringMode/) ──
     // Separate scale from color.text.* / color.surface.*, which were audited
     // against LIGHT surfaces only (see their own "on light surfaces" doc

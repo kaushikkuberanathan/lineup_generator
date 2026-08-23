@@ -3,11 +3,11 @@ import { Text } from './Text';
 
 var VARIANT_STYLES = {
   'hand-L': {
-    light: { background: '#dbeafe', color: '#1d4ed8' },
+    light: { background: tokens.color.badge.handL.background, color: tokens.color.badge.handL.text },
     dark: { background: tokens.color.overlay.whiteLight, color: tokens.color.text.onDark },
   },
   'hand-R': {
-    light: { background: '#f3f4f6', color: '#4b5563' },
+    light: { background: tokens.color.badge.handR.background, color: tokens.color.badge.handR.text },
     dark: { background: tokens.color.overlay.whiteLight, color: tokens.color.text.onDark },
   },
 };

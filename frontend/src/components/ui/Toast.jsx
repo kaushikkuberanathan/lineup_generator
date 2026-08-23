@@ -69,7 +69,7 @@ export default function Toast({
         justifyContent: 'space-between',
         gap: '8px',
         background: tokens.color.surface.chrome,
-        border: '1px solid rgba(96,165,250,0.4)',
+        border: '1px solid ' + tokens.color.toast.border,
         borderRadius: '10px',
         padding: '10px 14px',
         boxShadow: tokens.shadow.overlay,
@@ -80,7 +80,7 @@ export default function Toast({
       <span style={{
         flex: 1,
         fontSize: '13px',
-        color: '#e2e8f0',
+        color: tokens.color.gameDay.text.label,
         overflow: 'hidden',
         textOverflow: 'ellipsis',
         whiteSpace: 'nowrap',
@@ -97,10 +97,10 @@ export default function Toast({
             onAction();
           }}
           style={{
-            background: '#1d4ed8',
+            background: tokens.color.toast.actionBackground,
             border: 'none',
             borderRadius: '6px',
-            color: '#fff',
+            color: tokens.color.text.onDark,
             fontSize: '12px',
             fontWeight: 700,
             padding: '8px 14px',
@@ -125,7 +125,7 @@ export default function Toast({
         style={{
           background: 'transparent',
           border: 'none',
-          color: '#e2e8f0',
+          color: tokens.color.gameDay.text.label,
           fontSize: '18px',
           lineHeight: 1,
           padding: '0',
