@@ -40,7 +40,7 @@ export function BottomSheet({
         left: 0,
         right: 0,
         bottom: 0,
-        background: 'rgba(0,0,0,0.55)',
+        background: tokens.color.bottomSheet.backdrop,
         zIndex: 9000,
         display: 'flex',
         alignItems: 'flex-end',

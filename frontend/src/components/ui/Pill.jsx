@@ -26,7 +26,7 @@ var BASE_STYLE = {
 
 var ACTIVE_STYLE = {
   background:  tokens.color.brand.navy,
-  color:       '#ffffff',
+  color:       tokens.color.text.onDark,
   borderColor: tokens.color.brand.navy,
 };
 
