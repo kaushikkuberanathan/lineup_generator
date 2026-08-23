@@ -442,6 +442,53 @@ export const tokens = {
         // affordance) but a different component's own concern.
         finishGameText: '#fca5a5',
       },
+
+      // ─── RunnerConflictModal.jsx (Story 133 slice 9, #698) ─────────────
+      // Component-scoped, one-off values with no reusable role elsewhere in
+      // the gameDay family - same precedent as gameModeScreen/inningModal/
+      // gearMenu above (mint rather than alias, even where a value happens
+      // to byte-match another component's token, because the ROLE is this
+      // component's own).
+      runnerConflictModal: {
+        // Full-screen root backdrop. No existing match - sits between
+        // overlay.scrimLight (rgba(0,0,0,0.5)) and overlay.backdrop
+        // (rgba(5,10,25,0.97), also a different hue).
+        backdrop: 'rgba(0,0,0,0.82)',
+        // Panel border + Cancel-button border - same value, 2 sites within
+        // this file. Byte-matches diamond.stroke.empty
+        // (rgba(255,255,255,0.18)) exactly, but that token's role is a
+        // diamond-SVG stroke, not a modal/button border - kept separate
+        // per the no-silent-alias rule.
+        border: 'rgba(255,255,255,0.18)',
+        scoreButton: {
+          // "Score {name}" button - green-600 tint bg + solid border. No
+          // existing match (distinct from status.success #27AE60 and its
+          // 0.12-tier siblings, all different hues/values).
+          background: 'rgba(22,163,74,0.12)',
+          border:     '#16a34a',
+          // Green-300 subtitle text under the Score button. No existing match.
+          subtitleText: '#86efac',
+        },
+        holdButton: {
+          // "Hold {name}" button - blue-700 tint bg + solid border. Border
+          // byte-matches gearMenu.handoffModal.confirmBackground (#1d4ed8)
+          // exactly, but that token's role is a different component's
+          // confirm-button *background*, not this button's *border* - kept
+          // separate per the no-cross-component-alias rule (same reasoning
+          // as gearMenu.finishGameText above).
+          background: 'rgba(29,78,216,0.12)',
+          border:     '#1d4ed8',
+          // Blue-300 subtitle text under the Hold button. No existing match.
+          subtitleText: '#93c5fd',
+        },
+        cancelButton: {
+          // "Cancel play" button bg. Byte-matches inningModal.rowBackground
+          // exactly (both rgba(255,255,255,0.04)), but kept separate per
+          // the no-cross-component-alias rule already applied in slices
+          // 5/6/8.
+          background: 'rgba(255,255,255,0.04)',
+        },
+      },
     },
   },
 
