@@ -1,5 +1,23 @@
 export var VERSION_HISTORY = [
   {
+    version: '2.12.0',
+    date: 'August 2026',
+    headline: 'Home matches Account team visibility, one team-search bar',
+    techNote: 'Bug fixes and performance improvements',
+    userChanges: [
+      'Home now shows only the teams you\'re actually part of, matching what you already see in Account — no more stray teams from old devices or testing.',
+      'Finding or requesting access to another team is now one simple "Find your team…" bar at the top of Home, replacing the separate search field and link that used to be there.',
+      'Fixed a bug where a team you just created could briefly disappear from Home until you reloaded the app.',
+    ],
+    internalChanges: [
+      'Home team list filtered through memberships[].team_id, matching the Account tab\'s existing reconciliation pattern, instead of showing every team cached on the device. Single always-visible "Find your team…" bar routes into the existing Story 124 discovery flow; legacy "Don\'t see your team? Search for one" link removed. App-level golden-path coverage added (AppHomeMembershipTeams.test.jsx) (Story 134, #740, PR #741).',
+      'Post-merge follow-up: createTeam() never refreshed the client-side memberships array (pre-existing #729) — Story 134 made this a visible Home gap too, not just Account. Added refreshMemberships() to useAuth.js (re-fetches /api/v1/auth/me, updates memberships/membership only) and wired it into createTeam()\'s save-then-load chain. Verified live on dev.dugoutlineup.com. Also corrected two docs still referencing the removed link (faqs.js, TeamSearch.jsx header comment). Does not close #729 — that issue\'s broader Account-tab gap outside the create-team path stays open. RED->GREEN verified via mutation checkpoints (Story 135, #742, PR #743).',
+      'Deleted an orphaned duplicate Vercel project (lineup-generator, no hyphen) that had been producing a failing check on most PRs with zero functional impact — it owned no custom domain; verified dev.dugoutlineup.com resolves only through the real line-up-generator project before deleting (Story 136, #744).',
+      '2026-08-22 production incident: Supabase disabled legacy JWT-format API keys, but Vercel\'s VITE_SUPABASE_ANON_KEY still held the old key, silently breaking magic-link and Google sign-in for every user. Already fixed live in Vercel (key rotated); this lands the prevention/observability follow-up — vite.config.js fails real Vercel builds if the anon key looks like a legacy JWT, and three previously-silent auth failure paths in useAuth.js/LoginScreen.jsx now log sanitized diagnostics instead of swallowing everything. Full timeline in docs/TROUBLESHOOTING.md (PR #739, closes #738).',
+      'Routine dependency bumps: @supabase/supabase-js, mixpanel-browser, libphonenumber-js (backend), @testing-library/jest-dom.',
+    ],
+  },
+  {
     version: '2.11.0',
     date: 'August 2026',
     headline: 'Team seasons (Spring/Fall), first-save reliability fix',
