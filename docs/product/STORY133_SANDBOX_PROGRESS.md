@@ -382,3 +382,168 @@ No `tokens.js` change, no component change, no build/test re-run needed
 (nothing in the diff to verify). Slice 7 is complete as a verification
 no-op. Next up per the handoff scope table: slice 8,
 `GameModeGearMenu.jsx` (10 occurrences).
+
+---
+
+## Slice 8 — `GameModeGearMenu.jsx`
+
+**Branch:** `feature/story133-slice8-gamemodegearmenu-token-migration`
+(forked from `feature/story133-slices5-13-sandbox` @ `93d7a6e`)
+
+**PR:** [#751](https://github.com/kaushikkuberanathan/lineup_generator/pull/751),
+base = `feature/story133-slices5-13-sandbox`, labels `priority:p2` /
+`type:refactor` / `area:scoring`. Opened and merged via `gh` CLI, same
+approach slice 6 confirmed works (the GitHub MCP integration's
+`create_pull_request`/`merge_pull_request` still return `403`).
+
+**Commit:** `26ce51a` — "refactor: migrate GameModeGearMenu.jsx off
+literal colors onto tokens.js" (no closing keyword, per handoff rule).
+
+**Merge:** `1711076`, genuine 2-parent merge —
+`git show -s --format="%H %P" origin/feature/story133-slices5-13-sandbox`
+→ `1711076a48113aa0744a10962330370e80e56fa2 93d7a6e949bec3c87087c6fc39d3612d7a2c8bb9 26ce51a80bb323a18885100cf917e2dff25e0388`
+(2 parents — `93d7a6e` the prior sandbox tip [slice 7's checkpoint
+commit], `26ce51a` this slice's commit — not squashed).
+
+This is the first real migration slice in the `ScoringMode/*` track;
+slice 7 (`LiveScoreViewer.jsx`) was a verification-only no-op.
+
+### Scope discrepancy vs. the handoff doc
+
+Both `STORY133_SANDBOX_HANDOFF.md` and
+`STORY133_GAMEDAY_TOKEN_MIGRATION_HANDOFF.md` list this file at **~10**
+occurrences. The actual inventory —
+`grep -oE "#[0-9a-fA-F]{3,6}|rgba?\([^)]+\)" GameModeGearMenu.jsx | wc -l`
+— returned **18**. Logged per the escalation policy; same pattern as
+slices 5 (33 documented vs. 51 actual) and 6 (45 vs. 65 actual) — every
+real migration slice's doc count has undershot the true total so far.
+All 18 were migrated; post-migration grep on the file returns empty.
+
+### Reachability
+
+Confirmed live, not dead code: `grep -rln "GameModeGearMenu" frontend/src`
+shows it's imported and rendered by `LiveScoringPanel.jsx` — one of the 7
+live ScoringMode children `DugoutView` imports transitively, same
+reachability chain slice 7 confirmed for `LiveScoreViewer.jsx`. No
+dedicated `GameModeGearMenu.test.jsx` exists, and the `ScoringMode/*`
+track has no established baseline test-file-count yet (this is its
+first real slice) — confirmed via `find frontend/src/components/
+ScoringMode -iname "*.test.*"`, zero results.
+
+### Token mapping decisions
+
+**Reused existing tokens (value + role both matched):**
+
+| Literal | Reused token | Role match reasoning |
+|---|---|---|
+| `#0f1f3d` (handoff-confirm modal panel bg) | `brand.navy` | Exact byte match; same role as slices 5/6's reuse of this token — dominant dark-navy panel/surface background. |
+| `rgba(255,255,255,0.15)` (handoff modal border, gear-menu panel border; 2 sites) | `overlay.whiteLight` | Exact match, doc comment "on-dark borders, highlights" — direct fit for both panel borders. |
+| `#fff` (handoff modal title text, "Hand off" confirm-button text; 2 sites) | `gameDay.text.primary` | Exact match, "highest emphasis" — same generic opaque-white-on-dark role used identically at both sites. |
+| `#94a3b8` (handoff modal body text, Cancel button text, Exit Scoring menu-item text; 3 sites) | `gameDay.text.secondary` | Exact match, "mid-emphasis" — same role at all 3 sites. |
+| `rgba(255,255,255,0.12)` (Cancel button border) | `gameDay.border.hairline` | Exact match to the **shared** (not component-scoped) hairline token slice 5 minted and flagged as "likely to recur" — first actual recurrence, confirming that call was right. |
+| `rgba(0,0,0,0.5)` (gear-menu backdrop) | `overlay.scrimLight` | Exact match; doc comment "lighter full-screen modal backdrop." A backdrop scrim is a fixed alpha-blended wash applied uniformly under the whole viewport, not a light/dark-surface-calibrated text or border color — same reasoning slice 6 used to justify reusing `overlay.goldTint` directly, applied here to a black scrim instead of a gold tint. |
+| `rgba(255,255,255,0.08)` (Exit Scoring / Hand off scoring menu-item bottom borders; 2 sites) | `overlay.whiteFaint` | Exact match, dark-surface-safe per its own doc comment. |
+| `#e2e8f0` (Hand off scoring menu-item text) | `gameDay.text.label` | Exact match, "high-emphasis uppercase labels" family — same role. |
+
+**Minted new tokens** (`gameDay.gearMenu.*`, mirroring the
+`gameModeScreen.*`/`inningModal.*`/`quickSwap.*` component-scoped
+precedent):
+
+- `handoffModal.backdrop` (`rgba(0,0,0,0.8)`) — full-screen backdrop
+  behind the "Hand off scoring?" confirm dialog. No existing token at
+  this opacity: sits strictly between `overlay.scrimLight` (0.5, reused
+  above for the menu's own backdrop) and `overlay.backdrop` (0.97). Kept
+  distinct rather than rounding to either neighbor — the confirm dialog
+  can render standalone (`confirmHandoff=true`, `isOpen=false`) and its
+  own darker scrim is a deliberate visual choice in the source, not
+  incidental drift.
+- `handoffModal.cancelBackground` (`rgba(255,255,255,0.06)`) — Cancel
+  button bg. Byte-matches `gameModeScreen.advanceButton.mutedBackground`
+  and `inningModal.divider` exactly, but kept separate per the
+  no-cross-component-alias rule already applied twice in slices 5-6.
+- `handoffModal.confirmBackground` (`#1d4ed8`, blue-700) — "Hand off"
+  confirm button bg. No existing match anywhere (checked against
+  `status.info` `#2563EB` specifically, since both are blues — distinct
+  values, not a role match either: `status.info` is an informational
+  semantic color, this is a confirm-CTA background).
+- `menuPanel.background` (`#1a2a3a`) — gear-menu dropdown panel bg. No
+  existing match (checked against `brand.navy` `#0F1F3D` and
+  `gameDay.surface.shell` `#0B1524`, both darker/more saturated — this
+  is a distinct, lighter navy).
+- `finishGameText` (`#fca5a5`, red-300) — "Finish Game…" menu-item text.
+  Byte-matches `gameDay.gameModeScreen.exitButton.text` exactly (same
+  red-300 value, same abstract "light-red label on a red-adjacent
+  affordance" role), but kept separate per the no-cross-component-alias
+  rule — this component's own concern, not a dependency on
+  `GameModeScreen`'s namespace.
+
+### Verification
+
+- `grep -oE "#[0-9a-fA-F]{3,6}|rgba?\([^)]+\)"
+  frontend/src/components/ScoringMode/GameModeGearMenu.jsx` → empty
+  (zero literals remain).
+- `cd frontend && npm run build` → clean, no errors, no new warnings.
+- `npx vitest run src/components/game-mode/ src/tests/theme.tokens.test.js --no-file-parallelism`
+  → **114/114 passing** (6 test files), matching the slice-3/5/6
+  baseline. (No `ScoringMode/*`-specific suite exists yet to add to this
+  run — see Reachability above.)
+- **Real-DOM computed-style + interaction-wiring verification** (RTL,
+  real component render, real wired handlers per the auth-boundary rule
+  — a harness with a live `useState` log asserting each callback fires
+  with the right effect, not a no-op-stub harness): rendered
+  `GameModeGearMenu` via a throwaway test file (written, run, then
+  deleted — not committed), covering both render states (gear-menu open,
+  and the handoff-confirm modal reached by clicking "Hand off scoring"):
+
+  | Element | Computed value | Expected token | Match |
+  |---|---|---|---|
+  | Menu panel `background-color` | `rgb(26, 42, 58)` | `gearMenu.menuPanel.background` = `#1a2a3a` | exact |
+  | Menu panel `border-color` | `rgba(255, 255, 255, 0.15)` | `overlay.whiteLight` | exact |
+  | Menu backdrop `background-color` | `rgba(0, 0, 0, 0.5)` | `overlay.scrimLight` | exact |
+  | Exit Scoring item `color` | `rgb(148, 163, 184)` | `gameDay.text.secondary` = `#94A3B8` | exact |
+  | Exit Scoring item `border-bottom-color` | `rgba(255, 255, 255, 0.08)` | `overlay.whiteFaint` | exact |
+  | Hand off scoring item `color` | `rgb(226, 232, 240)` | `gameDay.text.label` = `#E2E8F0` | exact |
+  | Finish Game… item `color` | `rgb(252, 165, 165)` | `gearMenu.finishGameText` = `#fca5a5` | exact |
+  | Handoff-confirm panel `background-color` | `rgb(15, 31, 61)` | `brand.navy` = `#0F1F3D` | exact |
+  | Handoff-confirm panel `border-color` | `rgba(255, 255, 255, 0.15)` | `overlay.whiteLight` | exact |
+  | Handoff-confirm title `color` | `rgb(255, 255, 255)` | `gameDay.text.primary` = `#FFFFFF` | exact |
+  | Handoff-confirm body `color` | `rgb(148, 163, 184)` | `gameDay.text.secondary` | exact |
+  | Cancel button `background-color` | `rgba(255, 255, 255, 0.06)` | `handoffModal.cancelBackground` | exact |
+  | Cancel button `border-color` | `rgba(255, 255, 255, 0.12)` | `gameDay.border.hairline` | exact |
+  | Hand off (confirm) button `background-color` | `rgb(29, 78, 216)` | `handoffModal.confirmBackground` = `#1d4ed8` | exact |
+  | Handoff-modal backdrop `background-color` | `rgba(0, 0, 0, 0.8)` | `handoffModal.backdrop` | exact |
+
+  All computed values are byte-exact matches to their token's source
+  hex/rgba value. `fireEvent.click` on Exit Scoring, Hand off scoring,
+  Finish Game…, and the confirm-modal's Hand off button each asserted
+  the real callback prop fired with the right downstream effect
+  (`onClose`+`onExitScoring`; `onClose`+`onHandoff` then the confirm
+  modal actually appearing; `onClose`+`track`+`onFinishGame`;
+  `onConfirmHandoff`) — real interaction wiring confirmed, not just
+  appearance.
+
+### What wasn't independently re-verified
+
+Cancel's own click → `onCancelHandoff` path was exercised structurally
+(the button and its handler are wired identically to the confirm
+button's, which was asserted) but not separately fired in the harness —
+low-risk, same identical-pattern reasoning slices 5/6 used for their own
+"not every site individually DOM-verified" disclosures.
+
+### No behavioral quirks found
+
+Unlike slice 6's `POS_COLORS.LC` divergence (a real pre-existing
+color/data inconsistency), this slice's literal-color inventory
+contained no data-driven lookup tables and no divergent-from-shared-
+palette values — every literal was a static style-object value with an
+unambiguous 1:1 substitution. Nothing here rises to the level of a
+behavioral quirk worth flagging to KK beyond the occurrence-count
+discrepancy already logged above.
+
+### Outcome
+
+Slice 8 complete: merged into `feature/story133-slices5-13-sandbox` as
+commit `1711076` (genuine 2-parent merge), zero literal colors remaining
+in `GameModeGearMenu.jsx`, build clean, 114/114 tests passing, checkpoint
+logged. Next up per the handoff scope table: slice 9,
+`RunnerConflictModal.jsx` (12 occurrences).
