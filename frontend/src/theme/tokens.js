@@ -736,6 +736,142 @@ export const tokens = {
                                // a darker, more saturated blue serving a different role)
         },
       },
+
+      // ─── LiveScoringPanel.jsx sub-components (Story 133 slice 13a, #698) ─
+      // Sub-slice A of 3 (this file is sub-sliced per the handoff doc rather
+      // than one giant diff - see docs/product/STORY133_SANDBOX_PROGRESS.md).
+      // This slice covers ONLY the OUTCOME_ROWS/OUTCOME_ROWS_V2 constants and
+      // the CountPips/DiamondSVG/HomeAwayChip sub-components (source lines
+      // 1-200, above the "─── Main ───" marker). Parts B/C migrate the Main
+      // component body separately. Component-scoped, one-off values with no
+      // reusable role elsewhere in the gameDay family - same precedent as
+      // gearMenu/runnerConflictModal/restoreScoreModal/finishGameModal/
+      // scoringModeEntry above (mint rather than alias, even where a value
+      // happens to byte-match another component's token, because the ROLE is
+      // this component's own) - EXCEPT for genuinely generic/umbrella
+      // gameDay-family tokens (status.error, brand.gold, gameDay.text.
+      // secondary, overlay.whiteFaint, overlay.goldTint), which ARE reused
+      // directly here per the precedent already established for those
+      // specific tokens across every prior slice (see call sites / table
+      // in the checkpoint doc).
+      liveScoringPanel: {
+        // Shared pitch/outcome accent palette - PITCH_CHIPS, PITCH_BUTTONS,
+        // OUTCOME_ROWS, and OUTCOME_ROWS_V2 all draw from the same 6-color
+        // semantic set. Red (out/strike) reuses color.status.error directly
+        // and gold (home run) reuses color.brand.gold directly (see call
+        // sites) - both established generic-reuse precedents. The remaining
+        // 4 have no existing match and are minted here, named by ROLE not
+        // appearance per this file's top-of-file rule.
+        accent: {
+          // green-600 - "ball in play" positive signal. Shared 2 roles
+          // within this file: PITCH_CHIPS/PITCH_BUTTONS "Contact" pitch AND
+          // OUTCOME_ROWS/_V2 Single/Double/Triple hit outcomes - same
+          // abstract "good outcome" semantic, not a cross-component alias.
+          // Byte-matches runnerConflictModal.scoreButton.border (#16a34a)
+          // exactly, but that's a different component's button-border role -
+          // kept separate per the established no-cross-component-alias rule.
+          hit: '#16a34a',
+          // amber-600 - "imperfect/not clean" signal. Shared 2 roles within
+          // this file: PITCH_CHIPS/PITCH_BUTTONS "Foul" pitch AND
+          // OUTCOME_ROWS/_V2 "Error (reached)" outcome. Byte-matches
+          // gameDay.gameModeScreen.orientationHint.background exactly, but
+          // that's a different component's toast-background role - kept
+          // separate per the established rule.
+          caution: '#d97706',
+          // violet-600 - Walk/HBP outcome rows only (both OUTCOME_ROWS and
+          // OUTCOME_ROWS_V2). Byte-matches gameDay.scoringModeEntry.
+          // betaBadge.background exactly, but that's a different component's
+          // pill-background role - kept separate per the established rule.
+          walk: '#7c3aed',
+          // blue-700 - "Ball" pitch chip/button only. FOURTH recurrence of
+          // this exact value across ScoringMode/* components (gearMenu.
+          // handoffModal.confirmBackground, runnerConflictModal.holdButton.
+          // border, scoringModeEntry.claimButton.background, now here) -
+          // kept separate one more time for consistency with all 3 prior
+          // instances, but flagging explicitly: this recurrence count is
+          // high enough to be worth a dedicated follow-up story evaluating
+          // promotion to a genuine shared gameDay-level token (e.g. gameDay.
+          // accent.actionBlue) that all 4+ sites reference, rather than
+          // continuing to mint a component-scoped copy indefinitely. Not
+          // done here - retrofitting the 3 already-merged components is out
+          // of this sub-slice's scope (sub-components section only).
+          ball: '#1d4ed8',
+        },
+        countPips: {
+          // Inactive-pip background (ball/strike count dots). Byte-matches
+          // gameDay.diamond.stroke.empty (0.18) exactly, but that token's
+          // specific documented role is DiamondView's empty-base stroke -
+          // kept separate per the no-cross-component-alias rule (same
+          // reasoning QuickSwap's position.fallback established for a
+          // diamond.* byte-match).
+          inactiveBackground: 'rgba(255,255,255,0.18)',
+          // Pip border, all pips. Byte-matches scoringModeEntry.closeButton.
+          // border (0.2) exactly, but that's a different component's own
+          // button-border role - kept separate per the established rule.
+          border: 'rgba(255,255,255,0.2)',
+        },
+        diamondSvg: {
+          // Outer diamond polygon stroke. Byte-matches gameDay.diamond.
+          // stroke.mound (0.10) exactly, but that token's specific
+          // documented role is DiamondView's pitcher's-mound-circle stroke -
+          // a different element within a structurally different (larger,
+          // full-field) diamond SVG - kept separate per the
+          // no-cross-component-alias rule.
+          polygonStroke: 'rgba(255,255,255,0.1)',
+          base: {
+            // Unoccupied-base fill reuses overlay.whiteFaint directly (exact
+            // byte match, rgba(255,255,255,0.08)) - a generic pre-mixed
+            // cross-app tint, not light-surface-calibrated, already reused
+            // directly elsewhere in this gameDay family (e.g.
+            // scoringModeEntry's inactive toggle bg) - see call site.
+            //
+            // Unoccupied-base stroke. Byte-matches overlay.whiteMedium
+            // (0.25) exactly, but that token's documented role is dim
+            // version-chip TEXT on MaintenanceScreen specifically (a text
+            // role, not a stroke) - kept separate, same reasoning
+            // gameModeScreen.orientationHint.border already applied to this
+            // identical byte-match in slice 5.
+            offStroke: 'rgba(255,255,255,0.25)',
+          },
+          homePlate: {
+            // Home-plate fill. No existing 0.12-opacity white tier at this
+            // FILL role (gameDay.border.hairline is the same value but a
+            // border/divider role, not a shape fill).
+            fill: 'rgba(255,255,255,0.12)',
+            // Home-plate stroke. No existing match (diamond.stroke.
+            // highlight at 0.22 is the nearest neighbor, not equal).
+            stroke: 'rgba(255,255,255,0.28)',
+          },
+          runnerPill: {
+            // On-base runner-name pill background/border - gold tint.
+            // background (0.15) sits between overlay.goldTint (0.12) and
+            // overlay.goldStrong (0.40), no exact match. border (0.35) is
+            // close to goldStrong (0.40) but not equal - a genuine distinct
+            // tier, not a rounding of either.
+            background: 'rgba(245,200,66,0.15)',
+            border: 'rgba(245,200,66,0.35)',
+          },
+        },
+        homeAwayChip: {
+          home: {
+            // "Home" chip background/border - slate-400 tint (color reuses
+            // gameDay.text.secondary directly, exact byte match #94A3B8 -
+            // see call site). No existing pre-mixed overlay tier at this
+            // rgb triple (148,163,184).
+            background: 'rgba(148, 163, 184, 0.12)',
+            border: 'rgba(148, 163, 184, 0.2)',
+          },
+          away: {
+            // "@ Away" chip border - gold 0.3 tier. Byte-matches
+            // gameModeScreen.advanceButton.pendingBorder exactly, but
+            // that's a different component's own role - kept separate per
+            // the established rule. background reuses overlay.goldTint
+            // directly (exact byte match, rgba(245,200,66,0.12)) - see call
+            // site.
+            border: 'rgba(245, 200, 66, 0.3)',
+          },
+        },
+      },
     },
   },
 

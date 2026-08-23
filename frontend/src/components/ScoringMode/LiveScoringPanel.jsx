@@ -9,15 +9,16 @@ import { truncateTeamName, deriveGameHeader } from '../../utils/formatters';
 import { isFlagEnabled } from '../../config/featureFlags';
 import Toast from '../ui/Toast';
 import ScoreboardRow from '../game-mode/ScoreboardRow';
+import { tokens } from '../../theme/tokens';
 
 var FF = "Georgia,'Times New Roman',serif";
 
 var PITCH_CHIPS = {
-  ball:            { label: 'B',  bg: '#1d4ed8' },
-  strike_called:   { label: '✓', bg: '#dc2626' },
-  strike_swinging: { label: 'K',  bg: '#dc2626' },
-  foul:            { label: 'F',  bg: '#d97706' },
-  contact:         { label: '✕', bg: '#16a34a' },
+  ball:            { label: 'B',  bg: tokens.color.gameDay.liveScoringPanel.accent.ball },
+  strike_called:   { label: '✓', bg: tokens.color.status.error },
+  strike_swinging: { label: 'K',  bg: tokens.color.status.error },
+  foul:            { label: 'F',  bg: tokens.color.gameDay.liveScoringPanel.accent.caution },
+  contact:         { label: '✕', bg: tokens.color.gameDay.liveScoringPanel.accent.hit },
 };
 
 var LAST_PITCH_LABEL = {
@@ -29,51 +30,51 @@ var LAST_PITCH_LABEL = {
 };
 
 var PITCH_BUTTONS = [
-  { type: PITCH.BALL,            label: 'Ball',       color: '#1d4ed8', flex: 1   },
-  { type: PITCH.STRIKE_CALLED,   label: 'Strike ✓',  color: '#dc2626', flex: 1   },
-  { type: PITCH.STRIKE_SWINGING, label: 'Strike K',  color: '#dc2626', flex: 1   },
-  { type: PITCH.FOUL,            label: 'Foul',       color: '#d97706', flex: 1   },
-  { type: PITCH.CONTACT,         label: '⚾ Contact', color: '#16a34a', flex: 1.5 },
+  { type: PITCH.BALL,            label: 'Ball',       color: tokens.color.gameDay.liveScoringPanel.accent.ball,    flex: 1   },
+  { type: PITCH.STRIKE_CALLED,   label: 'Strike ✓',  color: tokens.color.status.error,                            flex: 1   },
+  { type: PITCH.STRIKE_SWINGING, label: 'Strike K',  color: tokens.color.status.error,                            flex: 1   },
+  { type: PITCH.FOUL,            label: 'Foul',       color: tokens.color.gameDay.liveScoringPanel.accent.caution, flex: 1   },
+  { type: PITCH.CONTACT,         label: '⚾ Contact', color: tokens.color.gameDay.liveScoringPanel.accent.hit,     flex: 1.5 },
 ];
 
 export var OUTCOME_ROWS = [
   [
-    { type: OUTCOME.OUT_AT_FIRST,  label: 'Out @ 1st', color: '#dc2626' },
-    { type: OUTCOME.FLYOUT,        label: 'Flyout',    color: '#dc2626' },
-    { type: OUTCOME.STRIKEOUT,     label: 'Strikeout', color: '#dc2626' },
+    { type: OUTCOME.OUT_AT_FIRST,  label: 'Out @ 1st', color: tokens.color.status.error },
+    { type: OUTCOME.FLYOUT,        label: 'Flyout',    color: tokens.color.status.error },
+    { type: OUTCOME.STRIKEOUT,     label: 'Strikeout', color: tokens.color.status.error },
   ],
   [
-    { type: OUTCOME.SINGLE, label: 'Single', color: '#16a34a' },
-    { type: OUTCOME.DOUBLE, label: 'Double', color: '#16a34a' },
-    { type: OUTCOME.TRIPLE, label: 'Triple', color: '#16a34a' },
+    { type: OUTCOME.SINGLE, label: 'Single', color: tokens.color.gameDay.liveScoringPanel.accent.hit },
+    { type: OUTCOME.DOUBLE, label: 'Double', color: tokens.color.gameDay.liveScoringPanel.accent.hit },
+    { type: OUTCOME.TRIPLE, label: 'Triple', color: tokens.color.gameDay.liveScoringPanel.accent.hit },
   ],
   [
-    { type: OUTCOME.HOME_RUN, label: 'Home Run', color: '#f5c842' },
+    { type: OUTCOME.HOME_RUN, label: 'Home Run', color: tokens.color.brand.gold },
   ],
   [
-    { type: OUTCOME.WALK,          label: 'Walk',            color: '#7c3aed' },
-    { type: OUTCOME.HBP,           label: 'HBP',             color: '#7c3aed' },
-    { type: OUTCOME.ERROR_REACHED, label: 'Error (reached)', color: '#d97706' },
+    { type: OUTCOME.WALK,          label: 'Walk',            color: tokens.color.gameDay.liveScoringPanel.accent.walk },
+    { type: OUTCOME.HBP,           label: 'HBP',             color: tokens.color.gameDay.liveScoringPanel.accent.walk },
+    { type: OUTCOME.ERROR_REACHED, label: 'Error (reached)', color: tokens.color.gameDay.liveScoringPanel.accent.caution },
   ],
 ];
 
 export var OUTCOME_ROWS_V2 = [
   [
-    { type: OUTCOME.OUT_AT_FIRST, label: 'Out @ 1st', color: '#dc2626' },
-    { type: OUTCOME.FLYOUT,       label: 'Flyout',    color: '#dc2626' },
+    { type: OUTCOME.OUT_AT_FIRST, label: 'Out @ 1st', color: tokens.color.status.error },
+    { type: OUTCOME.FLYOUT,       label: 'Flyout',    color: tokens.color.status.error },
   ],
   [
-    { type: OUTCOME.SINGLE, label: 'Single', color: '#16a34a' },
-    { type: OUTCOME.DOUBLE, label: 'Double', color: '#16a34a' },
-    { type: OUTCOME.TRIPLE, label: 'Triple', color: '#16a34a' },
+    { type: OUTCOME.SINGLE, label: 'Single', color: tokens.color.gameDay.liveScoringPanel.accent.hit },
+    { type: OUTCOME.DOUBLE, label: 'Double', color: tokens.color.gameDay.liveScoringPanel.accent.hit },
+    { type: OUTCOME.TRIPLE, label: 'Triple', color: tokens.color.gameDay.liveScoringPanel.accent.hit },
   ],
   [
-    { type: OUTCOME.HOME_RUN, label: 'Home Run', color: '#f5c842', fullWidth: true },
+    { type: OUTCOME.HOME_RUN, label: 'Home Run', color: tokens.color.brand.gold, fullWidth: true },
   ],
   [
-    { type: OUTCOME.WALK,          label: 'Walk',            color: '#7c3aed' },
-    { type: OUTCOME.HBP,           label: 'HBP',             color: '#7c3aed' },
-    { type: OUTCOME.ERROR_REACHED, label: 'Error (reached)', color: '#d97706' },
+    { type: OUTCOME.WALK,          label: 'Walk',            color: tokens.color.gameDay.liveScoringPanel.accent.walk },
+    { type: OUTCOME.HBP,           label: 'HBP',             color: tokens.color.gameDay.liveScoringPanel.accent.walk },
+    { type: OUTCOME.ERROR_REACHED, label: 'Error (reached)', color: tokens.color.gameDay.liveScoringPanel.accent.caution },
   ],
 ];
 
@@ -87,8 +88,8 @@ function CountPips(props) {
       <span key={i} style={{
         display: 'inline-block', verticalAlign: 'middle',
         width: 8, height: 8, borderRadius: '50%',
-        background: i < n ? color : 'rgba(255,255,255,0.18)',
-        border: '1px solid rgba(255,255,255,0.2)',
+        background: i < n ? color : tokens.color.gameDay.liveScoringPanel.countPips.inactiveBackground,
+        border: '1px solid ' + tokens.color.gameDay.liveScoringPanel.countPips.border,
         marginLeft: i > 0 ? 3 : 0,
       }} />
     );
@@ -121,10 +122,10 @@ function DiamondSVG(props) {
   var pillStyle = {
     position: 'absolute',
     fontSize: '11px', fontWeight: 'bold',
-    background: 'rgba(245,200,66,0.15)',
-    border: '1px solid rgba(245,200,66,0.35)',
+    background: tokens.color.gameDay.liveScoringPanel.diamondSvg.runnerPill.background,
+    border: '1px solid ' + tokens.color.gameDay.liveScoringPanel.diamondSvg.runnerPill.border,
     borderRadius: '4px', padding: '2px 6px',
-    color: '#f5c842',
+    color: tokens.color.brand.gold,
     whiteSpace: 'nowrap',
     pointerEvents: 'none',
   };
@@ -137,23 +138,23 @@ function DiamondSVG(props) {
     <div style={{ position: 'relative', width: '110px', height: '110px', overflow: 'visible' }}>
       <svg width={110} height={110} viewBox="0 0 100 100">
         <polygon points="50,12 88,50 50,88 12,50"
-          fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth={1.5} />
+          fill="none" stroke={tokens.color.gameDay.liveScoringPanel.diamondSvg.polygonStroke} strokeWidth={1.5} />
         {bases.map(function(b) {
           var on = !!occupied[b.base];
           return (
             <rect key={b.base}
               x={b.cx - 9} y={b.cy - 9} width={18} height={18}
               transform={'rotate(45,' + b.cx + ',' + b.cy + ')'}
-              fill={on ? '#f5c842' : 'rgba(255,255,255,0.08)'}
-              stroke={on ? '#f5c842' : 'rgba(255,255,255,0.25)'}
+              fill={on ? tokens.color.brand.gold : tokens.color.overlay.whiteFaint}
+              stroke={on ? tokens.color.brand.gold : tokens.color.gameDay.liveScoringPanel.diamondSvg.base.offStroke}
               strokeWidth={1.5}
             />
           );
         })}
         <rect x={41} y={79} width={18} height={18}
           transform="rotate(45,50,88)"
-          fill="rgba(255,255,255,0.12)"
-          stroke="rgba(255,255,255,0.28)"
+          fill={tokens.color.gameDay.liveScoringPanel.diamondSvg.homePlate.fill}
+          stroke={tokens.color.gameDay.liveScoringPanel.diamondSvg.homePlate.stroke}
           strokeWidth={1}
         />
       </svg>
@@ -183,17 +184,17 @@ function HomeAwayChip(props) {
   if (isHome) {
     return (
       <div style={Object.assign({}, base, {
-        color: '#94a3b8',
-        background: 'rgba(148, 163, 184, 0.12)',
-        border: '1px solid rgba(148, 163, 184, 0.2)',
+        color: tokens.color.gameDay.text.secondary,
+        background: tokens.color.gameDay.liveScoringPanel.homeAwayChip.home.background,
+        border: '1px solid ' + tokens.color.gameDay.liveScoringPanel.homeAwayChip.home.border,
       })}>Home</div>
     );
   }
   return (
     <div style={Object.assign({}, base, {
-      color: '#f5c842',
-      background: 'rgba(245, 200, 66, 0.12)',
-      border: '1px solid rgba(245, 200, 66, 0.3)',
+      color: tokens.color.brand.gold,
+      background: tokens.color.overlay.goldTint,
+      border: '1px solid ' + tokens.color.gameDay.liveScoringPanel.homeAwayChip.away.border,
     })}>@ Away</div>
   );
 }
