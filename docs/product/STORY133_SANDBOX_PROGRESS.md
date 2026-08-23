@@ -332,3 +332,53 @@ style object, only the source changed from a literal to a token
 reference), and build/test are green, which is consistent with the
 byte-preserving guarantee — but flagging plainly that not all 65 were
 individually DOM-verified, same disclosure slice 5 made.
+
+---
+
+## Slice 7 — `LiveScoreViewer.jsx` (verification-only, no code change)
+
+**No slice branch cut, no PR.** Per the handoff doc's instruction for a
+confirmed-clean file ("this is a no-code-change slice: just log a
+checkpoint... commit that checkpoint directly to the sandbox branch —
+no separate slice branch/PR needed"), this checkpoint is committed
+straight to `feature/story133-slices5-13-sandbox` on top of `af51899`
+(the slice 6 checkpoint commit).
+
+### Verification
+
+The handoff doc's scope table lists this file at **0 occurrences,
+verification-only**. Unlike slices 5 (33 documented vs. 51 actual) and 6
+(45 documented vs. 65 actual), this doc count checked out exactly:
+
+- `grep -oE "#[0-9a-fA-F]{3,6}|rgba?\([^)]+\)"
+  frontend/src/components/ScoringMode/LiveScoreViewer.jsx` → empty,
+  exit code 1 (no matches). **0 occurrences confirmed independently, not
+  trusted from the doc.**
+- The file is genuinely trivial, not a case of colors hidden behind
+  variables or template strings the regex could miss — full contents:
+  ```jsx
+  export default function LiveScoreViewer() {
+    return <div>LiveScoreViewer</div>;
+  }
+  ```
+  3 lines, one bare `<div>` with no `style` prop, no className, no
+  imported style object. There is no game-mode-track token debt in this
+  file to migrate.
+
+### Reachability
+
+Confirmed live, not dead code, despite being a stub: `grep -rn
+"LiveScoreViewer" frontend/src` shows it's imported and rendered by
+`frontend/src/components/ScoringMode/LiveScoringPanel.jsx` (`import
+LiveScoreViewer from './LiveScoreViewer';` at line 3, `<LiveScoreViewer`
+at line 285) — one of the 7 live ScoringMode children DugoutView imports
+transitively, per `versionHistory.js`'s own architecture note at line
+587. It is simply a component whose full implementation hasn't been
+built out yet; the stub itself carries no color/token debt regardless.
+
+### Outcome
+
+No `tokens.js` change, no component change, no build/test re-run needed
+(nothing in the diff to verify). Slice 7 is complete as a verification
+no-op. Next up per the handoff scope table: slice 8,
+`GameModeGearMenu.jsx` (10 occurrences).
