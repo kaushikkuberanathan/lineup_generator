@@ -1,11 +1,11 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: 2026-08-22 (v2.12.0 release entry added - Home membership visibility, unified team search, prod auth incident hardening; (develop only - not yet promoted))
+> Last updated: 2026-08-23 (v2.12.0 promoted to main - Home membership visibility, unified team search, prod auth incident hardening, PR #760; 24h soak explicitly overridden by KK, fall season readiness)
 > MVP launched: March 24, 2026
 
 ---
 
-## v2.12.0 - 2026-08-22 - Home membership visibility, unified team search, prod auth incident hardening (develop only - not yet promoted)
+## v2.12.0 - 2026-08-22 - Home membership visibility, unified team search, prod auth incident hardening (promoted to main 2026-08-23, PR #760)
 
 **Minor bump** — Story 134 is a genuine new coach-facing feature (Home redesign to match Account's team visibility), not just a fix batch, following the "size the bump to the release's actual scope" convention established at v2.9.0-v2.11.0.
 
@@ -20,6 +20,8 @@
 **Routine dependency updates**: `@supabase/supabase-js` (PR #725), `mixpanel-browser` (PR #727), `libphonenumber-js` backend (PR #726), `@testing-library/jest-dom` (PR #728).
 
 **Verification (re-run directly, 2026-08-22):** frontend 1090 passed / 1 skipped (95 files), lint clean, `npm run build` clean, `debt-p0` gate clear (0 open P0s).
+
+**24h soak explicitly overridden 2026-08-23** by KK, citing fall season readiness — not a hotfix, a deliberate exception, same pattern as v2.9.0's and v2.11.0's overrides. **Promoted to `main` 2026-08-23** (PR [#760](https://github.com/kaushikkuberanathan/lineup_generator/pull/760), regular merge, `43b0b75`) — confirmed a genuine 2-parent merge via direct API check. Prod smoke test same session: backend `/ping` 200 OK (708ms), frontend loads clean; both Render and Vercel confirmed serving the exact promoted commit via direct deploy-record queries. Post-promote sync (PR #761) merged the same session.
 
 ---
 
