@@ -1035,6 +1035,281 @@ export const tokens = {
           // forever.
           disclaimerText: '#374151',
         },
+
+        // ─── LiveScoringPanel.jsx Main body, sub-slice C of 3 (final, #698) ─
+        // Covers STATE 2 (I am scorer) - the active live-scoring surface:
+        // roster-picker/outcome/runner bottom sheets, the header strip (game
+        // badge, inning, count/outs pills, admin badge, gear/pause icons),
+        // mercy-rule banners, the lock-expired banner, the batting-area cards,
+        // the pitch log, my-half pitch buttons, and the opponent-half pitch
+        // buttons + run counter. Same mint-over-alias precedent as sub-slices
+        // A/B - EXCEPT genuinely generic/umbrella gameDay-level tokens AND the
+        // already-minted liveScoringPanel.* namespace from A/B, both of which
+        // ARE reused directly here per the task's own explicit instruction to
+        // check for and reuse those first (see call sites). Most notably: the
+        // header's game-number badge and count/outs pills are the exact same
+        // "top pill" widget as otherScorerState's (STATE 3) - verified by
+        // reading STATE 3's JSX directly before writing this block, not
+        // assumed from byte-matching alone - so those are reused directly,
+        // not re-minted, keeping the single-render-surface intent (root
+        // CLAUDE.md's Live Scoring Architecture note: "Game Mode count and
+        // outs render in exactly one place - the top pill") backed by one
+        // shared token source instead of two independently-drifting copies.
+        scorerState: {
+          // Bottom-sheet backdrop - shared verbatim by the roster-picker,
+          // outcome, and runner-advancement sheets (3 call sites, identical
+          // value + role). No existing 0.75-opacity black tier (neighbors:
+          // overlay.scrimLight 0.5, gearMenu.handoffModal.backdrop 0.8,
+          // restoreScoreModal.backdrop 0.72, runnerConflictModal.backdrop/
+          // finishGameModal.backdrop 0.82) - a genuine distinct tier for this
+          // file's own bottom sheets.
+          sheetBackdrop: 'rgba(0,0,0,0.75)',
+
+          rosterPicker: {
+            row: {
+              // Non-current roster row background. Byte-matches several
+              // other components' 0.04 white-wash tokens (inningModal.
+              // rowBackground, scoringModeEntry.subtleRowBackground,
+              // runnerConflictModal.cancelButton.background) and this same
+              // file's pitchButtons.disabledBackground below - kept separate
+              // per the established no-cross-role-alias rule (list-row bg is
+              // a distinct role from a disabled-button bg even at the same
+              // opacity).
+              background: 'rgba(255,255,255,0.04)',
+              // Current-row background/border reuse overlay.goldTint/
+              // goldStrong directly (exact matches, see call site).
+            },
+          },
+
+          outcomeSheet: {
+            // V2 sheet's standalone "Foul" button background - gold 0.10
+            // tier. Byte-matches gameModeScreen.resumeBanner.background
+            // exactly, but that's a different component's banner role -
+            // kept separate per the established rule. Border/text reuse
+            // overlay.goldStrong/brand.gold directly (see call site).
+            foulButtonBackground: 'rgba(245,200,66,0.10)',
+            // Outcome option buttons (both V1 and V2 sheets) - shared
+            // subtle-wash background, 1 role, all sites. No existing
+            // 0.05-opacity white tier anywhere in tokens.js.
+            optionButtonBackground: 'rgba(255,255,255,0.05)',
+          },
+
+          runnerSheet: {
+            // "Stayed 3rd" (held) button - byte-matches several other 0.06/
+            // 0.2 tokens elsewhere (see e.g. otherScorerState.countPill.
+            // background, countPips.border) but distinct role here (a
+            // 3-way outcome button, not a pip/pill) - kept separate.
+            heldButtonBackground: 'rgba(255,255,255,0.06)',
+            heldButtonBorder: 'rgba(255,255,255,0.2)',
+            // "Scored"/"Out" buttons - 8-digit hex = the established
+            // liveScoringPanel.accent.hit / color.status.error base color
+            // (reused directly for these buttons' solid borders, see call
+            // site) with a "22" alpha suffix baked into the source literal
+            // for the tinted background. Preserved byte-for-byte rather than
+            // computed via concatenation, consistent with this file's other
+            // tokens all being flat literals per this file's own top-of-file
+            // rule ("no computed expressions").
+            scoredButtonBackground: '#16a34a22',
+            outButtonBackground: '#dc262622',
+          },
+
+          header: {
+            // STATE 2's own header-strip bottom border. Byte-matches
+            // otherScorerState.headerBorder (STATE 3's header) exactly, but
+            // kept as its own key rather than reused: unlike the game-badge/
+            // count/outs pills below (verified identical sub-widgets shared
+            // between states), this is the outer header CONTAINER's own
+            // border and STATE 2's header has materially different content
+            // (admin badge, gear/pause icon buttons) that STATE 3's does
+            // not - a structurally different element, not the same shared
+            // widget, despite the byte match.
+            borderBottom: 'rgba(255,255,255,0.06)',
+            adminBadge: {
+              // "⚠ Admin" pill (isAdminTestMode) - amber-100 bg / amber-800
+              // text. No existing match anywhere in tokens.js.
+              background: '#fef3c7',
+              text: '#92400e',
+            },
+            iconButton: {
+              // Gear (⚙) and pause (✕) icon buttons - shared verbatim, same
+              // role, both sites in this header. No existing 0.06/0.1
+              // pairing tokenized together elsewhere for an icon-button
+              // role specifically (0.06 and 0.1 individually recur many
+              // times across the gameDay family, but always for different
+              // element roles) - color reuses gameDay.text.secondary
+              // directly (see call site).
+              background: 'rgba(255,255,255,0.06)',
+              border: 'rgba(255,255,255,0.1)',
+            },
+            // Game-number badge (background) and count/outs pills reuse
+            // liveScoringPanel.gameNumberBadge.background and
+            // liveScoringPanel.otherScorerState.countPill.*/outsPill.*
+            // directly - confirmed identical widget to STATE 3's by reading
+            // STATE 3's JSX (lines 383-502) before writing this block, not
+            // assumed from the byte match alone. See top-of-block note.
+          },
+
+          // Mercy-rule banner - identical markup rendered twice (home half,
+          // opponent half; gs.halfInning === myTeamHalf ? ... : ...), same
+          // value + role at both sites, one shared key set (same "shared
+          // within this file" precedent as gameNumberBadge/mercyBanner-style
+          // widgets in prior sub-slices).
+          mercyBanner: {
+            background: '#7c2d12',
+            // FOURTH+ recurrence of #fca5a5 across ScoringMode/* components
+            // (gameModeScreen.exitButton.text, gearMenu.finishGameText,
+            // restoreScoreModal.errorBox.text) - kept separate per the
+            // established rule, same reasoning every prior slice used for
+            // this literal.
+            text: '#fca5a5',
+            border: '#ef4444',
+            endButtonBackground: '#ef4444',
+          },
+
+          // Lock-expired reclaim banner. No exact match anywhere: 0.15/0.35
+          // red-600 tiers sit between color.overlay.errorMid (0.12) and
+          // errorMedium (0.30), and are a different rgb triple entirely from
+          // overlay.redFaint (200,16,46 vs. 220,38,38 here).
+          lockExpiredBanner: {
+            background: 'rgba(220,38,38,0.15)',
+            border: 'rgba(220,38,38,0.35)',
+            text: '#fca5a5',
+          },
+
+          // "Now Batting" (mine) / opponent "BATTING" cards - identical
+          // gold-tint chrome, 2 call sites, same role, one shared key set.
+          // background byte-matches otherScorerState.nowBattingCard.
+          // background (0.08) exactly, but border (0.25) does NOT match
+          // otherScorerState.nowBattingCard.border (0.2) - a genuinely
+          // different value, so kept as this section's own token pair
+          // rather than partially reusing one half of an otherwise-matching
+          // pair. Label text reuses brand.gold, subtext reuses gameDay.text.
+          // muted directly (see call sites).
+          battingCard: {
+            background: 'rgba(245,200,66,0.08)',
+            border: 'rgba(245,200,66,0.25)',
+          },
+
+          // "Next Batter" suggestion card. Byte-matches the roster-picker
+          // row background above (both 0.04) but a distinct role (advisory
+          // card vs. list row) - kept separate, own key. Border reuses
+          // gameDay.border.hairline directly (see call site).
+          suggestedBatterCard: {
+            background: 'rgba(255,255,255,0.04)',
+            // "↓ Different" secondary button background. Byte-matches
+            // runnerSheet.heldButtonBackground (both 0.06) exactly, but
+            // that's an unrelated button in a different sheet - kept
+            // separate, own key. Border reuses gameDay.border.hairline
+            // directly (see call site).
+            secondaryButtonBackground: 'rgba(255,255,255,0.06)',
+          },
+
+          // "No batting order set" empty state.
+          noBattingOrder: {
+            background: 'rgba(255,255,255,0.05)',
+            titleText: '#aaa',
+            bodyText: '#666',
+          },
+
+          pitchLog: {
+            // Unknown/lookup-miss pitch-chip fallback background (`PITCH_
+            // CHIPS[p.type] || { bg: '#475569' }`). Byte-matches gameDay.
+            // text.caption exactly, but that's a text-color role, not a
+            // chip-background role - kept separate. "Pitches" eyebrow label
+            // reuses gameDay.text.caption directly instead (see call site).
+            fallbackChipBackground: '#475569',
+            // "No pitches yet" empty-state text. FIFTH+ recurrence of
+            // #374151 across the gameDay family (gameDay.text.separator,
+            // restoreScoreModal.disabledText, finishGameModal.scorePreview.
+            // divider, scoringModeEntry.disabledText, otherScorerState.
+            // disclaimerText) - kept separate one more time per the
+            // established rule.
+            emptyText: '#374151',
+          },
+
+          // Coach-pitching overlay and rule-warning banners - both amber,
+          // distinct opacities per banner but sharing one warning-text
+          // color (shared within this file, same role, same "shared value +
+          // shared role = one key" precedent as gameNumberBadge/mercyBanner
+          // above). Distinct hue from liveScoringPanel.accent.caution
+          // (#d97706, rgb 217,119,6) - this is rgb(245,158,11), amber-500,
+          // a genuinely different orange.
+          coachPitchingBanner: {
+            background: 'rgba(245,158,11,0.15)',
+            border: 'rgba(245,158,11,0.4)',
+          },
+          ruleWarningBanner: {
+            background: 'rgba(245,158,11,0.1)',
+            border: 'rgba(245,158,11,0.3)',
+          },
+          warningText: '#f59e0b',
+
+          pitchButtons: {
+            // Disabled-state chrome shared by all 6 my-half pitch buttons
+            // (Attempt/Ball/Called-K/Swing-K/Foul/Contact). background
+            // (0.04) and text (#374151) are distinct values from
+            // otherScorerState.disabledPitchButtons' own 0.03/#2d3748 pair -
+            // STATE 2's disabled buttons (mid-at-bat, e.g. no batter
+            // selected) are a different visual treatment from STATE 3's
+            // permanently-read-only row, not a byte-for-byte rename of the
+            // same design. Disabled border reuses overlay.whiteFaint
+            // directly (exact match, see call site).
+            disabledBackground: 'rgba(255,255,255,0.04)',
+            disabledText: '#374151',
+            // Each enabled pitch button's 8-digit hex = its established
+            // liveScoringPanel.accent.* (or status.error) base color with a
+            // baked-in alpha suffix ("1a" ~= 10% for background, "66" ~= 40%
+            // for border) - preserved as flat literals per this file's own
+            // "no computed expressions" token rule, not derived via
+            // concatenation at the call site. Called-K and Swing-K share
+            // one "strike" pair (identical value + role, both map to
+            // status.error).
+            attempt: { background: '#7c3aed1a', border: '#7c3aed66' },   // = accent.walk (#7c3aed)
+            ball:    { background: '#1d4ed81a', border: '#1d4ed866' },   // = accent.ball (#1d4ed8)
+            strike:  { background: '#dc26261a', border: '#dc262666' },   // = status.error (#dc2626)
+            foul:    { background: '#d977061a', border: '#d9770666' },   // = accent.caution (#d97706)
+            contact: { background: '#16a34a1a', border: '#16a34a66' },   // = accent.hit (#16a34a)
+          },
+
+          undoButton: {
+            border: 'rgba(255,255,255,0.1)',
+            // Disabled-state (no pitches yet) text. Byte-matches
+            // otherScorerState.disabledPitchButtons.text exactly, but a
+            // different specific element (a bottom-of-panel undo link, not
+            // the disabled pitch-button row itself) - kept separate per the
+            // established rule. Enabled-state text reuses gameDay.text.
+            // muted directly (see call site).
+            disabledText: '#2d3748',
+          },
+
+          // Opponent-half pitch-button row. Byte-matches the outcome-sheet
+          // option-button background above (both 0.05) but a distinct role
+          // (opponent pitch entry vs. at-bat-outcome selection) - kept
+          // separate, own key. Border/text reuse overlay.whiteLight/
+          // gameDay.text.primary directly (see call site).
+          opponentPitchButtons: {
+            background: 'rgba(255,255,255,0.05)',
+          },
+
+          // "+1 {opp} Run" manual-run button - dark red. Byte-matches
+          // restoreScoreModal.restoreButton.confirmBackground exactly
+          // (#7f1d1d, red-900), but that's a different component's
+          // tap-to-confirm state background - kept separate per the
+          // established rule.
+          oppRunButton: {
+            background: '#7f1d1d',
+            text: '#fca5a5',
+          },
+
+          // "+1 {my team} Run" secondary manual-run button - muted/
+          // de-emphasized by design (this team's run count is expected to
+          // come from the scoring flow, not this manual button). No
+          // existing match for either value.
+          myRunButton: {
+            border: '#374151',
+            text: '#555',
+          },
+        },
       },
     },
   },
