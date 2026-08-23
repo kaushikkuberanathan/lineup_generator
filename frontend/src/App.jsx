@@ -1463,6 +1463,7 @@ export default function App() {
     user,
     authState,
     setAuthState,
+    error: authError,
     sendMagicLink,
     requestAccess,
     logout,
@@ -7450,6 +7451,7 @@ export default function App() {
         <LoginScreen
           onRequestAccess={() => setAuthScreen('request')}
           sendMagicLink={sendMagicLink}
+          authError={authError}
         />
       );
     }

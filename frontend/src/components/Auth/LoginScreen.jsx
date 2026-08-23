@@ -5,7 +5,7 @@ import { supabase } from '../../supabase';
 
 const TEAM_ID = import.meta.env.VITE_DEFAULT_TEAM_ID || '1774297491626';
 
-export function LoginScreen({ onRequestAccess, sendMagicLink }) {
+export function LoginScreen({ onRequestAccess, sendMagicLink, authError }) {
   const [email, setEmail]         = useState('');
   const [sent, setSent]           = useState(false);
   const [loading, setLoading]     = useState(false);
@@ -17,6 +17,14 @@ export function LoginScreen({ onRequestAccess, sendMagicLink }) {
     const emailParam = params.get('email');
     if (emailParam) setEmail(decodeURIComponent(emailParam));
   }, []);
+
+  // #579: useAuth surfaces authError when a background session-restore
+  // (e.g. a failed /me call right after SIGNED_IN) fails — previously this
+  // silently stranded the user with no feedback at all. Show it the same
+  // way as any other form error rather than adding a second banner.
+  useEffect(() => {
+    if (authError) setError(authError);
+  }, [authError]);
 
   async function handleSend(e) {
     e.preventDefault();
