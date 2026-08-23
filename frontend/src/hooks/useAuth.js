@@ -146,9 +146,21 @@ export function useAuth() {
               if (window.location.hash) {
                 window.history.replaceState(null, '', window.location.pathname);
               }
+            } else {
+              // #579: previously a silent no-op here left the user stranded on
+              // whatever screen they were already on (typically LoginScreen)
+              // with a live Supabase session and zero feedback. Mirror
+              // checkSession's handling of the same /me-rejected case: log for
+              // diagnostics, surface an error, and explicitly re-settle so the
+              // UI isn't left wedged in an ambiguous state.
+              console.error('[useAuth] onAuthStateChange: /me rejected after SIGNED_IN:', res.status);
+              setError('We could not finish signing you in. Please try again.');
+              setAuthState('unauthenticated');
             }
           } catch (err) {
             console.error('[useAuth] onAuthStateChange error:', err.message);
+            setError('We could not finish signing you in. Please try again.');
+            setAuthState('unauthenticated');
           }
         }
         if (event === 'SIGNED_OUT') {
