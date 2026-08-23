@@ -547,3 +547,147 @@ commit `1711076` (genuine 2-parent merge), zero literal colors remaining
 in `GameModeGearMenu.jsx`, build clean, 114/114 tests passing, checkpoint
 logged. Next up per the handoff scope table: slice 9,
 `RunnerConflictModal.jsx` (12 occurrences).
+
+---
+
+## Slice 9 — `RunnerConflictModal.jsx`
+
+**Branch:** `feature/story133-slice9-runnerconflictmodal-token-migration`
+(forked from `feature/story133-slices5-13-sandbox` @ `b11f1d6`)
+
+**PR:** [#752](https://github.com/kaushikkuberanathan/lineup_generator/pull/752),
+base = `feature/story133-slices5-13-sandbox`, labels `priority:p2` /
+`type:refactor` / `area:scoring`. Opened and merged via `gh` CLI, same
+approach slices 6/8 confirmed works (the GitHub MCP integration's
+`create_pull_request`/`merge_pull_request` still return `403`).
+
+**Commit:** `8d069f2` — "refactor: migrate RunnerConflictModal.jsx off
+literal colors onto tokens.js" (no closing keyword, per handoff rule).
+
+**Merge:** `93f6950`, genuine 2-parent merge —
+`git show -s --format="%H %P" origin/feature/story133-slices5-13-sandbox`
+→ `93f695068bf5cb457f4b706299292591d5775ec4 b11f1d6d65b1a49fa5f2e5ab4eebcccfc331fb30 8d069f2a0a1bf794654e2bb7a3cdba6faa4f63e9`
+(2 parents — `b11f1d6` the prior sandbox tip [slice 8's checkpoint
+commit], `8d069f2` this slice's commit — not squashed).
+
+### Scope discrepancy vs. the handoff doc
+
+Both `STORY133_SANDBOX_HANDOFF.md` and
+`STORY133_GAMEDAY_TOKEN_MIGRATION_HANDOFF.md` list this file at **~12**
+occurrences. The actual inventory —
+`grep -noE "#[0-9a-fA-F]{3,6}|rgba?\([^)]+\)" RunnerConflictModal.jsx | wc -l`
+— returned **18**. Logged per the escalation policy; every real migration
+slice's doc count has undershot the true total so far (slice 5: 33→51,
+slice 6: 45→65, slice 8: 10→18, this slice: 12→18). All 18 were migrated;
+post-migration grep on the file returns empty.
+
+### Reachability
+
+Confirmed live, not dead code: `grep -rln "RunnerConflictModal"
+frontend/src --include="*.jsx"` shows it's imported and rendered by
+`LiveScoringPanel.jsx` — one of the 7 live ScoringMode children
+`DugoutView` imports transitively, same reachability chain slices 7/8
+confirmed. No dedicated `RunnerConflictModal.test.jsx` exists; the
+`ScoringMode/*` track still has no established per-file test baseline
+(confirmed via `find frontend/src/components/ScoringMode -iname
+"*.test.*"`, zero results, same as slice 8).
+
+### Token mapping decisions
+
+**Reused existing tokens (value + role both matched):**
+
+| Literal | Reused token | Role match reasoning |
+|---|---|---|
+| `#0f1f3d` (panel bg) | `brand.navy` | Exact byte match; same role as slices 5/6/8's reuse — dominant dark-navy panel/surface background. |
+| `#f5c842` (eyebrow "Runner conflict at ___") | `brand.gold` | Exact match, primary-accent role — same as every prior slice's reuse. |
+| `#fff` (blocking-name headline, Score/Hold button text; 3 sites) | `gameDay.text.primary` | Exact match, "highest emphasis" — same generic opaque-white-on-dark role at all 3 sites. |
+| `#94a3b8` (body copy under headline, Cancel-play button text; 2 sites) | `gameDay.text.secondary` | Exact match, "mid-emphasis" — same role at both sites. |
+| `#64748b` (Cancel-play subtitle text) | `gameDay.text.muted` | Exact match, "subdued supporting text." |
+
+**Minted new tokens** (`gameDay.runnerConflictModal.*`, mirroring the
+`gameModeScreen.*`/`inningModal.*`/`gearMenu.*` component-scoped
+precedent):
+
+- `backdrop` (`rgba(0,0,0,0.82)`) — full-screen root backdrop. No
+  existing match: sits between `overlay.scrimLight` (0.5) and
+  `overlay.backdrop` (0.97, also a different hue — `rgba(5,10,25,...)`
+  vs. pure black here).
+- `border` (`rgba(255,255,255,0.18)`) — shared within this file, 2 sites
+  (panel border, Cancel-play button border). Byte-matches
+  `diamond.stroke.empty` exactly, but that token's role is a diamond-SVG
+  stroke, not a modal/button border — kept separate per the
+  no-silent-alias rule, same reasoning applied to every prior slice's
+  byte-match-but-wrong-role cases.
+- `scoreButton.{background,border,subtitleText}`
+  (`rgba(22,163,74,0.12)` / `#16a34a` / `#86efac`) — green-600 tint +
+  solid border + green-300 subtitle text for the "Score {name}" button.
+  None match an existing token (distinct hue/value from
+  `status.success` `#27AE60` and its sibling 0.12-tier tokens).
+- `holdButton.{background,border,subtitleText}`
+  (`rgba(29,78,216,0.12)` / `#1d4ed8` / `#93c5fd`) — blue-700 tint +
+  solid border + blue-300 subtitle text for the "Hold {name}" button.
+  `border` byte-matches `gearMenu.handoffModal.confirmBackground`
+  exactly (both `#1d4ed8`), but that token's role is a different
+  component's confirm-button *background*, not this button's *border* —
+  kept separate per the no-cross-component-alias rule, same reasoning as
+  `gearMenu.finishGameText` in slice 8.
+- `cancelButton.background` (`rgba(255,255,255,0.04)`) — Cancel-play
+  button bg. Byte-matches `inningModal.rowBackground` exactly, but kept
+  separate per the no-cross-component-alias rule already applied in
+  slices 5/6/8.
+
+### Verification
+
+- `grep -oE "#[0-9a-fA-F]{3,6}|rgba?\([^)]+\)"
+  frontend/src/components/ScoringMode/RunnerConflictModal.jsx` → empty
+  (zero literals remain).
+- `cd frontend && npm run build` → clean, no errors, no new warnings.
+- `npx vitest run src/components/game-mode/ src/tests/theme.tokens.test.js --no-file-parallelism`
+  → **114/114 passing** (6 test files), matching the slice-3/5/6/8
+  baseline.
+- **Real-DOM computed-style + interaction-wiring verification** (RTL,
+  real component render, real wired `onResolve` handler per the
+  auth-boundary rule — a `vi.fn()` spy asserting each button click fires
+  the callback with the correct decision string, not a no-op-stub
+  harness): rendered `RunnerConflictModal` with a 2-player fixture
+  batting order and a conflict descriptor via a throwaway test file
+  (written, run, then deleted — not committed), read back
+  `getComputedStyle(...)` on the live DOM:
+
+  | Element | Computed value | Expected token | Match |
+  |---|---|---|---|
+  | Dialog root `background-color` | `rgba(0, 0, 0, 0.82)` | `runnerConflictModal.backdrop` | exact |
+  | Panel `background-color` | `rgb(15, 31, 61)` | `brand.navy` = `#0F1F3D` | exact |
+  | Panel `border-color` | `rgba(255, 255, 255, 0.18)` | `runnerConflictModal.border` | exact |
+  | Score button `background-color` | `rgba(22, 163, 74, 0.12)` | `runnerConflictModal.scoreButton.background` | exact |
+  | Score button `border-color` | `rgb(22, 163, 74)` | `runnerConflictModal.scoreButton.border` = `#16a34a` | exact |
+  | Score button `color` | `rgb(255, 255, 255)` | `gameDay.text.primary` | exact |
+  | Hold button `background-color` | `rgba(29, 78, 216, 0.12)` | `runnerConflictModal.holdButton.background` | exact |
+  | Hold button `border-color` | `rgb(29, 78, 216)` | `runnerConflictModal.holdButton.border` = `#1d4ed8` | exact |
+  | Cancel-play button `background-color` | `rgba(255, 255, 255, 0.04)` | `runnerConflictModal.cancelButton.background` | exact |
+  | Cancel-play button `border-color` | `rgba(255, 255, 255, 0.18)` | `runnerConflictModal.border` | exact |
+  | Cancel-play button `color` | `rgb(148, 163, 184)` | `gameDay.text.secondary` = `#94A3B8` | exact |
+
+  All computed values are byte-exact matches to their token's source
+  hex/rgba value. `fireEvent.click` on Score/Hold/Cancel-play each
+  asserted the real `onResolve` prop was called with the correct decision
+  string (`'SCORE_BLOCKING'` / `'HOLD_INCOMING'` / `'CANCEL_PLAY'`,
+  exactly 3 calls total) — real interaction wiring, not just appearance.
+  A second case confirmed `conflict=null` still renders nothing (no
+  crash), covering the component's early-return guard.
+
+### No behavioral quirks found
+
+No data-driven lookup tables in this file (unlike slice 6's `POS_COLORS`)
+and no divergent-from-shared-palette values — every literal was a static
+style-object value with an unambiguous 1:1 substitution. Nothing here
+rises to the level of a behavioral quirk worth flagging to KK beyond the
+occurrence-count discrepancy already logged above.
+
+### Outcome
+
+Slice 9 complete: merged into `feature/story133-slices5-13-sandbox` as
+commit `93f6950` (genuine 2-parent merge), zero literal colors remaining
+in `RunnerConflictModal.jsx`, build clean, 114/114 tests passing,
+checkpoint logged. Next up per the handoff scope table: slice 10,
+`RestoreScoreModal.jsx` (15 occurrences).
