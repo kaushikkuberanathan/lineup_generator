@@ -44,6 +44,47 @@ step (not just trusting each slice-agent's self-report). Summary:
 Nothing in slices 5-13 touched `develop` or `main` at any point — confirmed
 independently after every single slice, not just at the end.
 
+## Bonus: `components/ui/*` primitives (2026-08-23, not a numbered slice)
+
+Not part of Story 133's original scope — a follow-up codebase audit found
+~818 untokenized occurrences beyond game-mode/ScoringMode (App.jsx alone:
+693). KK's call after reviewing the audit: promote Story 133 as-is, fix the
+`InningModal.jsx` LC bug, and do this one small high-leverage piece — the
+shared UI primitives themselves were, a little ironically, not using the
+design-token system. Bundled onto this branch per KK's explicit instruction
+rather than a separate branch, same develop-isolation rule.
+
+**PR:** [#759](https://github.com/kaushikkuberanathan/lineup_generator/pull/759),
+base = this branch, merged as a genuine 2-parent merge (`ea805e3`, parents
+`e76631a` + `29420ad`).
+
+**Files:** `Toast.jsx`, `Badge.jsx`, `Button.jsx`, `Text.jsx`, `Pill.jsx`,
+`BottomSheet.jsx` — 14 real occurrences (one grep hit, `#381` in a comment,
+was a false-positive GitHub issue reference).
+
+**Token decisions:**
+- `text.onDark` reused directly (exact value+role match) for every plain
+  white-on-dark text occurrence: Button secondary/danger, Text `white`,
+  Pill active state, Toast action button — 5 sites, zero minting needed.
+- Minted three new top-level families (no existing "ui primitives"
+  namespace existed): `toast.{border, actionBackground}`,
+  `bottomSheet.backdrop`, `badge.{handL, handR}` (Badge's light-context
+  variant only — dark-context already used `overlay.whiteLight`/
+  `text.onDark`, established since v2.5.12).
+- `toast.actionBackground` (`#1d4ed8`) is the **6th** independent
+  component-scoped mint of this exact value app-wide (5 in `ScoringMode/*`
+  from slices 8/9/12/13a/13b + this one) — same consolidation-candidate
+  flag as above, still deliberately not addressed.
+
+**Verification:**
+- `npm run lint` (`--max-warnings 0`) clean, `npm run build` clean.
+- Full frontend suite re-run on the merged tip: 1090/1091, zero
+  regressions.
+- Throwaway RTL harness (real render, real wired handlers — Toast's
+  `onAction`/`onDismiss` and BottomSheet's `onClose` actually invoked, not
+  stubs): 6/6 assertions passing, every computed style value byte-exact to
+  its token. Deleted before commit.
+
 ---
 
 ## Slice 5 — `GameModeScreen.jsx`
