@@ -1,9 +1,48 @@
 # Story 133 — Live Game-Day Surface Token Migration — Handoff
 
-**Read this before touching `game-mode/*` or `ScoringMode/*`.** This is the
-single source of truth for this specific initiative's current state,
-conventions, and remaining work. Update it in place as slices land — do not
-let it go stale the way other handoff docs in this repo have.
+**MIGRATION COMPLETE as of 2026-08-23 — all 13 slices merged to `develop`
+(PR #764).** This doc's per-slice workflow (§3 below) was followed exactly
+for slices 1-4; slices 5-13 diverged from it deliberately — see
+"Superseded by the sandbox branch" below before assuming anything below
+this point describes what actually happened for slices 5-13.
+
+**#698 is still open.** Per this doc's own standing rule, it closes only
+after a full real on-device Game-Day Validation pass across the complete
+migration, done manually by KK — not yet performed.
+
+## Superseded by the sandbox branch (2026-08-19 through 2026-08-23)
+
+Slices 5-13 were developed on an isolated `feature/story133-slices5-13-sandbox`
+branch instead of the per-slice-PR-to-`develop` flow this doc describes —
+KK's explicit instruction, so the run could proceed without stopping
+between slices (nothing would reach `develop` until explicitly promoted).
+The environment, escalation policy, and per-slice workflow actually used
+for slices 5-13 are in that branch's own `docs/product/STORY133_SANDBOX_HANDOFF.md`
+and `docs/product/STORY133_SANDBOX_PROGRESS.md` — neither has been copied
+into this repo's permanent docs yet; the sandbox branch was deleted on
+merge (per repo convention), so that history now lives only in PR #764's
+diff and the individual sub-PRs (#749-#759) it carried in. A bonus,
+out-of-scope `components/ui/*` primitives migration (PR #759) was bundled
+onto the same branch per KK's instruction and promoted in the same PR.
+
+**Real findings from the full run, not yet acted on:**
+1. `InningModal.jsx`'s `POS_COLORS.LC` is `#27ae60` (green), diverging from
+   the shared `color.position.LC` (`#2980b9`, blue) used everywhere else.
+   Preserved byte-exact; a standalone fix is planned as an immediate
+   follow-up.
+2. `LiveScoreViewer.jsx` ("Join as Viewer") is an unimplemented placeholder
+   — pre-existing, unrelated to this migration.
+3. `#1d4ed8` and `#374151` each independently recurred as separate
+   component-scoped token mints in 6 and 5 files respectively — candidates
+   for a future shared-token consolidation story.
+4. A broader codebase audit (2026-08-23) found ~818 more untokenized
+   occurrences beyond this story's entire scope (`App.jsx` alone: 693) —
+   deliberately not pursued given no customer-facing lift and `App.jsx`'s
+   own pending decomposition plan.
+
+---
+
+## Original handoff (2026-08-18) — accurate for slices 1-4 only from here down
 
 **Tracking issue:** [#698](https://github.com/kaushikkuberanathan/lineup_generator/issues/698)
 — the umbrella for all 13 slices. Read its full comment history before
