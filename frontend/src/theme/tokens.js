@@ -576,6 +576,69 @@ export const tokens = {
           border: 'rgba(255,255,255,0.1)',
         },
       },
+
+      // ─── FinishGameModal.jsx (Story 133 slice 11, #698) ────────────────
+      // Component-scoped, one-off values with no reusable role elsewhere in
+      // the gameDay family - same precedent as gameModeScreen/inningModal/
+      // gearMenu/runnerConflictModal/restoreScoreModal above (mint rather
+      // than alias, even where a value happens to byte-match another
+      // component's token, because the ROLE is this component's own). The
+      // error-alert box (background #fee2e2 / text #dc2626) reuses
+      // color.status.errorBg/color.status.error directly instead of
+      // minting - see component call site; first reuse of errorBg
+      // specifically in a gameDay context (status.error itself was already
+      // reused twice, by restoreScoreModal and gameModeScreen, and errorBg
+      // pairs with it identically to LoginScreen.jsx/RequestAccessScreen.jsx's
+      // existing color:errorBg/backgroundColor:errorBg usage - same alert-
+      // box role, not a light-surface-only concern like text/border/surface).
+      finishGameModal: {
+        // Full-screen root backdrop. Byte-matches runnerConflictModal.
+        // backdrop exactly (both rgba(0,0,0,0.82)) - kept as its own key
+        // per the no-cross-component-alias rule already applied to every
+        // prior instance of a byte-match-but-different-component value.
+        backdrop: 'rgba(0,0,0,0.82)',
+        scorePreview: {
+          // Score-comparison box wrapping the two team-short/score-number
+          // pairs. background byte-matches 4 existing 0.06 white-wash
+          // tokens across other components (gameModeScreen.advanceButton.
+          // mutedBackground, inningModal.divider, gearMenu.handoffModal.
+          // cancelBackground, restoreScoreModal.restoreButton.
+          // disabledBackground) - fifth recurrence, kept separate per the
+          // same rule. border byte-matches restoreScoreModal.cancelButton.
+          // border exactly (both 0.1) - same rule.
+          background: 'rgba(255,255,255,0.06)',
+          border: 'rgba(255,255,255,0.1)',
+          // The em-dash divider glyph between the two score numbers.
+          // Byte-matches gameDay.text.separator (#374151) exactly, but
+          // that token's documented role is explicitly scoped to
+          // ScoreboardRow's ":" glyph only - kept separate, same reasoning
+          // restoreScoreModal.disabledText already applied to this exact
+          // literal in slice 10.
+          divider: '#374151',
+        },
+        cancelButton: {
+          // "Not yet" button bg - byte-matches the same 0.06 white-wash
+          // family as scorePreview.background above; kept as its own key
+          // since it's a different element/role within this same file
+          // (button bg vs. box bg), same within-file discipline slice 6
+          // applied distinguishing battingCard vs. defenseCard chrome.
+          background: 'rgba(255,255,255,0.06)',
+        },
+        confirmButton: {
+          // "Yes, finish game" / "Saving..." primary CTA. Default-armed
+          // state reuses color.status.error (#DC2626) directly (see
+          // component call site) - same destructive/terminal-action reuse
+          // precedent slice 5 established for the Out Tonight strip and
+          // slice 10 for restoreScoreModal's Restore button. loading
+          // (dimmed, in-flight) state is a distinct red-900-adjacent tone
+          // from restoreScoreModal.restoreButton.confirmBackground
+          // (#7f1d1d) - different value, no existing match. spinnerTrack
+          // (0.4 white) has no existing match (overlay.whiteMedium=0.25,
+          // whiteHeavy=0.6 are the nearest tiers, neither equal).
+          loadingBackground: '#6b1a1a',
+          spinnerTrack: 'rgba(255,255,255,0.4)',
+        },
+      },
     },
   },
 
