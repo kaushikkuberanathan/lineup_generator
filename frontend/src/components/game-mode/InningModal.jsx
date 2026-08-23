@@ -19,11 +19,15 @@ import { useEffect } from "react";
 import { GiBaseballBat, GiBaseballGlove } from "react-icons/gi";
 import { isFlagEnabled } from "../../config/featureFlags";
 import { POSITION_LABELS } from "../../constants/positions";
+import { tokens } from "../../theme/tokens";
 
 var POS_COLORS = {
-  P:"#e05c2a", C:"#7f3f3f", "1B":"#2471a3", "2B":"#2980b9",
-  "3B":"#6c3483", SS:"#8e44ad", LF:"#1e8449", LC:"#27ae60",
-  RC:"#8e44ad", RF:"#239b56", Bench:"#475569"
+  P: tokens.color.position.P, C: tokens.color.position.C,
+  "1B": tokens.color.position['1B'], "2B": tokens.color.position['2B'],
+  "3B": tokens.color.position['3B'], SS: tokens.color.position.SS,
+  LF: tokens.color.position.LF, LC: tokens.color.gameDay.inningModal.posColors.lc,
+  RC: tokens.color.position.RC, RF: tokens.color.position.RF,
+  Bench: tokens.color.gameDay.inningModal.posColors.benchUnused
 };
 
 function firstName(name) {
@@ -91,23 +95,25 @@ export function InningModal({
       aria-modal={a11y ? "true" : undefined}
       aria-label={modalAriaLabel}
       style={{ position:"fixed", inset:0, zIndex:3000,
-        background:"rgba(5,10,25,0.97)",
+        background: tokens.color.overlay.backdrop,
         display:"flex", flexDirection:"column",
         fontFamily:"Georgia,'Times New Roman',serif" }}>
 
       {/* ── Header ────────────────────────────────────────────── */}
       <div style={{ padding:"20px 20px 16px", textAlign:"center",
-        background:"linear-gradient(180deg,#0f1a2e,#0b1524)",
-        borderBottom:"1px solid rgba(255,255,255,0.08)" }}>
-        <div style={{ fontSize: a11y ? "12px" : "11px", color: a11y ? "#cbd5e1" : "#64748b",
+        background:"linear-gradient(180deg," + tokens.color.gameDay.inningModal.header.gradientStart + "," + tokens.color.gameDay.surface.shell + ")",
+        borderBottom:"1px solid " + tokens.color.overlay.whiteFaint }}>
+        <div style={{ fontSize: a11y ? "12px" : "11px",
+          color: a11y ? tokens.color.gameDay.inningModal.header.eyebrowTextA11y : tokens.color.gameDay.text.muted,
           textTransform:"uppercase", letterSpacing:"0.15em", marginBottom:"6px" }}>
           {isLastInning ? "Final Inning" : "Inning " + (currentInning + 1) + " Complete"}
         </div>
-        <div style={{ fontSize:"26px", fontWeight:"bold", color:"#f1f5f9", lineHeight:1.2 }}>
+        <div style={{ fontSize:"26px", fontWeight:"bold", color: tokens.color.gameDay.inningModal.emphasisText, lineHeight:1.2 }}>
           {isLastInning ? "End of Game" : "What's Next?"}
         </div>
         {!isLastInning ? (
-          <div style={{ fontSize: a11y ? "14px" : "12px", color: a11y ? "#94a3b8" : "#64748b", marginTop:"6px" }}>
+          <div style={{ fontSize: a11y ? "14px" : "12px",
+            color: a11y ? tokens.color.gameDay.text.secondary : tokens.color.gameDay.text.muted, marginTop:"6px" }}>
             Choose which half to start
           </div>
         ) : null}
@@ -118,7 +124,8 @@ export function InningModal({
 
         {/* ── Last inning / end of game ── */}
         {isLastInning ? (
-          <div style={{ textAlign:"center", padding:"40px 0", color: a11y ? "#e2e8f0" : "#475569" }}>
+          <div style={{ textAlign:"center", padding:"40px 0",
+            color: a11y ? tokens.color.gameDay.text.label : tokens.color.gameDay.text.caption }}>
             <div style={{ fontSize:"32px", marginBottom:"12px" }}><GiBaseballBat /></div>
             <div style={{ fontSize:"16px" }}>
               Game complete. Return to the lineup to unlock or share.
@@ -131,26 +138,26 @@ export function InningModal({
 
             {/* ── Batting preview card ── */}
             <div style={{ borderRadius:"12px", overflow:"hidden",
-              border:"1px solid rgba(245,200,66,0.25)",
-              background:"rgba(245,200,66,0.05)" }}>
+              border:"1px solid " + tokens.color.gameDay.inningModal.battingCard.border,
+              background: tokens.color.gameDay.inningModal.battingCard.background }}>
               <div style={{ padding:"8px 14px",
-                background:"rgba(245,200,66,0.12)",
-                borderBottom:"1px solid rgba(245,200,66,0.15)",
-                fontSize: a11y ? "12px" : "10px", fontWeight:"bold", color:"#f5c842",
+                background: tokens.color.overlay.goldTint,
+                borderBottom:"1px solid " + tokens.color.gameDay.inningModal.battingCard.headerBorder,
+                fontSize: a11y ? "12px" : "10px", fontWeight:"bold", color: tokens.color.brand.gold,
                 letterSpacing:"0.15em", textTransform:"uppercase" }}>
                 <GiBaseballBat style={{ verticalAlign:"middle", marginRight:"5px" }} />Batting Order
               </div>
               <div style={{ padding:"10px 14px", display:"flex", flexDirection:"column", gap:"6px" }}>
                 {leadOff ? (
                   <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
-                    <div style={{ fontSize: a11y ? "11px" : "9px", color:"#f5c842",
+                    <div style={{ fontSize: a11y ? "11px" : "9px", color: tokens.color.brand.gold,
                       textTransform:"uppercase", letterSpacing:"0.1em", minWidth:"60px" }}>Now Batting</div>
-                    <div style={{ fontSize: a11y ? "18px" : "16px", fontWeight:"bold", color:"#f1f5f9", flex:1 }}>
+                    <div style={{ fontSize: a11y ? "18px" : "16px", fontWeight:"bold", color: tokens.color.gameDay.inningModal.emphasisText, flex:1 }}>
                       {firstName(leadOff)}
                     </div>
                     {getHand(leadOff) !== "U" ? (
                       <div style={{ fontSize:"10px", fontWeight:"bold", padding:"2px 7px",
-                        borderRadius:"5px", background:"rgba(245,200,66,0.2)", color:"#f5c842" }}>
+                        borderRadius:"5px", background: tokens.color.gameDay.inningModal.battingCard.handBadgeBackground, color: tokens.color.brand.gold }}>
                         {getHand(leadOff)}
                       </div>
                     ) : null}
@@ -158,14 +165,14 @@ export function InningModal({
                 ) : null}
                 {onDeck ? (
                   <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
-                    <div style={{ fontSize: a11y ? "11px" : "9px", color:"#64748b",
+                    <div style={{ fontSize: a11y ? "11px" : "9px", color: tokens.color.gameDay.text.muted,
                       textTransform:"uppercase", letterSpacing:"0.1em", minWidth:"60px" }}>On Deck</div>
-                    <div style={{ fontSize: a11y ? "15px" : "13px", fontWeight:"bold", color:"#94a3b8", flex:1 }}>
+                    <div style={{ fontSize: a11y ? "15px" : "13px", fontWeight:"bold", color: tokens.color.gameDay.text.secondary, flex:1 }}>
                       {firstName(onDeck)}
                     </div>
                     {getHand(onDeck) !== "U" ? (
                       <div style={{ fontSize:"10px", fontWeight:"bold", padding:"2px 7px",
-                        borderRadius:"5px", background:"rgba(255,255,255,0.08)", color:"#64748b" }}>
+                        borderRadius:"5px", background: tokens.color.overlay.whiteFaint, color: tokens.color.gameDay.text.muted }}>
                         {getHand(onDeck)}
                       </div>
                     ) : null}
@@ -173,21 +180,21 @@ export function InningModal({
                 ) : null}
                 {inHole ? (
                   <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
-                    <div style={{ fontSize: a11y ? "11px" : "9px", color:"#475569",
+                    <div style={{ fontSize: a11y ? "11px" : "9px", color: tokens.color.gameDay.text.caption,
                       textTransform:"uppercase", letterSpacing:"0.1em", minWidth:"60px" }}>In Hole</div>
-                    <div style={{ fontSize: a11y ? "14px" : "12px", color:"#64748b", flex:1 }}>
+                    <div style={{ fontSize: a11y ? "14px" : "12px", color: tokens.color.gameDay.text.muted, flex:1 }}>
                       {firstName(inHole)}
                     </div>
                   </div>
                 ) : null}
                 {restBatters.length > 0 ? (
                   <div style={{ display:"flex", flexWrap:"wrap", gap:"4px", paddingTop:"4px",
-                    borderTop:"1px solid rgba(255,255,255,0.06)" }}>
+                    borderTop:"1px solid " + tokens.color.gameDay.inningModal.divider }}>
                     {restBatters.map(function(name, i) {
                       return (
                         <div key={name} style={{ padding:"2px 8px", borderRadius:"10px",
-                          background:"rgba(255,255,255,0.04)",
-                          fontSize: a11y ? "12px" : "11px", color: a11y ? "#94a3b8" : "#475569" }}>
+                          background: tokens.color.gameDay.inningModal.rowBackground,
+                          fontSize: a11y ? "12px" : "11px", color: a11y ? tokens.color.gameDay.text.secondary : tokens.color.gameDay.text.caption }}>
                           {leadIdx + 4 + i}. {firstName(name)}
                         </div>
                       );
@@ -199,29 +206,29 @@ export function InningModal({
 
             {/* ── Defense preview card ── */}
             <div style={{ borderRadius:"12px", overflow:"hidden",
-              border:"1px solid rgba(74,222,128,0.25)",
-              background:"rgba(74,222,128,0.04)" }}>
+              border:"1px solid " + tokens.color.gameDay.inningModal.defenseCard.border,
+              background: tokens.color.gameDay.inningModal.defenseCard.background }}>
               <div style={{ padding:"8px 14px",
-                background:"rgba(74,222,128,0.10)",
-                borderBottom:"1px solid rgba(74,222,128,0.15)",
-                fontSize: a11y ? "12px" : "10px", fontWeight:"bold", color:"#4ade80",
+                background: tokens.color.gameDay.inningModal.defenseCard.headerBackground,
+                borderBottom:"1px solid " + tokens.color.gameDay.inningModal.defenseCard.headerBorder,
+                fontSize: a11y ? "12px" : "10px", fontWeight:"bold", color: tokens.color.gameDay.inningModal.defenseAccent,
                 letterSpacing:"0.15em", textTransform:"uppercase" }}>
                 <FieldIcon style={{ verticalAlign:"middle", marginRight:"5px" }} />Inning {nextInning + 1} Positions
               </div>
               <div style={{ padding:"10px 14px" }}>
                 <div style={{ display:"flex", flexDirection:"column", gap:"5px" }}>
                   {fieldPlayers.map(function(a) {
-                    var pc = POS_COLORS[a.pos] || "#555";
+                    var pc = POS_COLORS[a.pos] || tokens.color.gameDay.inningModal.posColors.fallback;
                     return (
                       <div key={a.name} style={{ display:"flex", alignItems:"center", gap:"10px",
                         padding:"6px 10px", borderRadius:"7px",
-                        background:"rgba(255,255,255,0.04)",
+                        background: tokens.color.gameDay.inningModal.rowBackground,
                         borderLeft:"3px solid " + pc }}>
                         <div
                           aria-label={a11y ? (POSITION_LABELS[a.pos] || a.pos) : undefined}
                           style={{ fontSize:"10px", fontWeight:"bold", color:pc,
                             minWidth:"24px", textAlign:"right" }}>{a.pos}</div>
-                        <div style={{ fontSize: a11y ? "15px" : "14px", fontWeight:"bold", color:"#e2e8f0" }}>
+                        <div style={{ fontSize: a11y ? "15px" : "14px", fontWeight:"bold", color: tokens.color.gameDay.text.label }}>
                           {firstName(a.name)}
                         </div>
                       </div>
@@ -230,16 +237,16 @@ export function InningModal({
                 </div>
                 {benchPlayers.length > 0 ? (
                   <div style={{ marginTop:"10px", display:"flex", flexWrap:"wrap", gap:"6px",
-                    paddingTop:"8px", borderTop:"1px solid rgba(255,255,255,0.06)" }}>
-                    <div style={{ fontSize: a11y ? "11px" : "9px", color: a11y ? "#94a3b8" : "#475569",
+                    paddingTop:"8px", borderTop:"1px solid " + tokens.color.gameDay.inningModal.divider }}>
+                    <div style={{ fontSize: a11y ? "11px" : "9px", color: a11y ? tokens.color.gameDay.text.secondary : tokens.color.gameDay.text.caption,
                       textTransform:"uppercase", letterSpacing:"0.1em", width:"100%",
                       marginBottom:"2px" }}>Bench</div>
                     {benchPlayers.map(function(a) {
                       return (
                         <div key={a.name} style={{ padding:"3px 10px", borderRadius:"12px",
-                          background:"rgba(255,255,255,0.05)",
-                          border:"1px solid rgba(255,255,255,0.08)",
-                          fontSize:"12px", color: a11y ? "#94a3b8" : "#64748b" }}>
+                          background: tokens.color.gameDay.inningModal.benchChip.background,
+                          border:"1px solid " + tokens.color.overlay.whiteFaint,
+                          fontSize:"12px", color: a11y ? tokens.color.gameDay.text.secondary : tokens.color.gameDay.text.muted }}>
                           {firstName(a.name)}
                         </div>
                       );
@@ -256,7 +263,7 @@ export function InningModal({
       {/* ── Action buttons ────────────────────────────────────── */}
       <div style={{ display:"flex", flexDirection:"column", gap:"8px", padding:"16px 20px",
         paddingBottom:"max(16px, env(safe-area-inset-bottom, 16px))",
-        borderTop:"1px solid rgba(255,255,255,0.08)" }}>
+        borderTop:"1px solid " + tokens.color.overlay.whiteFaint }}>
 
         {isLastInning ? (
           <button
@@ -264,8 +271,8 @@ export function InningModal({
             data-inning-confirm
             aria-label={a11y ? "Exit game mode" : undefined}
             style={{ padding:"14px", borderRadius:"10px", minHeight:44,
-              background:"#334155", border:"none",
-              color:"#94a3b8", fontSize:"15px", fontWeight:"bold", cursor:"pointer",
+              background: tokens.color.gameDay.inningModal.exitButton.background, border:"none",
+              color: tokens.color.gameDay.text.secondary, fontSize:"15px", fontWeight:"bold", cursor:"pointer",
               fontFamily:"Georgia,serif" }}>
             Exit Game Mode
           </button>
@@ -276,8 +283,8 @@ export function InningModal({
               data-inning-confirm
               aria-label={a11y ? "Start batting for inning " + (nextInning + 1) : undefined}
               style={{ padding:"14px", borderRadius:"10px", minHeight:44,
-                background:"#f5c842", border:"none",
-                color:"#0f1f3d", fontSize:"15px", fontWeight:"bold", cursor:"pointer",
+                background: tokens.color.brand.gold, border:"none",
+                color: tokens.color.brand.navy, fontSize:"15px", fontWeight:"bold", cursor:"pointer",
                 fontFamily:"Georgia,serif" }}>
               <GiBaseballBat style={{ verticalAlign:"middle", marginRight:"6px" }} />Start Batting — Inning {nextInning + 1}
             </button>
@@ -285,8 +292,8 @@ export function InningModal({
               onClick={function() { onConfirm("defense"); }}
               aria-label={a11y ? "Take the field for inning " + (nextInning + 1) : undefined}
               style={{ padding:"14px", borderRadius:"10px", minHeight:44,
-                background:"#4ade80", border:"none",
-                color:"#0f1f3d", fontSize:"15px", fontWeight:"bold", cursor:"pointer",
+                background: tokens.color.gameDay.inningModal.defenseAccent, border:"none",
+                color: tokens.color.brand.navy, fontSize:"15px", fontWeight:"bold", cursor:"pointer",
                 fontFamily:"Georgia,serif" }}>
               <FieldIcon style={{ verticalAlign:"middle", marginRight:"6px" }} />Take the Field — Inning {nextInning + 1}
             </button>
@@ -297,8 +304,8 @@ export function InningModal({
           onClick={onCancel}
           aria-label={a11y ? "Cancel inning advance" : undefined}
           style={{ padding:"12px", borderRadius:"10px", minHeight:44,
-            background:"transparent", border:"1px solid rgba(255,255,255,0.15)",
-            color:"#94a3b8", fontSize:"14px", cursor:"pointer",
+            background:"transparent", border:"1px solid " + tokens.color.overlay.whiteLight,
+            color: tokens.color.gameDay.text.secondary, fontSize:"14px", cursor:"pointer",
             fontFamily:"Georgia,serif" }}>
           Cancel
         </button>
