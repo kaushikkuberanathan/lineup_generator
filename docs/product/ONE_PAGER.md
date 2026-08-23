@@ -1,6 +1,6 @@
 # Dugout Lineup — 1-Pager
 
-> v2.1 — 2026-08-04 — App v2.8.3 (prod; develop is ahead at v2.8.4, not yet promoted)
+> v2.2 — 2026-08-23 — App v2.12.0 in production
 
 ---
 
@@ -65,9 +65,9 @@ Sideline-first, fairness is the product, zero friction for viewers, one-tap core
 
 For the authoritative roadmap including current release status, v2.5.1 features, v2.6.0 backlog, and longer-term planning, see [docs/product/ROADMAP.md](ROADMAP.md). This section is intentionally minimal here to avoid drift between docs.
 
-| Snapshot (2026-08-04) | Status |
+| Snapshot (2026-08-23) | Status |
 |---|---|
-| Production version | v2.8.3 (develop is ahead at v2.8.4, not yet promoted) |
+| Production version | v2.12.0 |
 | Live scoring | Shipped — functionally on for every team via an active testing shim; per-team DB flag + Mud Hens/Demo All-Stars hardcode still in code but bypassed (corrected 2026-08-04) |
 | Magic link + Google OAuth auth | Shipped |
 | Admin UI | Shipped |
@@ -79,7 +79,7 @@ For the authoritative roadmap including current release status, v2.5.1 features,
 
 - Lineup generated in < 60 seconds (p50)
 - Share link opens on mobile without login: 100% success rate
-- Test suite: 975 passed / 1 skipped / 0 failed before every deploy (as of v2.8.4, 2026-08-04; 1086 total incl. 111 backend)
+- Test suite: frontend Vitest, hermetic backend unit tests, backend integration checks, and local-stack RLS tests are enforced by CI; exact counts are recorded per release rather than frozen here
 - Zero roster wipe incidents (three guards in place)
 - Rollback to stable production: < 10 minutes from detection
 

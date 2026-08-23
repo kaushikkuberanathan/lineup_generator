@@ -1,6 +1,6 @@
 # Dugout Lineup — Product Charter
 
-> Version 1.2 — 2026-08-04 — App v2.8.3 (prod; develop is ahead at v2.8.4, not yet promoted)
+> Version 1.3 — 2026-08-23 — App v2.12.0 in production
 > Owner: KK (Product + Engineering)
 
 ---
@@ -69,7 +69,7 @@ Every product decision is evaluated against this principle first.
 - Scorekeeper role with scoped write access for live score entry
 - Team Coordinator role with schedule write access
 - Full audit log (who changed what, when)
-- GitHub Actions CI gate — block deploys on failing engine tests
+- Multi-coach invite UX and scoped collaborator permissions (the authentication gate and membership model already ship)
 
 ### Explicit Non-Goals
 
@@ -164,7 +164,7 @@ Success metric: fix any data problem using admin.html or Supabase SQL Editor wit
 
 | Metric | Target | Source |
 |--------|--------|--------|
-| Frontend test suite | 975 passed / 1 skipped / 0 failed (as of v2.8.4, 2026-08-04; 1086 total incl. 111 backend) | `npm test` (Vitest) |
+| Automated test gate | Frontend Vitest, backend unit/integration, sync-script, and local-stack RLS jobs; exact counts recorded per release | GitHub Actions CI |
 | Build clean (zero errors) | 100% before every deploy | `npm run build` |
 | Share link renders without login | 100% | Manual + health-check.yml |
 | Auth never blocks Game Mode | 100% | Manual QA |
