@@ -1086,3 +1086,239 @@ commit `2dea4c6` (genuine 2-parent merge), zero literal colors remaining
 in `FinishGameModal.jsx`, build clean, 114/114 tests passing, checkpoint
 logged. Next up per the handoff scope table: slice 12,
 `ScoringModeEntry.jsx` (31 occurrences).
+
+---
+
+## Slice 12 — `ScoringModeEntry.jsx`
+
+**Branch:** `feature/story133-slice12-scoringmodeentry-token-migration`
+(forked from `feature/story133-slices5-13-sandbox` @ `b34358b`)
+
+**PR:** [#755](https://github.com/kaushikkuberanathan/lineup_generator/pull/755),
+base = `feature/story133-slices5-13-sandbox`, labels `priority:p2` /
+`type:refactor` / `area:scoring`. Opened and merged via `gh` CLI, same
+approach slices 6/8/9/10/11 confirmed works (the GitHub MCP integration's
+`create_pull_request`/`merge_pull_request` still return `403`).
+
+**Commit:** `be3a627` — "refactor: migrate ScoringModeEntry.jsx off
+literal colors onto tokens.js" (no closing keyword, per handoff rule).
+
+**Merge:** `266d1cd`, genuine 2-parent merge —
+`git show -s --format="%H %P" origin/feature/story133-slices5-13-sandbox`
+→ `266d1cd36217125ab49e0df1e3a972311ea3386b b34358baf5954600497686126d39b36c348e84ec be3a6270bab37cc753ddc185e581f3ebd5c5f446`
+(2 parents — `b34358b` the prior sandbox tip [slice 11's checkpoint
+commit], `be3a627` this slice's commit — not squashed).
+
+### Scope discrepancy vs. the handoff doc
+
+Both `STORY133_SANDBOX_HANDOFF.md` and
+`STORY133_GAMEDAY_TOKEN_MIGRATION_HANDOFF.md` list this file at **~31**
+occurrences. The actual inventory —
+`grep -noE "#[0-9a-fA-F]{3,6}|rgba?\([^)]+\)" ScoringModeEntry.jsx | wc -l`
+— returned **48**. Logged per the escalation policy; every real migration
+slice's doc count has undershot the true total so far (slice 5: 33→51,
+slice 6: 45→65, slice 8: 10→18, slice 9: 12→18, slice 10: 15→27, slice
+11: 16→23, this slice: 31→48). All 48 were migrated; post-migration grep
+on the file returns empty.
+
+### Reachability
+
+Confirmed live, not dead code: `grep -rln "ScoringModeEntry" frontend/src
+--include="*.jsx"` shows it's imported and rendered directly by
+`DugoutView.jsx` (`import ScoringModeEntry from '../ScoringMode/
+ScoringModeEntry'`, `<ScoringModeEntry` at line 256) — the sole game-day
+surface per root `CLAUDE.md`'s Live Scoring Architecture notes, not
+reached transitively through `LiveScoringPanel.jsx` like slices 8-11's
+files. Also referenced in `DugoutView.test.jsx`,
+`DugoutView.viewport.test.jsx`, and `AppShareLinkRouting.test.jsx`. No
+dedicated `ScoringModeEntry.test.jsx` exists; the `ScoringMode/*` track
+still has no established per-file test baseline (confirmed via `find
+frontend/src/components/ScoringMode -iname "*.test.*"`, zero results,
+same as slices 8-11). This is the entry/selection screen for live
+scoring — `myTeamHalf` selection, today's-game vs. upcoming-game
+selection, Claim Scorer / Join as Viewer / Practice Mode routing — with
+real internal state (`useState` for `myTeamHalf`) and derived selection
+logic (`computeNextGames`), not a static-styling-only component like
+several prior slices.
+
+### Token mapping decisions
+
+**Reused existing tokens (value + role both matched):**
+
+| Literal | Reused token | Role match reasoning |
+|---|---|---|
+| `#0b1524` (root shell bg) | `gameDay.surface.shell` | Exact byte match; same role as every prior slice's reuse — full-screen game-day shell. |
+| `#fff` (root text color, BETA badge text, close-button text, selected next-game-row text, half-toggle active text ×2, Claim Scorer active text, Practice Mode text; 8 sites) | `gameDay.text.primary` | Exact match, "highest emphasis" — same generic opaque-white-on-dark role at all 8 sites. |
+| `rgba(255,255,255,0.08)` (header border, close-button bg, non-selected next-game-row border, half-toggle inactive bg ×2, divider border-top; 6 sites) | `overlay.whiteFaint` | Exact match, dark-surface-safe per its own doc comment. |
+| `#f5c842` (Scoring Mode title, team name, "Today's Game" label; 3 sites) | `brand.gold` | Exact match, primary-accent role — same as every prior slice's reuse. |
+| `#0f1f3d` (game card bg) | `brand.navy` | Exact match, same role as every prior slice's reuse. |
+| `#64748b` (Team label, "No game today" text, Practice Mode subtitle; 3 sites) | `gameDay.text.muted` | Exact match, "subdued supporting text." |
+| `#475569` ("Upcoming" eyebrow, "Pitches won't be recorded" caption, Claim Scorer disabled text; 3 sites) | `gameDay.text.caption` | Exact match; already reused in slices 5/6/10 for general low-emphasis supporting text beyond just eyebrow labels — consistent with that broader precedent, extended here to a button's disabled-state text too. |
+| `#94a3b8` (today's-game date text, next-game date text; 2 sites) | `gameDay.text.secondary` | Exact match, "mid-emphasis." |
+| `rgba(245,200,66,0.12)` (selected next-game-row bg) | `overlay.goldTint` | Exact match; generic pre-mixed cross-app alpha tint, safe to reuse directly per the precedent slice 6 established. |
+| `rgba(245,200,66,0.4)` (selected next-game-row border) | `overlay.goldStrong` | Exact match; doc comment "gold wash for selected/active states" — an exact role match for this file's selected-row highlight, first reuse of this specific token in a `gameDay` context. |
+
+**Minted new tokens** (`gameDay.scoringModeEntry.*`, mirroring the
+`gameModeScreen.*`/`inningModal.*`/`gearMenu.*`/`runnerConflictModal.*`/
+`restoreScoreModal.*`/`finishGameModal.*` component-scoped precedent):
+
+- `betaBadge.background` (`#7c3aed`, violet-600) — "BETA" pill bg; no
+  existing match anywhere.
+- `closeButton.border` (`rgba(255,255,255,0.2)`) — no existing
+  0.2-opacity white tier (`overlay.whiteFaint`=0.08, `whiteLight`=0.15,
+  `whiteMedium`=0.25 are the nearest, none exact).
+- `cardBorder` (`rgba(255,255,255,0.10)`) — shared within this file, 2
+  sites (game card border, Practice Mode card border). No existing
+  0.10-opacity white tier anywhere in `tokens.js` — a genuine gap-fill
+  value, not a rounding of `overlay.whiteFaint` (0.08).
+- `todayGameCard.{background,border}` (`rgba(245,200,66,0.08)` /
+  `rgba(245,200,66,0.25)`) — "Today's Game" advisory card. `background`
+  byte-matches `restoreScoreModal.warningBox.background` exactly;
+  `border` byte-matches both `inningModal.battingCard.border` and
+  `gameModeScreen.resumeBanner.border` exactly — third and second
+  recurrence respectively of these values across unrelated components.
+  Kept separate per the established no-cross-component-alias rule.
+- `mutedText` (`#888`) — shared within this file, 3 sites ("We bat:"
+  label, both half-toggle buttons' inactive text). No existing token at
+  this exact gray — sits between `gameDay.text.muted` (`#64748B`) and
+  `gameDay.text.secondary` (`#94A3B8`), matching neither.
+- `disabledText` (`#374151`) — shared within this file, 2 sites ("No
+  upcoming games scheduled" text, disabled "Join as Viewer" link text).
+  Byte-matches `restoreScoreModal.disabledText` and
+  `finishGameModal.scorePreview.divider` exactly — third recurrence of
+  this value across unrelated components; kept separate per the
+  established rule, same reasoning both prior slices used for this same
+  literal.
+- `halfToggle.activeBackground` (`#1B2A4A`) — shared within this file, 2
+  sites (Top/Bottom active state bg). No existing match (distinct from
+  `brand.navy` `#0F1F3D` and `gameDay.surface.shell` `#0B1524`, both
+  darker/more saturated — same "distinct lighter navy" pattern
+  `gearMenu.menuPanel.background` established in slice 8).
+- `subtleRowBackground` (`rgba(255,255,255,0.04)`) — shared within this
+  file, 2 sites (non-selected next-game row bg, Practice Mode card bg).
+  Byte-matches `inningModal.rowBackground` exactly, but kept separate per
+  the no-cross-component-alias rule, same reasoning
+  `runnerConflictModal.cancelButton.background` used for this identical
+  literal in slice 9.
+- `claimButton.{background,disabledBackground,shadow}` — "Claim Scorer"
+  primary CTA. `background` (`#1d4ed8`) byte-matches
+  `gearMenu.handoffModal.confirmBackground` exactly, kept separate per
+  the established rule. `disabledBackground`
+  (`rgba(255,255,255,0.06)`) is the sixth recurrence of this white-wash
+  value across components, minted separately per the same rule.
+  `shadow` (`rgba(29,78,216,0.35)`) has no existing match anywhere — a
+  button glow, distinct role from the flat background despite sharing
+  the same base hue.
+- `viewerLink.color` (`#60a5fa`, blue-400) — "Join as Viewer →" link
+  text (enabled state); no existing match (distinct from `status.info`
+  `#2563EB`, a darker, more saturated blue serving a different role).
+
+### Verification
+
+- `grep -oE "#[0-9a-fA-F]{3,6}|rgba?\([^)]+\)"
+  frontend/src/components/ScoringMode/ScoringModeEntry.jsx` → empty
+  (zero literals remain).
+- `cd frontend && npm run build` → clean, no errors, no new warnings.
+- `npx vitest run src/components/game-mode/ src/tests/theme.tokens.test.js --no-file-parallelism`
+  → **114/114 passing** (6 test files), matching the slice-3/5/6/8/9/10/11
+  baseline.
+- **Real-DOM computed-style + interaction-wiring verification** (RTL,
+  real component render, real wired `onClose`/`onClaimScorer`/
+  `onJoinViewer`/`onSelectGame`/`onPractice` handlers via `vi.fn()`
+  spies asserting actual call args, not no-op stubs — this component's
+  real behavior is a client-side `useState`/derived-selection state
+  machine with no network layer, so the auth-boundary rule's "real, not
+  stub" bar is met by exercising that real state directly): rendered
+  `ScoringModeEntry` across 3 real states via a throwaway test file
+  (written, run, then deleted — not committed) — (1) a today's-game
+  fixture with an active team, (2) no game today with two upcoming games
+  on the same date (one passed as `selectedGame`, exercising both the
+  selected and unselected next-game-row branches), (3) an empty schedule
+  (no `activeGame` at all, exercising every disabled-state branch) —
+  read back `getComputedStyle(...)` on the live DOM at each stage:
+
+  | Element / state | Computed value | Expected token | Match |
+  |---|---|---|---|
+  | Root shell `background-color` | `rgb(11, 21, 36)` | `gameDay.surface.shell` = `#0B1524` | exact |
+  | Root shell `color` | `rgb(255, 255, 255)` | `gameDay.text.primary` | exact |
+  | BETA badge `background-color` | `rgb(124, 58, 237)` | `scoringModeEntry.betaBadge.background` = `#7c3aed` | exact |
+  | Close button `border-color` | `rgba(255, 255, 255, 0.2)` | `scoringModeEntry.closeButton.border` | exact |
+  | Team label `color` | `rgb(100, 116, 139)` | `gameDay.text.muted` = `#64748B` | exact |
+  | Team name `color` | `rgb(245, 200, 66)` | `brand.gold` = `#F5C842` | exact |
+  | Today's Game card `background-color` | `rgba(245, 200, 66, 0.08)` | `scoringModeEntry.todayGameCard.background` | exact |
+  | Today's Game card `border-color` | `rgba(245, 200, 66, 0.25)` | `scoringModeEntry.todayGameCard.border` | exact |
+  | Today's Game date `color` | `rgb(148, 163, 184)` | `gameDay.text.secondary` = `#94A3B8` | exact |
+  | Claim Scorer (active) `background-color` | `rgb(29, 78, 216)` | `scoringModeEntry.claimButton.background` = `#1d4ed8` | exact |
+  | Claim Scorer (active) `box-shadow` | `0 4px 16px rgba(29,78,216,0.35)` | `scoringModeEntry.claimButton.shadow` | exact |
+  | Join as Viewer (active) `color` | `rgb(96, 165, 250)` | `scoringModeEntry.viewerLink.color` = `#60a5fa` | exact |
+  | Top toggle (active) `background-color` | `rgb(27, 42, 74)` | `scoringModeEntry.halfToggle.activeBackground` = `#1B2A4A` | exact |
+  | Bottom toggle (inactive) `background-color` | `rgba(255, 255, 255, 0.08)` | `overlay.whiteFaint` | exact |
+  | Bottom toggle (inactive) `color` | `rgb(136, 136, 136)` | `scoringModeEntry.mutedText` = `#888` | exact |
+  | Bottom toggle, after real click → `background-color` | `rgb(27, 42, 74)` | `halfToggle.activeBackground` | exact — confirms real `setMyTeamHalf` state drove the swap |
+  | Divider `border-top-color` | `rgba(255, 255, 255, 0.08)` | `overlay.whiteFaint` | exact |
+  | Practice Mode card `background-color` | `rgba(255, 255, 255, 0.04)` | `scoringModeEntry.subtleRowBackground` | exact |
+  | Practice Mode card `border-color` | `rgba(255, 255, 255, 0.1)` | `scoringModeEntry.cardBorder` | exact |
+  | Practice Mode caption `color` | `rgb(71, 85, 105)` | `gameDay.text.caption` = `#475569` | exact |
+  | "No game today" `color` | `rgb(100, 116, 139)` | `gameDay.text.muted` | exact |
+  | "Upcoming" eyebrow `color` | `rgb(71, 85, 105)` | `gameDay.text.caption` | exact |
+  | Selected next-game row `background-color` | `rgba(245, 200, 66, 0.12)` | `overlay.goldTint` | exact |
+  | Selected next-game row `border-color` | `rgba(245, 200, 66, 0.4)` | `overlay.goldStrong` | exact |
+  | Unselected next-game row `background-color` | `rgba(255, 255, 255, 0.04)` | `scoringModeEntry.subtleRowBackground` | exact |
+  | Unselected next-game row `border-color` | `rgba(255, 255, 255, 0.08)` | `overlay.whiteFaint` | exact |
+  | Game card `border-color` (second fixture) | `rgba(255, 255, 255, 0.1)` | `scoringModeEntry.cardBorder` | exact |
+  | "No upcoming games scheduled" `color` | `rgb(55, 65, 81)` | `scoringModeEntry.disabledText` = `#374151` | exact |
+  | Claim Scorer (disabled) `background-color` | `rgba(255, 255, 255, 0.06)` | `scoringModeEntry.claimButton.disabledBackground` | exact |
+  | Claim Scorer (disabled) `color` | `rgb(71, 85, 105)` | `gameDay.text.caption` | exact |
+  | Join as Viewer (disabled) `color` | `rgb(55, 65, 81)` | `scoringModeEntry.disabledText` | exact |
+  | "We bat:" label `color` | `rgb(136, 136, 136)` | `scoringModeEntry.mutedText` | exact |
+
+  All computed values are byte-exact matches to their token's source
+  hex/rgba value. Interaction wiring confirmed with real, non-stub
+  logic: `fireEvent.click` on the close button asserted the real
+  `onClose` prop fired exactly once; clicking Claim Scorer asserted
+  `onClaimScorer` was called with `(activeGame, myTeamHalf)` — first
+  with `myTeamHalf === 'top'` (the initial `useState` default), then a
+  second click after real-clicking the Bottom toggle button confirmed
+  the second call carried `'bottom'`, i.e. the real internal state
+  transition actually drove the prop the parent receives, not just the
+  visible highlight; clicking Join as Viewer asserted `onJoinViewer` was
+  called with the active game object; clicking an unselected next-game
+  row asserted `onSelectGame` was called with that exact game object
+  (not the selected one); clicking Practice Mode asserted `onPractice`
+  fired once; in the disabled-CTA fixture (empty schedule, no
+  `activeGame`), clicking both Claim Scorer and Join as Viewer asserted
+  their respective callbacks were never invoked, confirming the
+  `disabled={!activeGame}` guard is real, not just a visual dimming.
+
+### No behavioral quirks found
+
+No data-driven lookup tables in this file (unlike slice 6's
+`POS_COLORS`) and no divergent-from-shared-palette values — every
+literal was a static style-object value (including the ternaries
+driving the half-toggle and Claim/Join active-vs-disabled states) with
+an unambiguous 1:1 substitution. This is the first slice whose component
+carries real internal state (`myTeamHalf` via `useState`) and derived
+selection logic (`computeNextGames`) rather than being purely
+presentational or prop-driven — the interaction-wiring verification
+above specifically exercised that state (confirming the Bottom-toggle
+click actually changed the value `onClaimScorer` received, not just the
+button's own highlight) since a styling-only regression check would not
+have caught a broken state wire. Nothing here rises to the level of a
+behavioral quirk worth flagging to KK beyond the occurrence-count
+discrepancy already logged above.
+
+### Outcome
+
+Slice 12 complete: merged into `feature/story133-slices5-13-sandbox` as
+commit `266d1cd` (genuine 2-parent merge), zero literal colors remaining
+in `ScoringModeEntry.jsx`, build clean, 114/114 tests passing, checkpoint
+logged. Only slice 13 remains: `LiveScoringPanel.jsx` (167 occurrences,
+~60KB — per the handoff doc, sub-slice into 2-3 PRs by logical section
+rather than one giant diff). One note carried forward for that slice:
+this file confirmed the `scoringModeEntry.claimButton.background`
+(`#1d4ed8`) / `gearMenu.handoffModal.confirmBackground` byte-match is
+now a recurring blue-700 value across at least 2 `ScoringMode/*`
+components — worth checking whether `LiveScoringPanel.jsx` uses this
+same literal anywhere, since a third recurrence might tip the judgment
+call toward promoting it to a shared (non-component-scoped) token
+instead of minting a fourth separate copy.
