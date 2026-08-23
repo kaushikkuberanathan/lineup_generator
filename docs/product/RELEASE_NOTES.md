@@ -1,5 +1,20 @@
 # Dugout Lineup — Release Notes
 
+> **Archived 2026-08-23.** This file stopped being updated after v2.7.0
+> (2026-07-21) — five minor versions and dozens of patch releases (through
+> v2.12.0, August 2026) are undocumented here. Rather than backfill five
+> months of history by hand (which would drift out of sync again the next
+> time someone forgets this file exists), this is now a pointer, not a
+> living doc.
+>
+> **Canonical release history:** the `VERSION_HISTORY` constant in
+> `frontend/src/data/versionHistory.js`, surfaced in-app via the Updates
+> tab and summarized in root `CLAUDE.md` → **## Current Version**. That is
+> the single source of truth going forward — do not add new entries here.
+>
+> The entries below (v2.5.1 through v2.7.0) are kept as a historical
+> archive, unedited.
+
 - v2.7.0 (2026-07-21): Google sign-in for coaches; a new Account tab showing your teams with tap-to-switch and a way to sign out; and database-level protection against an accidental roster wipe.
 - v2.6.0 (2026-07-20): Sign-in required for editing; RLS enabled in production on team_data, teams and roster_snapshots, closing the publishable-key exposure. Write failures now surface instead of failing silently.
 
