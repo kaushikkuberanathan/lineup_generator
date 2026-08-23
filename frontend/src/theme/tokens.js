@@ -328,6 +328,83 @@ export const tokens = {
           activeBorder: 'rgba(245,200,66,0.5)', // top border highlighting the footer while on BATTING half
         },
       },
+
+      // ─── InningModal.jsx (Story 133 slice 6, #698) ─────────────────────
+      // Component-scoped, one-off values with no reusable role elsewhere in
+      // the gameDay family - same precedent as gameModeScreen/quickSwap
+      // above (mint rather than alias, even where a value happens to
+      // byte-match another component's token, because the ROLE is this
+      // component's own).
+      inningModal: {
+        // POS_COLORS local lookup table. 9 of its 11 entries are exact
+        // byte matches to the shared color.position.* palette and reuse it
+        // directly (P/C/1B/2B/3B/SS/LF/RC/RF - see component call site).
+        // These 3 do NOT match and are preserved byte-exact here instead:
+        posColors: {
+          // POS_COLORS.LC = #27ae60 here, but color.position.LC = #2980B9
+          // (the blue used by 2B/LC elsewhere in the app) - a genuine
+          // pre-existing inconsistency in this file, not introduced by this
+          // migration. Preserved as-is (byte-preserving mint); flagged for
+          // KK, not silently corrected.
+          lc: '#27ae60',
+          // POS_COLORS.Bench = #475569 here, vs. color.position.Bench =
+          // #555555 (also a pre-existing divergence) - but this entry is
+          // confirmed UNREACHABLE at runtime: fieldPlayers already filters
+          // out pos === "Bench" (see component, nextAssignments.filter)
+          // before POS_COLORS is ever indexed by "Bench". Byte-value
+          // happens to match gameDay.quickSwap.position.bench exactly, but
+          // kept as its own key per the no-cross-component-alias rule
+          // (same reasoning as gameModeScreen.resumeBanner above) - and
+          // because aliasing a live QuickSwap token to a dead InningModal
+          // code path would be a misleading dependency either way.
+          benchUnused: '#475569',
+          // POS_COLORS[pos] lookup-miss defensive default. Source literal
+          // was "#555" (3-digit shorthand) - normalized to 6-digit here,
+          // same computed color, not a visual change. Byte-matches
+          // color.position.Bench and gameDay.quickSwap.position.fallback,
+          // kept separate for the same cross-component reason as above.
+          fallback: '#555555',
+        },
+        header: {
+          gradientStart: '#0f1a2e',      // header gradient top stop; gradient end stop is
+                                           // gameDay.surface.shell (#0B1524) reused directly
+          eyebrowTextA11y: '#cbd5e1',    // slate-300 - a11y-mode high-contrast eyebrow label
+                                           // (ACCESSIBILITY_V1 flag on); no existing match
+        },
+        emphasisText: '#f1f5f9',  // slate-100 - highest-emphasis text distinct from
+                                    // gameDay.text.primary (#FFFFFF); modal title + lead-off
+                                    // batter name, 2 call sites sharing one role
+        defenseAccent: '#4ade80', // green-400 - defense-half accent color (positions-card
+                                    // eyebrow + "Take the Field" button bg), 2 call sites
+        battingCard: {
+          border:              'rgba(245,200,66,0.25)',
+          background:          'rgba(245,200,66,0.05)',
+          headerBorder:        'rgba(245,200,66,0.15)',
+          handBadgeBackground: 'rgba(245,200,66,0.2)',  // batting-hand (L/R) badge bg
+          // headerBackground reuses overlay.goldTint directly (exact byte match,
+          // rgba(245,200,66,0.12)) - generic cross-app alpha tint, not a
+          // light-surface-calibrated token, safe to reuse per precedent.
+        },
+        defenseCard: {
+          border:          'rgba(74,222,128,0.25)',
+          background:      'rgba(74,222,128,0.04)',
+          headerBackground:'rgba(74,222,128,0.10)',
+          headerBorder:    'rgba(74,222,128,0.15)',
+        },
+        divider:       'rgba(255,255,255,0.06)', // shared section-divider border-top, 2 call sites
+        rowBackground: 'rgba(255,255,255,0.04)', // shared subtle-wash row/chip bg, 2 call sites
+        benchChip: {
+          background: 'rgba(255,255,255,0.05)',  // bench-player chip bg (border reuses overlay.whiteFaint)
+        },
+        exitButton: {
+          // "Exit Game Mode" button bg (end-of-game state). Byte-matches
+          // gameDay.text.faint and gameDay.quickSwap.position.unassigned,
+          // but neither role fits (this is a solid button background, not
+          // text or a position swatch) - minted separately per the
+          // no-silent-alias-by-value-only rule.
+          background: '#334155',
+        },
+      },
     },
   },
 
