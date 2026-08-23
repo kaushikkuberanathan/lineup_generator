@@ -102,3 +102,27 @@ describe('LoginScreen — magic link submit', function () {
     expect(screen.queryByText('Check your email')).not.toBeInTheDocument();
   });
 });
+
+describe('LoginScreen — authError prop (#579)', function () {
+  // useAuth surfaces authError when a background session-restore (e.g. a
+  // failed /me call right after SIGNED_IN) fails. Previously nothing
+  // rendered it at all — the user was stranded with zero feedback.
+
+  test('renders authError as the form error on mount, with no user interaction', function () {
+    render(<LoginScreen {...baseProps({ authError: 'We could not finish signing you in. Please try again.' })} />);
+    expect(screen.getByText('We could not finish signing you in. Please try again.')).toBeInTheDocument();
+  });
+
+  test('no authError → no error message shown', function () {
+    render(<LoginScreen {...baseProps({ authError: null })} />);
+    expect(screen.queryByText(/could not finish signing you in/i)).not.toBeInTheDocument();
+  });
+
+  test('editing the email field clears the surfaced authError, same as any other form error', function () {
+    render(<LoginScreen {...baseProps({ authError: 'We could not finish signing you in. Please try again.' })} />);
+    expect(screen.getByText('We could not finish signing you in. Please try again.')).toBeInTheDocument();
+
+    fireEvent.change(screen.getByPlaceholderText('you@example.com'), { target: { value: 'coach@example.com' } });
+    expect(screen.queryByText('We could not finish signing you in. Please try again.')).not.toBeInTheDocument();
+  });
+});
