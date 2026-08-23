@@ -1452,3 +1452,163 @@ per the handoff doc's estimate (167 total, 47 accounted for here)
 likely holds on the order of 100+ further occurrences — genuinely
 unknown until inventoried, given every slice this run has undershot
 the doc's estimates.
+
+---
+
+## Slice 13b — `LiveScoringPanel.jsx` (sub-slice B of 3: viewer/no-scorer/other-scorer states)
+
+Part B of 3 for this file. Scope: the non-active-scorer branches of the
+default-exported `Main` function — the "Join as Viewer" wrapper, `STATE 1:
+No scorer`, and `STATE 3: Someone else is scoring` — everything from the
+`// ─── Main ───` marker up to (not including) `// ── STATE 2: I am
+scorer ──`. Confirmed the exact boundary with
+`grep -n "STATE 2: I am scorer" LiveScoringPanel.jsx` before starting: it
+sits at source line 506 (post-13a's +1-line import shift), so this
+sub-slice's real range is **lines 202–505**.
+
+### Scoping the section
+
+`sed -n '202,505p' LiveScoringPanel.jsx | grep -oE "#[0-9a-fA-F]{3,6}|rgba?\([^)]+\)"`
+found **43 occurrences** — again undershooting the handoff doc's rough
+per-part expectation, consistent with every prior slice this run. The
+Viewer-mode wrapper itself (`if (viewerOnly) return <LiveScoreViewer .../>`)
+contributes zero literals — it delegates entirely to `LiveScoreViewer.jsx`,
+already confirmed clean in slice 7. Reading that file directly during this
+slice's verification pass confirmed why: it is currently a literal
+placeholder, `export default function LiveScoreViewer() { return
+<div>LiveScoreViewer</div>; }` — not yet implemented. Noted here as a
+behavioral observation, not something this slice's scope covers fixing.
+
+### Inventory and mappings
+
+43 total: **20 reuse existing tokens directly** (exact byte matches),
+**23 mint new tokens** under a new `gameDay.liveScoringPanel.
+{gameNumberBadge, noScorerState, otherScorerState}` namespace (nested
+under the existing `liveScoringPanel` block minted in 13a).
+
+**Reused directly (20 occurrences, 9 distinct values):**
+
+| Literal | Count | Reused token |
+|---|---|---|
+| `#0b1524` | 2 | `gameDay.surface.shell` |
+| `#fff` | 3 | `gameDay.text.primary` |
+| `rgba(255,255,255,0.08)` | 1 | `overlay.whiteFaint` |
+| `#94a3b8` | 3 | `gameDay.text.secondary` |
+| `#f5c842` | 4 | `brand.gold` |
+| `#64748b` | 3 | `gameDay.text.muted` |
+| `#fee2e2` | 1 | `status.errorBg` |
+| `#dc2626` | 2 | `status.error` |
+| `#0a1628` | 1 | `gameDay.surface.scoreboard` |
+
+**Minted (23 occurrences, new `gameDay.liveScoringPanel.*` keys):**
+
+| Literal | Count | Site | New token |
+|---|---|---|---|
+| `rgba(148, 163, 184, 0.1)` | 2 | "Game N" badge bg, shared STATE 1 + STATE 3 | `gameNumberBadge.background` — close to but NOT equal to `homeAwayChip.home.background` (0.12 vs 0.1 here); genuinely different opacity |
+| `#cbd5e1` | 1 | STATE 1 subheader ("Practice Mode"/"vs Opponent") | `noScorerState.subheaderText` — byte-matches `inningModal.header.eyebrowTextA11y`, different component, kept separate |
+| `#aaa` | 1 | STATE 1 "TOP"/"BOT" micro-label | `noScorerState.halfLabel` — no existing match |
+| `#1d4ed8` | 1 | "Claim Scorer Role" button bg | `noScorerState.claimButton.background` — **5th recurrence** of this exact blue across ScoringMode/* (see dedicated note below) |
+| `#60a5fa` | 1 | "Join as Viewer →" link text | `noScorerState.viewerLink.color` — byte-matches `scoringModeEntry.viewerLink.color` exactly (same literal text/role, different component), kept separate |
+| `rgba(255,255,255,0.06)` | 1 | STATE 3 header strip border | `otherScorerState.headerBorder` — 7th+ recurrence of this white-wash value across the file family, minted separately per established rule |
+| `rgba(255,255,255,0.06)` | 1 | STATE 3 count-pill wrapper bg | `otherScorerState.countPill.background` — same value as headerBorder above but a different element/role within this file, own key per established within-file discipline |
+| `#cfd8e3` | 2 | "BALLS"/"STRIKES" micro-labels | `otherScorerState.countPill.labelText` — no existing match |
+| `#3b82f6` | 1 | CountPips active-ball fill | `otherScorerState.countPill.ballColor` — no existing match (active-strike fill reuses `status.error` directly instead, see call site) |
+| `rgba(255,140,66,0.12)` | 1 | Outs-pill wrapper bg | `otherScorerState.outsPill.background` — no existing match |
+| `#FFB89A` | 1 | "OUTS" micro-label | `otherScorerState.outsPill.labelText` — no existing match |
+| `#FF8C42` | 1 | CountPips active-out fill | `otherScorerState.outsPill.color` — no existing match |
+| `rgba(22,163,74,0.12)` | 1 | Scorer banner bg | `otherScorerState.scorerBanner.background` — byte-matches `runnerConflictModal.scoreButton.background` exactly, kept separate |
+| `rgba(22,163,74,0.3)` | 1 | Scorer banner border | `otherScorerState.scorerBanner.border` — no existing match |
+| `#16a34a` | 1 | Scorer-status live dot | `otherScorerState.scorerBanner.dot` — byte-matches `liveScoringPanel.accent.hit` (minted in 13a) exactly, but that token's role is the pitch-chip/outcome "good outcome" accent, not a status dot — kept separate per the no-cross-role-alias rule even within the same namespace |
+| `rgba(245,200,66,0.08)` | 1 | "Now Batting" card bg | `otherScorerState.nowBattingCard.background` — byte-matches `restoreScoreModal.warningBox.background` and `scoringModeEntry.todayGameCard.background`, kept separate |
+| `rgba(245,200,66,0.2)` | 1 | "Now Batting" card border | `otherScorerState.nowBattingCard.border` — byte-matches `restoreScoreModal.warningBox.border` and `inningModal.battingCard.handBadgeBackground`, kept separate |
+| `rgba(255,255,255,0.03)` | 1 | Disabled pitch-button row bg | `otherScorerState.disabledPitchButtons.background` — no existing match |
+| `rgba(255,255,255,0.07)` | 1 | Disabled pitch-button row border | `otherScorerState.disabledPitchButtons.border` — no existing match |
+| `#2d3748` | 1 | Disabled pitch-button text | `otherScorerState.disabledPitchButtons.text` — no existing match |
+| `#374151` | 1 | "Only one scorer at a time" footer | `otherScorerState.disclaimerText` — **5th recurrence** of this exact value across the gameDay family (see dedicated note below) |
+
+23 minted-token occurrences + 20 reused-token occurrences = 43, matching
+the grep inventory exactly.
+
+### Two values now recurring 5×
+
+Both flagged explicitly in `tokens.js` comments and here, per the
+handoff doc's ask to flag continued recurrences of `#1d4ed8` if this
+section hit it again — it did, and a second value independently crossed
+the same threshold in the same section:
+
+- **`#1d4ed8`** (blue-700, "action" CTA background/border) — now 5
+  sites: `gearMenu.handoffModal.confirmBackground`,
+  `runnerConflictModal.holdButton.border`,
+  `scoringModeEntry.claimButton.background`,
+  `liveScoringPanel.accent.ball` (13a), and now
+  `liveScoringPanel.noScorerState.claimButton.background` (13b).
+- **`#374151`** (dark slate, muted/disabled text) — now 5 sites:
+  `gameDay.text.separator`, `restoreScoreModal.disabledText`,
+  `finishGameModal.scorePreview.divider`,
+  `scoringModeEntry.disabledText`, and now
+  `liveScoringPanel.otherScorerState.disclaimerText` (13b).
+
+**Judgment call: minted component-scoped copies for both, same reasoning
+13a already applied to the `#1d4ed8` 4th recurrence** — retrofitting 4-5
+already-merged/checkpointed sites is out of this sub-slice's declared
+scope, and touching already-checkpointed code without a clear go-ahead is
+unnecessary risk in a sandbox run with no CI safety net. Both are now
+strong candidates for a dedicated follow-up consolidation story (e.g.
+`gameDay.accent.actionBlue` / `gameDay.text.disabled` shared tokens) —
+not done in this run.
+
+### Verification
+
+- `npm run build` — clean.
+- `theme.tokens.test.js` + `src/components/game-mode/` suite —
+  114/114, unchanged baseline held.
+- No existing dedicated test file for `LiveScoringPanel.jsx` — nothing
+  additional to run there (same as 13a).
+- `sed -n '202,505p' LiveScoringPanel.jsx | grep -oE "#[0-9a-fA-F]{3,6}|rgba?\([^)]+\)"`
+  → empty. Zero literal colors remain in lines 202–505. (Lines 1–201 were
+  13a's scope, already clean; line 506+ / STATE 2 is 13c's scope,
+  intentionally untouched.)
+- **Real-handler harness, not static-styling-only, per the escalation
+  policy's note about this section having genuine state-dependent
+  branches:** built a throwaway RTL test (`__LiveScoringPanel.throwaway.
+  test.jsx`, deleted before commit), 4 assertions, all passing:
+  - **STATE 1 → claim flow:** rendered `LiveScoringPanel` inside a small
+    harness component holding real `useState` for `isScorer`, passed
+    `claimScorerLock={function () { setClaimed(true); }}` (a real
+    handler that mutates real state and re-renders with updated props —
+    not a no-op stub). Clicking "🎙 Claim Scorer Role" fired the real
+    handler, `isScorer` flipped to `true`, and the button genuinely
+    unmounted (component transitioned out of STATE 1) — proof the click
+    wiring is live, not decorative. (Where it transitions *to* — STATE 2 —
+    is out of this sub-slice's scope to verify further.)
+  - **STATE 1 → viewer flow:** clicking "Join as Viewer →" exercises
+    genuinely internal component state (`setViewerOnly(true)`, no prop
+    needed) and the DOM swapped to render `LiveScoreViewer`'s actual
+    output ("LiveScoreViewer" placeholder text), confirming the internal
+    state wire is correct.
+  - **STATE 1 → claim-error box:** rendered with a real `claimError`
+    string prop; computed `background`/`color` matched
+    `status.errorBg`/`status.error` (jsdom-normalized hex→rgb
+    comparison, same method 13a used).
+  - **STATE 3 → disabled pitch buttons:** rendered with real `scorerName`
+    + `gameState` props (not stubs); computed `background`/`color` on a
+    real disabled `<button>` matched the new
+    `otherScorerState.disabledPitchButtons.{background,text}` tokens.
+
+### Outcome
+
+Slice 13b complete: PR [#757](https://github.com/kaushikkuberanathan/lineup_generator/pull/757)
+merged into `feature/story133-slices5-13-sandbox` as commit `4c5b660`
+(parents `6104491` + `f74403f` — genuine 2-parent merge, confirmed via
+`git show -s --format="%H %P"`), zero literal colors remaining in
+`LiveScoringPanel.jsx` lines 202–505, build clean, 114/114 tests passing,
+checkpoint logged. Behavioral quirk found: `LiveScoreViewer.jsx` (the
+component STATE 1's "Join as Viewer" flow mounts) is currently an
+unimplemented placeholder — not a regression introduced by this slice,
+and not something this slice's scope covers fixing, but worth surfacing
+since it means the real viewer experience doesn't exist yet behind that
+button. Part C remains: `STATE 2: I am scorer` (source line 506 onward),
+the last section of this file and the last slice of this sandbox run —
+per 13a's estimate (167 total, 47 + 43 = 90 accounted for across 13a/13b),
+likely on the order of 75+ further occurrences, genuinely unknown until
+inventoried.
