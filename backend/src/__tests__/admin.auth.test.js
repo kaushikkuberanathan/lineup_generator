@@ -63,6 +63,12 @@ describe('Admin routes — auth rejection (no token)', () => {
     assert.equal(res.body.error, 'UNAUTHORIZED');
   });
 
+  test('PATCH /api/v1/feature-flags/:flagName → 401 without token', async () => {
+    const res = await request(app).patch('/api/v1/feature-flags/live_scoring');
+    assert.equal(res.status, 401);
+    assert.equal(res.body.error, 'UNAUTHORIZED');
+  });
+
   // ── Public routes: registered BEFORE the auth guard → must NEVER 401 ────────
   // 1-tap email links, used unauthenticated. Missing query params → 400
   // (admin.js:17, :96). Security contract = "never 401".

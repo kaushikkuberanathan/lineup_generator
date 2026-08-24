@@ -1,5 +1,5 @@
 const { Router } = require('express');
-const { body, query, validationResult } = require('express-validator');
+const { body, param, query, validationResult } = require('express-validator');
 const { supabaseAdmin } = require('../lib/supabase');
 const requireAuth = require('../middleware/requireAuth');
 const requireAdmin = require('../middleware/requireAdmin');
@@ -538,6 +538,40 @@ router.get(
     }
 
     return res.status(200).json({ feedback: data, total: count });
+  }
+);
+
+// ─── PATCH /feature-flags/:flagName ────────────────────────────────────────────
+// Routes admin.html's global feature-flag toggle through the backend instead of
+// a direct Supabase client write (#787, remaining scope after #338/PR #780).
+// Global flags only (team_id IS NULL) — matches admin.html's Flags tab scope;
+// per-team overrides, if any, are out of scope here since the current UI
+// doesn't manage them either.
+
+router.patch(
+  '/feature-flags/:flagName',
+  [
+    param('flagName').notEmpty().trim(),
+    body('enabled').isBoolean(),
+  ],
+  async (req, res) => {
+    if (validationGuard(req, res)) return;
+
+    const { flagName } = req.params;
+    const { enabled } = req.body;
+
+    const { error } = await supabaseAdmin
+      .from('feature_flags')
+      .update({ enabled, updated_at: new Date().toISOString() })
+      .eq('flag_name', flagName)
+      .is('team_id', null);
+
+    if (error) {
+      console.error('[admin/feature-flags] DB error:', error.message);
+      return res.status(500).json({ error: 'DB_ERROR' });
+    }
+
+    return res.status(200).json({ message: `${flagName} set to ${enabled ? 'ON' : 'OFF'}.` });
   }
 );
 
