@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-17T11:43:28.540Z",
+  "generatedAt": "2026-08-24T11:45:55.187Z",
   "repository": "kaushikkuberanathan/lineup_generator",
   "sourceBranch": "develop",
   "windowMonths": 6,
@@ -204,114 +204,114 @@
     {
       "key": "2026-08",
       "label": "Aug 2026",
-      "mergedPullRequests": 133,
-      "productImprovements": 20,
-      "productionReleases": 4,
-      "qualityImprovements": 145,
-      "developmentCommits": 165,
-      "otherPullRequests": 129,
+      "mergedPullRequests": 226,
+      "productImprovements": 25,
+      "productionReleases": 8,
+      "qualityImprovements": 251,
+      "developmentCommits": 276,
+      "otherPullRequests": 218,
       "releaseNotes": [
         {
-          "number": 661,
-          "title": "Release v2.9.0: security hardening, team-deletion safety, identity data integrity",
-          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/661"
+          "number": 799,
+          "title": "release: promote v2.13.0 to production",
+          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/799"
         },
         {
-          "number": 619,
-          "title": "Release v2.8.5: Phase 4 var C retirement complete, Story 104.1, AboutTab fix",
-          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/619"
+          "number": 760,
+          "title": "v2.12.0: Home membership visibility, unified team search, prod auth incident hardening",
+          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/760"
         },
         {
-          "number": 560,
-          "title": "release: v2.8.4 - promote develop to main",
-          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/560"
+          "number": 731,
+          "title": "v2.11.0: team seasons, first-save race fix, Story 133 slices 1-4/13",
+          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/731"
         }
       ],
       "highlights": [
         {
-          "number": 661,
-          "title": "Release v2.9.0: security hardening, team-deletion safety, identity data integrity",
-          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/661"
+          "number": 799,
+          "title": "release: promote v2.13.0 to production",
+          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/799"
         },
         {
-          "number": 619,
-          "title": "Release v2.8.5: Phase 4 var C retirement complete, Story 104.1, AboutTab fix",
-          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/619"
+          "number": 760,
+          "title": "v2.12.0: Home membership visibility, unified team search, prod auth incident hardening",
+          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/760"
         },
         {
-          "number": 560,
-          "title": "release: v2.8.4 - promote develop to main",
-          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/560"
+          "number": 731,
+          "title": "v2.11.0: team seasons, first-save race fix, Story 133 slices 1-4/13",
+          "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/731"
         }
       ]
     }
   ],
   "totals": {
-    "mergedPullRequests": 430,
-    "productImprovements": 165,
-    "productionReleases": 50,
-    "qualityImprovements": 686,
-    "developmentCommits": 851
+    "mergedPullRequests": 523,
+    "productImprovements": 170,
+    "productionReleases": 54,
+    "qualityImprovements": 792,
+    "developmentCommits": 962
   },
   "currentMonth": {
     "key": "2026-08",
     "label": "Aug 2026",
-    "mergedPullRequests": 133,
-    "productImprovements": 20,
-    "productionReleases": 4,
-    "qualityImprovements": 145,
-    "developmentCommits": 165,
-    "otherPullRequests": 129,
+    "mergedPullRequests": 226,
+    "productImprovements": 25,
+    "productionReleases": 8,
+    "qualityImprovements": 251,
+    "developmentCommits": 276,
+    "otherPullRequests": 218,
     "releaseNotes": [
       {
-        "number": 661,
-        "title": "Release v2.9.0: security hardening, team-deletion safety, identity data integrity",
-        "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/661"
+        "number": 799,
+        "title": "release: promote v2.13.0 to production",
+        "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/799"
       },
       {
-        "number": 619,
-        "title": "Release v2.8.5: Phase 4 var C retirement complete, Story 104.1, AboutTab fix",
-        "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/619"
+        "number": 760,
+        "title": "v2.12.0: Home membership visibility, unified team search, prod auth incident hardening",
+        "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/760"
       },
       {
-        "number": 560,
-        "title": "release: v2.8.4 - promote develop to main",
-        "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/560"
+        "number": 731,
+        "title": "v2.11.0: team seasons, first-save race fix, Story 133 slices 1-4/13",
+        "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/731"
       }
     ],
     "highlights": [
       {
-        "number": 661,
-        "title": "Release v2.9.0: security hardening, team-deletion safety, identity data integrity",
-        "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/661"
+        "number": 799,
+        "title": "release: promote v2.13.0 to production",
+        "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/799"
       },
       {
-        "number": 619,
-        "title": "Release v2.8.5: Phase 4 var C retirement complete, Story 104.1, AboutTab fix",
-        "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/619"
+        "number": 760,
+        "title": "v2.12.0: Home membership visibility, unified team search, prod auth incident hardening",
+        "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/760"
       },
       {
-        "number": 560,
-        "title": "release: v2.8.4 - promote develop to main",
-        "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/560"
+        "number": 731,
+        "title": "v2.11.0: team seasons, first-save race fix, Story 133 slices 1-4/13",
+        "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/731"
       }
     ]
   },
   "latestReleaseNotes": [
     {
-      "number": 661,
-      "title": "Release v2.9.0: security hardening, team-deletion safety, identity data integrity",
-      "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/661"
+      "number": 799,
+      "title": "release: promote v2.13.0 to production",
+      "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/799"
     },
     {
-      "number": 619,
-      "title": "Release v2.8.5: Phase 4 var C retirement complete, Story 104.1, AboutTab fix",
-      "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/619"
+      "number": 760,
+      "title": "v2.12.0: Home membership visibility, unified team search, prod auth incident hardening",
+      "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/760"
     },
     {
-      "number": 560,
-      "title": "release: v2.8.4 - promote develop to main",
-      "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/560"
+      "number": 731,
+      "title": "v2.11.0: team seasons, first-save race fix, Story 133 slices 1-4/13",
+      "url": "https://github.com/kaushikkuberanathan/lineup_generator/pull/731"
     }
   ]
 }
