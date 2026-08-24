@@ -69,6 +69,12 @@ describe('Admin routes — auth rejection (no token)', () => {
     assert.equal(res.body.error, 'UNAUTHORIZED');
   });
 
+  test('DELETE /api/v1/coaches/:membershipId → 401 without token', async () => {
+    const res = await request(app).delete('/api/v1/coaches/33333333-3333-4333-8333-333333333333');
+    assert.equal(res.status, 401);
+    assert.equal(res.body.error, 'UNAUTHORIZED');
+  });
+
   // ── Public routes: registered BEFORE the auth guard → must NEVER 401 ────────
   // 1-tap email links, used unauthenticated. Missing query params → 400
   // (admin.js:17, :96). Security contract = "never 401".
