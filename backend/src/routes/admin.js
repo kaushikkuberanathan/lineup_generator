@@ -541,6 +541,74 @@ router.get(
   }
 );
 
+// ─── POST /coaches ──────────────────────────────────────────────────────────
+// Routes admin.html's Add Coach action through the backend instead of a
+// direct Supabase client write (#787, remaining scope after #338/PR #780).
+// Mirrors POST /admin/approve's insert shape and email->user lookup exactly
+// (ADMIN_HTML_BYPASS_REMEDIATION_PLAN.md §4.2), including status: 'invited'
+// (not the 'active'/activated_at admin.html currently sends) — a deliberate
+// behavior change per the plan, aligning this path with /approve's existing
+// "granting access by email" semantics (coach activates on first login).
+//
+// The plan flagged an open question: does team_memberships have a unique
+// constraint on (team_id, email) to rely on for duplicate detection?
+// Checked docs/db/schema.sql directly - it does not (no UNIQUE constraint
+// beyond the id primary key), so a duplicate insert would otherwise succeed
+// silently. Added an explicit pre-check instead of trusting a DB error that
+// would never come.
+
+router.post(
+  '/coaches',
+  [
+    body('teamId').notEmpty().trim(),
+    body('email').isEmail(),
+    body('role').isIn(CANONICAL_ROLES),
+  ],
+  async (req, res) => {
+    if (validationGuard(req, res)) return;
+
+    const { teamId, email, role } = req.body;
+
+    const { data: existing, error: existingError } = await supabaseAdmin
+      .from('team_memberships')
+      .select('id')
+      .eq('team_id', teamId)
+      .eq('email', email)
+      .maybeSingle();
+
+    if (existingError) {
+      console.error('[admin/coaches] DB error checking existing membership:', existingError.message);
+      return res.status(500).json({ error: 'DB_ERROR' });
+    }
+
+    if (existing) {
+      return res.status(409).json({ error: 'ALREADY_MEMBER' });
+    }
+
+    const { data: userListData } = await supabaseAdmin.auth.admin.listUsers();
+    const authUser = userListData?.users?.find(u => u.email === email);
+    const userId = authUser?.id ?? null;
+
+    const { error: insertError } = await supabaseAdmin
+      .from('team_memberships')
+      .insert({
+        email,
+        phone_e164: null,
+        team_id: teamId,
+        role,
+        status: 'invited',
+        user_id: userId,
+      });
+
+    if (insertError) {
+      console.error('[admin/coaches] DB error inserting membership:', insertError.message);
+      return res.status(500).json({ error: 'DB_ERROR' });
+    }
+
+    return res.status(200).json({ message: 'Coach added.' });
+  }
+);
+
 // ─── DELETE /coaches/:membershipId ─────────────────────────────────────────────
 // Routes admin.html's Remove Coach action through the backend instead of a
 // direct Supabase client write (#787, remaining scope after #338/PR #780).

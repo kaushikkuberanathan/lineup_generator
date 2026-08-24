@@ -904,16 +904,28 @@
     var teamId = document.getElementById('coach-team').value;
     if (!email) { showMsg('coach-form-msg', 'Email is required.', 'error'); return; }
     if (!teamId) { showMsg('coach-form-msg', 'Select a team.', 'error'); return; }
+    // Routed through POST /api/v1/coaches (was a direct Supabase write) so
+    // the role is validated against CANONICAL_ROLES server-side and the
+    // membership is created as 'invited' (activates on first login),
+    // matching /admin/approve's semantics — see #787 (remaining scope of #338).
+    var { data: { session } } = await sb.auth.getSession();
+    if (!session) { showMsg('coach-form-msg', 'Not signed in.', 'error'); return; }
     this.disabled = true;
-    var { error } = await sb.from('team_memberships').insert({
-      email, role, team_id: teamId, status: 'active',
-      activated_at: new Date().toISOString()
+    var res = await fetch(BACKEND_URL + '/api/v1/coaches', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token },
+      body: JSON.stringify({ teamId: teamId, email: email, role: role })
     });
+    var body = await res.json().catch(function() { return {}; });
     this.disabled = false;
-    if (error) { showMsg('coach-form-msg', 'Error: ' + error.message, 'error'); return; }
+    if (!res.ok) {
+      var addMsg = body.error === 'ALREADY_MEMBER' ? 'This coach is already a member of this team.' : (body.message || body.error || 'Add failed.');
+      showMsg('coach-form-msg', 'Error: ' + addMsg, 'error');
+      return;
+    }
     document.getElementById('coach-email').value = '';
     document.getElementById('add-coach-form').style.display = 'none';
-    showMsg('coaches-msg', 'Coach added.', 'success', true);
+    showMsg('coaches-msg', body.message || 'Coach added.', 'success', true);
     loadCoachesTab();
   });
 
