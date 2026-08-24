@@ -9,15 +9,16 @@ import { truncateTeamName, deriveGameHeader } from '../../utils/formatters';
 import { isFlagEnabled } from '../../config/featureFlags';
 import Toast from '../ui/Toast';
 import ScoreboardRow from '../game-mode/ScoreboardRow';
+import { tokens } from '../../theme/tokens';
 
 var FF = "Georgia,'Times New Roman',serif";
 
 var PITCH_CHIPS = {
-  ball:            { label: 'B',  bg: '#1d4ed8' },
-  strike_called:   { label: '✓', bg: '#dc2626' },
-  strike_swinging: { label: 'K',  bg: '#dc2626' },
-  foul:            { label: 'F',  bg: '#d97706' },
-  contact:         { label: '✕', bg: '#16a34a' },
+  ball:            { label: 'B',  bg: tokens.color.gameDay.liveScoringPanel.accent.ball },
+  strike_called:   { label: '✓', bg: tokens.color.status.error },
+  strike_swinging: { label: 'K',  bg: tokens.color.status.error },
+  foul:            { label: 'F',  bg: tokens.color.gameDay.liveScoringPanel.accent.caution },
+  contact:         { label: '✕', bg: tokens.color.gameDay.liveScoringPanel.accent.hit },
 };
 
 var LAST_PITCH_LABEL = {
@@ -29,51 +30,51 @@ var LAST_PITCH_LABEL = {
 };
 
 var PITCH_BUTTONS = [
-  { type: PITCH.BALL,            label: 'Ball',       color: '#1d4ed8', flex: 1   },
-  { type: PITCH.STRIKE_CALLED,   label: 'Strike ✓',  color: '#dc2626', flex: 1   },
-  { type: PITCH.STRIKE_SWINGING, label: 'Strike K',  color: '#dc2626', flex: 1   },
-  { type: PITCH.FOUL,            label: 'Foul',       color: '#d97706', flex: 1   },
-  { type: PITCH.CONTACT,         label: '⚾ Contact', color: '#16a34a', flex: 1.5 },
+  { type: PITCH.BALL,            label: 'Ball',       color: tokens.color.gameDay.liveScoringPanel.accent.ball,    flex: 1   },
+  { type: PITCH.STRIKE_CALLED,   label: 'Strike ✓',  color: tokens.color.status.error,                            flex: 1   },
+  { type: PITCH.STRIKE_SWINGING, label: 'Strike K',  color: tokens.color.status.error,                            flex: 1   },
+  { type: PITCH.FOUL,            label: 'Foul',       color: tokens.color.gameDay.liveScoringPanel.accent.caution, flex: 1   },
+  { type: PITCH.CONTACT,         label: '⚾ Contact', color: tokens.color.gameDay.liveScoringPanel.accent.hit,     flex: 1.5 },
 ];
 
 export var OUTCOME_ROWS = [
   [
-    { type: OUTCOME.OUT_AT_FIRST,  label: 'Out @ 1st', color: '#dc2626' },
-    { type: OUTCOME.FLYOUT,        label: 'Flyout',    color: '#dc2626' },
-    { type: OUTCOME.STRIKEOUT,     label: 'Strikeout', color: '#dc2626' },
+    { type: OUTCOME.OUT_AT_FIRST,  label: 'Out @ 1st', color: tokens.color.status.error },
+    { type: OUTCOME.FLYOUT,        label: 'Flyout',    color: tokens.color.status.error },
+    { type: OUTCOME.STRIKEOUT,     label: 'Strikeout', color: tokens.color.status.error },
   ],
   [
-    { type: OUTCOME.SINGLE, label: 'Single', color: '#16a34a' },
-    { type: OUTCOME.DOUBLE, label: 'Double', color: '#16a34a' },
-    { type: OUTCOME.TRIPLE, label: 'Triple', color: '#16a34a' },
+    { type: OUTCOME.SINGLE, label: 'Single', color: tokens.color.gameDay.liveScoringPanel.accent.hit },
+    { type: OUTCOME.DOUBLE, label: 'Double', color: tokens.color.gameDay.liveScoringPanel.accent.hit },
+    { type: OUTCOME.TRIPLE, label: 'Triple', color: tokens.color.gameDay.liveScoringPanel.accent.hit },
   ],
   [
-    { type: OUTCOME.HOME_RUN, label: 'Home Run', color: '#f5c842' },
+    { type: OUTCOME.HOME_RUN, label: 'Home Run', color: tokens.color.brand.gold },
   ],
   [
-    { type: OUTCOME.WALK,          label: 'Walk',            color: '#7c3aed' },
-    { type: OUTCOME.HBP,           label: 'HBP',             color: '#7c3aed' },
-    { type: OUTCOME.ERROR_REACHED, label: 'Error (reached)', color: '#d97706' },
+    { type: OUTCOME.WALK,          label: 'Walk',            color: tokens.color.gameDay.liveScoringPanel.accent.walk },
+    { type: OUTCOME.HBP,           label: 'HBP',             color: tokens.color.gameDay.liveScoringPanel.accent.walk },
+    { type: OUTCOME.ERROR_REACHED, label: 'Error (reached)', color: tokens.color.gameDay.liveScoringPanel.accent.caution },
   ],
 ];
 
 export var OUTCOME_ROWS_V2 = [
   [
-    { type: OUTCOME.OUT_AT_FIRST, label: 'Out @ 1st', color: '#dc2626' },
-    { type: OUTCOME.FLYOUT,       label: 'Flyout',    color: '#dc2626' },
+    { type: OUTCOME.OUT_AT_FIRST, label: 'Out @ 1st', color: tokens.color.status.error },
+    { type: OUTCOME.FLYOUT,       label: 'Flyout',    color: tokens.color.status.error },
   ],
   [
-    { type: OUTCOME.SINGLE, label: 'Single', color: '#16a34a' },
-    { type: OUTCOME.DOUBLE, label: 'Double', color: '#16a34a' },
-    { type: OUTCOME.TRIPLE, label: 'Triple', color: '#16a34a' },
+    { type: OUTCOME.SINGLE, label: 'Single', color: tokens.color.gameDay.liveScoringPanel.accent.hit },
+    { type: OUTCOME.DOUBLE, label: 'Double', color: tokens.color.gameDay.liveScoringPanel.accent.hit },
+    { type: OUTCOME.TRIPLE, label: 'Triple', color: tokens.color.gameDay.liveScoringPanel.accent.hit },
   ],
   [
-    { type: OUTCOME.HOME_RUN, label: 'Home Run', color: '#f5c842', fullWidth: true },
+    { type: OUTCOME.HOME_RUN, label: 'Home Run', color: tokens.color.brand.gold, fullWidth: true },
   ],
   [
-    { type: OUTCOME.WALK,          label: 'Walk',            color: '#7c3aed' },
-    { type: OUTCOME.HBP,           label: 'HBP',             color: '#7c3aed' },
-    { type: OUTCOME.ERROR_REACHED, label: 'Error (reached)', color: '#d97706' },
+    { type: OUTCOME.WALK,          label: 'Walk',            color: tokens.color.gameDay.liveScoringPanel.accent.walk },
+    { type: OUTCOME.HBP,           label: 'HBP',             color: tokens.color.gameDay.liveScoringPanel.accent.walk },
+    { type: OUTCOME.ERROR_REACHED, label: 'Error (reached)', color: tokens.color.gameDay.liveScoringPanel.accent.caution },
   ],
 ];
 
@@ -87,8 +88,8 @@ function CountPips(props) {
       <span key={i} style={{
         display: 'inline-block', verticalAlign: 'middle',
         width: 8, height: 8, borderRadius: '50%',
-        background: i < n ? color : 'rgba(255,255,255,0.18)',
-        border: '1px solid rgba(255,255,255,0.2)',
+        background: i < n ? color : tokens.color.gameDay.liveScoringPanel.countPips.inactiveBackground,
+        border: '1px solid ' + tokens.color.gameDay.liveScoringPanel.countPips.border,
         marginLeft: i > 0 ? 3 : 0,
       }} />
     );
@@ -121,10 +122,10 @@ function DiamondSVG(props) {
   var pillStyle = {
     position: 'absolute',
     fontSize: '11px', fontWeight: 'bold',
-    background: 'rgba(245,200,66,0.15)',
-    border: '1px solid rgba(245,200,66,0.35)',
+    background: tokens.color.gameDay.liveScoringPanel.diamondSvg.runnerPill.background,
+    border: '1px solid ' + tokens.color.gameDay.liveScoringPanel.diamondSvg.runnerPill.border,
     borderRadius: '4px', padding: '2px 6px',
-    color: '#f5c842',
+    color: tokens.color.brand.gold,
     whiteSpace: 'nowrap',
     pointerEvents: 'none',
   };
@@ -137,23 +138,23 @@ function DiamondSVG(props) {
     <div style={{ position: 'relative', width: '110px', height: '110px', overflow: 'visible' }}>
       <svg width={110} height={110} viewBox="0 0 100 100">
         <polygon points="50,12 88,50 50,88 12,50"
-          fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth={1.5} />
+          fill="none" stroke={tokens.color.gameDay.liveScoringPanel.diamondSvg.polygonStroke} strokeWidth={1.5} />
         {bases.map(function(b) {
           var on = !!occupied[b.base];
           return (
             <rect key={b.base}
               x={b.cx - 9} y={b.cy - 9} width={18} height={18}
               transform={'rotate(45,' + b.cx + ',' + b.cy + ')'}
-              fill={on ? '#f5c842' : 'rgba(255,255,255,0.08)'}
-              stroke={on ? '#f5c842' : 'rgba(255,255,255,0.25)'}
+              fill={on ? tokens.color.brand.gold : tokens.color.overlay.whiteFaint}
+              stroke={on ? tokens.color.brand.gold : tokens.color.gameDay.liveScoringPanel.diamondSvg.base.offStroke}
               strokeWidth={1.5}
             />
           );
         })}
         <rect x={41} y={79} width={18} height={18}
           transform="rotate(45,50,88)"
-          fill="rgba(255,255,255,0.12)"
-          stroke="rgba(255,255,255,0.28)"
+          fill={tokens.color.gameDay.liveScoringPanel.diamondSvg.homePlate.fill}
+          stroke={tokens.color.gameDay.liveScoringPanel.diamondSvg.homePlate.stroke}
           strokeWidth={1}
         />
       </svg>
@@ -183,17 +184,17 @@ function HomeAwayChip(props) {
   if (isHome) {
     return (
       <div style={Object.assign({}, base, {
-        color: '#94a3b8',
-        background: 'rgba(148, 163, 184, 0.12)',
-        border: '1px solid rgba(148, 163, 184, 0.2)',
+        color: tokens.color.gameDay.text.secondary,
+        background: tokens.color.gameDay.liveScoringPanel.homeAwayChip.home.background,
+        border: '1px solid ' + tokens.color.gameDay.liveScoringPanel.homeAwayChip.home.border,
       })}>Home</div>
     );
   }
   return (
     <div style={Object.assign({}, base, {
-      color: '#f5c842',
-      background: 'rgba(245, 200, 66, 0.12)',
-      border: '1px solid rgba(245, 200, 66, 0.3)',
+      color: tokens.color.brand.gold,
+      background: tokens.color.overlay.goldTint,
+      border: '1px solid ' + tokens.color.gameDay.liveScoringPanel.homeAwayChip.away.border,
     })}>@ Away</div>
   );
 }
@@ -295,26 +296,26 @@ export default function LiveScoringPanel(props) {
   if (!scorerName && !inScorerSession) {
     return (
       <div style={{
-        minHeight: '100vh', background: '#0b1524', color: '#fff',
+        minHeight: '100vh', background: tokens.color.gameDay.surface.shell, color: tokens.color.gameDay.text.primary,
         fontFamily: FF, display: 'flex', flexDirection: 'column',
       }}>
           <div style={{
           display: 'flex', alignItems: 'center', padding: '12px 16px',
-          borderBottom: '1px solid rgba(255,255,255,0.08)', flexShrink: 0,
+          borderBottom: '1px solid ' + tokens.color.overlay.whiteFaint, flexShrink: 0,
         }}>
           <button onClick={onExit} style={{
-            background: 'none', border: 'none', color: '#94a3b8',
+            background: 'none', border: 'none', color: tokens.color.gameDay.text.secondary,
             fontSize: '20px', cursor: 'pointer', padding: '4px 8px 4px 0', lineHeight: 1,
           }}>←</button>
           <div style={{ flex: 1, textAlign: 'center' }}>
-            <div style={{ fontSize: '14px', color: '#cbd5e1' }}>
+            <div style={{ fontSize: '14px', color: tokens.color.gameDay.liveScoringPanel.noScorerState.subheaderText }}>
               {isPractice ? 'Practice Mode' : (selectedGame && selectedGame.home === false ? '@ ' : 'vs ') + teamLabel}
             </div>
             <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1}}>
-              <span style={{fontSize:'10px',color:'#aaa',fontWeight:600,letterSpacing:'0.5px'}}>
+              <span style={{fontSize:'10px',color:tokens.color.gameDay.liveScoringPanel.noScorerState.halfLabel,fontWeight:600,letterSpacing:'0.5px'}}>
                 {gs.halfInning === 'top' ? 'TOP' : 'BOT'}
               </span>
-              <span style={{fontSize:'22px',fontWeight:'800',color:'#f5c842',letterSpacing:'1px'}}>
+              <span style={{fontSize:'22px',fontWeight:'800',color:tokens.color.brand.gold,letterSpacing:'1px'}}>
                 {gs.inning}
               </span>
             </div>
@@ -322,7 +323,7 @@ export default function LiveScoringPanel(props) {
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
             {gameHeader && gameHeader.gameNumber != null
               ? <>
-                  <div style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', fontSize: '10px', fontWeight: 600, color: '#94a3b8', background: 'rgba(148, 163, 184, 0.1)', borderRadius: '10px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Game {gameHeader.gameNumber}</div>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', fontSize: '10px', fontWeight: 600, color: tokens.color.gameDay.text.secondary, background: tokens.color.gameDay.liveScoringPanel.gameNumberBadge.background, borderRadius: '10px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Game {gameHeader.gameNumber}</div>
                   <HomeAwayChip isHome={selectedGame && selectedGame.home} />
                 </>
               : <div style={{ width: '36px' }} />}
@@ -338,7 +339,7 @@ export default function LiveScoringPanel(props) {
           <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '6px' }}>
             No active scorer
           </div>
-          <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '32px', maxWidth: '260px' }}>
+          <div style={{ fontSize: '13px', color: tokens.color.gameDay.text.muted, marginBottom: '32px', maxWidth: '260px' }}>
             {isPractice
               ? 'Claim the scorer role to start recording pitches without saving to the scorebook.'
               : 'Claim the scorer role to start recording live pitches.'}
@@ -347,8 +348,8 @@ export default function LiveScoringPanel(props) {
             onClick={claimScorerLock}
             style={{
               width: '100%', maxWidth: '320px', padding: '16px',
-              background: '#1d4ed8', border: 'none', borderRadius: '10px',
-              color: '#fff', fontSize: '16px', fontWeight: 'bold',
+              background: tokens.color.gameDay.liveScoringPanel.noScorerState.claimButton.background, border: 'none', borderRadius: '10px',
+              color: tokens.color.gameDay.text.primary, fontSize: '16px', fontWeight: 'bold',
               cursor: 'pointer', fontFamily: FF, marginBottom: claimError ? '10px' : '16px',
             }}>
             🎙 Claim Scorer Role
@@ -356,7 +357,7 @@ export default function LiveScoringPanel(props) {
           {claimError ? (
             <div style={{
               width: '100%', maxWidth: '320px',
-              background: '#fee2e2', color: '#dc2626',
+              background: tokens.color.status.errorBg, color: tokens.color.status.error,
               borderRadius: '8px', padding: '10px 14px',
               fontSize: '13px', fontWeight: 600,
               marginBottom: '16px', textAlign: 'center',
@@ -368,7 +369,7 @@ export default function LiveScoringPanel(props) {
             <button
               onClick={function() { setViewerOnly(true); }}
               style={{
-                background: 'none', border: 'none', color: '#60a5fa',
+                background: 'none', border: 'none', color: tokens.color.gameDay.liveScoringPanel.noScorerState.viewerLink.color,
                 fontSize: '14px', cursor: 'pointer', fontFamily: FF, padding: '4px 8px',
               }}>
               Join as Viewer →
@@ -383,7 +384,7 @@ export default function LiveScoringPanel(props) {
   if (scorerName && !inScorerSession) {
     return (
       <div style={{
-        minHeight: '100vh', background: '#0b1524', color: '#fff',
+        minHeight: '100vh', background: tokens.color.gameDay.surface.shell, color: tokens.color.gameDay.text.primary,
         fontFamily: FF, display: 'flex', flexDirection: 'column',
       }}>
         <ScoreboardRow
@@ -397,44 +398,44 @@ export default function LiveScoringPanel(props) {
         <div style={{
           display: 'flex', alignItems: 'center',
           padding: '10px 14px', gap: '10px',
-          background: '#0a1628',
-          borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0,
+          background: tokens.color.gameDay.surface.scoreboard,
+          borderBottom: '1px solid ' + tokens.color.gameDay.liveScoringPanel.otherScorerState.headerBorder, flexShrink: 0,
         }}>
           <button onClick={onExit} style={{
-            background: 'none', border: 'none', color: '#64748b',
+            background: 'none', border: 'none', color: tokens.color.gameDay.text.muted,
             fontSize: '18px', cursor: 'pointer', padding: 0, lineHeight: 1,
           }}>←</button>
           {gameHeader && gameHeader.gameNumber != null && (
             <>
-              <div style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', fontSize: '10px', fontWeight: 600, color: '#94a3b8', background: 'rgba(148, 163, 184, 0.1)', borderRadius: '10px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Game {gameHeader.gameNumber}</div>
+              <div style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', fontSize: '10px', fontWeight: 600, color: tokens.color.gameDay.text.secondary, background: tokens.color.gameDay.liveScoringPanel.gameNumberBadge.background, borderRadius: '10px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Game {gameHeader.gameNumber}</div>
               <HomeAwayChip isHome={selectedGame && selectedGame.home} />
             </>
           )}
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:'3px'}}>
-              <span style={{fontSize:'10px',color:'#f5c842',fontWeight:500,letterSpacing:'0.7px',textTransform:'uppercase'}}>INNING</span>
-              <span style={{fontSize:'22px',fontWeight:'800',color:'#f5c842',letterSpacing:'1px'}}>
+              <span style={{fontSize:'10px',color:tokens.color.brand.gold,fontWeight:500,letterSpacing:'0.7px',textTransform:'uppercase'}}>INNING</span>
+              <span style={{fontSize:'22px',fontWeight:'800',color:tokens.color.brand.gold,letterSpacing:'1px'}}>
                 {halfArrow} {gs.inning}
               </span>
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '11px' }}>
             {/* Count pill: B + S */}
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', background: 'rgba(255,255,255,0.06)', borderRadius: '9999px', padding: '6px 12px' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', background: tokens.color.gameDay.liveScoringPanel.otherScorerState.countPill.background, borderRadius: '9999px', padding: '6px 12px' }}>
               <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:'3px'}}>
-                <span style={{fontSize:'10px',color:'#cfd8e3',fontWeight:500,letterSpacing:'0.7px',textTransform:'uppercase'}}>BALLS</span>
-                <div><CountPips n={isHomeBatting ? gs.balls : (gs.oppBalls || 0)}   max={4} color="#3b82f6" /></div>
+                <span style={{fontSize:'10px',color:tokens.color.gameDay.liveScoringPanel.otherScorerState.countPill.labelText,fontWeight:500,letterSpacing:'0.7px',textTransform:'uppercase'}}>BALLS</span>
+                <div><CountPips n={isHomeBatting ? gs.balls : (gs.oppBalls || 0)}   max={4} color={tokens.color.gameDay.liveScoringPanel.otherScorerState.countPill.ballColor} /></div>
               </div>
               <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:'3px'}}>
-                <span style={{fontSize:'10px',color:'#cfd8e3',fontWeight:500,letterSpacing:'0.7px',textTransform:'uppercase'}}>STRIKES</span>
-                <div><CountPips n={isHomeBatting ? gs.strikes : (gs.oppStrikes || 0)} max={3} color="#dc2626" /></div>
+                <span style={{fontSize:'10px',color:tokens.color.gameDay.liveScoringPanel.otherScorerState.countPill.labelText,fontWeight:500,letterSpacing:'0.7px',textTransform:'uppercase'}}>STRIKES</span>
+                <div><CountPips n={isHomeBatting ? gs.strikes : (gs.oppStrikes || 0)} max={3} color={tokens.color.status.error} /></div>
               </div>
             </div>
             {/* Outs pill */}
-            <div style={{ display: 'flex', alignItems: 'flex-end', background: 'rgba(255,140,66,0.12)', borderRadius: '9999px', padding: '6px 12px' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-end', background: tokens.color.gameDay.liveScoringPanel.otherScorerState.outsPill.background, borderRadius: '9999px', padding: '6px 12px' }}>
               <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:'3px'}}>
-                <span style={{fontSize:'10px',color:'#FFB89A',fontWeight:500,letterSpacing:'0.7px',textTransform:'uppercase'}}>OUTS</span>
-                <div><CountPips n={gs.outs}    max={3} color="#FF8C42" /></div>
+                <span style={{fontSize:'10px',color:tokens.color.gameDay.liveScoringPanel.otherScorerState.outsPill.labelText,fontWeight:500,letterSpacing:'0.7px',textTransform:'uppercase'}}>OUTS</span>
+                <div><CountPips n={gs.outs}    max={3} color={tokens.color.gameDay.liveScoringPanel.otherScorerState.outsPill.color} /></div>
               </div>
             </div>
           </div>
@@ -442,15 +443,15 @@ export default function LiveScoringPanel(props) {
 
         {/* Scorer banner */}
         <div style={{
-          background: 'rgba(22,163,74,0.12)',
-          border: '1px solid rgba(22,163,74,0.3)',
+          background: tokens.color.gameDay.liveScoringPanel.otherScorerState.scorerBanner.background,
+          border: '1px solid ' + tokens.color.gameDay.liveScoringPanel.otherScorerState.scorerBanner.border,
           borderRadius: '8px', margin: '12px 16px 4px',
           padding: '10px 14px',
           display: 'flex', alignItems: 'center', gap: '8px',
         }}>
           <span style={{
             width: 8, height: 8, borderRadius: '50%',
-            background: '#16a34a', display: 'inline-block', flexShrink: 0,
+            background: tokens.color.gameDay.liveScoringPanel.otherScorerState.scorerBanner.dot, display: 'inline-block', flexShrink: 0,
           }} />
           <span style={{ fontSize: '14px', fontWeight: 'bold' }}>
             {scorerName} is scoring 🟢
@@ -464,15 +465,15 @@ export default function LiveScoringPanel(props) {
         {currentBatter ? (
           <div style={{ padding: '0 16px 12px' }}>
             <div style={{
-              background: 'rgba(245,200,66,0.08)',
-              border: '1px solid rgba(245,200,66,0.2)',
+              background: tokens.color.gameDay.liveScoringPanel.otherScorerState.nowBattingCard.background,
+              border: '1px solid ' + tokens.color.gameDay.liveScoringPanel.otherScorerState.nowBattingCard.border,
               borderRadius: '8px', padding: '10px 14px',
             }}>
-              <div style={{ fontSize: '10px', color: '#f5c842', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '2px' }}>
+              <div style={{ fontSize: '10px', color: tokens.color.brand.gold, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '2px' }}>
                 Now Batting
               </div>
               <div style={{ fontSize: '17px', fontWeight: 'bold' }}>{currentBatter.name}</div>
-              <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
+              <div style={{ fontSize: '11px', color: tokens.color.gameDay.text.muted, marginTop: '2px' }}>
                 {pitches.length} pitch{pitches.length !== 1 ? 'es' : ''}
               </div>
             </div>
@@ -480,7 +481,7 @@ export default function LiveScoringPanel(props) {
         ) : null}
 
         <div style={{ padding: '8px 16px', marginTop: 'auto' }}>
-          <div style={{ fontSize: '11px', color: '#374151', marginBottom: '8px', textAlign: 'center' }}>
+          <div style={{ fontSize: '11px', color: tokens.color.gameDay.liveScoringPanel.otherScorerState.disclaimerText, marginBottom: '8px', textAlign: 'center' }}>
             Only one scorer at a time
           </div>
           <div style={{ display: 'flex', gap: '6px' }}>
@@ -488,9 +489,9 @@ export default function LiveScoringPanel(props) {
               return (
                 <button key={btn.type} disabled style={{
                   flex: btn.flex || 1, padding: '13px 4px',
-                  background: 'rgba(255,255,255,0.03)',
-                  border: '1px solid rgba(255,255,255,0.07)',
-                  borderRadius: '10px', color: '#2d3748',
+                  background: tokens.color.gameDay.liveScoringPanel.otherScorerState.disabledPitchButtons.background,
+                  border: '1px solid ' + tokens.color.gameDay.liveScoringPanel.otherScorerState.disabledPitchButtons.border,
+                  borderRadius: '10px', color: tokens.color.gameDay.liveScoringPanel.otherScorerState.disabledPitchButtons.text,
                   fontWeight: 'bold', fontSize: '12px',
                   cursor: 'not-allowed', fontFamily: FF,
                 }}>{btn.label}</button>
@@ -530,19 +531,19 @@ export default function LiveScoringPanel(props) {
   // Roster picker sheet
   var rosterPickerSheet = showRosterPicker ? (
     <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)',
+      position: 'fixed', inset: 0, background: tokens.color.gameDay.liveScoringPanel.scorerState.sheetBackdrop,
       display: 'flex', alignItems: 'flex-end', zIndex: 300,
     }}>
       <div style={{
-        background: '#0f1f3d', borderRadius: '16px 16px 0 0',
-        border: '1px solid rgba(255,255,255,0.15)',
+        background: tokens.color.brand.navy, borderRadius: '16px 16px 0 0',
+        border: '1px solid ' + tokens.color.overlay.whiteLight,
         padding: '16px', width: '100%', maxHeight: '70vh',
         display: 'flex', flexDirection: 'column', fontFamily: FF,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
           <div style={{ fontSize: '14px', fontWeight: 'bold' }}>Select Batter</div>
           <button onClick={function() { setShowRosterPicker(false); }} style={{
-            background: 'none', border: 'none', color: '#64748b',
+            background: 'none', border: 'none', color: tokens.color.gameDay.text.muted,
             fontSize: '18px', cursor: 'pointer', padding: '2px 6px',
           }}>✕</button>
         </div>
@@ -555,14 +556,14 @@ export default function LiveScoringPanel(props) {
                 onClick={function() { handleSelectRosterPlayer(player); }}
                 style={{
                   width: '100%', textAlign: 'left', display: 'block',
-                  background: isCur ? 'rgba(245,200,66,0.12)' : 'rgba(255,255,255,0.04)',
-                  border: isCur ? '1px solid rgba(245,200,66,0.4)' : '1px solid rgba(255,255,255,0.08)',
+                  background: isCur ? tokens.color.overlay.goldTint : tokens.color.gameDay.liveScoringPanel.scorerState.rosterPicker.row.background,
+                  border: isCur ? '1px solid ' + tokens.color.overlay.goldStrong : '1px solid ' + tokens.color.overlay.whiteFaint,
                   borderRadius: '8px', padding: '10px 14px', marginBottom: '6px',
-                  cursor: 'pointer', color: '#fff', fontFamily: FF,
+                  cursor: 'pointer', color: tokens.color.gameDay.text.primary, fontFamily: FF,
                 }}>
-                <span style={{ fontSize: '11px', color: '#64748b', marginRight: '8px' }}>{idx + 1}.</span>
+                <span style={{ fontSize: '11px', color: tokens.color.gameDay.text.muted, marginRight: '8px' }}>{idx + 1}.</span>
                 <span style={{ fontWeight: isCur ? 'bold' : 'normal' }}>{player.name}</span>
-                {isCur ? <span style={{ fontSize: '10px', color: '#f5c842', marginLeft: '8px' }}>(current)</span> : null}
+                {isCur ? <span style={{ fontSize: '10px', color: tokens.color.brand.gold, marginLeft: '8px' }}>(current)</span> : null}
               </button>
             );
           })}
@@ -575,19 +576,19 @@ export default function LiveScoringPanel(props) {
   var sheetV2Enabled = isFlagEnabled('SCORING_SHEET_V2');
   var outcomeSheet = showOutcomes ? (
     <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)',
+      position: 'fixed', inset: 0, background: tokens.color.gameDay.liveScoringPanel.scorerState.sheetBackdrop,
       display: 'flex', alignItems: 'flex-end', zIndex: 250,
     }}>
       <div style={{
-        background: '#0f1f3d', borderRadius: '16px 16px 0 0',
-        border: '1px solid rgba(255,255,255,0.15)',
+        background: tokens.color.brand.navy, borderRadius: '16px 16px 0 0',
+        border: '1px solid ' + tokens.color.overlay.whiteLight,
         padding: '16px 16px 32px', width: '100%', fontFamily: FF,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-          <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#f5c842' }}>At-bat outcome</div>
+          <div style={{ fontSize: '14px', fontWeight: 'bold', color: tokens.color.brand.gold }}>At-bat outcome</div>
           <button onClick={undoLastPitch} style={{
-            background: 'none', border: '1px solid rgba(255,255,255,0.12)',
-            borderRadius: '6px', color: '#64748b', fontSize: '12px',
+            background: 'none', border: '1px solid ' + tokens.color.gameDay.border.hairline,
+            borderRadius: '6px', color: tokens.color.gameDay.text.muted, fontSize: '12px',
             cursor: 'pointer', fontFamily: FF, padding: '4px 10px',
           }}>⟲ Undo Contact</button>
         </div>
@@ -595,7 +596,7 @@ export default function LiveScoringPanel(props) {
         {sheetV2Enabled ? (
           <div>
             <div style={{
-              fontSize: '11px', fontWeight: 'bold', color: '#f5c842',
+              fontSize: '11px', fontWeight: 'bold', color: tokens.color.brand.gold,
               letterSpacing: '0.1em', textTransform: 'uppercase',
               marginBottom: '6px', marginTop: '4px',
             }}>
@@ -608,9 +609,9 @@ export default function LiveScoringPanel(props) {
               aria-label="Foul ball — at-bat continues"
               style={{
                 width: '100%', padding: '14px',
-                background: 'rgba(245,200,66,0.10)',
-                border: '1px solid rgba(245,200,66,0.4)',
-                borderRadius: '8px', color: '#f5c842',
+                background: tokens.color.gameDay.liveScoringPanel.scorerState.outcomeSheet.foulButtonBackground,
+                border: '1px solid ' + tokens.color.overlay.goldStrong,
+                borderRadius: '8px', color: tokens.color.brand.gold,
                 fontWeight: 'bold', fontSize: '14px',
                 cursor: 'pointer', fontFamily: FF,
                 marginBottom: '4px',
@@ -619,13 +620,13 @@ export default function LiveScoringPanel(props) {
               F  Foul
             </button>
             <div style={{
-              fontSize: '11px', color: '#64748b', textAlign: 'center',
+              fontSize: '11px', color: tokens.color.gameDay.text.muted, textAlign: 'center',
               fontStyle: 'italic', marginBottom: '14px',
             }}>
               At-bat continues
             </div>
             <div style={{
-              fontSize: '11px', fontWeight: 'bold', color: '#f5c842',
+              fontSize: '11px', fontWeight: 'bold', color: tokens.color.brand.gold,
               letterSpacing: '0.1em', textTransform: 'uppercase',
               marginBottom: '6px',
             }}>
@@ -646,7 +647,7 @@ export default function LiveScoringPanel(props) {
                     style={{
                       flex: isFullWidth ? '1 0 100%' : 1,
                       padding: '12px 4px',
-                      background: 'rgba(255,255,255,0.05)',
+                      background: tokens.color.gameDay.liveScoringPanel.scorerState.outcomeSheet.optionButtonBackground,
                       border: '1px solid ' + btn.color + '55',
                       borderRadius: '8px', color: btn.color,
                       fontWeight: 'bold', fontSize: '13px',
@@ -672,15 +673,15 @@ export default function LiveScoringPanel(props) {
     var pr = pendingAdvancement.runners[0];
     runnerSheet = (
       <div style={{
-        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)',
+        position: 'fixed', inset: 0, background: tokens.color.gameDay.liveScoringPanel.scorerState.sheetBackdrop,
         display: 'flex', alignItems: 'flex-end', zIndex: 260,
       }}>
         <div style={{
-          background: '#0f1f3d', borderRadius: '16px 16px 0 0',
-          border: '1px solid rgba(255,255,255,0.15)',
+          background: tokens.color.brand.navy, borderRadius: '16px 16px 0 0',
+          border: '1px solid ' + tokens.color.overlay.whiteLight,
           padding: '20px 20px 36px', width: '100%', fontFamily: FF,
         }}>
-          <div style={{ fontSize: '11px', color: '#f5c842', fontWeight: 'bold', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '6px' }}>
+          <div style={{ fontSize: '11px', color: tokens.color.brand.gold, fontWeight: 'bold', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '6px' }}>
             Runner on 3rd
           </div>
           <div style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '18px' }}>
@@ -688,21 +689,21 @@ export default function LiveScoringPanel(props) {
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
             <button onClick={function() { confirmRunnerAdvancement(pr.runnerId, 3, 'held'); }} style={{
-              flex: 1, padding: '13px 6px', background: 'rgba(255,255,255,0.06)',
-              border: '1.5px solid rgba(255,255,255,0.2)', borderRadius: '10px',
-              color: '#94a3b8', fontWeight: 'bold', fontSize: '13px',
+              flex: 1, padding: '13px 6px', background: tokens.color.gameDay.liveScoringPanel.scorerState.runnerSheet.heldButtonBackground,
+              border: '1.5px solid ' + tokens.color.gameDay.liveScoringPanel.scorerState.runnerSheet.heldButtonBorder, borderRadius: '10px',
+              color: tokens.color.gameDay.text.secondary, fontWeight: 'bold', fontSize: '13px',
               cursor: 'pointer', fontFamily: FF,
             }}>Stayed 3rd</button>
             <button onClick={function() { confirmRunnerAdvancement(pr.runnerId, 4, 'scored'); }} style={{
-              flex: 1, padding: '13px 6px', background: '#16a34a22',
-              border: '1.5px solid #16a34a', borderRadius: '10px',
-              color: '#fff', fontWeight: 'bold', fontSize: '13px',
+              flex: 1, padding: '13px 6px', background: tokens.color.gameDay.liveScoringPanel.scorerState.runnerSheet.scoredButtonBackground,
+              border: '1.5px solid ' + tokens.color.gameDay.liveScoringPanel.accent.hit, borderRadius: '10px',
+              color: tokens.color.gameDay.text.primary, fontWeight: 'bold', fontSize: '13px',
               cursor: 'pointer', fontFamily: FF,
             }}>Scored ✓</button>
             <button onClick={function() { confirmRunnerAdvancement(pr.runnerId, null, 'out'); }} style={{
-              flex: 1, padding: '13px 6px', background: '#dc262622',
-              border: '1.5px solid #dc2626', borderRadius: '10px',
-              color: '#fff', fontWeight: 'bold', fontSize: '13px',
+              flex: 1, padding: '13px 6px', background: tokens.color.gameDay.liveScoringPanel.scorerState.runnerSheet.outButtonBackground,
+              border: '1.5px solid ' + tokens.color.status.error, borderRadius: '10px',
+              color: tokens.color.gameDay.text.primary, fontWeight: 'bold', fontSize: '13px',
               cursor: 'pointer', fontFamily: FF,
             }}>Out ✗</button>
           </div>
@@ -714,7 +715,7 @@ export default function LiveScoringPanel(props) {
   return (
     <div style={{
       minHeight: '100vh', overflow: 'visible', paddingBottom: '160px',
-      background: '#0b1524', color: '#fff',
+      background: tokens.color.gameDay.surface.shell, color: tokens.color.gameDay.text.primary,
       fontFamily: FF, display: 'flex', flexDirection: 'column',
     }}>
       <ScoreboardRow
@@ -731,43 +732,43 @@ export default function LiveScoringPanel(props) {
       <div style={{
         display: 'flex', alignItems: 'center',
         padding: '10px 14px', gap: '8px',
-        background: '#0a1628',
-        borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0,
+        background: tokens.color.gameDay.surface.scoreboard,
+        borderBottom: '1px solid ' + tokens.color.gameDay.liveScoringPanel.scorerState.header.borderBottom, flexShrink: 0,
       }}>
         <button onClick={handlePause} style={{
-          background: 'none', border: 'none', color: '#64748b',
+          background: 'none', border: 'none', color: tokens.color.gameDay.text.muted,
           fontSize: '18px', cursor: 'pointer', padding: 0, lineHeight: 1, flexShrink: 0,
         }}>←</button>
 
         {gameHeader && gameHeader.gameNumber != null && (
           <>
-            <div style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', fontSize: '10px', fontWeight: 600, color: '#94a3b8', background: 'rgba(148, 163, 184, 0.1)', borderRadius: '10px', letterSpacing: '0.05em', textTransform: 'uppercase', flexShrink: 0 }}>Game {gameHeader.gameNumber}</div>
+            <div style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', fontSize: '10px', fontWeight: 600, color: tokens.color.gameDay.text.secondary, background: tokens.color.gameDay.liveScoringPanel.gameNumberBadge.background, borderRadius: '10px', letterSpacing: '0.05em', textTransform: 'uppercase', flexShrink: 0 }}>Game {gameHeader.gameNumber}</div>
             <HomeAwayChip isHome={selectedGame && selectedGame.home} />
           </>
         )}
 
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px', flexShrink: 0 }}>
-          <span style={{ fontSize: '10px', color: '#f5c842', fontWeight: 500, letterSpacing: '0.7px', textTransform: 'uppercase' }}>INNING</span>
-          <span style={{ fontSize: '15px', fontWeight: 'bold', color: '#f5c842' }}>{halfArrow} {gs.inning}</span>
+          <span style={{ fontSize: '10px', color: tokens.color.brand.gold, fontWeight: 500, letterSpacing: '0.7px', textTransform: 'uppercase' }}>INNING</span>
+          <span style={{ fontSize: '15px', fontWeight: 'bold', color: tokens.color.brand.gold }}>{halfArrow} {gs.inning}</span>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '11px', flexShrink: 0 }}>
-          {/* Count pill: B + S */}
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', background: 'rgba(255,255,255,0.06)', borderRadius: '9999px', padding: '6px 12px' }}>
+          {/* Count pill: B + S — same shared "top pill" widget as STATE 3's (otherScorerState), reused directly */}
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', background: tokens.color.gameDay.liveScoringPanel.otherScorerState.countPill.background, borderRadius: '9999px', padding: '6px 12px' }}>
             <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:'3px'}}>
-              <span style={{fontSize:'10px',color:'#cfd8e3',fontWeight:500,letterSpacing:'0.7px',textTransform:'uppercase'}}>BALLS</span>
-              <div><CountPips n={isHomeBatting ? gs.balls : (gs.oppBalls || 0)}   max={4} color="#3b82f6" /></div>
+              <span style={{fontSize:'10px',color:tokens.color.gameDay.liveScoringPanel.otherScorerState.countPill.labelText,fontWeight:500,letterSpacing:'0.7px',textTransform:'uppercase'}}>BALLS</span>
+              <div><CountPips n={isHomeBatting ? gs.balls : (gs.oppBalls || 0)}   max={4} color={tokens.color.gameDay.liveScoringPanel.otherScorerState.countPill.ballColor} /></div>
             </div>
             <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:'3px'}}>
-              <span style={{fontSize:'10px',color:'#cfd8e3',fontWeight:500,letterSpacing:'0.7px',textTransform:'uppercase'}}>STRIKES</span>
-              <div><CountPips n={isHomeBatting ? gs.strikes : (gs.oppStrikes || 0)} max={3} color="#dc2626" /></div>
+              <span style={{fontSize:'10px',color:tokens.color.gameDay.liveScoringPanel.otherScorerState.countPill.labelText,fontWeight:500,letterSpacing:'0.7px',textTransform:'uppercase'}}>STRIKES</span>
+              <div><CountPips n={isHomeBatting ? gs.strikes : (gs.oppStrikes || 0)} max={3} color={tokens.color.status.error} /></div>
             </div>
           </div>
-          {/* Outs pill */}
-          <div style={{ display: 'flex', alignItems: 'flex-end', background: 'rgba(255,140,66,0.12)', borderRadius: '9999px', padding: '6px 12px' }}>
+          {/* Outs pill — same shared "top pill" widget as STATE 3's, reused directly */}
+          <div style={{ display: 'flex', alignItems: 'flex-end', background: tokens.color.gameDay.liveScoringPanel.otherScorerState.outsPill.background, borderRadius: '9999px', padding: '6px 12px' }}>
             <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:'3px'}}>
-              <span style={{fontSize:'10px',color:'#FFB89A',fontWeight:500,letterSpacing:'0.7px',textTransform:'uppercase'}}>OUTS</span>
-              <div><CountPips n={gs.outs}    max={3} color="#FF8C42" /></div>
+              <span style={{fontSize:'10px',color:tokens.color.gameDay.liveScoringPanel.otherScorerState.outsPill.labelText,fontWeight:500,letterSpacing:'0.7px',textTransform:'uppercase'}}>OUTS</span>
+              <div><CountPips n={gs.outs}    max={3} color={tokens.color.gameDay.liveScoringPanel.otherScorerState.outsPill.color} /></div>
             </div>
           </div>
         </div>
@@ -775,7 +776,7 @@ export default function LiveScoringPanel(props) {
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
           {isAdminTestMode && (
             <span style={{
-              background: '#fef3c7', color: '#92400e',
+              background: tokens.color.gameDay.liveScoringPanel.scorerState.header.adminBadge.background, color: tokens.color.gameDay.liveScoringPanel.scorerState.header.adminBadge.text,
               fontSize: '10px', fontWeight: 600,
               padding: '2px 7px', borderRadius: '99px',
               whiteSpace: 'nowrap', flexShrink: 0,
@@ -784,19 +785,19 @@ export default function LiveScoringPanel(props) {
           <button
             onClick={function() { setShowGearMenu(function(v) { return !v; }); }}
             style={{
-              background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.1)',
+              background: tokens.color.gameDay.liveScoringPanel.scorerState.header.iconButton.background,
+              border: '1px solid ' + tokens.color.gameDay.liveScoringPanel.scorerState.header.iconButton.border,
               borderRadius: '6px', padding: '5px 8px',
-              color: '#94a3b8', cursor: 'pointer',
+              color: tokens.color.gameDay.text.secondary, cursor: 'pointer',
               fontSize: '14px', fontFamily: FF, lineHeight: 1,
             }}>⚙</button>
           <button
             onClick={handlePause}
             style={{
-              background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.1)',
+              background: tokens.color.gameDay.liveScoringPanel.scorerState.header.iconButton.background,
+              border: '1px solid ' + tokens.color.gameDay.liveScoringPanel.scorerState.header.iconButton.border,
               borderRadius: '6px', padding: '5px 8px',
-              color: '#94a3b8', cursor: 'pointer',
+              color: tokens.color.gameDay.text.secondary, cursor: 'pointer',
               fontSize: '16px', fontFamily: FF, lineHeight: 1,
               fontWeight: 300,
             }}>✕</button>
@@ -806,10 +807,10 @@ export default function LiveScoringPanel(props) {
       {/* ── Mercy run banner — home half ───────────────────────────────────── */}
       {gs.halfInning === myTeamHalf && runsThisHalf >= 5 && (
         <div style={{
-          background: '#7c2d12', color: '#fca5a5',
+          background: tokens.color.gameDay.liveScoringPanel.scorerState.mercyBanner.background, color: tokens.color.gameDay.liveScoringPanel.scorerState.mercyBanner.text,
           fontSize: '13px', fontWeight: 700,
           padding: '8px 16px',
-          borderBottom: '1px solid #ef4444',
+          borderBottom: '1px solid ' + tokens.color.gameDay.liveScoringPanel.scorerState.mercyBanner.border,
           flexShrink: 0,
           display: 'flex', alignItems: 'center',
           justifyContent: 'space-between', gap: '8px',
@@ -822,7 +823,7 @@ export default function LiveScoringPanel(props) {
               track('inning_ended', { trigger: 'mercy', half: gs.halfInning, runs: runsThisHalf });
             }}
             style={{
-              background:'#ef4444', border:'none', color:'#fff',
+              background: tokens.color.gameDay.liveScoringPanel.scorerState.mercyBanner.endButtonBackground, border:'none', color: tokens.color.gameDay.text.primary,
               fontSize:'12px', fontWeight:700, padding:'4px 10px',
               borderRadius:'6px', cursor:'pointer'
             }}
@@ -833,10 +834,10 @@ export default function LiveScoringPanel(props) {
       {/* ── Mercy run banner — opponent half ───────────────────────────────── */}
       {gs.halfInning !== myTeamHalf && (scoring.oppRunsThisHalf || 0) >= 5 && (
         <div style={{
-          background: '#7c2d12', color: '#fca5a5',
+          background: tokens.color.gameDay.liveScoringPanel.scorerState.mercyBanner.background, color: tokens.color.gameDay.liveScoringPanel.scorerState.mercyBanner.text,
           fontSize: '13px', fontWeight: 700,
           padding: '8px 16px',
-          borderBottom: '1px solid #ef4444',
+          borderBottom: '1px solid ' + tokens.color.gameDay.liveScoringPanel.scorerState.mercyBanner.border,
           flexShrink: 0,
           display: 'flex', alignItems: 'center',
           justifyContent: 'space-between', gap: '8px',
@@ -849,7 +850,7 @@ export default function LiveScoringPanel(props) {
               track('inning_ended', { trigger: 'opp_mercy', half: gs.halfInning, runs: scoring.oppRunsThisHalf });
             }}
             style={{
-              background:'#ef4444', border:'none', color:'#fff',
+              background: tokens.color.gameDay.liveScoringPanel.scorerState.mercyBanner.endButtonBackground, border:'none', color: tokens.color.gameDay.text.primary,
               fontSize:'12px', fontWeight:700, padding:'4px 10px',
               borderRadius:'6px', cursor:'pointer'
             }}
@@ -879,9 +880,9 @@ export default function LiveScoringPanel(props) {
         <button
           onClick={claimScorerLock}
           style={{
-            width: '100%', background: 'rgba(220,38,38,0.15)',
-            border: 'none', borderBottom: '1px solid rgba(220,38,38,0.35)',
-            color: '#fca5a5', fontSize: '13px', fontWeight: 'bold',
+            width: '100%', background: tokens.color.gameDay.liveScoringPanel.scorerState.lockExpiredBanner.background,
+            border: 'none', borderBottom: '1px solid ' + tokens.color.gameDay.liveScoringPanel.scorerState.lockExpiredBanner.border,
+            color: tokens.color.gameDay.liveScoringPanel.scorerState.lockExpiredBanner.text, fontSize: '13px', fontWeight: 'bold',
             cursor: 'pointer', fontFamily: FF, padding: '9px 16px',
             textAlign: 'center', flexShrink: 0,
           }}>
@@ -893,29 +894,29 @@ export default function LiveScoringPanel(props) {
       <div style={{ padding: '12px 16px', flexShrink: 0 }}>
         {gs.halfInning === myTeamHalf ? (currentBatter ? (
           <div style={{
-            background: 'rgba(245,200,66,0.08)',
-            border: '1px solid rgba(245,200,66,0.25)',
+            background: tokens.color.gameDay.liveScoringPanel.scorerState.battingCard.background,
+            border: '1px solid ' + tokens.color.gameDay.liveScoringPanel.scorerState.battingCard.border,
             borderRadius: '8px', padding: '10px 14px',
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           }}>
             <div>
-              <div style={{ fontSize: '10px', color: '#f5c842', fontWeight: 'bold', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '2px' }}>
+              <div style={{ fontSize: '10px', color: tokens.color.brand.gold, fontWeight: 'bold', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '2px' }}>
                 Now Batting
               </div>
               <div style={{ fontSize: '17px', fontWeight: 'bold' }}>
                 {currentBatter.number ? '#' + currentBatter.number + ' ' : ''}{currentBatter.name}
               </div>
-              <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
+              <div style={{ fontSize: '11px', color: tokens.color.gameDay.text.muted, marginTop: '2px' }}>
                 {pitches.length} pitch{pitches.length !== 1 ? 'es' : ''}
               </div>
             </div>
             <button
               onClick={function() { setShowRosterPicker(true); }}
               style={{
-                background: 'rgba(255,255,255,0.08)',
-                border: '1px solid rgba(255,255,255,0.15)',
+                background: tokens.color.overlay.whiteFaint,
+                border: '1px solid ' + tokens.color.overlay.whiteLight,
                 borderRadius: '7px', padding: '7px 12px',
-                color: '#94a3b8', fontSize: '12px', fontWeight: 'bold',
+                color: tokens.color.gameDay.text.secondary, fontSize: '12px', fontWeight: 'bold',
                 cursor: 'pointer', fontFamily: FF,
               }}>
               SWAP
@@ -923,17 +924,17 @@ export default function LiveScoringPanel(props) {
           </div>
         ) : suggestedBatter ? (
           <div style={{
-            background: 'rgba(255,255,255,0.04)',
-            border: '1px solid rgba(255,255,255,0.12)',
+            background: tokens.color.gameDay.liveScoringPanel.scorerState.suggestedBatterCard.background,
+            border: '1px solid ' + tokens.color.gameDay.border.hairline,
             borderRadius: '8px', padding: '12px 14px',
           }}>
-            <div style={{ fontSize: '10px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>
+            <div style={{ fontSize: '10px', color: tokens.color.gameDay.text.secondary, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>
               Next Batter
             </div>
             <div style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '4px' }}>
               {suggestedBatter.number ? '#' + suggestedBatter.number + ' ' : ''}{suggestedBatter.name}
             </div>
-            <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '12px' }}>
+            <div style={{ fontSize: '12px', color: tokens.color.gameDay.text.muted, marginBottom: '12px' }}>
               Batting {suggestedBatter.orderPosition !== undefined ? suggestedBatter.orderPosition + 1 : '?'} of {battingOrder.length} — Is this right?
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
@@ -941,8 +942,8 @@ export default function LiveScoringPanel(props) {
                 onClick={function() { startAtBat(suggestedBatter, true); }}
                 style={{
                   flex: 2, padding: '10px 12px',
-                  background: '#1d4ed8', border: 'none', borderRadius: '8px',
-                  color: '#fff', fontSize: '14px', fontWeight: 'bold',
+                  background: tokens.color.gameDay.liveScoringPanel.accent.ball, border: 'none', borderRadius: '8px',
+                  color: tokens.color.gameDay.text.primary, fontSize: '14px', fontWeight: 'bold',
                   cursor: 'pointer', fontFamily: FF,
                 }}>
                 ✓ Confirm
@@ -951,9 +952,9 @@ export default function LiveScoringPanel(props) {
                 onClick={function() { setShowRosterPicker(true); }}
                 style={{
                   flex: 1, padding: '10px 12px',
-                  background: 'rgba(255,255,255,0.06)',
-                  border: '1px solid rgba(255,255,255,0.12)',
-                  borderRadius: '8px', color: '#94a3b8',
+                  background: tokens.color.gameDay.liveScoringPanel.scorerState.suggestedBatterCard.secondaryButtonBackground,
+                  border: '1px solid ' + tokens.color.gameDay.border.hairline,
+                  borderRadius: '8px', color: tokens.color.gameDay.text.secondary,
                   fontSize: '13px', fontWeight: 'bold',
                   cursor: 'pointer', fontFamily: FF,
                 }}>
@@ -962,28 +963,28 @@ export default function LiveScoringPanel(props) {
             </div>
           </div>
         ) : (
-          <div style={{padding:'10px 14px', background:'rgba(255,255,255,0.05)',
+          <div style={{padding:'10px 14px', background: tokens.color.gameDay.liveScoringPanel.scorerState.noBattingOrder.background,
             borderRadius:'10px', textAlign:'center'}}>
-            <div style={{color:'#aaa', fontSize:'14px', marginBottom:'4px'}}>
+            <div style={{color: tokens.color.gameDay.liveScoringPanel.scorerState.noBattingOrder.titleText, fontSize:'14px', marginBottom:'4px'}}>
               No batting order set
             </div>
-            <div style={{color:'#666', fontSize:'12px'}}>
+            <div style={{color: tokens.color.gameDay.liveScoringPanel.scorerState.noBattingOrder.bodyText, fontSize:'12px'}}>
               Set a batting order in Game Day → Lineups tab first
             </div>
           </div>
         )) : (
           <div style={{
-            background: 'rgba(245,200,66,0.08)',
-            border: '1px solid rgba(245,200,66,0.25)',
+            background: tokens.color.gameDay.liveScoringPanel.scorerState.battingCard.background,
+            border: '1px solid ' + tokens.color.gameDay.liveScoringPanel.scorerState.battingCard.border,
             borderRadius: '8px', padding: '10px 14px',
           }}>
-            <div style={{ fontSize: '10px', color: '#f5c842', fontWeight: 'bold', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '2px' }}>
+            <div style={{ fontSize: '10px', color: tokens.color.brand.gold, fontWeight: 'bold', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '2px' }}>
               BATTING
             </div>
             <div style={{ fontSize: '17px', fontWeight: 'bold' }}>
               {teamLabel} #{((gs.oppCurrentBatterNumber || 1) - 1) % 11 + 1}
             </div>
-            <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
+            <div style={{ fontSize: '11px', color: tokens.color.gameDay.text.muted, marginTop: '2px' }}>
               Pitches: {gs.opp_current_batter_pitches || 0} of 5
             </div>
           </div>
@@ -1004,17 +1005,17 @@ export default function LiveScoringPanel(props) {
         <div data-testid="pitch-map" style={{ width: '100%', textAlign: 'center' }}>
           {pitches.length > 0 ? (
             <div>
-              <div style={{ fontSize: '10px', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>
+              <div style={{ fontSize: '10px', color: tokens.color.gameDay.text.caption, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>
                 Pitches
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                 {pitches.map(function(p, i) {
-                  var chip = PITCH_CHIPS[p.type] || { label: '?', bg: '#475569' };
+                  var chip = PITCH_CHIPS[p.type] || { label: '?', bg: tokens.color.gameDay.liveScoringPanel.scorerState.pitchLog.fallbackChipBackground };
                   return (
                     <span key={i} style={{
                       display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                       width: 26, height: 26, borderRadius: '6px',
-                      background: chip.bg, color: '#fff',
+                      background: chip.bg, color: tokens.color.gameDay.text.primary,
                       fontSize: '11px', fontWeight: 'bold',
                     }}>
                       {chip.label}
@@ -1024,10 +1025,10 @@ export default function LiveScoringPanel(props) {
               </div>
             </div>
           ) : (
-            <div style={{ fontSize: '12px', color: '#374151' }}>No pitches yet</div>
+            <div style={{ fontSize: '12px', color: tokens.color.gameDay.liveScoringPanel.scorerState.pitchLog.emptyText }}>No pitches yet</div>
           )}
           {lastPitch ? (
-            <div style={{ fontSize: '11px', color: '#64748b', marginTop: '8px' }}>
+            <div style={{ fontSize: '11px', color: tokens.color.gameDay.text.muted, marginTop: '8px' }}>
               Last: {LAST_PITCH_LABEL[lastPitch.type] || lastPitch.type}
             </div>
           ) : null}
@@ -1038,10 +1039,10 @@ export default function LiveScoringPanel(props) {
       {gs.halfInning === myTeamHalf ? (
         <div style={{
           position: 'fixed', bottom: '60px', left: 0, right: 0,
-          background: '#0b1524', padding: '8px 16px 12px', zIndex: 50,
+          background: tokens.color.gameDay.surface.shell, padding: '8px 16px 12px', zIndex: 50,
         }}>
           {!pitchUIConfig && (
-            <div style={{ color: '#64748b', textAlign: 'center', padding: 16 }}>
+            <div style={{ color: tokens.color.gameDay.text.muted, textAlign: 'center', padding: 16 }}>
               Loading rules...
             </div>
           )}
@@ -1050,10 +1051,10 @@ export default function LiveScoringPanel(props) {
             <>
               {pitchUIConfig.showCoachOverlay && gs.isCoachPitching && (
                 <div style={{
-                  background: 'rgba(245,158,11,0.15)',
-                  border: '1px solid rgba(245,158,11,0.4)',
+                  background: tokens.color.gameDay.liveScoringPanel.scorerState.coachPitchingBanner.background,
+                  border: '1px solid ' + tokens.color.gameDay.liveScoringPanel.scorerState.coachPitchingBanner.border,
                   borderRadius: 8, padding: '6px 12px',
-                  fontSize: 12, color: '#f59e0b', textAlign: 'center',
+                  fontSize: 12, color: tokens.color.gameDay.liveScoringPanel.scorerState.warningText, textAlign: 'center',
                   marginBottom: 6,
                 }}>
                   Coach pitching — {gs.coachPitchesRemaining || 0} pitch
@@ -1064,10 +1065,10 @@ export default function LiveScoringPanel(props) {
               {ruleWarnings.length > 0 && ruleWarnings.map(function(w, i) {
                 return (
                   <div key={i} style={{
-                    background: 'rgba(245,158,11,0.1)',
-                    border: '1px solid rgba(245,158,11,0.3)',
+                    background: tokens.color.gameDay.liveScoringPanel.scorerState.ruleWarningBanner.background,
+                    border: '1px solid ' + tokens.color.gameDay.liveScoringPanel.scorerState.ruleWarningBanner.border,
                     borderRadius: 8, padding: '6px 12px',
-                    fontSize: 12, color: '#f59e0b', marginBottom: 4,
+                    fontSize: 12, color: tokens.color.gameDay.liveScoringPanel.scorerState.warningText, marginBottom: 4,
                   }}>
                     ⚠ {w}
                   </div>
@@ -1081,10 +1082,10 @@ export default function LiveScoringPanel(props) {
                     disabled={pitchDisabled}
                     style={{
                       flex: 1, padding: '13px 4px',
-                      background: pitchDisabled ? 'rgba(255,255,255,0.04)' : '#7c3aed1a',
-                      border: '1.5px solid ' + (pitchDisabled ? 'rgba(255,255,255,0.08)' : '#7c3aed66'),
+                      background: pitchDisabled ? tokens.color.gameDay.liveScoringPanel.scorerState.pitchButtons.disabledBackground : tokens.color.gameDay.liveScoringPanel.scorerState.pitchButtons.attempt.background,
+                      border: '1.5px solid ' + (pitchDisabled ? tokens.color.overlay.whiteFaint : tokens.color.gameDay.liveScoringPanel.scorerState.pitchButtons.attempt.border),
                       borderRadius: '10px',
-                      color: pitchDisabled ? '#374151' : '#fff',
+                      color: pitchDisabled ? tokens.color.gameDay.liveScoringPanel.scorerState.pitchButtons.disabledText : tokens.color.gameDay.text.primary,
                       fontWeight: 'bold', fontSize: '13px',
                       cursor: pitchDisabled ? 'default' : 'pointer',
                       fontFamily: FF, transition: 'background 150ms',
@@ -1099,10 +1100,10 @@ export default function LiveScoringPanel(props) {
                     disabled={pitchDisabled}
                     style={{
                       flex: 1, padding: '13px 4px',
-                      background: pitchDisabled ? 'rgba(255,255,255,0.04)' : '#1d4ed81a',
-                      border: '1.5px solid ' + (pitchDisabled ? 'rgba(255,255,255,0.08)' : '#1d4ed866'),
+                      background: pitchDisabled ? tokens.color.gameDay.liveScoringPanel.scorerState.pitchButtons.disabledBackground : tokens.color.gameDay.liveScoringPanel.scorerState.pitchButtons.ball.background,
+                      border: '1.5px solid ' + (pitchDisabled ? tokens.color.overlay.whiteFaint : tokens.color.gameDay.liveScoringPanel.scorerState.pitchButtons.ball.border),
                       borderRadius: '10px',
-                      color: pitchDisabled ? '#374151' : '#fff',
+                      color: pitchDisabled ? tokens.color.gameDay.liveScoringPanel.scorerState.pitchButtons.disabledText : tokens.color.gameDay.text.primary,
                       fontWeight: 'bold', fontSize: '13px',
                       cursor: pitchDisabled ? 'default' : 'pointer',
                       fontFamily: FF, transition: 'background 150ms',
@@ -1117,10 +1118,10 @@ export default function LiveScoringPanel(props) {
                     disabled={pitchDisabled}
                     style={{
                       flex: 1, padding: '13px 4px',
-                      background: pitchDisabled ? 'rgba(255,255,255,0.04)' : '#dc26261a',
-                      border: '1.5px solid ' + (pitchDisabled ? 'rgba(255,255,255,0.08)' : '#dc262666'),
+                      background: pitchDisabled ? tokens.color.gameDay.liveScoringPanel.scorerState.pitchButtons.disabledBackground : tokens.color.gameDay.liveScoringPanel.scorerState.pitchButtons.strike.background,
+                      border: '1.5px solid ' + (pitchDisabled ? tokens.color.overlay.whiteFaint : tokens.color.gameDay.liveScoringPanel.scorerState.pitchButtons.strike.border),
                       borderRadius: '10px',
-                      color: pitchDisabled ? '#374151' : '#fff',
+                      color: pitchDisabled ? tokens.color.gameDay.liveScoringPanel.scorerState.pitchButtons.disabledText : tokens.color.gameDay.text.primary,
                       fontWeight: 'bold', fontSize: '13px',
                       cursor: pitchDisabled ? 'default' : 'pointer',
                       fontFamily: FF, transition: 'background 150ms',
@@ -1135,10 +1136,10 @@ export default function LiveScoringPanel(props) {
                     disabled={pitchDisabled}
                     style={{
                       flex: 1, padding: '13px 4px',
-                      background: pitchDisabled ? 'rgba(255,255,255,0.04)' : '#dc26261a',
-                      border: '1.5px solid ' + (pitchDisabled ? 'rgba(255,255,255,0.08)' : '#dc262666'),
+                      background: pitchDisabled ? tokens.color.gameDay.liveScoringPanel.scorerState.pitchButtons.disabledBackground : tokens.color.gameDay.liveScoringPanel.scorerState.pitchButtons.strike.background,
+                      border: '1.5px solid ' + (pitchDisabled ? tokens.color.overlay.whiteFaint : tokens.color.gameDay.liveScoringPanel.scorerState.pitchButtons.strike.border),
                       borderRadius: '10px',
-                      color: pitchDisabled ? '#374151' : '#fff',
+                      color: pitchDisabled ? tokens.color.gameDay.liveScoringPanel.scorerState.pitchButtons.disabledText : tokens.color.gameDay.text.primary,
                       fontWeight: 'bold', fontSize: '13px',
                       cursor: pitchDisabled ? 'default' : 'pointer',
                       fontFamily: FF, transition: 'background 150ms',
@@ -1153,10 +1154,10 @@ export default function LiveScoringPanel(props) {
                     disabled={pitchDisabled}
                     style={{
                       flex: 1, padding: '13px 4px',
-                      background: pitchDisabled ? 'rgba(255,255,255,0.04)' : '#d977061a',
-                      border: '1.5px solid ' + (pitchDisabled ? 'rgba(255,255,255,0.08)' : '#d9770666'),
+                      background: pitchDisabled ? tokens.color.gameDay.liveScoringPanel.scorerState.pitchButtons.disabledBackground : tokens.color.gameDay.liveScoringPanel.scorerState.pitchButtons.foul.background,
+                      border: '1.5px solid ' + (pitchDisabled ? tokens.color.overlay.whiteFaint : tokens.color.gameDay.liveScoringPanel.scorerState.pitchButtons.foul.border),
                       borderRadius: '10px',
-                      color: pitchDisabled ? '#374151' : '#fff',
+                      color: pitchDisabled ? tokens.color.gameDay.liveScoringPanel.scorerState.pitchButtons.disabledText : tokens.color.gameDay.text.primary,
                       fontWeight: 'bold', fontSize: '13px',
                       cursor: pitchDisabled ? 'default' : 'pointer',
                       fontFamily: FF, transition: 'background 150ms',
@@ -1171,10 +1172,10 @@ export default function LiveScoringPanel(props) {
                     disabled={pitchDisabled}
                     style={{
                       flex: 1.5, padding: '13px 4px',
-                      background: pitchDisabled ? 'rgba(255,255,255,0.04)' : '#16a34a1a',
-                      border: '1.5px solid ' + (pitchDisabled ? 'rgba(255,255,255,0.08)' : '#16a34a66'),
+                      background: pitchDisabled ? tokens.color.gameDay.liveScoringPanel.scorerState.pitchButtons.disabledBackground : tokens.color.gameDay.liveScoringPanel.scorerState.pitchButtons.contact.background,
+                      border: '1.5px solid ' + (pitchDisabled ? tokens.color.overlay.whiteFaint : tokens.color.gameDay.liveScoringPanel.scorerState.pitchButtons.contact.border),
                       borderRadius: '10px',
-                      color: pitchDisabled ? '#374151' : '#fff',
+                      color: pitchDisabled ? tokens.color.gameDay.liveScoringPanel.scorerState.pitchButtons.disabledText : tokens.color.gameDay.text.primary,
                       fontWeight: 'bold', fontSize: '13px',
                       cursor: pitchDisabled ? 'default' : 'pointer',
                       fontFamily: FF, transition: 'background 150ms',
@@ -1193,9 +1194,9 @@ export default function LiveScoringPanel(props) {
               disabled={pitches.length === 0}
               style={{
                 background: 'none',
-                border: '1px solid rgba(255,255,255,0.1)',
+                border: '1px solid ' + tokens.color.gameDay.liveScoringPanel.scorerState.undoButton.border,
                 borderRadius: '7px',
-                color: pitches.length > 0 ? '#64748b' : '#2d3748',
+                color: pitches.length > 0 ? tokens.color.gameDay.text.muted : tokens.color.gameDay.liveScoringPanel.scorerState.undoButton.disabledText,
                 fontSize: '12px',
                 cursor: pitches.length > 0 ? 'pointer' : 'default',
                 fontFamily: FF, padding: '7px 12px',
@@ -1207,7 +1208,7 @@ export default function LiveScoringPanel(props) {
       ) : (
         <div style={{
           position:'fixed', bottom:'60px', left:0, right:0,
-          background:'#0b1524', borderTop:'1px solid rgba(255,255,255,0.08)',
+          background: tokens.color.gameDay.surface.shell, borderTop: '1px solid ' + tokens.color.overlay.whiteFaint,
           padding:'8px 16px', zIndex:50,
         }}>
           {/* Opponent pitch buttons */}
@@ -1225,9 +1226,9 @@ export default function LiveScoringPanel(props) {
                   onClick={function(){ scoring.recordOppPitch(btn.type); }}
                   style={{
                     flex:1, padding:'8px 4px', borderRadius:'8px',
-                    border:'1px solid rgba(255,255,255,0.15)',
-                    background:'rgba(255,255,255,0.05)',
-                    color:'#fff', fontSize:'11px', fontWeight:600,
+                    border: '1px solid ' + tokens.color.overlay.whiteLight,
+                    background: tokens.color.gameDay.liveScoringPanel.scorerState.opponentPitchButtons.background,
+                    color: tokens.color.gameDay.text.primary, fontSize:'11px', fontWeight:600,
                     cursor:'pointer', whiteSpace:'pre-line',
                     textAlign:'center', lineHeight:1.2,
                   }}>
@@ -1243,16 +1244,16 @@ export default function LiveScoringPanel(props) {
                 onClick={function(){ scoring.addManualRun('opp'); }}
                 style={{
                   flex:2, padding:'10px', borderRadius:'8px',
-                  border:'none', background:'#7f1d1d',
-                  color:'#fca5a5', fontSize:'14px', fontWeight:700,
+                  border:'none', background: tokens.color.gameDay.liveScoringPanel.scorerState.oppRunButton.background,
+                  color: tokens.color.gameDay.liveScoringPanel.scorerState.oppRunButton.text, fontSize:'14px', fontWeight:700,
                   cursor:'pointer'
                 }}>+1 {teamLabel} Run</button>
               <button
                 onClick={function(){ scoring.addManualRun('us'); }}
                 style={{
                   flex:1, padding:'10px', borderRadius:'8px',
-                  border:'1px solid #374151', background:'transparent',
-                  color:'#555', fontSize:'12px', cursor:'pointer'
+                  border: '1px solid ' + tokens.color.gameDay.liveScoringPanel.scorerState.myRunButton.border, background:'transparent',
+                  color: tokens.color.gameDay.liveScoringPanel.scorerState.myRunButton.text, fontSize:'12px', cursor:'pointer'
                 }}>+1 {myTeamLabel}</button>
             </div>
           )}

@@ -1,9 +1,10 @@
 {
   "name": "backend",
-  "version": "2.12.0",
+  "version": "2.13.0",
   "description": "",
   "main": "index.js",
   "scripts": {
+    "start": "node index.js",
     "test": "node scripts/tests/test-runner.js",
     "test:unit": "node --test src/__tests__/*.test.js",
     "test:rls": "node --test src/__tests__/rls/*.test.js",

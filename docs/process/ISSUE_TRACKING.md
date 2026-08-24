@@ -51,7 +51,9 @@ After running: always review inferred labels and correct misfires in the GitHub 
 
 ## Label Taxonomy
 
-All 31 labels follow `prefix:name` convention — no spaces, colon separator.
+The canonical set — as defined in `scripts/setup-github-labels.ps1`, re-verified directly against that script 2026-08-23 — is **31 labels**: 4 priority + 8 type + 10 area + 5 status + 4 meta (2 of the 4 meta labels, `auto-created` and `needs-overnight-soak`, are bare labels without a `prefix:name` colon; the rest follow `prefix:name`).
+
+**Not independently verified this pass:** a prior repository audit (#773) flagged the live GitHub label count as 44, not 31 — i.e. possible drift from labels created manually outside the script, which the "Label drift" rule below exists to prevent. This session's available GitHub tooling has no list-all-labels call, so that discrepancy could not be confirmed or resolved here. Before trusting either number, check the repo's live Labels page (Issues → Labels) against the script's 31 and reconcile — do not assume 31 is still accurate just because the script and this doc agree with each other.
 
 ### Priority (required on every issue)
 
@@ -80,7 +82,7 @@ All 31 labels follow `prefix:name` convention — no spaces, colon separator.
 | Label | Covers |
 |---|---|
 | `area:scoring` | Live scoring, pitch tracking, game mode, DugoutView |
-| `area:auth` | Magic link, OTP, sessions, RLS, memberships |
+| `area:auth` | Magic link, Google sign-in, sessions, RLS, memberships (phone/OTP was permanently removed — root `CLAUDE.md` → Auth Strategy) |
 | `area:ux` | Frontend UX, design tokens, component primitives |
 | `area:backend` | Express API, Render, backend logic |
 | `area:ci-ops` | GitHub Actions, Husky, Vitest, deployment, scripts |
@@ -213,4 +215,4 @@ https://github.com/kaushikkuberanathan/lineup_generator/issues?q=label:auto-crea
 
 ---
 
-*Last updated: 2026-05-19. Maintained alongside `CLAUDE.md` — update both when process changes.*
+*Last updated: 2026-08-23. Maintained alongside `CLAUDE.md` — update both when process changes.*

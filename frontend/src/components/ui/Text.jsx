@@ -19,7 +19,7 @@ var COLOR_MAP = {
   disabled: tokens.color.text.disabled,
   gold: tokens.color.brand.gold,
   navy: tokens.color.brand.navy,
-  white: '#ffffff',
+  white: tokens.color.text.onDark,
   inherit: 'inherit',
 };
 

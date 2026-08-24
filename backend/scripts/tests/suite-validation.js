@@ -20,9 +20,14 @@ async function run(test, BASE_URL, state) {
 
   // ─── /request-access validation ─────────────────────────────────────────────
 
+  // VAL-01 through VAL-05 use a per-run-unique email (same state.runId pattern
+  // as TEST_EMAIL above) rather than a fixed one. requestAccessLimiter
+  // (auth.js) is email-keyed at 10 req/60min; a fixed email reused on every
+  // CI run across the project's history can exceed that budget under normal
+  // CI traffic, turning these 400-checks into false 429s (#785).
   await test('VAL-01', '/request-access: missing firstName', async () => {
     const res = await post(BASE_URL, '/api/v1/auth/request-access', {
-      lastName: 'Test', email: 'val01@test.com', teamId: TEAM_ID,
+      lastName: 'Test', email: `val01-${state.runId}@test.com`, teamId: TEAM_ID,
       requestedRole: 'coach', deviceContext: DEVICE,
     });
     return { pass: res.status === 400, expected: '400', actual: String(res.status) };
@@ -30,7 +35,7 @@ async function run(test, BASE_URL, state) {
 
   await test('VAL-02', '/request-access: missing lastName', async () => {
     const res = await post(BASE_URL, '/api/v1/auth/request-access', {
-      firstName: 'Test', email: 'val02@test.com', teamId: TEAM_ID,
+      firstName: 'Test', email: `val02-${state.runId}@test.com`, teamId: TEAM_ID,
       requestedRole: 'coach', deviceContext: DEVICE,
     });
     return { pass: res.status === 400, expected: '400', actual: String(res.status) };
@@ -38,7 +43,7 @@ async function run(test, BASE_URL, state) {
 
   await test('VAL-03', '/request-access: missing teamId', async () => {
     const res = await post(BASE_URL, '/api/v1/auth/request-access', {
-      firstName: 'Test', lastName: 'User', email: 'val03@test.com',
+      firstName: 'Test', lastName: 'User', email: `val03-${state.runId}@test.com`,
       requestedRole: 'coach', deviceContext: DEVICE,
     });
     return { pass: res.status === 400, expected: '400', actual: String(res.status) };
@@ -46,7 +51,7 @@ async function run(test, BASE_URL, state) {
 
   await test('VAL-04', '/request-access: missing role', async () => {
     const res = await post(BASE_URL, '/api/v1/auth/request-access', {
-      firstName: 'Test', lastName: 'User', email: 'val04@test.com',
+      firstName: 'Test', lastName: 'User', email: `val04-${state.runId}@test.com`,
       teamId: TEAM_ID, deviceContext: DEVICE,
     });
     return { pass: res.status === 400, expected: '400', actual: String(res.status) };
@@ -54,7 +59,7 @@ async function run(test, BASE_URL, state) {
 
   await test('VAL-05', '/request-access: invalid role value', async () => {
     const res = await post(BASE_URL, '/api/v1/auth/request-access', {
-      firstName: 'Test', lastName: 'User', email: 'val05@test.com',
+      firstName: 'Test', lastName: 'User', email: `val05-${state.runId}@test.com`,
       teamId: TEAM_ID, requestedRole: 'superadmin', deviceContext: DEVICE,
     });
     return { pass: res.status === 400, expected: '400', actual: String(res.status) };

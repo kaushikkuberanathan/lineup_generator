@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../supabase';
+import { tokens } from '../../theme/tokens';
 
 var FF = "Georgia,'Times New Roman',serif";
 
@@ -71,39 +72,41 @@ export default function RestoreScoreModal(props) {
       });
   }
 
+  var RSM = tokens.color.gameDay.restoreScoreModal;
+
   return (
     <div style={{
       position: 'fixed', inset: 0,
-      background: 'rgba(0,0,0,0.72)',
+      background: RSM.backdrop,
       backdropFilter: 'blur(4px)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       zIndex: 500, padding: '20px',
       fontFamily: FF,
     }}>
       <div style={{
-        background: '#0f1f3d',
-        border: '1px solid rgba(255,255,255,0.15)',
+        background: tokens.color.brand.navy,
+        border: '1px solid ' + tokens.color.overlay.whiteLight,
         borderRadius: '16px',
         padding: '24px',
         width: '100%', maxWidth: '380px',
-        color: '#fff',
+        color: tokens.color.gameDay.text.primary,
       }}>
 
         {/* Title row */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
           <div style={{ fontSize: '17px', fontWeight: 'bold' }}>Restore Scorebook</div>
           <button onClick={onClose} style={{
-            background: 'none', border: 'none', color: '#64748b',
+            background: 'none', border: 'none', color: tokens.color.gameDay.text.muted,
             fontSize: '18px', cursor: 'pointer', padding: '2px 4px', lineHeight: 1,
           }}>✕</button>
         </div>
 
         {/* Warning */}
         <div style={{
-          background: 'rgba(245,200,66,0.08)',
-          border: '1px solid rgba(245,200,66,0.2)',
+          background: RSM.warningBox.background,
+          border: '1px solid ' + RSM.warningBox.border,
           borderRadius: '8px', padding: '10px 12px',
-          fontSize: '12px', color: '#94a3b8', lineHeight: '1.5',
+          fontSize: '12px', color: tokens.color.gameDay.text.secondary, lineHeight: '1.5',
           marginBottom: '16px',
         }}>
           This rebuilds the current score and inning from all recorded at-bats.
@@ -111,14 +114,14 @@ export default function RestoreScoreModal(props) {
         </div>
 
         {/* At-bat count */}
-        <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '20px', minHeight: '22px' }}>
+        <div style={{ fontSize: '13px', color: tokens.color.gameDay.text.muted, marginBottom: '20px', minHeight: '22px' }}>
           {atBatCount === null ? (
-            <span style={{ color: '#374151' }}>Checking scorebook…</span>
+            <span style={{ color: RSM.disabledText }}>Checking scorebook…</span>
           ) : atBatCount === 0 ? (
-            <span style={{ color: '#475569' }}>No scorebook data found</span>
+            <span style={{ color: tokens.color.gameDay.text.caption }}>No scorebook data found</span>
           ) : (
             <span>
-              <span style={{ fontWeight: 'bold', color: '#f5c842', fontSize: '15px' }}>
+              <span style={{ fontWeight: 'bold', color: tokens.color.brand.gold, fontSize: '15px' }}>
                 {atBatCount}
               </span>
               {' '}at-bat{atBatCount !== 1 ? 's' : ''} recorded
@@ -129,20 +132,20 @@ export default function RestoreScoreModal(props) {
         {/* Status feedback */}
         {status === 'success' ? (
           <div style={{
-            background: 'rgba(22,163,74,0.15)',
-            border: '1px solid rgba(22,163,74,0.35)',
+            background: RSM.successBox.background,
+            border: '1px solid ' + RSM.successBox.border,
             borderRadius: '8px', padding: '10px 12px',
-            fontSize: '13px', fontWeight: 'bold', color: '#86efac',
+            fontSize: '13px', fontWeight: 'bold', color: RSM.successBox.text,
             textAlign: 'center', marginBottom: '12px',
           }}>
             ✓ Score restored successfully
           </div>
         ) : status && status.error ? (
           <div style={{
-            background: 'rgba(220,38,38,0.12)',
-            border: '1px solid rgba(220,38,38,0.3)',
+            background: tokens.color.overlay.errorMid,
+            border: '1px solid ' + tokens.color.overlay.errorMedium,
             borderRadius: '8px', padding: '10px 12px',
-            fontSize: '12px', color: '#fca5a5',
+            fontSize: '12px', color: RSM.errorBox.text,
             marginBottom: '12px',
           }}>
             {status.error}
@@ -157,13 +160,13 @@ export default function RestoreScoreModal(props) {
             style={{
               width: '100%', padding: '13px',
               background: !canRestore
-                ? 'rgba(255,255,255,0.06)'
-                : confirmTap ? '#7f1d1d' : '#dc2626',
+                ? RSM.restoreButton.disabledBackground
+                : confirmTap ? RSM.restoreButton.confirmBackground : tokens.color.status.error,
               border: '1px solid ' + (!canRestore
-                ? 'rgba(255,255,255,0.08)'
-                : 'rgba(220,38,38,0.6)'),
+                ? tokens.color.overlay.whiteFaint
+                : RSM.restoreButton.border),
               borderRadius: '10px',
-              color: canRestore ? '#fff' : '#374151',
+              color: canRestore ? tokens.color.gameDay.text.primary : RSM.disabledText,
               fontSize: '14px', fontWeight: 'bold',
               cursor: canRestore ? 'pointer' : 'default',
               fontFamily: FF,
@@ -181,8 +184,8 @@ export default function RestoreScoreModal(props) {
             style={{
               width: '100%', padding: '11px',
               background: 'none',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '10px', color: '#64748b',
+              border: '1px solid ' + RSM.cancelButton.border,
+              borderRadius: '10px', color: tokens.color.gameDay.text.muted,
               fontSize: '14px', cursor: 'pointer',
               fontFamily: FF,
             }}>

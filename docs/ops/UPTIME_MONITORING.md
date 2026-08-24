@@ -1,6 +1,6 @@
 # UptimeRobot Monitoring (Production Availability)
 
-> **Last Updated:** April 27, 2026
+> **Last Reviewed:** August 23, 2026 (configuration unchanged; version example made release-independent)
 > **Owner:** K (solo)
 
 ---
@@ -93,7 +93,7 @@ curl https://lineup-generator-backend.onrender.com/health
 # Expected: {"status":"ok","uptime":<seconds>,"timestamp":"...","version":"<current backend version>"}
 ```
 
-The `/health` endpoint returns the actual deployed backend version, useful for confirming a deploy completed correctly. As of v2.5.1 prod ship (April 27, 2026), version field returns `"2.5.1"`.
+The `/health` endpoint returns the actual deployed backend version, useful for confirming a deploy completed correctly. Compare it with `backend/package.json`; do not rely on a version value copied into this runbook.
 
 ---
 

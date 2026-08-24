@@ -1,11 +1,37 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: 2026-08-22 (v2.12.0 release entry added - Home membership visibility, unified team search, prod auth incident hardening; (develop only - not yet promoted))
+> Last updated: 2026-08-23 (v2.13.0 version-bumped on develop — Story 133 code-complete, admin.html Approve/Deny bypass fix, useAuth silent-stall fix; NOT yet promoted to main, soak in progress. 🔒 DEV/deploy freeze in effect — see v2.13.0 entry below for scope and clearance conditions.)
 > MVP launched: March 24, 2026
 
 ---
 
-## v2.12.0 - 2026-08-22 - Home membership visibility, unified team search, prod auth incident hardening (develop only - not yet promoted)
+## v2.13.0 - 2026-08-23 - Story 133 complete, admin.html bypass fix, useAuth stall fix (develop only — not yet promoted)
+
+**Minor bump** — completes the multi-week Story 133 design-token migration across two Locked, live-game-day files, plus a real auth bug fix and a security-relevant admin.html fix, sized above a patch per the v2.9.0-v2.12.0 "size the bump to the release's actual scope" convention.
+
+**Story 133 (#698) code-complete (PR #764)** — all 13 of 13 slices for the live game-day surface design-token migration (`game-mode/*` + `ScoringMode/*`, 384 literal-hex color occurrences across 14 files, none previously tokenized) merged to `develop`, plus a bonus `components/ui/*` primitives token migration bundled onto the same branch (PR #759). Slices 5-13 were developed on an isolated `feature/story133-slices5-13-sandbox` branch per KK's explicit instruction (kept off `develop`/`main` during the v2.12.0 release soak), independently re-verified after every sub-merge, then promoted as a single PR once that soak cleared — full mapping-decision reasoning and verification evidence for every slice is preserved in that branch's history and `docs/product/STORY133_SANDBOX_PROGRESS.md` (not yet copied into this repo's permanent docs). **Does not close #698** — per the standing rule, closure requires a full real on-device Game-Day Validation pass across the complete migration, done manually by KK, not yet performed. Treat that validation pass as the actual promotion gate for this release, not just the 24h soak. Two real findings surfaced during the migration, not yet acted on: `InningModal.jsx`'s `POS_COLORS.LC` is `#27ae60` (green), diverging from the shared `color.position.LC` (`#2980b9`, blue) used everywhere else — preserved byte-exact, a fix is planned as an immediate follow-up. A broader codebase audit (2026-08-23) found ~818 more untokenized occurrences beyond this story's scope (`App.jsx` alone: 693) — deliberately not pursued given no customer-facing lift and `App.jsx`'s own pending decomposition plan.
+
+**admin.html Approve/Deny routed through backend (partial fix for #338, PR #780)** — both handlers previously wrote directly to `team_memberships`/`access_requests` via the Supabase client SDK, bypassing every backend guard: no role validation (a raw dropdown value went straight at the DB's CHECK constraint), no `reviewed_by` attribution, and no approval/denial email to the requester (the backend routes send these; the direct writes silently skipped that step). Both handlers now call `POST /api/v1/approve`/`POST /api/v1/reject` with a Bearer token, mirroring the pattern `deleteTeam()` already used for team deletion (#380). Verified by direct comparison against the real route handlers in `backend/src/routes/admin.js`; no automated test exists for `admin.html` (static file, no test harness in this repo) — manual verification against DEV recommended before treating this as fully closed. **Still bypassing the backend, unaddressed:** Add Coach, Remove Coach, Add Team, roster writes (add/remove player, CSV import), schedule writes (add game, CSV import, clear), and feature-flag toggles — none of these have a backend route to route through yet; building them is a separate, larger piece of work. #338 stays open pending that work.
+
+**useAuth silent-stall fix (#579/#766, PRs #767 + #782)** — `useAuth.js`'s `onAuthStateChange` `SIGNED_IN` handler previously left `authState` unchanged (stuck in an ambiguous state) if the background `/me` call failed right after sign-in, with no user-visible feedback. #579 had been auto-closed by PR #580 (a docs-only filing, not a fix) back on 2026-08-05 — reopened 2026-08-23 and closed for real by PR #767: the handler now has an explicit `else` branch mirroring `checkSession`'s existing `/me`-rejected handling, setting `error` and explicitly re-settling `authState` to `'unauthenticated'`. The same fallback was added to the surrounding `catch` block for thrown/network errors. `frontend/src/tests/auth.test.js` test B4 rewritten to assert the fixed behavior, RED-confirmed against the pre-fix code before applying the fix. PR #767 deliberately left the hook's `error` field unwired from any UI (would have touched the locked `App.jsx` prop-wiring) — PR #782 closed that residual gap same-day, wiring `authError` into `LoginScreen`'s existing error display via a `useEffect`, reusing the form's existing error state and clear-on-edit behavior rather than adding a second banner (`LoginScreen.test.jsx` +24 lines of coverage).
+
+**Test coverage batch** — `GameModeGearMenu.test.jsx` (10), `RunnerConflictModal.test.jsx` (8), and `LiveScoringPanel.test.jsx` (19 tests across its 3 render states — no active scorer, another scorer active, I am scorer — plus pitch recording, Undo, contact-pitch outcome sheet, mercy-rule banner, roster swap, opponent-half pitch tracking, and header controls; children with their own test files mocked to keep this suite focused). Closes the "one substantial gap" `FEATURE_MAP.md` row 11 flagged after the prior test-coverage session (`LiveScoringPanel.jsx`, 1302 lines, previously zero direct coverage). Also added: `leagueRules`, `ErrorBoundary`, `useBackendHealth`, ScoringMode finalize/restore, batting order, schedule, `flipHalfInning`, `useFeatureFlag`, `playerUtils` — plus deletion of a dead `leagueRules_corrections.js` scratch file whose proposed corrections were already incorporated into `leagueRules.js`.
+
+**CI flake fix (#785, PR #786)** — `backend/scripts/tests/suite-validation.js`'s `VAL-01` through `VAL-05` POSTed to prod `/request-access` using 5 hardcoded emails (`val01@test.com`...`val05@test.com`) on every CI run, forever. `requestAccessLimiter` rate-limits that endpoint per email at 10 req/60min, so normal CI traffic across the project's history could exhaust those fixed emails' budgets, turning 400-checks into false 429s — diagnosed after it blocked two PRs across multiple re-runs. Switched to the same per-run-unique-email (`state.runId`) pattern already used consistently across the other integration suites. Test-only change, no endpoint behavior change.
+
+**Docs staleness remediation batch 1 (#773, #774)** — Privacy Policy now discloses the actual Mixpanel identity payload (coach_name, team_name, team_id) instead of claiming anonymity, and corrects the access-request path to the current team-search flow (`legal.js`). `backend/migrations/README.md` replaced a false blanket "idempotent, safe to re-run" claim with a per-migration status/idempotency table covering all 20 files, sourced from each file's own header — flags 008/020 as non-idempotent and 021/023 as currently NOT live on prod with re-apply preconditions. `docs/analytics/ANALYTICS.md` rebuilt from current `track()`/`vaTrack()` call sites, correcting the "Auth Funnel gated/dormant" claim (auth has been live since v2.6.0). `docs/features/feature-flags.md` now documents the two coexisting localStorage override schemes (`flag_NAME` vs `flag:name`) and the Supabase `feature_flags` runtime layer, neither previously documented. Also corrected: `docs/features/accessibility-v1.md` (default-off → GA default-on, test count 19→24), `frontend/src/tests/README.md` (stale known-failing-test claim replaced with the real current skip), `backend/scripts/tests/TEST_SETUP.md`, `.github/pull_request_template.md`, `docs/process/ISSUE_TRACKING.md`, `scripts/smoke-test.js` (example port fix), and `docs/features/ios-pwa-install-overlay.md` (marked superseded by the shipped implementation). `docs/product/RELEASE_NOTES.md` archived with a pointer to `versionHistory.js` as canonical (had stopped updating after v2.7.0). Not included in this batch: the Mixpanel/PII data-collection code itself (#774 is documentation-only here — no data-collection code changed) and `LiveScoreViewer.jsx` (#775, deferred to the regular fix path per KK).
+
+**Routine:** synced `backend/package-lock.json`'s version field (was already drifted, still reading 2.12.0 before this bump). Found and fixed `frontend/package-lock.json` also stale — a full release behind at 2.11.0 — synced to match `frontend/package.json`.
+
+**Verification (CI run at `develop` HEAD `bce6ba9`, 2026-08-23):** frontend 1227 passed / 1 skipped (108 files), backend unit 147/147, `debt-p0` gate clear (0 open P0s).
+
+**Not yet promoted to `main`.** Soak started 2026-08-23 19:35 EDT (PR #786 merge, the last commit in this batch); normal 24h clearance is 2026-08-24 19:35 EDT. No override requested as of this entry. Real on-device Game-Day Validation (see Story 133 note above) is a separate, harder gate that should clear before promotion regardless of soak timing, given this release's blast radius on Game Mode and Live Scoring.
+
+**🔒 DEV/DEPLOY FREEZE in effect, declared 2026-08-23 ~21:50 EDT by KK — protects the soak's integrity.** No PRs merged into `develop` (which auto-deploys `dev.dugoutlineup.com` via Vercel on every push), and no migrations applied against DEV or PROD Supabase, until **either**: (a) the 24h soak above clears (2026-08-24 19:35 EDT) and KK gives the go-ahead to resume, **or** (b) it's confirmed v2.13.0 has actually promoted to and is live on `main`/PROD (an earlier-than-expected clearance path, e.g. if a hotfix-style promote happens outside the normal flow). Checked at freeze time: no open PR has `autoMergeRequest` enabled (`#673`, `#623`, `#746` all confirmed unset) and no repo workflow auto-enables it, so nothing merges into `develop` without an explicit human/agent action — the freeze is a discipline commitment on that action, not a technical block. Migration `023_enforce_team_season_not_null.sql` is the one currently-pending migration this covers; it was already gated on its own precondition (see `backend/CLAUDE.md` § Migration Notes) and stays untouched regardless. Lift this note once either clearance condition is met.
+
+---
+
+## v2.12.0 - 2026-08-22 - Home membership visibility, unified team search, prod auth incident hardening (promoted to main 2026-08-23, PR #760)
 
 **Minor bump** — Story 134 is a genuine new coach-facing feature (Home redesign to match Account's team visibility), not just a fix batch, following the "size the bump to the release's actual scope" convention established at v2.9.0-v2.11.0.
 
@@ -20,6 +46,8 @@
 **Routine dependency updates**: `@supabase/supabase-js` (PR #725), `mixpanel-browser` (PR #727), `libphonenumber-js` backend (PR #726), `@testing-library/jest-dom` (PR #728).
 
 **Verification (re-run directly, 2026-08-22):** frontend 1090 passed / 1 skipped (95 files), lint clean, `npm run build` clean, `debt-p0` gate clear (0 open P0s).
+
+**24h soak explicitly overridden 2026-08-23** by KK, citing fall season readiness — not a hotfix, a deliberate exception, same pattern as v2.9.0's and v2.11.0's overrides. **Promoted to `main` 2026-08-23** (PR [#760](https://github.com/kaushikkuberanathan/lineup_generator/pull/760), regular merge, `43b0b75`) — confirmed a genuine 2-parent merge via direct API check. Prod smoke test same session: backend `/ping` 200 OK (708ms), frontend loads clean; both Render and Vercel confirmed serving the exact promoted commit via direct deploy-record queries. Post-promote sync (PR #761) merged the same session.
 
 ---
 
@@ -4750,10 +4778,33 @@ main and this scoping has KK's go-ahead on the tooling choice.
 
 ---
 ### Story 133 (P2) - Live game-day surface token migration (game-mode/ + ScoringMode/) <!-- #698 -->
-Status: In progress - slices 1-4 of 13 merged (PRs #705, #707, #709, #712).
-**Corrected 2026-08-19 (v2.11.0 release prep): this line previously read
-"slice 4 branch cut, ready to start" — slice 4 (`QuickSwap.jsx`) has since
-merged (PR #712).** 9 slices remain. Slice 4 is partially, not fully,
+Status: **All 13 slices merged to `develop` (2026-08-23, PR #764)** - the
+migration itself is code-complete. **Corrected 2026-08-23: this line
+previously read "slices 1-4 of 13 merged, 9 slices remain."** Slices 5-13
+were developed on an isolated `feature/story133-slices5-13-sandbox`
+branch per KK's explicit instruction (kept off `develop`/`main` during the
+v2.12.0 release soak), independently re-verified after every sub-merge,
+then promoted as a single PR (#764) once the soak cleared - full
+mapping-decision reasoning and verification evidence for every slice is
+preserved in that branch's history and `docs/product/STORY133_SANDBOX_PROGRESS.md`
+(not yet copied into this repo's permanent docs). A bonus, out-of-scope
+`components/ui/*` primitives migration (PR #759) was bundled onto the same
+branch per KK's instruction and merged in the same promotion.
+**Does not close #698** - per the standing rule, closure requires a full
+real on-device Game-Day Validation pass across the complete migration,
+done manually by KK, not yet performed. Two real findings surfaced during
+the migration, not yet acted on: `InningModal.jsx`'s `POS_COLORS.LC` is
+`#27ae60` (green), diverging from the shared `color.position.LC`
+(`#2980b9`, blue) used everywhere else - preserved byte-exact, a fix is
+planned as an immediate follow-up. A broader codebase audit (2026-08-23)
+found ~818 more untokenized occurrences beyond this story's scope
+(`App.jsx` alone: 693) - deliberately not pursued given no customer-facing
+lift and `App.jsx`'s own pending decomposition plan.
+
+<details>
+<summary>Original slice-4 status note (2026-08-19), superseded above</summary>
+
+Slice 4 is partially, not fully,
 validated — automated coverage green, one manual QuickSwap flow confirmed
 working, full device/layout visual coverage deliberately deferred as an
 accepted residual risk (KK's call, 2026-08-19) rather than completed;
@@ -4858,6 +4909,14 @@ ScoreboardRow) once KK grants the `game-mode/*` gate phrase. Each slice is
 its own PR to `develop`, same merge-commit + branch-hygiene discipline as
 every other track. Do not batch multiple slices into one PR - keeps blast
 radius small and each KK visual-check cycle short.
+
+**Superseded 2026-08-23:** slices 5-13 did not follow this per-slice
+recommendation in the end - they were developed on an isolated sandbox
+branch instead (see the status note at the top of this section) so the
+run could proceed without a per-slice stop-and-wait gate, given nothing
+would reach `develop` until explicitly promoted. All 13 slices are done.
+
+</details>
 
 ---
 ### Story 134 (P2) - Home membership teams + unified Find your team entry <!-- #740 -->
@@ -5019,4 +5078,4 @@ Source of truth: `docs/product/SECURITY_FRAMEWORK.md`
 - **Storage:** Supabase (primary) + localStorage (offline cache with sync-on-connect)
 - **AI backend:** Render Starter plan ($7/mo) since April 27, 2026 — no spin-down. UptimeRobot monitor #802733786 pings `https://lineup-generator-backend.onrender.com/ping` every 5 minutes for availability monitoring; alerts via email + push notification.
 - **Frontend:** Vercel — auto-deploys on push to `main`
-- **Auth backend deployed (Phase 3):** Email magic-link auth live on Render (Twilio removed). Frontend cutover pending. Until then, all routes remain open (no `requireAuth` middleware on existing routes).
+- **Auth:** Email magic-link auth and Google OAuth are live end to end; editing requires a session. Backend write routes use authentication/authorization middleware where required. The remaining role work is the multi-coach invite UX and finer-grained collaborator permissions, not a frontend auth cutover.

@@ -273,7 +273,7 @@ describe('useAuth (#DOC_TEST_DEBT Auth Flow End-to-End)', function() {
     // left on the login screen with a live Supabase session and no error
     // shown. FLAGGED FOR KK REVIEW in SPRINT2_EXECUTION_LOG.md — a reliability
     // gap (silent stall), not an auth-bypass; not fixed as part of this item.
-    it('B4: SIGNED_IN + backend /me failure → authState does NOT change (silent no-op, current behavior)', async function() {
+    it('B4: SIGNED_IN + backend /me failure → surfaces an error and explicitly settles on unauthenticated (#579 fix)', async function() {
       mocks.auth.getSession.mockResolvedValue({ data: { session: null } });
 
       var h = await renderHook(function() { return useAuth(); });
@@ -287,8 +287,13 @@ describe('useAuth (#DOC_TEST_DEBT Auth Flow End-to-End)', function() {
         await callback('SIGNED_IN', MOCK_SESSION);
       });
 
+      // Previously: silent no-op — authState never changed, no error surfaced,
+      // user stranded on whatever screen they were on with zero feedback (#579).
+      // Fixed: the hook now explicitly re-settles on 'unauthenticated' and
+      // exposes an error message so a consumer can show it.
       expect(h.result.current.authState).toBe('unauthenticated');
       expect(h.result.current.session).toBeNull();
+      expect(h.result.current.error).toMatch(/try again|sign(ing)? in/i);
 
       await h.unmount();
     });

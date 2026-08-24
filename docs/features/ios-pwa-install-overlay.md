@@ -1,9 +1,31 @@
 # iOS PWA Install Coaching Overlay
 
-**Status:** Backlog — Ready to Implement
-**Target version:** 1.4.1
-**Effort:** Small (frontend only)
-**Last updated:** March 28, 2026
+**Status:** SUPERSEDED — archived 2026-08-23. A PWA install banner shipped, but not as this doc specifies. Kept for historical design-rationale reference only; do not use this as an implementation guide.
+**Originally:** Backlog — Ready to Implement, target v1.4.1
+**Last updated (before archival):** March 28, 2026
+
+---
+
+## What actually shipped instead
+
+A unified Android + iOS install banner exists today in `App.jsx`, not the
+separate `useIOSInstallPrompt.js` hook / `IOSInstallBanner.jsx` component
+this doc specifies below. Real differences, verified against source
+2026-08-23:
+
+- **One code path for both platforms**, not iOS-only: the `showInstallBanner` / `deferredPrompt` state (`App.jsx` ~line 1842) drives a persistent bottom banner for both Android (`beforeinstallprompt` capture, ~line 1590) and iOS (shown immediately when not standalone, ~line 1613) — not the bottom-sheet-with-backdrop overlay spec'd below.
+- **No visit-count gating.** The doc's "2nd+ visit only" trigger logic was never built — the shipped banner shows on first visit if not already installed/standalone.
+- **No `ios_install_dismissed` / `ios_install_visit_count` localStorage keys, no `window.triggerIOSInstallPrompt` global.** The shipped version tracks install state via a `pwa_installed` localStorage flag and closes the banner on the `appinstalled` browser event instead.
+- **Instrumented**: `pwa_banner_shown`, `pwa_install_clicked`, `pwa_install_accepted`, `pwa_install_declined`, `pwa_installed` all fire via Mixpanel `track()` — see `docs/analytics/ANALYTICS.md` → Acquisition & Onboarding. None of this doc's spec'd events exist.
+- Render site: `App.jsx` ~line 7948 (`showInstallBanner && !gameModeActive && !dugoutViewActive`).
+
+If this feature needs revisiting (e.g. reintroducing visit-gating or a
+richer coaching overlay), treat it as new design work informed by the
+shipped implementation above — not as "finish implementing this doc."
+
+---
+
+## Original proposal (archived, not built as specified)
 
 ---
 

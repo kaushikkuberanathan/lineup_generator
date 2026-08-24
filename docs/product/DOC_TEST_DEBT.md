@@ -37,18 +37,14 @@
 | **Target** | Opportunistic — no hard deadline, not a North Star capability gap. |
 | **Issue** | [#664](https://github.com/kaushikkuberanathan/lineup_generator/issues/664) |
 
-### 🟡 P2 — useAuth.js `onAuthStateChange` silently strands user on failed `/me` call after `SIGNED_IN`
+### ✅ RESOLVED — useAuth.js `onAuthStateChange` silently strands user on failed `/me` call after `SIGNED_IN`
 
-| | |
-|---|---|
-| **Area** | Auth system (magic link + Google OAuth) |
-| **Description** | `frontend/src/hooks/useAuth.js`'s `onAuthStateChange` listener has a bare `if (res.ok)` guard around the backend `GET /me` call it makes after Supabase fires `SIGNED_IN`. If that call fails (network error, non-2xx), the entire state-update block is skipped — no `authState` change, no error surfaced, no retry. The user is left exactly where they were (typically the login screen) with a live Supabase session and zero feedback. |
-| **Risk if unfixed** | Not a security bypass — no unauthorized access results. A reliability/UX stall: a coach who clicks a magic link or completes Google OAuth during a transient backend hiccup gets silently stuck, likely reads it as "the link didn't work," and may re-request during the `loginLimiter`'s rate-limit window. |
-| **Proposed test/fix** | Surface an error to the user (toast/banner) and/or retry the `/me` call with backoff. `frontend/src/tests/auth.test.js` test B4 already documents the current (broken) behavior — extend or replace it with a fix-verifying test once a fix approach is chosen. |
-| **Opened** | 2026-08-05 — found while adding `auth.test.js` (test B4) during Sprint 2's Story 6 (Auth Flow End-to-End, #566/PR #567); flagged in execution logs across two sessions the same day without being filed as its own tracked item until now. |
-| **Age** | 0 days |
-| **Target** | Opportunistic — no hard deadline, but should be fixed before treating "no error shown after clicking the link" coach reports as unrelated confusion. |
-| **Issue** | [#579](https://github.com/kaushikkuberanathan/lineup_generator/issues/579) |
+- **Discovered:** 2026-08-05 (Sprint 2 Story 6, Auth Flow End-to-End)
+- **Resolved:** 2026-08-23 (test-coverage-analysis session) — merged to `develop` via PR [#767](https://github.com/kaushikkuberanathan/lineup_generator/pull/767), a genuine 2-parent merge commit (`996640a`), not squashed; feature branch `claude/test-coverage-analysis-ufzbj5` deleted post-merge
+- **Fix:** `frontend/src/hooks/useAuth.js`'s `onAuthStateChange` SIGNED_IN handler now has an explicit `else` branch (mirroring `checkSession`'s existing `/me`-rejected handling) that logs the failure, sets the hook's `error` state to a user-facing message, and explicitly re-settles `authState` to `'unauthenticated'` instead of leaving it unchanged. The same fallback (`setError` + `setAuthState('unauthenticated')`) was added to the surrounding `catch` block for thrown/network errors, which previously only logged.
+- **Test:** `frontend/src/tests/auth.test.js` test B4 rewritten to assert the fixed behavior (RED confirmed against the pre-fix code before applying the fix, then GREEN after).
+- **Residual gap closed same day:** the hook's `error` field was not initially wired into `LoginScreen.jsx`'s UI (that would touch the locked `App.jsx` prop-wiring) — PR [#782](https://github.com/kaushikkuberanathan/lineup_generator/pull/782) closed this later the same session (2026-08-23), wiring `authError` into `LoginScreen`'s existing error display via a `useEffect`, reusing the form's existing error state and clear-on-edit behavior. `LoginScreen.test.jsx` gained 24 lines of coverage for the new wiring. A real user now sees the surfaced error, not just an internally-consistent `authState`.
+- **Issue** | [#579](https://github.com/kaushikkuberanathan/lineup_generator/issues/579) — had been auto-closed by PR #580 (docs-only filing, not a fix); reopened 2026-08-23 and closed for real by PR #767's merge. Tracked alongside the rest of this session's coverage work under [#766](https://github.com/kaushikkuberanathan/lineup_generator/issues/766), also closed by #767.
 
 ### 🟡 P2 — Walk-Up Song Navigation
 
@@ -308,6 +304,19 @@
 | **Target** | Next dedicated tooling session — not opportunistic, scoped as its own work per KK's explicit decision |
 | **Issues** | [#632](https://github.com/kaushikkuberanathan/lineup_generator/issues/632) (eslint), [#633](https://github.com/kaushikkuberanathan/lineup_generator/issues/633) (react-dom), [#634](https://github.com/kaushikkuberanathan/lineup_generator/issues/634) (jsdom), [#635](https://github.com/kaushikkuberanathan/lineup_generator/issues/635) (supabase-js), [#636](https://github.com/kaushikkuberanathan/lineup_generator/issues/636) (umbrella scope) |
 
+### 🟡 P2 — InningModal.jsx `POS_COLORS.LC` diverges from canonical `color.position.LC` token
+
+| | |
+|---|---|
+| **Area** | Game Mode / design tokens (game-mode/*, Story 133) |
+| **Description** | `InningModal.jsx`'s local `POS_COLORS.LC` is `#27ae60` (green), diverging from the canonical `color.position.LC` token (`#2980b9`, blue) used everywhere else — DefenseDiamond, DugoutView, etc. Found during Story 133's (#698) 13-slice design-token migration and deliberately preserved byte-exact, since that migration was a zero-intended-visual-change reference swap; fixing a pre-existing color inconsistency was out of scope. |
+| **Risk if unfixed** | Low — cosmetic only. One field (LC) renders a different color in this one modal than everywhere else in the app; no functional impact. |
+| **Proposed fix** | Update `InningModal.jsx`'s `POS_COLORS.LC` to reference `color.position.LC` directly. Small, isolated visual fix. |
+| **Opened** | 2026-08-23 (Story 133 code-complete pass) |
+| **Age** | 0 days |
+| **Target** | Opportunistic — no hard deadline, cosmetic only |
+| **Issue** | [#794](https://github.com/kaushikkuberanathan/lineup_generator/issues/794) |
+
 ### 🟡 P2 — `snack_duty` column drop blocked on codebase audit
 
 - **What:** Column verified present in Supabase as jsonb on April 27, 2026 (logged in MASTER_DEV_REFERENCE.md as outstanding manual action). **Not the same thing as** the live `renderSnackDuty()` UI feature in App.jsx — that feature reads/writes a plain string field (`game.snackDuty`) on each game object in the schedule array, a completely different storage location from this `team_data.snack_duty` jsonb column. Confirmed distinct during the Phase 4b slice 10 scoping spike (`docs/product/PHASE4B_SLICE10_SCOPING.md` § 3) so this item is not accidentally read as "the snack duty feature is being removed."
@@ -428,10 +437,10 @@
 |---|---|---|---|---|
 | 🔴 P0 | 0 | 0 | 0 | **0** |
 | 🟠 P1 | 1 | 1 | 0 | **2** |
-| 🟡 P2 | 9 | 5 | 8 | **22** |
-| **Total** | **10** | **6** | **8** | **24** |
+| 🟡 P2 | 8 | 5 | 9 | **22** |
+| **Total** | **9** | **6** | **9** | **24** |
 
-*(2026-08-19, v2.11.0 release-prep audit: new P1 test gap added — RequestAccessScreen `submitted` confirmation state, #664 — see the Open — Test Gaps section above. Direct recount of every `### 🔴`/`### 🟠`/`### 🟡` heading actually present in each Open section immediately before this edit matched the prior table exactly (0/0/9 Test Gaps, 0/1/5 Doc Gaps, 0/0/8 Process Gaps = 23), so this is a clean single-item addition, not a correction of pre-existing drift. Test Gaps P1 0→1, Total Test Gaps 9→10, P1 Total 1→2, Grand Total 23→24. `debt-p0` gate re-confirmed clear (0 P0) before the v2.11.0 minor version bump.)*
+*(2026-08-23, v2.13.0 release-prep audit: direct recount of every `### 🔴`/`### 🟠`/`### 🟡` heading actually present in each Open section, by line number, before this edit — Test Gaps: 1 P1 + 8 P2 = 9, not the 10 the prior table claimed (the P2 Test Gaps figure had drifted to 9 sometime after the 2026-08-19 entry without a matching 9th heading ever being added; root cause not identified, flagging as found rather than guessed). Doc Gaps (1 P1 + 5 P2 = 6) and Process Gaps (0 + 8 = 8, pre-this-edit) both matched the prior table exactly. New P2 process gap added this pass — InningModal.jsx `POS_COLORS.LC` token divergence, #794, found during the Story 133 code-complete pass, see Open — Tooling / Process Gaps above. Net: Test Gaps P2 corrected 9→8 (drift fix, Total Test Gaps 10→9), Process Gaps P2 8→9 (new item, Total Process Gaps 8→9); both changes cancel in the Grand Total (24→24) but the per-column Total row changes from 10/6/8 to 9/6/9. Also updated this pass: the #579 entry's "residual gap" note, now closed by PR #782 (LoginScreen error wiring) — no count change, that item was already excluded from these tallies as `✅ RESOLVED`. `debt-p0` gate re-confirmed clear (0 P0) before the v2.13.0 minor version bump.)*
 
 *(2026-08-07: new P2 process gap added — Dependency currency: 4 Dependabot bumps held (eslint/jsdom/react-dom/supabase-js), #632-#636 — see the Open — Tooling / Process Gaps section. Direct recount of every `### 🔴`/`### 🟠`/`### 🟡` heading actually present in each Open section immediately before this edit matched the prior table exactly (9/1/7, P2 9/5/7 = 21, Total 9/6/7 = 22), so this is a clean single-item addition, not a correction of pre-existing drift. Process Gaps P2 7→8, Total Process Gaps 7→8, P2 row 21→22, Grand Total 22→23.)*
 

@@ -1,4 +1,5 @@
 import { track } from '../../utils/analytics';
+import { tokens } from '../../theme/tokens';
 
 var FF = "Georgia,'Times New Roman',serif";
 
@@ -11,19 +12,19 @@ function HandoffConfirmModal(props) {
   if (!isOpen) return null;
   return (
     <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)',
+      position: 'fixed', inset: 0, background: tokens.color.gameDay.gearMenu.handoffModal.backdrop,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       zIndex: 500, fontFamily: FF, padding: '20px',
     }}>
       <div style={{
-        background: '#0f1f3d', border: '1px solid rgba(255,255,255,0.15)',
+        background: tokens.color.brand.navy, border: `1px solid ${tokens.color.overlay.whiteLight}`,
         borderRadius: '14px', padding: '22px',
         width: '100%', maxWidth: '300px',
       }}>
-        <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#fff', marginBottom: '8px' }}>
+        <div style={{ fontSize: '16px', fontWeight: 'bold', color: tokens.color.gameDay.text.primary, marginBottom: '8px' }}>
           Hand off scoring?
         </div>
-        <div style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '20px', lineHeight: '1.5' }}>
+        <div style={{ fontSize: '13px', color: tokens.color.gameDay.text.secondary, marginBottom: '20px', lineHeight: '1.5' }}>
           This releases the scorer role. Someone else can claim it. Your score progress is saved.
         </div>
         <div style={{ display: 'flex', gap: '10px' }}>
@@ -31,9 +32,9 @@ function HandoffConfirmModal(props) {
             onClick={onCancel}
             style={{
               flex: 1, padding: '12px',
-              background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.12)',
-              borderRadius: '9px', color: '#94a3b8',
+              background: tokens.color.gameDay.gearMenu.handoffModal.cancelBackground,
+              border: `1px solid ${tokens.color.gameDay.border.hairline}`,
+              borderRadius: '9px', color: tokens.color.gameDay.text.secondary,
               fontSize: '14px', fontWeight: 600,
               cursor: 'pointer', fontFamily: FF,
             }}>
@@ -43,8 +44,8 @@ function HandoffConfirmModal(props) {
             onClick={onConfirm}
             style={{
               flex: 1, padding: '12px',
-              background: '#1d4ed8', border: 'none',
-              borderRadius: '9px', color: '#fff',
+              background: tokens.color.gameDay.gearMenu.handoffModal.confirmBackground, border: 'none',
+              borderRadius: '9px', color: tokens.color.gameDay.text.primary,
               fontSize: '14px', fontWeight: 700,
               cursor: 'pointer', fontFamily: FF,
             }}>
@@ -82,14 +83,14 @@ export default function GameModeGearMenu(props) {
         onClick={onClose}
         style={{
           position: 'fixed', inset: 0,
-          background: 'rgba(0,0,0,0.5)', zIndex: 200,
+          background: tokens.color.overlay.scrimLight, zIndex: 200,
         }}
       />
       {/* Menu panel */}
       <div style={{
         position: 'fixed', top: '52px', right: '12px',
-        background: '#1a2a3a',
-        border: '1px solid rgba(255,255,255,0.15)',
+        background: tokens.color.gameDay.gearMenu.menuPanel.background,
+        border: `1px solid ${tokens.color.overlay.whiteLight}`,
         borderRadius: '12px',
         width: '220px', zIndex: 210,
         overflow: 'hidden', fontFamily: FF,
@@ -99,8 +100,8 @@ export default function GameModeGearMenu(props) {
           style={{
             width: '100%', padding: '14px 16px',
             background: 'none', border: 'none',
-            borderBottom: '1px solid rgba(255,255,255,0.08)',
-            color: '#94a3b8', fontSize: '14px', fontWeight: 500,
+            borderBottom: `1px solid ${tokens.color.overlay.whiteFaint}`,
+            color: tokens.color.gameDay.text.secondary, fontSize: '14px', fontWeight: 500,
             textAlign: 'left', cursor: 'pointer', fontFamily: FF,
             display: 'flex', alignItems: 'center', gap: '10px',
           }}>
@@ -113,8 +114,8 @@ export default function GameModeGearMenu(props) {
             style={{
               width: '100%', padding: '14px 16px',
               background: 'none', border: 'none',
-              borderBottom: '1px solid rgba(255,255,255,0.08)',
-              color: '#e2e8f0', fontSize: '14px', fontWeight: 600,
+              borderBottom: `1px solid ${tokens.color.overlay.whiteFaint}`,
+              color: tokens.color.gameDay.text.label, fontSize: '14px', fontWeight: 600,
               textAlign: 'left', cursor: 'pointer', fontFamily: FF,
               display: 'flex', alignItems: 'center', gap: '10px',
             }}>
@@ -131,7 +132,7 @@ export default function GameModeGearMenu(props) {
           style={{
             width: '100%', padding: '14px 16px',
             background: 'none', border: 'none',
-            color: '#fca5a5', fontSize: '14px', fontWeight: 600,
+            color: tokens.color.gameDay.gearMenu.finishGameText, fontSize: '14px', fontWeight: 600,
             textAlign: 'left', cursor: 'pointer', fontFamily: FF,
             display: 'flex', alignItems: 'center', gap: '10px',
           }}>

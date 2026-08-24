@@ -1,6 +1,6 @@
 # Feature Flags — How-To Guide
 
-> Last updated: March 29, 2026 (v1.6.7)
+> Last updated: August 2026 (v2.12.0)
 
 Feature flags let you ship code to production without activating it for all users. You can test quietly, roll out gradually, and kill a broken feature in seconds — no code deploy required for most operations.
 
@@ -14,40 +14,45 @@ Feature flags let you ship code to production without activating it for all user
 4. [Enabling / Disabling Flags](#enabling--disabling-flags)
 5. [Per-User Rollout (No Deploy)](#per-user-rollout-no-deploy)
 6. [URL Param Bootstrap](#url-param-bootstrap)
-7. [Options for Runtime Flag Control (Future)](#options-for-runtime-flag-control-future)
+7. [Supabase Runtime Flags](#supabase-runtime-flags)
 8. [Current Flags](#current-flags)
 
 ---
 
 ## How the System Works
 
-Flags are evaluated at **render time** using a two-level check:
+There are two independent layers, and a flag can be controlled by either or both:
+
+**1. Compile-time default + localStorage override** — evaluated at render time via `isFlagEnabled()` (`frontend/src/config/featureFlags.js`):
 
 ```
-FEATURE_FLAGS.<FLAG_NAME>           ← global default (compile-time, in featureFlags.js)
+FEATURE_FLAGS.<FLAG_NAME>                          ← global default (compile-time)
   OR
-localStorage.getItem("flag:<name>") === "1"   ← per-user override (runtime, no deploy)
+localStorage.getItem("flag_<FLAG_NAME>") === "true" / "false"   ← per-user override (runtime, no deploy)
 ```
 
-If **either** is true, the feature is on for that user. This means:
+**2. Supabase `feature_flags` table** — read at app load via the `useFeatureFlag` / `useFeatureFlags` hooks (see [Supabase Runtime Flags](#supabase-runtime-flags) below). This is a separate mechanism from `isFlagEnabled()` and does not go through it.
 
-- Setting the global flag to `true` and deploying enables it for **everyone**.
-- Setting a localStorage key enables it for **one device/browser** without any deploy.
-- Setting the global flag to `false` disables it globally, even if some users have the localStorage key — unless you want localStorage to win (see the guard pattern below).
+**⚠️ Two different localStorage key schemes coexist in the codebase — verified against current call sites, not assumed:**
 
-The standard guard pattern used throughout the app:
+| Scheme | Key format | Value | Used by |
+|---|---|---|---|
+| **A — via `isFlagEnabled()`** | `flag_<UPPERCASE_NAME>` (underscore) | `"true"` / `"false"` (string) | `ACCESSIBILITY_V1`, `SCORING_SHEET_V2`, `COMBINED_GAMEMODE_AND_SCORING`, `MAINTENANCE_MODE` |
+| **B — inline in App.jsx, not via `isFlagEnabled()`** | `flag:<lowercase_name>` (colon) | `"1"` (set) / absent (unset) | `VIEWER_MODE` (`flag:viewer_mode`), `GAME_MODE` (`flag:game_mode`) |
+
+These are not interchangeable — setting `flag:viewer_mode` has no effect on a flag guarded by `isFlagEnabled()`, and vice versa. Check which scheme a specific flag's call site actually uses (grep the flag name in `App.jsx`) before assuming either key format will work.
+
+The `isFlagEnabled()` guard pattern (Scheme A):
 
 ```js
-var featureEnabled = FEATURE_FLAGS.VIEWER_MODE || localStorage.getItem("flag:viewer_mode") === "1";
-if (featureEnabled) { ... }
+import { isFlagEnabled } from '../config/featureFlags';
+if (isFlagEnabled('ACCESSIBILITY_V1')) { ... }
 ```
 
-To make the global flag a hard kill switch (overrides localStorage):
+The inline Scheme B pattern (used directly at a handful of call sites in App.jsx):
 
 ```js
-var featureEnabled = FEATURE_FLAGS.VIEWER_MODE && (
-  FEATURE_FLAGS.VIEWER_MODE === true || localStorage.getItem("flag:viewer_mode") === "1"
-);
+var on = FEATURE_FLAGS.VIEWER_MODE || localStorage.getItem("flag:viewer_mode") === "1";
 ```
 
 ---
@@ -58,15 +63,24 @@ var featureEnabled = FEATURE_FLAGS.VIEWER_MODE && (
 
 ```js
 export const FEATURE_FLAGS = {
-  USE_NEW_LINEUP_ENGINE: true,   // V2 scoring engine — always on
-
-  // Viewer Mode — read-only swipeable inning cards for parents/players
-  // Set to true to enable globally, or leave false and enable per-user via:
-  //   localStorage.setItem("flag:viewer_mode", "1")   ← enable for this user
-  //   localStorage.removeItem("flag:viewer_mode")     ← disable / revert
-  VIEWER_MODE: false,
+  USE_NEW_LINEUP_ENGINE: true,          // V2 scoring engine — always on, not overridable
+  MAINTENANCE_MODE: false,              // "We'll be right back" screen
+  VIEWER_MODE: false,                   // Read-only swipeable inning cards; Share Viewer Link button
+  GAME_MODE: true,                      // Full-screen live game overlay
+  ACCESSIBILITY_V1: true,               // Font floors, touch targets, contrast, aria labels — GA default-on
+  SCORING_SHEET_V2: true,               // Outcome sheet semantic cleanup — GA default-on
+  COMBINED_GAMEMODE_AND_SCORING: true,  // DugoutView — GA default-on since v2.5.9
 };
+
+export function isFlagEnabled(flagName) {
+  var override = localStorage.getItem('flag_' + flagName);
+  if (override === 'true') return true;
+  if (override === 'false') return false;
+  return FEATURE_FLAGS[flagName] === true;
+}
 ```
+
+**Not every flag lives here.** `live_scoring` exists only as a Supabase `feature_flags` row (no `FEATURE_FLAGS` entry, no compile-time default) — see [Supabase Runtime Flags](#supabase-runtime-flags).
 
 ---
 
@@ -77,59 +91,53 @@ export const FEATURE_FLAGS = {
 ```js
 export const FEATURE_FLAGS = {
   // ...existing flags...
-
-  // My new feature — describe what it does and when to enable
   MY_FEATURE: false,
 };
 ```
 
-2. Import and guard in `App.jsx`:
+2. Guard the call site using `isFlagEnabled()` (preferred — Scheme A) rather than a new inline `localStorage.getItem("flag:...")` check, to avoid adding a third key scheme:
 
 ```js
-// At the point where the feature renders or runs:
-{(FEATURE_FLAGS.MY_FEATURE || localStorage.getItem("flag:my_feature") === "1") ? (
-  <MyFeatureComponent />
-) : null}
+{isFlagEnabled('MY_FEATURE') ? <MyFeatureComponent /> : null}
 ```
 
-3. Document it in the **Current Flags** table at the bottom of this file.
+3. Document it in the [Current Flags](#current-flags) table at the bottom of this file.
 
-4. Add to the version history entry in `App.jsx` (`VERSION_HISTORY`) and `CLAUDE.md`.
+4. Add to `VERSION_HISTORY` (`frontend/src/data/versionHistory.js`) and `CLAUDE.md`.
 
 ---
 
 ## Enabling / Disabling Flags
 
-### Global enable (for all users) — requires deploy
+### Global enable/disable (all users) — requires deploy
 
 ```js
 // featureFlags.js
-VIEWER_MODE: true,   // was false
+MY_FEATURE: true,   // was false
 ```
 
-Commit, push to main → Vercel deploys in ~1 minute → all users see the feature.
+This is code in a **locked file's sibling path** — `featureFlags.js` itself isn't on the root `CLAUDE.md` Locked Files list, but the branch/PR/soak flow in that file's **Release Ritual — Develop to Main Promotion** section applies: feature branch → PR to `develop` (CI green, preview tested) → 24h soak → PR to `develop` → `main` (Ship Gate) → prod smoke test. There is no direct-push-to-main path in the current branch strategy.
 
-### Global disable (kill switch) — requires deploy
+### Per-user, no deploy
 
-```js
-VIEWER_MODE: false,
-```
-
-Same deploy cycle. Useful when a feature is broken in production.
+See below.
 
 ---
 
 ## Per-User Rollout (No Deploy)
 
-Enable or disable for a single user without any code change or deploy.
+Enable or disable for a single user without any code change or deploy. **Use the key scheme that matches the specific flag** — see the table in [How the System Works](#how-the-system-works).
 
-### Via browser console (coach / internal tester)
+### Via browser console
 
 ```js
-// Enable
-localStorage.setItem("flag:viewer_mode", "1");
+// Scheme A flags (ACCESSIBILITY_V1, SCORING_SHEET_V2, COMBINED_GAMEMODE_AND_SCORING, MAINTENANCE_MODE)
+localStorage.setItem("flag_MY_FEATURE", "true");
+localStorage.setItem("flag_MY_FEATURE", "false");   // force off
+localStorage.removeItem("flag_MY_FEATURE");         // revert to default
 
-// Disable / revert
+// Scheme B flags (VIEWER_MODE, GAME_MODE)
+localStorage.setItem("flag:viewer_mode", "1");
 localStorage.removeItem("flag:viewer_mode");
 ```
 
@@ -137,140 +145,66 @@ Refresh the page after running either command.
 
 ### Via URL param bootstrap (share a link with someone)
 
-Send anyone a URL with `?enable_flag=<name>` appended. When they open it, the app:
-1. Sets the localStorage flag automatically
-2. Strips the param from the URL (clean redirect)
-3. Loads normally with the feature active
-
 ```
-# Enable viewer mode for the person who opens this link:
 https://dugoutlineup.com/?enable_flag=viewer_mode
-
-# Disable it (useful for reverting a tester):
 https://dugoutlineup.com/?disable_flag=viewer_mode
-
-# Combine with a share link — viewer opens in viewer mode AND gets the flag set:
 https://dugoutlineup.com/?s=abc123&view=true&enable_flag=viewer_mode
 ```
 
-This is the **recommended path for rolling out to specific coaches** before a global release.
+This always writes the **Scheme B (`flag:<name>`, colon)** localStorage key — it does not set the `flag_<NAME>` (underscore) key `isFlagEnabled()` reads. For a Scheme A flag, the URL param bootstrap has no effect; use the browser console method above instead.
 
 ---
 
 ## URL Param Bootstrap
 
-Implemented in `App.jsx` as a `useEffect` on mount (runs once):
+The URL-param logic has been extracted into `frontend/src/utils/flagBootstrap.js` (`applyFlagParams` / `buildCleanSearch`), which is unit-tested independently of React (`frontend/src/tests/flag-bootstrap.test.js`).
+
+**Verified 2026-08-23: `App.jsx`'s actual `useEffect` (~line 1519) does not import or call `flagBootstrap.js` — it runs its own separate inline copy of the same param-reading logic**, plus two params (`coach_access`, `clear_bypass`) that `flagBootstrap.js` doesn't know about. Both implementations behave equivalently for `enable_flag`/`disable_flag` today, but `flagBootstrap.js` is currently tested-but-not-live: a fix or behavior change made there will not reach production until App.jsx's inline copy is switched over to import it. Filed as a known gap, not fixed here — App.jsx requires its locked-file gate phrase to edit.
+
+**Security note:** Anyone who receives a `?enable_flag=` URL can enable the feature on their own device. This is intentional — flags protect against accidental exposure, not adversarial access.
+
+---
+
+## Supabase Runtime Flags
+
+A second, independent flag source: the Supabase `feature_flags` table (`flag_name text, team_id text nullable, enabled bool`). This is live and shipped, not a future option.
+
+### `useFeatureFlags()` — global flags, merged with compile-time defaults
+
+`frontend/src/hooks/useFeatureFlags.js`. On mount, `fetchRuntimeFlags()` reads all rows where `team_id IS NULL`, uppercases `flag_name`, and merges over `FEATURE_FLAGS` (DB row wins on conflict). Falls back to the static `FEATURE_FLAGS` object if Supabase is disabled or the query errors. Used once at the top of `App.jsx` as `runtimeFlags`.
 
 ```js
-useEffect(function() {
-  var _ffp = new URLSearchParams(window.location.search);
-  var _ef  = _ffp.get("enable_flag");
-  var _df  = _ffp.get("disable_flag");
-  if (!_ef && !_df) { return; }
-  if (_ef) { localStorage.setItem("flag:" + _ef, "1"); }
-  if (_df) { localStorage.removeItem("flag:" + _df); }
-  // Strip param and reload cleanly
-  var clean = window.location.pathname;
-  var kept  = [];
-  _ffp.forEach(function(v, k) {
-    if (k !== "enable_flag" && k !== "disable_flag") kept.push(k + "=" + encodeURIComponent(v));
-  });
-  window.location.replace(clean + (kept.length ? "?" + kept.join("&") : ""));
-}, []);
+var { flags, loading } = useFeatureFlags();
+if (flags.VIEWER_MODE) { ... }
 ```
 
-**Security note:** Anyone who receives such a URL can enable the feature on their own device. This is intentional — flags protect against accidental exposure, not adversarial access. Don't put unfinished or sensitive code behind a flag and assume it's secured.
+`fetchTeamFlags(teamId)` (team-scoped variant, same file) exists but has no call site yet — a stub for future per-team override support.
 
----
+### `useFeatureFlag(flagName, teamId)` — single flag, team-scoped
 
-## Options for Runtime Flag Control (Future)
-
-The current system requires either a deploy (global) or manual browser console access (per-user). Below are upgrade paths, ranked from lowest to highest effort.
-
-### Option A — Supabase `feature_flags` table *(recommended next step)*
-
-Add a table to Supabase:
-
-```sql
-CREATE TABLE feature_flags (
-  name       TEXT PRIMARY KEY,
-  enabled    BOOLEAN DEFAULT false,
-  notes      TEXT,
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
-```
-
-Query on app load (non-blocking):
+`frontend/src/hooks/useFeatureFlag.js`. Reads one flag by name; if a team-scoped row (`team_id` matches) exists it wins over the global (`team_id IS NULL`) row. **Fails closed** — returns `enabled: false` if Supabase is unavailable or no row is found. Used in `App.jsx` for `live_scoring`:
 
 ```js
-supabase.from('feature_flags').select('name, enabled')
-  .then(function(r) {
-    (r.data || []).forEach(function(row) {
-      if (row.enabled) localStorage.setItem("flag:" + row.name, "1");
-      else             localStorage.removeItem("flag:" + row.name);
-    });
-  });
+var { enabled, loading } = useFeatureFlag('live_scoring', activeTeamId);
 ```
 
-**Result:** You can flip flags in the Supabase dashboard — no deploy, no browser console. Takes effect on next page load.
+`live_scoring` has no `FEATURE_FLAGS` compile-time entry — it exists purely as Supabase rows. Per root `CLAUDE.md` → Live Scoring Architecture, it's additionally hardcoded on regardless of the DB row for teams named "Mud Hens" or "Demo All-Stars".
 
-**Targeting:** Add a `team_id` or `user_id` column to target specific coaches.
+### Managing rows
 
-**Effort:** ~1 hour (SQL migration + 10 lines of JS).
-
----
-
-### Option B — URL param only (already shipped)
-
-Use the `?enable_flag=` bootstrap (described above). Zero infra, works today.
-
-**Best for:** Inviting 1–3 specific coaches to test a feature before rolling out broadly.
-
----
-
-### Option C — Dedicated flags endpoint on Render backend
-
-Add `GET /api/flags` to `backend/index.js`. Returns JSON of flag states from an env var or a JSON file:
-
-```json
-{ "viewer_mode": true, "my_other_feature": false }
-```
-
-**Result:** Update an env var on Render dashboard → new flag state active in ~30s (no frontend deploy, but backend restart).
-
-**Effort:** ~30 minutes.
-
----
-
-### Option D — Third-party feature flag service
-
-| Service | Free tier | Key capability |
-|---|---|---|
-| **PostHog** | 1M events/mo | Percentage rollouts, user properties, A/B testing, analytics |
-| **GrowthBook** | Unlimited (open source) | Self-hosted option, SQL metric integration |
-| **Flagsmith** | 50K requests/mo | Per-identity flags, remote config values |
-| **LaunchDarkly** | Paid ($10/seat) | Industry standard, real-time streaming updates |
-
-**Best for:** When you have multiple coaches, want rollout percentages (e.g., "5% of users"), or need A/B testing with analytics.
-
-**Effort:** 2–4 hours to integrate SDK.
-
----
-
-### Recommendation
-
-| Stage | Approach |
-|---|---|
-| **Now (testing)** | URL param bootstrap — send `?enable_flag=viewer_mode` link |
-| **Small rollout (2–5 coaches)** | URL param bootstrap per coach |
-| **Broader rollout** | Supabase `feature_flags` table (Option A) |
-| **Multi-team launch with targeting** | PostHog or Flagsmith (Option D) |
+Flip flags directly in the Supabase dashboard (Table Editor → `feature_flags`) — no deploy, no browser console. Takes effect on next page load (`useFeatureFlags`/`useFeatureFlag` re-fetch on mount, not live-subscribed).
 
 ---
 
 ## Current Flags
 
-| Flag name | Key in featureFlags.js | Default | localStorage key | Description |
+| Flag name | Key in featureFlags.js | Default | Override scheme | Description |
 |---|---|---|---|---|
-| Viewer Mode | `VIEWER_MODE` | `false` | `flag:viewer_mode` | Read-only swipeable inning cards; `Share Viewer Link` button in Lineups tab |
-| V2 Lineup Engine | `USE_NEW_LINEUP_ENGINE` | `true` | *(not overridable)* | V2 scoring engine — always on, no localStorage override |
+| V2 Lineup Engine | `USE_NEW_LINEUP_ENGINE` | `true` | *(not overridable)* | V2 scoring engine — always on |
+| Maintenance Mode | `MAINTENANCE_MODE` | `false` | A (`flag_MAINTENANCE_MODE`) | "We'll be right back" screen during deploys |
+| Viewer Mode | `VIEWER_MODE` | `false` | B (`flag:viewer_mode`) | Gates the "Share Viewer Link" button in the Lineups share sheet. Does **not** gate the viewer-rendering path itself — a share URL with `?view=true` or `?role=viewer` renders the read-only `DugoutView` viewer regardless of this flag. |
+| Game Mode | `GAME_MODE` | `true` | B (`flag:game_mode`) | Full-screen live game overlay |
+| Accessibility v1 | `ACCESSIBILITY_V1` | `true` | A (`flag_ACCESSIBILITY_V1`) | Font floors, touch targets, contrast, aria labels — GA default-on (Phase 1a) |
+| Scoring Sheet V2 | `SCORING_SHEET_V2` | `true` | A (`flag_SCORING_SHEET_V2`) | Outcome sheet semantic cleanup — GA default-on |
+| Combined Game Mode + Scoring | `COMBINED_GAMEMODE_AND_SCORING` | `true` | A (`flag_COMBINED_GAMEMODE_AND_SCORING`) | DugoutView, the sole game-day surface — GA default-on since v2.5.9 |
+| Live Scoring | *(Supabase only, no compile-time entry)* | `false` (DB row) | Supabase `feature_flags` table, team-scoped via `useFeatureFlag('live_scoring', teamId)` | Hardcoded on for "Mud Hens" / "Demo All-Stars" regardless of the DB row |
