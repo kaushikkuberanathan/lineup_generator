@@ -1296,18 +1296,24 @@
       chk.addEventListener('change', async function() {
         var flagName = chk.dataset.flag;
         var enabled  = chk.checked;
+        // Routed through PATCH /api/v1/feature-flags/:flagName (was a direct
+        // Supabase write) so the change goes through requireAuth/requireAdmin
+        // instead of resting on RLS alone — see #787 (remaining scope of #338).
+        var { data: { session } } = await sb.auth.getSession();
+        if (!session) { showMsg('flags-msg', 'Not signed in.', 'error'); chk.checked = !enabled; return; }
         chk.disabled = true;
-        var { error } = await sb
-          .from('feature_flags')
-          .update({ enabled, updated_at: new Date().toISOString() })
-          .eq('flag_name', flagName)
-          .is('team_id', null);
+        var res = await fetch(BACKEND_URL + '/api/v1/feature-flags/' + encodeURIComponent(flagName), {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token },
+          body: JSON.stringify({ enabled: enabled })
+        });
+        var body = await res.json().catch(function() { return {}; });
         chk.disabled = false;
-        if (error) {
-          showMsg('flags-msg', 'Error updating ' + flagName + ': ' + error.message, 'error');
+        if (!res.ok) {
+          showMsg('flags-msg', 'Error updating ' + flagName + ': ' + (body.message || body.error || 'Update failed.'), 'error');
           chk.checked = !enabled; // revert
         } else {
-          showMsg('flags-msg', flagName + ' set to ' + (enabled ? 'ON' : 'OFF') + '.', 'success', true);
+          showMsg('flags-msg', body.message || (flagName + ' set to ' + (enabled ? 'ON' : 'OFF') + '.'), 'success', true);
           loadFlagsTab(); // refresh timestamps
         }
       });
