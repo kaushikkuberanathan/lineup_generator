@@ -10,6 +10,80 @@
 
 ---
 
+## 2026-08-24-A — dev→prod assessment, v2.13.0 promotion correction, #698 reopened, admin.html bypass remediation started (#788)
+
+**Date:** August 23-24, 2026 (continuous session)
+**Session ID:** 2026-08-24-A (`lineup_generator` worktree, remote execution environment)
+**Duration:** Single continuous session
+**PRs opened/merged to develop:** #808 (v2.13.0 promotion-status docs correction), #811 (#788 — admin.html feature-flag toggle routed through backend)
+**Issues reopened:** #698
+**Issues closed:** #788
+**Issues updated:** #787 (parent tracker, progress note)
+**Tests added:** 7 (6 in new `adminFeatureFlags.test.js`, 1 in `admin.auth.test.js`)
+**Not this session's work, found already live:** v2.13.0 itself (PR #799) — promoted by a prior session/KK before this one started; this session only assessed and corrected its aftermath
+
+### Overview
+
+Opened as a request to assess all outstanding work on `develop` before finalizing a dev→prod migration. The first pass found `develop` 65 commits ahead of `main`, CI green, and Story 133 (the `game-mode/`/`ScoringMode/` design-token migration) code-complete but explicitly not yet validated on a real device — flagged as the actual promotion gate, separate from the 24h soak. A tangential question about an unrelated scoping branch (`docs/admin-html-bypass-remediation-plan-787`) led to explaining the six remaining admin.html Supabase-bypass fixes it plans (#788-793). Asked to redo the dev→prod assessment fresh rather than reuse the first pass's conclusions, and the ground had genuinely moved underneath: v2.13.0 had already promoted to `main` (PR #799) via an explicit, well-documented owner override that knowingly skipped the real-device gate. Cross-checking that promote PR's own body against live issue state surfaced a real finding neither summary had: issue #698 — the same issue that exists specifically to track a *prior* instance of this exact failure mode (see #503 in its own body) — had itself been silently auto-closed one second after its migration PR merged, directly contradicting that PR's explicit "no closing keyword" intent and PR #799's own instruction to keep it open. Reopened #698 with the evidence on record and corrected `ROADMAP.md`/`CLAUDE.md` from a stale "not yet promoted, freeze in effect" state to the real, already-live one (PR #808) — the same doc-catch-up lag this repo has hit at every release since v2.9.0. KK caught that PR shipping with zero labels despite the repo's own PR-labeling rule; fixed immediately and applied correctly to the next PR from the start. Moved on to implementation: picked up #788, the lowest-risk item in the admin.html remediation plan (feature-flag toggle), built the new backend route and rewired `admin.html` to call it with a Bearer token, added real test coverage, and ran an actual RED→GREEN mutation check rather than just asserting green. Closed with branch hygiene, issue sync, and this retro.
+
+### What Shipped
+
+| Item | Scope | PR/Issue | Status |
+|---|---|---|---|
+| dev→prod assessment (2 passes) | Full `develop`-vs-`main` gap read: commit log, CI status, open PRs, `DOC_TEST_DEBT.md` state; second pass caught that v2.13.0 had promoted underneath the first pass's conclusions | — | Delivered |
+| `docs/admin-html-bypass-remediation-plan-787` explainer | Traced the scoping-only branch's contents: 6 remaining admin.html bypass fixes, 5 cross-cutting gotchas, suggested build order | — | Delivered |
+| #698 reopened | Caught a silent auto-close (PR #764, one second after merge) that contradicted that PR's own stated no-closing-keyword intent and PR #799's explicit "keep #698 open" instruction | #698 | Reopened, evidence comment attached |
+| v2.13.0 promotion-status correction | `ROADMAP.md`/`CLAUDE.md` corrected from "not yet promoted"/freeze-in-effect to the real promoted state, override reasoning, and freeze lifted per its own stated clearance condition | PR #808 | Merged to develop |
+| #788 — feature-flag toggle | New `PATCH /api/v1/feature-flags/:flagName` in `admin.js` (behind existing `requireAuth`+`requireAdmin`); `admin.html`'s Flags tab rewired to call it with a Bearer token instead of a direct Supabase write | #788, PR #811 | Merged to develop, issue closed |
+| Branch + issue hygiene | 3 stale local branches removed (2 merged, 1 pruned-remote leftover); #788 closed against its acceptance criteria; #787 tracker updated with what's next | — | Done |
+
+### What Didn't Happen
+
+- **Independently re-verifying live PROD** (`/ping`, frontend load, Render/Vercel deploy-record cross-check) for v2.13.0 — flagged as a recommended follow-up rather than fabricated; this session's sandbox had no outbound network egress to the live domains.
+- **The real on-device Game-Day Validation pass for Story 133** — #698 stays open specifically because this still hasn't happened; not this session's to perform (needs a real device, real login).
+- **#789-793** (Remove/Add Coach, Add Team, roster/schedule writes) — scoped in the plan doc, not started this session.
+- **Merging PRs #808/#811 personally** — both were opened and CI-watched by this session, but merged by KK directly each time.
+
+### Key Events (Chronological)
+
+**1. A first-pass assessment was delivered as a snapshot, not a verdict — and treated as re-checkable rather than settled.** The initial dev→prod read (65 commits ahead, CI green, Story 133 code-complete-but-unvalidated) was accurate at the time it was made, but nothing about how it was presented implied it would still be true hours later — which mattered, because it wasn't.
+
+**2. A tangential question about an unrelated branch got a real trace, not a guess from the branch name.** `docs/admin-html-bypass-remediation-plan-787` was fetched and diffed against current `develop` rather than inferred from its name — the actual unique commit (a 332-line scoping doc) was read in full before describing what it contained.
+
+**3. Asked to redo the same assessment, the second pass started from a fresh fetch instead of the first pass's notes.** That's what surfaced that `main` had moved: v2.13.0 had promoted (PR #799) in the interval, under an override this session hadn't seen argued for or recorded anywhere yet.
+
+**4. A promote PR's own stated intent was checked against live issue state instead of assumed to match.** PR #799's body explicitly said "keep #698 and #338 open." Checking #698 directly (not trusting the PR body's framing) found it was already closed — by PR #764, one second after merge, despite that PR's own body explicitly disclaiming any closing keyword. The mismatch was the finding, not the PR body's stated intent.
+
+**5. The mismatch was recognized as a recurrence of a documented failure mode, not a fresh anomaly.** #698's own original body already describes this exact pattern happening to #503 — an issue auto/manually closed while its real work was still open. Naming that connection explicitly (rather than treating #698's re-closure as a one-off) is what made "reopen it" the obvious next step rather than a judgment call.
+
+**6. A reopen decision and a docs correction were both put to KK before acting, not bundled into an assumed "clean this up" instruction.** Findings were presented, then KK explicitly said "reopen #698, then do the docs correction pass" — the docs branch, edits, and PR only followed that instruction, not the assessment alone.
+
+**7. `CLAUDE.md`'s own locked-file gate was honored even mid-flow, and the user pre-empted it correctly.** The gate phrase requirement was stated before editing; KK supplied *"all clear — CLAUDE.md editing approved"* as a genuine mid-turn message matching that exact requirement, and it was recognized as legitimate (harness-delivered, consistent with the ongoing ask) rather than either ignored or over-scrutinized.
+
+**8. A real self-caught process gap was fixed immediately once flagged, not defended or minimized.** KK's one-line "once again missing labels" on PR #808 was met with a same-message fix (labels applied, matching the v2.12.0-era precedent PR found by direct lookup) and a stated intent to label from the start going forward — which then actually happened on PR #811 without a second reminder.
+
+**9. Implementation of #788 deviated from its own plan doc's proposed route path, and the deviation was justified from the codebase's own documented convention, not personal preference.** `backend/CLAUDE.md` explicitly flags "admin route paths are NOT under `/api/v1/admin/`" as a documented gotcha; the plan doc's proposed `/api/v1/admin/feature-flags/...` path would have reintroduced exactly that anti-pattern. Used the bare path matching every sibling route in the same file instead, and said so plainly in the PR rather than silently diverging from the plan.
+
+**10. RED→GREEN was produced as real evidence, not asserted.** Per this repo's own RED-checkpoint rule, the `enabled` validator was temporarily dropped, the two dependent tests were confirmed to fail for the right reason (2/6 red, not a crash), then restored and reconfirmed green — documented in both the commit message and the PR body, not just claimed.
+
+**11. Closing #788 restated the acceptance criteria and checked each one, rather than a generic "done" comment.** The issue's own four-item acceptance-criteria checklist was walked explicitly in the closing comment, including naming the one deliberate deviation from the linked plan doc.
+
+### Standing takeaway
+
+The throughline was re-verification over restatement, applied symmetrically to other people's claims and this session's own. A prior turn's assessment wasn't trusted as still-true without a fresh fetch; a promote PR's stated intent ("keep #698 open") wasn't trusted without checking the issue directly; a plan doc's proposed route path wasn't followed without checking it against the codebase's own documented convention first. The same standard applied inward: a real mistake (PR #808 shipping without labels) was corrected the moment it was flagged, with no defense of why it happened, and the fix was carried forward as a habit on the very next PR rather than a one-time patch. Nothing in this session was accepted as done because a prior step said so — each claim got its own fresh check before the next action built on it.
+
+### Carry-Forward Items
+
+| Priority | Story/Issue | Item |
+|---|---|---|
+| P1 | #698 | Open — real on-device Game-Day Validation pass for Story 133 still hasn't happened; this is the actual gate, not the soak |
+| P2 | #787 | #789 (Remove Coach) next, per the plan's build order, then #790-793 |
+| — | — | Live-PROD smoke test for v2.13.0 not independently re-run this session (no network egress in sandbox) — recommended before calling that release fully closed out |
+| — | #673, #623 | Still open, unresolved, carried forward again — both held major-version Dependabot bumps |
+| — | #746 | Still open (Vercel Speed Insights, draft, targets `main` directly) — untouched again this session |
+
+---
+
 ## 2026-08-22-A — Story 134 assessed + regression fixed, duplicate Vercel project deleted, v2.12.0 shipped to production
 
 **Date:** August 22-23, 2026 (continuous session; the soak window was overridden rather than waited out, so the promote itself landed the same session, hours after packaging rather than a full 24h later)
