@@ -1,6 +1,6 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: 2026-08-23 (v2.13.0 version-bumped on develop — Story 133 code-complete, admin.html Approve/Deny bypass fix, useAuth silent-stall fix; NOT yet promoted to main, soak in progress)
+> Last updated: 2026-08-23 (v2.13.0 version-bumped on develop — Story 133 code-complete, admin.html Approve/Deny bypass fix, useAuth silent-stall fix; NOT yet promoted to main, soak in progress. 🔒 DEV/deploy freeze in effect — see v2.13.0 entry below for scope and clearance conditions.)
 > MVP launched: March 24, 2026
 
 ---
@@ -26,6 +26,8 @@
 **Verification (CI run at `develop` HEAD `bce6ba9`, 2026-08-23):** frontend 1227 passed / 1 skipped (108 files), backend unit 147/147, `debt-p0` gate clear (0 open P0s).
 
 **Not yet promoted to `main`.** Soak started 2026-08-23 19:35 EDT (PR #786 merge, the last commit in this batch); normal 24h clearance is 2026-08-24 19:35 EDT. No override requested as of this entry. Real on-device Game-Day Validation (see Story 133 note above) is a separate, harder gate that should clear before promotion regardless of soak timing, given this release's blast radius on Game Mode and Live Scoring.
+
+**🔒 DEV/DEPLOY FREEZE in effect, declared 2026-08-23 ~21:50 EDT by KK — protects the soak's integrity.** No PRs merged into `develop` (which auto-deploys `dev.dugoutlineup.com` via Vercel on every push), and no migrations applied against DEV or PROD Supabase, until **either**: (a) the 24h soak above clears (2026-08-24 19:35 EDT) and KK gives the go-ahead to resume, **or** (b) it's confirmed v2.13.0 has actually promoted to and is live on `main`/PROD (an earlier-than-expected clearance path, e.g. if a hotfix-style promote happens outside the normal flow). Checked at freeze time: no open PR has `autoMergeRequest` enabled (`#673`, `#623`, `#746` all confirmed unset) and no repo workflow auto-enables it, so nothing merges into `develop` without an explicit human/agent action — the freeze is a discipline commitment on that action, not a technical block. Migration `023_enforce_team_season_not_null.sql` is the one currently-pending migration this covers; it was already gated on its own precondition (see `backend/CLAUDE.md` § Migration Notes) and stays untouched regardless. Lift this note once either clearance condition is met.
 
 ---
 
