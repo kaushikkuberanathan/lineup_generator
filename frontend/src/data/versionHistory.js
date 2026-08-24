@@ -1,5 +1,25 @@
 export var VERSION_HISTORY = [
   {
+    version: '2.13.0',
+    date: 'August 2026',
+    headline: 'Game-day visual polish finished, sign-in error fix',
+    techNote: 'Bug fixes and performance improvements',
+    userChanges: [
+      'Fixed a bug where a failed background check after signing in could leave you stuck on the login screen with no explanation — you\'ll now see a clear error message instead.',
+      'Fixed a bug where approving or denying a team join request from the admin panel could skip sending the requester their confirmation email.',
+      'Updated the Privacy Policy to accurately describe the analytics data collected (coach name, team name, team ID) and the current way to request access to a team.',
+    ],
+    internalChanges: [
+      'Story 133 (#698) code-complete: all 13 of 13 planned slices for the live game-day surface design-token migration (game-mode/* + ScoringMode/*, 384 literal-hex color occurrences across 14 files) merged to develop via PR #764, plus a bonus components/ui/* primitives token migration (PR #759). Slices 5-13 were developed on an isolated feature/story133-slices5-13-sandbox branch per KK\'s instruction (kept off develop/main during the v2.12.0 release soak), independently re-verified per slice, then promoted as one PR. Does NOT close #698 — per the standing rule, closure requires a full real-on-device Game-Day Validation pass across the complete migration, not yet performed. One known finding preserved on purpose, not yet fixed: InningModal.jsx\'s POS_COLORS.LC is #27ae60 (green), diverging from the canonical color.position.LC (#2980b9, blue) used everywhere else.',
+      'admin.html\'s Approve Request and Deny Request handlers now route through POST /api/v1/approve and POST /api/v1/reject (Bearer-token authenticated) instead of writing team_memberships/access_requests directly via the Supabase client SDK — restores role validation, reviewed_by attribution, and the approval/denial emails, which the direct writes silently skipped (partial fix for #338, PR #780). Still bypassing the backend, not addressed here: Add Coach, Remove Coach, Add Team, roster writes, schedule writes, and feature-flag toggles — each needs its own backend route built first.',
+      'Fixed useAuth.js\'s onAuthStateChange SIGNED_IN handler silently stranding a user in an ambiguous auth state after a failed /me call — it now explicitly resolves to \'unauthenticated\' with a surfaced error, mirroring checkSession\'s existing handling (#579/#766, PR #767). Wired the surfaced error into LoginScreen\'s existing error display (PR #782).',
+      'Test coverage batch: GameModeGearMenu, RunnerConflictModal, LiveScoringPanel (19 tests across its 3 render states plus scorer interactions), leagueRules, ErrorBoundary, useBackendHealth, ScoringMode finalize/restore, batting order, schedule, flipHalfInning, useFeatureFlag, playerUtils — plus deletion of a dead leagueRules_corrections.js scratch file.',
+      'Fixed backend integration test suite-validation.js\'s VAL-01–05 checks using 5 hardcoded emails against prod on every CI run forever, which requestAccessLimiter\'s per-email rate limit could exhaust into false 429s (diagnosed after it blocked two PR runs) — switched to the same per-run-unique-email pattern already used elsewhere in the suite (#785, PR #786).',
+      'Docs staleness remediation batch 1: corrected the Privacy Policy\'s analytics disclosure and access-request path (legal.js), replaced a false blanket migration-idempotency claim with a real per-migration table (backend/migrations/README.md), rebuilt the analytics event reference from current call sites (docs/analytics/ANALYTICS.md), documented the two coexisting feature-flag override schemes plus the Supabase runtime layer (docs/features/feature-flags.md), and corrected several other stale docs (accessibility-v1.md, tests/README.md, TEST_SETUP.md, PR template, ISSUE_TRACKING.md, smoke-test.js) (#773, #774, PR #772/e32c4ff).',
+      'Routine: backend/package-lock.json version field synced to match backend/package.json; found and fixed frontend/package-lock.json also stale at 2.11.0 (had drifted a full release behind), synced to match frontend/package.json.',
+    ],
+  },
+  {
     version: '2.12.0',
     date: 'August 2026',
     headline: 'Home matches Account team visibility, one team-search bar',
