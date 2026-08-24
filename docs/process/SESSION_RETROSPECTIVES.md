@@ -10,6 +10,72 @@
 
 ---
 
+## 2026-08-24-B — Test-coverage baseline reassessment closed out: 6 components/routes, 72 new tests, CI rate-limit fixture fix, full branch/issue hygiene
+
+**Date:** August 24, 2026
+**Session ID:** 2026-08-24-B (`lineup_generator` worktree, remote execution environment) — continuous with, and immediately following, the same day's already-merged 2026-08-24-A entry (#788/#808/#811)
+**Duration:** Single continuous session
+**PRs opened/merged to develop:** #786 (CI rate-limit fixture fix), #804 (DefenseDiamond.jsx), #805 (POST /admin/reject), #806 (InningModal.jsx), #807 (ScoringModeEntry.jsx), #810 (FairnessCheck.jsx), #814 (DiamondView.jsx) — all verified as genuine 2-parent merge commits, none squashed
+**Issues filed and closed:** #785, #797, #798, #801, #802, #809, #812 — each confirmed individually closed by its correct merging PR via direct `issue_read`, not assumed from the merge succeeding
+**Tests added:** 72 total — 64 frontend across 5 new files (DefenseDiamond 18, InningModal 12, ScoringModeEntry 20, FairnessCheck 7, DiamondView 7) + 8 backend unit (`reject.test.js`). Frontend suite moved 1227→1291 passed / 1 skipped across the batch (exact arithmetic match at every step, not an approximation); backend unit 147→155.
+**Locked-file gate exercised:** `game-mode/*` gate phrase ("all clear — game-mode editing approved") requested and obtained from KK before the temporary mutation edit to `DiamondView.jsx`.
+
+### Overview
+
+Picked up from a prior turn's diagnosis of a recurring CI false-failure — `suite-validation.js`'s `VAL-01`–`05` tests used five hardcoded fixed emails that, under heavy CI traffic, exhausted `requestAccessLimiter`'s shared budget and produced spurious 429s unrelated to the code under test. Fixed by switching to the same per-run-unique-email pattern already established elsewhere in the same file (#785, PR #786). From there, ran a fresh, evidence-based test-coverage gap analysis against `develop` at its actual v2.13.0 state, rather than trusting the standing `DOC_TEST_DEBT.md` ledger as still-current. That surfaced six real, verifiable gaps — three components (`DefenseDiamond.jsx`, `InningModal.jsx`, `ScoringModeEntry.jsx`) that every consuming test only ever mocked out, one backend route (`POST /admin/reject`) with only a blanket 401-rejection check and no authorized-success-path coverage despite admin.html now calling it for real in production, and two more found on a second, later pass (`FairnessCheck.jsx`, `DiamondView.jsx`). Each gap got its own filed issue, its own isolated branch, and its own RED→GREEN mutation-verified test file — mutation testing being the sanctioned substitute for a real RED when the code under test has no known bug to derive one from. Mid-batch, the user reversed an earlier "keep everything isolated, nothing to develop" instruction to "get all four sets of work over to develop, managed end to end" — triggering a full PR-creation-through-merge-through-hygiene pass for all four, followed by an explicit ask to prove (not just assert) that the three merges landing after the first hadn't silently introduced conflicts. That proof came from exact arithmetic (each PR's test-count delta summed cleanly onto the running total, both frontend and backend) plus direct 2-parent-commit verification — not from "CI was green." The last two items (FairnessCheck, DiamondView) followed the same discipline one at a time; `DiamondView.jsx`'s location under the locked `game-mode/*` path meant explicitly stopping to request the gate phrase before the mutation-testing step could touch the file, rather than treating the pattern already used successfully on `InningModal.jsx` earlier in the batch as implicit precedent to skip asking again. Throughout, unrelated PRs merged into `develop` directly by KK mid-flight (the admin.html feature-flag-toggle and remove-coach work, the v2.13.0 promotion-confirmation docs, and the 2026-08-24-A retro itself) synced into the open feature branches as merge commits — each one checked for a clean diff against `develop` before trusting the resulting CI run, rather than assumed harmless because it came from the repo owner. Closed with a full branch-hygiene and issue-sync sweep across the whole batch.
+
+### What Shipped
+
+| Item | Scope | Issue/PR | Status |
+|---|---|---|---|
+| CI rate-limit fixture fix | `suite-validation.js` VAL-01–05 switched from 5 hardcoded emails to the file's own established per-run-unique-email pattern, ending a recurring false-failure under CI traffic | #785, PR #786 | Merged to develop |
+| DefenseDiamond.jsx coverage | 18 tests — controlled/uncontrolled inning selection, single-inning vs. all-innings rendering, `onPositionTap`. RED via mutating the tap callback's argument | #797, PR #804 | Merged to develop |
+| POST /admin/reject coverage | 8 tests — authorized-success path (mirrors `approve.role.test.js`'s pattern), correctly asserts success even when `RESEND_API_KEY` is absent in CI rather than asserting an email was sent | #798, PR #805 | Merged to develop |
+| InningModal.jsx coverage | 12 tests — last-inning vs. mid-game branching, batting-order preview wraparound (leadOff/onDeck/inHole), defense preview, all four action callbacks | #801, PR #806 | Merged to develop |
+| ScoringModeEntry.jsx coverage | 20 tests — 5 for the exported pure `computeNextGames`, 15 for the component (game selection, claim scorer/join viewer/practice mode, half toggle) | #802, PR #807 | Merged to develop |
+| FairnessCheck.jsx coverage | 7 tests — all-pass state, each of 4 independent checks isolated and combined, first-violator-only surfacing, empty-roster edge case | #809, PR #810 | Merged to develop |
+| DiamondView.jsx coverage | 7 tests — assigned/unassigned rendering, per-inning lookup correctness, tap-to-select for both states, all 10 positions, empty-string-name edge case | #812, PR #814 | Merged to develop |
+| Merge-integrity verification | Direct proof (2-parent-commit checks + exact test-count arithmetic) that the 3 merges after the first introduced zero conflicts, on explicit user request | — | Delivered |
+| Branch + issue hygiene (full batch) | All 6 feature branches deleted (local + auto-deleted remote), stale remote-tracking refs pruned, all 7 issues (#785 + the 6 coverage issues) confirmed individually closed and correctly linked to their merging PR | — | Done |
+
+### What Didn't Happen
+
+- **DOC_TEST_DEBT.md ledger update** for the 5 new frontend test files and 1 new backend test file — deferred to this session-close pass rather than done incrementally per PR, consistent with the batch's own stated convention on each PR body; not yet actually applied as of this retro (see Carry-Forward).
+- **Remaining `/admin/*` authorized-success-path gaps** — `update-role`, `reset-access`, `suspend`, `members`, `requests`, `feedback` still lack the same coverage `/admin/reject` just got. Scoped out of this batch, not started.
+- **`BenchStrip.jsx`** (41 lines) and **`utils/roleLabels.js`** (13 lines) — both flagged in the original baseline reassessment as real but low-priority gaps, not started.
+- **Version bump / VERSION_HISTORY entry** — correctly skipped; every PR in this batch is test-only with zero behavior change, matching this repo's established convention that pure test-coverage chores don't bump version.
+
+### Key Events (Chronological)
+
+**1. A recurring CI failure was root-caused to its actual mechanism, not patched at the symptom.** VAL-01–05's failures looked like flaky rate-limiting at first glance; tracing `requestAccessLimiter`'s email-keyed budget against the suite's own hardcoded fixture emails found the real cause (shared budget exhaustion under CI traffic) and the fix that already existed as a working pattern elsewhere in the same file, rather than loosening the limiter or retrying the job.
+
+**2. A stale coverage ledger was not trusted as the current state of the world.** Asked to reassess test coverage, the response was a fresh pass against `develop`'s actual v2.13.0 code — reading real consuming-test files to confirm which components were only ever mocked out — rather than restating `DOC_TEST_DEBT.md`'s existing entries as if they were still accurate.
+
+**3. An explicit "keep this isolated, nothing to develop" instruction was honored exactly, then just as explicitly reversed and re-honored.** Four branches were built and verified in isolation first, per the original ask; when the user then said to bring all four to develop end-to-end, the full PR/label/merge/hygiene/issue-sync process ran for each — the instruction that mattered was the most recent one, not the first one repeated by default.
+
+**4. A request to "confirm no conflicts" was answered with falsifiable evidence, not a restated "CI was green."** Each PR's frontend/backend test-count delta was checked to sum exactly onto the running total (1227→1277 across the four, matching 18+12+20 precisely), and every merge commit's parent count was checked directly — because "CI passed" and "no conflicts occurred" are different claims, and only the second one was actually asked for.
+
+**5. A prior pattern's success on one locked file was not treated as blanket permission for the next one.** `InningModal.jsx`'s mutation-testing edit (earlier in the same batch, same locked `game-mode/*` path) had already gone smoothly; when `DiamondView.jsx` came up, the gate phrase was requested fresh via `AskUserQuestion` rather than assumed still-covered by the earlier exchange, since CLAUDE.md's own rule requires the phrase before "any edit," not before the first edit in a session.
+
+**6. Unrelated concurrent merges into `develop` were checked for a clean diff, not assumed harmless because KK made them.** Three separate times during this batch, a PR branch picked up a "Merge branch 'develop' into ..." commit authored directly by KK mid-flight (the admin feature-flag-toggle work, the remove-coach work, the v2.13.0 promotion docs, and the prior retro entry). Each one got `git diff origin/develop origin/<branch> --stat` before trusting the next CI run, confirming the branch's only real change remained the one new test file.
+
+**7. A background CI-wait command's actual output was read from its log file, not assumed from the "completed" notification alone.** Every `run_in_background` wait resolved into a direct `Read`/`tail` of the recorded output before treating a suite run as clean, rather than trusting the exit-code summary line by itself.
+
+### Standing takeaway
+
+The throughline was the same discipline the 2026-08-24-A entry named for the earlier part of this same day: nothing was accepted as true because it was plausible or because an adjacent signal suggested it. A stale coverage ledger got a fresh read instead of a restatement; "no conflicts" got exact arithmetic and parent-commit checks instead of a green CI badge; a locked-file gate already cleared once in the same session was still asked for again on the next file it applied to, because the rule is stated per-edit, not per-session; and a mid-flight instruction reversal was followed exactly rather than negotiated back toward the original plan. Six real, previously-invisible test gaps got closed with actual RED evidence behind every one of them, not just seven green files that happened to import the right component.
+
+### Carry-Forward Items
+
+| Priority | Story/Issue | Item |
+|---|---|---|
+| P2 | — | `docs/product/DOC_TEST_DEBT.md` not yet updated with the 6 new test files from this batch (`DefenseDiamond.test.jsx`, `reject.test.js`, `InningModal.test.jsx`, `ScoringModeEntry.test.jsx`, `FairnessCheck.test.jsx`, `DiamondView.test.jsx`) — deferred across every PR in the batch to this session-close pass, and still not actually applied as of this retro |
+| P2 | — | Remaining `/admin/*` routes without authorized-success-path coverage: `update-role`, `reset-access`, `suspend`, `members`, `requests`, `feedback` |
+| P3 | — | `BenchStrip.jsx` (41 lines) and `utils/roleLabels.js` (13 lines) — real but low-priority gaps flagged in the original baseline reassessment, not started |
+| — | — | `CLAUDE.md`'s frontend/backend test-count lines (currently citing the pre-batch 1090/1227-era figures depending on section) should be reconciled to the post-batch 1291 frontend / 155 backend totals at the next docs pass |
+
+---
+
 ## 2026-08-24-A — dev→prod assessment, v2.13.0 promotion correction, #698 reopened, admin.html bypass remediation started (#788)
 
 **Date:** August 23-24, 2026 (continuous session)
