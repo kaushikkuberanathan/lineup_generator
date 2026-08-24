@@ -872,9 +872,22 @@
   }
 
   async function removeCoach(id) {
-    var { error } = await sb.from('team_memberships').delete().eq('id', id);
-    if (error) { showMsg('coaches-msg', 'Error: ' + error.message, 'error'); }
-    else { showMsg('coaches-msg', 'Coach removed.', 'success', true); loadCoachesTab(); }
+    // Routed through DELETE /api/v1/coaches/:membershipId (was a direct
+    // Supabase write) so removal goes through requireAuth/requireAdmin
+    // instead of resting on RLS alone — see #787 (remaining scope of #338).
+    var { data: { session } } = await sb.auth.getSession();
+    if (!session) { showMsg('coaches-msg', 'Not signed in.', 'error'); return; }
+    var res = await fetch(BACKEND_URL + '/api/v1/coaches/' + encodeURIComponent(id), {
+      method: 'DELETE',
+      headers: { Authorization: 'Bearer ' + session.access_token }
+    });
+    var body = await res.json().catch(function() { return {}; });
+    if (!res.ok) {
+      showMsg('coaches-msg', 'Error: ' + (body.message || body.error || 'Remove failed.'), 'error');
+    } else {
+      showMsg('coaches-msg', body.message || 'Coach removed.', 'success', true);
+      loadCoachesTab();
+    }
   }
 
   document.getElementById('add-coach-btn').addEventListener('click', function() {

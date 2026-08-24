@@ -541,6 +541,37 @@ router.get(
   }
 );
 
+// ─── DELETE /coaches/:membershipId ─────────────────────────────────────────────
+// Routes admin.html's Remove Coach action through the backend instead of a
+// direct Supabase client write (#787, remaining scope after #338/PR #780).
+// Preserves the existing hard-delete behavior exactly, matching
+// ADMIN_HTML_BYPASS_REMEDIATION_PLAN.md §4.3 — /suspend already exists as a
+// soft-remove alternative if that semantic ever needs revisiting; that's a
+// separate, deliberate call, not part of "route the existing action through
+// the backend."
+
+router.delete(
+  '/coaches/:membershipId',
+  [param('membershipId').isUUID()],
+  async (req, res) => {
+    if (validationGuard(req, res)) return;
+
+    const { membershipId } = req.params;
+
+    const { error } = await supabaseAdmin
+      .from('team_memberships')
+      .delete()
+      .eq('id', membershipId);
+
+    if (error) {
+      console.error('[admin/coaches] DB error:', error.message);
+      return res.status(500).json({ error: 'DB_ERROR' });
+    }
+
+    return res.status(200).json({ message: 'Coach removed.' });
+  }
+);
+
 // ─── PATCH /feature-flags/:flagName ────────────────────────────────────────────
 // Routes admin.html's global feature-flag toggle through the backend instead of
 // a direct Supabase client write (#787, remaining scope after #338/PR #780).
