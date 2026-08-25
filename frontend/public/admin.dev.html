@@ -7,7 +7,9 @@
   <!--
     #645: DEV-pointed variant of admin.html. Same code, wired to the DEV
     Supabase project (dugout-lineup-dev, psqvzppphdedqkpmarwx) instead of
-    prod, and a local backend by default. Exists so admin.html changes and
+    prod, and the deployed lineup-generator-dev-backend Render service by
+    default (swap to localhost for uncommitted local changes — see the
+    BACKEND_URL comment below). Exists so admin.html changes and
     admin operations (team delete, membership edits, etc.) can be rehearsed
     against non-production data. NEVER add a real secret key here — the
     publishable/anon key below is meant to be public, same as admin.html's.
@@ -570,15 +572,20 @@
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   // #380/#645: team deletion (and every other backend-routed admin action)
-  // needs a running backend pointed at the SAME DEV Supabase project above.
-  // There is no persistent DEV backend deployment (deleted 2026-04-27, see
-  // root CLAUDE.md "DEV backend" note) — run one locally:
+  // needs a backend pointed at the SAME DEV Supabase project above.
+  // Corrected 2026-08-25: root CLAUDE.md's "DEV backend deleted 2026-04-27"
+  // claim was stale — a real persistent DEV backend exists on Render
+  // (lineup-generator-dev-backend, auto-deploys from `develop`, boots with
+  // SUPABASE_TARGET=dev). It was found running but crash-looping (missing
+  // APPROVE_LINK_HMAC_SECRET after #337 landed); fixed same day and now
+  // documented here as the supported target instead of localhost-only.
+  // To run one locally instead (e.g. to test an uncommitted change):
   //   cd backend && SUPABASE_TARGET=dev node index.js
   // (SUPABASE_TARGET=dev requires SUPABASE_URL_DEV/ANON_KEY_DEV/
   // SERVICE_ROLE_KEY_DEV in backend/.env — see src/lib/env.js. There is no
-  // "npm run dev" script in backend/package.json, despite root CLAUDE.md's
-  // "DEV backend" note referencing one.)
-  const BACKEND_URL = 'http://localhost:5000';
+  // "npm run dev" script in backend/package.json.) If testing locally,
+  // swap this constant to 'http://localhost:5000'.
+  const BACKEND_URL = 'https://lineup-generator-dev-backend.onrender.com';
 
   // ── Screen helpers ───────────────────────────────────────────
   function show(id) { document.getElementById(id).style.display = 'flex'; }
