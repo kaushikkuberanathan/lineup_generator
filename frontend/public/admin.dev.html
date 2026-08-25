@@ -3,7 +3,31 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Admin Console — Dugout Lineup</title>
+  <title>Admin Console (DEV) — Dugout Lineup</title>
+  <!--
+    #645: DEV-pointed variant of admin.html. Same code, wired to the DEV
+    Supabase project (dugout-lineup-dev, psqvzppphdedqkpmarwx) instead of
+    prod, and a local backend by default. Exists so admin.html changes and
+    admin operations (team delete, membership edits, etc.) can be rehearsed
+    against non-production data. NEVER add a real secret key here — the
+    publishable/anon key below is meant to be public, same as admin.html's.
+
+    Keep this file's behavior identical to admin.html except: the config
+    constants below (SUPABASE_URL/SUPABASE_ANON_KEY/BACKEND_URL) and the
+    DEV banner. If admin.html's actual feature code changes, port the same
+    change here too - there is no build step to share code between them.
+    (Went stale once already, 2026-08-25, when #346 added isTestEmail/
+    testToggleHtml to admin.html after this file had already been copied -
+    caught by adminDevHtmlSync.test.js, regenerated from the merged
+    admin.html rather than hand-patched.)
+  -->
+  <style>
+    #dev-banner {
+      position: sticky; top: 0; z-index: 1000; background: #b45309; color: #fff;
+      font: 700 13px/1.4 -apple-system, sans-serif; text-align: center;
+      padding: 8px 12px;
+    }
+  </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -257,6 +281,8 @@
   </style>
 </head>
 <body>
+
+<div id="dev-banner">⚠ DEV ENVIRONMENT — writes go to dugout-lineup-dev, not production</div>
 
 <!-- Loading -->
 <div id="loading-screen">
@@ -532,20 +558,27 @@
 (function() {
   'use strict';
 
-  const SUPABASE_URL = 'https://hzaajccyurlyeweekvma.supabase.co';
+  // #645: DEV project (dugout-lineup-dev), not prod. See admin.html for the
+  // prod variant — keep these two files' feature code in sync manually.
+  const SUPABASE_URL = 'https://psqvzppphdedqkpmarwx.supabase.co';
   // Publishable key. Safe to ship in a browser - RLS is what protects the data.
-  // The legacy anon/service_role JWTs were DISABLED 2026-07-14, after a real
-  // service_role key was found committed in backend/.env.example (PUBLIC repo,
-  // 3.75 months). NEVER paste a secret key (sb_secret_...) here.
-  const SUPABASE_ANON_KEY = 'sb_publishable_YqriD4NYUNB_KXSvBDMX9w_KzDCK5Y_';
+  // The legacy anon/service_role JWTs were DISABLED 2026-07-14 on the PROD
+  // project (unrelated to this DEV project's own keys). NEVER paste a secret
+  // key (sb_secret_...) here.
+  const SUPABASE_ANON_KEY = 'sb_publishable_LPBM3ZQnPWXJHFKPnJsccA_Zh0BzGKI';
 
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  // #380: team deletion is routed through the backend's service_role DELETE
-  // route, not a direct Supabase write — see deleteTeam() below. Static HTML
-  // has no build-time env injection, so this is hardcoded to match every
-  // other BACKEND_URL fallback in the app (useAuth.js, supabase.js).
-  const BACKEND_URL = 'https://lineup-generator-backend.onrender.com';
+  // #380/#645: team deletion (and every other backend-routed admin action)
+  // needs a running backend pointed at the SAME DEV Supabase project above.
+  // There is no persistent DEV backend deployment (deleted 2026-04-27, see
+  // root CLAUDE.md "DEV backend" note) — run one locally:
+  //   cd backend && SUPABASE_TARGET=dev node index.js
+  // (SUPABASE_TARGET=dev requires SUPABASE_URL_DEV/ANON_KEY_DEV/
+  // SERVICE_ROLE_KEY_DEV in backend/.env — see src/lib/env.js. There is no
+  // "npm run dev" script in backend/package.json, despite root CLAUDE.md's
+  // "DEV backend" note referencing one.)
+  const BACKEND_URL = 'http://localhost:5000';
 
   // ── Screen helpers ───────────────────────────────────────────
   function show(id) { document.getElementById(id).style.display = 'flex'; }

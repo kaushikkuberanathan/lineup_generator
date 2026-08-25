@@ -435,11 +435,25 @@ gate — this exact regression shipped and was fixed in v2.8.3 (see backend/CLAU
 
 ### Admin UI
 
-`frontend/public/admin.html` — deployed as a static page at `/admin.html` on Vercel.
+`frontend/public/admin.html` — deployed as a static page at `/admin.html` on Vercel. `frontend/public/admin.dev.html` (#645) is a DEV-pointed copy for safe testing — same code, wired to the `dugout-lineup-dev` Supabase project and a local backend instead of prod; the two files have no shared code and must be kept in sync manually.
 
 Six-tab admin interface: Pending Requests | Members | Feedback | Teams | Settings | Audit.
 
 Login via Google OAuth or email magic link. Checks `/me` for `memberships[0].role === 'admin'`.
+
+**Write path (corrected 2026-08-25 — see #338/#787).** This section previously
+left unstated how `admin.html` authenticates its *mutations*, at a time when the
+honest answer was "it doesn't — it writes straight to Supabase with the client
+SDK," a real architectural bypass tracked as #338. That is no longer true: as of
+`docs/product/ADMIN_HTML_BYPASS_REMEDIATION_PLAN.md`'s six sub-issues (#788-793,
+all closed), every `admin.html` mutation — approve/deny, feature-flag toggle, add
+Coach, remove Coach, add Team, roster save, schedule save — authenticates to the
+Express API with a Bearer token instead of calling `supabaseAdmin`/the anon
+client directly. This restores `normalizeRole`, `requireAuth`/`requireAdmin`,
+`reviewed_by` attribution, and audit-event logging to every one of those actions.
+#338 is closed. Reads (Pending Requests / Coaches / Feedback / Teams list) still
+query Supabase directly from the browser with the anon key, gated by RLS — that
+was never the exposure #338 tracked, and is unchanged by this remediation.
 
 ### RLS Policy Map (live, re-verified 2026-08-04)
 

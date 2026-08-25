@@ -2,7 +2,7 @@
 
 **Status:** v1.2
 **Owner:** Kaushik
-**Last Updated:** 2026-08-08 (role-model table, scoring-capability section, and WS-1 known-gaps updated for Story 124/#655 — see inline notes; prior update 2026-08-04 was the role-model + WS-3 correction, Doc Audit Spike Story 2)
+**Last Updated:** 2026-08-25 (WS-2 row now references PR #822, open against #337 — see inline note; prior update 2026-08-08 was the role-model table, scoring-capability section, and WS-1 known-gaps for Story 124/#655; before that, 2026-08-04 was the role-model + WS-3 correction, Doc Audit Spike Story 2)
 **Location:** `docs/product/AUTH_SECURITY_AUDIT_ROADMAP.md`
 
 ---
@@ -131,7 +131,7 @@ weaken the contract.
 | WS | Title | Maps to | Gate | Worktree | Status |
 |----|-------|---------|------|----------|--------|
 | WS-1 | Role vocabulary normalization | *(new)* | A | T1 | **DONE** (#336) |
-| WS-2 | Approve-link HMAC + `reviewed_by` | SF-1.11 | A | T1 | Open (#337) |
+| WS-2 | Approve-link HMAC + `reviewed_by` | SF-1.11 | A | T1 | Open (#337) — PR [#822](https://github.com/kaushikkuberanathan/lineup_generator/pull/822) draft, not yet merged |
 | WS-3 | `requireAuth` cutover + RLS 004 | Charter P2 | B (spine) | T1 | **SPLIT STATUS - re-verified live 2026-08-04.** #342 (team-data/teams/roster_snapshots RLS) is **DONE** - shipped v2.6.0 (2026-07-20), confirmed live: all three tables now show `relrowsecurity = true` with real `auth.uid()`-scoped policies (see `docs/db/schema.sql` §8). #355 (the scoring tables) is **STILL OPEN** - confirmed live, unchanged: `live_game_state`/`game_scoring_sessions`/`scoring_audit_log` each carry an `allow_scorer_writes` policy (`roles: public, cmd: ALL, qual: true`) that permits unrestricted read/write/delete on every team's scoring data, platform-wide - broader than the "four backdoors, Mud Hens-only" framing this row previously carried; the team-scoped `*_anon_test` policies are redundant given `allow_scorer_writes` already grants everything to everyone. #355 is not fixable without WS-4 (below). |
 | WS-4 | FK restore + WHO/WHEN columns | SF-2.1-adj | rides B | T1 | Not started |
 | WS-5 | Agreement gate (backend + UI) | *(new)* | C | T1 + T2 | Not started |
