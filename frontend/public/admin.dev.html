@@ -1,0 +1,1422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin Console (DEV) — Dugout Lineup</title>
+  <!--
+    #645: DEV-pointed variant of admin.html. Same code, wired to the DEV
+    Supabase project (dugout-lineup-dev, psqvzppphdedqkpmarwx) instead of
+    prod, and a local backend by default. Exists so admin.html changes and
+    admin operations (team delete, membership edits, etc.) can be rehearsed
+    against non-production data. NEVER add a real secret key here — the
+    publishable/anon key below is meant to be public, same as admin.html's.
+
+    Keep this file's behavior identical to admin.html except: the config
+    constants below (SUPABASE_URL/SUPABASE_ANON_KEY/BACKEND_URL) and the
+    DEV banner. If admin.html's actual feature code changes, port the same
+    change here too - there is no build step to share code between them.
+  -->
+  <style>
+    #dev-banner {
+      position: sticky; top: 0; z-index: 1000; background: #b45309; color: #fff;
+      font: 700 13px/1.4 -apple-system, sans-serif; text-align: center;
+      padding: 8px 12px;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy:  #0f1f3d;
+      --navy2: #1a2f5e;
+      --gold:  #f5c842;
+      --red:   #c8102e;
+      --text:  #ffffff;
+      --muted: rgba(255,255,255,0.55);
+      --border: rgba(255,255,255,0.1);
+      --green: #22c55e;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--navy);
+      color: var(--text);
+      font-size: 14px;
+      min-height: 100vh;
+    }
+
+    /* ── Loading ── */
+    #loading-screen {
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; color: var(--muted); font-size: 14px; gap: 10px;
+    }
+
+    /* ── Login ── */
+    #login-screen {
+      display: none; align-items: center; justify-content: center;
+      min-height: 100vh; padding: 24px;
+    }
+    .login-card {
+      background: var(--navy2); border: 1px solid var(--border);
+      border-radius: 10px; padding: 40px 32px; width: 100%; max-width: 360px;
+      display: flex; flex-direction: column; gap: 20px;
+    }
+    .login-card h1 {
+      font-family: Georgia, serif; color: var(--gold); font-size: 22px;
+      text-align: center;
+    }
+    .login-card .subtitle { text-align: center; color: var(--muted); font-size: 13px; }
+    .divider {
+      display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 12px;
+    }
+    .divider::before, .divider::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
+    }
+
+    /* ── Access Denied ── */
+    #denied-screen {
+      display: none; align-items: center; justify-content: center;
+      min-height: 100vh; padding: 24px;
+    }
+    .denied-card {
+      background: var(--navy2); border: 1px solid rgba(200,16,46,0.4);
+      border-radius: 10px; padding: 40px 32px; text-align: center;
+      max-width: 360px; display: flex; flex-direction: column; gap: 16px;
+    }
+    .denied-card h2 { color: var(--red); font-family: Georgia, serif; }
+    .denied-card p { color: var(--muted); font-size: 13px; }
+
+    /* ── Main App ── */
+    #app { display: none; flex-direction: column; min-height: 100vh; }
+
+    /* Header */
+    #header {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      background: var(--navy); border-bottom: 2px solid var(--gold);
+      padding: 12px 20px; display: flex; align-items: center;
+      justify-content: space-between; gap: 12px;
+    }
+    #header h1 {
+      font-family: Georgia, serif; color: var(--gold); font-size: 18px;
+      white-space: nowrap;
+    }
+    .header-right { display: flex; align-items: center; gap: 12px; }
+    #user-email { color: var(--muted); font-size: 12px; }
+
+    /* Tab bar */
+    #tab-bar {
+      position: fixed; top: 53px; left: 0; right: 0; z-index: 99;
+      background: var(--navy2); border-bottom: 1px solid var(--border);
+      display: flex; overflow-x: auto; scrollbar-width: none;
+    }
+    #tab-bar::-webkit-scrollbar { display: none; }
+    .tab-btn {
+      flex: none; padding: 10px 18px; border: none; background: transparent;
+      color: var(--muted); font-size: 13px; font-weight: 600; cursor: pointer;
+      border-bottom: 2px solid transparent; white-space: nowrap;
+      transition: color 0.15s;
+    }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { color: var(--gold); border-bottom-color: var(--gold); }
+
+    /* Content */
+    #content {
+      margin-top: 97px; padding: 24px 20px;
+      max-width: 900px; margin-left: auto; margin-right: auto;
+      padding-top: 121px;
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── UI Components ── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 14px; border-radius: 6px; border: none;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      font-family: inherit; transition: opacity 0.15s;
+      white-space: nowrap;
+    }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn-gold { background: var(--gold); color: var(--navy); }
+    .btn-ghost {
+      background: transparent; color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { border-color: rgba(255,255,255,0.3); }
+    .btn-danger { background: var(--red); color: #fff; }
+    .btn-sm { padding: 4px 10px; font-size: 12px; }
+    .btn-full { width: 100%; justify-content: center; padding: 11px; }
+
+    input, select, textarea {
+      background: rgba(255,255,255,0.07); border: 1px solid var(--border);
+      border-radius: 6px; color: var(--text); font-size: 13px;
+      font-family: inherit; padding: 8px 10px; width: 100%;
+      outline: none; transition: border-color 0.15s;
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--gold);
+    }
+    input::placeholder, textarea::placeholder { color: var(--muted); }
+    select option { background: var(--navy2); }
+
+    label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 4px; }
+
+    .form-group { display: flex; flex-direction: column; gap: 4px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 500px) { .form-row { grid-template-columns: 1fr; } }
+
+    .card {
+      background: var(--navy2); border: 1px solid var(--border);
+      border-radius: 10px; padding: 20px;
+    }
+    .card + .card { margin-top: 16px; }
+    .card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px; flex-wrap: wrap; gap: 10px;
+    }
+    .card-title {
+      font-family: Georgia, serif; font-size: 15px; color: var(--gold);
+    }
+    .section-label {
+      font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--muted); margin-bottom: 10px;
+    }
+
+    /* Tables */
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 480px; }
+    th {
+      text-align: left; padding: 8px 10px; font-size: 11px; font-weight: 700;
+      letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted);
+      border-bottom: 1px solid var(--border);
+    }
+    td {
+      padding: 9px 10px; border-bottom: 1px solid rgba(255,255,255,0.04);
+      vertical-align: middle;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,0.03); }
+
+    /* Status badges */
+    .badge {
+      display: inline-block; padding: 2px 8px; border-radius: 10px;
+      font-size: 11px; font-weight: 700; letter-spacing: 0.04em;
+    }
+    .badge-green { background: rgba(34,197,94,0.15); color: var(--green); }
+    .badge-amber { background: rgba(251,191,36,0.15); color: #fbbf24; }
+    .badge-red   { background: rgba(200,16,46,0.15);  color: #f87171; }
+    .badge-gray  { background: rgba(255,255,255,0.08); color: var(--muted); }
+
+    /* Toggle switch */
+    .toggle-wrap {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 0; border-bottom: 1px solid var(--border);
+    }
+    .toggle-wrap:last-child { border-bottom: none; }
+    .toggle-info { display: flex; flex-direction: column; gap: 3px; }
+    .toggle-name { font-weight: 700; font-size: 13px; }
+    .toggle-desc { font-size: 12px; color: var(--muted); }
+    .toggle-meta { font-size: 11px; color: rgba(255,255,255,0.3); margin-top: 2px; }
+    .switch {
+      position: relative; width: 42px; height: 24px; flex-shrink: 0;
+    }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .switch-track {
+      position: absolute; inset: 0; border-radius: 12px;
+      background: rgba(255,255,255,0.15); cursor: pointer;
+      transition: background 0.2s;
+    }
+    .switch-track::after {
+      content: ''; position: absolute; width: 18px; height: 18px;
+      border-radius: 50%; background: white; top: 3px; left: 3px;
+      transition: transform 0.2s;
+    }
+    .switch input:checked + .switch-track { background: var(--gold); }
+    .switch input:checked + .switch-track::after { transform: translateX(18px); }
+
+    /* Alerts */
+    .alert {
+      padding: 10px 14px; border-radius: 6px; font-size: 13px;
+      margin-bottom: 14px;
+    }
+    .alert-error { background: rgba(200,16,46,0.15); color: #f87171; border: 1px solid rgba(200,16,46,0.3); }
+    .alert-success { background: rgba(34,197,94,0.12); color: var(--green); border: 1px solid rgba(34,197,94,0.25); }
+    .alert-info { background: rgba(245,200,66,0.1); color: var(--gold); border: 1px solid rgba(245,200,66,0.2); }
+
+    /* Inline loading spinner */
+    .spinner {
+      display: inline-block; width: 14px; height: 14px;
+      border: 2px solid rgba(255,255,255,0.2);
+      border-top-color: var(--gold); border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .empty-state {
+      text-align: center; color: var(--muted); padding: 32px 0; font-size: 13px;
+    }
+
+    /* Collapsible */
+    .collapse-toggle {
+      background: none; border: none; color: var(--muted); font-size: 12px;
+      cursor: pointer; font-family: inherit; padding: 8px 0;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .collapse-toggle:hover { color: var(--text); }
+    .collapse-content { overflow: hidden; transition: max-height 0.25s ease; }
+
+    /* Approve inline form */
+    .approve-form {
+      background: rgba(245,200,66,0.06); border: 1px solid rgba(245,200,66,0.2);
+      border-radius: 8px; padding: 12px; margin-top: 8px;
+      display: none; flex-direction: column; gap: 10px;
+    }
+    .approve-form.open { display: flex; }
+  </style>
+</head>
+<body>
+
+<div id="dev-banner">⚠ DEV ENVIRONMENT — writes go to dugout-lineup-dev, not production</div>
+
+<!-- Loading -->
+<div id="loading-screen">
+  <div class="spinner"></div> <span>Loading…</span>
+</div>
+
+<!-- Login -->
+<div id="login-screen">
+  <div class="login-card">
+    <h1>⚾ Dugout Lineup</h1>
+    <p class="subtitle">Admin Console — sign in to continue</p>
+    <button class="btn btn-gold btn-full" id="google-btn">
+      <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
+        <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.703-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
+        <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/>
+        <path d="M3.964 10.71A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
+        <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+      </svg>
+      Sign in with Google
+    </button>
+    <div class="divider">or</div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div class="form-group">
+        <label for="magic-email">Email address</label>
+        <input type="email" id="magic-email" placeholder="coach@example.com">
+      </div>
+      <button class="btn btn-ghost btn-full" id="magic-btn">Send Magic Link</button>
+    </div>
+    <div id="login-msg"></div>
+  </div>
+</div>
+
+<!-- Access Denied -->
+<div id="denied-screen">
+  <div class="denied-card">
+    <h2>🚫 Access Denied</h2>
+    <p>Your account doesn't have admin access to this console.</p>
+    <p id="denied-email" style="color:var(--muted);font-size:12px;"></p>
+    <button class="btn btn-ghost" id="denied-logout">Sign Out</button>
+  </div>
+</div>
+
+<!-- Main App -->
+<div id="app">
+  <div id="header">
+    <h1>⚾ Dugout Lineup Admin</h1>
+    <div class="header-right">
+      <span id="user-email"></span>
+      <button class="btn btn-ghost btn-sm" id="signout-btn">Sign Out</button>
+    </div>
+  </div>
+
+  <div id="tab-bar">
+    <button class="tab-btn active" data-tab="teams">Teams</button>
+    <button class="tab-btn" data-tab="coaches">Coaches</button>
+    <button class="tab-btn" data-tab="requests">Requests</button>
+    <button class="tab-btn" data-tab="rosters">Rosters</button>
+    <button class="tab-btn" data-tab="schedules">Schedules</button>
+    <button class="tab-btn" data-tab="flags">Feature Flags</button>
+  </div>
+
+  <div id="content">
+
+    <!-- TAB: TEAMS -->
+    <div id="tab-teams" class="tab-panel active">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Teams</span>
+          <button class="btn btn-gold btn-sm" id="add-team-btn">+ Add Team</button>
+        </div>
+        <div id="add-team-form" style="display:none;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:16px;">
+          <div class="section-label">New Team</div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div class="form-group"><label>Team Name</label><input type="text" id="team-name" placeholder="e.g. Mud Hens"></div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Age Group</label>
+                <select id="team-age">
+                  <option value="">— select —</option>
+                  <option>5U</option><option>6U</option><option>7U</option><option>8U</option>
+                  <option>9U</option><option>10U</option><option>11U</option><option>12U</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Sport</label>
+                <select id="team-sport"><option value="baseball">Baseball</option><option value="softball">Softball</option></select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Season</label>
+                <select id="team-season">
+                  <option value="">— select —</option>
+                  <option>Spring</option>
+                  <option>Fall</option>
+                </select>
+              </div>
+              <div class="form-group"><label>Year</label><input type="number" id="team-year" placeholder="2026" value="2026"></div>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-gold" id="save-team-btn">Save Team</button>
+              <button class="btn btn-ghost" id="cancel-team-btn">Cancel</button>
+            </div>
+            <div id="team-form-msg"></div>
+          </div>
+        </div>
+        <div id="teams-msg"></div>
+        <div id="teams-loading" style="text-align:center;padding:20px;"><div class="spinner"></div></div>
+        <div id="teams-table" class="table-wrap" style="display:none;">
+          <table>
+            <thead><tr><th>Name</th><th>Age</th><th>Sport</th><th>Season</th><th>Year</th><th>ID</th><th></th></tr></thead>
+            <tbody id="teams-body"></tbody>
+          </table>
+        </div>
+        <div id="teams-empty" class="empty-state" style="display:none;">No teams yet.</div>
+      </div>
+    </div>
+
+    <!-- TAB: COACHES -->
+    <div id="tab-coaches" class="tab-panel">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Coaches</span>
+          <button class="btn btn-gold btn-sm" id="add-coach-btn">+ Add Coach</button>
+        </div>
+        <div id="add-coach-form" style="display:none;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:16px;">
+          <div class="section-label">Add Coach</div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div class="form-group"><label>Email</label><input type="email" id="coach-email" placeholder="coach@example.com"></div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Role</label>
+                <select id="coach-role"><option value="coach">Coach</option><option value="coach">Coordinator</option><option value="admin">Head Coach</option><option value="scorekeeper">Scorekeeper</option><option value="viewer">Viewer</option></select>
+              </div>
+              <div class="form-group">
+                <label>Team</label>
+                <select id="coach-team"><option value="">— select team —</option></select>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-gold" id="save-coach-btn">Add Coach</button>
+              <button class="btn btn-ghost" id="cancel-coach-btn">Cancel</button>
+            </div>
+            <div id="coach-form-msg"></div>
+          </div>
+        </div>
+        <div id="coaches-msg"></div>
+        <div id="coaches-loading" style="text-align:center;padding:20px;"><div class="spinner"></div></div>
+        <div id="coaches-table" class="table-wrap" style="display:none;">
+          <table>
+            <thead><tr><th>Email</th><th>Role</th><th>Status</th><th>Team</th><th>Activated</th><th></th></tr></thead>
+            <tbody id="coaches-body"></tbody>
+          </table>
+        </div>
+        <div id="coaches-empty" class="empty-state" style="display:none;">No coaches yet.</div>
+      </div>
+    </div>
+
+    <!-- TAB: ACCESS REQUESTS -->
+    <div id="tab-requests" class="tab-panel">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Pending Requests</span></div>
+        <div id="requests-msg"></div>
+        <div id="requests-loading" style="text-align:center;padding:20px;"><div class="spinner"></div></div>
+        <div id="requests-content" style="display:none;"></div>
+      </div>
+      <div class="card" style="margin-top:16px;">
+        <button class="collapse-toggle" id="history-toggle">▶ Approved / Denied history</button>
+        <div class="collapse-content" id="history-content" style="max-height:0;overflow:hidden;">
+          <div id="history-loading" style="text-align:center;padding:20px;display:none;"><div class="spinner"></div></div>
+          <div id="history-table" class="table-wrap" style="margin-top:12px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: ROSTERS -->
+    <div id="tab-rosters" class="tab-panel">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Rosters</span></div>
+        <div class="form-group" style="margin-bottom:16px;">
+          <label>Select Team</label>
+          <select id="roster-team-select"><option value="">— select a team —</option></select>
+        </div>
+        <div id="roster-content" style="display:none;">
+          <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:16px;">
+            <div class="section-label">Add Player</div>
+            <div class="form-row">
+              <div class="form-group"><label>First Name</label><input type="text" id="player-first" placeholder="First"></div>
+              <div class="form-group"><label>Last Name</label><input type="text" id="player-last" placeholder="Last"></div>
+            </div>
+            <div><button class="btn btn-gold btn-sm" id="add-player-btn">Add Player</button></div>
+            <div id="player-msg"></div>
+          </div>
+          <div style="margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:16px;">
+            <div class="section-label">CSV Import (FirstName,LastName — one per line)</div>
+            <textarea id="roster-csv" rows="4" placeholder="Jane,Smith&#10;Bob,Jones"></textarea>
+            <div style="margin-top:8px;"><button class="btn btn-ghost btn-sm" id="import-roster-btn">Import CSV</button></div>
+            <div id="import-roster-msg"></div>
+          </div>
+          <div id="roster-msg"></div>
+          <div id="roster-loading" style="text-align:center;padding:20px;"><div class="spinner"></div></div>
+          <div id="roster-table-wrap" class="table-wrap" style="display:none;">
+            <table>
+              <thead><tr><th>#</th><th>Name</th><th>Tags</th><th></th></tr></thead>
+              <tbody id="roster-body"></tbody>
+            </table>
+          </div>
+          <div id="roster-empty" class="empty-state" style="display:none;">No players yet.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: SCHEDULES -->
+    <div id="tab-schedules" class="tab-panel">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Schedules</span></div>
+        <div class="form-group" style="margin-bottom:16px;">
+          <label>Select Team</label>
+          <select id="sched-team-select"><option value="">— select a team —</option></select>
+        </div>
+        <div id="sched-content" style="display:none;">
+          <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:16px;">
+            <div class="section-label">Add Game</div>
+            <div class="form-row">
+              <div class="form-group"><label>Date</label><input type="date" id="game-date"></div>
+              <div class="form-group"><label>Time</label><input type="time" id="game-time"></div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label>Opponent</label><input type="text" id="game-opponent" placeholder="vs. Team Name"></div>
+              <div class="form-group"><label>Location</label><input type="text" id="game-location" placeholder="Field / Address"></div>
+            </div>
+            <div><button class="btn btn-gold btn-sm" id="add-game-btn">Add Game</button></div>
+            <div id="game-msg"></div>
+          </div>
+          <div style="margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:16px;">
+            <div class="section-label">CSV Import (Date,Time,Opponent,Location — header row optional)</div>
+            <textarea id="sched-csv" rows="4" placeholder="2026-04-10,6:00 PM,Tigers,Riverside Park&#10;2026-04-17,10:00 AM,Bears,Home"></textarea>
+            <div style="margin-top:8px;display:flex;gap:8px;align-items:center;">
+              <button class="btn btn-ghost btn-sm" id="import-sched-btn">Import CSV</button>
+              <button class="btn btn-danger btn-sm" id="clear-sched-btn">Clear Schedule</button>
+            </div>
+            <div id="import-sched-msg"></div>
+          </div>
+          <div id="sched-msg"></div>
+          <div id="sched-loading" style="text-align:center;padding:20px;"><div class="spinner"></div></div>
+          <div id="sched-table-wrap" class="table-wrap" style="display:none;">
+            <table>
+              <thead><tr><th>Date</th><th>Time</th><th>Opponent</th><th>Location</th><th>Result</th></tr></thead>
+              <tbody id="sched-body"></tbody>
+            </table>
+          </div>
+          <div id="sched-empty" class="empty-state" style="display:none;">No games yet.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: FEATURE FLAGS -->
+    <div id="tab-flags" class="tab-panel">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Feature Flags</span></div>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Global flags (team_id IS NULL). Changes take effect on next page load. Add/remove flags via SQL only.</p>
+        <div id="flags-msg"></div>
+        <div id="flags-loading" style="text-align:center;padding:20px;"><div class="spinner"></div></div>
+        <div id="flags-list" style="display:none;"></div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /app -->
+
+<script>
+(function() {
+  'use strict';
+
+  // #645: DEV project (dugout-lineup-dev), not prod. See admin.html for the
+  // prod variant — keep these two files' feature code in sync manually.
+  const SUPABASE_URL = 'https://psqvzppphdedqkpmarwx.supabase.co';
+  // Publishable key. Safe to ship in a browser - RLS is what protects the data.
+  // The legacy anon/service_role JWTs were DISABLED 2026-07-14 on the PROD
+  // project (unrelated to this DEV project's own keys). NEVER paste a secret
+  // key (sb_secret_...) here.
+  const SUPABASE_ANON_KEY = 'sb_publishable_LPBM3ZQnPWXJHFKPnJsccA_Zh0BzGKI';
+
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // #380/#645: team deletion (and every other backend-routed admin action)
+  // needs a running backend pointed at the SAME DEV Supabase project above.
+  // There is no persistent DEV backend deployment (deleted 2026-04-27, see
+  // root CLAUDE.md "DEV backend" note) — run one locally:
+  //   cd backend && SUPABASE_TARGET=dev node index.js
+  // (SUPABASE_TARGET=dev requires SUPABASE_URL_DEV/ANON_KEY_DEV/
+  // SERVICE_ROLE_KEY_DEV in backend/.env — see src/lib/env.js. There is no
+  // "npm run dev" script in backend/package.json, despite root CLAUDE.md's
+  // "DEV backend" note referencing one.)
+  const BACKEND_URL = 'http://localhost:5000';
+
+  // ── Screen helpers ───────────────────────────────────────────
+  function show(id) { document.getElementById(id).style.display = 'flex'; }
+  function hide(id) { document.getElementById(id).style.display = 'none'; }
+  function showBlock(id) { document.getElementById(id).style.display = 'block'; }
+
+  function showMsg(id, msg, type, autoClear) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = '<div class="alert alert-' + type + '">' + esc(msg) + '</div>';
+    if (autoClear) setTimeout(function() { if (el) el.innerHTML = ''; }, 3000);
+  }
+  function clearMsg(id) { var el = document.getElementById(id); if (el) el.innerHTML = ''; }
+
+  function esc(s) {
+    return String(s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function fmtDate(s) {
+    if (!s) return '—';
+    try { return new Date(s).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }); }
+    catch(e) { return s; }
+  }
+
+  function genId() {
+    return Date.now() + '' + Math.floor(Math.random() * 1000);
+  }
+
+  // ── Cached data ──────────────────────────────────────────────
+  var _teams = [];
+  var _currentUser = null;
+
+  // ── Auth ─────────────────────────────────────────────────────
+  async function init() {
+    const { data: { session } } = await sb.auth.getSession();
+    if (session) {
+      await handleSession(session);
+    } else {
+      hide('loading-screen');
+      show('login-screen');
+    }
+  }
+
+  sb.auth.onAuthStateChange(async function(event, session) {
+    if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session) {
+      hide('login-screen');
+      show('loading-screen');
+      document.getElementById('loading-screen').style.display = 'flex';
+      await handleSession(session);
+    }
+  });
+
+  async function handleSession(session) {
+    _currentUser = session.user;
+    // Check by user_id first (fastest, most reliable)
+    let { data, error } = await sb
+      .from('team_memberships')
+      .select('role')
+      .eq('user_id', session.user.id)
+      .eq('role', 'admin')
+      .eq('status', 'active')
+      .limit(1);
+
+    // Fallback: check by email (handles newly approved admins
+    // whose user_id hasn't been linked yet)
+    if (!error && (!data || data.length === 0) && session.user.email) {
+      ({ data, error } = await sb
+        .from('team_memberships')
+        .select('role')
+        .eq('email', session.user.email)
+        .eq('role', 'admin')
+        .eq('status', 'active')
+        .limit(1));
+
+      // If found by email, backfill user_id silently
+      if (!error && data && data.length > 0) {
+        await sb
+          .from('team_memberships')
+          .update({ user_id: session.user.id })
+          .eq('email', session.user.email)
+          .eq('role', 'admin')
+          .is('user_id', null);
+      }
+    }
+
+    hide('loading-screen');
+
+    if (error || !data || data.length === 0) {
+      document.getElementById('denied-email').textContent = session.user.email || '';
+      show('denied-screen');
+      return;
+    }
+
+    document.getElementById('user-email').textContent = session.user.email || '';
+    document.getElementById('app').style.display = 'flex';
+    await loadTeams();
+    loadActiveTab();
+  }
+
+  // Login
+  document.getElementById('google-btn').addEventListener('click', async function() {
+    clearMsg('login-msg');
+    await sb.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.href }
+    });
+  });
+
+  document.getElementById('magic-btn').addEventListener('click', async function() {
+    var email = document.getElementById('magic-email').value.trim();
+    if (!email) { showMsg('login-msg', 'Enter your email address.', 'error'); return; }
+    this.disabled = true;
+    clearMsg('login-msg');
+    var { error } = await sb.auth.signInWithOtp({
+      email: email,
+      options: { emailRedirectTo: window.location.origin + '/admin.html' }
+    });
+    this.disabled = false;
+    if (error) { showMsg('login-msg', error.message, 'error'); }
+    else { showMsg('login-msg', '✓ Check your email for a magic link.', 'success'); }
+  });
+
+  document.getElementById('signout-btn').addEventListener('click', signOut);
+  document.getElementById('denied-logout').addEventListener('click', signOut);
+
+  async function signOut() {
+    await sb.auth.signOut();
+    window.location.reload();
+  }
+
+  // ── Tabs ──────────────────────────────────────────────────────
+  document.querySelectorAll('.tab-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+      document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+      btn.classList.add('active');
+      var tab = btn.dataset.tab;
+      document.getElementById('tab-' + tab).classList.add('active');
+      loadTab(tab);
+    });
+  });
+
+  function loadActiveTab() {
+    var active = document.querySelector('.tab-btn.active');
+    if (active) loadTab(active.dataset.tab);
+  }
+
+  function loadTab(tab) {
+    if (tab === 'teams')     loadTeamsTab();
+    if (tab === 'coaches')   loadCoachesTab();
+    if (tab === 'requests')  loadRequestsTab();
+    if (tab === 'rosters')   initRostersTab();
+    if (tab === 'schedules') initSchedulesTab();
+    if (tab === 'flags')     loadFlagsTab();
+  }
+
+  // ── Shared: season/year formatting + newest-first sort ─────────
+  // "Spring" + 2026 -> "Spring 26". Duplicated at each display call site
+  // (App.jsx, TeamSearch.jsx, here) rather than a shared import — matches
+  // this file's existing team-metadata conventions (e.g. age_group labels
+  // built inline per call site, not imported from a shared module).
+  function formatSeason(season, year) {
+    if (!season) return '';
+    return season + (year ? ' ' + String(year).slice(-2) : '');
+  }
+  // Newest season/year first: same year, Fall (later in the calendar year)
+  // sorts before Spring.
+  function seasonRank(season) { return season === 'Fall' ? 1 : 0; }
+  function compareNewestFirst(a, b) {
+    var ay = a.year || 0, by = b.year || 0;
+    if (ay !== by) return by - ay;
+    return seasonRank(b.season) - seasonRank(a.season);
+  }
+  // Sensible default for the season select below — Jan-Jun -> Spring,
+  // Jul-Dec -> Fall. A guess, not a rule: admins can always override it.
+  // teams.season is meant to end up NOT NULL with a CHECK constraint
+  // (migration 022 adds it nullable, 023 tightens it later — see 023's
+  // header for the PROD two-phase rollout), so the add-team form validates
+  // this explicitly rather than letting an empty selection reach the
+  // insert.
+  function currentSeasonGuess() {
+    var month = new Date().getMonth() + 1;
+    return (month >= 1 && month <= 6) ? 'Spring' : 'Fall';
+  }
+
+  // ── Shared: load teams ────────────────────────────────────────
+  async function loadTeams() {
+    var { data } = await sb.from('teams').select('*').order('name');
+    _teams = (data || []).slice().sort(compareNewestFirst);
+    populateTeamDropdowns();
+  }
+
+  function populateTeamDropdowns() {
+    var selects = ['coach-team', 'approve-team', 'roster-team-select', 'sched-team-select'];
+    selects.forEach(function(id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      var cur = el.value;
+      var base = id === 'roster-team-select' || id === 'sched-team-select'
+        ? '<option value="">— select a team —</option>'
+        : '<option value="">— select team —</option>';
+      el.innerHTML = base + _teams.map(function(t) {
+        var suffix = [formatSeason(t.season, t.year), t.age_group].filter(Boolean).join(', ');
+        return '<option value="' + esc(t.id) + '">' + esc(t.name) + (suffix ? ' (' + esc(suffix) + ')' : '') + '</option>';
+      }).join('');
+      if (cur) el.value = cur;
+    });
+  }
+
+  // ── TAB: TEAMS ────────────────────────────────────────────────
+  async function loadTeamsTab() {
+    hide('teams-table'); hide('teams-empty');
+    showBlock('teams-loading');
+    clearMsg('teams-msg');
+    var { data, error } = await sb.from('teams').select('*').order('name');
+    hide('teams-loading');
+    if (error) { showMsg('teams-msg', 'Error: ' + error.message, 'error'); return; }
+    _teams = (data || []).slice().sort(compareNewestFirst);
+    populateTeamDropdowns();
+    var tbody = document.getElementById('teams-body');
+    tbody.innerHTML = '';
+    if (!_teams.length) { showBlock('teams-empty'); return; }
+    _teams.forEach(function(t) {
+      var tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td><strong>' + esc(t.name) + '</strong></td>' +
+        '<td>' + esc(t.age_group || '—') + '</td>' +
+        '<td style="text-transform:capitalize">' + esc(t.sport || '—') + '</td>' +
+        '<td>' + esc(formatSeason(t.season, t.year) || '—') + '</td>' +
+        '<td>' + esc(t.year || '—') + '</td>' +
+        '<td style="font-size:11px;color:var(--muted);">' + esc(t.id) + '</td>' +
+        '<td><button class="btn btn-danger btn-sm del-team-btn" data-id="' + esc(t.id) + '" data-name="' + esc(t.name) + '">Delete</button></td>';
+      tbody.appendChild(tr);
+    });
+    showBlock('teams-table');
+    document.getElementById('teams-table').style.display = 'block';
+    document.querySelectorAll('.del-team-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        if (!confirm('Delete team "' + btn.dataset.name + '"? This cannot be undone.')) return;
+        deleteTeam(btn.dataset.id);
+      });
+    });
+  }
+
+  async function deleteTeam(id) {
+    var { data: { session } } = await sb.auth.getSession();
+    if (!session) { showMsg('teams-msg', 'Not signed in.', 'error'); return; }
+    var res = await fetch(BACKEND_URL + '/api/v1/teams/' + id, {
+      method: 'DELETE',
+      headers: { Authorization: 'Bearer ' + session.access_token }
+    });
+    var body = await res.json().catch(function() { return {}; });
+    if (!res.ok) { showMsg('teams-msg', 'Error: ' + (body.message || body.error || 'delete failed'), 'error'); }
+    else { showMsg('teams-msg', 'Team deleted.', 'success', true); loadTeamsTab(); }
+  }
+
+  document.getElementById('add-team-btn').addEventListener('click', function() {
+    var f = document.getElementById('add-team-form');
+    var opening = f.style.display === 'none';
+    f.style.display = opening ? 'block' : 'none';
+    if (opening) { document.getElementById('team-season').value = currentSeasonGuess(); }
+  });
+  document.getElementById('cancel-team-btn').addEventListener('click', function() {
+    document.getElementById('add-team-form').style.display = 'none';
+  });
+  document.getElementById('save-team-btn').addEventListener('click', async function() {
+    var name = document.getElementById('team-name').value.trim();
+    var age  = document.getElementById('team-age').value;
+    var sport= document.getElementById('team-sport').value;
+    var season = document.getElementById('team-season').value;
+    var year = parseInt(document.getElementById('team-year').value) || new Date().getFullYear();
+    if (!name) { showMsg('team-form-msg', 'Team name is required.', 'error'); return; }
+    if (!season) { showMsg('team-form-msg', 'Season is required.', 'error'); return; }
+    // Routed through POST /api/v1/teams (was a direct Supabase write) so the
+    // insert runs service-role (fixes a silent bug: the admin no longer ends
+    // up a member of every team they create) and the id is server-generated
+    // rather than trusted from the client — see #787 (remaining scope of #338).
+    var { data: { session } } = await sb.auth.getSession();
+    if (!session) { showMsg('team-form-msg', 'Not signed in.', 'error'); return; }
+    this.disabled = true;
+    var res = await fetch(BACKEND_URL + '/api/v1/teams', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token },
+      body: JSON.stringify({ name: name, ageGroup: age, sport: sport, season: season, year: year })
+    });
+    var body = await res.json().catch(function() { return {}; });
+    this.disabled = false;
+    if (!res.ok) {
+      showMsg('team-form-msg', 'Error: ' + (body.message || body.error || 'Add failed.'), 'error');
+      return;
+    }
+    document.getElementById('team-name').value = '';
+    document.getElementById('team-age').value = '';
+    document.getElementById('team-season').value = currentSeasonGuess();
+    document.getElementById('add-team-form').style.display = 'none';
+    showMsg('teams-msg', 'Team added.', 'success', true);
+    loadTeamsTab();
+  });
+
+  // ── TAB: COACHES ──────────────────────────────────────────────
+  async function loadCoachesTab() {
+    hide('coaches-table'); hide('coaches-empty');
+    showBlock('coaches-loading');
+    document.getElementById('coaches-loading').style.display = 'block';
+    clearMsg('coaches-msg');
+    var { data, error } = await sb
+      .from('team_memberships')
+      .select('*, teams(name)')
+      .neq('role', 'admin')
+      .order('activated_at', { ascending: false });
+    hide('coaches-loading');
+    if (error) { showMsg('coaches-msg', 'Error: ' + error.message, 'error'); return; }
+    var rows = data || [];
+    var tbody = document.getElementById('coaches-body');
+    tbody.innerHTML = '';
+    if (!rows.length) { showBlock('coaches-empty'); return; }
+    rows.forEach(function(m) {
+      var statusClass = m.status === 'active' ? 'badge-green' : m.status === 'invited' ? 'badge-amber' : 'badge-gray';
+      var tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td>' + esc(m.email || '—') + '</td>' +
+        '<td style="text-transform:capitalize">' + esc(m.role || '—') + '</td>' +
+        '<td><span class="badge ' + statusClass + '">' + esc(m.status || '—') + '</span></td>' +
+        '<td>' + esc((m.teams && m.teams.name) || m.team_id || '—') + '</td>' +
+        '<td style="font-size:11px;color:var(--muted);">' + fmtDate(m.activated_at) + '</td>' +
+        '<td><button class="btn btn-danger btn-sm rm-coach-btn" data-id="' + esc(m.id) + '" data-email="' + esc(m.email || '') + '">Remove</button></td>';
+      tbody.appendChild(tr);
+    });
+    document.getElementById('coaches-table').style.display = 'block';
+    document.querySelectorAll('.rm-coach-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        if (!confirm('Remove coach "' + btn.dataset.email + '"?')) return;
+        removeCoach(btn.dataset.id);
+      });
+    });
+  }
+
+  async function removeCoach(id) {
+    // Routed through DELETE /api/v1/coaches/:membershipId (was a direct
+    // Supabase write) so removal goes through requireAuth/requireAdmin
+    // instead of resting on RLS alone — see #787 (remaining scope of #338).
+    var { data: { session } } = await sb.auth.getSession();
+    if (!session) { showMsg('coaches-msg', 'Not signed in.', 'error'); return; }
+    var res = await fetch(BACKEND_URL + '/api/v1/coaches/' + encodeURIComponent(id), {
+      method: 'DELETE',
+      headers: { Authorization: 'Bearer ' + session.access_token }
+    });
+    var body = await res.json().catch(function() { return {}; });
+    if (!res.ok) {
+      showMsg('coaches-msg', 'Error: ' + (body.message || body.error || 'Remove failed.'), 'error');
+    } else {
+      showMsg('coaches-msg', body.message || 'Coach removed.', 'success', true);
+      loadCoachesTab();
+    }
+  }
+
+  document.getElementById('add-coach-btn').addEventListener('click', function() {
+    var f = document.getElementById('add-coach-form');
+    f.style.display = f.style.display === 'none' ? 'block' : 'none';
+    populateTeamDropdowns();
+  });
+  document.getElementById('cancel-coach-btn').addEventListener('click', function() {
+    document.getElementById('add-coach-form').style.display = 'none';
+  });
+  document.getElementById('save-coach-btn').addEventListener('click', async function() {
+    var email  = document.getElementById('coach-email').value.trim();
+    var role   = document.getElementById('coach-role').value;
+    var teamId = document.getElementById('coach-team').value;
+    if (!email) { showMsg('coach-form-msg', 'Email is required.', 'error'); return; }
+    if (!teamId) { showMsg('coach-form-msg', 'Select a team.', 'error'); return; }
+    // Routed through POST /api/v1/coaches (was a direct Supabase write) so
+    // the role is validated against CANONICAL_ROLES server-side and the
+    // membership is created as 'invited' (activates on first login),
+    // matching /admin/approve's semantics — see #787 (remaining scope of #338).
+    var { data: { session } } = await sb.auth.getSession();
+    if (!session) { showMsg('coach-form-msg', 'Not signed in.', 'error'); return; }
+    this.disabled = true;
+    var res = await fetch(BACKEND_URL + '/api/v1/coaches', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token },
+      body: JSON.stringify({ teamId: teamId, email: email, role: role })
+    });
+    var body = await res.json().catch(function() { return {}; });
+    this.disabled = false;
+    if (!res.ok) {
+      var addMsg = body.error === 'ALREADY_MEMBER' ? 'This coach is already a member of this team.' : (body.message || body.error || 'Add failed.');
+      showMsg('coach-form-msg', 'Error: ' + addMsg, 'error');
+      return;
+    }
+    document.getElementById('coach-email').value = '';
+    document.getElementById('add-coach-form').style.display = 'none';
+    showMsg('coaches-msg', body.message || 'Coach added.', 'success', true);
+    loadCoachesTab();
+  });
+
+  // ── TAB: ACCESS REQUESTS ──────────────────────────────────────
+  async function loadRequestsTab() {
+    clearMsg('requests-msg');
+    document.getElementById('requests-loading').style.display = 'block';
+    document.getElementById('requests-content').style.display = 'none';
+
+    var { data, error } = await sb
+      .from('access_requests')
+      .select('*')
+      .eq('status', 'pending')
+      .order('requested_at', { ascending: false });
+
+    document.getElementById('requests-loading').style.display = 'none';
+    if (error) { showMsg('requests-msg', 'Error: ' + error.message, 'error'); return; }
+
+    var pending = data || [];
+    var container = document.getElementById('requests-content');
+    container.style.display = 'block';
+
+    if (!pending.length) {
+      container.innerHTML = '<div class="empty-state">No pending requests ✓</div>';
+    } else {
+      container.innerHTML = renderRequestCards(pending);
+      wireRequestButtons();
+    }
+  }
+
+  function renderRequestCards(rows) {
+    return rows.map(function(r) {
+      return '<div class="card" style="margin-bottom:12px;" id="req-' + esc(r.id) + '">' +
+        '<div style="display:flex;justify-content:space-between;align-items:start;gap:12px;flex-wrap:wrap;">' +
+          '<div>' +
+            '<div style="font-weight:700;font-size:14px;">' + esc(r.name || '—') + '</div>' +
+            '<div style="font-size:12px;color:var(--muted);margin-top:2px;">' + esc(r.email || '—') + '</div>' +
+            (r.message ? '<div style="font-size:12px;color:var(--muted);margin-top:6px;font-style:italic;">"' + esc(r.message) + '"</div>' : '') +
+            '<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:4px;">' + fmtDate(r.requested_at) + '</div>' +
+          '</div>' +
+          '<div style="display:flex;gap:8px;flex-shrink:0;">' +
+            '<button class="btn btn-gold btn-sm approve-open-btn" data-id="' + esc(r.id) + '">Approve</button>' +
+            '<button class="btn btn-danger btn-sm deny-btn" data-id="' + esc(r.id) + '" data-email="' + esc(r.email||'') + '">Deny</button>' +
+          '</div>' +
+        '</div>' +
+        '<div class="approve-form" id="approve-form-' + esc(r.id) + '">' +
+          '<div class="form-row">' +
+            '<div class="form-group"><label>Role</label><select id="approve-role-' + esc(r.id) + '"><option value="coach">Coach</option><option value="coach">Coordinator</option><option value="admin">Head Coach</option><option value="scorekeeper">Scorekeeper</option><option value="viewer">Viewer</option></select></div>' +
+            '<div class="form-group"><label>Team</label><select id="approve-team-' + esc(r.id) + '"><option value="">— select team —</option>' +
+              _teams.map(function(t) { return '<option value="' + esc(t.id) + '">' + esc(t.name) + '</option>'; }).join('') +
+            '</select></div>' +
+          '</div>' +
+          '<div style="display:flex;gap:8px;">' +
+            '<button class="btn btn-gold btn-sm confirm-approve-btn" data-id="' + esc(r.id) + '" data-email="' + esc(r.email||'') + '">Confirm Approve</button>' +
+            '<button class="btn btn-ghost btn-sm cancel-approve-btn" data-id="' + esc(r.id) + '">Cancel</button>' +
+          '</div>' +
+          '<div id="approve-msg-' + esc(r.id) + '"></div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  function wireRequestButtons() {
+    document.querySelectorAll('.approve-open-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var form = document.getElementById('approve-form-' + btn.dataset.id);
+        if (form) form.classList.toggle('open');
+      });
+    });
+    document.querySelectorAll('.cancel-approve-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var form = document.getElementById('approve-form-' + btn.dataset.id);
+        if (form) form.classList.remove('open');
+      });
+    });
+    document.querySelectorAll('.deny-btn').forEach(function(btn) {
+      btn.addEventListener('click', async function() {
+        if (!confirm('Deny request from "' + btn.dataset.email + '"?')) return;
+        // Routed through POST /api/v1/reject (was a direct Supabase write) so
+        // the denial gets reviewed_by/reviewed_at attribution and the coach
+        // actually receives a denial email — see #338.
+        var { data: { session } } = await sb.auth.getSession();
+        if (!session) { showMsg('requests-msg', 'Not signed in.', 'error'); return; }
+        this.disabled = true;
+        var res = await fetch(BACKEND_URL + '/api/v1/reject', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token },
+          body: JSON.stringify({ requestId: btn.dataset.id })
+        });
+        var body = await res.json().catch(function() { return {}; });
+        this.disabled = false;
+        if (!res.ok) {
+          var denyMsg = body.error === 'ALREADY_PROCESSED' ? 'This request was already processed.' : (body.message || body.error || 'Deny failed.');
+          showMsg('requests-msg', 'Error: ' + denyMsg, 'error');
+          return;
+        }
+        showMsg('requests-msg', 'Request denied.', 'success', true);
+        loadRequestsTab();
+      });
+    });
+    document.querySelectorAll('.confirm-approve-btn').forEach(function(btn) {
+      btn.addEventListener('click', async function() {
+        var role   = document.getElementById('approve-role-' + btn.dataset.id).value;
+        var teamId = document.getElementById('approve-team-' + btn.dataset.id).value;
+        if (!teamId) { showMsg('approve-msg-' + btn.dataset.id, 'Select a team.', 'error'); return; }
+        // Routed through POST /api/v1/approve (was two direct Supabase writes)
+        // so the role is validated against CANONICAL_ROLES, the membership
+        // gets reviewed_by/reviewed_at attribution, and the coach actually
+        // receives an approval email — none of that happened via the direct
+        // writes this replaces. See #338.
+        var { data: { session } } = await sb.auth.getSession();
+        if (!session) { showMsg('approve-msg-' + btn.dataset.id, 'Not signed in.', 'error'); return; }
+        this.disabled = true;
+        var res = await fetch(BACKEND_URL + '/api/v1/approve', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token },
+          body: JSON.stringify({ requestId: btn.dataset.id, teamId: teamId, role: role })
+        });
+        var body = await res.json().catch(function() { return {}; });
+        this.disabled = false;
+        if (!res.ok) {
+          var approveMsg = body.error === 'ALREADY_PROCESSED' ? 'This request was already processed.'
+            : body.error === 'VALIDATION_ERROR' ? 'Invalid role or request.'
+            : (body.message || body.error || 'Approve failed.');
+          showMsg('approve-msg-' + btn.dataset.id, 'Error: ' + approveMsg, 'error');
+          return;
+        }
+        showMsg('requests-msg', 'Request approved.', 'success', true);
+        loadRequestsTab();
+      });
+    });
+  }
+
+  // History collapse
+  var historyOpen = false;
+  document.getElementById('history-toggle').addEventListener('click', async function() {
+    historyOpen = !historyOpen;
+    var content = document.getElementById('history-content');
+    var arrow = historyOpen ? '▼' : '▶';
+    this.innerHTML = arrow + ' Approved / Denied history';
+    if (historyOpen) {
+      content.style.maxHeight = '2000px';
+      await loadHistory();
+    } else {
+      content.style.maxHeight = '0';
+    }
+  });
+
+  async function loadHistory() {
+    document.getElementById('history-loading').style.display = 'block';
+    var { data, error } = await sb
+      .from('access_requests')
+      .select('*')
+      .in('status', ['approved', 'denied'])
+      .order('requested_at', { ascending: false });
+    document.getElementById('history-loading').style.display = 'none';
+    var container = document.getElementById('history-table');
+    if (error) { container.innerHTML = '<div class="alert alert-error">Error: ' + esc(error.message) + '</div>'; return; }
+    var rows = data || [];
+    if (!rows.length) { container.innerHTML = '<div class="empty-state">No history yet.</div>'; return; }
+    var html = '<table><thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Date</th></tr></thead><tbody>';
+    rows.forEach(function(r) {
+      var cls = r.status === 'approved' ? 'badge-green' : 'badge-red';
+      html += '<tr><td>' + esc(r.name||'—') + '</td><td>' + esc(r.email||'—') + '</td>' +
+        '<td><span class="badge ' + cls + '">' + esc(r.status) + '</span></td>' +
+        '<td style="font-size:11px;color:var(--muted)">' + fmtDate(r.requested_at) + '</td></tr>';
+    });
+    container.innerHTML = html + '</tbody></table>';
+  }
+
+  // ── TAB: ROSTERS ──────────────────────────────────────────────
+  var _rosterTeamId = null;
+  var _rosterData   = null;
+
+  function initRostersTab() {
+    populateTeamDropdowns();
+  }
+
+  document.getElementById('roster-team-select').addEventListener('change', async function() {
+    _rosterTeamId = this.value;
+    if (!_rosterTeamId) { document.getElementById('roster-content').style.display = 'none'; return; }
+    document.getElementById('roster-content').style.display = 'block';
+    await loadRoster();
+  });
+
+  async function loadRoster() {
+    clearMsg('roster-msg');
+    document.getElementById('roster-loading').style.display = 'block';
+    document.getElementById('roster-table-wrap').style.display = 'none';
+    document.getElementById('roster-empty').style.display = 'none';
+    var { data, error } = await sb
+      .from('team_data')
+      .select('roster')
+      .eq('team_id', _rosterTeamId)
+      .single();
+    document.getElementById('roster-loading').style.display = 'none';
+    if (error && error.code !== 'PGRST116') { showMsg('roster-msg', 'Error: ' + error.message, 'error'); return; }
+    _rosterData = (data && data.roster) ? data.roster : [];
+    renderRoster();
+  }
+
+  function renderRoster() {
+    var tbody = document.getElementById('roster-body');
+    tbody.innerHTML = '';
+    if (!_rosterData.length) { document.getElementById('roster-empty').style.display = 'block'; return; }
+    _rosterData.forEach(function(p, i) {
+      var name = p.firstName && p.lastName ? p.firstName + ' ' + p.lastName : (p.name || '—');
+      var tags = (p.tags || []).join(', ') || '—';
+      var tr = document.createElement('tr');
+      tr.innerHTML = '<td style="color:var(--muted)">' + (i+1) + '</td>' +
+        '<td><strong>' + esc(name) + '</strong></td>' +
+        '<td style="font-size:12px;color:var(--muted)">' + esc(tags) + '</td>' +
+        '<td><button class="btn btn-danger btn-sm rm-player-btn" data-idx="' + i + '" data-name="' + esc(name) + '">Remove</button></td>';
+      tbody.appendChild(tr);
+    });
+    document.getElementById('roster-table-wrap').style.display = 'block';
+    document.querySelectorAll('.rm-player-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        if (!confirm('Remove "' + btn.dataset.name + '"?')) return;
+        _rosterData.splice(parseInt(btn.dataset.idx), 1);
+        saveRoster('roster-msg', 'Player removed.');
+      });
+    });
+  }
+
+  async function saveRoster(msgId, successMsg) {
+    // Routed through POST /api/v1/teams/:teamId/roster (was a direct
+    // Supabase write) so the save is protected by the same roster-wipe
+    // guard POST /:teamId/data already has internally — see #787
+    // (remaining scope of #338).
+    var { data: { session } } = await sb.auth.getSession();
+    if (!session) { showMsg(msgId, 'Not signed in.', 'error'); return; }
+    var res = await fetch(BACKEND_URL + '/api/v1/teams/' + encodeURIComponent(_rosterTeamId) + '/roster', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token },
+      body: JSON.stringify({ roster: _rosterData })
+    });
+    var body = await res.json().catch(function() { return {}; });
+    if (!res.ok) {
+      var rosterMsg = body.error === 'ROSTER_WIPE_GUARD' ? body.message : (body.message || body.error || 'Save failed.');
+      showMsg(msgId, 'Error: ' + rosterMsg, 'error');
+      return;
+    }
+    showMsg(msgId, successMsg, 'success', true);
+    renderRoster();
+  }
+
+  document.getElementById('add-player-btn').addEventListener('click', async function() {
+    var first = document.getElementById('player-first').value.trim();
+    var last  = document.getElementById('player-last').value.trim();
+    if (!first) { showMsg('player-msg', 'First name is required.', 'error'); return; }
+    var name = first + (last ? ' ' + last : '');
+    _rosterData.push({ name, firstName: first, lastName: last, skills:[], tags:[], prefs:[], dislikes:[], batSkills:[] });
+    document.getElementById('player-first').value = '';
+    document.getElementById('player-last').value = '';
+    await saveRoster('player-msg', 'Player added.');
+  });
+
+  document.getElementById('import-roster-btn').addEventListener('click', async function() {
+    var raw = document.getElementById('roster-csv').value.trim();
+    if (!raw) { showMsg('import-roster-msg', 'Paste CSV data first.', 'error'); return; }
+    var lines = raw.split('\n').map(function(l) { return l.trim(); }).filter(Boolean);
+    var added = 0;
+    lines.forEach(function(line) {
+      var parts = line.split(',');
+      var first = (parts[0] || '').trim();
+      var last  = (parts[1] || '').trim();
+      if (!first) return;
+      var name = first + (last ? ' ' + last : '');
+      _rosterData.push({ name, firstName: first, lastName: last, skills:[], tags:[], prefs:[], dislikes:[], batSkills:[] });
+      added++;
+    });
+    if (!added) { showMsg('import-roster-msg', 'No valid rows found.', 'error'); return; }
+    document.getElementById('roster-csv').value = '';
+    await saveRoster('import-roster-msg', added + ' player(s) imported.');
+  });
+
+  // ── TAB: SCHEDULES ────────────────────────────────────────────
+  var _schedTeamId = null;
+  var _schedData   = null;
+
+  function initSchedulesTab() {
+    populateTeamDropdowns();
+  }
+
+  document.getElementById('sched-team-select').addEventListener('change', async function() {
+    _schedTeamId = this.value;
+    if (!_schedTeamId) { document.getElementById('sched-content').style.display = 'none'; return; }
+    document.getElementById('sched-content').style.display = 'block';
+    await loadSchedule();
+  });
+
+  async function loadSchedule() {
+    clearMsg('sched-msg');
+    document.getElementById('sched-loading').style.display = 'block';
+    document.getElementById('sched-table-wrap').style.display = 'none';
+    document.getElementById('sched-empty').style.display = 'none';
+    var { data, error } = await sb
+      .from('team_data')
+      .select('schedule')
+      .eq('team_id', _schedTeamId)
+      .single();
+    document.getElementById('sched-loading').style.display = 'none';
+    if (error && error.code !== 'PGRST116') { showMsg('sched-msg', 'Error: ' + error.message, 'error'); return; }
+    _schedData = (data && Array.isArray(data.schedule)) ? data.schedule : [];
+    renderSchedule();
+  }
+
+  function renderSchedule() {
+    var tbody = document.getElementById('sched-body');
+    tbody.innerHTML = '';
+    if (!_schedData.length) { document.getElementById('sched-empty').style.display = 'block'; return; }
+    var sorted = _schedData.slice().sort(function(a,b) { return (a.date||'') < (b.date||'') ? -1 : 1; });
+    sorted.forEach(function(g) {
+      var resultBadge = g.result
+        ? '<span class="badge ' + (g.result==='W'?'badge-green':g.result==='L'?'badge-red':'badge-gray') + '">' + esc(g.result) + '</span>'
+        : '<span style="color:var(--muted)">—</span>';
+      var tr = document.createElement('tr');
+      tr.innerHTML = '<td>' + esc(g.date||'—') + '</td><td>' + esc(g.time||'—') + '</td>' +
+        '<td><strong>' + esc(g.opponent||'—') + '</strong></td>' +
+        '<td style="font-size:12px">' + esc(g.location||'—') + '</td><td>' + resultBadge + '</td>';
+      tbody.appendChild(tr);
+    });
+    document.getElementById('sched-table-wrap').style.display = 'block';
+  }
+
+  async function saveSchedule(msgId, successMsg) {
+    // Routed through POST /api/v1/teams/:teamId/schedule (was a direct
+    // Supabase write) — see #787 (remaining scope of #338). No wipe guard
+    // here on purpose: Clear Schedule is an intentional empty write.
+    var { data: { session } } = await sb.auth.getSession();
+    if (!session) { showMsg(msgId, 'Not signed in.', 'error'); return; }
+    var res = await fetch(BACKEND_URL + '/api/v1/teams/' + encodeURIComponent(_schedTeamId) + '/schedule', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token },
+      body: JSON.stringify({ schedule: _schedData })
+    });
+    var body = await res.json().catch(function() { return {}; });
+    if (!res.ok) {
+      showMsg(msgId, 'Error: ' + (body.message || body.error || 'Save failed.'), 'error');
+      return;
+    }
+    showMsg(msgId, successMsg, 'success', true);
+    renderSchedule();
+  }
+
+  document.getElementById('add-game-btn').addEventListener('click', async function() {
+    var date     = document.getElementById('game-date').value;
+    var time     = document.getElementById('game-time').value;
+    var opponent = document.getElementById('game-opponent').value.trim();
+    var location = document.getElementById('game-location').value.trim();
+    if (!date || !opponent) { showMsg('game-msg', 'Date and opponent are required.', 'error'); return; }
+    _schedData.push({ id: genId(), date, time, opponent, location, result: '', ourScore: '', theirScore: '', home: false });
+    document.getElementById('game-date').value = '';
+    document.getElementById('game-time').value = '';
+    document.getElementById('game-opponent').value = '';
+    document.getElementById('game-location').value = '';
+    await saveSchedule('game-msg', 'Game added.');
+  });
+
+  document.getElementById('import-sched-btn').addEventListener('click', async function() {
+    var raw = document.getElementById('sched-csv').value.trim();
+    if (!raw) { showMsg('import-sched-msg', 'Paste CSV data first.', 'error'); return; }
+    var lines = raw.split('\n').map(function(l) { return l.trim(); }).filter(Boolean);
+    var added = 0;
+    lines.forEach(function(line, idx) {
+      if (idx === 0 && /date/i.test(line.split(',')[0])) return; // skip header
+      var parts = line.split(',');
+      var date     = (parts[0] || '').trim();
+      var time     = (parts[1] || '').trim();
+      var opponent = (parts[2] || '').trim();
+      var location = (parts[3] || '').trim();
+      if (!date) return;
+      _schedData.push({ id: genId(), date, time, opponent, location, result: '', ourScore: '', theirScore: '', home: false });
+      added++;
+    });
+    if (!added) { showMsg('import-sched-msg', 'No valid rows found.', 'error'); return; }
+    document.getElementById('sched-csv').value = '';
+    await saveSchedule('import-sched-msg', added + ' game(s) imported.');
+  });
+
+  document.getElementById('clear-sched-btn').addEventListener('click', async function() {
+    if (!confirm('Clear the entire schedule for this team? This cannot be undone.')) return;
+    _schedData = [];
+    await saveSchedule('sched-msg', 'Schedule cleared.');
+  });
+
+  // ── TAB: FEATURE FLAGS ────────────────────────────────────────
+  async function loadFlagsTab() {
+    clearMsg('flags-msg');
+    document.getElementById('flags-loading').style.display = 'block';
+    document.getElementById('flags-list').style.display = 'none';
+    var { data, error } = await sb
+      .from('feature_flags')
+      .select('*')
+      .is('team_id', null)
+      .order('flag_name');
+    document.getElementById('flags-loading').style.display = 'none';
+    if (error) { showMsg('flags-msg', 'Error: ' + error.message, 'error'); return; }
+    var flags = data || [];
+    var list = document.getElementById('flags-list');
+    if (!flags.length) { list.innerHTML = '<div class="empty-state">No global flags found. Run migration 007.</div>'; list.style.display = 'block'; return; }
+    list.innerHTML = flags.map(function(f) {
+      var ts = f.updated_at ? fmtDate(f.updated_at) : '—';
+      return '<div class="toggle-wrap">' +
+        '<div class="toggle-info">' +
+          '<div class="toggle-name">' + esc(f.flag_name) + '</div>' +
+          (f.description ? '<div class="toggle-desc">' + esc(f.description) + '</div>' : '') +
+          '<div class="toggle-meta">Updated ' + ts + '</div>' +
+        '</div>' +
+        '<label class="switch">' +
+          '<input type="checkbox" class="flag-toggle" data-flag="' + esc(f.flag_name) + '" ' + (f.enabled ? 'checked' : '') + '>' +
+          '<span class="switch-track"></span>' +
+        '</label>' +
+      '</div>';
+    }).join('');
+    list.style.display = 'block';
+    document.querySelectorAll('.flag-toggle').forEach(function(chk) {
+      chk.addEventListener('change', async function() {
+        var flagName = chk.dataset.flag;
+        var enabled  = chk.checked;
+        // Routed through PATCH /api/v1/feature-flags/:flagName (was a direct
+        // Supabase write) so the change goes through requireAuth/requireAdmin
+        // instead of resting on RLS alone — see #787 (remaining scope of #338).
+        var { data: { session } } = await sb.auth.getSession();
+        if (!session) { showMsg('flags-msg', 'Not signed in.', 'error'); chk.checked = !enabled; return; }
+        chk.disabled = true;
+        var res = await fetch(BACKEND_URL + '/api/v1/feature-flags/' + encodeURIComponent(flagName), {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token },
+          body: JSON.stringify({ enabled: enabled })
+        });
+        var body = await res.json().catch(function() { return {}; });
+        chk.disabled = false;
+        if (!res.ok) {
+          showMsg('flags-msg', 'Error updating ' + flagName + ': ' + (body.message || body.error || 'Update failed.'), 'error');
+          chk.checked = !enabled; // revert
+        } else {
+          showMsg('flags-msg', body.message || (flagName + ' set to ' + (enabled ? 'ON' : 'OFF') + '.'), 'success', true);
+          loadFlagsTab(); // refresh timestamps
+        }
+      });
+    });
+  }
+
+  // ── Boot ─────────────────────────────────────────────────────
+  init();
+
+})();
+</script>
+</body>
+</html>
