@@ -1,11 +1,29 @@
 const { Router } = require('express');
 const { body, param, query, validationResult } = require('express-validator');
+const rateLimit = require('express-rate-limit');
+const { ipKeyGenerator } = require('express-rate-limit');
 const { supabaseAdmin } = require('../lib/supabase');
 const requireAuth = require('../middleware/requireAuth');
 const requireAdmin = require('../middleware/requireAdmin');
 const { sendApprovalEmail, sendDenialEmail, ADMIN_EMAIL } = require('../lib/email');
 const { normalizeRole, CANONICAL_ROLES } = require('../lib/normalizeRole');
 const { verify: verifyApproveLinkToken } = require('../lib/approveLinkToken');
+
+// #337 (CodeQL: js/missing-rate-limiting) — these two public links now do a
+// real authorization check (token verification), which is exactly the
+// pattern CodeQL flags as brute-forceable without a rate limit. The token's
+// own entropy already makes guessing infeasible, but this is still a cheap,
+// standard defense-in-depth layer against brute force AND log/DB-load
+// abuse — same email-keyless, IP-keyed shape as nothing else in this file
+// (no email is available pre-verification), generous enough that a single
+// admin repeatedly opening/retrying an email link never trips it.
+const adminLinkLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => ipKeyGenerator(req.ip),
+});
 
 // #337: the public 1-tap link is only ever emailed to the platform admin
 // (ADMIN_EMAIL) - there's no session on this path to pull an acting-admin id
@@ -42,7 +60,7 @@ const router = Router();
 // token (see lib/approveLinkToken.js) rather than trusted from the query
 // string directly.
 
-router.get('/admin/approve-link', async (req, res) => {
+router.get('/admin/approve-link', adminLinkLimiter, async (req, res) => {
   const { token } = req.query;
 
   if (!token) {
@@ -159,7 +177,7 @@ router.get('/admin/approve-link', async (req, res) => {
 // #337: requestId is derived from a verified, 24h-expiring HMAC token rather
 // than trusted from the query string directly (see lib/approveLinkToken.js).
 
-router.get('/admin/deny-link', async (req, res) => {
+router.get('/admin/deny-link', adminLinkLimiter, async (req, res) => {
   const { token } = req.query;
 
   if (!token) {
