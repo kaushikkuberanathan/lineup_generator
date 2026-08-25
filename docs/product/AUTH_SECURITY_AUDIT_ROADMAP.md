@@ -220,7 +220,7 @@ but the request stays `pending` - a silent inconsistency, unlogged.
 |---|-------|----------|
 | #336 | WS-1 Role vocabulary normalization | P1 - **DONE** |
 | #337 | WS-2 Approve-link HMAC + reviewed_by | P1 |
-| #338 | admin.html writes directly to team_memberships, bypassing all backend guards | P1 |
+| #338 | admin.html writes directly to team_memberships, bypassing all backend guards | P1 - **DONE 2026-08-25** |
 | #339 | Test suites pollute production team_memberships and access_requests | P2 |
 | #340 | OG meta duplicate | P3 |
 | **#342** | **P0: RLS DISABLED on core tables - rosters publicly readable and destructible** | **P0** |
@@ -241,11 +241,15 @@ but the request stays `pending` - a silent inconsistency, unlogged.
 **Ground truth is now `docs/db/schema.sql`.** Debugging gotchas are in
 `docs/TROUBLESHOOTING.md`.
 
-**#338 is the significant discovery.** `frontend/public/admin.html` writes membership
-rows straight to Supabase via the client SDK - a FOURTH write path into
-`team_memberships` that WS-1 did not know about. It bypasses `normalizeRole`,
-`requireAuth`, `requireAdmin`, `reviewed_by`, and auth-event logging. WS-1 patched
-its option values as a stopgap; the architectural bypass remains.
+**#338 was the significant discovery, resolved 2026-08-25.** `frontend/public/admin.html`
+used to write membership rows straight to Supabase via the client SDK - a FOURTH write
+path into `team_memberships` that WS-1 did not know about, bypassing `normalizeRole`,
+`requireAuth`, `requireAdmin`, `reviewed_by`, and auth-event logging. WS-1 patched its
+option values as a stopgap in 2026-07-13; the architectural bypass itself was fixed via
+PR #780 (Approve/Deny) and #787's six sub-issues #788-793 (feature flags, Add/Remove
+Coach, Add Team, roster, schedule) — every admin.html mutation now authenticates to
+the Express API with a Bearer token. See
+`docs/product/ADMIN_HTML_BYPASS_REMEDIATION_PLAN.md` for the full design record.
 
 ---
 
