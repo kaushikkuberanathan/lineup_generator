@@ -404,6 +404,7 @@
           </div>
         </div>
         <div id="coaches-msg"></div>
+        <div id="coaches-test-toggle" style="display:none;margin-bottom:10px;"></div>
         <div id="coaches-loading" style="text-align:center;padding:20px;"><div class="spinner"></div></div>
         <div id="coaches-table" class="table-wrap" style="display:none;">
           <table>
@@ -573,6 +574,24 @@
 
   function genId() {
     return Date.now() + '' + Math.floor(Math.random() * 1000);
+  }
+
+  // #346: automated test suites write rows to prod using a `*@test.com`
+  // email (see backend/scripts/tests/suite-validation.js's TEST_EMAIL
+  // pattern) — hidden by default so real requests/coaches aren't buried
+  // under hundreds of them, but never deleted, and always one click away
+  // via the toggle built below.
+  function isTestEmail(email) {
+    return /@test\.com$/i.test(email || '');
+  }
+
+  /** Builds the "Show test {label} (count)" checkbox row shared by both tabs. */
+  function testToggleHtml(inputId, label, count, checked) {
+    if (!count) return '';
+    return '<label style="font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;margin-bottom:10px;cursor:pointer;">' +
+      '<input type="checkbox" id="' + inputId + '"' + (checked ? ' checked' : '') + '> ' +
+      'Show test ' + label + ' (' + count + ') — filtered from automated test suites, not deleted' +
+      '</label>';
   }
 
   // ── Cached data ──────────────────────────────────────────────
@@ -847,6 +866,9 @@
   });
 
   // ── TAB: COACHES ──────────────────────────────────────────────
+  var _lastCoaches = [];
+  var _showTestCoaches = false;
+
   async function loadCoachesTab() {
     hide('coaches-table'); hide('coaches-empty');
     showBlock('coaches-loading');
@@ -859,7 +881,29 @@
       .order('activated_at', { ascending: false });
     hide('coaches-loading');
     if (error) { showMsg('coaches-msg', 'Error: ' + error.message, 'error'); return; }
-    var rows = data || [];
+    _lastCoaches = data || [];
+    renderCoachesTab();
+  }
+
+  // #346: split out from loadCoachesTab so the toggle can re-render from
+  // the already-fetched rows without a re-query.
+  function renderCoachesTab() {
+    var testRows = _lastCoaches.filter(function(m) { return isTestEmail(m.email); });
+    var realRows = _lastCoaches.filter(function(m) { return !isTestEmail(m.email); });
+    var rows = _showTestCoaches ? _lastCoaches : realRows;
+
+    var toggleContainer = document.getElementById('coaches-test-toggle');
+    var toggle = testToggleHtml('coaches-show-test', 'coaches', testRows.length, _showTestCoaches);
+    toggleContainer.innerHTML = toggle;
+    toggleContainer.style.display = toggle ? 'block' : 'none';
+    var toggleEl = document.getElementById('coaches-show-test');
+    if (toggleEl) {
+      toggleEl.addEventListener('change', function() {
+        _showTestCoaches = toggleEl.checked;
+        renderCoachesTab();
+      });
+    }
+
     var tbody = document.getElementById('coaches-body');
     tbody.innerHTML = '';
     if (!rows.length) { showBlock('coaches-empty'); return; }
@@ -943,6 +987,9 @@
   });
 
   // ── TAB: ACCESS REQUESTS ──────────────────────────────────────
+  var _lastPendingRequests = [];
+  var _showTestRequests = false;
+
   async function loadRequestsTab() {
     clearMsg('requests-msg');
     document.getElementById('requests-loading').style.display = 'block';
@@ -957,15 +1004,34 @@
     document.getElementById('requests-loading').style.display = 'none';
     if (error) { showMsg('requests-msg', 'Error: ' + error.message, 'error'); return; }
 
-    var pending = data || [];
+    _lastPendingRequests = data || [];
+    renderRequestsTab();
+  }
+
+  // #346: split out from loadRequestsTab so the toggle can re-render from
+  // the already-fetched rows without a re-query.
+  function renderRequestsTab() {
     var container = document.getElementById('requests-content');
     container.style.display = 'block';
 
-    if (!pending.length) {
-      container.innerHTML = '<div class="empty-state">No pending requests ✓</div>';
+    var testRows = _lastPendingRequests.filter(function(r) { return isTestEmail(r.email); });
+    var realRows = _lastPendingRequests.filter(function(r) { return !isTestEmail(r.email); });
+    var visible = _showTestRequests ? _lastPendingRequests : realRows;
+    var toggle = testToggleHtml('requests-show-test', 'requests', testRows.length, _showTestRequests);
+
+    if (!visible.length) {
+      container.innerHTML = toggle + '<div class="empty-state">No pending requests ✓</div>';
     } else {
-      container.innerHTML = renderRequestCards(pending);
+      container.innerHTML = toggle + renderRequestCards(visible);
       wireRequestButtons();
+    }
+
+    var toggleEl = document.getElementById('requests-show-test');
+    if (toggleEl) {
+      toggleEl.addEventListener('change', function() {
+        _showTestRequests = toggleEl.checked;
+        renderRequestsTab();
+      });
     }
   }
 
