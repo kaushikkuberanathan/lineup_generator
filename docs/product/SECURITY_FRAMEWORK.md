@@ -2,7 +2,7 @@
 
 **Status:** Draft v1.0
 **Owner:** Kaushik
-**Last Updated:** 2026-04-30
+**Last Updated:** 2026-08-25 (Status Tracker corrected against actual shipped state — see notes inline; prior update 2026-07-13 added the #0 threat-model entry and the Phase 4 row, but never re-verified the Phase 0/1 checkboxes against what had actually shipped by then)
 **Location:** `docs/product/SECURITY_FRAMEWORK.md`
 
 ---
@@ -330,32 +330,44 @@ When K picks an item from this doc:
 
 | Phase | Item | Status | Shipped Version | Date |
 |---|---|---|---|---|
-> **!! STALE. This tracker says all 33 items are "Not started". Several are done, and
-> it is missing everything found in July 2026.** See
-> `docs/product/AUTH_SECURITY_AUDIT_ROADMAP.md` and the issue list below.
+> **!! STALE, CORRECTED 2026-08-25.** This tracker said all 33 items were "Not
+> started" as of the 2026-07-13 note below — but that note's own "Done since this
+> table was written" list was itself incomplete. Re-verified directly against the
+> codebase (not re-guessed): CORS is a real `ALLOWED_ORIGINS` allowlist in
+> `backend/app.js` (0.2), `loginLimiter`/`requestAccessLimiter` are live email-keyed
+> rate limits (1.4), `.github/dependabot.yml` exists and is configured (1.8), and
+> root `CLAUDE.md`'s Pre-release Docs Checklist has asserted live branch protection
+> on `main` across dozens of releases (1.7) — all four flipped to ✅ below. **Not**
+> verified, deliberately left `☐ Not started`: 0.1, 0.3, 0.4, 0.5, 1.1-1.3, 1.6,
+> 1.9, 1.10 and everything in Phases 2-3 — no evidence found either way
+> beyond what's already noted per-row. 1.5 (password hardening) is arguably N/A,
+> not "not started" — this app has no password auth (magic link + OAuth only) —
+> left as-is rather than guessed at, since "N/A" and "not started" read
+> differently to whoever picks this doc up next.
 >
-> **Done since this table was written:** 1.11 (approve-link HMAC → #337, still open
-> but scoped), 2.1-adjacent (audit columns → WS-4). **Newly found and NOT in this
+> **Original 2026-07-13 note, superseded above but kept for history:** "Done
+> since this table was written: 1.11 (approve-link HMAC → #337, still open but
+> scoped), 2.1-adjacent (audit columns → WS-4)." **Newly found and NOT in this
 > table at all:** RLS disabled (#342), recursive RLS policy, view RLS bypass,
 > SECURITY DEFINER search_path vectors, four `*_anon_test` backdoors (#355), tests
 > writing to prod (#339), zero RLS test coverage (#348), repo/DB never in sync (#351).
 
 | 0.1 | Share-link ID audit | ☐ Not started | — | — |
-| 0.2 | CORS lockdown | ☐ Not started | — | — |
+| 0.2 | CORS lockdown | ✅ Shipped | — | Verified live 2026-08-25: `backend/app.js` uses an explicit `ALLOWED_ORIGINS` allowlist, not `*`/origin-reflecting |
 | 0.3 | Helmet middleware | ☐ Not started | — | — |
 | 0.4 | Gitleaks history scan | ☐ Not started | — | — |
 | 0.5 | Mixpanel PII audit | ☐ Not started | — | — |
 | 1.1 | JWT → httpOnly cookies | ☐ Not started | — | — |
 | 1.2 | Ownership-check middleware | ☐ Not started | — | — |
 | 1.3 | Zod schema validation | ☐ Not started | — | — |
-| 1.4 | Rate limiting | ☐ Not started | — | — |
-| 1.5 | Password hardening | ☐ Not started | — | — |
+| 1.4 | Rate limiting | ✅ Shipped | v2.5.25 (`loginLimiter`) / v2.9.0 (`requestAccessLimiter`) | 2026-07-31 / 2026-08-08 |
+| 1.5 | Password hardening | N/A | — | No password auth in this system — magic link + Google OAuth only |
 | 1.6 | CI security gates | ☐ Not started | — | — |
-| 1.7 | Branch protection | ☐ Not started | — | — |
-| 1.8 | Dependabot | ☐ Not started | — | — |
+| 1.7 | Branch protection | ✅ Shipped | — | Asserted live across many releases in root `CLAUDE.md`'s Pre-release Docs Checklist ("Branch protection on `main` enforces CI checks... no bypass"); not independently re-verified via the GitHub API (token lacks the scope for the branch-protection endpoint) |
+| 1.8 | Dependabot | ✅ Shipped | v2.5.16 | 2026-05-19 |
 | 1.9 | CSP enforcement | ☐ Not started | — | — |
 | 1.10 | SW cache versioning | ☐ Not started | — | — |
-| 1.11 | Approve-link HMAC tokens | ☐ Not started | — | — |
+| 1.11 | Approve-link HMAC tokens | 🔶 In progress | — | PR [#822](https://github.com/kaushikkuberanathan/lineup_generator/pull/822), draft, not yet merged |
 | 2.1 | Audit log table | ☐ Not started | — | — |
 | 2.2 | Structured logging | ☐ Not started | — | — |
 | 2.3 | Sentry + PII scrubbing | ☐ Not started | — | — |
