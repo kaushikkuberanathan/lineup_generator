@@ -17,6 +17,12 @@
  *
  * CI-safe: no network. global.fetch is stubbed so sendApprovalEmail never leaves
  * the process.
+ *
+ * #337: the route now takes a signed `?token=` instead of raw requestId/teamId
+ * query params, so every request here builds one via sign(). Token-security
+ * behavior itself (tamper -> 401, expiry -> 410, reviewed_by attribution) is
+ * covered separately in adminLinkToken.route.test.js - this file stays
+ * scoped to WS-1's role-normalization wiring, unchanged in intent.
  */
 
 const { test, describe, afterEach } = require('node:test');
@@ -27,12 +33,18 @@ require('../lib/env');
 const request = require('supertest');
 const { supabaseAdmin } = require('../lib/supabase');
 const app = require('../../app');
+const { sign: signApproveLinkToken } = require('../lib/approveLinkToken');
 
 const originalAdminFrom = supabaseAdmin.from;
+const originalListUsers = supabaseAdmin.auth.admin.listUsers;
 const REAL_FETCH = global.fetch;
 
 const TEAM_ID = '1774297491626';
 const REQUEST_ID = 'req-ws1-test';
+
+function approveToken(requestId = REQUEST_ID, teamId = TEAM_ID) {
+  return signApproveLinkToken({ requestId, teamId, action: 'approve' });
+}
 
 /** Per-test recorder, reset by installStubs. */
 let calls;
@@ -44,6 +56,13 @@ function installStubs({ accessRequest, membershipInsertResult = { error: null } 
     accessRequestUpdates: [],
     emailFetchCount: 0,
   };
+
+  // resolveLinkReviewer() -> reviewed_by lookup; not this file's concern, but
+  // the route always calls it on the way to a 200, so it must resolve.
+  supabaseAdmin.auth.admin.listUsers = async () => ({
+    data: { users: [{ id: 'admin-user-id', email: 'kaushik.kuberanathan@gmail.com' }] },
+    error: null,
+  });
 
   supabaseAdmin.from = (table) => {
     calls.fromTables.push(table);
@@ -115,6 +134,7 @@ function pendingRequest(requestedRole) {
 
 afterEach(() => {
   supabaseAdmin.from = originalAdminFrom;
+  supabaseAdmin.auth.admin.listUsers = originalListUsers;
   global.fetch = REAL_FETCH;
   calls = undefined;
 });
@@ -126,7 +146,7 @@ describe('GET /admin/approve-link - role normalization (WS-1 #336)', () => {
 
     const res = await request(app)
       .get('/api/v1/admin/approve-link')
-      .query({ requestId: REQUEST_ID, teamId: TEAM_ID });
+      .query({ token: approveToken() });
 
     assert.equal(res.status, 200);
     assert.equal(calls.membershipInserts.length, 1);
@@ -140,7 +160,7 @@ describe('GET /admin/approve-link - role normalization (WS-1 #336)', () => {
 
     const res = await request(app)
       .get('/api/v1/admin/approve-link')
-      .query({ requestId: REQUEST_ID, teamId: TEAM_ID });
+      .query({ token: approveToken() });
 
     assert.equal(res.status, 200);
     assert.equal(calls.membershipInserts[0].role, 'coach');
@@ -151,7 +171,7 @@ describe('GET /admin/approve-link - role normalization (WS-1 #336)', () => {
 
     const res = await request(app)
       .get('/api/v1/admin/approve-link')
-      .query({ requestId: REQUEST_ID, teamId: TEAM_ID });
+      .query({ token: approveToken() });
 
     assert.equal(res.status, 200);
     assert.equal(calls.membershipInserts[0].role, 'viewer');
@@ -162,7 +182,7 @@ describe('GET /admin/approve-link - role normalization (WS-1 #336)', () => {
 
     const res = await request(app)
       .get('/api/v1/admin/approve-link')
-      .query({ requestId: REQUEST_ID, teamId: TEAM_ID });
+      .query({ token: approveToken() });
 
     assert.equal(res.status, 400);
     assert.equal(calls.membershipInserts.length, 0);
@@ -175,7 +195,7 @@ describe('GET /admin/approve-link - role normalization (WS-1 #336)', () => {
 
     const res = await request(app)
       .get('/api/v1/admin/approve-link')
-      .query({ requestId: REQUEST_ID, teamId: TEAM_ID });
+      .query({ token: approveToken() });
 
     assert.equal(res.status, 400);
     assert.equal(calls.membershipInserts.length, 0);
@@ -187,7 +207,7 @@ describe('GET /admin/approve-link - role normalization (WS-1 #336)', () => {
 
     const res = await request(app)
       .get('/api/v1/admin/approve-link')
-      .query({ requestId: REQUEST_ID, teamId: TEAM_ID });
+      .query({ token: approveToken() });
 
     assert.equal(res.status, 400);
     assert.equal(calls.membershipInserts.length, 0);
@@ -198,7 +218,7 @@ describe('GET /admin/approve-link - role normalization (WS-1 #336)', () => {
 
     const res = await request(app)
       .get('/api/v1/admin/approve-link')
-      .query({ requestId: REQUEST_ID, teamId: TEAM_ID });
+      .query({ token: approveToken() });
 
     assert.equal(res.status, 200);
     assert.equal(calls.membershipInserts[0].role, 'coach');

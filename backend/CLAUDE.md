@@ -34,6 +34,7 @@ Set in `backend/.env`. See `backend/.env.example` for a template.
 | `RESEND_DOMAIN_VERIFIED` | Set `true` after domain is verified in Resend dashboard |
 | `RESEND_TEST_RECIPIENT` | Override recipient for test emails |
 | `PORT` | Server port. `.env.example` sets `3000`; code fallback if unset is `5000` |
+| `APPROVE_LINK_HMAC_SECRET` | **Required** (`env.js` throws at boot if unset). Signs the 24h-expiring 1-tap approve/deny email links (#337, `lib/approveLinkToken.js`). Generate with `node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"`. Must also be set as a GitHub Actions repo secret (`backend` CI job) and on Render (prod) — separately from this file. |
 
 ---
 

@@ -106,6 +106,13 @@ jobs:
           BACKEND_URL:               https://lineup-generator-backend.onrender.com
           CI_SAFE:                   'true'
           ADMIN_KEY:                 ${{ secrets.ADMIN_KEY }}
+          # #337 — test-runner.js requires src/lib/env.js, which now requires
+          # this var to be set. This job's own process never signs/verifies a
+          # token (it drives the live Render deploy over HTTP), but env.js's
+          # require-time check runs regardless. Needs a real GitHub Actions
+          # repo secret added (matching the value set on Render), or this job
+          # fails at boot — see rollout note in #337.
+          APPROVE_LINK_HMAC_SECRET:  ${{ secrets.APPROVE_LINK_HMAC_SECRET }}
 
   # ── Job 2b: Backend Unit Tests (supertest, in-process) ─────────────────────
   # Hermetic. No live server, no live DB, no Render dependency, NO REAL
@@ -159,6 +166,10 @@ jobs:
           SUPABASE_URL:              https://ci-hermetic.invalid
           SUPABASE_SERVICE_ROLE_KEY: ci-dummy-not-a-real-key
           SUPABASE_ANON_KEY:         ci-dummy-not-a-real-key
+          # Same "dummy, not a secret" rationale (#337) — env.js requires this
+          # var at boot; approveLinkToken.test.js signs/verifies with its own
+          # dummy value, never this one.
+          APPROVE_LINK_HMAC_SECRET:  ci-dummy-not-a-real-secret
 
   # ── Job 3: Sync-script unit tests ──────────────────────────────────────────
   # Tests scripts/sync-stories-to-issues.js patch logic (Story 97 regression
