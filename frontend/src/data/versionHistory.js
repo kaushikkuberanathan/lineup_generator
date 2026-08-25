@@ -1,5 +1,23 @@
 export var VERSION_HISTORY = [
   {
+    version: '2.14.0',
+    date: 'August 2026',
+    headline: 'Admin panel fully routed through the backend, security hardening',
+    techNote: 'Minor fixes and internal improvements',
+    userChanges: [
+      'Behind-the-scenes security and reliability improvements to the admin tools used to manage teams and coaches. No changes to how the app works for you.',
+    ],
+    internalChanges: [
+      'admin.html Supabase-bypass remediation complete (#338, #787 both closed). All 6 remaining mutating admin.html actions now route through the backend instead of writing directly to Supabase: feature-flag toggle (PATCH /api/v1/feature-flags/:flagName, #788, PR #811), Remove Coach (DELETE /api/v1/coaches/:membershipId, hard-delete semantics preserved exactly, #789, PR #815), Add Coach (POST /api/v1/coaches, role validated against CANONICAL_ROLES, status set to \'invited\' matching /admin/approve\'s existing semantics, duplicate-membership pre-check added since no DB constraint covers it, #790, PR #817), Add Team (POST /api/v1/teams, runs under supabaseAdmin so the auto-provision-membership trigger correctly no-ops instead of silently making the admin a member of every team they create — fixes a live bug for free, server-generates the team id, #791, PR #818), Roster save (POST /api/v1/teams/:teamId/roster, reuses teamData.js\'s already-exported rosterWipeGuard rather than duplicating it, #792, PR #819), Schedule save (POST /api/v1/teams/:teamId/schedule, deliberately has no wipe guard since Clear Schedule is an intentional wipe, #793, PR #820). 38 new backend tests across the 6 routes, every one RED→GREEN mutation-verified plus a 401-no-token case added per route.',
+      'Fixed a real security gap in the admin panel\'s one-tap approve/deny email links (#337, PR #822): they previously trusted raw, unsigned requestId/teamId query params with no expiry, so a forwarded or guessed link could be replayed indefinitely, and reviewed_by was never recorded. Links are now HMAC-SHA256 signed, expire after 24 hours, and bind the approve/deny action into the signature so one can\'t be replayed as the other; reviewed_by now resolves to the real admin user at click time. New required backend env var (APPROVE_LINK_HMAC_SECRET) confirmed set in both Render production and GitHub Actions before this release. Same PR also added rate limiting to both link routes per a CodeQL finding.',
+      'The admin panel\'s Pending Requests and Coaches tabs no longer show hundreds of automated test-suite rows by default (#346, PR #823) — real requests were getting buried under ~600 val-suite-*@test.com artifacts. Test rows are hidden behind a toggle, not deleted.',
+      'Added a test that would have caught a real production bug: team_memberships was missing a foreign key to teams that PostgREST needed to show team names on the Coaches tab, silently broken until a manual fix in July; a new schema-integrity test suite now asserts the fix and guards against similar gaps (#347, PR #824).',
+      'Added admin.dev.html, a DEV-pointed copy of the admin panel with its own banner, so admin panel changes can be rehearsed against test data instead of only ever running against production (#645, PR #825).',
+      'Docs currency pass across CHARTER.md, SOLUTION_DESIGN.md, SECURITY_FRAMEWORK.md, and AUTH_SECURITY_AUDIT_ROADMAP.md — corrected the admin panel\'s security description and flipped several already-shipped security items from "Not started" to Shipped after direct code verification (#350, PR #826).',
+      'Verification: backend unit suite 220/220 (up from 199), frontend 1301 passed / 1 skipped (115 files), lint and build clean, debt-p0 gate clear (0 open P0s).',
+    ],
+  },
+  {
     version: '2.13.0',
     date: 'August 2026',
     headline: 'Game-day visual polish finished, sign-in error fix',
