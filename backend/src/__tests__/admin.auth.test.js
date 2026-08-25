@@ -87,6 +87,12 @@ describe('Admin routes — auth rejection (no token)', () => {
     assert.equal(res.body.error, 'UNAUTHORIZED');
   });
 
+  test('POST /api/v1/teams/:teamId/roster → 401 without token', async () => {
+    const res = await request(app).post('/api/v1/teams/1774297491626/roster');
+    assert.equal(res.status, 401);
+    assert.equal(res.body.error, 'UNAUTHORIZED');
+  });
+
   // ── Public routes: registered BEFORE the auth guard → must NEVER 401 ────────
   // 1-tap email links, used unauthenticated. Missing query params → 400
   // (admin.js:17, :96). Security contract = "never 401".
