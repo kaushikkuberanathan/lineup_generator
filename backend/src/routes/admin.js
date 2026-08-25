@@ -541,6 +541,69 @@ router.get(
   }
 );
 
+// ─── POST /teams ────────────────────────────────────────────────────────────
+// Routes admin.html's Add Team action through the backend instead of a direct
+// Supabase client write (#787, remaining scope after #338/PR #780).
+//
+// Uses supabaseAdmin (service-role) rather than the pattern of trusting the
+// caller's own session — this fixes a live, silent bug for free per
+// ADMIN_HTML_BYPASS_REMEDIATION_PLAN.md §3b: today, admin.html inserts using
+// the platform admin's own authenticated Supabase session, so
+// 018_auto_provision_team_membership_on_create.sql's AFTER INSERT trigger
+// (which grants role=admin/status=active membership to auth.uid()) makes the
+// platform admin silently a member of every team they create through the
+// panel. A service-role insert carries no user JWT, so auth.uid() resolves
+// NULL inside the trigger, and the trigger's own documented behavior is to
+// no-op on NULL rather than error - net effect, this route creates a team
+// with zero team_memberships rows, which is the correct/intended semantics
+// (the real coach is added afterward via Add Coach, #790).
+//
+// Server generates the id (matching admin.html's own genId() format exactly:
+// String(Date.now()) + a random 0-999 suffix - every other teams.id in the
+// system is this shape) rather than trusting a client-supplied one.
+//
+// season is validated to Spring/Fall even though the DB CHECK for it
+// (023_enforce_team_season_not_null.sql) is not live yet - see
+// backend/CLAUDE.md § Migration Notes - validating to the intended values
+// now is cheap and avoids a garbage value slipping in before 023 ships.
+
+router.post(
+  '/teams',
+  [
+    body('name').notEmpty().trim(),
+    body('ageGroup').optional().isString().trim(),
+    body('sport').optional().isString().trim(),
+    body('season').isIn(['Spring', 'Fall']),
+    body('year').optional().isInt({ min: 2000, max: 2100 }),
+  ],
+  async (req, res) => {
+    if (validationGuard(req, res)) return;
+
+    const { name, ageGroup, sport, season, year } = req.body;
+    const id = String(Date.now()) + String(Math.floor(Math.random() * 1000));
+
+    const { error } = await supabaseAdmin
+      .from('teams')
+      .insert({
+        id,
+        name,
+        age_group: ageGroup ?? '',
+        sport: sport ?? 'baseball',
+        season,
+        year: year ?? new Date().getFullYear(),
+      });
+
+    if (error) {
+      console.error('[admin/teams] DB error:', error.message);
+      return res.status(500).json({ error: 'DB_ERROR' });
+    }
+
+    return res.status(200).json({
+      team: { id, name, age_group: ageGroup ?? '', sport: sport ?? 'baseball', season, year: year ?? new Date().getFullYear() },
+    });
+  }
+);
+
 // ─── POST /coaches ──────────────────────────────────────────────────────────
 // Routes admin.html's Add Coach action through the backend instead of a
 // direct Supabase client write (#787, remaining scope after #338/PR #780).

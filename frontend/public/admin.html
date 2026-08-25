@@ -820,11 +820,24 @@
     var year = parseInt(document.getElementById('team-year').value) || new Date().getFullYear();
     if (!name) { showMsg('team-form-msg', 'Team name is required.', 'error'); return; }
     if (!season) { showMsg('team-form-msg', 'Season is required.', 'error'); return; }
+    // Routed through POST /api/v1/teams (was a direct Supabase write) so the
+    // insert runs service-role (fixes a silent bug: the admin no longer ends
+    // up a member of every team they create) and the id is server-generated
+    // rather than trusted from the client — see #787 (remaining scope of #338).
+    var { data: { session } } = await sb.auth.getSession();
+    if (!session) { showMsg('team-form-msg', 'Not signed in.', 'error'); return; }
     this.disabled = true;
-    var id = genId();
-    var { error } = await sb.from('teams').insert({ id, name, age_group: age, sport, season, year });
+    var res = await fetch(BACKEND_URL + '/api/v1/teams', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token },
+      body: JSON.stringify({ name: name, ageGroup: age, sport: sport, season: season, year: year })
+    });
+    var body = await res.json().catch(function() { return {}; });
     this.disabled = false;
-    if (error) { showMsg('team-form-msg', 'Error: ' + error.message, 'error'); return; }
+    if (!res.ok) {
+      showMsg('team-form-msg', 'Error: ' + (body.message || body.error || 'Add failed.'), 'error');
+      return;
+    }
     document.getElementById('team-name').value = '';
     document.getElementById('team-age').value = '';
     document.getElementById('team-season').value = currentSeasonGuess();
