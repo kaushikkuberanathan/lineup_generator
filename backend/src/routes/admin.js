@@ -669,6 +669,47 @@ router.post(
   }
 );
 
+// ─── POST /teams/:teamId/schedule ───────────────────────────────────────────
+// Routes admin.html's schedule save (add game, CSV import, and Clear
+// Schedule - all three funnel through admin.html's one shared
+// saveSchedule() function) through the backend instead of a direct
+// Supabase client write (#787, remaining scope after #338/PR #780).
+//
+// Deliberately does NOT reuse rosterWipeGuard, per
+// ADMIN_HTML_BYPASS_REMEDIATION_PLAN.md §3d: admin.html's Clear Schedule
+// button (confirm() dialog, then _schedData = [] before calling
+// saveSchedule()) is an intentional wipe-to-empty action already in the UI.
+// Applying the roster guard here would outright break that feature - an
+// empty schedule write must always be allowed through.
+//
+// Partial upsert only - team_id/schedule columns, per §3e - same reasoning
+// as the roster route: does not touch roster/practices/etc.
+
+router.post(
+  '/teams/:teamId/schedule',
+  [
+    param('teamId').notEmpty().trim(),
+    body('schedule').isArray(),
+  ],
+  async (req, res) => {
+    if (validationGuard(req, res)) return;
+
+    const { teamId } = req.params;
+    const { schedule } = req.body;
+
+    const { error } = await supabaseAdmin
+      .from('team_data')
+      .upsert({ team_id: String(teamId), schedule }, { onConflict: 'team_id' });
+
+    if (error) {
+      console.error('[admin/teams/schedule] DB error:', error.message);
+      return res.status(500).json({ error: 'DB_ERROR' });
+    }
+
+    return res.status(200).json({ ok: true });
+  }
+);
+
 // ─── POST /coaches ──────────────────────────────────────────────────────────
 // Routes admin.html's Add Coach action through the backend instead of a
 // direct Supabase client write (#787, remaining scope after #338/PR #780).
