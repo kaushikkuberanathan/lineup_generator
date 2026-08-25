@@ -1266,11 +1266,23 @@
   }
 
   async function saveSchedule(msgId, successMsg) {
-    var { error } = await sb
-      .from('team_data')
-      .upsert({ team_id: _schedTeamId, schedule: _schedData }, { onConflict: 'team_id' });
-    if (error) { showMsg(msgId, 'Error: ' + error.message, 'error'); }
-    else { showMsg(msgId, successMsg, 'success', true); renderSchedule(); }
+    // Routed through POST /api/v1/teams/:teamId/schedule (was a direct
+    // Supabase write) — see #787 (remaining scope of #338). No wipe guard
+    // here on purpose: Clear Schedule is an intentional empty write.
+    var { data: { session } } = await sb.auth.getSession();
+    if (!session) { showMsg(msgId, 'Not signed in.', 'error'); return; }
+    var res = await fetch(BACKEND_URL + '/api/v1/teams/' + encodeURIComponent(_schedTeamId) + '/schedule', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token },
+      body: JSON.stringify({ schedule: _schedData })
+    });
+    var body = await res.json().catch(function() { return {}; });
+    if (!res.ok) {
+      showMsg(msgId, 'Error: ' + (body.message || body.error || 'Save failed.'), 'error');
+      return;
+    }
+    showMsg(msgId, successMsg, 'success', true);
+    renderSchedule();
   }
 
   document.getElementById('add-game-btn').addEventListener('click', async function() {
