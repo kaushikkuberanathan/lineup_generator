@@ -1165,11 +1165,25 @@
   }
 
   async function saveRoster(msgId, successMsg) {
-    var { error } = await sb
-      .from('team_data')
-      .upsert({ team_id: _rosterTeamId, roster: _rosterData }, { onConflict: 'team_id' });
-    if (error) { showMsg(msgId, 'Error: ' + error.message, 'error'); }
-    else { showMsg(msgId, successMsg, 'success', true); renderRoster(); }
+    // Routed through POST /api/v1/teams/:teamId/roster (was a direct
+    // Supabase write) so the save is protected by the same roster-wipe
+    // guard POST /:teamId/data already has internally — see #787
+    // (remaining scope of #338).
+    var { data: { session } } = await sb.auth.getSession();
+    if (!session) { showMsg(msgId, 'Not signed in.', 'error'); return; }
+    var res = await fetch(BACKEND_URL + '/api/v1/teams/' + encodeURIComponent(_rosterTeamId) + '/roster', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token },
+      body: JSON.stringify({ roster: _rosterData })
+    });
+    var body = await res.json().catch(function() { return {}; });
+    if (!res.ok) {
+      var rosterMsg = body.error === 'ROSTER_WIPE_GUARD' ? body.message : (body.message || body.error || 'Save failed.');
+      showMsg(msgId, 'Error: ' + rosterMsg, 'error');
+      return;
+    }
+    showMsg(msgId, successMsg, 'success', true);
+    renderRoster();
   }
 
   document.getElementById('add-player-btn').addEventListener('click', async function() {

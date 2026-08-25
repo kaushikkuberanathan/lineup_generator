@@ -5,6 +5,14 @@ const requireAuth = require('../middleware/requireAuth');
 const requireAdmin = require('../middleware/requireAdmin');
 const { sendApprovalEmail, sendDenialEmail } = require('../lib/email');
 const { normalizeRole, CANONICAL_ROLES } = require('../lib/normalizeRole');
+// teamData.js already exports rosterWipeGuard as a named export alongside
+// its default router (module.exports.rosterWipeGuard = rosterWipeGuard) -
+// reusing it here needs zero changes to that file, so there's no reason to
+// duplicate the guard's logic the way ADMIN_HTML_BYPASS_REMEDIATION_PLAN.md
+// §3a anticipated (that section's "duplicate, don't extract" reasoning was
+// about avoiding touching teamData.js's exports - moot, since this export
+// already existed before this route was written).
+const { rosterWipeGuard } = require('./teamData');
 
 const router = Router();
 
@@ -601,6 +609,63 @@ router.post(
     return res.status(200).json({
       team: { id, name, age_group: ageGroup ?? '', sport: sport ?? 'baseball', season, year: year ?? new Date().getFullYear() },
     });
+  }
+);
+
+// ─── POST /teams/:teamId/roster ─────────────────────────────────────────────
+// Routes admin.html's roster save (add/remove player, CSV import - all three
+// funnel through admin.html's one shared saveRoster() function) through the
+// backend instead of a direct Supabase client write (#787, remaining scope
+// after #338/PR #780). Reuses the existing rosterWipeGuard (see the require
+// above) so an admin-panel action can't silently wipe a live roster, same
+// protection POST /:teamId/data already has internally.
+//
+// No `force` override exposed here on purpose, per
+// ADMIN_HTML_BYPASS_REMEDIATION_PLAN.md §4.4's explicit recommendation:
+// admin.html has no force-override UI today, and an admin who genuinely
+// needs to force-wipe a roster already has the recovery tooling
+// (X-Admin-Key + GET .../history) for that - adding a second, weaker path
+// to the same override isn't part of "route the existing action through
+// the backend."
+//
+// Partial upsert - only team_id/roster columns, per plan §3e - admin.html's
+// direct write never touched schedule/practices/etc. and this route must not
+// either, or a roster save would silently null out a team's schedule.
+
+router.post(
+  '/teams/:teamId/roster',
+  [
+    param('teamId').notEmpty().trim(),
+    body('roster').isArray(),
+  ],
+  async (req, res) => {
+    if (validationGuard(req, res)) return;
+
+    const { teamId } = req.params;
+    const { roster } = req.body;
+
+    const guard = await rosterWipeGuard(teamId, roster, undefined);
+    if (guard.blocked) {
+      return res.status(409).json({
+        error: 'ROSTER_WIPE_GUARD',
+        message:
+          'Refusing to overwrite a non-empty roster with an empty one. ' +
+          'Use the recovery tooling (X-Admin-Key + GET .../history) if this is intentional.',
+        currentRosterCount: guard.currentRosterCount,
+        ...(guard.readError ? { readError: guard.readError } : {}),
+      });
+    }
+
+    const { error } = await supabaseAdmin
+      .from('team_data')
+      .upsert({ team_id: String(teamId), roster }, { onConflict: 'team_id' });
+
+    if (error) {
+      console.error('[admin/teams/roster] DB error:', error.message);
+      return res.status(500).json({ error: 'DB_ERROR' });
+    }
+
+    return res.status(200).json({ ok: true });
   }
 );
 
