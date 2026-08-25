@@ -187,14 +187,24 @@ If that email **already has a membership on that team**, approving throws a
 **unique violation**. Two of the three requests stuck since April 2026 were exactly
 this - duplicate memberships, not a role problem. **The panel gives no useful error.**
 
-### The admin panel bypasses the entire backend.
+### The admin panel used to bypass the entire backend. Fixed 2026-08-25 (#338, #787).
 
-`frontend/public/admin.html` writes **directly to Supabase** via the client SDK. Seven
-writes across three tables. It does **not** call the Express API.
+`frontend/public/admin.html` used to write **directly to Supabase** via the client SDK
+— seven writes across three tables, never calling the Express API. That meant a fix
+to a backend route didn't fix the panel, since the panel never called it.
 
-So it bypasses `normalizeRole()`, `requireAuth`, `requireAdmin`, `reviewed_by`
-attribution, and auth-event logging. **A fix to a backend route does not fix the
-panel.** (See #338.)
+**No longer true.** Every admin.html mutation now goes through a Bearer-token-
+authenticated Express route: Approve/Deny (`POST /api/v1/approve`/`reject`, PR #780),
+feature flags (`PATCH /api/v1/feature-flags/:flagName`), Add/Remove Coach
+(`POST /api/v1/coaches`, `DELETE /api/v1/coaches/:membershipId`), Add Team
+(`POST /api/v1/teams`), roster save (`POST /api/v1/teams/:teamId/roster`), and
+schedule save (`POST /api/v1/teams/:teamId/schedule`) — see
+`docs/product/ADMIN_HTML_BYPASS_REMEDIATION_PLAN.md` for the per-endpoint design and
+which PR shipped each one. `normalizeRole()`-equivalent server-side role validation,
+`requireAuth`/`requireAdmin`, and (where relevant) `reviewed_by` attribution are all
+enforced now. Not yet covered: `admin.html`'s own JS has no automated test harness in
+this repo (static file) — manual verification against DEV is still the practice for
+changes to it.
 
 ### The three role-vocabulary boundaries are DELIBERATELY asymmetric.
 
