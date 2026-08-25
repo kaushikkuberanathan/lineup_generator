@@ -1,10 +1,48 @@
 const { Router } = require('express');
 const { body, param, query, validationResult } = require('express-validator');
+const rateLimit = require('express-rate-limit');
+const { ipKeyGenerator } = require('express-rate-limit');
 const { supabaseAdmin } = require('../lib/supabase');
 const requireAuth = require('../middleware/requireAuth');
 const requireAdmin = require('../middleware/requireAdmin');
-const { sendApprovalEmail, sendDenialEmail } = require('../lib/email');
+const { sendApprovalEmail, sendDenialEmail, ADMIN_EMAIL } = require('../lib/email');
 const { normalizeRole, CANONICAL_ROLES } = require('../lib/normalizeRole');
+const { verify: verifyApproveLinkToken } = require('../lib/approveLinkToken');
+
+// #337 (CodeQL: js/missing-rate-limiting) — these two public links now do a
+// real authorization check (token verification), which is exactly the
+// pattern CodeQL flags as brute-forceable without a rate limit. The token's
+// own entropy already makes guessing infeasible, but this is still a cheap,
+// standard defense-in-depth layer against brute force AND log/DB-load
+// abuse — same email-keyless, IP-keyed shape as nothing else in this file
+// (no email is available pre-verification), generous enough that a single
+// admin repeatedly opening/retrying an email link never trips it.
+const adminLinkLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => ipKeyGenerator(req.ip),
+});
+
+// #337: the public 1-tap link is only ever emailed to the platform admin
+// (ADMIN_EMAIL) - there's no session on this path to pull an acting-admin id
+// from, so reviewed_by is resolved by looking up that fixed address's auth
+// user id at click time. Returns null (logged, not thrown) if unresolved -
+// email failures/config drift here must not block the actual approve/deny.
+async function resolveLinkReviewer() {
+  const { data, error } = await supabaseAdmin.auth.admin.listUsers();
+  if (error) {
+    console.error('[admin-link] could not list auth users for reviewed_by:', error.message);
+    return null;
+  }
+  const adminUser = data?.users?.find(u => u.email === ADMIN_EMAIL);
+  if (!adminUser) {
+    console.warn('[admin-link] no auth user found for ADMIN_EMAIL; reviewed_by will be null');
+  }
+  return adminUser?.id ?? null;
+}
+
 // teamData.js already exports rosterWipeGuard as a named export alongside
 // its default router (module.exports.rosterWipeGuard = rosterWipeGuard) -
 // reusing it here needs zero changes to that file, so there's no reason to
@@ -17,15 +55,29 @@ const { rosterWipeGuard } = require('./teamData');
 const router = Router();
 
 // ─── GET /admin/approve-link ─────────────────────────────────────────────────
-// 1-tap approve from email link — no auth required (Phase 4 MVP)
-// TODO Phase 5: add signed token validation (see docs/TODO_approve_link_security.md)
+// 1-tap approve from email link — no auth required (Phase 4 MVP).
+// #337: requestId/teamId are derived from a verified, 24h-expiring HMAC
+// token (see lib/approveLinkToken.js) rather than trusted from the query
+// string directly.
 
-router.get('/admin/approve-link', async (req, res) => {
-  const { requestId, teamId } = req.query;
+router.get('/admin/approve-link', adminLinkLimiter, async (req, res) => {
+  const { token } = req.query;
 
-  if (!requestId || !teamId) {
+  if (!token) {
     return res.status(400).send(htmlPage('Invalid Link',
       'This approval link is missing required parameters.'));
+  }
+
+  let requestId, teamId;
+  try {
+    ({ requestId, teamId } = verifyApproveLinkToken(token, 'approve'));
+  } catch (tokenErr) {
+    if (tokenErr.code === 'TOKEN_EXPIRED') {
+      return res.status(410).send(htmlPage('Link Expired',
+        'This approval link has expired. Please request a new one from the admin panel.'));
+    }
+    return res.status(401).send(htmlPage('Invalid Link',
+      'This approval link is invalid or has been tampered with.'));
   }
 
   try {
@@ -89,9 +141,10 @@ router.get('/admin/approve-link', async (req, res) => {
     }
 
     // Mark request approved
+    const reviewedBy = await resolveLinkReviewer();
     await supabaseAdmin
       .from('access_requests')
-      .update({ status: 'approved', reviewed_at: new Date().toISOString() })
+      .update({ status: 'approved', reviewed_at: new Date().toISOString(), reviewed_by: reviewedBy })
       .eq('id', requestId);
 
     // Look up team name for approval email
@@ -121,13 +174,27 @@ router.get('/admin/approve-link', async (req, res) => {
 });
 
 // ─── GET /admin/deny-link ─────────────────────────────────────────────────────
+// #337: requestId is derived from a verified, 24h-expiring HMAC token rather
+// than trusted from the query string directly (see lib/approveLinkToken.js).
 
-router.get('/admin/deny-link', async (req, res) => {
-  const { requestId } = req.query;
+router.get('/admin/deny-link', adminLinkLimiter, async (req, res) => {
+  const { token } = req.query;
 
-  if (!requestId) {
+  if (!token) {
     return res.status(400).send(htmlPage('Invalid Link',
       'This denial link is missing required parameters.'));
+  }
+
+  let requestId;
+  try {
+    ({ requestId } = verifyApproveLinkToken(token, 'deny'));
+  } catch (tokenErr) {
+    if (tokenErr.code === 'TOKEN_EXPIRED') {
+      return res.status(410).send(htmlPage('Link Expired',
+        'This denial link has expired. Please request a new one from the admin panel.'));
+    }
+    return res.status(401).send(htmlPage('Invalid Link',
+      'This denial link is invalid or has been tampered with.'));
   }
 
   try {
@@ -147,9 +214,10 @@ router.get('/admin/deny-link', async (req, res) => {
         `This request has already been ${accessRequest.status}.`));
     }
 
+    const reviewedBy = await resolveLinkReviewer();
     await supabaseAdmin
       .from('access_requests')
-      .update({ status: 'denied', reviewed_at: new Date().toISOString() })
+      .update({ status: 'denied', reviewed_at: new Date().toISOString(), reviewed_by: reviewedBy })
       .eq('id', requestId);
 
     const { data: teamRowDenyLink } = await supabaseAdmin

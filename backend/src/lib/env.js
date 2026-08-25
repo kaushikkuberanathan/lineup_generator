@@ -24,7 +24,7 @@ if (target) {
         : `\n🔧  SUPABASE_TARGET=${target} — using SUPABASE_URL_${suffix}\n`);
 }
 
-const required = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_ANON_KEY'];
+const required = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_ANON_KEY', 'APPROVE_LINK_HMAC_SECRET'];
 for (const key of required) {
     if (!process.env[key]) {
         throw new Error(`Missing required environment variable: ${key}`);
