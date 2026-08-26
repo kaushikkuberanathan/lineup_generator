@@ -55,6 +55,15 @@ export function DugoutView({
   var _mth = useState('top');
   var myTeamHalf = _mth[0]; var setMyTeamHalf = _mth[1];
 
+  // Story 48 (#119) — defense-view inning soft-sync. followLive=true means
+  // the diamond tracks the live scoring inning automatically; scrubbing to a
+  // specific inning (or "All") turns that off until "Jump to current" is tapped.
+  var _followLive = useState(true);
+  var followLive = _followLive[0]; var setFollowLive = _followLive[1];
+
+  var _manualInn = useState(null);
+  var manualInning = _manualInn[0]; var setManualInning = _manualInn[1];
+
   // ── Feature flags ─────────────────────────────────────────────────────────
   var _lsFlag = useFeatureFlag('live_scoring', activeTeamId || teamId);
   var liveScoringEnabled = _lsFlag.enabled;
@@ -158,6 +167,15 @@ export function DugoutView({
     setSelectedGame(game);
   }
 
+  function handleSelectInning(inn) {
+    setFollowLive(false);
+    setManualInning(inn);
+  }
+
+  function handleJumpToCurrentInning() {
+    setFollowLive(true);
+  }
+
   function handleClaimScorer(game, half) {
     setSelectedGame(game);
     setMyTeamHalf(half || 'top');
@@ -197,6 +215,12 @@ export function DugoutView({
   var opponentName  = selectedGame ? selectedGame.opponent : 'Opponent';
   var myTeamLabelSB = truncateTeamName(activeTeam ? activeTeam.name : '', 10);
   var teamLabelSB   = truncateTeamName(opponentName, 10);
+
+  // Story 48 (#119) — 0-indexed inning currently shown on the diamond
+  // vs. the live game's current inning; "drifted" gates the sync banner.
+  var currentInningIdx = (gs.inning || 1) - 1;
+  var viewedInning      = followLive ? currentInningIdx : manualInning;
+  var inningViewDrifted = !followLive && manualInning !== currentInningIdx;
 
   // ── Viewer path (share links — payload-based, no scoring context) ─────────
   if (isViewer) {
@@ -311,11 +335,41 @@ export function DugoutView({
             data-testid="defense-diamond-mount"
             style={{ display: dugoutFocusMode === 'lineup' ? 'block' : 'none' }}
           >
+            {inningViewDrifted ? (
+              <div
+                data-testid="inning-sync-banner"
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                  padding: '8px 14px', fontSize: '12px',
+                  color: tokens.color.gameDay.text.secondary,
+                  background: tokens.color.gameDay.surface.scoreboard,
+                  borderBottom: '1px solid ' + tokens.color.gameDay.border.hairline,
+                }}
+              >
+                <span>
+                  Viewing: {manualInning === null ? 'All' : 'Inning ' + (manualInning + 1)}
+                  {' · Game: Inning ' + (gs.inning || 1)}
+                </span>
+                <button
+                  onClick={handleJumpToCurrentInning}
+                  style={{
+                    background: 'none', border: '1px solid ' + tokens.color.gameDay.border.hairline,
+                    borderRadius: '9999px', color: tokens.color.brand.gold,
+                    fontSize: '11px', fontWeight: 700, cursor: 'pointer',
+                    padding: '3px 10px', fontFamily: FF,
+                  }}
+                >
+                  Jump to current
+                </button>
+              </div>
+            ) : null}
             <DefenseDiamond
               roster={roster || []}
               grid={grid || {}}
               innings={innings || 6}
               onPositionTap={onPositionTap || null}
+              selectedInning={viewedInning}
+              onSelectInning={handleSelectInning}
             />
           </div>
 
