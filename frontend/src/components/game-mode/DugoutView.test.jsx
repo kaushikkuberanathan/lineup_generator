@@ -23,6 +23,12 @@ vi.mock('../ScoringMode/ScoringModeEntry', () => ({
         >
           Claim Scorer
         </button>
+        <button
+          data-testid="join-viewer-btn"
+          onClick={function() { props.onJoinViewer({ id: 'g1' }); }}
+        >
+          Join as Viewer
+        </button>
       </div>
     );
   },
@@ -52,8 +58,20 @@ vi.mock('../BattingOrderStrip', () => ({
 }));
 
 vi.mock('../GameDay/DefenseDiamond', () => ({
-  DefenseDiamond: function MockDD() {
-    return <div data-testid="mock-defense-diamond" />;
+  DefenseDiamond: function MockDD(props) {
+    return (
+      <div
+        data-testid="mock-defense-diamond"
+        data-selected-inning={props.selectedInning === null || props.selectedInning === undefined ? 'null' : String(props.selectedInning)}
+      >
+        <button data-testid="mock-select-inning-1" onClick={function() { props.onSelectInning(1); }}>
+          select inning 2
+        </button>
+        <button data-testid="mock-select-all" onClick={function() { props.onSelectInning(null); }}>
+          select all
+        </button>
+      </div>
+    );
   },
 }));
 
@@ -329,5 +347,112 @@ describe('exit affordance across modes', function() {
       fireEvent.click(screen.getByTestId('scoreboard-exit'));
     });
     expect(onExit).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ── Story 48 (#119): defense-view inning soft-sync ───────────────────────────
+
+describe('defense-view inning soft-sync (#119)', function() {
+  function joinViewer() {
+    act(function() {
+      fireEvent.click(screen.getByTestId('join-viewer-btn'));
+    });
+  }
+
+  it('follows the live game inning by default (no manual scrub yet)', function() {
+    vi.mocked(useLiveScoring).mockReturnValue(
+      Object.assign(createDefaultScoring(), {
+        gameState: Object.assign({}, createDefaultScoring().gameState, { inning: 3 }),
+      })
+    );
+    render(<DugoutView {...defaultProps} />);
+    joinViewer();
+    // gs.inning=3 (1-indexed) -> DefenseDiamond's 0-indexed selectedInning should be 2
+    expect(screen.getByTestId('mock-defense-diamond')).toHaveAttribute('data-selected-inning', '2');
+    expect(screen.queryByTestId('inning-sync-banner')).toBeNull();
+  });
+
+  it('re-renders to follow the live inning as the game advances, with no manual scrub', function() {
+    vi.mocked(useLiveScoring).mockReturnValue(createDefaultScoring()); // inning 1
+    var rendered = render(<DugoutView {...defaultProps} />);
+    joinViewer();
+    expect(screen.getByTestId('mock-defense-diamond')).toHaveAttribute('data-selected-inning', '0');
+
+    vi.mocked(useLiveScoring).mockReturnValue(
+      Object.assign(createDefaultScoring(), {
+        gameState: Object.assign({}, createDefaultScoring().gameState, { inning: 4 }),
+      })
+    );
+    rendered.rerender(<DugoutView {...defaultProps} />);
+    expect(screen.getByTestId('mock-defense-diamond')).toHaveAttribute('data-selected-inning', '3');
+    expect(screen.queryByTestId('inning-sync-banner')).toBeNull();
+  });
+
+  it('scrubbing to a different inning stops following and shows the sync banner', function() {
+    vi.mocked(useLiveScoring).mockReturnValue(createDefaultScoring()); // inning 1
+    render(<DugoutView {...defaultProps} />);
+    joinViewer();
+
+    act(function() {
+      fireEvent.click(screen.getByTestId('mock-select-inning-1')); // picks 0-indexed inning 1 ("Inning 2")
+    });
+
+    expect(screen.getByTestId('mock-defense-diamond')).toHaveAttribute('data-selected-inning', '1');
+    var banner = screen.getByTestId('inning-sync-banner');
+    expect(banner).toBeInTheDocument();
+    expect(banner.textContent).toContain('Viewing: Inning 2');
+    expect(banner.textContent).toContain('Game: Inning 1');
+  });
+
+  it('the game advancing while scrubbed does NOT pull the view back automatically', function() {
+    vi.mocked(useLiveScoring).mockReturnValue(createDefaultScoring()); // inning 1
+    var rendered = render(<DugoutView {...defaultProps} />);
+    joinViewer();
+    act(function() {
+      fireEvent.click(screen.getByTestId('mock-select-inning-1'));
+    });
+    expect(screen.getByTestId('mock-defense-diamond')).toHaveAttribute('data-selected-inning', '1');
+
+    vi.mocked(useLiveScoring).mockReturnValue(
+      Object.assign(createDefaultScoring(), {
+        gameState: Object.assign({}, createDefaultScoring().gameState, { inning: 5 }),
+      })
+    );
+    rendered.rerender(<DugoutView {...defaultProps} />);
+    // still showing the manually-scrubbed inning, not the new live inning (4, 0-indexed)
+    expect(screen.getByTestId('mock-defense-diamond')).toHaveAttribute('data-selected-inning', '1');
+    expect(screen.getByTestId('inning-sync-banner').textContent).toContain('Game: Inning 5');
+  });
+
+  it('"Jump to current" resumes following the live inning and hides the banner', function() {
+    vi.mocked(useLiveScoring).mockReturnValue(
+      Object.assign(createDefaultScoring(), {
+        gameState: Object.assign({}, createDefaultScoring().gameState, { inning: 3 }),
+      })
+    );
+    render(<DugoutView {...defaultProps} />);
+    joinViewer();
+    act(function() {
+      fireEvent.click(screen.getByTestId('mock-select-inning-1'));
+    });
+    expect(screen.getByTestId('inning-sync-banner')).toBeInTheDocument();
+
+    act(function() {
+      fireEvent.click(screen.getByText('Jump to current'));
+    });
+
+    expect(screen.queryByTestId('inning-sync-banner')).toBeNull();
+    expect(screen.getByTestId('mock-defense-diamond')).toHaveAttribute('data-selected-inning', '2');
+  });
+
+  it('selecting "All" is treated as a manual scrub and shows the banner as "Viewing: All"', function() {
+    vi.mocked(useLiveScoring).mockReturnValue(createDefaultScoring()); // inning 1
+    render(<DugoutView {...defaultProps} />);
+    joinViewer();
+    act(function() {
+      fireEvent.click(screen.getByTestId('mock-select-all'));
+    });
+    expect(screen.getByTestId('mock-defense-diamond')).toHaveAttribute('data-selected-inning', 'null');
+    expect(screen.getByTestId('inning-sync-banner').textContent).toContain('Viewing: All');
   });
 });
