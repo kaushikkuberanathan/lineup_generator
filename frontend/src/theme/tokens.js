@@ -231,10 +231,14 @@ export const tokens = {
         secondary: '#94A3B8',  // mid-emphasis - bench chip names, icon-button colors, inning label
                                  // (7.07:1 vs surface.scoreboard - passes WCAG AA)
         muted:     '#64748B',  // subdued supporting text shared across both game-day tracks
-        caption:   '#475569',  // low-emphasis section eyebrow - "Bench"
-                                 // KNOWN GAP: 2.39:1 vs surface.scoreboard - FAILS WCAG AA
-                                 // (needs 4.5:1). Pre-existing production value, preserved
-                                 // as-is by this byte-preserving mint. See #704.
+                                 // (3.81:1 vs surface.scoreboard - FAILS WCAG AA, pre-existing,
+                                 // not in scope for #704 - caption below is the coach-facing-copy
+                                 // token that issue targeted)
+        caption:   '#8496AC',  // low-emphasis section eyebrow - "Bench"
+                                 // FIXED (#704): was #475569 (2.39:1, failed WCAG AA). Picked a
+                                 // slate lighter than muted but dimmer than secondary to keep the
+                                 // emphasis tier distinct (5.99:1 vs surface.scoreboard - passes
+                                 // WCAG AA normal-text minimum of 4.5:1).
         faint:     '#334155',  // near-invisible - empty-state placeholder dash only
         separator: '#374151',  // decorative glyph - ScoreboardRow's ":" only
       },
@@ -366,12 +370,15 @@ export const tokens = {
         // directly (P/C/1B/2B/3B/SS/LF/RC/RF - see component call site).
         // These 3 do NOT match and are preserved byte-exact here instead:
         posColors: {
-          // POS_COLORS.LC = #27ae60 here, but color.position.LC = #2980B9
-          // (the blue used by 2B/LC elsewhere in the app) - a genuine
-          // pre-existing inconsistency in this file, not introduced by this
-          // migration. Preserved as-is (byte-preserving mint); flagged for
-          // KK, not silently corrected.
-          lc: '#27ae60',
+          // POS_COLORS.LC previously diverged from color.position.LC
+          // (#27ae60 green vs #2980B9 blue, the blue used by 2B/LC
+          // elsewhere in the app) - flagged in #794 and confirmed by KK as
+          // a genuine inconsistency, not intentional. Corrected to the
+          // canonical value; byte-matches color.position.LC exactly, kept
+          // as its own key per the no-cross-component-alias rule used
+          // throughout this file (self-reference isn't possible here -
+          // `tokens` doesn't exist yet during its own literal's construction).
+          lc: '#2980b9',
           // POS_COLORS.Bench = #475569 here, vs. color.position.Bench =
           // #555555 (also a pre-existing divergence) - but this entry is
           // confirmed UNREACHABLE at runtime: fieldPlayers already filters

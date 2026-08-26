@@ -5,6 +5,7 @@ import { OfflineIndicator } from '../components/Shared/OfflineIndicator';
 import { DefenseDiamond } from '../components/GameDay/DefenseDiamond';
 import { NowBattingBar } from '../components/GameDay/NowBattingStrip';
 import { LockFlow } from '../components/GameDay/LockFlow';
+import { tokens } from '../theme/tokens';
 
 // ============================================================================
 // F3 — OfflineIndicator: status label font-size must meet 12px WCAG floor
@@ -195,6 +196,46 @@ describe('F7 — DefenseDiamond inning pill contrast', function() {
     expect(allBtn.style.backgroundColor).not.toContain('15, 31, 61');
     expect(allBtn.style.borderColor).toContain('15, 31, 61');
     expect(allBtn.style.color).toContain('15, 31, 61');
+  });
+
+});
+
+// ============================================================================
+// F8 — InningModal POS_COLORS.LC matches canonical color.position.LC (#794)
+// ============================================================================
+
+describe('F8 — gameDay.inningModal.posColors.lc matches color.position.LC', function() {
+
+  test('F8 — LC no longer diverges to green; matches the blue used elsewhere', function() {
+    expect(tokens.color.gameDay.inningModal.posColors.lc).toBe(tokens.color.position.LC);
+  });
+
+});
+
+// ============================================================================
+// F9 — gameDay.text.caption WCAG AA contrast against the scoreboard surface (#704)
+// ============================================================================
+
+function relLuminance(hex) {
+  var h = hex.replace('#', '');
+  var r = parseInt(h.substring(0, 2), 16) / 255;
+  var g = parseInt(h.substring(2, 4), 16) / 255;
+  var b = parseInt(h.substring(4, 6), 16) / 255;
+  function chan(c) { return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); }
+  return 0.2126 * chan(r) + 0.7152 * chan(g) + 0.0722 * chan(b);
+}
+
+function contrastRatio(hexA, hexB) {
+  var lA = relLuminance(hexA) + 0.05;
+  var lB = relLuminance(hexB) + 0.05;
+  return lA > lB ? lA / lB : lB / lA;
+}
+
+describe('F9 — gameDay.text.caption WCAG AA contrast', function() {
+
+  test('F9 — caption clears the 4.5:1 WCAG AA normal-text minimum against surface.scoreboard', function() {
+    var ratio = contrastRatio(tokens.color.gameDay.text.caption, tokens.color.gameDay.surface.scoreboard);
+    expect(ratio).toBeGreaterThanOrEqual(4.5);
   });
 
 });
