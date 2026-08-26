@@ -1,0 +1,62 @@
+name: PR Target Branch Guard
+
+# Detects a PR whose title declares one merge direction (e.g. "sync main
+# into develop", "promote v2.x to main") while its actual base branch is
+# the other one. PR #57 (2026-05-11) was titled "chore: sync main (v2.5.8)
+# into develop" but was opened against `main` — landed 452 lines of test
+# coverage and a docs update on the wrong branch, contributing to the
+# main/develop divergence that caused 9 file conflicts on PR #64.
+#
+# Unlike Merge Policy Guard (which can only detect after the push), this
+# runs on the PR itself and can fail a required check before merge — a
+# real preventive control, not just a detection guard. A plain checkbox
+# field in the PR template was considered and rejected (see #122): a
+# checkbox is easy to skip and doesn't get enforced.
+#
+# Design: see issue #122. Only fires when the title itself declares an
+# explicit direction — ordinary feature/fix PRs (which don't mention a
+# target branch by name) are never affected.
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  check-title-matches-base:
+    name: Check PR title direction matches base branch
+    runs-on: ubuntu-latest
+    steps:
+      - name: Compare title-declared direction against actual base
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+          BASE: ${{ github.event.pull_request.base.ref }}
+        run: |
+          echo "Title: $TITLE"
+          echo "Base branch: $BASE"
+
+          TITLE_LOWER=$(echo "$TITLE" | tr '[:upper:]' '[:lower:]')
+
+          DECLARES_DEVELOP=false
+          DECLARES_MAIN=false
+
+          if echo "$TITLE_LOWER" | grep -qE 'into develop|-> ?develop|→ ?develop'; then
+            DECLARES_DEVELOP=true
+          fi
+          if echo "$TITLE_LOWER" | grep -qE 'into main|-> ?main|→ ?main|^promote |promote .* to main'; then
+            DECLARES_MAIN=true
+          fi
+
+          if [ "$DECLARES_DEVELOP" = "true" ] && [ "$BASE" != "develop" ]; then
+            echo "::error::PR title declares 'develop' as the target (\"$TITLE\") but this PR's base branch is '$BASE'. Fix the base branch or the title before merging — see issue #122."
+            exit 1
+          fi
+
+          if [ "$DECLARES_MAIN" = "true" ] && [ "$BASE" != "main" ]; then
+            echo "::error::PR title declares 'main' as the target (\"$TITLE\") but this PR's base branch is '$BASE'. Fix the base branch or the title before merging — see issue #122."
+            exit 1
+          fi
+
+          echo "No direction mismatch detected."

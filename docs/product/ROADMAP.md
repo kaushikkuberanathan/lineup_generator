@@ -301,6 +301,20 @@ Audited `CHARTER.md`, `SOLUTION_DESIGN.md`, `SECURITY_FRAMEWORK.md`, and `AUTH_S
 - Note: 2.5.27 (icons, OG/Twitter meta, maskable-split) shipped via PRs #305/#309/#310/#311 but was never logged here - captured in versionHistory.js only.
 - Deferred fast-follow: DugoutView viewer-path brand mark (flag-off); maskable-512 re-export (current PROD asset reads black-bg, 0% safe-zone); brand-mark image in PDF via addImage.
 ---
+## v2.5.27 - 2026-06-12 - Fresh new look — app icon, share previews, refreshed auth screens
+
+**Backfilled 2026-08-26 (closes #317).** This entry was deferred at release time — local VS Code's EOL/format-on-save setting flips this CRLF file to LF on save, corrupting the whole-file diff — and the release shipped without it rather than commit corruption. Content sourced from the existing `versionHistory.js` v2.5.27 entry and the promote commit (`5ab97c0`, PR #316) rather than re-derived from memory.
+
+- Story 304 - Badge icon set: favicon, apple-touch, pwa-192/512, and a new maskable-512 replace placeholder SVGs; `vite.config` maskable-split (pwa-512 purpose `any`, dedicated maskable-512 purpose `maskable`) (PR #305).
+- Story 306 - Removed 4 orphaned `.svg` icon sources from `public/` after the raster icon swap (PR #309).
+- Story 307 - Open Graph + Twitter Card share-link meta tags + 1200x630 `og-image.png`; baseball emoji replaced with the badge image on `LoginScreen` + `RequestAccessScreen` (PR #310, PR #311).
+- Story 99 - Backend test coverage: `aiProxy` + auth happy-path specs (PR #299).
+- Governance - color-token disposition audit, MASTER staging discipline + RED-GREEN workflow (#298-#303).
+- Infra - `dev.dugoutlineup.com` confirmed tracking `develop` (#308 closed, caching false alarm); Vercel Deployment Protection disabled for dev soak (#314).
+- Promoted to `main` via PR #316 (merge commit `5ab97c0`).
+- Root-cause CRLF/EOL tooling gap (also behind Stories 76/96/97) is likely moot going forward — this entry itself was added via Claude Code's Edit tool, which doesn't trigger VS Code's format-on-save conversion. No `.gitattributes` EOL pin added; revisit only if the corruption recurs through this same editing path.
+
+---
 ## v2.5.26 — 2026-06-08 — New About tab (builder profile + partnership CTA)
 
 - Story 105 (P2) resolved — About tab overhaul: AboutTab extracted from
