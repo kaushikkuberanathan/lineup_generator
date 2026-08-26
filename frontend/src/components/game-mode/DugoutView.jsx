@@ -290,6 +290,7 @@ export function DugoutView({
         <BattingOrderStrip
           battingOrder={battingOrder || []}
           currentBatterIndex={currentBatterIndex || 0}
+          roster={roster || []}
         />
       </div>
     );
@@ -327,6 +328,7 @@ export function DugoutView({
         <BattingOrderStrip
           battingOrder={battingOrder || []}
           currentBatterIndex={battingIdxForStrip}
+          roster={roster || []}
         />
 
         {/* Scrollable body — both panels always mounted; CSS display toggles */}

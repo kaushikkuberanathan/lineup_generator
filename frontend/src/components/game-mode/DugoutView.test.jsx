@@ -50,6 +50,7 @@ vi.mock('../BattingOrderStrip', () => ({
       <div
         data-testid="batting-order-strip"
         data-batter-index={props.currentBatterIndex}
+        data-roster-names={(props.roster || []).map(function(r) { return r.name; }).join(',')}
       >
         {(props.battingOrder || []).join(',')}
       </div>
@@ -454,5 +455,26 @@ describe('defense-view inning soft-sync (#119)', function() {
     });
     expect(screen.getByTestId('mock-defense-diamond')).toHaveAttribute('data-selected-inning', 'null');
     expect(screen.getByTestId('inning-sync-banner').textContent).toContain('Viewing: All');
+  });
+});
+
+// ── #128: BattingOrderStrip receives roster for hand badges ──────────────────
+
+describe('BattingOrderStrip roster wiring (#128)', function() {
+  it('passes roster through to BattingOrderStrip in the entry state', function() {
+    render(<DugoutView {...defaultProps} />);
+    expect(screen.getByTestId('batting-order-strip')).toHaveAttribute(
+      'data-roster-names', 'Aiden,Benji,Cassius'
+    );
+  });
+
+  it('passes roster through to BattingOrderStrip in the active scoring shell', function() {
+    render(<DugoutView {...defaultProps} />);
+    act(function() {
+      fireEvent.click(screen.getByTestId('claim-btn'));
+    });
+    expect(screen.getByTestId('batting-order-strip')).toHaveAttribute(
+      'data-roster-names', 'Aiden,Benji,Cassius'
+    );
   });
 });
