@@ -99,6 +99,14 @@ describe('Admin routes — auth rejection (no token)', () => {
     assert.equal(res.body.error, 'UNAUTHORIZED');
   });
 
+  // Added 2026-08-26 (#406/#410 Pass 2) — this route had zero coverage of any
+  // kind, not even this baseline, unlike every other route in this file.
+  test('GET /api/v1/feedback → 401 without token', async () => {
+    const res = await request(app).get('/api/v1/feedback');
+    assert.equal(res.status, 401);
+    assert.equal(res.body.error, 'UNAUTHORIZED');
+  });
+
   // ── Public routes: registered BEFORE the auth guard → must NEVER 401 ────────
   // 1-tap email links, used unauthenticated. Missing query params → 400
   // (admin.js:17, :96). Security contract = "never 401".
