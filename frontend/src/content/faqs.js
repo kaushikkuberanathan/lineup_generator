@@ -4,7 +4,7 @@
  * Written from the perspective of real roles at a youth baseball game:
  * head coach, dugout parent, DJ parent, catcher parent, base coaches, and general setup.
  */
-// Last reviewed: April 27, 2026 (v2.5.1) — content audited as current; no stale references found. See DOC_TEST_DEBT.md for known content gaps (FAQ × feature flag coverage).
+// Last reviewed: August 26, 2026 (#664 item 5) — content spot-checked against current UI (the team-discovery entry at line ~259 already matches present-day "Find your team…" wording through Story 134/v2.12.0); no stale references found. This bump was overdue — the timestamp had sat at April 27, 2026 through several rounds of content updates. See DOC_TEST_DEBT.md for known content gaps (FAQ × feature flag coverage).
 
 export var FAQ_CATEGORIES = [
   {
