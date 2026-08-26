@@ -81,4 +81,26 @@ describe('ScoreboardRow', function() {
       expect(onExit).toHaveBeenCalledTimes(1);
     });
   });
+
+  // ── Slice 2 fix-up: isAtBat active-half indicator (#118) ─────────────────────
+
+  describe('isAtBat prop', function() {
+    it('shows the pulsing dot next to my team when isAtBat is true', function() {
+      render(<ScoreboardRow isAtBat={true} />);
+      expect(screen.getByTestId('scoreboard-mine-active-dot')).toBeInTheDocument();
+      expect(screen.queryByTestId('scoreboard-opp-active-dot')).toBeNull();
+    });
+
+    it('shows the pulsing dot next to the opponent when isAtBat is false', function() {
+      render(<ScoreboardRow isAtBat={false} />);
+      expect(screen.getByTestId('scoreboard-opp-active-dot')).toBeInTheDocument();
+      expect(screen.queryByTestId('scoreboard-mine-active-dot')).toBeNull();
+    });
+
+    it('shows no dot when isAtBat is omitted', function() {
+      render(<ScoreboardRow />);
+      expect(screen.queryByTestId('scoreboard-mine-active-dot')).toBeNull();
+      expect(screen.queryByTestId('scoreboard-opp-active-dot')).toBeNull();
+    });
+  });
 });

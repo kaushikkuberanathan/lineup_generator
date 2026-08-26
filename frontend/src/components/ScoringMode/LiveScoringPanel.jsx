@@ -394,6 +394,7 @@ export default function LiveScoringPanel(props) {
           oppLabel={teamLabelSB}
           myScore={gs.myScore}
           oppScore={gs.opponentScore}
+          isAtBat={isHomeBatting}
           isScorer={false}
         />
         {/* Header strip */}
@@ -726,6 +727,7 @@ export default function LiveScoringPanel(props) {
         myScore={gs.myScore}
         oppScore={gs.opponentScore}
         isScorer={isScorer}
+        isAtBat={isHomeBatting}
         onAddMyRun={function() { scoring.addManualRun('us'); }}
         onAddOppRun={function() { scoring.addManualRun('opp'); }}
       />

@@ -321,6 +321,7 @@ export function DugoutView({
           onAddOppRun={function() { scoring.addManualRun && scoring.addManualRun('opp'); }}
           inning={gs.inning - 1}
           halfInning={gs.halfInning}
+          isAtBat={gs.halfInning === myTeamHalf}
           onExit={onExit}
         />
 

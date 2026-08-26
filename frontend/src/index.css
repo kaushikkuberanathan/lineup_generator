@@ -17,3 +17,10 @@ html, body { margin: 0; padding: 0; height: 100%; overscroll-behavior: none; }
   to   { opacity: 1; transform: translateY(0); }
 }
 .animate-toast-in { animation: toast-in 180ms ease-out; }
+
+/* ScoreboardRow active-half indicator (#118) */
+@keyframes scoreboard-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.35; }
+}
+.animate-scoreboard-pulse { animation: scoreboard-pulse 1.6s ease-in-out infinite; }
