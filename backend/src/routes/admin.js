@@ -1,23 +1,83 @@
 const { Router } = require('express');
-const { body, query, validationResult } = require('express-validator');
+const { body, param, query, validationResult } = require('express-validator');
+const rateLimit = require('express-rate-limit');
+const { ipKeyGenerator } = require('express-rate-limit');
 const { supabaseAdmin } = require('../lib/supabase');
 const requireAuth = require('../middleware/requireAuth');
 const requireAdmin = require('../middleware/requireAdmin');
-const { sendApprovalEmail, sendDenialEmail } = require('../lib/email');
+const { sendApprovalEmail, sendDenialEmail, ADMIN_EMAIL } = require('../lib/email');
 const { normalizeRole, CANONICAL_ROLES } = require('../lib/normalizeRole');
+const { verify: verifyApproveLinkToken } = require('../lib/approveLinkToken');
+
+// #337 (CodeQL: js/missing-rate-limiting) — these two public links now do a
+// real authorization check (token verification), which is exactly the
+// pattern CodeQL flags as brute-forceable without a rate limit. The token's
+// own entropy already makes guessing infeasible, but this is still a cheap,
+// standard defense-in-depth layer against brute force AND log/DB-load
+// abuse — same email-keyless, IP-keyed shape as nothing else in this file
+// (no email is available pre-verification), generous enough that a single
+// admin repeatedly opening/retrying an email link never trips it.
+const adminLinkLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => ipKeyGenerator(req.ip),
+});
+
+// #337: the public 1-tap link is only ever emailed to the platform admin
+// (ADMIN_EMAIL) - there's no session on this path to pull an acting-admin id
+// from, so reviewed_by is resolved by looking up that fixed address's auth
+// user id at click time. Returns null (logged, not thrown) if unresolved -
+// email failures/config drift here must not block the actual approve/deny.
+async function resolveLinkReviewer() {
+  const { data, error } = await supabaseAdmin.auth.admin.listUsers();
+  if (error) {
+    console.error('[admin-link] could not list auth users for reviewed_by:', error.message);
+    return null;
+  }
+  const adminUser = data?.users?.find(u => u.email === ADMIN_EMAIL);
+  if (!adminUser) {
+    console.warn('[admin-link] no auth user found for ADMIN_EMAIL; reviewed_by will be null');
+  }
+  return adminUser?.id ?? null;
+}
+
+// teamData.js already exports rosterWipeGuard as a named export alongside
+// its default router (module.exports.rosterWipeGuard = rosterWipeGuard) -
+// reusing it here needs zero changes to that file, so there's no reason to
+// duplicate the guard's logic the way ADMIN_HTML_BYPASS_REMEDIATION_PLAN.md
+// §3a anticipated (that section's "duplicate, don't extract" reasoning was
+// about avoiding touching teamData.js's exports - moot, since this export
+// already existed before this route was written).
+const { rosterWipeGuard } = require('./teamData');
 
 const router = Router();
 
 // ─── GET /admin/approve-link ─────────────────────────────────────────────────
-// 1-tap approve from email link — no auth required (Phase 4 MVP)
-// TODO Phase 5: add signed token validation (see docs/TODO_approve_link_security.md)
+// 1-tap approve from email link — no auth required (Phase 4 MVP).
+// #337: requestId/teamId are derived from a verified, 24h-expiring HMAC
+// token (see lib/approveLinkToken.js) rather than trusted from the query
+// string directly.
 
-router.get('/admin/approve-link', async (req, res) => {
-  const { requestId, teamId } = req.query;
+router.get('/admin/approve-link', adminLinkLimiter, async (req, res) => {
+  const { token } = req.query;
 
-  if (!requestId || !teamId) {
+  if (!token) {
     return res.status(400).send(htmlPage('Invalid Link',
       'This approval link is missing required parameters.'));
+  }
+
+  let requestId, teamId;
+  try {
+    ({ requestId, teamId } = verifyApproveLinkToken(token, 'approve'));
+  } catch (tokenErr) {
+    if (tokenErr.code === 'TOKEN_EXPIRED') {
+      return res.status(410).send(htmlPage('Link Expired',
+        'This approval link has expired. Please request a new one from the admin panel.'));
+    }
+    return res.status(401).send(htmlPage('Invalid Link',
+      'This approval link is invalid or has been tampered with.'));
   }
 
   try {
@@ -81,9 +141,10 @@ router.get('/admin/approve-link', async (req, res) => {
     }
 
     // Mark request approved
+    const reviewedBy = await resolveLinkReviewer();
     await supabaseAdmin
       .from('access_requests')
-      .update({ status: 'approved', reviewed_at: new Date().toISOString() })
+      .update({ status: 'approved', reviewed_at: new Date().toISOString(), reviewed_by: reviewedBy })
       .eq('id', requestId);
 
     // Look up team name for approval email
@@ -113,13 +174,27 @@ router.get('/admin/approve-link', async (req, res) => {
 });
 
 // ─── GET /admin/deny-link ─────────────────────────────────────────────────────
+// #337: requestId is derived from a verified, 24h-expiring HMAC token rather
+// than trusted from the query string directly (see lib/approveLinkToken.js).
 
-router.get('/admin/deny-link', async (req, res) => {
-  const { requestId } = req.query;
+router.get('/admin/deny-link', adminLinkLimiter, async (req, res) => {
+  const { token } = req.query;
 
-  if (!requestId) {
+  if (!token) {
     return res.status(400).send(htmlPage('Invalid Link',
       'This denial link is missing required parameters.'));
+  }
+
+  let requestId;
+  try {
+    ({ requestId } = verifyApproveLinkToken(token, 'deny'));
+  } catch (tokenErr) {
+    if (tokenErr.code === 'TOKEN_EXPIRED') {
+      return res.status(410).send(htmlPage('Link Expired',
+        'This denial link has expired. Please request a new one from the admin panel.'));
+    }
+    return res.status(401).send(htmlPage('Invalid Link',
+      'This denial link is invalid or has been tampered with.'));
   }
 
   try {
@@ -139,9 +214,10 @@ router.get('/admin/deny-link', async (req, res) => {
         `This request has already been ${accessRequest.status}.`));
     }
 
+    const reviewedBy = await resolveLinkReviewer();
     await supabaseAdmin
       .from('access_requests')
-      .update({ status: 'denied', reviewed_at: new Date().toISOString() })
+      .update({ status: 'denied', reviewed_at: new Date().toISOString(), reviewed_by: reviewedBy })
       .eq('id', requestId);
 
     const { data: teamRowDenyLink } = await supabaseAdmin
@@ -538,6 +614,300 @@ router.get(
     }
 
     return res.status(200).json({ feedback: data, total: count });
+  }
+);
+
+// ─── POST /teams ────────────────────────────────────────────────────────────
+// Routes admin.html's Add Team action through the backend instead of a direct
+// Supabase client write (#787, remaining scope after #338/PR #780).
+//
+// Uses supabaseAdmin (service-role) rather than the pattern of trusting the
+// caller's own session — this fixes a live, silent bug for free per
+// ADMIN_HTML_BYPASS_REMEDIATION_PLAN.md §3b: today, admin.html inserts using
+// the platform admin's own authenticated Supabase session, so
+// 018_auto_provision_team_membership_on_create.sql's AFTER INSERT trigger
+// (which grants role=admin/status=active membership to auth.uid()) makes the
+// platform admin silently a member of every team they create through the
+// panel. A service-role insert carries no user JWT, so auth.uid() resolves
+// NULL inside the trigger, and the trigger's own documented behavior is to
+// no-op on NULL rather than error - net effect, this route creates a team
+// with zero team_memberships rows, which is the correct/intended semantics
+// (the real coach is added afterward via Add Coach, #790).
+//
+// Server generates the id (matching admin.html's own genId() format exactly:
+// String(Date.now()) + a random 0-999 suffix - every other teams.id in the
+// system is this shape) rather than trusting a client-supplied one.
+//
+// season is validated to Spring/Fall even though the DB CHECK for it
+// (023_enforce_team_season_not_null.sql) is not live yet - see
+// backend/CLAUDE.md § Migration Notes - validating to the intended values
+// now is cheap and avoids a garbage value slipping in before 023 ships.
+
+router.post(
+  '/teams',
+  [
+    body('name').notEmpty().trim(),
+    body('ageGroup').optional().isString().trim(),
+    body('sport').optional().isString().trim(),
+    body('season').isIn(['Spring', 'Fall']),
+    body('year').optional().isInt({ min: 2000, max: 2100 }),
+  ],
+  async (req, res) => {
+    if (validationGuard(req, res)) return;
+
+    const { name, ageGroup, sport, season, year } = req.body;
+    const id = String(Date.now()) + String(Math.floor(Math.random() * 1000));
+
+    const { error } = await supabaseAdmin
+      .from('teams')
+      .insert({
+        id,
+        name,
+        age_group: ageGroup ?? '',
+        sport: sport ?? 'baseball',
+        season,
+        year: year ?? new Date().getFullYear(),
+      });
+
+    if (error) {
+      console.error('[admin/teams] DB error:', error.message);
+      return res.status(500).json({ error: 'DB_ERROR' });
+    }
+
+    return res.status(200).json({
+      team: { id, name, age_group: ageGroup ?? '', sport: sport ?? 'baseball', season, year: year ?? new Date().getFullYear() },
+    });
+  }
+);
+
+// ─── POST /teams/:teamId/roster ─────────────────────────────────────────────
+// Routes admin.html's roster save (add/remove player, CSV import - all three
+// funnel through admin.html's one shared saveRoster() function) through the
+// backend instead of a direct Supabase client write (#787, remaining scope
+// after #338/PR #780). Reuses the existing rosterWipeGuard (see the require
+// above) so an admin-panel action can't silently wipe a live roster, same
+// protection POST /:teamId/data already has internally.
+//
+// No `force` override exposed here on purpose, per
+// ADMIN_HTML_BYPASS_REMEDIATION_PLAN.md §4.4's explicit recommendation:
+// admin.html has no force-override UI today, and an admin who genuinely
+// needs to force-wipe a roster already has the recovery tooling
+// (X-Admin-Key + GET .../history) for that - adding a second, weaker path
+// to the same override isn't part of "route the existing action through
+// the backend."
+//
+// Partial upsert - only team_id/roster columns, per plan §3e - admin.html's
+// direct write never touched schedule/practices/etc. and this route must not
+// either, or a roster save would silently null out a team's schedule.
+
+router.post(
+  '/teams/:teamId/roster',
+  [
+    param('teamId').notEmpty().trim(),
+    body('roster').isArray(),
+  ],
+  async (req, res) => {
+    if (validationGuard(req, res)) return;
+
+    const { teamId } = req.params;
+    const { roster } = req.body;
+
+    const guard = await rosterWipeGuard(teamId, roster, undefined);
+    if (guard.blocked) {
+      return res.status(409).json({
+        error: 'ROSTER_WIPE_GUARD',
+        message:
+          'Refusing to overwrite a non-empty roster with an empty one. ' +
+          'Use the recovery tooling (X-Admin-Key + GET .../history) if this is intentional.',
+        currentRosterCount: guard.currentRosterCount,
+        ...(guard.readError ? { readError: guard.readError } : {}),
+      });
+    }
+
+    const { error } = await supabaseAdmin
+      .from('team_data')
+      .upsert({ team_id: String(teamId), roster }, { onConflict: 'team_id' });
+
+    if (error) {
+      console.error('[admin/teams/roster] DB error:', error.message);
+      return res.status(500).json({ error: 'DB_ERROR' });
+    }
+
+    return res.status(200).json({ ok: true });
+  }
+);
+
+// ─── POST /teams/:teamId/schedule ───────────────────────────────────────────
+// Routes admin.html's schedule save (add game, CSV import, and Clear
+// Schedule - all three funnel through admin.html's one shared
+// saveSchedule() function) through the backend instead of a direct
+// Supabase client write (#787, remaining scope after #338/PR #780).
+//
+// Deliberately does NOT reuse rosterWipeGuard, per
+// ADMIN_HTML_BYPASS_REMEDIATION_PLAN.md §3d: admin.html's Clear Schedule
+// button (confirm() dialog, then _schedData = [] before calling
+// saveSchedule()) is an intentional wipe-to-empty action already in the UI.
+// Applying the roster guard here would outright break that feature - an
+// empty schedule write must always be allowed through.
+//
+// Partial upsert only - team_id/schedule columns, per §3e - same reasoning
+// as the roster route: does not touch roster/practices/etc.
+
+router.post(
+  '/teams/:teamId/schedule',
+  [
+    param('teamId').notEmpty().trim(),
+    body('schedule').isArray(),
+  ],
+  async (req, res) => {
+    if (validationGuard(req, res)) return;
+
+    const { teamId } = req.params;
+    const { schedule } = req.body;
+
+    const { error } = await supabaseAdmin
+      .from('team_data')
+      .upsert({ team_id: String(teamId), schedule }, { onConflict: 'team_id' });
+
+    if (error) {
+      console.error('[admin/teams/schedule] DB error:', error.message);
+      return res.status(500).json({ error: 'DB_ERROR' });
+    }
+
+    return res.status(200).json({ ok: true });
+  }
+);
+
+// ─── POST /coaches ──────────────────────────────────────────────────────────
+// Routes admin.html's Add Coach action through the backend instead of a
+// direct Supabase client write (#787, remaining scope after #338/PR #780).
+// Mirrors POST /admin/approve's insert shape and email->user lookup exactly
+// (ADMIN_HTML_BYPASS_REMEDIATION_PLAN.md §4.2), including status: 'invited'
+// (not the 'active'/activated_at admin.html currently sends) — a deliberate
+// behavior change per the plan, aligning this path with /approve's existing
+// "granting access by email" semantics (coach activates on first login).
+//
+// The plan flagged an open question: does team_memberships have a unique
+// constraint on (team_id, email) to rely on for duplicate detection?
+// Checked docs/db/schema.sql directly - it does not (no UNIQUE constraint
+// beyond the id primary key), so a duplicate insert would otherwise succeed
+// silently. Added an explicit pre-check instead of trusting a DB error that
+// would never come.
+
+router.post(
+  '/coaches',
+  [
+    body('teamId').notEmpty().trim(),
+    body('email').isEmail(),
+    body('role').isIn(CANONICAL_ROLES),
+  ],
+  async (req, res) => {
+    if (validationGuard(req, res)) return;
+
+    const { teamId, email, role } = req.body;
+
+    const { data: existing, error: existingError } = await supabaseAdmin
+      .from('team_memberships')
+      .select('id')
+      .eq('team_id', teamId)
+      .eq('email', email)
+      .maybeSingle();
+
+    if (existingError) {
+      console.error('[admin/coaches] DB error checking existing membership:', existingError.message);
+      return res.status(500).json({ error: 'DB_ERROR' });
+    }
+
+    if (existing) {
+      return res.status(409).json({ error: 'ALREADY_MEMBER' });
+    }
+
+    const { data: userListData } = await supabaseAdmin.auth.admin.listUsers();
+    const authUser = userListData?.users?.find(u => u.email === email);
+    const userId = authUser?.id ?? null;
+
+    const { error: insertError } = await supabaseAdmin
+      .from('team_memberships')
+      .insert({
+        email,
+        phone_e164: null,
+        team_id: teamId,
+        role,
+        status: 'invited',
+        user_id: userId,
+      });
+
+    if (insertError) {
+      console.error('[admin/coaches] DB error inserting membership:', insertError.message);
+      return res.status(500).json({ error: 'DB_ERROR' });
+    }
+
+    return res.status(200).json({ message: 'Coach added.' });
+  }
+);
+
+// ─── DELETE /coaches/:membershipId ─────────────────────────────────────────────
+// Routes admin.html's Remove Coach action through the backend instead of a
+// direct Supabase client write (#787, remaining scope after #338/PR #780).
+// Preserves the existing hard-delete behavior exactly, matching
+// ADMIN_HTML_BYPASS_REMEDIATION_PLAN.md §4.3 — /suspend already exists as a
+// soft-remove alternative if that semantic ever needs revisiting; that's a
+// separate, deliberate call, not part of "route the existing action through
+// the backend."
+
+router.delete(
+  '/coaches/:membershipId',
+  [param('membershipId').isUUID()],
+  async (req, res) => {
+    if (validationGuard(req, res)) return;
+
+    const { membershipId } = req.params;
+
+    const { error } = await supabaseAdmin
+      .from('team_memberships')
+      .delete()
+      .eq('id', membershipId);
+
+    if (error) {
+      console.error('[admin/coaches] DB error:', error.message);
+      return res.status(500).json({ error: 'DB_ERROR' });
+    }
+
+    return res.status(200).json({ message: 'Coach removed.' });
+  }
+);
+
+// ─── PATCH /feature-flags/:flagName ────────────────────────────────────────────
+// Routes admin.html's global feature-flag toggle through the backend instead of
+// a direct Supabase client write (#787, remaining scope after #338/PR #780).
+// Global flags only (team_id IS NULL) — matches admin.html's Flags tab scope;
+// per-team overrides, if any, are out of scope here since the current UI
+// doesn't manage them either.
+
+router.patch(
+  '/feature-flags/:flagName',
+  [
+    param('flagName').notEmpty().trim(),
+    body('enabled').isBoolean(),
+  ],
+  async (req, res) => {
+    if (validationGuard(req, res)) return;
+
+    const { flagName } = req.params;
+    const { enabled } = req.body;
+
+    const { error } = await supabaseAdmin
+      .from('feature_flags')
+      .update({ enabled, updated_at: new Date().toISOString() })
+      .eq('flag_name', flagName)
+      .is('team_id', null);
+
+    if (error) {
+      console.error('[admin/feature-flags] DB error:', error.message);
+      return res.status(500).json({ error: 'DB_ERROR' });
+    }
+
+    return res.status(200).json({ message: `${flagName} set to ${enabled ? 'ON' : 'OFF'}.` });
   }
 );
 

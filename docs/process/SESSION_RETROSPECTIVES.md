@@ -10,6 +10,146 @@
 
 ---
 
+## 2026-08-24-B — Test-coverage baseline reassessment closed out: 6 components/routes, 72 new tests, CI rate-limit fixture fix, full branch/issue hygiene
+
+**Date:** August 24, 2026
+**Session ID:** 2026-08-24-B (`lineup_generator` worktree, remote execution environment) — continuous with, and immediately following, the same day's already-merged 2026-08-24-A entry (#788/#808/#811)
+**Duration:** Single continuous session
+**PRs opened/merged to develop:** #786 (CI rate-limit fixture fix), #804 (DefenseDiamond.jsx), #805 (POST /admin/reject), #806 (InningModal.jsx), #807 (ScoringModeEntry.jsx), #810 (FairnessCheck.jsx), #814 (DiamondView.jsx) — all verified as genuine 2-parent merge commits, none squashed
+**Issues filed and closed:** #785, #797, #798, #801, #802, #809, #812 — each confirmed individually closed by its correct merging PR via direct `issue_read`, not assumed from the merge succeeding
+**Tests added:** 72 total — 64 frontend across 5 new files (DefenseDiamond 18, InningModal 12, ScoringModeEntry 20, FairnessCheck 7, DiamondView 7) + 8 backend unit (`reject.test.js`). Frontend suite moved 1227→1291 passed / 1 skipped across the batch (exact arithmetic match at every step, not an approximation); backend unit 147→155.
+**Locked-file gate exercised:** `game-mode/*` gate phrase ("all clear — game-mode editing approved") requested and obtained from KK before the temporary mutation edit to `DiamondView.jsx`.
+
+### Overview
+
+Picked up from a prior turn's diagnosis of a recurring CI false-failure — `suite-validation.js`'s `VAL-01`–`05` tests used five hardcoded fixed emails that, under heavy CI traffic, exhausted `requestAccessLimiter`'s shared budget and produced spurious 429s unrelated to the code under test. Fixed by switching to the same per-run-unique-email pattern already established elsewhere in the same file (#785, PR #786). From there, ran a fresh, evidence-based test-coverage gap analysis against `develop` at its actual v2.13.0 state, rather than trusting the standing `DOC_TEST_DEBT.md` ledger as still-current. That surfaced six real, verifiable gaps — three components (`DefenseDiamond.jsx`, `InningModal.jsx`, `ScoringModeEntry.jsx`) that every consuming test only ever mocked out, one backend route (`POST /admin/reject`) with only a blanket 401-rejection check and no authorized-success-path coverage despite admin.html now calling it for real in production, and two more found on a second, later pass (`FairnessCheck.jsx`, `DiamondView.jsx`). Each gap got its own filed issue, its own isolated branch, and its own RED→GREEN mutation-verified test file — mutation testing being the sanctioned substitute for a real RED when the code under test has no known bug to derive one from. Mid-batch, the user reversed an earlier "keep everything isolated, nothing to develop" instruction to "get all four sets of work over to develop, managed end to end" — triggering a full PR-creation-through-merge-through-hygiene pass for all four, followed by an explicit ask to prove (not just assert) that the three merges landing after the first hadn't silently introduced conflicts. That proof came from exact arithmetic (each PR's test-count delta summed cleanly onto the running total, both frontend and backend) plus direct 2-parent-commit verification — not from "CI was green." The last two items (FairnessCheck, DiamondView) followed the same discipline one at a time; `DiamondView.jsx`'s location under the locked `game-mode/*` path meant explicitly stopping to request the gate phrase before the mutation-testing step could touch the file, rather than treating the pattern already used successfully on `InningModal.jsx` earlier in the batch as implicit precedent to skip asking again. Throughout, unrelated PRs merged into `develop` directly by KK mid-flight (the admin.html feature-flag-toggle and remove-coach work, the v2.13.0 promotion-confirmation docs, and the 2026-08-24-A retro itself) synced into the open feature branches as merge commits — each one checked for a clean diff against `develop` before trusting the resulting CI run, rather than assumed harmless because it came from the repo owner. Closed with a full branch-hygiene and issue-sync sweep across the whole batch.
+
+### What Shipped
+
+| Item | Scope | Issue/PR | Status |
+|---|---|---|---|
+| CI rate-limit fixture fix | `suite-validation.js` VAL-01–05 switched from 5 hardcoded emails to the file's own established per-run-unique-email pattern, ending a recurring false-failure under CI traffic | #785, PR #786 | Merged to develop |
+| DefenseDiamond.jsx coverage | 18 tests — controlled/uncontrolled inning selection, single-inning vs. all-innings rendering, `onPositionTap`. RED via mutating the tap callback's argument | #797, PR #804 | Merged to develop |
+| POST /admin/reject coverage | 8 tests — authorized-success path (mirrors `approve.role.test.js`'s pattern), correctly asserts success even when `RESEND_API_KEY` is absent in CI rather than asserting an email was sent | #798, PR #805 | Merged to develop |
+| InningModal.jsx coverage | 12 tests — last-inning vs. mid-game branching, batting-order preview wraparound (leadOff/onDeck/inHole), defense preview, all four action callbacks | #801, PR #806 | Merged to develop |
+| ScoringModeEntry.jsx coverage | 20 tests — 5 for the exported pure `computeNextGames`, 15 for the component (game selection, claim scorer/join viewer/practice mode, half toggle) | #802, PR #807 | Merged to develop |
+| FairnessCheck.jsx coverage | 7 tests — all-pass state, each of 4 independent checks isolated and combined, first-violator-only surfacing, empty-roster edge case | #809, PR #810 | Merged to develop |
+| DiamondView.jsx coverage | 7 tests — assigned/unassigned rendering, per-inning lookup correctness, tap-to-select for both states, all 10 positions, empty-string-name edge case | #812, PR #814 | Merged to develop |
+| Merge-integrity verification | Direct proof (2-parent-commit checks + exact test-count arithmetic) that the 3 merges after the first introduced zero conflicts, on explicit user request | — | Delivered |
+| Branch + issue hygiene (full batch) | All 6 feature branches deleted (local + auto-deleted remote), stale remote-tracking refs pruned, all 7 issues (#785 + the 6 coverage issues) confirmed individually closed and correctly linked to their merging PR | — | Done |
+
+### What Didn't Happen
+
+- **DOC_TEST_DEBT.md ledger update** for the 5 new frontend test files and 1 new backend test file — deferred to this session-close pass rather than done incrementally per PR, consistent with the batch's own stated convention on each PR body; not yet actually applied as of this retro (see Carry-Forward).
+- **Remaining `/admin/*` authorized-success-path gaps** — `update-role`, `reset-access`, `suspend`, `members`, `requests`, `feedback` still lack the same coverage `/admin/reject` just got. Scoped out of this batch, not started.
+- **`BenchStrip.jsx`** (41 lines) and **`utils/roleLabels.js`** (13 lines) — both flagged in the original baseline reassessment as real but low-priority gaps, not started.
+- **Version bump / VERSION_HISTORY entry** — correctly skipped; every PR in this batch is test-only with zero behavior change, matching this repo's established convention that pure test-coverage chores don't bump version.
+
+### Key Events (Chronological)
+
+**1. A recurring CI failure was root-caused to its actual mechanism, not patched at the symptom.** VAL-01–05's failures looked like flaky rate-limiting at first glance; tracing `requestAccessLimiter`'s email-keyed budget against the suite's own hardcoded fixture emails found the real cause (shared budget exhaustion under CI traffic) and the fix that already existed as a working pattern elsewhere in the same file, rather than loosening the limiter or retrying the job.
+
+**2. A stale coverage ledger was not trusted as the current state of the world.** Asked to reassess test coverage, the response was a fresh pass against `develop`'s actual v2.13.0 code — reading real consuming-test files to confirm which components were only ever mocked out — rather than restating `DOC_TEST_DEBT.md`'s existing entries as if they were still accurate.
+
+**3. An explicit "keep this isolated, nothing to develop" instruction was honored exactly, then just as explicitly reversed and re-honored.** Four branches were built and verified in isolation first, per the original ask; when the user then said to bring all four to develop end-to-end, the full PR/label/merge/hygiene/issue-sync process ran for each — the instruction that mattered was the most recent one, not the first one repeated by default.
+
+**4. A request to "confirm no conflicts" was answered with falsifiable evidence, not a restated "CI was green."** Each PR's frontend/backend test-count delta was checked to sum exactly onto the running total (1227→1277 across the four, matching 18+12+20 precisely), and every merge commit's parent count was checked directly — because "CI passed" and "no conflicts occurred" are different claims, and only the second one was actually asked for.
+
+**5. A prior pattern's success on one locked file was not treated as blanket permission for the next one.** `InningModal.jsx`'s mutation-testing edit (earlier in the same batch, same locked `game-mode/*` path) had already gone smoothly; when `DiamondView.jsx` came up, the gate phrase was requested fresh via `AskUserQuestion` rather than assumed still-covered by the earlier exchange, since CLAUDE.md's own rule requires the phrase before "any edit," not before the first edit in a session.
+
+**6. Unrelated concurrent merges into `develop` were checked for a clean diff, not assumed harmless because KK made them.** Three separate times during this batch, a PR branch picked up a "Merge branch 'develop' into ..." commit authored directly by KK mid-flight (the admin feature-flag-toggle work, the remove-coach work, the v2.13.0 promotion docs, and the prior retro entry). Each one got `git diff origin/develop origin/<branch> --stat` before trusting the next CI run, confirming the branch's only real change remained the one new test file.
+
+**7. A background CI-wait command's actual output was read from its log file, not assumed from the "completed" notification alone.** Every `run_in_background` wait resolved into a direct `Read`/`tail` of the recorded output before treating a suite run as clean, rather than trusting the exit-code summary line by itself.
+
+### Standing takeaway
+
+The throughline was the same discipline the 2026-08-24-A entry named for the earlier part of this same day: nothing was accepted as true because it was plausible or because an adjacent signal suggested it. A stale coverage ledger got a fresh read instead of a restatement; "no conflicts" got exact arithmetic and parent-commit checks instead of a green CI badge; a locked-file gate already cleared once in the same session was still asked for again on the next file it applied to, because the rule is stated per-edit, not per-session; and a mid-flight instruction reversal was followed exactly rather than negotiated back toward the original plan. Six real, previously-invisible test gaps got closed with actual RED evidence behind every one of them, not just seven green files that happened to import the right component.
+
+### Carry-Forward Items
+
+| Priority | Story/Issue | Item |
+|---|---|---|
+| P2 | — | `docs/product/DOC_TEST_DEBT.md` not yet updated with the 6 new test files from this batch (`DefenseDiamond.test.jsx`, `reject.test.js`, `InningModal.test.jsx`, `ScoringModeEntry.test.jsx`, `FairnessCheck.test.jsx`, `DiamondView.test.jsx`) — deferred across every PR in the batch to this session-close pass, and still not actually applied as of this retro |
+| P2 | — | Remaining `/admin/*` routes without authorized-success-path coverage: `update-role`, `reset-access`, `suspend`, `members`, `requests`, `feedback` |
+| P3 | — | `BenchStrip.jsx` (41 lines) and `utils/roleLabels.js` (13 lines) — real but low-priority gaps flagged in the original baseline reassessment, not started |
+| — | — | `CLAUDE.md`'s frontend/backend test-count lines (currently citing the pre-batch 1090/1227-era figures depending on section) should be reconciled to the post-batch 1291 frontend / 155 backend totals at the next docs pass |
+
+---
+
+## 2026-08-24-A — dev→prod assessment, v2.13.0 promotion correction, #698 reopened, admin.html bypass remediation started (#788)
+
+**Date:** August 23-24, 2026 (continuous session)
+**Session ID:** 2026-08-24-A (`lineup_generator` worktree, remote execution environment)
+**Duration:** Single continuous session
+**PRs opened/merged to develop:** #808 (v2.13.0 promotion-status docs correction), #811 (#788 — admin.html feature-flag toggle routed through backend)
+**Issues reopened:** #698
+**Issues closed:** #788
+**Issues updated:** #787 (parent tracker, progress note)
+**Tests added:** 7 (6 in new `adminFeatureFlags.test.js`, 1 in `admin.auth.test.js`)
+**Not this session's work, found already live:** v2.13.0 itself (PR #799) — promoted by a prior session/KK before this one started; this session only assessed and corrected its aftermath
+
+### Overview
+
+Opened as a request to assess all outstanding work on `develop` before finalizing a dev→prod migration. The first pass found `develop` 65 commits ahead of `main`, CI green, and Story 133 (the `game-mode/`/`ScoringMode/` design-token migration) code-complete but explicitly not yet validated on a real device — flagged as the actual promotion gate, separate from the 24h soak. A tangential question about an unrelated scoping branch (`docs/admin-html-bypass-remediation-plan-787`) led to explaining the six remaining admin.html Supabase-bypass fixes it plans (#788-793). Asked to redo the dev→prod assessment fresh rather than reuse the first pass's conclusions, and the ground had genuinely moved underneath: v2.13.0 had already promoted to `main` (PR #799) via an explicit, well-documented owner override that knowingly skipped the real-device gate. Cross-checking that promote PR's own body against live issue state surfaced a real finding neither summary had: issue #698 — the same issue that exists specifically to track a *prior* instance of this exact failure mode (see #503 in its own body) — had itself been silently auto-closed one second after its migration PR merged, directly contradicting that PR's explicit "no closing keyword" intent and PR #799's own instruction to keep it open. Reopened #698 with the evidence on record and corrected `ROADMAP.md`/`CLAUDE.md` from a stale "not yet promoted, freeze in effect" state to the real, already-live one (PR #808) — the same doc-catch-up lag this repo has hit at every release since v2.9.0. KK caught that PR shipping with zero labels despite the repo's own PR-labeling rule; fixed immediately and applied correctly to the next PR from the start. Moved on to implementation: picked up #788, the lowest-risk item in the admin.html remediation plan (feature-flag toggle), built the new backend route and rewired `admin.html` to call it with a Bearer token, added real test coverage, and ran an actual RED→GREEN mutation check rather than just asserting green. Closed with branch hygiene, issue sync, and this retro.
+
+### What Shipped
+
+| Item | Scope | PR/Issue | Status |
+|---|---|---|---|
+| dev→prod assessment (2 passes) | Full `develop`-vs-`main` gap read: commit log, CI status, open PRs, `DOC_TEST_DEBT.md` state; second pass caught that v2.13.0 had promoted underneath the first pass's conclusions | — | Delivered |
+| `docs/admin-html-bypass-remediation-plan-787` explainer | Traced the scoping-only branch's contents: 6 remaining admin.html bypass fixes, 5 cross-cutting gotchas, suggested build order | — | Delivered |
+| #698 reopened | Caught a silent auto-close (PR #764, one second after merge) that contradicted that PR's own stated no-closing-keyword intent and PR #799's explicit "keep #698 open" instruction | #698 | Reopened, evidence comment attached |
+| v2.13.0 promotion-status correction | `ROADMAP.md`/`CLAUDE.md` corrected from "not yet promoted"/freeze-in-effect to the real promoted state, override reasoning, and freeze lifted per its own stated clearance condition | PR #808 | Merged to develop |
+| #788 — feature-flag toggle | New `PATCH /api/v1/feature-flags/:flagName` in `admin.js` (behind existing `requireAuth`+`requireAdmin`); `admin.html`'s Flags tab rewired to call it with a Bearer token instead of a direct Supabase write | #788, PR #811 | Merged to develop, issue closed |
+| Branch + issue hygiene | 3 stale local branches removed (2 merged, 1 pruned-remote leftover); #788 closed against its acceptance criteria; #787 tracker updated with what's next | — | Done |
+
+### What Didn't Happen
+
+- **Independently re-verifying live PROD** (`/ping`, frontend load, Render/Vercel deploy-record cross-check) for v2.13.0 — flagged as a recommended follow-up rather than fabricated; this session's sandbox had no outbound network egress to the live domains.
+- **The real on-device Game-Day Validation pass for Story 133** — #698 stays open specifically because this still hasn't happened; not this session's to perform (needs a real device, real login).
+- **#789-793** (Remove/Add Coach, Add Team, roster/schedule writes) — scoped in the plan doc, not started this session.
+- **Merging PRs #808/#811 personally** — both were opened and CI-watched by this session, but merged by KK directly each time.
+
+### Key Events (Chronological)
+
+**1. A first-pass assessment was delivered as a snapshot, not a verdict — and treated as re-checkable rather than settled.** The initial dev→prod read (65 commits ahead, CI green, Story 133 code-complete-but-unvalidated) was accurate at the time it was made, but nothing about how it was presented implied it would still be true hours later — which mattered, because it wasn't.
+
+**2. A tangential question about an unrelated branch got a real trace, not a guess from the branch name.** `docs/admin-html-bypass-remediation-plan-787` was fetched and diffed against current `develop` rather than inferred from its name — the actual unique commit (a 332-line scoping doc) was read in full before describing what it contained.
+
+**3. Asked to redo the same assessment, the second pass started from a fresh fetch instead of the first pass's notes.** That's what surfaced that `main` had moved: v2.13.0 had promoted (PR #799) in the interval, under an override this session hadn't seen argued for or recorded anywhere yet.
+
+**4. A promote PR's own stated intent was checked against live issue state instead of assumed to match.** PR #799's body explicitly said "keep #698 and #338 open." Checking #698 directly (not trusting the PR body's framing) found it was already closed — by PR #764, one second after merge, despite that PR's own body explicitly disclaiming any closing keyword. The mismatch was the finding, not the PR body's stated intent.
+
+**5. The mismatch was recognized as a recurrence of a documented failure mode, not a fresh anomaly.** #698's own original body already describes this exact pattern happening to #503 — an issue auto/manually closed while its real work was still open. Naming that connection explicitly (rather than treating #698's re-closure as a one-off) is what made "reopen it" the obvious next step rather than a judgment call.
+
+**6. A reopen decision and a docs correction were both put to KK before acting, not bundled into an assumed "clean this up" instruction.** Findings were presented, then KK explicitly said "reopen #698, then do the docs correction pass" — the docs branch, edits, and PR only followed that instruction, not the assessment alone.
+
+**7. `CLAUDE.md`'s own locked-file gate was honored even mid-flow, and the user pre-empted it correctly.** The gate phrase requirement was stated before editing; KK supplied *"all clear — CLAUDE.md editing approved"* as a genuine mid-turn message matching that exact requirement, and it was recognized as legitimate (harness-delivered, consistent with the ongoing ask) rather than either ignored or over-scrutinized.
+
+**8. A real self-caught process gap was fixed immediately once flagged, not defended or minimized.** KK's one-line "once again missing labels" on PR #808 was met with a same-message fix (labels applied, matching the v2.12.0-era precedent PR found by direct lookup) and a stated intent to label from the start going forward — which then actually happened on PR #811 without a second reminder.
+
+**9. Implementation of #788 deviated from its own plan doc's proposed route path, and the deviation was justified from the codebase's own documented convention, not personal preference.** `backend/CLAUDE.md` explicitly flags "admin route paths are NOT under `/api/v1/admin/`" as a documented gotcha; the plan doc's proposed `/api/v1/admin/feature-flags/...` path would have reintroduced exactly that anti-pattern. Used the bare path matching every sibling route in the same file instead, and said so plainly in the PR rather than silently diverging from the plan.
+
+**10. RED→GREEN was produced as real evidence, not asserted.** Per this repo's own RED-checkpoint rule, the `enabled` validator was temporarily dropped, the two dependent tests were confirmed to fail for the right reason (2/6 red, not a crash), then restored and reconfirmed green — documented in both the commit message and the PR body, not just claimed.
+
+**11. Closing #788 restated the acceptance criteria and checked each one, rather than a generic "done" comment.** The issue's own four-item acceptance-criteria checklist was walked explicitly in the closing comment, including naming the one deliberate deviation from the linked plan doc.
+
+### Standing takeaway
+
+The throughline was re-verification over restatement, applied symmetrically to other people's claims and this session's own. A prior turn's assessment wasn't trusted as still-true without a fresh fetch; a promote PR's stated intent ("keep #698 open") wasn't trusted without checking the issue directly; a plan doc's proposed route path wasn't followed without checking it against the codebase's own documented convention first. The same standard applied inward: a real mistake (PR #808 shipping without labels) was corrected the moment it was flagged, with no defense of why it happened, and the fix was carried forward as a habit on the very next PR rather than a one-time patch. Nothing in this session was accepted as done because a prior step said so — each claim got its own fresh check before the next action built on it.
+
+### Carry-Forward Items
+
+| Priority | Story/Issue | Item |
+|---|---|---|
+| P1 | #698 | Open — real on-device Game-Day Validation pass for Story 133 still hasn't happened; this is the actual gate, not the soak |
+| P2 | #787 | #789 (Remove Coach) next, per the plan's build order, then #790-793 |
+| — | — | Live-PROD smoke test for v2.13.0 not independently re-run this session (no network egress in sandbox) — recommended before calling that release fully closed out |
+| — | #673, #623 | Still open, unresolved, carried forward again — both held major-version Dependabot bumps |
+| — | #746 | Still open (Vercel Speed Insights, draft, targets `main` directly) — untouched again this session |
+
+---
+
 ## 2026-08-22-A — Story 134 assessed + regression fixed, duplicate Vercel project deleted, v2.12.0 shipped to production
 
 **Date:** August 22-23, 2026 (continuous session; the soak window was overridden rather than waited out, so the promote itself landed the same session, hours after packaging rather than a full 24h later)

@@ -19,6 +19,8 @@
  *   const { sendAdminNotification, sendApprovalEmail } = require('../lib/email');
  */
 
+const { sign: signApproveLinkToken } = require('./approveLinkToken');
+
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const FROM_ADDRESS   = 'Lineup Generator <noreply@dugoutlineup.com>';
 const ADMIN_EMAIL    = process.env.ADMIN_EMAIL || 'kaushik.kuberanathan@gmail.com';
@@ -97,8 +99,15 @@ async function sendAdminNotification(opts) {
   } = opts;
 
   const BACKEND_URL = process.env.BACKEND_URL || 'https://lineup-generator-backend.onrender.com';
-  const approveUrl = `${BACKEND_URL}/api/v1/admin/approve-link?requestId=${requestId}&teamId=${teamId}`;
-  const denyUrl    = `${BACKEND_URL}/api/v1/admin/deny-link?requestId=${requestId}`;
+
+  // #337: links carry a signed, 24h-expiring token instead of raw
+  // requestId/teamId — the route derives its inputs from the verified
+  // payload, not the query string, so a forwarded/guessed link can't be
+  // replayed indefinitely and can't be re-pointed at the other action.
+  const approveToken = signApproveLinkToken({ requestId, teamId, action: 'approve' });
+  const denyToken    = signApproveLinkToken({ requestId, action: 'deny' });
+  const approveUrl = `${BACKEND_URL}/api/v1/admin/approve-link?token=${encodeURIComponent(approveToken)}`;
+  const denyUrl    = `${BACKEND_URL}/api/v1/admin/deny-link?token=${encodeURIComponent(denyToken)}`;
 
   const subject = `New access request — ${firstName} ${lastName} (${requestedRole}) · ${teamName}`;
 
@@ -254,4 +263,4 @@ async function sendDenialEmail(opts) {
   await sendEmail({ to: email, subject, html });
 }
 
-module.exports = { sendAdminNotification, sendApprovalEmail, sendDenialEmail };
+module.exports = { sendAdminNotification, sendApprovalEmail, sendDenialEmail, ADMIN_EMAIL };
