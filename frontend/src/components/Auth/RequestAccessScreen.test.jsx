@@ -127,6 +127,50 @@ describe('RequestAccessScreen — additive props for the Home tab discovery flow
     expect(requestAccess.mock.calls[0][1]).toEqual({ preserveSession: true });
   });
 
+  // Added 2026-08-26 (#406/#410 test-health survey; the ask itself predates
+  // the survey — Story 126/#665, v2.10.0 — logged as debt in DOC_TEST_DEBT.md
+  // under "#664" but distinct from that issue's own 5-item list, which is why
+  // it landed here rather than there).
+  test('preserveSession:true — after a successful submit, shows the inline confirmation card instead of the form', async function () {
+    var requestAccess = vi.fn().mockResolvedValue({ success: true });
+    render(<RequestAccessScreen {...baseProps({ requestAccess, preserveSession: true, preselectedTeam: TEAM })} />);
+
+    fillRequiredFields();
+    fireEvent.click(screen.getByRole('button', { name: /request access/i }));
+
+    await waitFor(function () {
+      expect(screen.getByRole('heading', { name: 'Request Sent' })).toBeInTheDocument();
+    });
+    expect(screen.getByText(TEAM.name + ' · Pending approval')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /request access/i })).not.toBeInTheDocument();
+  });
+
+  test('preserveSession:true — a FAILED submit shows the form\'s error state, not the confirmation card', async function () {
+    var requestAccess = vi.fn().mockResolvedValue({ success: false, error: 'already_approved' });
+    render(<RequestAccessScreen {...baseProps({ requestAccess, preserveSession: true, preselectedTeam: TEAM })} />);
+
+    fillRequiredFields();
+    fireEvent.click(screen.getByRole('button', { name: /request access/i }));
+
+    await waitFor(function () {
+      expect(screen.getByText(/already has access/i)).toBeInTheDocument();
+    });
+    expect(screen.queryByRole('heading', { name: 'Request Sent' })).not.toBeInTheDocument();
+  });
+
+  test('preserveSession:false (default) — a successful submit does NOT show the confirmation card (App.jsx routes to PendingApprovalScreen instead)', async function () {
+    var requestAccess = vi.fn().mockResolvedValue({ success: true });
+    render(<RequestAccessScreen {...baseProps({ requestAccess })} />);
+
+    fillRequiredFields();
+    fireEvent.click(screen.getByRole('button', { name: /request access/i }));
+
+    await waitFor(function () {
+      expect(requestAccess).toHaveBeenCalledTimes(1);
+    });
+    expect(screen.queryByRole('heading', { name: 'Request Sent' })).not.toBeInTheDocument();
+  });
+
   test('backLabel defaults to "← Back to login"; a custom value overrides it', function () {
     var { unmount } = render(<RequestAccessScreen {...baseProps()} />);
     expect(screen.getByRole('button', { name: /back to login/i })).toBeInTheDocument();

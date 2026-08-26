@@ -118,6 +118,27 @@ describe('GET /api/v1/auth/me', () => {
     assert.deepEqual(res.body.user.memberships, []);
   });
 
+  // Added 2026-08-26 (#406/#410 Pass 2). GET /me selects `role` straight off
+  // team_memberships with no normalization pass — by design, per the documented
+  // role model (richer labels are a LABEL layer on top of these strings, not
+  // something to translate away on read; see lib/normalizeRole.js). Root
+  // CLAUDE.md documents ~596 prod rows still holding pre-normalization legacy
+  // values (team_admin/coordinator/parent). This test locks in the current,
+  // presumed-intentional behavior: the raw DB value reaches the client as-is.
+  test('SESSION-9: a membership row still holding a legacy role value is returned verbatim, not normalized', async () => {
+    installStubs({
+      profile: { id: USER_ID, first_name: 'Pat', last_name: 'Lee', email: USER_EMAIL, phone_e164: null, created_at: '2026-01-01' },
+      memberships: [{ id: 'm-2', user_id: USER_ID, team_id: '1774297491626', role: 'team_admin', status: 'active', activated_at: '2026-01-01' }],
+    });
+
+    const res = await request(app)
+      .get('/api/v1/auth/me')
+      .set('Authorization', `Bearer ${TOKEN}`);
+
+    assert.equal(res.status, 200);
+    assert.equal(res.body.user.memberships[0].role, 'team_admin');
+  });
+
   test('SESSION-3: no Bearer token → 401 UNAUTHORIZED, never reaches the handler', async () => {
     installStubs({ rejectAuth: true });
 
