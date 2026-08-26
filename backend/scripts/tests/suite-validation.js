@@ -65,12 +65,16 @@ async function run(test, BASE_URL, state) {
     return { pass: res.status === 400, expected: '400', actual: String(res.status) };
   });
 
-  await test('VAL-06', '/request-access: no contact method', async () => {
+  await test('VAL-06', '/request-access: missing email', async () => {
     const res = await post(BASE_URL, '/api/v1/auth/request-access', {
       firstName: 'Test', lastName: 'User', teamId: TEAM_ID,
       requestedRole: 'coach', deviceContext: DEVICE,
     });
-    return { pass: res.status === 400, expected: '400 CONTACT_REQUIRED', actual: String(res.status) };
+    // Phone was a valid alternative to email here until 2026-08-26 (#406/#410
+    // survey removed it as dead code — the frontend never sent it). This now
+    // fails email's own isEmail() validator (VALIDATION_ERROR), not the old
+    // CONTACT_REQUIRED path.
+    return { pass: res.status === 400, expected: '400 VALIDATION_ERROR', actual: String(res.status) };
   });
 
   await test('VAL-07', '/request-access: XSS in firstName is rejected or stored escaped', async () => {

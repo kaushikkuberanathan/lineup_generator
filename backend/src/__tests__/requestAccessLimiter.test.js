@@ -18,10 +18,15 @@
  *   RA-LIMIT-2: a DIFFERENT email is unaffected by another email's
  *               exhausted budget (two different emails from the same
  *               source/IP must NOT share a budget).
- *   RA-LIMIT-3: a phone-only request (no email) is never rate-limited,
- *               even after other emails' budgets are exhausted — skip()
- *               excludes it entirely, matching loginLimiter's own
- *               no-email behavior.
+ *   RA-LIMIT-3: a request with no email is never rate-limited (never a
+ *               429), even after other emails' budgets are exhausted —
+ *               skip() excludes it from the limiter entirely, matching
+ *               loginLimiter's own no-email behavior. It still gets
+ *               rejected, just by validation (400), not the limiter —
+ *               phone was a valid alternative to email here until
+ *               2026-08-26 (#406/#410 test-health survey, dead code:
+ *               the frontend never sent it); this test's own payload no
+ *               longer offers it.
  *
  * Hermetic / CI-safe — no DB, no network. Stubs supabaseAdmin.from (shared
  * singleton — also intercepts logAuthEvent's auth_events insert) and
@@ -84,7 +89,7 @@ afterEach(() => {
 
 const TEAM_ID = '1774297491626';
 
-function requestAccess({ email, phone } = {}) {
+function requestAccess({ email } = {}) {
   const payload = {
     firstName: 'Stan',
     lastName: 'Hoover',
@@ -92,7 +97,6 @@ function requestAccess({ email, phone } = {}) {
     requestedRole: 'coach',
   };
   if (email !== undefined) payload.email = email;
-  if (phone !== undefined) payload.phone = phone;
   return request(app).post('/api/v1/auth/request-access').send(payload);
 }
 
@@ -126,7 +130,7 @@ describe('requestAccessLimiter keying (Security hardening batch 1)', () => {
     assert.equal(res.status, 201, 'a different email must not share the exhausted email\'s budget');
   });
 
-  test('RA-LIMIT-3: a phone-only request (no email) is never rate-limited, even after other emails are exhausted', async () => {
+  test('RA-LIMIT-3: a request with no email is never rate-limited (400 from validation, not 429 from the limiter), even after other emails are exhausted', async () => {
     installStubs();
     const exhaustedEmail = 'ralimit3-exhausted@example.com';
 
@@ -135,10 +139,12 @@ describe('requestAccessLimiter keying (Security hardening batch 1)', () => {
     }
 
     // No email → skip() excludes this request from the limiter entirely,
-    // regardless of how many other budgets are already exhausted. It must
-    // reach the handler (201), not be blocked (429).
-    const res = await requestAccess({ phone: '+15555550100' });
-    assert.equal(res.status, 201, 'a phone-only request must never be rate-limited by the email-keyed limiter');
+    // regardless of how many other budgets are already exhausted. It's
+    // still rejected — email is required — but by validation (400), not
+    // the limiter (429).
+    const res = await requestAccess({});
+    assert.equal(res.status, 400, 'a request with no email must be rejected by validation, never by the rate limiter');
+    assert.equal(res.body.error, 'VALIDATION_ERROR');
   });
 
 });
