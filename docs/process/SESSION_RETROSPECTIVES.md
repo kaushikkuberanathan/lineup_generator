@@ -10,6 +10,73 @@
 
 ---
 
+## 2026-08-25-A — Game Day & Scoring Integrity workstream planned and sequenced; 7 issues shipped/closed across 6 PRs to develop
+
+**Date:** August 25-26, 2026 (continuous session, spans the midnight date rollover)
+**Session ID:** 2026-08-25-A (`lineup_generator` worktree)
+**Duration:** Single continuous session, no gaps
+**Versions shipped to production:** None — every PR this session merged to `develop` only; no promote to `main` was requested or attempted
+**PRs opened/merged to develop:** #832 (#775), #833 (#794 + #704), #836 (#119), #838 (#128), #841 (#105), #843 (#118) — all six confirmed genuine 2-parent merges via direct `git show -s --format=%P`, all six labeled `priority:*`/`type:*`/`area:*` at open time
+**Issues closed:** #775, #794, #704, #119, #128, #105, #118 (via PR `Closes #N`) plus #106 and #479, closed directly with evidence comments after investigation showed both were already resolved by old, unrelated commits and never needed new code
+**Production DB changes:** None. One migration (`024_add_opp_runners_to_live_game_state.sql`, additive `opp_runners jsonb` column on `live_game_state`) applied to DEV (`psqvzppphdedqkpmarwx`) only, verified via direct query; PROD (`hzaajccyurlyeweekvma`) deliberately untouched, confirmed as a separate KK decision for whenever #105 promotes
+
+### Overview
+
+Opened with KK handing over a raw, unstructured list of game-day/scoring issues framed as three workstreams (Live Game Day P0, Secure Live Scoring, Game Day UX & Reliability) and asking to plan and fix them together. Rather than accept the framing as given, pulled the actual GitHub issue bodies, ROADMAP.md entries, and CLAUDE.md history for every issue named before proposing a sequence — which surfaced real corrections to the framing itself: #479's ask was already satisfied by a merged PR nobody had circled back to close, #689's GRANT-revocation migration had no drafted SQL because it was blocked on a design decision only KK could make, and #688 carried its own explicit instruction not to be started solo. Got sign-off on a corrected sequence via AskUserQuestion, then worked it front to back: seven issues, one per PR, each on its own branch off a freshly-synced `develop`, each gated through the repo's locked-file gate phrases and push-gate phrase individually, each verified with RED→GREEN test evidence (or an honest mutation-test substitute when implementation preceded the tests), each PR-hygiene-cleaned (2-parent merge verified, branch deleted locally and remotely, `develop` re-synced) before starting the next. Two of the seven turned out to need zero code — #106 and #479 were both already shipped by old commits nobody had closed the tracking issue for — and were closed with evidence rather than redone. One (#128) turned out to have a materially different root cause than the issue itself claimed, found by writing an actual reproduction rather than trusting the issue's stated hypothesis. One (#105) was scoped as a real feature with a schema change, and got its own design-alignment pass (two AskUserQuestion calls covering the hit-modeling simplification and the DEV-migration-apply decision) before any code was written, rather than being executed like the smaller P2/P3 fixes around it.
+
+### What Shipped
+
+| Item | Scope | PR/Issue | Status |
+|---|---|---|---|
+| Workstream plan | Corrected KK's raw issue list against live GitHub/ROADMAP/CLAUDE.md state; reordered around what #479/#689/#688 actually needed | — | Presented, confirmed via AskUserQuestion |
+| #775 — LiveScoreViewer placeholder | Real read-only score view (ScoreboardRow reuse) replacing a two-line placeholder that dropped `onExit`, leaving viewers with no score and no way out mid-game | PR #832 | Merged |
+| #106 — flipHalfInning extraction | Investigated, found already fully shipped via old `[combined-view] Story 20` commits plus v2.13.0 test coverage; zero code changed | Closed directly | Closed, stale tracking issue |
+| #479 — live-scoring test-debt spec | Investigated, found already delivered by merged PR #506 (skip-gated `LS1`-`LS7` RED-by-design suite); zero code changed | Closed directly | Closed, stale tracking issue |
+| #794 + #704 — InningModal LC color + gameDay.text.caption contrast | Two single-token-value fixes (byte-match to `color.position.LC`; `#475569`→`#8496AC`, 2.39:1→5.99:1 WCAG AA) | PR #833 | Merged |
+| #119 — defense-view inning soft-sync | `DugoutView` follows the live inning until manually scrubbed, then shows a "Viewing: Inning X / Game: Inning Y" banner + Jump to current; scoped to the GA-default surface only | PR #836 | Merged |
+| #128 — batting-hand badges | Root cause was NOT the issue's own hypothesis (`NowBattingBar`'s roster wiring, confirmed correct since March via `git blame` + a live reproduction) — the real gap was `BattingOrderStrip` (DugoutView's actual strip) never having the feature at all; ported it over | PR #838 | Merged |
+| #105 — opponent baserunners | New `opp_runners` schema column (DEV only), `recordOppPitch` walk/contact branches reuse the existing `forceAdvance` helper (forced-single-only model, confirmed via AskUserQuestion), diamond now shows the correct team's runners per half | PR #841 | Merged (DEV-only migration) |
+| #118 — ScoreboardRow active-half dot | New `isAtBat` prop, wired at all 3 real call sites reusing already-computed `isHomeBatting`/`myTeamHalf` values; pulse animation follows the existing `.animate-*`/`@keyframes` convention in `index.css` | PR #843 | Merged |
+| PR/branch hygiene | Every one of the 6 PRs verified as a genuine 2-parent merge (not squashed) before cleanup; every merged branch deleted locally, remote already auto-deleted each time; `develop` re-fetched and re-synced before starting the next branch | — | Done, all 6 |
+
+### What Didn't Happen
+
+- **#689 (GRANT-revocation migration) drafted or applied** — the design decision (zero anon grants vs. keep-broad-rely-on-RLS) was confirmed via AskUserQuestion, but no SQL was written this session; still needs its own pass.
+- **#688 (Phase 4C shim removal steps 2-7)** — not started, per the issue's own explicit instruction not to attempt this unattended without KK's live presence for the step-3 game-day soak. Not even scoped further this session.
+- **Any real-device verification** — every one of the 7 fixes was flagged in its own PR body as needing a phone/live-game check before promoting past `develop`; none of that verification happened this session, by design (see standing takeaway below).
+- **`docs/db/schema.sql` update for `opp_runners`** — deliberately not touched as a side effect of the #105 PR, flagged instead, given this repo's documented history of schema-doc drift causing real incidents (#342/#351/#355).
+- **PROD migration for #105** — explicitly scoped to DEV only this session; promoting the feature to `main` will need its own PROD-apply decision.
+- **Any promote to `main`** — every PR this session targeted `develop`; no version bump, no VERSION_HISTORY entry, no Ship Gate walkthrough was attempted, because nothing here was framed as release-ready.
+
+### Key Events (Chronological)
+
+**1. A raw issue list was treated as a starting point to verify, not a plan to execute.** Rather than work KK's three-workstream framing as given, every named issue's actual GitHub body was pulled before proposing a sequence — which is what surfaced that #479 and #689 weren't accurately described by the framing (one already done, one blocked on an undecided design question), corrections that materially changed the proposed order.
+
+**2. #775's placeholder bug was verified against the live component, not the issue's quoted code snippet.** The issue quoted `return LiveScoreViewer;` (invalid JSX); the actual file on disk read `return <div>LiveScoreViewer</div>;` — a materially different but still-broken state, confirmed by reading the real file and the real caller's props before writing the fix, not by trusting the issue text verbatim.
+
+**3. Two "next" items turned out to need investigation before code, not after.** Both #106 and #479 were confirmed already-shipped via `git blame`, `git log -S`, and running the relevant existing tests — before any new branch, any new code, or any redone work — rather than assuming an open GitHub issue meant open work.
+
+**4. A user instruction that conflicted with known state was flagged, not silently reinterpreted.** When told "do 106 next" after #106 had already been closed minutes earlier in the same session, the mismatch was named plainly and the most likely intended next item (#128) was proposed instead of guessing silently or blindly redoing already-finished work.
+
+**5. #128's root cause was established by writing a live reproduction, not by trusting the issue's own stated hypothesis.** The issue claimed `NowBattingBar`'s `roster` prop wasn't reaching the component. A scratch reproduction test with realistic data showed that component working correctly, and `git blame` showed its wiring predated the bug report by six weeks — which is what led to finding the *actual*, different bug in a sibling component (`BattingOrderStrip`) the issue never mentioned.
+
+**6. A schema-touching feature got its own design-alignment pass before code, unlike the smaller fixes around it.** #105 was recognized as materially bigger risk (DB migration, a real product simplification in how opponent hits are modeled) and was paused for two explicit AskUserQuestion calls — the forced-single-only hit model, and whether to apply the DEV migration via the connected Supabase MCP — before any file was touched, rather than defaulting to the same "just build it" pace as the P2/P3 fixes.
+
+**7. Before touching the database at all, the connected Supabase MCP's actual project targets were verified, not assumed.** `list_projects` was called to confirm which of the two connected projects (`hzaajccyurlyeweekvma` vs `psqvzppphdedqkpmarwx`) was DEV before running `apply_migration` — matching this repo's own documented convention (`backend/CLAUDE.md`'s Migration Notes) of never trusting a migration-number or environment claim without a direct check.
+
+**8. Uncommitted pre-existing work was found in the working tree at the very start and preserved, not discarded.** Before the first branch could be created, an unrelated uncommitted `CLAUDE.md` edit (a stale-freeze-notice correction, not this session's work) blocked a `git checkout`. It was stashed rather than force-discarded, and the stash was explicitly flagged to KK as parked and unrelated rather than silently dropped or silently carried onto an unrelated feature branch.
+
+**9. Every RED-first gap was closed with a documented mutation test, not skipped.** In every case where implementation landed before its tests (a repeated pattern this session, since design and diagnosis often happened inline with the fix), the fix was temporarily reverted via `git stash` or `sed`, the new tests were confirmed to fail for the right reason, then restored and reconfirmed green — the repo's own documented RED-checkpoint substitute, applied every time rather than treated as optional once skipped once.
+
+**10. Every merge was independently verified as a real merge commit, not trusted from the GitHub UI.** All 6 PRs' merge commits were checked directly via `git show -s --format=%P` for exactly two parents before any branch cleanup — matching this repo's own documented history of squash-merges slipping through the dropdown despite stated intent (#573).
+
+**11. A real limitation was stated plainly and repeatedly, not glossed over once.** Every one of the 7 PRs explicitly disclosed that no live-device or real-login verification had been done, and why (the standing auth-testing boundary from Story 133, recorded in memory) — rather than letting a clean test suite imply more confidence than was actually earned.
+
+**12. A same-directory concurrency conflict was found while writing this retro, and resolved by rebuilding rather than force-picking a side.** Mid-write, the local repo's HEAD had moved to a branch (`docs/session-retro-2026-08-26`) this session never created, with its own stash entry — evidence another process (a separate Claude Code session, or KK directly) had touched this exact worktree directory concurrently. Rather than guess which side's content to keep or force through the resulting 3-way conflict, `origin/develop`'s clean current file (which turned out to already contain two newer, unrelated, already-merged retro entries — 2026-08-24-A and 2026-08-24-B — this session's branch had been cut before) was pulled fresh and this entry re-inserted above them by hand.
+
+### Standing takeaway
+
+The throughline this session was refusing to let "there's an open issue about this" or "the issue says X" stand in for an actual check. Two of seven items turned out to be already-finished work nobody had closed out; one of seven turned out to have a wrong stated root cause. In every case the response was the same: read the real code, run the real test, check the real git history, before writing anything new — and when a task's risk profile genuinely changed (a schema migration, a product-modeling simplification, an ambiguous instruction conflicting with known state, a same-directory concurrency surprise), slow down and get explicit sign-off or rebuild cleanly rather than carrying the same fast, confirm-and-go pace that worked fine for the smaller fixes. Every fix also stayed honest about what verification hadn't happened — RED evidence when possible, a disclosed mutation-test substitute when not, and a flagged "needs a real device" note on every PR rather than a clean-suite-implies-done story.
 ## 2026-08-26-A — Three consolidation passes closed out: dependency currency, git governance, and the Test Health & Regression Protection umbrella
 
 **Date:** August 26, 2026
@@ -89,6 +156,13 @@ Every cluster this session touched shared one root cause: an issue or doc claim 
 
 | Priority | Story/Issue | Item |
 |---|---|---|
+| — | #689 | Design decided (zero anon grants) via this session's AskUserQuestion; SQL still not drafted |
+| — | #688 | Phase 4C shim-removal steps 2-7 — explicitly not started, needs KK's live presence for the step-3 soak |
+| — | #105 | PROD migration decision still open — DEV-only as of this session |
+| — | `docs/db/schema.sql` | Missing `opp_runners` (#105) — deliberately not touched this session, flagged in PR #841 |
+| — | 7 merged PRs (#832, #833, #836, #838, #841, #843) | None have had real-device verification yet — each PR body names the specific manual check it needs before promoting past `develop` |
+| — | Pre-existing stashed `CLAUDE.md` edit | Found at session start, unrelated to this session's work (a main-promote freeze-notice correction) — still parked in a git stash on the `main` branch, not yet committed |
+| — | `docs/session-retro-2026-08-26` branch/stash | A branch and stash this session did not create, found mid-write on this same worktree directory — worth checking with KK whether another session is (or was) concurrently active here |
 | — | #850 | Merge in flight as of this retro — needs branch cleanup + `develop` sync once it lands |
 | P2 | #517 | Windows Vitest Bug #7 — permanent known-limitation tracker, correctly not touched |
 | P2 | #482 | Secondary RLS coverage — self-scoped low-risk/opportunistic, not started |
