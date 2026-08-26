@@ -1,7 +1,23 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: 2026-08-26 (v2.14.0 promoted to `main` and live in prod — see the top entry below.)
+> Last updated: 2026-08-26 (dependency-currency closure audit + ESLint 9 / React 19 migrations — develop only, not yet promoted; see the top entry below.); previously 2026-08-26 (v2.14.0 promoted to `main` and live in prod).
 > MVP launched: March 24, 2026
+
+---
+
+## Dependency-currency closure audit + ESLint 9 / React 19 migrations — 2026-08-26 (develop only — not yet promoted)
+
+**Dev-tooling only, no user-facing change.** A 9-issue dependency-currency cluster (#135, #321, #322, #371, #469, #473, #632, #633, #636) was flagged as "screaming for consolidation" — several of the older issues described vulnerability states that later issues explicitly said were already fixed. A closure audit (read every issue + its cross-references before touching anything) found the cluster resolved to exactly 3 real pieces of work, matching the predicted 2-4 range.
+
+**Closed as stale/duplicate/already-resolved (6):** #135 (superseded by #371's later triage), #321 (literal duplicate of #322, filed 11s apart), #322 (decoupled esbuild fix that never landed, superseded by later audits), #371 (its 23-vuln triage was actually done via #468), #469 and #473 (both tracked Dependabot alerts #28/#30, which #636's own 2026-08-07 comment confirms were already `state=fixed`). Each closed with a comment citing what superseded it.
+
+**#632 — ESLint 8 → 9 + flat-config migration (PR #834).** The originally attempted 8→10 bump (#626) was blocked by `eslint-plugin-react`'s peer-dep ceiling (`^9.7` max, still true as of this session — verified directly against the current npm registry, not assumed from the old issue). Landed ESLint 9.39.5 instead, plus the mandatory `.eslintrc.cjs` → `eslint.config.js` migration ESLint 9 requires. `eslint-plugin-react-hooks` bumped 4.6.2 → 7.1.1 (the only version with flat-config support) but deliberately scoped down to just `rules-of-hooks` + `exhaustive-deps` rather than its new `recommended-latest` preset, which bundles the React Compiler lint rules and flagged 9 real errors across existing code — out of scope for a lint-infra migration. Two ESLint 9 default-behavior changes were pinned back to old behavior for parity: `no-unused-vars`'s `caughtErrors` option (default flipped `'none'`→`'all'`, would have silently surfaced 31 new warnings) and `reportUnusedDisableDirectives` (new default `'warn'`, caught one genuinely stale directive in a file under the locked `game-mode/` path — pinned off rather than editing that file without its gate phrase). Verified: lint clean, build clean, full Vitest suite 1307 passed / 1 skipped.
+
+**#633 — React 18 → 19.2.8 migration (PR #835).** A Dependabot PR (#623) had already bumped `react-dom` alone, leaving `react` itself on 18.2.0 — a genuine version mismatch that would have shipped broken (CI was failing on that branch for exactly this reason). Bumped both together. Pre-bump codebase audit found zero legacy patterns needing migration: no `ReactDOM.render`/`hydrate` (already on `createRoot`), no `.defaultProps`/`propTypes`/string refs/`forwardRef`, no `createFactory`/`findDOMNode`/`UNSAFE_` lifecycle methods, no `react-dom/test-utils` imports. The one class component (`ErrorBoundary.jsx`) uses only `getDerivedStateFromError`/`componentDidCatch`, both fully supported in 19. No app code changes were needed. Verified: lint clean, build clean (bundle ~50KB larger, expected), full Vitest suite 1307 passed / 1 skipped.
+
+**Both merged to `develop`** as genuine 2-parent merge commits (verified via `git show -s --format=%P`, not the GitHub UI) — #834 first, #835 second (rebased onto #834's merge mid-flight after KK used GitHub's "Update branch"). Re-verified together post-merge: 1309 passed / 1 skipped (116/116 files), lint/build clean — no interaction issues between the two migrations. Both PRs labeled to match their source issues' taxonomy (`priority:p2`/`type:chore`/`area:ci-ops`) — labeling PRs, not just issues, had been missed before. Feature branches deleted both locally and remotely post-merge.
+
+**#636 (the umbrella) closed, then reopened as a standing tracker per KK's instruction.** All 4 of its original 2026-08-07 sub-issues (#635, #634, #632, #633) plus a bonus 5th item it surfaced (#674) are now resolved, so it was closed — then reopened and retitled "Dependency modernization — umbrella tracker" to serve as the ongoing home for future dependency-currency work instead of being recreated each time. Its body now documents the resolved history and instructs closure-audit-first for future work, given this cluster's demonstrated track record of issues going stale once their scope lands elsewhere.
 
 ---
 
