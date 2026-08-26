@@ -478,3 +478,29 @@ describe('BattingOrderStrip roster wiring (#128)', function() {
     );
   });
 });
+
+// ── #118: ScoreboardRow active-half indicator ─────────────────────────────────
+
+describe('ScoreboardRow active-half dot (#118)', function() {
+  it('shows the dot on our team when the scoring inning halfInning matches myTeamHalf', function() {
+    render(<DugoutView {...defaultProps} />);
+    act(function() {
+      fireEvent.click(screen.getByTestId('claim-btn')); // mock claims with half='top'
+    });
+    // createDefaultScoring()'s gameState.halfInning is also 'top' — matches
+    expect(screen.getByTestId('scoreboard-mine-active-dot')).toBeInTheDocument();
+  });
+
+  it('shows the dot on the opponent when the scoring inning halfInning is the other half', function() {
+    vi.mocked(useLiveScoring).mockReturnValue(
+      Object.assign(createDefaultScoring(), {
+        gameState: Object.assign({}, createDefaultScoring().gameState, { halfInning: 'bottom' }),
+      })
+    );
+    render(<DugoutView {...defaultProps} />);
+    act(function() {
+      fireEvent.click(screen.getByTestId('claim-btn')); // mock claims with half='top'
+    });
+    expect(screen.getByTestId('scoreboard-opp-active-dot')).toBeInTheDocument();
+  });
+});
