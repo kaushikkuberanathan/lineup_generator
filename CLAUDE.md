@@ -50,6 +50,12 @@ Default base for new work: develop.
 
 **`--no-verify` exception:** Acceptable only when all three conditions are true: (a) commit is docs-only or meta-governance — zero app code, zero `frontend/` files changed; (b) pre-push failure is the documented Bug #7 worker-timeout flake; (c) CI is running on the PR as the authoritative gate. Any usage outside these conditions requires explicit justification in the commit message body. See also: MASTER_DEV_REFERENCE.md § GitHub Operating System.
 
+**Conflict resolution when develop ↔ main diverge (#124):** The v2.5.10 promotion invented this decision tree on the fly and lost ~45 min recovering from the wrong choice. Use this instead of rediscovering it:
+- **Mechanical conflicts** (one side wins everywhere, no substantive review needed): resolve directly on the destination PR via the GitHub web editor. Creates a real merge commit, preserves ancestry.
+- **Conflicts needing substantive review/audit:** cut a sync branch off the destination branch, merge the source branch into it, then PR sync-branch → destination. Use "Create a merge commit" on that PR — NOT squash — to preserve ancestry (see Merge-type policy above).
+- **Avoid:** sync-branch + squash-merge. This erases the ancestry the destination PR needs to see the conflict as resolved, and the destination PR re-conflicts.
+- **Avoid:** direct push to `develop`/`main` with `ALLOW_DIRECT_PUSH=1` to route around a divergence. That override exists for declared hotfixes, not as a shortcut past merge conflicts — it bypasses the safety gates that exist for exactly this kind of pressure.
+
 ---
 
 ## Commands
