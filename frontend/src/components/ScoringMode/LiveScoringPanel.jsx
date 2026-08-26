@@ -286,6 +286,8 @@ export default function LiveScoringPanel(props) {
       <LiveScoreViewer
         gameState={gs}
         scorerName={scorerName}
+        myTeamLabel={myTeamLabelSB}
+        oppLabel={teamLabelSB}
         onClaimScorer={function() { setViewerOnly(false); claimScorerLock(); }}
         onExit={onExit}
       />
