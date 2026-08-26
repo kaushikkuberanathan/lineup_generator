@@ -1935,7 +1935,8 @@ Six open issues, one underlying capability (repo/DB/CI don't reliably describe t
 - Blocks nothing directly; current localStorage override remains available as workaround.
 - Connects to Story 41: until both resolved, runtime flag changes require redeploy + can't be locally test-validated.
 
-### Story 26 (P2): Backend RATE-01a test flakiness — stateful against prod rate limiter <!-- #111 -->
+### ✅ Story 26 (P2): Backend RATE-01a test flakiness — stateful against prod rate limiter <!-- #111 -->
+Status: Resolved. `loginLimiter` re-keyed IP→email; rate-limit-touching integration tests use per-run-unique emails. GitHub issue closed 2026-08-26 as root-cause-resolved (see #840, #115).
 - **Surfaced:** April 24, 2026 (PR #17 CI run — admin-bypassed because only CLAUDE.md changed).
 - `backend/scripts/tests/suite-rate-limits.js` RATE-01a expects `403 NOT_AUTHORIZED` but gets `429 TOO_MANY_ATTEMPTS` when prior CI runs have burned through the prod backend's rate-limit cap.
 - Update 2026-04-28: VAL-09 (validation, no email) is also affected by this rate limit issue, not just RATE-01a.
@@ -2148,8 +2149,8 @@ Recommendation: A. Ship a tight banned-token list (≤10 patterns), per-entry
 
 ---
 
-### Story 39 (P3) — Typed VERSION_HISTORY schema validator <!-- #117 -->
-Status: Open
+### ✅ Story 39 (P3) — Typed VERSION_HISTORY schema validator <!-- #117 -->
+Status: Resolved. Option A shipped via `frontend/src/__tests__/versionHistory.test.js` (PR #257/#258, 2026-05-30, story #256). GitHub issue closed 2026-08-26 — tracker was never closed after the validator landed.
 Discovered: April 2026 — pattern recognized after two structural regressions
   (v2.2.12/13 missing entries killed the Current badge; v2.4.0/v2.3.4
   techNote violations slipped past)
@@ -2775,9 +2776,9 @@ Recommendation: Bundle all three in one chore PR — small scope, no app code.
 
 ---
 
-### Story 71 (P2) — Version History Audit: Standardize Schema Across All Entries <!-- #140 -->
+### ✅ Story 71 (P2) — Version History Audit: Standardize Schema Across All Entries <!-- #140 -->
 
-Status: Open
+Status: Resolved. Schema enforcement (headline required, no `title` field, no PR/Story leakage in userChanges, date-format check) shipped via `versionHistory.test.js` (PR #257/#258, 2026-05-30, story #256). GitHub issue closed 2026-08-26 — tracker was never closed after the work landed.
 Discovered: May 19, 2026 (v2.5.16 bump session — 2026-05-19-B)
 Target: v2.5.17
 Symptom: VERSION_HISTORY entries in frontend/src/data/versionHistory.js have inconsistent date formats (some "2026-05-04", some "May 2026"), missing headline/techNote fields on older entries, and internalChanges content appearing in userChanges where coaches could see it.
@@ -2880,9 +2881,9 @@ proper semantic prop, plus add a guard rail. (b) renames the problem
 rather than solving it. Related: PR #144's F5 anti-pattern guard for
 fontSize — this is the color-prop equivalent.
 
-### Story 75 (P1) — Pre-push hook: move full Vitest suite out of hook, CI-only <!-- #153 -->
+### ✅ Story 75 (P1) — Pre-push hook: move full Vitest suite out of hook, CI-only <!-- #153 -->
 
-Status: Resolved v2.5.18
+Status: Resolved v2.5.18. GitHub issue closed 2026-08-26 — tracker was left open after the fix shipped.
 Discovered: May 20, 2026 — 4 of 5 push attempts failed during chore/backend-route-modularization session
 Target: Next governance pass
 
