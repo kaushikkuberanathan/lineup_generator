@@ -78,7 +78,7 @@ Located at App.jsx ~458–720. Two-phase auto-assign algorithm:
 ## Test Suite
 
 - **Framework**: Vitest
-- **CI target**: 1227 frontend passed / 1 skipped / 0 failed (as of 2026-08-23, v2.13.0 release prep, from the CI run at `develop` HEAD `bce6ba9`; 108 test files; 1374 total incl. 147 backend unit tests)
+- **CI target**: 1368 frontend passed / 1 skipped / 0 failed (as of 2026-08-26, v2.15.0 release prep; 120 test files; 1618 total incl. 250 backend unit tests)
 - **Known skip**: bench-equity.test.js test 2.1 (bench rotation fairness — BUG CONFIRMED; identical players, sit-count drift > 1 inning; fix deferred)
 
 #### Test files
