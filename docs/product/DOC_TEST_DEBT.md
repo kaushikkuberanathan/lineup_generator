@@ -24,19 +24,6 @@
 
 ## Open — Test Gaps
 
-### 🟠 P1 — RequestAccessScreen `submitted` confirmation state has no dedicated test coverage
-
-| | |
-|---|---|
-| **Area** | Auth / Request Access (Team Discovery, FEATURE_MAP.md row 38) |
-| **Description** | `RequestAccessScreen.jsx`'s `preserveSession=true` success path (an already-authenticated coach requesting a 2nd team) renders a new inline `submitted` confirmation-card state, added in Story 126/#665 (v2.10.0, PR #667) because the prior `useAuth` authState-transition confirmation doesn't fire when the session is preserved. Verified by eye only at ship time — no automated test exercises the new state. |
-| **Risk if unfixed** | Silent UX regression risk: a future refactor of `RequestAccessScreen.jsx` or `useAuth.requestAccess` could remove or break the `submitted` state with no test to catch it, reintroducing the exact "no visible confirmation" bug #665 fixed. |
-| **Proposed test/fix** | Add a case to `RequestAccessScreen.test.jsx` that submits with `preserveSession=true` and asserts the confirmation card renders (and that the old authState-transition path is not what's being relied on). |
-| **Opened** | 2026-08-15 (v2.10.0 ship) — flagged in that release's PR body and changelog entry but never formally logged in this ledger until now; caught during v2.11.0 release-prep docs pass. |
-| **Age** | 4 days |
-| **Target** | Opportunistic — no hard deadline, not a North Star capability gap. |
-| **Issue** | [#664](https://github.com/kaushikkuberanathan/lineup_generator/issues/664) |
-
 ### ✅ RESOLVED — useAuth.js `onAuthStateChange` silently strands user on failed `/me` call after `SIGNED_IN`
 
 - **Discovered:** 2026-08-05 (Sprint 2 Story 6, Auth Flow End-to-End)
@@ -331,6 +318,10 @@
 
 *(Items move here once shipped. Format: date, version, original description summary, resolution commit.)*
 
+### August 26, 2026 — RequestAccessScreen `submitted` confirmation state test coverage (#664)
+
+- ✅ **P1 — RequestAccessScreen `submitted` confirmation state has no dedicated test coverage** — Resolved. Added 3 cases to `RequestAccessScreen.test.jsx`: `preserveSession:true` + successful submit renders the "Request Sent" confirmation card (not the form); `preserveSession:true` + a failed submit (`already_approved`) shows the form's error state instead, not the confirmation card; `preserveSession:false` (default) never shows the confirmation card at all, since that path routes through App.jsx to `PendingApprovalScreen` instead. Found and closed during the #406/#410 test-health survey's #664 closure pass — this item had been folded into the same #664 issue number as a separate, unrelated 5-item list (Story 124/#655 backend rate-limit + integration-test debt), untangled and both closed in the same PR (#849) since they were adjacent enough to fix together. PR: #849.
+
 ### August 17, 2026 — PendingApprovalScreen test coverage (#696)
 
 - ✅ **P2 — PendingApprovalScreen has no test coverage** — Resolved. Added `frontend/src/components/Auth/PendingApprovalScreen.test.jsx` (5 tests), mirroring `NoMembershipScreen.test.jsx`'s shape (D-S428b/#481 precedent): confirmation heading + step-list render (both "Request submitted" occurrences — the `<h1>` and step 1's own label — selector-scoped since the bare text collides), pending email from `localStorage.getItem('lg_pending_email')` shown when present and its whole clause omitted when absent, `onTryLogin` wiring on "Try logging in", and an affordance-count check (exactly one button). **RED-checkpoint (mutation-test substitute — coverage-after-the-fact for an already-shipped, already-correct component, not a bug fix, so no natural RED state exists to capture)**: two mutations in one pass, matching D-S428b's precedent — inverted the `pendingEmail &&` conditional to `!pendingEmail &&`, and replaced the button's `onClick={onTryLogin}` with a no-op. 3 of 5 tests went red (the two email-presence tests plus the click-wiring test — exactly the ones touching either mutation); the render/step-list test and the button-count test correctly stayed green (neither mutation touches what they assert). Reverted both mutations, confirmed `git diff` on `PendingApprovalScreen.jsx` empty, re-ran and confirmed 5/5 green again. Full Auth suite re-run clean (4 files, 29 tests) and `npm run build` clean. No real production bug found — this closes a coverage gap only. Issue: [#696](https://github.com/kaushikkuberanathan/lineup_generator/issues/696).
@@ -436,9 +427,11 @@
 | Priority | Test Gaps | Doc Gaps | Process Gaps | Total |
 |---|---|---|---|---|
 | 🔴 P0 | 0 | 0 | 0 | **0** |
-| 🟠 P1 | 1 | 1 | 0 | **2** |
+| 🟠 P1 | 0 | 1 | 0 | **1** |
 | 🟡 P2 | 8 | 5 | 9 | **22** |
-| **Total** | **9** | **6** | **9** | **24** |
+| **Total** | **8** | **6** | **9** | **23** |
+
+*(2026-08-26: RequestAccessScreen `submitted`-state test gap (#664) resolved, moved to Resolved section — see that entry. Direct recount of every `### 🔴`/`### 🟠`/`### 🟡` heading actually present in each Open section immediately before this edit matched the prior table exactly (0/1/8 Test Gaps P0/P1/P2, Doc Gaps and Process Gaps both untouched) — clean single-item removal, not a drift correction. Test Gaps P1 1→0, Total Test Gaps 9→8, P1 Total 2→1, Grand Total 24→23.)*
 
 *(2026-08-23, v2.13.0 release-prep audit: direct recount of every `### 🔴`/`### 🟠`/`### 🟡` heading actually present in each Open section, by line number, before this edit — Test Gaps: 1 P1 + 8 P2 = 9, not the 10 the prior table claimed (the P2 Test Gaps figure had drifted to 9 sometime after the 2026-08-19 entry without a matching 9th heading ever being added; root cause not identified, flagging as found rather than guessed). Doc Gaps (1 P1 + 5 P2 = 6) and Process Gaps (0 + 8 = 8, pre-this-edit) both matched the prior table exactly. New P2 process gap added this pass — InningModal.jsx `POS_COLORS.LC` token divergence, #794, found during the Story 133 code-complete pass, see Open — Tooling / Process Gaps above. Net: Test Gaps P2 corrected 9→8 (drift fix, Total Test Gaps 10→9), Process Gaps P2 8→9 (new item, Total Process Gaps 8→9); both changes cancel in the Grand Total (24→24) but the per-column Total row changes from 10/6/8 to 9/6/9. Also updated this pass: the #579 entry's "residual gap" note, now closed by PR #782 (LoginScreen error wiring) — no count change, that item was already excluded from these tallies as `✅ RESOLVED`. `debt-p0` gate re-confirmed clear (0 P0) before the v2.13.0 minor version bump.)*
 
