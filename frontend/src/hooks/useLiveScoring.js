@@ -66,6 +66,7 @@ function makeDefaultGs() {
     myScore:           0,
     opponentScore:     0,
     runners:           [],  // [{ runnerId, base }]  base: 1|2|3
+    oppRunners:        [],  // #105 — same shape, opponent's baserunners
     currentBatter:     null,
     battingOrderIndex: 0,
     runsThisHalf:      0,
@@ -266,6 +267,7 @@ export function flipHalfInning(gs) {
     oppCurrentBatterPitches: 0,
     oppInningPitches:        0,
     runners:                 [],
+    oppRunners:              [],
     currentBatter:           null,
     runsThisHalf:            0,
     oppRunsThisHalf:         0,
@@ -369,6 +371,7 @@ export function useLiveScoring(params) {
           my_score:            gs.myScore,
           opponent_score:      gs.opponentScore,
           runners:             gs.runners,
+          opp_runners:         gs.oppRunners || [],
           current_batter:      gs.currentBatter,
           batting_order_index: gs.battingOrderIndex,
           runs_this_half:             gs.runsThisHalf             || 0,
@@ -467,6 +470,7 @@ export function useLiveScoring(params) {
             myScore:           row.my_score            || 0,
             opponentScore:     row.opponent_score      || 0,
             runners:           row.runners             || [],
+            oppRunners:        row.opp_runners          || [],
             currentBatter:     row.current_batter      || null,
             battingOrderIndex: row.batting_order_index || 0,
             runsThisHalf:            row.runs_this_half             || 0,
@@ -525,6 +529,7 @@ export function useLiveScoring(params) {
             myScore:           row.my_score            || 0,
             opponentScore:     row.opponent_score      || 0,
             runners:           row.runners             || [],
+            oppRunners:        row.opp_runners          || [],
             currentBatter:     row.current_batter      || null,
             battingOrderIndex: row.batting_order_index || 0,
             runsThisHalf:            row.runs_this_half             || 0,
@@ -627,6 +632,7 @@ export function useLiveScoring(params) {
             opponent_score:      gameState.opponentScore      || 0,
             batting_order_index: gameState.battingOrderIndex  || 0,
             runners:             gameState.runners             || [],
+            opp_runners:                gameState.oppRunners          || [],
             runs_this_half:             gameState.runsThisHalf        || 0,
             opp_runs_this_half:         gameState.oppRunsThisHalf     || 0,
             opp_balls:                  0,
@@ -1020,14 +1026,30 @@ export function useLiveScoring(params) {
     if (type === 'ball') {
       newOppBalls = newOppBalls + 1;
       if (newOppBalls >= 4) {
-        newOppBalls = 0; newOppStrikes = 0;
+        // #105 — walk: batter forced to 1st, cascade only the forced chain
+        // (same model as our own team's WALK/HBP via forceAdvance). No real
+        // roster for the opponent team, so the batting slot number stands
+        // in for a batter id.
+        var walkBatterId = 'opp-' + (gs.oppCurrentBatterNumber || 1);
+        var walkAdv = forceAdvance(gs.oppRunners || [], walkBatterId);
+        newGs = Object.assign({}, gs, {
+          oppBalls: 0, oppStrikes: 0,
+          oppRunners:              walkAdv.remaining,
+          opponentScore:           gs.opponentScore + walkAdv.runsScored,
+          oppRunsThisHalf:         (gs.oppRunsThisHalf || 0) + walkAdv.runsScored,
+          oppCurrentBatterPitches: 0,
+          oppCurrentBatterNumber:  ((gs.oppCurrentBatterNumber || 1) % 11) + 1,
+          oppInningPitches:        (gs.oppInningPitches || 0) + 1,
+          oppGamePitches:          (gs.oppGamePitches || 0) + 1,
+        });
+      } else {
+        newGs = Object.assign({}, gs, {
+          oppBalls: newOppBalls, oppStrikes: newOppStrikes,
+          oppCurrentBatterPitches: (gs.oppCurrentBatterPitches || 0) + 1,
+          oppInningPitches:        (gs.oppInningPitches || 0) + 1,
+          oppGamePitches:          (gs.oppGamePitches || 0) + 1,
+        });
       }
-      newGs = Object.assign({}, gs, {
-        oppBalls: newOppBalls, oppStrikes: newOppStrikes,
-        oppCurrentBatterPitches: (gs.oppCurrentBatterPitches || 0) + 1,
-        oppInningPitches:        (gs.oppInningPitches || 0) + 1,
-        oppGamePitches:          (gs.oppGamePitches || 0) + 1,
-      });
     } else if (type === 'strike') {
       newOppStrikes = newOppStrikes + 1;
       if (newOppStrikes >= 3) {
@@ -1082,9 +1104,17 @@ export function useLiveScoring(params) {
         oppGamePitches:          (gs.oppGamePitches || 0) + 1,
       });
     } else {
-      // contact/hit — batter advances
+      // #105 — contact/hit. Same forced-only model as the walk branch above
+      // (no extra-base/pending-runner UI for the opponent half — a coach who
+      // knows it was an extra-base hit can still true up the score with the
+      // existing manual +1 run button).
+      var hitBatterId = 'opp-' + (gs.oppCurrentBatterNumber || 1);
+      var hitAdv = forceAdvance(gs.oppRunners || [], hitBatterId);
       newGs = Object.assign({}, gs, {
         oppBalls: 0, oppStrikes: 0,
+        oppRunners:              hitAdv.remaining,
+        opponentScore:           gs.opponentScore + hitAdv.runsScored,
+        oppRunsThisHalf:         (gs.oppRunsThisHalf || 0) + hitAdv.runsScored,
         oppCurrentBatterPitches: 0,
         oppCurrentBatterNumber:  ((gs.oppCurrentBatterNumber || 1) % 11) + 1,
         oppInningPitches:        (gs.oppInningPitches || 0) + 1,
