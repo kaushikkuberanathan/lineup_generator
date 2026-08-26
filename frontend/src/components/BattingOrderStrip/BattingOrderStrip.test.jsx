@@ -48,4 +48,36 @@ describe('BattingOrderStrip', () => {
     expect(screen.getByTestId('bos-on-deck')).toHaveTextContent('Jackson');
     expect(screen.getByTestId('bos-in-hole')).toHaveTextContent('Connor');
   });
+
+  // ── #128: batting-hand badges (parity with NowBattingBar) ──────────────────
+
+  describe('batting-hand badges (#128)', () => {
+    var roster = [
+      { name: 'Aiden', battingHand: 'L' },
+      { name: 'Benji', battingHand: 'R' },
+      { name: 'Cassius' }, // no battingHand set — should show no badge
+    ];
+
+    it('shows an L badge for a left-handed batter when roster is passed', () => {
+      render(<BattingOrderStrip battingOrder={['Aiden', 'Benji', 'Cassius']} currentBatterIndex={0} roster={roster} />);
+      expect(screen.getByTestId('bos-now')).toHaveTextContent('L');
+    });
+
+    it('shows an R badge for a right-handed on-deck batter', () => {
+      render(<BattingOrderStrip battingOrder={['Aiden', 'Benji', 'Cassius']} currentBatterIndex={0} roster={roster} />);
+      expect(screen.getByTestId('bos-on-deck')).toHaveTextContent('R');
+    });
+
+    it('shows no badge for a batter with no battingHand set', () => {
+      render(<BattingOrderStrip battingOrder={['Aiden', 'Benji', 'Cassius']} currentBatterIndex={0} roster={roster} />);
+      expect(screen.getByTestId('bos-in-hole')).not.toHaveTextContent('U');
+      expect(screen.getByTestId('bos-in-hole')).toHaveTextContent('Cassius');
+    });
+
+    it('shows no badge for anyone when roster is not passed (backward compatible)', () => {
+      render(<BattingOrderStrip battingOrder={['Aiden', 'Benji', 'Cassius']} currentBatterIndex={0} />);
+      expect(screen.getByTestId('bos-now')).not.toHaveTextContent('L');
+      expect(screen.getByTestId('bos-now')).toHaveTextContent('Aiden');
+    });
+  });
 });

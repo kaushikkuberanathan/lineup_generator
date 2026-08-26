@@ -1,12 +1,23 @@
 import { tokens } from "../../theme/tokens";
 import { Text } from "../ui/Text";
+import { PlayerHandBadge } from "../PlayerHandBadge";
 
 function firstName(name) {
   if (!name) return '';
   return name.split(' ')[0];
 }
 
-export function BattingOrderStrip({ battingOrder, currentBatterIndex }) {
+export function BattingOrderStrip({ battingOrder, currentBatterIndex, roster }) {
+  // #128: NowBattingBar (App.jsx's own strip + GameModeScreen) has always
+  // shown batting-hand badges via this same roster.find(r => r.name ===
+  // name) pattern; BattingOrderStrip (DugoutView's strip, the GA-default
+  // live game-day surface) never got the feature when it was built. roster
+  // is optional so existing callers that don't pass it are unaffected.
+  function getHand(name) {
+    if (!roster || !name) return null;
+    var p = roster.find(function(r) { return r.name === name; });
+    return p ? (p.battingHand || null) : null;
+  }
   if (!battingOrder || battingOrder.length === 0) {
     return (
       <Text
@@ -68,20 +79,26 @@ export function BattingOrderStrip({ battingOrder, currentBatterIndex }) {
       display: 'flex', alignItems: 'stretch', gap: '8px',
     }}>
       <div data-testid="bos-now" style={pillStyle(true)}>
-        <Text as="div" style={nameStyle(true)}>{firstName(nowName)}</Text>
+        <Text as="div" style={nameStyle(true)}>
+          {firstName(nowName)}{' '}<PlayerHandBadge hand={getHand(nowName)} context="dark" />
+        </Text>
         <Text as="div" uppercase style={labelStyle(true)}>Now Batting</Text>
       </div>
 
       {onDeckName ? (
         <div data-testid="bos-on-deck" style={pillStyle(false)}>
-          <Text as="div" style={nameStyle(false)}>{firstName(onDeckName)}</Text>
+          <Text as="div" style={nameStyle(false)}>
+            {firstName(onDeckName)}{' '}<PlayerHandBadge hand={getHand(onDeckName)} context="dark" />
+          </Text>
           <Text as="div" uppercase style={labelStyle(false)}>On Deck</Text>
         </div>
       ) : null}
 
       {inHoleName ? (
         <div data-testid="bos-in-hole" style={pillStyle(false)}>
-          <Text as="div" style={nameStyle(false)}>{firstName(inHoleName)}</Text>
+          <Text as="div" style={nameStyle(false)}>
+            {firstName(inHoleName)}{' '}<PlayerHandBadge hand={getHand(inHoleName)} context="dark" />
+          </Text>
           <Text as="div" uppercase style={labelStyle(false)}>In Hole</Text>
         </div>
       ) : null}
