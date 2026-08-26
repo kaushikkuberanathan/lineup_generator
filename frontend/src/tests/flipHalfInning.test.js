@@ -20,6 +20,7 @@ function baseGs(overrides) {
     myScore: 4,
     opponentScore: 2,
     runners: [{ runnerId: 'p1', base: 2 }],
+    oppRunners: [{ runnerId: 'opp-3', base: 1 }],
     currentBatter: { id: 'p2', name: 'Jordan' },
     battingOrderIndex: 5,
     runsThisHalf: 2,
@@ -60,6 +61,7 @@ describe('flipHalfInning', function () {
     expect(next.oppCurrentBatterPitches).toBe(0);
     expect(next.oppInningPitches).toBe(0);
     expect(next.runners).toEqual([]);
+    expect(next.oppRunners).toEqual([]);
     expect(next.currentBatter).toBeNull();
     expect(next.runsThisHalf).toBe(0);
     expect(next.oppRunsThisHalf).toBe(0);

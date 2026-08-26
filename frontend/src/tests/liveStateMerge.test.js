@@ -23,7 +23,7 @@ var MOCK_BATTER = { id: 'p1', name: 'Test Batter' };
 var EXPECTED_LGS_KEYS = [
   'game_id', 'team_id', 'inning', 'half_inning', 'outs',
   'balls', 'strikes', 'my_score', 'opponent_score',
-  'runners', 'current_batter', 'batting_order_index',
+  'runners', 'opp_runners', 'current_batter', 'batting_order_index',
   'runs_this_half', 'opp_runs_this_half', 'updated_at',
   'opp_balls', 'opp_strikes',
   'opp_current_batter_number', 'opp_current_batter_pitches',
@@ -439,6 +439,152 @@ describe('live_game_state MERGE contract', function() {
     expect(mocks.lgsUpsert).toHaveBeenCalledTimes(1);
     var payload = mocks.lgsUpsert.mock.calls[0][0];
     expect(payload).toHaveProperty('opp_game_pitches');
+
+    await h.unmount();
+  });
+
+  // ── Cases 15-19: opponent runner tracking (#105) ───────────────────────────
+
+  it('15: opp_runners jsonb integrity — persist payload.opp_runners is an Array, not a string', async function() {
+    var h = await mountAndClaim();
+    mocks.lgsUpsert.mockClear();
+
+    await act(async function() {
+      h.result.current.recordOppPitch('ball');
+    });
+
+    var payload = mocks.lgsUpsert.mock.calls[0][0];
+    expect(Array.isArray(payload.opp_runners)).toBe(true);
+
+    await h.unmount();
+  });
+
+  it('16: walk (4th ball) with empty bases places the batter on 1st, no run', async function() {
+    mocks.lgsBuilder.single.mockResolvedValueOnce({
+      data: {
+        inning: 1, half_inning: 'bottom', outs: 0, balls: 0, strikes: 0,
+        my_score: 0, opponent_score: 0,
+        runners: [], opp_runners: [], current_batter: null,
+        batting_order_index: 0, runs_this_half: 0, opp_runs_this_half: 0,
+        opp_balls: 3, opp_strikes: 0, opp_current_batter_number: 1,
+      },
+      error: null,
+    });
+
+    var h = await mountAndClaim();
+    mocks.lgsUpsert.mockClear();
+
+    await act(async function() {
+      h.result.current.recordOppPitch('ball');
+    });
+
+    var payload = mocks.lgsUpsert.mock.calls[0][0];
+    expect(payload.opp_runners).toEqual([{ runnerId: 'opp-1', base: 1 }]);
+    expect(payload.opponent_score).toBe(0);
+    expect(payload.opp_runs_this_half).toBe(0);
+    expect(payload.opp_balls).toBe(0);
+    expect(payload.opp_current_batter_number).toBe(2);
+
+    await h.unmount();
+  });
+
+  it('17: walk with bases loaded forces the runner on 3rd home and scores a run', async function() {
+    mocks.lgsBuilder.single.mockResolvedValueOnce({
+      data: {
+        inning: 1, half_inning: 'bottom', outs: 0, balls: 0, strikes: 0,
+        my_score: 0, opponent_score: 2,
+        runners: [],
+        opp_runners: [
+          { runnerId: 'opp-1', base: 1 },
+          { runnerId: 'opp-2', base: 2 },
+          { runnerId: 'opp-3', base: 3 },
+        ],
+        current_batter: null,
+        batting_order_index: 0, runs_this_half: 0, opp_runs_this_half: 1,
+        opp_balls: 3, opp_strikes: 0, opp_current_batter_number: 4,
+      },
+      error: null,
+    });
+
+    var h = await mountAndClaim();
+    mocks.lgsUpsert.mockClear();
+
+    await act(async function() {
+      h.result.current.recordOppPitch('ball');
+    });
+
+    var payload = mocks.lgsUpsert.mock.calls[0][0];
+    // opp-3 scores, opp-2 -> 3rd, opp-1 -> 2nd, batter (opp-4) -> 1st
+    expect(payload.opp_runners).toEqual(
+      expect.arrayContaining([
+        { runnerId: 'opp-2', base: 3 },
+        { runnerId: 'opp-1', base: 2 },
+        { runnerId: 'opp-4', base: 1 },
+      ])
+    );
+    expect(payload.opp_runners.length).toBe(3);
+    expect(payload.opponent_score).toBe(3);
+    expect(payload.opp_runs_this_half).toBe(2);
+
+    await h.unmount();
+  });
+
+  it('18: contact places the batter on 1st (forced-only model, no extra-base advancement)', async function() {
+    mocks.lgsBuilder.single.mockResolvedValueOnce({
+      data: {
+        inning: 1, half_inning: 'bottom', outs: 0, balls: 0, strikes: 0,
+        my_score: 0, opponent_score: 0,
+        runners: [], opp_runners: [{ runnerId: 'opp-1', base: 1 }], current_batter: null,
+        batting_order_index: 0, runs_this_half: 0, opp_runs_this_half: 0,
+        opp_balls: 0, opp_strikes: 0, opp_current_batter_number: 2,
+      },
+      error: null,
+    });
+
+    var h = await mountAndClaim();
+    mocks.lgsUpsert.mockClear();
+
+    await act(async function() {
+      h.result.current.recordOppPitch('contact');
+    });
+
+    var payload = mocks.lgsUpsert.mock.calls[0][0];
+    // opp-1 forced to 2nd, batter (opp-2) to 1st — not a double, no extra advancement
+    expect(payload.opp_runners).toEqual(
+      expect.arrayContaining([
+        { runnerId: 'opp-1', base: 2 },
+        { runnerId: 'opp-2', base: 1 },
+      ])
+    );
+    expect(payload.opp_runners.length).toBe(2);
+    expect(payload.opponent_score).toBe(0);
+
+    await h.unmount();
+  });
+
+  it('19: 3rd out clears opp_runners (half-inning flip resets both teams\' baserunners)', async function() {
+    mocks.lgsBuilder.single.mockResolvedValueOnce({
+      data: {
+        inning: 1, half_inning: 'bottom', outs: 2, balls: 0, strikes: 0,
+        my_score: 0, opponent_score: 1,
+        runners: [], opp_runners: [{ runnerId: 'opp-3', base: 2 }], current_batter: null,
+        batting_order_index: 0, runs_this_half: 0, opp_runs_this_half: 1,
+        opp_balls: 0, opp_strikes: 0, opp_current_batter_number: 4,
+      },
+      error: null,
+    });
+
+    var h = await mountAndClaim();
+    mocks.lgsUpsert.mockClear();
+
+    await act(async function() {
+      h.result.current.recordOppPitch('out');
+    });
+
+    var payload = mocks.lgsUpsert.mock.calls[0][0];
+    expect(payload.opp_runners).toEqual([]);
+    expect(payload.half_inning).toBe('top');
+    expect(payload.inning).toBe(2);
 
     await h.unmount();
   });
