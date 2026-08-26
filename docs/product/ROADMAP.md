@@ -1863,6 +1863,15 @@ Open questions to resolve during implementation:
 
 ## Backlog
 
+### Environment & Data Governance — sequencing (2026-08-25)
+Six open issues, one underlying capability (repo/DB/CI don't reliably describe the same system). Sequenced by live-risk-first, not by issue number:
+1. [#368](https://github.com/kaushikkuberanathan/lineup_generator/issues/368) — Smoke Test (dev) CI job runs against prod
+2. [#339](https://github.com/kaushikkuberanathan/lineup_generator/issues/339) — test suites pollute prod team_memberships/access_requests
+3. [#735](https://github.com/kaushikkuberanathan/lineup_generator/issues/735) — finish Migration 023 (season NOT NULL) after write verification
+4. [#351](https://github.com/kaushikkuberanathan/lineup_generator/issues/351) — repo/prod DB migration source-of-truth drift
+5. [#348](https://github.com/kaushikkuberanathan/lineup_generator/issues/348) — no test exercises RLS as an authenticated user
+6. [#379](https://github.com/kaushikkuberanathan/lineup_generator/issues/379) — populate team_data_history.write_source
+
 ### ✅ Story 15 (P1): RLS policy blocking saveTeamData calls in real-game mode
 **Surfaced:** April 23, 2026 (real-game smoke test)
 **Status:** Resolved v2.5.13
