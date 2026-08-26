@@ -17,15 +17,18 @@ async function post(BASE_URL, path, body) {
 
 async function run(test, BASE_URL, supabaseAdmin, state) {
 
-  // access_requests: contact method required
-  await test('INT-01', 'access_requests: no phone or email → rejected', async () => {
+  // access_requests: email required. Phone was a valid alternative here
+  // until 2026-08-26 (#406/#410 survey removed it as dead code — the
+  // frontend never sent it) — this now fails email's own isEmail()
+  // validator (VALIDATION_ERROR), not the old CONTACT_REQUIRED path.
+  await test('INT-01', 'access_requests: no email → rejected', async () => {
     const res = await post(BASE_URL, '/api/v1/auth/request-access', {
       firstName: 'No', lastName: 'Contact',
       teamId: TEAM_ID, requestedRole: 'coach', deviceContext: DEVICE,
     });
     return {
       pass: res.status === 400,
-      expected: '400 CONTACT_REQUIRED',
+      expected: '400 VALIDATION_ERROR',
       actual: String(res.status),
     };
   });
