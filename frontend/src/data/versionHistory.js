@@ -1,5 +1,22 @@
 export var VERSION_HISTORY = [
   {
+    version: '2.15.0',
+    date: 'August 2026',
+    headline: 'Dependency currency, git governance, and test-health cleanup',
+    techNote: 'Minor fixes and internal improvements',
+    userChanges: [
+      'Behind-the-scenes dependency, tooling, and test-coverage work. No changes to how the app works for you.',
+    ],
+    internalChanges: [
+      'Dependency currency: ESLint migrated 8 -> 9.39.5 with the required flat-config rewrite (.eslintrc.cjs -> eslint.config.js), the highest version eslint-plugin-react currently supports; React migrated 18 -> 19.2.8 (react and react-dom bumped together after finding a prior partial bump had only touched react-dom). A 9-issue dependency-currency backlog was closed to these 2 real items plus 6 stale/duplicate/already-fixed closures, and #636 was reopened and retitled as a standing umbrella tracker for future dependency work rather than a one-off.',
+      'Git/governance: repo settings now disable squash and rebase merging entirely (Settings -> General -> Pull Requests), a real prevention upgrade over the existing squash-detection CI guard. Added a PR title/base-branch mismatch guard (.github/workflows/pr-target-branch-guard.yml) and a conflict-resolution decision tree for develop/main divergence in CLAUDE.md. An 11-issue-plus-label-search governance backlog closed to these 2 real items, 9 stale closures, and 1 settings change.',
+      'Test Health & Regression Protection: consolidated 8 fragmented testing issues into one umbrella (#840) with a false-confidence / critical-path-gaps / test-infrastructure tranche structure. Completed the remaining 2 of 4 passes of an in-progress test-drift-and-coverage survey (#406/#410), finding and fixing a real "replica divergence" bug -- utils/flagBootstrap.js was extracted from an App.jsx useEffect to be unit-tested, but the extraction was never wired back in, so its test suite asserted behavior the running app did not execute (the same anti-pattern as the documented Bug #5, found fresh in a new subsystem). Also added coverage for a completely untracked admin route (GET /api/v1/feedback, previously missing from both backend/CLAUDE.md\'s route list and every test file), 2 untested auth/roles assumptions (requireAdmin\'s exact-match legacy-role behavior, GET /me\'s raw role passthrough), 3 previously-untested components (BrandMark.jsx, game-mode/BenchStrip.jsx, storage.js), the last 3 of 6 admin.js routes flagged as authorized-path coverage gaps (#474), and a tangled issue (#664) that turned out to conflate 2 unrelated asks under one number.',
+      'Removed dead phone-channel code from POST /request-access (detectChannel/normalizeContact) -- the frontend never sent a phone field, and it contradicted the documented "no phone or SMS dependency anywhere in the stack" auth model. Historical DB rows already holding phone_e164 are untouched; only the ability to create a *new* request via phone is gone.',
+      'Confirmed GitHub\'s default branch stays develop (not main) -- an intentional decision (#488), not a leftover: day-to-day mechanics (clone checkout, new-PR target, "Closes #N" auto-close) should point at the active integration branch, while main stays Production for releases. Verified directly via the GitHub API and reconciled against live evidence (issues auto-closing on develop-only merges while main sat 71 commits behind) before documenting the decision.',
+      'Test suite: backend unit 220 -> 250, frontend 1301 -> 1368 passed / 1 skipped (120 files). Lint and build clean, debt-p0 gate clear (0 open P0s).',
+    ],
+  },
+  {
     version: '2.14.0',
     date: 'August 2026',
     headline: 'Admin panel fully routed through the backend, security hardening',
