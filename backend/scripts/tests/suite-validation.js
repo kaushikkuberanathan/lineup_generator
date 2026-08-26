@@ -124,7 +124,15 @@ async function run(test, BASE_URL, state) {
   });
 
   await test('VAL-16', '/admin/approve-link: nonexistent requestId', async () => {
-    const res = await fetch(`${BASE_URL}/api/v1/admin/approve-link?requestId=00000000-0000-0000-0000-000000000000&teamId=${TEAM_ID}`);
+    // #337: the route now derives requestId/teamId from a signed token
+    // instead of raw query params, so reaching the "request not found" 404
+    // path requires a validly-signed token pointing at an id that doesn't
+    // exist — a bare requestId param (pre-#337 shape) never gets past the
+    // route's own "missing token" check (see VAL-14/15) and can't exercise
+    // this path at all.
+    const { sign } = require('../../src/lib/approveLinkToken');
+    const token = sign({ requestId: '00000000-0000-0000-0000-000000000000', teamId: TEAM_ID, action: 'approve' });
+    const res = await fetch(`${BASE_URL}/api/v1/admin/approve-link?token=${encodeURIComponent(token)}`);
     return { pass: res.status === 404, expected: '404', actual: String(res.status) };
   });
 
