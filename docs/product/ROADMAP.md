@@ -1,7 +1,21 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: 2026-08-27 (v2.15.0 promoted to `main` and live in prod — PR #857, `5a38b08`; post-promote sync PR #858); previously 2026-08-26 (v2.15.0 release prep — dependency currency, git governance, and Test Health & Regression Protection consolidation).
+> Last updated: 2026-08-27 (Test/CI environment safety fixes for #339/#368, develop only — not yet promoted); previously 2026-08-27 (v2.15.0 promoted to `main` and live in prod — PR #857, `5a38b08`; post-promote sync PR #858); previously 2026-08-26 (v2.15.0 release prep — dependency currency, git governance, and Test Health & Regression Protection consolidation).
 > MVP launched: March 24, 2026
+
+---
+
+## Unreleased (develop only — not yet promoted) — Test/CI environment safety (#339, #368)
+
+Internal-only, no version bump (no user-facing behavior, no app code touched). Picked up the remaining 3 open issues on the Test Health & CI Governance board (#339, #368, #517) after finding the other 3 (#406, #410, and umbrella #840's own disposition table) were stale trackers for already-shipped v2.15.0 work — see the tracker-sync note below.
+
+**#368 fixed (`.github/workflows/ci.yml`).** The "Smoke Test (dev)" job's `DEV_*` values had always resolved to the exact same project/backend as `PROD_*` (`DEV_SUPABASE_URL`/`ANON_KEY` aliased `secrets.SUPABASE_URL`/`SUPABASE_ANON_KEY` — prod's own — and `DEV_BACKEND_URL` was a copy-pasted literal of the prod Render URL). Every "dev" smoke run has always actually been a second, mislabeled prod run. Audited `scripts/smoke-test.js` before fixing: every check is a GET, so this was a correctness/mislabeling bug, not a data-integrity incident. Fixed: `DEV_BACKEND_URL` now hardcodes the real DEV Render service (`lineup-generator-dev-backend.onrender.com`, the same URL `admin.dev.html` already uses); `DEV_SUPABASE_URL`/`ANON_KEY` now read their own new secrets, pointed at the DEV Supabase project (`psqvzppphdedqkpmarwx`). **Needs KK action:** add `DEV_SUPABASE_URL` (`https://psqvzppphdedqkpmarwx.supabase.co`) and `DEV_SUPABASE_ANON_KEY` (from the Supabase dashboard) as new GitHub Actions repo secrets — until then the job fails loudly (missing env) rather than silently hitting prod, which is the safe failure mode.
+
+**#339 fixed (backend test suites).** Found the live mechanism behind the growing `access_requests` row count: `suite-validation.js`'s VAL-07 test runs unconditionally (even under `CI_SAFE`, even against prod — it's not one of the gated write-heavy suites) and can legitimately get a real `201` back, inserting a real row — but never tracked its email for the existing end-of-run cleanup. Fixed by pushing it into `state.testEmails` like every other suite's rows. Separately, added an unconditional blast-radius fence (`scripts/tests/prodGuard.js`, mirrors `src/__tests__/rls/clients.js`'s `assertDevProject()`) in front of the five write-heavy suites (auth-flow, idempotency, device-context, audit-trail, data-integrity) — they now refuse to run against the PROD project ref regardless of `CI_SAFE`, closing the gap where a crashed/interrupted local run (plausible before `SUPABASE_TARGET=dev` existed) could skip the existing cleanup and leave orphaned `team_memberships` rows, as it evidently did historically. Unit-tested (`prodGuard.test.js`, +4, backend unit suite 250→254). **Not done this session — needs KK action:** purging the existing orphaned rows (10 `team_memberships`, ~584 `access_requests`, both matching `val-suite-%@test.com`, plus one anomalous null-role/approved row) — no prod DB write access was available this session; exact scoped SQL handed to KK separately.
+
+**#517** left untouched — its own comment thread explicitly documents it as a permanent known-limitation tracker, not something to close.
+
+**Tracker sync (#406, #410, #840) — GitHub-only, no code:** #406 and #410's survey work (Pass 2 backend auth/roles/API, Pass 4 frontend screens/data) was already completed and shipped in v2.15.0 per this file's own entry above (PRs #842/#844/#846/#847/#848/#845) — the GitHub issues were just never closed. Closed both with a comment citing the shipped evidence. #840's disposition table also still showed #474 and #664 as open despite both already being `closed` on GitHub (verified live) — corrected.
 
 ---
 

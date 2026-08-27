@@ -14,6 +14,7 @@
 
 require('../../src/lib/env');
 const { createClient } = require('@supabase/supabase-js');
+const { assertNotProd } = require('./prodGuard');
 
 // BACKEND_URL lets CI point at the production Render instance without starting a local server.
 // CI_SAFE=true skips suites that write to the database, keeping CI runs read-only against prod.
@@ -107,8 +108,12 @@ async function run() {
 
   // ── Write-heavy suites (skipped in CI_SAFE mode) ──────────────────────────
   // WRITE-HEAVY: these suites create rows in access_requests, team_memberships,
-  // and auth_events. Do not run against prod without cleanup being available.
+  // and auth_events. Blast-radius fence (#339) — unconditional, checked
+  // regardless of CI_SAFE: relying on "CI_SAFE skips them" plus "cleanup runs
+  // at the end" was not enough, since a crashed/interrupted run skips
+  // cleanup. This makes running them against prod structurally impossible.
   if (!CI_SAFE) {
+    assertNotProd(process.env.SUPABASE_URL);
     await suiteAuthFlow.run(test, BASE_URL, state);
     await suiteIdempotency.run(test, BASE_URL, state);
     await suiteDeviceContext.run(test, BASE_URL, supabaseAdmin, state);
