@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { HELP_CATEGORIES, GAME_DAY_HELP_IDS } from "../../content/faqs";
+import { HELP_CATEGORY_META, HELP_ARTICLES } from "../../content/faqs";
 import { Pill } from "../ui/Pill";
 import { ListRow } from "../ui/ListRow";
 import { Text } from "../ui/Text";
@@ -7,23 +7,18 @@ import { Stack } from "../ui/Stack";
 import { tokens } from "../../theme/tokens";
 import { track } from "../../utils/analytics";
 
-// Flattened lookup used by search and the Game-Day Help quick-access list.
-// Each entry carries its owning category so a result can be opened directly
-// without the coach having to first pick the right category tab.
-var ALL_ITEMS = HELP_CATEGORIES.reduce(function(acc, cat) {
-  cat.items.forEach(function(item) {
-    acc.push({ item: item, categoryId: cat.id, categoryLabel: cat.label, categoryEmoji: cat.emoji });
-  });
+var CATEGORY_BY_ID = HELP_CATEGORY_META.reduce(function(acc, cat) {
+  acc[cat.id] = cat;
   return acc;
-}, []);
+}, {});
 
-var GAME_DAY_ITEMS = GAME_DAY_HELP_IDS
-  .map(function(id) { return ALL_ITEMS.find(function(e) { return e.item.id === id; }); })
-  .filter(Boolean);
+var GAME_DAY_ARTICLES = HELP_ARTICLES.filter(function(a) { return a.gameDayCritical; });
 
-function matchesQuery(entry, query) {
+function matchesQuery(article, query) {
   var q = query.toLowerCase();
-  return entry.item.q.toLowerCase().indexOf(q) >= 0 || entry.item.a.toLowerCase().indexOf(q) >= 0;
+  var haystack = article.title.toLowerCase() + " " + article.answer.toLowerCase()
+    + " " + (article.keywords || []).join(" ").toLowerCase();
+  return haystack.indexOf(q) >= 0;
 }
 
 /**
@@ -31,28 +26,28 @@ function matchesQuery(entry, query) {
  * Support tab → Help sub-tab (component name/file kept as FAQSection to
  * avoid an App.jsx import-path change; the rendered content is "Help").
  *
- * Layout: Game-Day Help quick-access (curated, offline, no category-picking
- * required) → search → Browse Help (task-oriented categories, accordion).
- * Search results are a flat list across all categories so a coach doesn't
- * need to guess which bucket an article landed in.
+ * Layout: Game-Day Help quick-access (curated via gameDayCritical, offline,
+ * no category-picking required) → search → Browse Help (task-oriented
+ * categories, accordion). Search matches title, answer, and keywords, and
+ * results are a flat list across all categories.
  */
 export function FAQSection() {
-  var _cat = useState(HELP_CATEGORIES[0].id);
+  var _cat = useState(HELP_CATEGORY_META[0].id);
   var activeCategory = _cat[0];
   var setActiveCategory = _cat[1];
 
   var _open = useState(null);
-  var openItemId = _open[0];
-  var setOpenItemId = _open[1];
+  var openArticleId = _open[0];
+  var setOpenArticleId = _open[1];
 
   var _query = useState("");
   var query = _query[0];
   var setQuery = _query[1];
 
-  var category = HELP_CATEGORIES.find(function(c) { return c.id === activeCategory; });
+  var categoryArticles = HELP_ARTICLES.filter(function(a) { return a.category === activeCategory; });
   var trimmedQuery = query.trim();
   var isSearching = trimmedQuery.length > 0;
-  var searchResults = isSearching ? ALL_ITEMS.filter(function(e) { return matchesQuery(e, trimmedQuery); }) : [];
+  var searchResults = isSearching ? HELP_ARTICLES.filter(function(a) { return matchesQuery(a, trimmedQuery); }) : [];
 
   // Privacy-safe search analytics: never send the raw query text (see
   // content-rule discussion — coaches type player names, phone numbers,
@@ -60,7 +55,7 @@ export function FAQSection() {
   useEffect(function() {
     if (!isSearching) return;
     var timer = setTimeout(function() {
-      var categoryMatch = searchResults.some(function(e) { return e.categoryId === activeCategory; });
+      var categoryMatch = searchResults.some(function(a) { return a.category === activeCategory; });
       track("help_search", {
         query_length: trimmedQuery.length,
         result_count: searchResults.length,
@@ -72,17 +67,17 @@ export function FAQSection() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trimmedQuery]);
 
-  function openArticle(itemId, categoryId, entryPoint) {
-    var willOpen = openItemId !== itemId;
-    setOpenItemId(willOpen ? itemId : null);
+  function openArticle(article, entryPoint) {
+    var willOpen = openArticleId !== article.id;
+    setOpenArticleId(willOpen ? article.id : null);
     if (willOpen) {
-      track("help_article_open", { article_id: itemId, category_id: categoryId, entry_point: entryPoint });
+      track("help_article_open", { article_id: article.id, category_id: article.category, entry_point: entryPoint });
     }
   }
 
   function selectCategory(catId) {
     setActiveCategory(catId);
-    setOpenItemId(null);
+    setOpenArticleId(null);
     track("help_category_view", { category_id: catId });
   }
 
@@ -98,7 +93,7 @@ export function FAQSection() {
     fontSize: tokens.font.size.body,
   };
 
-  function renderAnswerCard(item) {
+  function renderAnswerCard(article) {
     return (
       <div style={{
         padding: "12px 16px 16px",
@@ -110,26 +105,26 @@ export function FAQSection() {
           size="body"
           style={{ display: "block", color: tokens.color.text.body, lineHeight: tokens.font.lineHeight.loose }}
         >
-          {item.a}
+          {article.answer}
         </Text>
       </div>
     );
   }
 
-  function renderRow(entry, entryPoint, showCategoryLabel) {
-    var item = entry.item;
-    var isOpen = openItemId === item.id;
+  function renderRow(article, entryPoint, showCategoryLabel) {
+    var isOpen = openArticleId === article.id;
+    var cat = CATEGORY_BY_ID[article.category];
     return (
-      <div key={item.id}>
+      <div key={article.id}>
         <ListRow
-          onClick={function() { openArticle(item.id, entry.categoryId, entryPoint); }}
+          onClick={function() { openArticle(article, entryPoint); }}
           showDivider={!isOpen}
         >
           <Stack direction="row" justify="between" align="start" gap="md" style={{ flex: 1 }}>
             <Stack direction="col" gap="xs" style={{ flex: 1 }}>
-              {showCategoryLabel ? (
+              {showCategoryLabel && cat ? (
                 <Text size="xs" color="tertiary" style={{ display: "block", textTransform: "uppercase", letterSpacing: tokens.font.letterSpacing.wider }}>
-                  {entry.categoryEmoji} {entry.categoryLabel}
+                  {cat.emoji} {cat.label}
                 </Text>
               ) : null}
               <Text
@@ -139,7 +134,7 @@ export function FAQSection() {
                 color="navy"
                 style={{ lineHeight: tokens.font.lineHeight.body }}
               >
-                {item.q}
+                {article.title}
               </Text>
             </Stack>
             <span style={{
@@ -153,7 +148,7 @@ export function FAQSection() {
             }}>›</span>
           </Stack>
         </ListRow>
-        {isOpen ? renderAnswerCard(item) : null}
+        {isOpen ? renderAnswerCard(article) : null}
       </div>
     );
   }
@@ -197,7 +192,7 @@ export function FAQSection() {
               </Text>
             </div>
           ) : (
-            searchResults.map(function(entry) { return renderRow(entry, "search", true); })
+            searchResults.map(function(article) { return renderRow(article, "search", true); })
           )}
         </div>
       ) : (
@@ -219,7 +214,7 @@ export function FAQSection() {
             </Text>
           </div>
           <div style={{ paddingBottom: tokens.space.md }}>
-            {GAME_DAY_ITEMS.map(function(entry) { return renderRow(entry, "game_day_quick_access", false); })}
+            {GAME_DAY_ARTICLES.map(function(article) { return renderRow(article, "game_day_quick_access", false); })}
           </div>
 
           {/* Browse Help — task-oriented category picker + accordion */}
@@ -248,7 +243,7 @@ export function FAQSection() {
               gap="sm"
               style={{ overflowX: "auto", paddingBottom: tokens.space.xs }}
             >
-              {HELP_CATEGORIES.map(function(cat) {
+              {HELP_CATEGORY_META.map(function(cat) {
                 return (
                   <Pill
                     key={cat.id}
@@ -263,9 +258,7 @@ export function FAQSection() {
           </div>
 
           <div style={{ paddingBottom: tokens.space.xl2 }}>
-            {category.items.map(function(item) {
-              return renderRow({ item: item, categoryId: category.id, categoryLabel: category.label, categoryEmoji: category.emoji }, "browse", false);
-            })}
+            {categoryArticles.map(function(article) { return renderRow(article, "browse", false); })}
           </div>
         </>
       )}

@@ -4254,6 +4254,19 @@ Deferred, explicitly rejected rather than silently dropped: a hosted
 external Help Center. Revisit only if `help_search` zero-result rates or
 real support volume ever justify it.
 
+**Revised same day, before push:** initial draft nested articles inside
+`HELP_CATEGORIES[].items[]`. Reshaped to a flat `HELP_ARTICLES` list
+(`id`/`category`/`title`/`answer`/`gameDayCritical`/`keywords`) plus a
+separate `HELP_CATEGORY_META` array for category display/ordering — flat
+records give more stable analytics identity, keyword-assisted search
+(search now matches `keywords` too, not just title/answer text),
+`gameDayCritical` as a per-article boolean instead of a hand-maintained
+`GAME_DAY_HELP_IDS` list that could drift out of sync, and easier future
+contextual deep-linking. Still static, still bundled, still offline —
+shape change only. `FAQSection.test.jsx` grew H1-H14 → H1-H15 (added
+keyword-match coverage); full suite 1377 passed / 1 skipped, lint/build
+clean.
+
 ---
 ### Story 109 (P2) - Color token foundation: legacy C disposition <!-- #294 -->
 Status: Resolved
