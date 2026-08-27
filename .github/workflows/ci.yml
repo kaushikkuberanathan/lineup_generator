@@ -273,18 +273,18 @@ jobs:
   # #368 — this job's DEV_* values previously resolved to the exact same
   # project/backend as PROD_* (DEV_SUPABASE_URL/ANON_KEY aliased
   # secrets.SUPABASE_URL/SUPABASE_ANON_KEY — prod's own — and DEV_BACKEND_URL
-  # was a copy-pasted literal of the prod Render URL). Every "dev" smoke run
-  # was actually a second, mislabeled prod run. Fixed: DEV_BACKEND_URL now
-  # hardcodes the real DEV Render service (same URL frontend/public/
-  # admin.dev.html already uses); DEV_SUPABASE_URL/ANON_KEY now read their
-  # own secrets, pointed at the DEV Supabase project (psqvzppphdedqkpmarwx).
-  # Audited what this job's checks actually do against their target
-  # (scripts/smoke-test.js) before this fix: every check is a GET — the job
-  # has never written to prod, so this was a correctness/mislabeling bug,
-  # not a data-integrity incident.
+  # was hardcoded to a copy-pasted literal of the prod Render URL, ignoring
+  # the DEV_BACKEND_URL secret that already existed for exactly this). Every
+  # "dev" smoke run was actually a second, mislabeled prod run. Fixed:
+  # DEV_BACKEND_URL now actually reads its own pre-existing secret;
+  # DEV_SUPABASE_URL/ANON_KEY now read new secrets pointed at the real DEV
+  # Supabase project (psqvzppphdedqkpmarwx). Audited what this job's checks
+  # actually do against their target (scripts/smoke-test.js) before this fix:
+  # every check is a GET — the job has never written to prod, so this was a
+  # correctness/mislabeling bug, not a data-integrity incident.
   #
-  # Requires GitHub secrets: DEV_SUPABASE_URL, DEV_SUPABASE_ANON_KEY,
-  # DEV_FRONTEND_URL (new/pre-existing — see #368)
+  # Requires GitHub secrets: DEV_BACKEND_URL, DEV_SUPABASE_URL,
+  # DEV_SUPABASE_ANON_KEY, DEV_FRONTEND_URL (all now present — see #368)
   # (PROD_FRONTEND_URL, and SUPABASE_URL/SUPABASE_ANON_KEY for PROD_*, already
   # exist from the backend job)
 
@@ -305,7 +305,7 @@ jobs:
       - name: Write .env.smoke
         run: |
           cat > .env.smoke << EOF
-          DEV_BACKEND_URL=https://lineup-generator-dev-backend.onrender.com
+          DEV_BACKEND_URL=${{ secrets.DEV_BACKEND_URL }}
           ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}
           PROD_BACKEND_URL=${{ secrets.PROD_BACKEND_URL }}
           DEV_FRONTEND_URL=${{ secrets.DEV_FRONTEND_URL }}
