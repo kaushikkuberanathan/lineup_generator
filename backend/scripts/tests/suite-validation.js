@@ -17,6 +17,13 @@ async function post(BASE_URL, path, body) {
 
 async function run(test, BASE_URL, state) {
   const TEST_EMAIL = `val-suite-${state.runId}@test.com`;
+  // VAL-07 below can legitimately succeed (201) rather than reject — when it
+  // does, it inserts a real access_requests row under TEST_EMAIL. This suite
+  // runs unconditionally (even under CI_SAFE, even against prod), unlike the
+  // gated write-heavy suites, so without this it's an untracked, permanent
+  // leak on every single run. Track it so test-runner.js's end-of-run
+  // cleanup (state.testEmails) actually deletes it. See #339.
+  state.testEmails.push(TEST_EMAIL);
 
   // ─── /request-access validation ─────────────────────────────────────────────
 

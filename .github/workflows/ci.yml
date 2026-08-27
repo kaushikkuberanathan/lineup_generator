@@ -269,8 +269,24 @@ jobs:
 
   # ── Job 4: Smoke Test (dev environment) ────────────────────────────────────
   # Runs on main only, after both frontend and backend jobs pass.
-  # Requires GitHub secrets: DEV_BACKEND_URL, DEV_FRONTEND_URL
-  # (SUPABASE_URL and SUPABASE_ANON_KEY already exist from the backend job)
+  #
+  # #368 — this job's DEV_* values previously resolved to the exact same
+  # project/backend as PROD_* (DEV_SUPABASE_URL/ANON_KEY aliased
+  # secrets.SUPABASE_URL/SUPABASE_ANON_KEY — prod's own — and DEV_BACKEND_URL
+  # was hardcoded to a copy-pasted literal of the prod Render URL, ignoring
+  # the DEV_BACKEND_URL secret that already existed for exactly this). Every
+  # "dev" smoke run was actually a second, mislabeled prod run. Fixed:
+  # DEV_BACKEND_URL now actually reads its own pre-existing secret;
+  # DEV_SUPABASE_URL/ANON_KEY now read new secrets pointed at the real DEV
+  # Supabase project (psqvzppphdedqkpmarwx). Audited what this job's checks
+  # actually do against their target (scripts/smoke-test.js) before this fix:
+  # every check is a GET — the job has never written to prod, so this was a
+  # correctness/mislabeling bug, not a data-integrity incident.
+  #
+  # Requires GitHub secrets: DEV_BACKEND_URL, DEV_SUPABASE_URL,
+  # DEV_SUPABASE_ANON_KEY, DEV_FRONTEND_URL (all now present — see #368)
+  # (PROD_FRONTEND_URL, and SUPABASE_URL/SUPABASE_ANON_KEY for PROD_*, already
+  # exist from the backend job)
 
   smoke:
     name: Smoke Test (dev)
@@ -289,14 +305,14 @@ jobs:
       - name: Write .env.smoke
         run: |
           cat > .env.smoke << EOF
-          DEV_BACKEND_URL=https://lineup-generator-backend.onrender.com
+          DEV_BACKEND_URL=${{ secrets.DEV_BACKEND_URL }}
           ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}
           PROD_BACKEND_URL=${{ secrets.PROD_BACKEND_URL }}
           DEV_FRONTEND_URL=${{ secrets.DEV_FRONTEND_URL }}
           PROD_FRONTEND_URL=${{ secrets.PROD_FRONTEND_URL }}
-          DEV_SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+          DEV_SUPABASE_URL=${{ secrets.DEV_SUPABASE_URL }}
           PROD_SUPABASE_URL=${{ secrets.SUPABASE_URL }}
-          DEV_SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+          DEV_SUPABASE_ANON_KEY=${{ secrets.DEV_SUPABASE_ANON_KEY }}
           PROD_SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
           DEV_TEAM_ID=1774297491626
           PROD_TEAM_ID=
