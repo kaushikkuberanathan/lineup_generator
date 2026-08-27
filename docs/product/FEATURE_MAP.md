@@ -17,7 +17,7 @@
 
 ---
 
-## Feature Registry (39 features)
+## Feature Registry (40 features)
 
 | # | Feature | Status | Primary Doc | Doc Status | Test File(s) | Test Status | Debt |
 |---|---------|--------|-------------|------------|--------------|-------------|------|
@@ -60,6 +60,7 @@
 | 37 | **PWA Setup (install prompt + service worker)** | MVP | `SOLUTION_DESIGN.md` § PWA Setup | ✅ Current | None | ❌ None | PWA Install Prompt Logic — Android/iOS/already-installed platform branches untested (DOC_TEST_DEBT.md P2) |
 | 39 | **Team season tracking (Spring/Fall + year)** | MVP | `docs/product/ROADMAP.md` § v2.11.0 entry; `backend/CLAUDE.md` § Migration Notes | ✅ Current | `season.test.js` (12), `season.adminHtmlParity.test.js` (3), `TeamSearch.test.jsx` (season/year filter cases, see row 38), backend `teamsSearch.route.test.js` (TS-9c/9d/9e), backend integration `INT-06` (`suite-data-integrity.js`, CI_SAFE-skipped) | ⚠ Partial | #713 (closes #719), #717, #720, #722 (closes #721). **DEV only as of v2.11.0** — migration `022_add_team_season.sql` applied to DEV only (2026-08-18); PROD rollout requires the two-phase sequence in `backend/CLAUDE.md` (apply 022 to PROD → promote this release → confirm zero NULL seasons → apply `023_enforce_team_season_not_null.sql`). Migration-file itself has no dedicated test (deliberate, #722 — no migration in this repo does). Manual authenticated DEV acceptance pass (create/edit/search/switch/reload) flagged in PR #713 as not yet completed by a human. |
 | 38 | **Request Access / Team Discovery** | MVP | `docs/product/AUTH_SECURITY_AUDIT_ROADMAP.md` § The label layer | ✅ Current | `RequestAccessScreen.test.jsx` (16 — +3 2026-08-26, #664 closure: `preserveSession:true` confirmation-card success/failure + `preserveSession:false` contrast), `TeamSearch.test.jsx` (12), `AppHomeMembershipTeams.test.jsx` (2), `AppTeamSearchRequestAccessFlow.test.jsx` (1, new 2026-08-26 — the full wired flow: Home → TeamSearch → RequestAccessScreen with `preselectedTeam`/`preserveSession` threaded from the real App.jsx call site), `useAuth.requestAccess.test.js` (5), backend `teamsSearch.route.test.js` (9), `teamsSearchLimiter.test.js` (1, new 2026-08-26 — `searchLimiter` 20 req/15min actually fires) | ✅ Yes | Story 124/#655 established discovery. Story 134/#740 aligns Home with Account by showing only membership-backed teams and makes the always-visible Find bar the single discovery entry. Story 135/#742 fixed a `refreshMemberships()` gap Story 134 exposed. **#664 closed 2026-08-26** (PR #849): the Story 126/#665 `submitted`-state confirmation card now has dedicated coverage (previously verified by eye only), the App-level wired-flow integration test landed, and `searchLimiter`'s 429 behavior is now asserted — closing out this row's last three known gaps. Test Status upgraded Partial → Yes. |
+| 40 | **Help (Support → FAQ redesign, task-oriented + Game-Day quick access)** | MVP | `ROADMAP.md` § Story 333; `CLAUDE.md` § Support tab convention | ✅ Current | `FAQSection.test.jsx` (14 tests, H1–H14: Game-Day Help quick-access, search incl. privacy-safe analytics, category switching, stable article ids) | ✅ Yes | Story 333/#865 replaced the 7-persona `FAQ_CATEGORIES` taxonomy with 6 task-oriented `HELP_CATEGORIES` (content and file/export names in `content/faqs.js` / `FAQSection.jsx` kept for locked-file reasons — rendered heading is "Help"). Content-accuracy pass against `QuickSwap.jsx`/`toggleAbsentTonight` found and fixed a real drift: the prior FAQ text implied a late/injured player could be added to or pulled from an active game in one step; there is no such action, only a per-inning manual Quick Swap. Hosted external Help Center evaluated and explicitly rejected (no usage evidence, would trade away the app's offline guarantee). Outstanding: Support sub-tab nav label still reads "FAQ" (`MORE_SUBTABS` in App.jsx, locked file, gate phrase pending); resolves alongside or independent of Story 107/#285. |
 
 ---
 
@@ -67,13 +68,15 @@
 
 | Status | Count |
 |--------|-------|
-| ✅ Doc Current | 34 / 39 |
-| ⚠ Doc Stale | 5 / 39 |
-| ❌ Doc Missing | 0 / 39 |
-| ✅ Tests Exist | 13 / 39 |
-| ⚠ Tests Partial | 15 / 39 |
-| ❌ No Tests | 11 / 39 |
+| ✅ Doc Current | 35 / 40 |
+| ⚠ Doc Stale | 5 / 40 |
+| ❌ Doc Missing | 0 / 40 |
+| ✅ Tests Exist | 14 / 40 |
+| ⚠ Tests Partial | 15 / 40 |
+| ❌ No Tests | 11 / 40 |
 
+> **Recounted 2026-08-27** (row 40 added, Story 333/#865): new row for the Help redesign — Doc Current (this file is the current doc) and Tests Exist (`FAQSection.test.jsx` H1–H14). Net change: denominator 39→40, Doc Current 34→35, Tests Exist 13→14; all other categories unchanged.
+>
 > **Recounted 2026-08-26** (row 38, #664 closure): direct tally confirmed the prior 12/16/11 split matched this summary exactly before this edit. Row 38's Test Status then moved `⚠ Tests Partial` → `✅ Yes` — the `submitted`-state confirmation card, the App-level wired-flow integration test, and `searchLimiter`'s 429 behavior all gained coverage in the same PR (#849), closing this row's last three known gaps. Net change: Tests Exist 12→13, Tests Partial 16→15; Doc Status counts unchanged.
 >
 > **Recounted 2026-08-26** (row 9 stale-claim correction, #406/#410 test-health survey): direct tally confirmed the prior 11/17/11 split matched this summary exactly before this edit. Row 9's Test Status then moved `⚠ Tests Partial` → `✅ Tests Exist` — the row's own Debt note claimed the persistence layer (`dbSaveShareLink`/`dbLoadShareLink`) had no coverage; checked directly, both have dedicated test files (`dbSaveShareLink.test.js`, `shareLink.test.js`) and always did by the time this was checked. Net change: Tests Exist 11→12, Tests Partial 17→16; Doc Status counts unchanged.

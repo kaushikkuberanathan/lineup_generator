@@ -4194,6 +4194,67 @@ Fix: Patch ROADMAP (Story 105 entry + <!-- #281 --> marker), add
 FEATURE_MAP row.
 
 ---
+### Story 333 (P2) — Task-oriented Help redesign (Game-Day Help + search, still bundled offline) <!-- #865 -->
+
+Status: Open — implemented on branch `claude/support-help-center-redesign-gq1qus`,
+pending push + PR to develop
+Discovered: 2026-08-27 — product review of a GameChanger-style Help Center
+proposal; decision was to adopt the information architecture, not hosted
+support infrastructure
+Target: Next develop PR
+
+Context: The Support → FAQ sub-tab organized 53 articles by persona (Head
+Coach, Dugout Parent, DJ Parent, Catcher Parent, Base Coaches, Scorekeeper,
+Setup & Sharing) with no search. A coach had to self-identify a role before
+finding an answer. A hosted external Help Center was proposed and evaluated;
+rejected for now — no usage evidence exists to justify the infrastructure,
+and hosting content externally would trade away the app's offline guarantee
+(everything is currently precached via the existing Workbox config).
+
+Scope shipped this pass:
+  - `frontend/src/content/faqs.js` restructured into `HELP_CATEGORIES` (6
+    task-oriented categories: Getting Started, Players & Roster, Lineups,
+    Game Day, Sharing & Scoring, Account & Troubleshooting) with stable
+    per-item `id`s, plus `GAME_DAY_HELP_IDS` (curated quick-access set,
+    deliberately not labeled "Popular" — no analytics exist yet to justify
+    that claim).
+  - `FAQSection.jsx` (file/export name kept to avoid an App.jsx
+    locked-file import change): Game-Day Help quick-access section, a
+    simple client-side search (title + answer substring match, no
+    library/server/AI), Browse Help category picker/accordion retained.
+    Rendered heading changed "Frequently Asked Questions" → "Help".
+  - Privacy-safe analytics: `help_search` (query_length/result_count/
+    zero_results/category_match — never raw query text), `help_article_open`
+    (stable article_id/category_id/entry_point), `help_category_view`.
+  - Content-accuracy pass against actual code, not the prior FAQ text: the
+    Game Day articles ("Player arrived late", "Replace an injured player",
+    "Player needs to leave early") were rewritten after verifying
+    `QuickSwap.jsx` (same-inning two-way swap only, filters out anyone in
+    `absentTonight`) and `toggleAbsentTonight` (App.jsx — flips the
+    attendance flag only, never touches the position grid). The prior FAQ
+    text implied these were closer to one-tap actions than they are; the
+    new copy describes the real multi-step, per-inning workflow.
+  - `FAQSection.test.jsx` rewritten (H1-H14). Full frontend suite green
+    (1376 passed / 1 skipped, up from the 1368/1 baseline). Lint clean,
+    build clean.
+
+Known product gap surfaced, not fixed here: there is no single action that
+removes a player from all remaining innings and rebalances the rest of the
+lineup automatically — a coach must repeat Quick Swap per inning. Flagged
+as a real product question, not a content problem to write around.
+
+Explicitly not done in this pass (locked file, needs gate phrase "all
+clear — App.jsx editing approved"): the Support sub-tab nav label itself
+still reads "FAQ" (`MORE_SUBTABS` in App.jsx) — content and behavior are
+"Help," the one remaining nav-label string is not. Story 107 (#285, tab
+reorder + default-to-About) is unrelated to this story's scope and remains
+open on its own.
+
+Deferred, explicitly rejected rather than silently dropped: a hosted
+external Help Center. Revisit only if `help_search` zero-result rates or
+real support volume ever justify it.
+
+---
 ### Story 109 (P2) - Color token foundation: legacy C disposition <!-- #294 -->
 Status: Resolved
 Discovered: 2026-06-08 - T2 UX track, design-token migration kickoff
