@@ -2,24 +2,23 @@
  * routes/auth.js
  * Authentication routes — email magic-link (primary)
  *
- * POST /request-access  — submit access request (email or phone)
- * POST /login           — request OTP via email or phone
- * POST /verify          — verify OTP, activate membership, return session
+ * POST /request-access  — submit access request (email only)
+ * POST /magic-link       — send a magic-link login email
  * GET  /me              — return profile + active memberships (requireAuth)
+ * PATCH /me             — update the signed-in user's profile name
  * POST /logout          — clear session, log auth_event
  *
- * Channel detection: if request body contains `email` → email channel
- *                    if request body contains `phone` → phone channel
- *                    both present → email takes priority
- *
- * Changes from previous version:
- *   - Email OTP support added throughout (login, verify, request-access)
- *   - auth_events logging on every auth action
- *   - device context captured from req.body.deviceContext on all routes
- *   - /me now returns id on team_memberships (was missing — known bug)
- *   - /logout route added
- *   - Debug console.log statements removed
- *   - requested_role and team_id now written to access_requests
+ * Phone-based request-access (a channel this route accepted alongside email)
+ * was removed 2026-08-26 — dead code found during the #406/#410 test-health
+ * survey: the frontend never sent a `phone` field (confirmed by grep across
+ * `RequestAccessScreen.jsx` and every request-access test file before
+ * removing this), and it contradicted root CLAUDE.md's Auth Strategy
+ * section, which states this app has "no phone or SMS dependency anywhere
+ * in the stack." Historical `access_requests`/`team_memberships` rows that
+ * already hold a `phone_e164` value are untouched — this only removes the
+ * ability to create a *new* request via phone; `admin.js`'s existing
+ * `email ?? phone_e164` read-side fallbacks for those old rows are
+ * unaffected.
  */
 
 const express = require('express');
@@ -82,33 +81,6 @@ const requestAccessLimiter = rateLimit({
   keyGenerator: (req) => (hasEmail(req) ? req.body.email.trim().toLowerCase() : ipKeyGenerator(req.ip)),
 });
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-/**
- * Detect auth channel from request body.
- * Email takes priority if both are present.
- */
-function detectChannel(body) {
-  if (body.email && typeof body.email === 'string' && body.email.includes('@')) {
-    return 'email';
-  }
-  if (body.phone && typeof body.phone === 'string') {
-    return 'phone';
-  }
-  return null;
-}
-
-/**
- * Normalize contact identifier for consistent DB queries.
- * Returns { email, phone } with one populated and one null.
- */
-function normalizeContact(body, channel) {
-  return {
-    email: channel === 'email' ? body.email.toLowerCase().trim() : null,
-    phone: channel === 'phone' ? body.phone.trim() : null,
-  };
-}
-
 // ─── POST /request-access ─────────────────────────────────────────────────────
 
 router.post(
@@ -117,11 +89,11 @@ router.post(
   [
     body('firstName').notEmpty().trim().escape(),
     body('lastName').notEmpty().trim().escape(),
+    body('email').isEmail(),
     body('teamId').notEmpty().trim(),
     body('requestedRole').notEmpty()
       .custom((v) => isNormalizableRole(v))
       .withMessage('requestedRole must be a recognized role'),
-    // At least one contact method required — validated below
   ],
   async (req, res) => {
     const errors = validationResult(req);
@@ -130,16 +102,7 @@ router.post(
     }
 
     const { firstName, lastName, teamId, requestedRole, deviceContext } = req.body;
-    const channel = detectChannel(req.body);
-
-    if (!channel) {
-      return res.status(400).json({
-        error: 'CONTACT_REQUIRED',
-        message: 'Email or phone number is required.',
-      });
-    }
-
-    const { email, phone } = normalizeContact(req.body, channel);
+    const email = req.body.email.toLowerCase().trim();
 
     // Normalize the requested role to a canonical team_memberships value before
     // it is persisted. WS-1 (#336): access_requests.requested_role was written
@@ -162,15 +125,11 @@ router.post(
     }
 
     try {
-      // Check for duplicate pending request for this team + contact
-      const contactFilter = channel === 'email'
-        ? { email, team_id: String(teamId) }
-        : { phone_e164: phone, team_id: String(teamId) };
-
+      // Check for duplicate pending request for this team + email
       const { data: existing } = await supabaseAdmin
         .from('access_requests')
         .select('id, status')
-        .match(contactFilter)
+        .match({ email, team_id: String(teamId) })
         .maybeSingle();
 
       if (existing?.status === 'pending') {
@@ -193,8 +152,7 @@ router.post(
         .insert({
           first_name:     firstName,
           last_name:      lastName,
-          email:          email ?? null,
-          phone_e164:     phone ?? null,
+          email,
           team_id:        String(teamId),
           requested_role: canonicalRole,
           status:         'pending',
@@ -226,7 +184,7 @@ router.post(
       // Log auth event
       await logAuthEvent('access_requested', {
         teamId: String(teamId),
-        authChannel: channel,
+        authChannel: 'email',
         deviceContext: deviceContext ?? {},
       });
 
@@ -234,7 +192,7 @@ router.post(
         requestId: data.id,
         firstName,
         lastName,
-        email:         email ?? null,
+        email,
         requestedRole: canonicalRole,
         teamId:        String(teamId),
         teamName,

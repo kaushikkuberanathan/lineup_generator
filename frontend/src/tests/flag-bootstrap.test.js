@@ -20,6 +20,13 @@
 
 import { applyFlagParams, buildCleanSearch } from '../utils/flagBootstrap.js';
 
+// NOTE (#406/#410 Pass 4): App.jsx's real URL-bootstrap useEffect handled
+// ?coach_access=mudhen2026 (sets bypass:maintenance) and ?clear_bypass
+// (removes it) inline, alongside enable_flag/disable_flag — but this
+// extracted module, and this test file, never learned about them. That was
+// a replica-divergence bug: the "tested" module was behaviorally behind the
+// real running code. Group 3 below closes that gap.
+
 // ── localStorage mock (node environment has no window.localStorage) ──────────
 var _store = {};
 var localStorageMock = {
@@ -126,6 +133,69 @@ describe('Group 2 — buildCleanSearch', function () {
     var result = buildCleanSearch('?enable_flag=x&disable_flag=y&s=abc');
     expect(result).not.toContain('enable_flag');
     expect(result).not.toContain('disable_flag');
+    expect(result).toContain('s=abc');
+  });
+});
+
+// ============================================================================
+// Group 3 — maintenance bypass (?coach_access= / ?clear_bypass)
+// ============================================================================
+
+describe('Group 3 — applyFlagParams: maintenance bypass', function () {
+
+  test('3.1: ?coach_access=mudhen2026 sets "bypass:maintenance" = "1"', function () {
+    applyFlagParams('?coach_access=mudhen2026');
+    expect(localStorage.getItem('bypass:maintenance')).toBe('1');
+  });
+
+  test('3.2: ?coach_access= with the wrong value does NOT set the bypass', function () {
+    applyFlagParams('?coach_access=wrong_code');
+    expect(localStorage.getItem('bypass:maintenance')).toBeNull();
+  });
+
+  test('3.3: ?clear_bypass removes "bypass:maintenance"', function () {
+    localStorage.setItem('bypass:maintenance', '1');
+    applyFlagParams('?clear_bypass');
+    expect(localStorage.getItem('bypass:maintenance')).toBeNull();
+  });
+
+  test('3.4: ?clear_bypass= (present with empty value) still clears the bypass — presence, not truthiness, gates this param', function () {
+    localStorage.setItem('bypass:maintenance', '1');
+    applyFlagParams('?clear_bypass=');
+    expect(localStorage.getItem('bypass:maintenance')).toBeNull();
+  });
+
+  test('3.5: ?coach_access=mudhen2026 alone returns true', function () {
+    expect(applyFlagParams('?coach_access=mudhen2026')).toBe(true);
+  });
+
+  test('3.6: ?clear_bypass alone returns true', function () {
+    expect(applyFlagParams('?clear_bypass')).toBe(true);
+  });
+
+  test('3.7: coach_access and a flag param together both apply', function () {
+    applyFlagParams('?enable_flag=viewer_mode&coach_access=mudhen2026');
+    expect(localStorage.getItem('flag:viewer_mode')).toBe('1');
+    expect(localStorage.getItem('bypass:maintenance')).toBe('1');
+  });
+});
+
+describe('Group 4 — buildCleanSearch: bypass params also stripped', function () {
+
+  test('4.1: ?coach_access=x alone → "" (fully stripped)', function () {
+    expect(buildCleanSearch('?coach_access=mudhen2026')).toBe('');
+  });
+
+  test('4.2: ?clear_bypass alone → ""', function () {
+    expect(buildCleanSearch('?clear_bypass')).toBe('');
+  });
+
+  test('4.3: all four params stripped together, other params kept', function () {
+    var result = buildCleanSearch('?enable_flag=x&disable_flag=y&coach_access=mudhen2026&clear_bypass&s=abc');
+    expect(result).not.toContain('enable_flag');
+    expect(result).not.toContain('disable_flag');
+    expect(result).not.toContain('coach_access');
+    expect(result).not.toContain('clear_bypass');
     expect(result).toContain('s=abc');
   });
 });

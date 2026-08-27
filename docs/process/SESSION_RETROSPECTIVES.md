@@ -10,6 +10,170 @@
 
 ---
 
+## 2026-08-25-A — Game Day & Scoring Integrity workstream planned and sequenced; 7 issues shipped/closed across 6 PRs to develop
+
+**Date:** August 25-26, 2026 (continuous session, spans the midnight date rollover)
+**Session ID:** 2026-08-25-A (`lineup_generator` worktree)
+**Duration:** Single continuous session, no gaps
+**Versions shipped to production:** None — every PR this session merged to `develop` only; no promote to `main` was requested or attempted
+**PRs opened/merged to develop:** #832 (#775), #833 (#794 + #704), #836 (#119), #838 (#128), #841 (#105), #843 (#118) — all six confirmed genuine 2-parent merges via direct `git show -s --format=%P`, all six labeled `priority:*`/`type:*`/`area:*` at open time
+**Issues closed:** #775, #794, #704, #119, #128, #105, #118 (via PR `Closes #N`) plus #106 and #479, closed directly with evidence comments after investigation showed both were already resolved by old, unrelated commits and never needed new code
+**Production DB changes:** None. One migration (`024_add_opp_runners_to_live_game_state.sql`, additive `opp_runners jsonb` column on `live_game_state`) applied to DEV (`psqvzppphdedqkpmarwx`) only, verified via direct query; PROD (`hzaajccyurlyeweekvma`) deliberately untouched, confirmed as a separate KK decision for whenever #105 promotes
+
+### Overview
+
+Opened with KK handing over a raw, unstructured list of game-day/scoring issues framed as three workstreams (Live Game Day P0, Secure Live Scoring, Game Day UX & Reliability) and asking to plan and fix them together. Rather than accept the framing as given, pulled the actual GitHub issue bodies, ROADMAP.md entries, and CLAUDE.md history for every issue named before proposing a sequence — which surfaced real corrections to the framing itself: #479's ask was already satisfied by a merged PR nobody had circled back to close, #689's GRANT-revocation migration had no drafted SQL because it was blocked on a design decision only KK could make, and #688 carried its own explicit instruction not to be started solo. Got sign-off on a corrected sequence via AskUserQuestion, then worked it front to back: seven issues, one per PR, each on its own branch off a freshly-synced `develop`, each gated through the repo's locked-file gate phrases and push-gate phrase individually, each verified with RED→GREEN test evidence (or an honest mutation-test substitute when implementation preceded the tests), each PR-hygiene-cleaned (2-parent merge verified, branch deleted locally and remotely, `develop` re-synced) before starting the next. Two of the seven turned out to need zero code — #106 and #479 were both already shipped by old commits nobody had closed the tracking issue for — and were closed with evidence rather than redone. One (#128) turned out to have a materially different root cause than the issue itself claimed, found by writing an actual reproduction rather than trusting the issue's stated hypothesis. One (#105) was scoped as a real feature with a schema change, and got its own design-alignment pass (two AskUserQuestion calls covering the hit-modeling simplification and the DEV-migration-apply decision) before any code was written, rather than being executed like the smaller P2/P3 fixes around it.
+
+### What Shipped
+
+| Item | Scope | PR/Issue | Status |
+|---|---|---|---|
+| Workstream plan | Corrected KK's raw issue list against live GitHub/ROADMAP/CLAUDE.md state; reordered around what #479/#689/#688 actually needed | — | Presented, confirmed via AskUserQuestion |
+| #775 — LiveScoreViewer placeholder | Real read-only score view (ScoreboardRow reuse) replacing a two-line placeholder that dropped `onExit`, leaving viewers with no score and no way out mid-game | PR #832 | Merged |
+| #106 — flipHalfInning extraction | Investigated, found already fully shipped via old `[combined-view] Story 20` commits plus v2.13.0 test coverage; zero code changed | Closed directly | Closed, stale tracking issue |
+| #479 — live-scoring test-debt spec | Investigated, found already delivered by merged PR #506 (skip-gated `LS1`-`LS7` RED-by-design suite); zero code changed | Closed directly | Closed, stale tracking issue |
+| #794 + #704 — InningModal LC color + gameDay.text.caption contrast | Two single-token-value fixes (byte-match to `color.position.LC`; `#475569`→`#8496AC`, 2.39:1→5.99:1 WCAG AA) | PR #833 | Merged |
+| #119 — defense-view inning soft-sync | `DugoutView` follows the live inning until manually scrubbed, then shows a "Viewing: Inning X / Game: Inning Y" banner + Jump to current; scoped to the GA-default surface only | PR #836 | Merged |
+| #128 — batting-hand badges | Root cause was NOT the issue's own hypothesis (`NowBattingBar`'s roster wiring, confirmed correct since March via `git blame` + a live reproduction) — the real gap was `BattingOrderStrip` (DugoutView's actual strip) never having the feature at all; ported it over | PR #838 | Merged |
+| #105 — opponent baserunners | New `opp_runners` schema column (DEV only), `recordOppPitch` walk/contact branches reuse the existing `forceAdvance` helper (forced-single-only model, confirmed via AskUserQuestion), diamond now shows the correct team's runners per half | PR #841 | Merged (DEV-only migration) |
+| #118 — ScoreboardRow active-half dot | New `isAtBat` prop, wired at all 3 real call sites reusing already-computed `isHomeBatting`/`myTeamHalf` values; pulse animation follows the existing `.animate-*`/`@keyframes` convention in `index.css` | PR #843 | Merged |
+| PR/branch hygiene | Every one of the 6 PRs verified as a genuine 2-parent merge (not squashed) before cleanup; every merged branch deleted locally, remote already auto-deleted each time; `develop` re-fetched and re-synced before starting the next branch | — | Done, all 6 |
+
+### What Didn't Happen
+
+- **#689 (GRANT-revocation migration) drafted or applied** — the design decision (zero anon grants vs. keep-broad-rely-on-RLS) was confirmed via AskUserQuestion, but no SQL was written this session; still needs its own pass.
+- **#688 (Phase 4C shim removal steps 2-7)** — not started, per the issue's own explicit instruction not to attempt this unattended without KK's live presence for the step-3 game-day soak. Not even scoped further this session.
+- **Any real-device verification** — every one of the 7 fixes was flagged in its own PR body as needing a phone/live-game check before promoting past `develop`; none of that verification happened this session, by design (see standing takeaway below).
+- **`docs/db/schema.sql` update for `opp_runners`** — deliberately not touched as a side effect of the #105 PR, flagged instead, given this repo's documented history of schema-doc drift causing real incidents (#342/#351/#355).
+- **PROD migration for #105** — explicitly scoped to DEV only this session; promoting the feature to `main` will need its own PROD-apply decision.
+- **Any promote to `main`** — every PR this session targeted `develop`; no version bump, no VERSION_HISTORY entry, no Ship Gate walkthrough was attempted, because nothing here was framed as release-ready.
+
+### Key Events (Chronological)
+
+**1. A raw issue list was treated as a starting point to verify, not a plan to execute.** Rather than work KK's three-workstream framing as given, every named issue's actual GitHub body was pulled before proposing a sequence — which is what surfaced that #479 and #689 weren't accurately described by the framing (one already done, one blocked on an undecided design question), corrections that materially changed the proposed order.
+
+**2. #775's placeholder bug was verified against the live component, not the issue's quoted code snippet.** The issue quoted `return LiveScoreViewer;` (invalid JSX); the actual file on disk read `return <div>LiveScoreViewer</div>;` — a materially different but still-broken state, confirmed by reading the real file and the real caller's props before writing the fix, not by trusting the issue text verbatim.
+
+**3. Two "next" items turned out to need investigation before code, not after.** Both #106 and #479 were confirmed already-shipped via `git blame`, `git log -S`, and running the relevant existing tests — before any new branch, any new code, or any redone work — rather than assuming an open GitHub issue meant open work.
+
+**4. A user instruction that conflicted with known state was flagged, not silently reinterpreted.** When told "do 106 next" after #106 had already been closed minutes earlier in the same session, the mismatch was named plainly and the most likely intended next item (#128) was proposed instead of guessing silently or blindly redoing already-finished work.
+
+**5. #128's root cause was established by writing a live reproduction, not by trusting the issue's own stated hypothesis.** The issue claimed `NowBattingBar`'s `roster` prop wasn't reaching the component. A scratch reproduction test with realistic data showed that component working correctly, and `git blame` showed its wiring predated the bug report by six weeks — which is what led to finding the *actual*, different bug in a sibling component (`BattingOrderStrip`) the issue never mentioned.
+
+**6. A schema-touching feature got its own design-alignment pass before code, unlike the smaller fixes around it.** #105 was recognized as materially bigger risk (DB migration, a real product simplification in how opponent hits are modeled) and was paused for two explicit AskUserQuestion calls — the forced-single-only hit model, and whether to apply the DEV migration via the connected Supabase MCP — before any file was touched, rather than defaulting to the same "just build it" pace as the P2/P3 fixes.
+
+**7. Before touching the database at all, the connected Supabase MCP's actual project targets were verified, not assumed.** `list_projects` was called to confirm which of the two connected projects (`hzaajccyurlyeweekvma` vs `psqvzppphdedqkpmarwx`) was DEV before running `apply_migration` — matching this repo's own documented convention (`backend/CLAUDE.md`'s Migration Notes) of never trusting a migration-number or environment claim without a direct check.
+
+**8. Uncommitted pre-existing work was found in the working tree at the very start and preserved, not discarded.** Before the first branch could be created, an unrelated uncommitted `CLAUDE.md` edit (a stale-freeze-notice correction, not this session's work) blocked a `git checkout`. It was stashed rather than force-discarded, and the stash was explicitly flagged to KK as parked and unrelated rather than silently dropped or silently carried onto an unrelated feature branch.
+
+**9. Every RED-first gap was closed with a documented mutation test, not skipped.** In every case where implementation landed before its tests (a repeated pattern this session, since design and diagnosis often happened inline with the fix), the fix was temporarily reverted via `git stash` or `sed`, the new tests were confirmed to fail for the right reason, then restored and reconfirmed green — the repo's own documented RED-checkpoint substitute, applied every time rather than treated as optional once skipped once.
+
+**10. Every merge was independently verified as a real merge commit, not trusted from the GitHub UI.** All 6 PRs' merge commits were checked directly via `git show -s --format=%P` for exactly two parents before any branch cleanup — matching this repo's own documented history of squash-merges slipping through the dropdown despite stated intent (#573).
+
+**11. A real limitation was stated plainly and repeatedly, not glossed over once.** Every one of the 7 PRs explicitly disclosed that no live-device or real-login verification had been done, and why (the standing auth-testing boundary from Story 133, recorded in memory) — rather than letting a clean test suite imply more confidence than was actually earned.
+
+**12. A same-directory concurrency conflict was found while writing this retro, and resolved by rebuilding rather than force-picking a side.** Mid-write, the local repo's HEAD had moved to a branch (`docs/session-retro-2026-08-26`) this session never created, with its own stash entry — evidence another process (a separate Claude Code session, or KK directly) had touched this exact worktree directory concurrently. Rather than guess which side's content to keep or force through the resulting 3-way conflict, `origin/develop`'s clean current file (which turned out to already contain two newer, unrelated, already-merged retro entries — 2026-08-24-A and 2026-08-24-B — this session's branch had been cut before) was pulled fresh and this entry re-inserted above them by hand.
+
+### Standing takeaway
+
+The throughline this session was refusing to let "there's an open issue about this" or "the issue says X" stand in for an actual check. Two of seven items turned out to be already-finished work nobody had closed out; one of seven turned out to have a wrong stated root cause. In every case the response was the same: read the real code, run the real test, check the real git history, before writing anything new — and when a task's risk profile genuinely changed (a schema migration, a product-modeling simplification, an ambiguous instruction conflicting with known state, a same-directory concurrency surprise), slow down and get explicit sign-off or rebuild cleanly rather than carrying the same fast, confirm-and-go pace that worked fine for the smaller fixes. Every fix also stayed honest about what verification hadn't happened — RED evidence when possible, a disclosed mutation-test substitute when not, and a flagged "needs a real device" note on every PR rather than a clean-suite-implies-done story.
+## 2026-08-26-A — Three consolidation passes closed out: dependency currency, git governance, and the Test Health & Regression Protection umbrella
+
+**Date:** August 26, 2026
+**Session ID:** 2026-08-26-A (`lineup-generator-ux` worktree)
+**Duration:** Single continuous session
+**PRs opened/merged to develop:** #834 (ESLint 9 migration), #835 (React 19 migration), #837 (dependency-currency ROADMAP/FEATURE_MAP entry), #839 (PR target-branch guard + ROADMAP backfill + conflict-resolution playbook), #842 (flagBootstrap replica-divergence fix), #844 (`GET /feedback` coverage), #845 (test-filename doc drift + stale share-link claim), #846 (BrandMark + storage.js coverage), #847 (BenchStrip coverage), #848 (requireAdmin + legacy-role coverage), #849 (#664 closure), #850 (#474 closure — merging as this retro is being written)
+**Issues closed:** 25 total — #135, #321, #322, #371, #469, #473 (dependency-cluster closure audit); #632, #633 (ESLint 9 / React 19); #182, #573, #181, #183, #207, #121, #595, #388, #125, #108, #256, #122, #317, #124 (governance cluster); #115, #474, #664 (test-health cluster); #479 (found already closed, pre-dated this session)
+**Issues reopened/repurposed:** #636 (closed, then reopened per KK's explicit instruction and retitled "Dependency modernization — umbrella tracker" to serve as a standing tracker rather than a closed one-off)
+**Issues created:** #840 (Test Health & Regression Protection — umbrella tracker)
+**Tests added:** ~90 across the session — ESLint/React 19 migrations added none (dev-tooling only); the Test Health work added `adminFeedback.test.js` (6), `requireAdmin.test.js` (4) + 1 new case in `auth.session.test.js`, `adminRequests.test.js` (3), `adminMembers.test.js` (4), `adminMembershipActions.test.js` (10), `teamsSearchLimiter.test.js` (1), `AppTeamSearchRequestAccessFlow.test.jsx` (1), `BrandMark.test.jsx` (6), `storage.test.js` (8), `BenchStrip.test.jsx` (5), 3 new cases in `RequestAccessScreen.test.jsx`, plus the `flag-bootstrap.test.js` Group 3/4 additions (10) as part of the flagBootstrap fix. Backend unit suite 220→249; frontend suite grew alongside it (exact running total tracked per-PR in each PR's own body rather than restated here).
+**Locked-file gates exercised:** `frontend/package.json` (ESLint 9 + React 19 migrations), `CLAUDE.md` (conflict-resolution playbook addition), `App.jsx` (flagBootstrap wiring fix), `game-mode/*` (BenchStrip test) — all four requested and obtained from KK before editing, each for its own specific change rather than treated as blanket session-wide permission.
+
+### Overview
+
+Opened against three separate audit-style requests, each following the same shape: read a cluster of issues KK described as fragmented, run a real closure audit against current repo state rather than trust the issues' own text, consolidate into fewer trackers, then execute the real remaining work. **Dependency currency** (9 issues) resolved to exactly the 2-4 real pieces KK predicted — 6 were already stale/duplicate/superseded, and the 2 real items (#632 ESLint 8→9 + flat config, #633 React 18→19) both shipped clean with zero app-code changes and full RED→GREEN evidence, closing the #636 umbrella's original 4-item scope. **Git/governance** (11 named issues plus 8 more found via label search) resolved to one real settings change (disabling squash/rebase merge at the repo level — true prevention, not just the existing detection-guard workflow), a batch of 9 stale closures, and 4 small real fixes (PR-title/base-branch guard, a conflict-resolution decision tree in CLAUDE.md, a backfilled ROADMAP entry, a wording correction). **Test Health & Regression Protection** was the largest: consolidated 8 fragmented testing issues into one umbrella with KK's own proposed A/B/C tranche structure, ran the two remaining passes (2 and 4) of an already-half-complete 4-pass drift/coverage survey, found and fixed a genuine "replica divergence" bug (`flagBootstrap.js` — extracted from App.jsx to be tested, then never actually wired back in, so its test suite was asserting behavior the running app didn't execute) matching a previously-documented anti-pattern (CLAUDE.md's Bug #5) in a fresh subsystem, and then worked through every concrete gap the survey surfaced: an admin route with zero coverage of any kind (not even the 401-rejection baseline every other route had), two untested security-adjacent assumptions in the auth/roles layer, three previously-untested UI components, a rate limiter that existed in code but was never asserted to actually fire, and a tangled issue (#664) that turned out to conflate two unrelated asks under one number. Corrected several stale claims along the way rather than trusting old issue/doc text at face value — the same "verify before acting" discipline the two prior sessions logged in this file already established as standing practice.
+
+### What Shipped
+
+| Item | Scope | Issue/PR | Status |
+|---|---|---|---|
+| Dependency-currency closure audit | 9 issues read in full, cross-referenced against current repo state; 6 closed as stale/duplicate/already-fixed with evidence-cited comments | #135, #321, #322, #371, #469, #473 | Closed |
+| ESLint 8→9 + flat-config migration | `.eslintrc.cjs`→`eslint.config.js`; `eslint-plugin-react-hooks` scoped to `rules-of-hooks`+`exhaustive-deps` only (not the new React Compiler preset); two ESLint-9-default behavior changes (`caughtErrors`, `reportUnusedDisableDirectives`) pinned back for parity | #632, PR #834 | Merged |
+| React 18→19.2.8 migration | Both `react`+`react-dom` bumped together (a prior Dependabot PR had only bumped `react-dom`, a real mismatch); pre-bump audit found zero legacy patterns needing migration | #633, PR #835 | Merged |
+| #636 umbrella reopened as standing tracker | Closed once its original 4-item scope resolved, then reopened and retitled per KK's explicit instruction to serve as an ongoing home for future dependency work | #636 | Reopened, repurposed |
+| Merge-strategy true prevention | KK disabled "Allow squash merging"/"Allow rebase merging" at the repo-settings level (this session's GitHub token lacked the `Administration: write` scope to do it via API) — upgrades the existing detection-only CI guard to actual prevention | #182 (dup), #573 | Closed |
+| Governance closure-audit batch | 9 issues closed with evidence — labels existed and in active use, pre-pull check already in CLAUDE.md, sync-script dedup already fixed, flag-docs already current, stale branch write-up, superseded release-ritual claim, 2 explicit deprioritizations, 1 verified-not-reproducible (15 consecutive CI runs, zero queue delay) | #181, #183, #207, #121, #595, #388, #125, #108, #256 | Closed |
+| PR target-branch guard + 2 doc fixes | New `.github/workflows/pr-target-branch-guard.yml` (real prevention — the issue's own analysis rejected a PR-template checkbox as "weak, humans skip them"); backfilled the missing v2.5.27 ROADMAP entry; conflict-resolution decision tree added to CLAUDE.md's Branch Strategy section | #122, #317, #124, PR #839 | Merged |
+| Test Health & Regression Protection umbrella | Consolidated 8 fragmented testing issues into one tracker with KK's own proposed 3-tranche structure (false confidence / critical-path gaps / test infrastructure) | #840 (new) | Created |
+| `#406`/`#410` survey Passes 2 and 4 | Backend auth/roles/API pass found the `flagBootstrap.js` replica divergence, an undocumented+untested admin route, and 2 untested security assumptions; frontend screens/data pass found the same replica-divergence class in a second subsystem plus 2 zero-coverage components and 1 stale doc claim. Corrected a stale Pass-3 finding along the way (the RLS-suite-not-in-CI gap was already fixed via #415/#480, weeks before this session) | #406, #410 (comments) | Posted |
+| `flagBootstrap.js` replica-divergence fix | Extended the extracted module to handle all 4 URL params (it only knew 2; the real inline code in App.jsx had grown 2 more without the "tested" module ever catching up), then wired App.jsx's real `useEffect` to actually call it | PR #842 | Merged |
+| `GET /api/v1/feedback` coverage | The single worst blind spot found all session — reachable in prod, absent from `backend/CLAUDE.md`'s own route list, zero coverage of any kind | PR #844 | Merged |
+| Doc-drift fixes (test filenames + stale share-link claim) | `frontend/CLAUDE.md` cited two test files that don't exist under those names; `FEATURE_MAP.md` row 9 wrongly claimed the share-link persistence layer was untested | PR #845 | Merged |
+| `BrandMark.jsx` + `storage.js` coverage | Always-rendered brand component (incl. the public share page) and the module every localStorage read/write in the app funnels through — both had zero tests anywhere | PR #846 | Merged |
+| `BenchStrip.jsx` coverage | Live, migrated game-day component with zero tests; deliberately held back from the prior PR since it's under the locked `game-mode/*` path, added once KK gave the gate phrase | PR #847 | Merged |
+| `requireAdmin` + legacy-role coverage | Direct unit tests for the admin-check middleware (previously only exercised indirectly); locked in (not fixed) the fact that a legacy `team_admin`-labeled row is excluded by the query before the middleware ever sees it | PR #848 | Merged |
+| #664 untangled and closed | 2 of its original 5 items were already satisfied (verified directly, not assumed); the 3 real gaps (rate-limit-fires test, full wired-flow integration test, `faqs.js` timestamp) plus a separately-tracked-under-the-same-number `submitted`-state test all closed together | PR #849 | Merged |
+| #474 untangled and closed | `GET /admin/deny-link` turned out to already have real coverage (landed via unrelated #337 HMAC work, never reflected back); the 3 genuinely-uncovered routes got new test files | PR #850 | Merging |
+| `DOC_TEST_DEBT.md` + `FEATURE_MAP.md` session-close hygiene | #664's P1 debt entry moved to Resolved with a recount; `FEATURE_MAP.md` row 38 updated to reflect the same closure | — | Done |
+
+### What Didn't Happen
+
+- **Phone-channel dead code in `POST /request-access`** — found during Pass 2/4 of the survey (contradicts root CLAUDE.md's "no phone/SMS dependency" claim, unreachable from the frontend, zero test coverage in either direction). Flagged as needing a KK decision (delete vs. keep+test), not something to resolve unilaterally — not yet decided.
+- **`#517` (Windows Vitest Bug #7)** — correctly left open as a permanent known-limitation tracker per its own comment thread's explicit "don't re-litigate the forks-pool option" instruction. Nothing to fix here; noted, not touched.
+- **`#482` (secondary RLS coverage)** — real gap, but self-scoped low-risk and opportunistic by its own text. Left open at its current low priority, not started.
+- **`#358`/`#351` (docs/db drift, prod/repo migration-ledger gap)** and **`#577` (FEATURE_MAP.md structural restructure)** — all three explicitly identified as separate, larger initiatives during the governance-cluster scoping and deliberately not touched this session.
+- **`#488` (default-branch=develop decision)** — needs an actual policy decision from KK, not a codify-and-automate treatment; not raised for a decision this session.
+- **Root `CLAUDE.md`'s frontend/backend test-count lines** — flagged as a carry-forward in the 2026-08-24-B retro, still not reconciled to current totals (1090/1227-era figures cited in various sections vs. the actual post-session count). Carried forward again below.
+- **#850 merging** — still in flight as this retro is being written; the session is closing before its merge-cleanup (branch delete, `develop` sync) happens.
+
+### Key Events (Chronological)
+
+**1. A prediction was tested against evidence, not assumed correct because it was plausible.** KK's opening framing for the dependency cluster ("9 open issues → perhaps 2-4 actual pieces of work") was treated as a hypothesis to verify, not a conclusion to restate — each of the 9 issues was actually read and cross-checked against current repo/npm-registry state before any closure decision.
+
+**2. A recommended fix was overridden by re-reading the issue's own reasoning.** #122's own body explicitly analyzed and rejected a PR-template checkbox field ("weak — humans skip checkboxes") in favor of an automated title/base-branch check. The initial scoping pass had defaulted to the checkbox as the obvious minimal fix; re-reading the issue's own recommendation before implementing caught this and produced the actual automated guard instead.
+
+**3. A GitHub API permission gap was surfaced honestly rather than worked around silently.** Disabling squash/rebase merge required `Administration: write`, which this session's token lacked (the same class of gap hit earlier with the GitHub MCP connector). Rather than silently give up on #573 or fabricate a workaround, the exact blocker was named and hand-off instructions given — KK did the settings change directly, then the session verified it via the API before closing the issue.
+
+**4. Multiple "issue never closed after being fixed elsewhere" patterns were found and treated as a category, not one-offs.** Across all three clusters, the same shape recurred: an issue accurately described a real problem, the problem got fixed by unrelated later work, and nobody closed the loop. This happened often enough (#135, #322, #371, #469, #473, #181, #183, #207, #121, #388, #125, #108, #474's `deny-link` entry, #410 Pass 3's own RLS-CI finding) that it's worth naming as this repo's dominant failure mode in issue hygiene, not coincidence.
+
+**5. A stale finding was corrected in-place rather than propagated forward.** Pass 2 of the test-health survey was framed as flagging the RLS-suite-not-in-CI gap as a top priority; direct verification (reading the actual CI workflow file, checking the most recent run) found it had already been fixed weeks earlier via #415/#480. Both #410's own comment thread and the newly-created #840 umbrella were corrected before either could propagate the stale claim further — including catching that the survey itself, whose entire purpose is catching exactly this kind of drift, had drifted.
+
+**6. A new bug was found by applying an existing, named anti-pattern to unfamiliar code, not by rediscovering it from scratch.** Root CLAUDE.md already documents "Bug #5" (replica-divergence — a test asserting behavior against a local reimplementation the real code doesn't call). Recognizing the same shape in `flagBootstrap.js` (extracted, tested, never wired back into App.jsx) came from actively checking for that specific pattern during the survey, not from a fresh independent investigation.
+
+**7. A locked-file mistake was caught and reversed the same session, not just noted for next time.** A `game-mode/DugoutView.test.jsx` edit landed without the required gate phrase; caught on review, reverted immediately (`git checkout --`), and the underlying fix achieved a different way (a config-level `linterOptions` setting) that didn't require touching the locked file at all. The same gate was then correctly requested and obtained before every subsequent locked-file touch in the session (`package.json` ×2, `CLAUDE.md`, `App.jsx`, `game-mode/BenchStrip.test.jsx`).
+
+**8. Every merge was verified as a genuine 2-parent commit before cleanup, every time, without exception.** Across 10+ merged PRs this session, `git show -s --format=%P` was checked before syncing `develop` and deleting each branch — never inferred from "the merge button said Merged" alone, matching this repo's own recurring squash-merge incident history (#573's own evidence list).
+
+**9. A test file's own stub shape was debugged from a real failure, not assumed correct from having worked elsewhere.** The first draft of the `#474` closure tests failed with an unrelated-looking `INTERNAL_ERROR` instead of the expected `DB_ERROR` — traced to a `team_memberships` mock stub that only supported one chained `.eq()` call when `requireAdmin` actually chains three; fixed by switching to a self-referencing chain object, the same pattern already used correctly in an earlier file, rather than assumed to already match it.
+
+**10. An issue's own tracked scope was checked against current code before writing anything, twice, and both times the count was wrong.** #474 said 6 routes lacked coverage; one (`GET /admin/deny-link`) turned out to already be covered by unrelated #337 work. #664 listed 5 items; 2 were already satisfied by the original route PR. Both times, work started only after confirming the real remaining scope directly against the test tree — not from the issue's own stated count.
+
+### Standing takeaway
+
+Every cluster this session touched shared one root cause: an issue or doc claim that was accurate when written, then silently overtaken by later work, with nothing ever closing the loop. That's not a coincidence of scale — it's what happens when closure discipline (checking whether a described problem still exists before acting on it) isn't as consistently applied as opening discipline (filing the issue in the first place). The three consolidation passes this session ran were, underneath the different subject matter, the same operation each time: stop trusting the tracker's own text, re-derive the current state directly, and only then decide what's real. That discipline caught a genuine bug (`flagBootstrap.js`), corrected a stale security-relevant claim in the umbrella that exists specifically to prevent stale claims (#410's own RLS-CI finding), and turned 9+11+8 fragmented issues into a handful of real, well-scoped pieces of work — matching the exact "2-4 real items" shape KK predicted for the first cluster, then held for the other two as well.
+
+### Carry-Forward Items
+
+| Priority | Story/Issue | Item |
+|---|---|---|
+| — | #689 | Design decided (zero anon grants) via this session's AskUserQuestion; SQL still not drafted |
+| — | #688 | Phase 4C shim-removal steps 2-7 — explicitly not started, needs KK's live presence for the step-3 soak |
+| — | #105 | PROD migration decision still open — DEV-only as of this session |
+| — | `docs/db/schema.sql` | Missing `opp_runners` (#105) — deliberately not touched this session, flagged in PR #841 |
+| — | 7 merged PRs (#832, #833, #836, #838, #841, #843) | None have had real-device verification yet — each PR body names the specific manual check it needs before promoting past `develop` |
+| — | Pre-existing stashed `CLAUDE.md` edit | Found at session start, unrelated to this session's work (a main-promote freeze-notice correction) — still parked in a git stash on the `main` branch, not yet committed |
+| — | `docs/session-retro-2026-08-26` branch/stash | A branch and stash this session did not create, found mid-write on this same worktree directory — worth checking with KK whether another session is (or was) concurrently active here |
+| — | #850 | Merge in flight as of this retro — needs branch cleanup + `develop` sync once it lands |
+| P2 | #517 | Windows Vitest Bug #7 — permanent known-limitation tracker, correctly not touched |
+| P2 | #482 | Secondary RLS coverage — self-scoped low-risk/opportunistic, not started |
+| P2 | — | Phone-channel dead code in `POST /request-access` — needs a KK decision (delete vs. keep+test), not resolved this session |
+| P2 | #358, #351 | docs/db drift + repo/prod migration-ledger gap — flagged as its own initiative, not started |
+| P2 | #577 | FEATURE_MAP.md structural restructure for adjacency support — already explicitly deferred as its own dedicated session |
+| P2 | #488 | default-branch=develop — needs an actual policy decision from KK, not raised this session |
+| P3 | — | Root `CLAUDE.md`'s frontend/backend test-count lines — carried forward again from the 2026-08-24-B retro, still not reconciled to current totals |
+
+---
+
 ## 2026-08-24-B — Test-coverage baseline reassessment closed out: 6 components/routes, 72 new tests, CI rate-limit fixture fix, full branch/issue hygiene
 
 **Date:** August 24, 2026

@@ -14,6 +14,7 @@ import { persistTeamBeforeLoad } from './utils/teamCreationPersistence.js';
 import { outboundLinkProps, CAMPAIGNS, CONTENT } from './utils/trackingUrl';
 import { migrateRoster, migrateSchedule, migrateBattingPerf, mergeLocalScheduleFields } from '@/utils/migrations';
 import { fmtAvg, fmtStat } from '@/utils/formatters';
+import { applyFlagParams, buildCleanSearch } from './utils/flagBootstrap';
 import { loadJSON, saveJSON } from './utils/storage';
 import { DEMO_ROSTER, DEMO_SCHEDULE, DEMO_GRID, DEMO_INNINGS, DEMO_AGE_GROUP, DEMO_SEED_VERSION } from "./data/demoSeed";
 import { useBackendHealth } from '@/hooks/useBackendHealth';
@@ -144,7 +145,7 @@ var DISLIKE_PENALTY = -50;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.14.0";
+var APP_VERSION = "2.15.0";
 
 // loadJSON / saveJSON — localStorage with in-memory (_mem) fallback — moved to
 // ./utils/storage (#416). Imported above; call sites unchanged.
@@ -1517,26 +1518,14 @@ export default function App() {
   // ?disable_flag=<name> clears it. Allows per-user flag activation via a shared link.
   // ?coach_access=mudhen2026 sets bypass:maintenance so coaches can enter during maintenance.
   // ?clear_bypass removes the bypass.
+  // Delegates to utils/flagBootstrap.js (RED-GREEN tested in isolation) rather
+  // than reimplementing this inline — a prior version of this effect drifted
+  // out of sync with that module for exactly this reason (#406/#410 Pass 4).
   useEffect(function() {
-    var _ffp = new URLSearchParams(window.location.search);
-    var _ef = _ffp.get("enable_flag");
-    var _df = _ffp.get("disable_flag");
-    var _ca = _ffp.get("coach_access");
-    var _cb = _ffp.get("clear_bypass");
-    if (!_ef && !_df && !_ca && _cb === null) { return; }
-    if (_ef) { localStorage.setItem("flag:" + _ef, "1"); }
-    if (_df) { localStorage.removeItem("flag:" + _df); }
-    if (_ca === 'mudhen2026') { localStorage.setItem('bypass:maintenance', '1'); }
-    if (_cb !== null) { localStorage.removeItem('bypass:maintenance'); }
-    // Strip the params and reload so changes take effect cleanly
-    var clean = window.location.pathname;
-    var kept = [];
-    _ffp.forEach(function(v, k) {
-      if (k !== "enable_flag" && k !== "disable_flag" && k !== "coach_access" && k !== "clear_bypass") {
-        kept.push(k + "=" + encodeURIComponent(v));
-      }
-    });
-    window.location.replace(clean + (kept.length ? "?" + kept.join("&") : ""));
+    var applied = applyFlagParams(window.location.search);
+    if (!applied) { return; }
+    var clean = window.location.pathname + buildCleanSearch(window.location.search);
+    window.location.replace(clean);
   }, []);
 
   // Fetch short share link payload on mount

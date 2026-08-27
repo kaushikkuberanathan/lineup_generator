@@ -1,11 +1,59 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: 2026-08-25 (v2.14.0 release prep — admin.html Supabase-bypass remediation, approve/deny link security fix, and the parallel security/docs batch bundled into one release. See the top entry below.)
+> Last updated: 2026-08-26 (v2.15.0 release prep — dependency currency, git governance, and Test Health & Regression Protection consolidation; develop only, not yet promoted; see the top entry below.); previously 2026-08-26 (v2.14.0 promoted to `main` and live in prod).
 > MVP launched: March 24, 2026
 
 ---
 
-## v2.14.0 — 2026-08-25 — admin.html fully routed through the backend, approve/deny link security fix
+## v2.15.0 — 2026-08-26 — Dependency currency, git governance, and test-health cleanup (develop only — not yet promoted)
+
+**Minor bump, dev-tooling/governance/test-infra only — zero new coach-facing features.** Sized above patch per the established "size the bump to the release's actual scope" convention: real dependency major-version migrations (React 18→19) plus a real repo-governance settings change are enough surface area to justify it even with no user-visible feature. Three unrelated consolidation passes bundled together, each following the same shape — audit a cluster of issues KK flagged as fragmented, verify current state directly rather than trust old issue text, consolidate, then execute the real remaining work.
+
+### Dependency currency
+
+A 9-issue dependency-currency cluster (#135, #321, #322, #371, #469, #473, #632, #633, #636) was flagged as "screaming for consolidation" — several of the older issues described vulnerability states that later issues explicitly said were already fixed. A closure audit (read every issue + its cross-references before touching anything) found the cluster resolved to exactly 3 real pieces of work, matching the predicted 2-4 range.
+
+**Closed as stale/duplicate/already-resolved (6):** #135 (superseded by #371's later triage), #321 (literal duplicate of #322, filed 11s apart), #322 (decoupled esbuild fix that never landed, superseded by later audits), #371 (its 23-vuln triage was actually done via #468), #469 and #473 (both tracked Dependabot alerts #28/#30, which #636's own 2026-08-07 comment confirms were already `state=fixed`). Each closed with a comment citing what superseded it.
+
+**#632 — ESLint 8 → 9 + flat-config migration (PR #834).** The originally attempted 8→10 bump (#626) was blocked by `eslint-plugin-react`'s peer-dep ceiling (`^9.7` max, still true as of this session — verified directly against the current npm registry, not assumed from the old issue). Landed ESLint 9.39.5 instead, plus the mandatory `.eslintrc.cjs` → `eslint.config.js` migration ESLint 9 requires. `eslint-plugin-react-hooks` bumped 4.6.2 → 7.1.1 (the only version with flat-config support) but deliberately scoped down to just `rules-of-hooks` + `exhaustive-deps` rather than its new `recommended-latest` preset, which bundles the React Compiler lint rules and flagged 9 real errors across existing code — out of scope for a lint-infra migration. Two ESLint 9 default-behavior changes were pinned back to old behavior for parity: `no-unused-vars`'s `caughtErrors` option (default flipped `'none'`→`'all'`, would have silently surfaced 31 new warnings) and `reportUnusedDisableDirectives` (new default `'warn'`, caught one genuinely stale directive in a file under the locked `game-mode/` path — pinned off rather than editing that file without its gate phrase). Verified: lint clean, build clean, full Vitest suite 1307 passed / 1 skipped.
+
+**#633 — React 18 → 19.2.8 migration (PR #835).** A Dependabot PR (#623) had already bumped `react-dom` alone, leaving `react` itself on 18.2.0 — a genuine version mismatch that would have shipped broken (CI was failing on that branch for exactly this reason). Bumped both together. Pre-bump codebase audit found zero legacy patterns needing migration: no `ReactDOM.render`/`hydrate` (already on `createRoot`), no `.defaultProps`/`propTypes`/string refs/`forwardRef`, no `createFactory`/`findDOMNode`/`UNSAFE_` lifecycle methods, no `react-dom/test-utils` imports. The one class component (`ErrorBoundary.jsx`) uses only `getDerivedStateFromError`/`componentDidCatch`, both fully supported in 19. No app code changes were needed. Verified: lint clean, build clean (bundle ~50KB larger, expected), full Vitest suite 1307 passed / 1 skipped.
+
+**Both merged to `develop`** as genuine 2-parent merge commits (verified via `git show -s --format=%P`, not the GitHub UI) — #834 first, #835 second (rebased onto #834's merge mid-flight after KK used GitHub's "Update branch"). Re-verified together post-merge: 1309 passed / 1 skipped (116/116 files), lint/build clean — no interaction issues between the two migrations. Both PRs labeled to match their source issues' taxonomy (`priority:p2`/`type:chore`/`area:ci-ops`) — labeling PRs, not just issues, had been missed before. Feature branches deleted both locally and remotely post-merge.
+
+**#636 (the umbrella) closed, then reopened as a standing tracker per KK's instruction.** All 4 of its original 2026-08-07 sub-issues (#635, #634, #632, #633) plus a bonus 5th item it surfaced (#674) are now resolved, so it was closed — then reopened and retitled "Dependency modernization — umbrella tracker" to serve as the ongoing home for future dependency-currency work instead of being recreated each time. Its body now documents the resolved history and instructs closure-audit-first for future work, given this cluster's demonstrated track record of issues going stale once their scope lands elsewhere.
+
+### Git / documentation / governance
+
+An 11-issue cluster (#122, #124, #181, #182, #183, #207, #488, #573, #595, #644, plus 8 more found via `type:governance`/`area:governance` label search) got the same closure-audit treatment. Resolved to: **1 real settings change** — KK disabled "Allow squash merging" and "Allow rebase merging" at the repo level (Settings → General → Pull Requests), upgrading the existing squash-detection CI guard (`.github/workflows/merge-policy-guard.yml`, #573) to actual prevention, since this session's GitHub token lacked the `Administration: write` scope to do it via API; **9 stale closures** with evidence-cited comments (#181, #183, #207, #121, #595, #388, #125, #108, #256 — labels already existed and in active use, pre-pull check already in `CLAUDE.md`, sync-script dedup already fixed via PR #234, flag-docs already current, a stale branch write-up, a superseded release-ritual claim, 2 explicit deprioritizations, and 1 verified-not-reproducible via 15 consecutive CI runs with zero queue delay); and **4 small real fixes** in PR #839 — a new `.github/workflows/pr-target-branch-guard.yml` (the issue's own analysis rejected a PR-template checkbox as "weak, humans skip them," so this is a real automated check instead), a conflict-resolution decision tree added to root `CLAUDE.md`'s Branch Strategy section, a backfilled v2.5.27 `ROADMAP.md` entry, and a stale-wording correction to the v2.5.9 changelog entry. #182 closed as a duplicate of #573 (same capability — correct merge-strategy enforcement — competing for prioritization independently, exactly as KK's original framing called out).
+
+### Test Health & Regression Protection
+
+8 fragmented testing issues (#406, #410, #474, #479, #482, #664, #517, #115) consolidated into umbrella #840, using KK's own proposed 3-tranche structure: **A — false confidence** (fake-green, stale tests, incorrect assumptions), **B — critical-path gaps** (scoring, auth, RLS, admin, share link), **C — test infrastructure** (Vitest/Windows/CI/runtime reliability). #479 was found already closed (PR #506, pre-dated this session). #115 closed — its own recommended fix (rate-limit tests should be identity-keyed, not trigger-volume-dependent) was already shipped via Story 26 + PR #786's per-run-unique-email pattern, confirmed by reading the actual test code rather than the issue's stale description.
+
+Ran the remaining 2 of 4 passes of an already-half-complete test-drift-and-coverage survey (#406/#410). **Pass 2 (backend auth/roles/API)** found `GET /api/v1/feedback` — reachable in prod, absent from `backend/CLAUDE.md`'s own route enumeration, zero test coverage of any kind (not even the 401-rejection baseline every other admin route had) — closed via PR #844. Also found 2 untested-but-presumed-correct assumptions, locked in (not changed) via PR #848: `requireAdmin`'s exact-match query excludes a legacy `team_admin`-labeled row before the middleware ever inspects it, and `GET /me` returns a membership's raw (unnormalized) role value by design. Also corrected a stale Pass-3 finding along the way — the RLS-suite-not-in-CI gap this survey itself had flagged as a priority was already fixed weeks earlier via #415/#480; caught and corrected in both #410's thread and umbrella #840 before it could propagate further. **Pass 4 (frontend screens/data)** found the session's headline bug: `utils/flagBootstrap.js` was extracted from an `App.jsx` `useEffect` specifically to be unit-tested, but the extraction was never wired back in — the real running code kept its own inline duplicate, which had since drifted 2 URL params ahead of what the "tested" module knew about. Same replica-divergence shape as root `CLAUDE.md`'s documented Bug #5, found fresh in a new subsystem; fixed via PR #842 (extended the module to handle all 4 params, then wired `App.jsx` to actually call it — RED→GREEN verified). Also closed via Pass 4: zero-coverage components `BrandMark.jsx` and `game-mode/BenchStrip.jsx` (PRs #846/#847), `storage.js`'s own `loadJSON`/`saveJSON` implementation never directly tested (PR #846), and 2 doc-drift corrections (`frontend/CLAUDE.md`'s test-table filenames, `FEATURE_MAP.md` row 9's stale share-link coverage claim — PR #845).
+
+**#474** narrowed from 6 routes to 5 before writing anything new — `GET /admin/deny-link` turned out to already have real authorized-path coverage via `adminLinkToken.route.test.js`'s LT-7, landed as a side effect of the unrelated #337 HMAC work and never reflected back into #474's own tracking. The remaining 3 routes (`GET /requests`, `GET /members`, `POST /update-role`+`/reset-access`+`/suspend`) got new test files via PR #850. **#664** turned out to conflate 2 unrelated asks under one issue number — its own 5-item list (2 of which were already satisfied, verified directly) plus a separately-logged `DOC_TEST_DEBT.md` P1 item (the `RequestAccessScreen` `submitted`-state confirmation card, Story 126/#665) that had been cross-referenced to the same number by mistake. Both closed together via PR #849 since they were adjacent enough to fix in one pass. **#517** (Windows Vitest Bug #7) left open as a permanent known-limitation tracker per its own comment thread's explicit instruction not to re-litigate the `pool: 'forks'` alternative. **#482** (secondary RLS coverage) left open at its existing low priority — self-scoped opportunistic by its own text.
+
+### Dead code removed + a repo-settings decision confirmed
+
+**Phone-channel code deleted from `POST /request-access`** (PR #853, KK's explicit decision after the survey flagged it) — `detectChannel()`/`normalizeContact()` accepted phone as an alternative to email, but the frontend never sent a `phone` field, and it contradicted root `CLAUDE.md`'s Auth Strategy section ("no phone or SMS dependency anywhere in the stack"). `email` is now a declared `express-validator` field matching `POST /magic-link`'s existing pattern. Historical DB rows already holding `phone_e164` are untouched — only the ability to create a *new* request via phone is gone. Updated the one real test regression this surfaced (`requestAccessLimiter.test.js`'s RA-LIMIT-3 had asserted a phone-only request should succeed) plus 2 stale integration-test labels.
+
+**Default-branch=develop confirmed intentional (#488, PR #854).** KK's decision: keep `develop` as GitHub's configured default branch — `main` stays Production/conceptually primary for releases, but day-to-day mechanics (clone checkout, new-PR target, "Closes #N" auto-close) should point at the active integration branch. Verified directly via `GET /repos/{owner}/{repo}` (`default_branch: "develop"`) rather than restated from the original 2026-08-01 finding, and reconciled against live evidence: `develop` sat 69-71 commits ahead of `main` (last promoted at v2.14.0) throughout this session, yet PRs merging only to `develop` (#849, #850, #839) immediately auto-closed their linked issues — proof the mechanism this issue described is real and current, not historical.
+
+### Session-close hygiene
+
+Full session retrospective logged in `docs/process/SESSION_RETROSPECTIVES.md` (2026-08-26-A). `docs/product/DOC_TEST_DEBT.md`'s #664 P1 entry moved to Resolved with a dashboard recount (P1 2→1, Total 24→23). `FEATURE_MAP.md` row 38 updated to reflect the `#664`/`#474` closures (Test Status Partial→Yes), row 9's stale share-link claim corrected separately (also Partial→Yes). Root `CLAUDE.md`'s frontend/backend test-count lines — flagged stale in both the 2026-08-24-B and 2026-08-26-A retros — finally reconciled to current totals as part of this release prep, rather than carried forward a third time.
+
+### Verification and soak status
+
+Backend unit 220→250 (`npm run test:unit`, `APPROVE_LINK_HMAC_SECRET` exported directly — the one local-only failure this session hit repeatedly, `teamData.envGuard.test.js`'s `NODE_ENV=production`/dotenv-skip interaction, is confirmed pre-existing and CI-unaffected). Frontend 1301→1368 passed / 1 skipped (120 files). Lint and build both clean. `debt-p0` gate clear (0 open P0s).
+
+**Soak: not overridden this time.** Every prior release since v2.9.0 explicitly overrode the 24h develop-soak requirement; asked directly this time, KK chose to wait out the full period instead — a deliberate break from that pattern, not an oversight. Soak clock started at `develop` HEAD `b7bbe25` (2026-08-26T09:01:59-04:00), clears 2026-08-27T09:01:59-04:00. Version bump, `VERSION_HISTORY` entry, and this docs pass were prepared ahead of the soak clearing (per KK's explicit instruction) so the PR to `main` is ready to open the moment it does — but that PR itself will not open or merge until then.
+
+---
+
+## v2.14.0 — 2026-08-25 — admin.html fully routed through the backend, approve/deny link security fix (promoted to main 2026-08-26)
 
 **Minor bump** — bundles a completed security remediation (admin.html, #338/#787), a real security vulnerability fix (unsigned/replayable approve-deny links, #337), and three smaller security/reliability/docs items (#346, #347, #350, #645) that landed on `develop` in the same window. Sized above a patch per the established "size the bump to the release's actual scope" convention.
 
@@ -42,6 +90,10 @@ Audited `CHARTER.md`, `SOLUTION_DESIGN.md`, `SECURITY_FRAMEWORK.md`, and `AUTH_S
 **Also this pass:** #698 was found silently auto-closed one second after its own migration PR (#764) merged, despite that PR's explicit no-closing-keyword intent and PR #799's own instruction to keep it open — reopened with evidence; still open pending the real on-device Game-Day Validation pass. v2.13.0's promotion status in this file and root `CLAUDE.md` was corrected from a stale "not yet promoted, freeze in effect" state to the real, already-live one (PR #808). `docs/TROUBLESHOOTING.md` and `docs/product/AUTH_SECURITY_AUDIT_ROADMAP.md` corrected to stop describing admin.html as bypassing the backend entirely.
 
 **Verification (this release-prep pass, `develop` HEAD `a0d1504`):** backend unit 220/220, frontend 1301 passed / 1 skipped (115 files), `npm run lint` clean (0 warnings), `npm run build` clean, `debt-p0` gate clear (0 open P0s).
+
+**Soak explicitly overridden 2026-08-26 by KK** — ~21.5h into the 24h soak when asked, KK chose to override rather than wait the remaining ~2.5h, same pattern as v2.9.0/v2.11.0/v2.12.0. **Promoted to `main` 2026-08-26** (PR [#829](https://github.com/kaushikkuberanathan/lineup_generator/pull/829), regular merge, `29a29b5`) — confirmed a genuine 2-parent merge via `git show -s --format=%P`, not just the GitHub UI. Prod smoke test same session: Render backend booted clean with no thrown errors (`Server running on port 3000`, `Your service is live 🎉` — confirms `APPROVE_LINK_HMAC_SECRET` really is set on the prod service, not just asserted), Vercel production deployment `READY` on the promoted commit, both confirmed via direct deploy-record queries rather than the dashboard. Post-promote sync (PR [#830](https://github.com/kaushikkuberanathan/lineup_generator/pull/830)) merged the same session — its first CI run surfaced one genuine failure, unrelated to the sync itself: `VAL-16` in `backend/scripts/tests/suite-validation.js` (the live-prod integration suite) still called `/admin/approve-link` with the pre-#337 raw-query-param shape, so it 400'd instead of reaching the 404 path it was checking, now that prod was actually running #337's new signed-token contract for the first time (prod had only just been promoted). Fixed by signing a real token via `approveLinkToken.sign()`, verified in-process (supertest against `./app` with the DB lookup mocked to "not found") before pushing. `VAL-14`/`VAL-15` still pass today but now have stale descriptions post-#337 (they're effectively testing "missing token → 400", not their original premises) — logged as non-blocking test debt, not fixed in this pass to keep the fix scoped to the actual CI failure.
+
+**Post-promote branch hygiene (2026-08-26):** remote was already clean (this repo auto-deletes merged PR head branches) — only `develop`, `main`, the unrelated `activity-data` automation branch, and the two pre-existing Dependabot PRs (`#673` ESLint major bump, `#623` react-dom major bump, both out of scope for this release) remained. Local worktree had 3 stale merged branches (`claude/dev-prod-migration-assess-ckgefe`, `fix/dev-backend-hmac-secret-and-docs`, `sync/main-into-develop-v2140`) — deleted, plus stale remote-tracking refs pruned.
 
 **Post-merge fix, same session:** the previously-undocumented `lineup-generator-dev-backend` Render service (id `srv-da2c7fqjnfac73aefmv0`, branch `develop`, created 2026-08-18 — contradicted root `CLAUDE.md`'s "DEV backend deleted" claim and PR #825's own body) turned out to be real and deliberately configured (`SUPABASE_TARGET=dev` at boot), but was found crash-looping: its two most recent deploys had failed with `Error: Missing required environment variable: APPROVE_LINK_HMAC_SECRET`, since only the actual prod Render service had received that new required env var. KK supplied the value, it was applied to the dev service too, and it redeployed clean (`Server running on port 10000`, `Your service is live`). `admin.dev.html`'s `BACKEND_URL` was repointed from `http://localhost:5000` to `https://lineup-generator-dev-backend.onrender.com` as the new default (falls back to localhost for testing an uncommitted local change), and both its header comment and root `CLAUDE.md`'s Key Infrastructure entry were corrected. Origin/owner of the service itself is still unconfirmed — it predates PR #825 by a week and nothing in this repo documents who created it.
 
@@ -280,6 +332,20 @@ Audited `CHARTER.md`, `SOLUTION_DESIGN.md`, `SECURITY_FRAMEWORK.md`, and `AUTH_S
 - Release: APP_VERSION 2.5.26 to 2.5.28 and package.json 2.5.27 to 2.5.28, resolving the stale App.jsx constant left by the 2.5.27 icon/OG release.
 - Note: 2.5.27 (icons, OG/Twitter meta, maskable-split) shipped via PRs #305/#309/#310/#311 but was never logged here - captured in versionHistory.js only.
 - Deferred fast-follow: DugoutView viewer-path brand mark (flag-off); maskable-512 re-export (current PROD asset reads black-bg, 0% safe-zone); brand-mark image in PDF via addImage.
+---
+## v2.5.27 - 2026-06-12 - Fresh new look — app icon, share previews, refreshed auth screens
+
+**Backfilled 2026-08-26 (closes #317).** This entry was deferred at release time — local VS Code's EOL/format-on-save setting flips this CRLF file to LF on save, corrupting the whole-file diff — and the release shipped without it rather than commit corruption. Content sourced from the existing `versionHistory.js` v2.5.27 entry and the promote commit (`5ab97c0`, PR #316) rather than re-derived from memory.
+
+- Story 304 - Badge icon set: favicon, apple-touch, pwa-192/512, and a new maskable-512 replace placeholder SVGs; `vite.config` maskable-split (pwa-512 purpose `any`, dedicated maskable-512 purpose `maskable`) (PR #305).
+- Story 306 - Removed 4 orphaned `.svg` icon sources from `public/` after the raster icon swap (PR #309).
+- Story 307 - Open Graph + Twitter Card share-link meta tags + 1200x630 `og-image.png`; baseball emoji replaced with the badge image on `LoginScreen` + `RequestAccessScreen` (PR #310, PR #311).
+- Story 99 - Backend test coverage: `aiProxy` + auth happy-path specs (PR #299).
+- Governance - color-token disposition audit, MASTER staging discipline + RED-GREEN workflow (#298-#303).
+- Infra - `dev.dugoutlineup.com` confirmed tracking `develop` (#308 closed, caching false alarm); Vercel Deployment Protection disabled for dev soak (#314).
+- Promoted to `main` via PR #316 (merge commit `5ab97c0`).
+- Root-cause CRLF/EOL tooling gap (also behind Stories 76/96/97) is likely moot going forward — this entry itself was added via Claude Code's Edit tool, which doesn't trigger VS Code's format-on-save conversion. No `.gitattributes` EOL pin added; revisit only if the corruption recurs through this same editing path.
+
 ---
 ## v2.5.26 — 2026-06-08 — New About tab (builder profile + partnership CTA)
 
@@ -1843,6 +1909,15 @@ Open questions to resolve during implementation:
 
 ## Backlog
 
+### Environment & Data Governance — sequencing (2026-08-25)
+Six open issues, one underlying capability (repo/DB/CI don't reliably describe the same system). Sequenced by live-risk-first, not by issue number:
+1. [#368](https://github.com/kaushikkuberanathan/lineup_generator/issues/368) — Smoke Test (dev) CI job runs against prod
+2. [#339](https://github.com/kaushikkuberanathan/lineup_generator/issues/339) — test suites pollute prod team_memberships/access_requests
+3. [#735](https://github.com/kaushikkuberanathan/lineup_generator/issues/735) — finish Migration 023 (season NOT NULL) after write verification
+4. [#351](https://github.com/kaushikkuberanathan/lineup_generator/issues/351) — repo/prod DB migration source-of-truth drift
+5. [#348](https://github.com/kaushikkuberanathan/lineup_generator/issues/348) — no test exercises RLS as an authenticated user
+6. [#379](https://github.com/kaushikkuberanathan/lineup_generator/issues/379) — populate team_data_history.write_source
+
 ### ✅ Story 15 (P1): RLS policy blocking saveTeamData calls in real-game mode
 **Surfaced:** April 23, 2026 (real-game smoke test)
 **Status:** Resolved v2.5.13
@@ -1892,7 +1967,8 @@ Open questions to resolve during implementation:
 - Blocks nothing directly; current localStorage override remains available as workaround.
 - Connects to Story 41: until both resolved, runtime flag changes require redeploy + can't be locally test-validated.
 
-### Story 26 (P2): Backend RATE-01a test flakiness — stateful against prod rate limiter <!-- #111 -->
+### ✅ Story 26 (P2): Backend RATE-01a test flakiness — stateful against prod rate limiter <!-- #111 -->
+Status: Resolved. `loginLimiter` re-keyed IP→email; rate-limit-touching integration tests use per-run-unique emails. GitHub issue closed 2026-08-26 as root-cause-resolved (see #840, #115).
 - **Surfaced:** April 24, 2026 (PR #17 CI run — admin-bypassed because only CLAUDE.md changed).
 - `backend/scripts/tests/suite-rate-limits.js` RATE-01a expects `403 NOT_AUTHORIZED` but gets `429 TOO_MANY_ATTEMPTS` when prior CI runs have burned through the prod backend's rate-limit cap.
 - Update 2026-04-28: VAL-09 (validation, no email) is also affected by this rate limit issue, not just RATE-01a.
@@ -2105,8 +2181,8 @@ Recommendation: A. Ship a tight banned-token list (≤10 patterns), per-entry
 
 ---
 
-### Story 39 (P3) — Typed VERSION_HISTORY schema validator <!-- #117 -->
-Status: Open
+### ✅ Story 39 (P3) — Typed VERSION_HISTORY schema validator <!-- #117 -->
+Status: Resolved. Option A shipped via `frontend/src/__tests__/versionHistory.test.js` (PR #257/#258, 2026-05-30, story #256). GitHub issue closed 2026-08-26 — tracker was never closed after the validator landed.
 Discovered: April 2026 — pattern recognized after two structural regressions
   (v2.2.12/13 missing entries killed the Current badge; v2.4.0/v2.3.4
   techNote violations slipped past)
@@ -2732,9 +2808,9 @@ Recommendation: Bundle all three in one chore PR — small scope, no app code.
 
 ---
 
-### Story 71 (P2) — Version History Audit: Standardize Schema Across All Entries <!-- #140 -->
+### ✅ Story 71 (P2) — Version History Audit: Standardize Schema Across All Entries <!-- #140 -->
 
-Status: Open
+Status: Resolved. Schema enforcement (headline required, no `title` field, no PR/Story leakage in userChanges, date-format check) shipped via `versionHistory.test.js` (PR #257/#258, 2026-05-30, story #256). GitHub issue closed 2026-08-26 — tracker was never closed after the work landed.
 Discovered: May 19, 2026 (v2.5.16 bump session — 2026-05-19-B)
 Target: v2.5.17
 Symptom: VERSION_HISTORY entries in frontend/src/data/versionHistory.js have inconsistent date formats (some "2026-05-04", some "May 2026"), missing headline/techNote fields on older entries, and internalChanges content appearing in userChanges where coaches could see it.
@@ -2837,9 +2913,9 @@ proper semantic prop, plus add a guard rail. (b) renames the problem
 rather than solving it. Related: PR #144's F5 anti-pattern guard for
 fontSize — this is the color-prop equivalent.
 
-### Story 75 (P1) — Pre-push hook: move full Vitest suite out of hook, CI-only <!-- #153 -->
+### ✅ Story 75 (P1) — Pre-push hook: move full Vitest suite out of hook, CI-only <!-- #153 -->
 
-Status: Resolved v2.5.18
+Status: Resolved v2.5.18. GitHub issue closed 2026-08-26 — tracker was left open after the fix shipped.
 Discovered: May 20, 2026 — 4 of 5 push attempts failed during chore/backend-route-modularization session
 Target: Next governance pass
 

@@ -78,7 +78,7 @@ Located at App.jsx ~458–720. Two-phase auto-assign algorithm:
 ## Test Suite
 
 - **Framework**: Vitest
-- **CI target**: 1227 frontend passed / 1 skipped / 0 failed (as of 2026-08-23, v2.13.0 release prep, from the CI run at `develop` HEAD `bce6ba9`; 108 test files; 1374 total incl. 147 backend unit tests)
+- **CI target**: 1368 frontend passed / 1 skipped / 0 failed (as of 2026-08-26, v2.15.0 release prep; 120 test files; 1618 total incl. 250 backend unit tests)
 - **Known skip**: bench-equity.test.js test 2.1 (bench rotation fairness — BUG CONFIRMED; identical players, sit-count drift > 1 inning; fix deferred)
 
 #### Test files
@@ -90,9 +90,9 @@ Located at App.jsx ~458–720. Two-phase auto-assign algorithm:
 | `bench-equity.test.js` | Bench count correctness, exclusivity, rotation fairness; absent-player equity (reduced roster) |
 | `scoring.test.js` | 28 parameterized scoring function tests |
 | `accessibility.v1.test.js` | POSITION_LABELS, FEATURE_FLAGS registry, isFlagEnabled defaults + overrides |
-| `migrations.test.js` | Schedule migration, roster normalization, field backfill |
+| `migration.test.js` | Schedule migration, roster normalization, field backfill (filename corrected 2026-08-26 — this table previously said `migrations.test.js`, plural; the real file is singular, matching root `CLAUDE.md`'s Known Open Bugs table) |
 | `formatters.test.js` | fmtAvg, fmtStat, time formatting helpers |
-| `flagBootstrap.test.js` | Feature flag bootstrap, localStorage override, URL param enable/disable |
+| `flag-bootstrap.test.js` | Feature flag bootstrap, localStorage override, URL param enable/disable, maintenance-bypass params (filename corrected 2026-08-26 — this table previously said `flagBootstrap.test.js`, camelCase; the real file is hyphenated) |
 | `trackingUrl.test.js` | UTM outboundLinkProps, CAMPAIGNS registry, medium auto-detection (17 tests) |
 | `BattingOrderStrip.test.jsx` | BattingOrderStrip component: Now Batting / On Deck / In Hole pill rendering, +N more badge, empty state, currentBatterIndex cycling (6 tests) |
 | `DugoutView.test.jsx` | DugoutView smoke tests: entry state renders, active scoring state renders, BattingOrderStrip present in both states, onExit handler (5 tests); `scorer_local_id` generation — crypto.randomUUID primary path, localStorage reuse, crypto.getRandomValues legacy-browser fallback with explicit UUID v4 version/variant nibble checks (3 tests, v2.9.0 security hardening) (15 tests total) |

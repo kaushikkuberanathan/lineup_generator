@@ -286,6 +286,8 @@ export default function LiveScoringPanel(props) {
       <LiveScoreViewer
         gameState={gs}
         scorerName={scorerName}
+        myTeamLabel={myTeamLabelSB}
+        oppLabel={teamLabelSB}
         onClaimScorer={function() { setViewerOnly(false); claimScorerLock(); }}
         onExit={onExit}
       />
@@ -392,6 +394,7 @@ export default function LiveScoringPanel(props) {
           oppLabel={teamLabelSB}
           myScore={gs.myScore}
           oppScore={gs.opponentScore}
+          isAtBat={isHomeBatting}
           isScorer={false}
         />
         {/* Header strip */}
@@ -459,7 +462,7 @@ export default function LiveScoringPanel(props) {
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0' }}>
-          <DiamondSVG runners={gs.runners} battingOrder={battingOrder} />
+          <DiamondSVG runners={isHomeBatting ? gs.runners : gs.oppRunners} battingOrder={battingOrder} />
         </div>
 
         {currentBatter ? (
@@ -724,6 +727,7 @@ export default function LiveScoringPanel(props) {
         myScore={gs.myScore}
         oppScore={gs.opponentScore}
         isScorer={isScorer}
+        isAtBat={isHomeBatting}
         onAddMyRun={function() { scoring.addManualRun('us'); }}
         onAddOppRun={function() { scoring.addManualRun('opp'); }}
       />
@@ -999,7 +1003,7 @@ export default function LiveScoringPanel(props) {
         flex: 1,
       }}>
         <div style={{ display: 'flex', justifyContent: 'center', flexShrink: 0 }}>
-          <DiamondSVG runners={gs.runners} battingOrder={battingOrder} />
+          <DiamondSVG runners={isHomeBatting ? gs.runners : gs.oppRunners} battingOrder={battingOrder} />
         </div>
 
         <div data-testid="pitch-map" style={{ width: '100%', textAlign: 'center' }}>

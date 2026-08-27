@@ -260,6 +260,56 @@ describe('LiveScoringPanel — STATE 2: opponent half', function () {
     fireEvent.click(screen.getByRole('button', { name: /K\nStrike/ }));
     expect(recordOppPitch).toHaveBeenCalledWith('strike');
   });
+
+  test('#118 — ScoreboardRow shows the active-half dot on our team during our half', function () {
+    render(<LiveScoringPanel {...baseProps({ isScorer: true, scorerName: 'Me' })} />);
+    expect(screen.getByTestId('scoreboard-mine-active-dot')).toBeInTheDocument();
+    expect(screen.queryByTestId('scoreboard-opp-active-dot')).toBeNull();
+  });
+
+  test('#118 — ScoreboardRow shows the active-half dot on the opponent during their half', function () {
+    render(<LiveScoringPanel {...baseProps({
+      isScorer: true, scorerName: 'Me',
+      gameState: baseGameState({ halfInning: 'bottom' }),
+      myTeamHalf: 'top',
+      scoring: { addManualRun: vi.fn(), recordOppPitch: vi.fn(), endHalfInning: vi.fn(), oppRunsThisHalf: 0 },
+    })} />);
+
+    expect(screen.getByTestId('scoreboard-opp-active-dot')).toBeInTheDocument();
+    expect(screen.queryByTestId('scoreboard-mine-active-dot')).toBeNull();
+  });
+
+  test('#105 — diamond shows opponent runners, not our own, during their half', function () {
+    var { container } = render(<LiveScoringPanel {...baseProps({
+      isScorer: true, scorerName: 'Me',
+      gameState: baseGameState({
+        halfInning: 'bottom',
+        runners: [{ runnerId: 'p1', base: 1 }],
+        oppRunners: [{ runnerId: 'opp-2', base: 2 }],
+      }),
+      myTeamHalf: 'top',
+      scoring: { addManualRun: vi.fn(), recordOppPitch: vi.fn(), endHalfInning: vi.fn(), oppRunsThisHalf: 0 },
+    })} />);
+
+    expect(container.querySelector('[data-base="2"]')).not.toBeNull();
+    expect(container.querySelector('[data-base="1"]')).toBeNull();
+  });
+
+  test('#105 — diamond shows our own runners, not opponent runners, during our half', function () {
+    var { container } = render(<LiveScoringPanel {...baseProps({
+      isScorer: true, scorerName: 'Me',
+      gameState: baseGameState({
+        halfInning: 'top',
+        runners: [{ runnerId: 'p1', base: 1 }],
+        oppRunners: [{ runnerId: 'opp-2', base: 2 }],
+        currentBatter: { id: 'p2', name: 'Batter' },
+      }),
+      myTeamHalf: 'top',
+    })} />);
+
+    expect(container.querySelector('[data-base="1"]')).not.toBeNull();
+    expect(container.querySelector('[data-base="2"]')).toBeNull();
+  });
 });
 
 describe('LiveScoringPanel — STATE 2: header controls', function () {
