@@ -5114,6 +5114,50 @@ against `line-up-generator` (`prj_P1ajLGpY6ZezIsNMeTCPXPSnyZEu`) before using
 the `vercel` CLI from that checkout.
 
 ---
+### Story 137 (P3) - Story 133 token-migration follow-up cleanup <!-- #859 -->
+Status: Backlog, not started.
+Discovered: 2026-08-27, while reassessing Story 133's (#698) production
+status. Three separate, unrelated-to-each-other design-token gaps
+surfaced during/after that migration - batched here rather than
+reopening #698, which stays scoped to the original 13-slice migration
+itself.
+Symptom:
+1. **9 literal (non-token) colors resurfaced in the 3 earliest-migrated
+   files** - `BenchStrip.jsx`, `DugoutView.jsx`, `ScoreboardRow.jsx`
+   (slices 1-2, PRs #705/#707). Verified directly against `develop`:
+   `BenchStrip.jsx` 4 `rgba()` occurrences, `DugoutView.jsx` 1,
+   `ScoreboardRow.jsx` 4. Root cause unconfirmed - either the original
+   migration missed sites, or unrelated feature work since reintroduced
+   literals without reaching for the token.
+2. **`#1d4ed8` and `#374151` were independently re-minted as separate
+   component-scoped tokens** in 6 and 5 files respectively during
+   slices 5-13, rather than converging on one shared token. Found by the
+   migration's own author, documented in PR #764's body, not fixed
+   there.
+3. **A full-codebase audit run during the migration found ~818 more
+   untokenized literal-color occurrences** outside Story 133's
+   `game-mode/*` + `ScoringMode/*` + `components/ui/*` scope -
+   `App.jsx` alone accounts for 693 of those.
+Impact: None of these affect coaches today - no visual regression, no
+functional risk. Pure design-system hygiene debt. (1) means the
+migration isn't fully clean in the 3 earliest files; (2) means two
+token names that should be one, inviting future divergence; (3) is the
+single largest remaining untokenized surface in the app (bigger than
+all of Story 133 combined) but deliberately out of scope given
+`App.jsx`'s own pending decomposition plan.
+Root cause: Known-ish for (1) (unconfirmed which of the two
+explanations) and (2) (independent, uncoordinated per-slice token
+minting during the slices 5-13 sandbox run); (3) is scope, not a
+defect.
+Proposed fix: (1) + (2) together in one slice-style PR - inventory,
+propose mapping, KK sign-off, migrate, verify zero literal colors
+remain; same low-risk byte-preserving mechanical pattern as the rest of
+Story 133, small enough not to need its own sandbox branch. (3) stays
+explicitly parked - revisit only alongside or after `App.jsx`'s
+decomposition plan, not standalone.
+Full detail: [#859](https://github.com/kaushikkuberanathan/lineup_generator/issues/859).
+
+---
 ### Automated Score Reporting (County Integration)
 **Status:** Architecture finalized, implementation pending
 **Trigger:** Coach taps "Report Score" on a completed game
