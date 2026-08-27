@@ -1,11 +1,11 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: 2026-08-26 (v2.15.0 release prep — dependency currency, git governance, and Test Health & Regression Protection consolidation; develop only, not yet promoted; see the top entry below.); previously 2026-08-26 (v2.14.0 promoted to `main` and live in prod).
+> Last updated: 2026-08-27 (v2.15.0 promoted to `main` and live in prod — PR #857, `5a38b08`; post-promote sync PR #858); previously 2026-08-26 (v2.15.0 release prep — dependency currency, git governance, and Test Health & Regression Protection consolidation).
 > MVP launched: March 24, 2026
 
 ---
 
-## v2.15.0 — 2026-08-26 — Dependency currency, git governance, and test-health cleanup (develop only — not yet promoted)
+## v2.15.0 — 2026-08-26 — Dependency currency, git governance, and test-health cleanup (promoted to `main` 2026-08-27, PR #857)
 
 **Minor bump, dev-tooling/governance/test-infra only — zero new coach-facing features.** Sized above patch per the established "size the bump to the release's actual scope" convention: real dependency major-version migrations (React 18→19) plus a real repo-governance settings change are enough surface area to justify it even with no user-visible feature. Three unrelated consolidation passes bundled together, each following the same shape — audit a cluster of issues KK flagged as fragmented, verify current state directly rather than trust old issue text, consolidate, then execute the real remaining work.
 
