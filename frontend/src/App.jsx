@@ -2898,6 +2898,15 @@ export default function App() {
     function TeamCard(props) {
       var team = props.team;
 
+      // Story 127 (#666): Edit/Delete are admin-only actions. subscribedTeams
+      // (this function's only caller) is already filtered to membership-backed
+      // teams, so a matching row should always exist here; the true-if-missing
+      // fallback only covers pre-auth/offline rendering, where no memberships
+      // array exists at all and every team is local-only (nothing to protect
+      // from another role, since there's no server-side membership to speak of).
+      var teamMembership = (memberships || []).filter(function(m) { return m.team_id === team.id; })[0];
+      var canManageTeam = teamMembership ? teamMembership.role === "admin" : true;
+
       // Show skeleton while Supabase is fetching this team's data for the first time.
       // Prevents the card from flashing "Missing roster" / no Game Mode button
       // for teams not yet visited on this device.
@@ -3006,6 +3015,7 @@ export default function App() {
                      onClick={function(e) { e.stopPropagation(); setOpenMenuTeamId(null); }} />
                 <div style={{ position:"absolute", top:"100%", right:0, marginTop:"4px", background:"#ffffff", border:"1px solid rgba(0,0,0,0.1)", borderRadius:"6px", boxShadow:"0 4px 12px rgba(0,0,0,0.12)", zIndex:9999, minWidth:"168px", overflow:"hidden" }}
                      onClick={function(e) { e.stopPropagation(); }}>
+                  {canManageTeam && (
                   <div style={{ padding:"10px 16px", cursor:"pointer", color:"#374151", fontSize:"13px", fontFamily:"inherit" }}
                        onMouseEnter={function(e) { e.currentTarget.style.background="#f9fafb"; }}
                        onMouseLeave={function(e) { e.currentTarget.style.background="transparent"; }}
@@ -3016,12 +3026,14 @@ export default function App() {
                        }; }(team)}>
                     ✏ Edit team
                   </div>
+                  )}
                   <div style={{ padding:"10px 16px", cursor:"pointer", color:"#374151", fontSize:"13px", fontFamily:"inherit" }}
                        onMouseEnter={function(e) { e.currentTarget.style.background="#f9fafb"; }}
                        onMouseLeave={function(e) { e.currentTarget.style.background="transparent"; }}
                        onClick={function(e) { e.stopPropagation(); exportTeamData(team); setOpenMenuTeamId(null); }}>
                     ⬇ Download backup
                   </div>
+                  {canManageTeam && (
                   <div style={{ padding:"10px 16px", cursor:"pointer", color:"#e05565", fontSize:"13px", fontFamily:"inherit" }}
                        onMouseEnter={function(e) { e.currentTarget.style.background="#f9fafb"; }}
                        onMouseLeave={function(e) { e.currentTarget.style.background="transparent"; }}
@@ -3032,6 +3044,7 @@ export default function App() {
                        }}>
                     🗑 Delete team
                   </div>
+                  )}
                 </div>
               </>
             )}
