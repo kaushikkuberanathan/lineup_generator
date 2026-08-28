@@ -194,14 +194,6 @@
 | **Opened** | 2026-04-17 |
 | **Target** | v2.4.0 |
 
-### 🟡 P3 — FAQ × Feature Flag coverage audit
-
-- **What:** `frontend/src/content/faqs.js` contains 48 FAQ entries across 7 personas. At least one entry (line 191, scorekeeper category) describes a feature gated by `liveScoringEnabled` flag without acknowledging the gate. Coaches without the flag enabled see referenced UI elements that don't exist for them.
-- **Scope:** Full audit of all 48 entries against current feature flag state. Identify entries describing gated features. Decide on a consistent presentation pattern (caveat language? group flag-gated entries? prefix like "If live scoring is enabled..."?). Apply consistently.
-- **Target:** v2.6.0 P3 (or v2.7.0 if scope creeps)
-- **Source:** Surfaced during v2.6.0 documentation foundation sweep on April 27, 2026.
-- **Why P3:** Not actively misleading — coaches without the flag never reach the relevant FAQ answer expecting it to apply. But represents a content quality gap worth resolving once flag count grows.
-
 ### 🟡 P2 — D-S31: FEATURE_MAP.md Coverage Summary denominator drift
 
 | | |
@@ -251,16 +243,6 @@
 | **Opened** | 2026-04-17 |
 | **Target** | v2.4.0 |
 
-### 🟡 P2 — FAQ Linter
-
-| | |
-|---|---|
-| **Area** | Governance |
-| **Description** | No automated check that FAQ categories correspond to real personas and that no persona is missing FAQ coverage. |
-| **Proposed action** | Write a small Vitest fixture that asserts every FAQ category in faqs.js has a matching persona in PERSONAS.md. Low priority because manual audit just happened. |
-| **Opened** | 2026-04-17 |
-| **Target** | v2.4.0 |
-
 ### 🟡 P2 — FEATURE_MAP.md Sync Linter
 
 | | |
@@ -305,6 +287,12 @@
 ## Resolved
 
 *(Items move here once shipped. Format: date, version, original description summary, resolution commit.)*
+
+### August 27, 2026 — FAQ × Feature Flag coverage audit (superseded) + FAQ Linter (retired) — Story 333/#865
+
+- ✅ **P3 — FAQ × Feature Flag coverage audit** — Superseded, not separately fixed. The persona-taxonomy `faqs.js` this item described (48 entries across 7 personas, one describing `liveScoringEnabled`-gated behavior without acknowledging the gate) was fully restructured into task-oriented `HELP_CATEGORIES` (Story 333). The rewritten scoring content ("Start scoring") now opens with an explicit flag-awareness caveat ("Live scoring is on for teams it's enabled for") rather than presenting it as universal. The specific line-191 entry this item pointed at no longer exists in that form.
+- ✅ **P2 — FAQ Linter** — Retired, not built. This proposal asserted every FAQ category has "a matching persona in PERSONAS.md" — the persona taxonomy it depended on no longer exists after Story 333's task-oriented redesign, so the proposed linter's premise is gone. A future content-integrity check (if wanted) would need a different shape — e.g. asserting every `HELP_CATEGORIES` item has a unique `id`, which `FAQSection.test.jsx`'s H13 now covers directly.
+- Issue: [#865](https://github.com/kaushikkuberanathan/lineup_generator/issues/865).
 
 ### August 27, 2026 — Dependency currency: 4 Dependabot bumps held (eslint, jsdom, react-dom, supabase-js) (#632-636)
 
