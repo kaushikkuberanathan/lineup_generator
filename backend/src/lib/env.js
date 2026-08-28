@@ -38,4 +38,22 @@ for (const key of optional) {
     }
 }
 
+// Legacy Supabase JWT keys (`eyJ...`) were disabled on the prod project after
+// the 2026-07-20 cutover incident (#387) — a stale legacy anon key in Render
+// broke every login for ~15min with no startup-time signal, only a runtime
+// "Legacy API keys are disabled" error on the first auth call. New-style
+// keys are `sb_secret_...` / `sb_publishable_...`. This is a warning, not a
+// throw: DEV still uses legacy keys deliberately (its project hasn't
+// disabled them), so a hard failure here would break local/DEV boot.
+const legacyKeyPattern = /^eyJ/;
+for (const key of ['SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_ANON_KEY']) {
+    if (legacyKeyPattern.test(process.env[key] || '')) {
+        console.warn(
+            `\n⚠️⚠️⚠️  [env] ${key} looks like a legacy Supabase JWT ("eyJ..."). ` +
+            `If this project has legacy keys disabled, every auth call using it will fail. ` +
+            `Expected a new-style key (sb_secret_... / sb_publishable_...). See #387.  ⚠️⚠️⚠️\n`
+        );
+    }
+}
+
 module.exports = {};
