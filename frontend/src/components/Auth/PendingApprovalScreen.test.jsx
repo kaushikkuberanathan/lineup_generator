@@ -29,7 +29,7 @@ describe('PendingApprovalScreen — component (#696)', function () {
     // 1's own label — so both must be selector-scoped, not a bare getByText.
     expect(screen.getByText('Request submitted', { selector: 'h1' })).toBeInTheDocument();
     expect(screen.getByText('Request submitted', { selector: 'span' })).toBeInTheDocument();
-    expect(screen.getByText('Coach reviews and approves')).toBeInTheDocument();
+    expect(screen.getByText('Admin reviews and approves')).toBeInTheDocument();
     expect(screen.getByText('You receive an approval email')).toBeInTheDocument();
     expect(screen.getByText('Tap the link and log in')).toBeInTheDocument();
   });

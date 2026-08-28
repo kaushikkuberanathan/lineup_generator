@@ -230,8 +230,8 @@ export function RequestAccessScreen({
         </form>
 
         <p style={styles.note}>
-          The head coach will review your request and you&apos;ll receive an email
-          when approved — usually within a few hours.
+          Dugout Lineup&apos;s admin team will review your request and you&apos;ll
+          receive an email when approved — usually within a few hours.
         </p>
 
         </>
