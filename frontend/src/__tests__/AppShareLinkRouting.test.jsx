@@ -141,7 +141,7 @@ afterEach(function () {
 describe("App — share-link routing render path (Story 61 follow-up, DOC_TEST_DEBT.md)", function () {
   describe("`?s=<id>` short-link branch", function () {
     it("renders SharedView (not DugoutView) for `?s=abc` with no view/role param", async function () {
-      mockDbLoadShareLink.mockResolvedValue(sharePayload);
+      mockDbLoadShareLink.mockResolvedValue({ payload: sharePayload, status: "ok" });
       setUrl("s=abc");
 
       render(<App />);
@@ -154,7 +154,7 @@ describe("App — share-link routing render path (Story 61 follow-up, DOC_TEST_D
     });
 
     it("renders DugoutView (not SharedView) for `?s=abc&view=true`", async function () {
-      mockDbLoadShareLink.mockResolvedValue(sharePayload);
+      mockDbLoadShareLink.mockResolvedValue({ payload: sharePayload, status: "ok" });
       setUrl("s=abc&view=true");
 
       render(<App />);
@@ -167,7 +167,7 @@ describe("App — share-link routing render path (Story 61 follow-up, DOC_TEST_D
     });
 
     it("renders DugoutView (not SharedView) for `?s=abc&role=viewer`", async function () {
-      mockDbLoadShareLink.mockResolvedValue(sharePayload);
+      mockDbLoadShareLink.mockResolvedValue({ payload: sharePayload, status: "ok" });
       setUrl("s=abc&role=viewer");
 
       render(<App />);
@@ -176,6 +176,52 @@ describe("App — share-link routing render path (Story 61 follow-up, DOC_TEST_D
         expect(screen.getByTestId("mock-dugout-view")).toBeInTheDocument();
       });
       expect(screen.queryByText("Print")).not.toBeInTheDocument();
+    });
+  });
+
+  describe("`?s=<id>` failure modes (Story 62/#127)", function () {
+    it("shows a malformed-link message for status 'malformed_slug'", async function () {
+      mockDbLoadShareLink.mockResolvedValue({ payload: null, status: "malformed_slug" });
+      setUrl("s=abc");
+
+      render(<App />);
+
+      await waitFor(function () {
+        expect(screen.getByText(/looks incomplete or broken/i)).toBeInTheDocument();
+      });
+    });
+
+    it("shows a re-share message for status 'rls_blocked'", async function () {
+      mockDbLoadShareLink.mockResolvedValue({ payload: null, status: "rls_blocked" });
+      setUrl("s=abc");
+
+      render(<App />);
+
+      await waitFor(function () {
+        expect(screen.getByText(/ask the coach to re-share/i)).toBeInTheDocument();
+      });
+    });
+
+    it("shows a connection message for status 'timeout'", async function () {
+      mockDbLoadShareLink.mockResolvedValue({ payload: null, status: "timeout" });
+      setUrl("s=abc");
+
+      render(<App />);
+
+      await waitFor(function () {
+        expect(screen.getByText(/check your connection/i)).toBeInTheDocument();
+      });
+    });
+
+    it("shows the not-found message for status 'not_found'", async function () {
+      mockDbLoadShareLink.mockResolvedValue({ payload: null, status: "not_found" });
+      setUrl("s=abc");
+
+      render(<App />);
+
+      await waitFor(function () {
+        expect(screen.getByText(/couldn.t be found/i)).toBeInTheDocument();
+      });
     });
   });
 

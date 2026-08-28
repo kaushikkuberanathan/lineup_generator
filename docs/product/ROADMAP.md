@@ -1540,12 +1540,16 @@ See also: Story 61 (P0) — recipient-side viewer routing broken (separate fix,
 
 ### Story 62 (P2) — dbLoadShareLink silent null collapses three failure modes <!-- #127 -->
 
-**Problem:** `dbLoadShareLink` returns null for at least three distinct failure modes (row not found, RLS block, malformed slug) and the caller cannot distinguish them — all three collapse into a single silent null, making the share-link error surface undiagnosable.
+**Status:** Resolved — v2.15.1-prep (develop only, not yet promoted)
+
+**Problem:** `dbLoadShareLink` returned null for at least three distinct failure modes (row not found, RLS block, malformed slug) and the caller could not distinguish them — all three collapsed into a single silent null, making the share-link error surface undiagnosable.
+
+**Resolution:** `dbLoadShareLink` (`frontend/src/supabase.js`) now always resolves `{ payload, status }`, where `status` is one of `ok` / `not_found` / `rls_blocked` / `timeout` / `malformed_slug`. Malformed ids are caught client-side against `SHARE_LINK_ID_PATTERN` before ever touching the network; `42501`/`PGRST301` Supabase error codes map to `rls_blocked`, everything else to `not_found`. The `?s=` share-link error screen in `App.jsx` now shows a distinct, user-meaningful message per status instead of one generic "couldn't be found" for every case.
 
 **Acceptance criteria:**
-- Caller receives a typed result or error code distinguishing: (a) not found, (b) RLS/auth block, (c) malformed slug
-- Share-link error UI surfaces a user-meaningful message per failure mode
-- Unit test covers all three paths
+- [x] Caller receives a typed result or error code distinguishing: (a) not found, (b) RLS/auth block, (c) malformed slug
+- [x] Share-link error UI surfaces a user-meaningful message per failure mode
+- [x] Unit test covers all three paths — `shareLink.test.js` (6 tests) + new `AppShareLinkRouting.test.jsx` describe block (4 tests) asserting the rendered copy per status
 
 **Priority:** P2 | **Connects to:** Story 61 (P0 share-link routing)
 
