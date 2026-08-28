@@ -1,10 +1,12 @@
 # Runs every 6 hours. Failures mean real coaches may be impacted — check immediately.
 # Also triggerable manually from the Actions tab (workflow_dispatch).
 #
-# Three checks in order:
+# Four checks in order:
 #   1. API health — /health must return 200 with db: "ok"
 #   2. Share link — dugoutlineup.com/?s=<HEALTH_SHARE_KEY> must load and contain "Mud Hens"
 #   3. Lineup generation smoke — /generate-lineup must return a lineup array
+#   4. DEV deployment protection (#314) — dev.dugoutlineup.com must return 200,
+#      not be gated behind Vercel Authentication (recurring config drift)
 #
 # Required GitHub secret:
 #   HEALTH_SHARE_KEY — an 8-char share key created from the Mud Hens team (1774297491626).
@@ -130,6 +132,29 @@ jobs:
 
           echo "✅ /generate-lineup → 200 with lineup array"
 
+      # ── Step 4: DEV deployment-protection drift check (#314) ────────────────────
+      # dev.dugoutlineup.com must stay reachable without Vercel Authentication.
+      # Protection has silently re-armed itself before with no known trigger — this
+      # step exists so a recurrence is caught within 6h instead of rediscovered by
+      # chance during unrelated work (how it was found both previous times).
+      # A protected deployment returns 401 with a Vercel SSO/login page instead of
+      # the app; an unprotected one returns 200 with the real app shell.
+
+      - name: DEV deployment protection check
+        id: dev_protection
+        run: |
+          HTTP_STATUS=$(curl -s -o /tmp/dev_body.html -w "%{http_code}" https://dev.dugoutlineup.com)
+          echo "http_status=$HTTP_STATUS" >> $GITHUB_OUTPUT
+          echo "HTTP $HTTP_STATUS — https://dev.dugoutlineup.com"
+
+          if [ "$HTTP_STATUS" != "200" ]; then
+            echo "❌ dev.dugoutlineup.com returned HTTP $HTTP_STATUS (expected 200) —"
+            echo "   Vercel Deployment Protection may have re-armed itself. See #314."
+            exit 1
+          fi
+
+          echo "✅ dev.dugoutlineup.com → 200, not gated by Vercel Authentication"
+
       # ── Job Summary ─────────────────────────────────────────────────────────────
 
       - name: Write job summary
@@ -140,14 +165,17 @@ jobs:
           API_STATUS="${{ steps.api_health.outputs.http_status }}"
           SHARE_STATUS="${{ steps.share_link.outputs.http_status }}"
           LINEUP_STATUS="${{ steps.lineup_smoke.outputs.http_status }}"
+          DEV_PROTECTION_STATUS="${{ steps.dev_protection.outputs.http_status }}"
           NOW=$(date -u '+%Y-%m-%d %H:%M UTC')
 
           api_icon="✅"
           share_icon="⏭ (no key)"
           lineup_icon="✅"
+          dev_protection_icon="✅"
 
           [ "$API_STATUS"    != "200" ] && api_icon="❌"
           [ "$LINEUP_STATUS" != "200" ] && lineup_icon="❌"
+          [ "$DEV_PROTECTION_STATUS" != "200" ] && dev_protection_icon="❌"
 
           if [ -n "$HEALTH_SHARE_KEY" ]; then
             share_icon="✅"
@@ -161,6 +189,7 @@ jobs:
           echo "| 1 | API /health + DB | status=ok, db=ok | $api_icon |" >> $GITHUB_STEP_SUMMARY
           echo "| 2 | Share link | dugoutlineup.com/?s=... | $share_icon |" >> $GITHUB_STEP_SUMMARY
           echo "| 3 | Lineup generation | /generate-lineup → lineup[] | $lineup_icon |" >> $GITHUB_STEP_SUMMARY
+          echo "| 4 | DEV deployment protection (#314) | dev.dugoutlineup.com → 200 | $dev_protection_icon |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Run at:** $NOW" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
