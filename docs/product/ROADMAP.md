@@ -1,11 +1,25 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: 2026-08-26 (v2.15.0 release prep — dependency currency, git governance, and Test Health & Regression Protection consolidation; develop only, not yet promoted; see the top entry below.); previously 2026-08-26 (v2.14.0 promoted to `main` and live in prod).
+> Last updated: 2026-08-27 (Test/CI environment safety fixes for #339/#368, develop only — not yet promoted); previously 2026-08-27 (v2.15.0 promoted to `main` and live in prod — PR #857, `5a38b08`; post-promote sync PR #858); previously 2026-08-26 (v2.15.0 release prep — dependency currency, git governance, and Test Health & Regression Protection consolidation).
 > MVP launched: March 24, 2026
 
 ---
 
-## v2.15.0 — 2026-08-26 — Dependency currency, git governance, and test-health cleanup (develop only — not yet promoted)
+## Unreleased (develop only — not yet promoted) — Test/CI environment safety (#339, #368)
+
+Internal-only, no version bump (no user-facing behavior, no app code touched). Picked up the remaining 3 open issues on the Test Health & CI Governance board (#339, #368, #517) after finding the other 3 (#406, #410, and umbrella #840's own disposition table) were stale trackers for already-shipped v2.15.0 work — see the tracker-sync note below.
+
+**#368 fixed (`.github/workflows/ci.yml`).** The "Smoke Test (dev)" job's `DEV_*` values had always resolved to the exact same project/backend as `PROD_*` (`DEV_SUPABASE_URL`/`ANON_KEY` aliased `secrets.SUPABASE_URL`/`SUPABASE_ANON_KEY` — prod's own — and `DEV_BACKEND_URL` was hardcoded to a copy-pasted literal of the prod Render URL, ignoring a `DEV_BACKEND_URL` secret that had existed for this exact purpose since before this session). Every "dev" smoke run has always actually been a second, mislabeled prod run. Audited `scripts/smoke-test.js` before fixing: every check is a GET, so this was a correctness/mislabeling bug, not a data-integrity incident. Fixed: `DEV_BACKEND_URL` now actually reads its own pre-existing secret; `DEV_SUPABASE_URL`/`ANON_KEY` now read new secrets pointed at the real DEV Supabase project (`psqvzppphdedqkpmarwx`). **KK added `DEV_SUPABASE_URL` and `DEV_SUPABASE_ANON_KEY` as new GitHub Actions repo secrets same session** — confirmed present alongside the pre-existing `DEV_BACKEND_URL`/`DEV_FRONTEND_URL`.
+
+**#339 fixed (backend test suites).** Found the live mechanism behind the growing `access_requests` row count: `suite-validation.js`'s VAL-07 test runs unconditionally (even under `CI_SAFE`, even against prod — it's not one of the gated write-heavy suites) and can legitimately get a real `201` back, inserting a real row — but never tracked its email for the existing end-of-run cleanup. Fixed by pushing it into `state.testEmails` like every other suite's rows. Separately, added an unconditional blast-radius fence (`scripts/tests/prodGuard.js`, mirrors `src/__tests__/rls/clients.js`'s `assertDevProject()`) in front of the five write-heavy suites (auth-flow, idempotency, device-context, audit-trail, data-integrity) — they now refuse to run against the PROD project ref regardless of `CI_SAFE`, closing the gap where a crashed/interrupted local run (plausible before `SUPABASE_TARGET=dev` existed) could skip the existing cleanup and leave orphaned `team_memberships` rows, as it evidently did historically. Unit-tested (`prodGuard.test.js`, +4, backend unit suite 250→254). **No purge needed.** KK ran a scoped `email like '%@test.com'` check directly against PROD for both tables — zero rows in either. The historical orphaned rows this issue originally documented (10 `team_memberships`, ~584 `access_requests`) had already been cleaned up by someone/something before this session; the only real remaining work was fixing the mechanism that could still create new ones, which is what this fix does.
+
+**#517** left untouched — its own comment thread explicitly documents it as a permanent known-limitation tracker, not something to close.
+
+**Tracker sync (#406, #410, #840) — GitHub-only, no code:** #406 and #410's survey work (Pass 2 backend auth/roles/API, Pass 4 frontend screens/data) was already completed and shipped in v2.15.0 per this file's own entry above (PRs #842/#844/#846/#847/#848/#845) — the GitHub issues were just never closed. Closed both with a comment citing the shipped evidence. #840's disposition table also still showed #474 and #664 as open despite both already being `closed` on GitHub (verified live) — corrected.
+
+---
+
+## v2.15.0 — 2026-08-26 — Dependency currency, git governance, and test-health cleanup (promoted to `main` 2026-08-27, PR #857)
 
 **Minor bump, dev-tooling/governance/test-infra only — zero new coach-facing features.** Sized above patch per the established "size the bump to the release's actual scope" convention: real dependency major-version migrations (React 18→19) plus a real repo-governance settings change are enough surface area to justify it even with no user-visible feature. Three unrelated consolidation passes bundled together, each following the same shape — audit a cluster of issues KK flagged as fragmented, verify current state directly rather than trust old issue text, consolidate, then execute the real remaining work.
 
@@ -5187,6 +5201,50 @@ Note: any local clone/worktree whose `frontend/.vercel/project.json`
 (gitignored) was linked to the deleted project needs `vercel link` re-run
 against `line-up-generator` (`prj_P1ajLGpY6ZezIsNMeTCPXPSnyZEu`) before using
 the `vercel` CLI from that checkout.
+
+---
+### Story 137 (P3) - Story 133 token-migration follow-up cleanup <!-- #859 -->
+Status: Backlog, not started.
+Discovered: 2026-08-27, while reassessing Story 133's (#698) production
+status. Three separate, unrelated-to-each-other design-token gaps
+surfaced during/after that migration - batched here rather than
+reopening #698, which stays scoped to the original 13-slice migration
+itself.
+Symptom:
+1. **9 literal (non-token) colors resurfaced in the 3 earliest-migrated
+   files** - `BenchStrip.jsx`, `DugoutView.jsx`, `ScoreboardRow.jsx`
+   (slices 1-2, PRs #705/#707). Verified directly against `develop`:
+   `BenchStrip.jsx` 4 `rgba()` occurrences, `DugoutView.jsx` 1,
+   `ScoreboardRow.jsx` 4. Root cause unconfirmed - either the original
+   migration missed sites, or unrelated feature work since reintroduced
+   literals without reaching for the token.
+2. **`#1d4ed8` and `#374151` were independently re-minted as separate
+   component-scoped tokens** in 6 and 5 files respectively during
+   slices 5-13, rather than converging on one shared token. Found by the
+   migration's own author, documented in PR #764's body, not fixed
+   there.
+3. **A full-codebase audit run during the migration found ~818 more
+   untokenized literal-color occurrences** outside Story 133's
+   `game-mode/*` + `ScoringMode/*` + `components/ui/*` scope -
+   `App.jsx` alone accounts for 693 of those.
+Impact: None of these affect coaches today - no visual regression, no
+functional risk. Pure design-system hygiene debt. (1) means the
+migration isn't fully clean in the 3 earliest files; (2) means two
+token names that should be one, inviting future divergence; (3) is the
+single largest remaining untokenized surface in the app (bigger than
+all of Story 133 combined) but deliberately out of scope given
+`App.jsx`'s own pending decomposition plan.
+Root cause: Known-ish for (1) (unconfirmed which of the two
+explanations) and (2) (independent, uncoordinated per-slice token
+minting during the slices 5-13 sandbox run); (3) is scope, not a
+defect.
+Proposed fix: (1) + (2) together in one slice-style PR - inventory,
+propose mapping, KK sign-off, migrate, verify zero literal colors
+remain; same low-risk byte-preserving mechanical pattern as the rest of
+Story 133, small enough not to need its own sandbox branch. (3) stays
+explicitly parked - revisit only alongside or after `App.jsx`'s
+decomposition plan, not standalone.
+Full detail: [#859](https://github.com/kaushikkuberanathan/lineup_generator/issues/859).
 
 ---
 ### Automated Score Reporting (County Integration)
