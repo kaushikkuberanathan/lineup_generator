@@ -78,7 +78,7 @@ Located at App.jsx ~458–720. Two-phase auto-assign algorithm:
 ## Test Suite
 
 - **Framework**: Vitest
-- **CI target**: 1368 frontend passed / 1 skipped / 0 failed (as of 2026-08-26, v2.15.0 release prep; 120 test files; 1618 total incl. 250 backend unit tests)
+- **CI target**: 1390 frontend passed / 1 skipped / 0 failed (as of 2026-08-27, #112/#116/#120 governance batch; 120 test files; backend unit count unchanged at 250). +22 vs. the 2026-08-26 baseline of 1368: +9 from the v2.15.1 Help redesign (`FAQSection.test.jsx` 6→15, already on `develop` when this batch's branch was cut, not part of this batch's own work) plus +13 from this batch itself — Group 6 `accessibility.v1.test.js` DB-cache precedence (#112, +6), Group 5 `flag-bootstrap.test.js` dual-write (#120, +6), `versionHistory.test.js` banned-token scanner (#116, +1).
 - **Known skip**: bench-equity.test.js test 2.1 (bench rotation fairness — BUG CONFIRMED; identical players, sit-count drift > 1 inning; fix deferred)
 
 #### Test files
