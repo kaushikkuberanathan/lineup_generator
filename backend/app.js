@@ -46,7 +46,13 @@ app.use(cors({
     if (/^http:\/\/localhost(:\d+)?$/.test(origin)) return callback(null, true);
     if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
     if (VERCEL_PREVIEW_ORIGIN_RE.test(origin)) return callback(null, true);
-    callback(new Error('Not allowed by CORS'));
+    // #389: a rejected origin is a client-side condition, not a server
+    // fault — 500 gave callers and monitoring no usable signal, and the
+    // origin itself was never logged, making a rejection undiagnosable.
+    console.warn('[CORS] rejected origin:', origin);
+    const err = new Error('Not allowed by CORS');
+    err.status = 403;
+    callback(err);
   }
 }));
 app.use(express.json({ limit: '10mb' }));
