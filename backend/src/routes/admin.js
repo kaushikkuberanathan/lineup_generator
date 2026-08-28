@@ -7,6 +7,7 @@ const requireAuth = require('../middleware/requireAuth');
 const requireAdmin = require('../middleware/requireAdmin');
 const { sendApprovalEmail, sendDenialEmail, ADMIN_EMAIL } = require('../lib/email');
 const { normalizeRole, CANONICAL_ROLES } = require('../lib/normalizeRole');
+const { normalizeEmail } = require('../lib/normalizeEmail');
 const { verify: verifyApproveLinkToken } = require('../lib/approveLinkToken');
 
 // #337 (CodeQL: js/missing-rate-limiting) — these two public links now do a
@@ -804,7 +805,12 @@ router.post(
   async (req, res) => {
     if (validationGuard(req, res)) return;
 
-    const { teamId, email, role } = req.body;
+    const { teamId, role } = req.body;
+    // normalizeEmail (#374): this route previously stored the address
+    // exactly as typed (no lowercase, no Gmail dot handling), the most
+    // exposed of the three team_memberships write paths to the read/write
+    // mismatch that locked coaches out at login.
+    const email = normalizeEmail(req.body.email);
 
     const { data: existing, error: existingError } = await supabaseAdmin
       .from('team_memberships')

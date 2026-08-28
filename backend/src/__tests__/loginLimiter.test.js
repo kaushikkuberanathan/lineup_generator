@@ -63,6 +63,11 @@ function installNoMembershipStub() {
       in: () => chain,
       maybeSingle: async () => ({ data: null, error: null }), // no membership → every request that reaches the handler gets 403
       single: async () => ({ data: null, error: null }),
+      // #374: /magic-link's membership lookup ends in a bare .in('status',
+      // ...) with no terminal .maybeSingle()/.single() call — real
+      // supabase-js query builders are themselves thenable. Empty array =
+      // no candidates = no membership, same 403 outcome as before.
+      then: (resolve) => resolve({ data: [], error: null }),
     };
     return chain;
   };
