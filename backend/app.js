@@ -11,6 +11,14 @@ const { supabaseAdmin } = require('./src/lib/supabase');
 
 const app = express();
 
+// Render terminates TLS and proxies every request, so X-Forwarded-For is
+// always set. Without this, Express reports req.ip as Render's proxy
+// address rather than the real client — express-rate-limit then can't
+// distinguish callers and either throttles everyone collectively or no one
+// meaningfully. `1` (not `true`) trusts only the single hop Render adds, so
+// a client can't spoof X-Forwarded-For to evade the limiter. (#390)
+app.set('trust proxy', 1);
+
 const ALLOWED_ORIGINS = [
   'https://dugoutlineup.com',
   // Stable custom domain for the DEV frontend/backend pairing (Story
