@@ -1,218 +1,166 @@
-# Production Schema Baseline
+# Production Schema Baseline — Incident History & Narrative
 
-**Captured:** 2026-07-13 from prod (`hzaajccyurlyeweekvma`)
-**Purpose:** ground truth. Until now there was no source of truth to diff production
-against - which is why RLS was disabled on five tables for months, a recursive policy
-broke the admin panel from day one, and a missing FK broke the Coaches tab, all
-invisibly. See #351.
+**Captured:** 2026-07-13 from prod (`hzaajccyurlyeweekvma`).
+**Merged:** 2026-08-27 (#358) — folded in what was `PROD_SCHEMA_BASELINE_ADDENDUM_1.md`.
+A baseline plus its own correction-and-extension document was not a good shape; this
+is now one file.
 
-**This file is authoritative for what prod ACTUALLY contains.** Where the migration
-files in `backend/migrations/` or `backend/src/db/migrations/` disagree with it, the
-migration files are wrong.
-
-> **!! READ `PROD_SCHEMA_BASELINE_ADDENDUM_1.md` ALONGSIDE THIS FILE.**
-> This document is INCOMPLETE. It enumerates tables, constraints, indexes, triggers,
-> functions and RLS state - but **no views, no grants, no RLS policies, no sequences**.
+> **`docs/db/schema.sql` is the single source of truth for object definitions**
+> (declared authoritative 2026-08-27, #358). Tables, columns, constraints, indexes,
+> triggers, functions, views, RLS policies, grants, sequences — all of it lives there,
+> organized into 9 numbered sections. This document does not restate any of that,
+> because a restated definition is exactly the thing that drifts unnoticed (see #351,
+> and the "14 tables vs. 15" correction this file itself needed on 2026-07-14 — a doc
+> correcting a doc correcting a doc).
 >
-> That gap hid a live security hole: a VIEW was bypassing the RLS lock on
-> `team_data_history` (fixed, migration 011), and four hardcoded `*_anon_test`
-> backdoors grant `anon` full write on the real team's scoring tables (#355, still open).
->
-> It also states 14 tables. **There are 15.** Corrected in the addendum.
->
-> You cannot detect drift in objects you never enumerate.
+> **What this document is for:** WHY a given defect existed, HOW it was found, WHAT
+> breaks if you "fix" it naively, and the incident history. That narrative doesn't
+> live in `schema.sql` and doesn't belong there — SQL comments are a poor home for a
+> multi-paragraph incident writeup. Keep it here instead.
 
 ---
 
-## DRIFT FOUND (repo says X, prod says Y)
+## Section map — where each object type is defined
 
-### 1. `team_memberships` role CHECK - THE BIG ONE
+| Object type | `schema.sql` section |
+|---|---|
+| Extensions | § 1 |
+| Sequences | § 2 |
+| Tables + columns + defaults | § 3 |
+| Indexes | § 4 |
+| Functions (incl. `prosecdef` / `proconfig`) | § 5 |
+| Triggers | § 6 |
+| Views (incl. `security_invoker`) | § 7 |
+| Row Level Security (enabled state + policies) | § 8 |
+| Grants | § 9 |
 
-**Repo** (`003_create_team_memberships.sql`):
-```sql
-CHECK (role IN ('admin', 'coach', 'scorekeeper', 'viewer'))    -- 4 roles
-```
-
-**Prod** (actual):
-```sql
-CHECK (role = ANY (ARRAY['admin','viewer','team_admin','coordinator','coach','scorekeeper','parent']))    -- 7 roles
-```
-
-Someone widened it to accept the legacy vocabulary, outside version control.
-
-**This invalidates WS-1's stated diagnosis (#336).** WS-1's commits, PR #341, and the
-roadmap doc all assert that `/admin/approve-link` threw a CHECK violation when
-approving a `team_admin` request. **It would not have** - prod's constraint permits
-`team_admin`. That claim was inferred from the repo's constraint and never tested
-against the live database.
-
-WS-1's *work* remains correct (normalizing role vocabulary is right, and the
-`/approve` validator genuinely did omit `admin` - that is application code, verified).
-But the *reason those three requests were stuck* was something else entirely - see #2.
-
-### 2. Why the April access requests were actually stuck
-
-```sql
-CREATE UNIQUE INDEX team_memberships_team_email_unique_idx
-  ON team_memberships (team_id, email) WHERE email IS NOT NULL;
-```
-
-Two of the three stuck requests were for emails that **already had an active
-membership on that team**:
-
-| Request | Email | Already a member? |
-|---|---|---|
-| Test User | `kaushik.kuberanathan@gmail.com` | YES - active `admin` |
-| Gaya Kau | `kaushikkumar.kuberanathan@cox.com` | (a KK alias) |
-| Eshaan Kaushik | `eshaan.kaushik122@gmail.com` | NO - new email |
-
-Approving the first two would insert a duplicate `(team_id, email)` and violate the
-**unique index** - not the role CHECK. And Eshaan's approval **succeeded** on
-2026-07-13, consistent with his being the only genuinely new email.
-
-The failure was duplicate-membership, not role vocabulary.
-
-### 3. `access_requests.requested_role` CHECK
-
-Prod also permits the full legacy set:
-```sql
-CHECK (requested_role IS NULL OR requested_role = ANY
-       (ARRAY['team_admin','coordinator','coach','scorekeeper','parent']))
-```
-Note: this does NOT permit `admin` or `viewer` - the canonical values WS-1 now writes.
-**Ingestion normalization (a51db38) writes `admin`/`viewer`, which this CHECK REJECTS.**
-Needs verification - a request-access for a Head Coach may now fail at the DB.
-
-### 4. `SECURITY DEFINER` functions with no pinned `search_path`
-
-| Function | SECURITY DEFINER | search_path |
-|---|---|---|
-| `activate_membership` | YES | **(none)** - escalation vector |
-| `restore_game_state` | YES | **(none)** - escalation vector |
-| `is_active_admin` | YES | `public` (correct) |
-| `snapshot_team_data` | YES | `public` (correct, fixed 2026-07-13) |
-| `prune_team_data_history` | YES | `public` (correct, fixed 2026-07-13) |
-| `prune_roster_snapshots` | no | n/a |
-| `set_updated_at` | no | n/a |
-| `update_updated_at` | no | n/a |
-
-A `SECURITY DEFINER` function without a fixed `search_path` lets a caller shadow an
-unqualified table name with one in their own schema; the function then executes
-against it **as `postgres`**. Two live instances.
-
-### 5. `feature_flags.team_id` is `bigint`
-
-Every other `team_id` in the schema is `text`. Team IDs include slugs
-(`party-animals-8u`, `bananas-8u`), which **cannot be stored in a bigint**. So
-team-scoped feature flags only work for the one numeric team (`1774297491626`); the
-other six teams cannot have one.
-
-### 6. `teams.owner_id` is `text` defaulting to `''`
-
-Not a uuid, no FK to `auth.users`. Team ownership is not actually linked to a user.
-
-### 7. Duplicate index on `access_requests`
-
-`access_requests_team_status_created_idx` and `access_requests_team_status_idx` are
-identical: `(team_id, status, requested_at DESC)`. One is redundant.
+If you need the current column list, constraint text, policy expression, or grant —
+read the matching section of `schema.sql`, not this file. Below is only what happened
+and why it mattered.
 
 ---
 
-## RLS STATE (as of 2026-07-13)
+## Incident 1 — `team_memberships` role CHECK: repo said 4 roles, prod enforced 7
 
-> **!! STALE — predates WS-3 (#411). DO NOT TREAT THIS TABLE AS CURRENT.**
-> This capture is the same 2026-07-13 vintage as `docs/db/schema.sql`'s own RLS
-> section, which carries an identical staleness warning in three places
-> (`ci.yml`, `apply-rls-bootstrap.sh`, `backend/src/__tests__/rls/clients.js`).
-> WS-3 (migration `004_rls_fixes.sql`, shipped prod v2.6.0, 2026-07-20) enabled
-> RLS and revoked the TRUNCATE grant on the first three rows below — the table
-> as written now describes a database that no longer exists. Confirmed stale by
-> direct prod probe 2026-08-01 (Test-Health Survey Pass 3, #476): anon SELECT
-> against prod `teams` and `roster_snapshots` returns zero rows with no error
-> (the RLS-filtered signature), not the full-CRUD access this table claims.
-> Current ground truth for RLS state: `docs/db/schema.sql`'s table shape +
-> migrations 004, 013–016 replayed — see `clients.js`'s header for the exact
-> recipe. This table's non-RLS content (constraints, indexes, triggers) is not
-> known to be affected and is out of scope for this warning.
+**Repo** (`003_create_team_memberships.sql`) declared 4 roles. **Prod** actually
+enforced 7 — someone widened the CHECK outside version control. The current,
+corrected role model (four canonical roles enforced in code, seven tolerated by the
+DB CHECK for 596 legacy rows) is documented in full in the root `CLAUDE.md` §
+Multi-team design — that is the living doc for this; this entry is the historical
+record of how the discrepancy was found.
 
-| Table | RLS | Policies | anon/auth grants |
-|---|---|---|---|
-| `team_data` | **OFF** | 0 | **FULL CRUD + TRUNCATE** |
-| `teams` | **OFF** | 0 | **FULL CRUD + TRUNCATE** |
-| `roster_snapshots` | **OFF** | 0 | **FULL CRUD + TRUNCATE** |
-| `auth_events` | on | 0 | NONE (locked 2026-07-13) |
-| `team_data_history` | on | 0 | NONE (locked 2026-07-13) |
-| `team_memberships` | on | 2 | granted, policy-gated |
-| `access_requests` | on | 2 | granted, policy-gated |
-| `share_links` | on | 2 | granted (anon SELECT is required for viewer mode) |
-| `feedback` | on | 2 | granted, policy-gated |
-| `profiles` | on | 1 | granted, policy-gated |
-| `at_bats` | on | 2 | granted |
-| `live_game_state` | on | 3 | granted |
-| `game_scoring_sessions` | on | 3 | granted |
-| `scoring_audit_log` | on | 3 | granted |
-| `feature_flags` | on | 1 | granted |
+This invalidated WS-1's stated diagnosis (#336): WS-1 assumed `/admin/approve-link`
+threw a CHECK violation approving a `team_admin` request. It would not have — prod's
+constraint already permitted `team_admin`. WS-1's *application-code* fix (normalizing
+role vocabulary, and the `/approve` validator's genuine omission of `admin`) remained
+correct; the *reasoning* about why requests were stuck was wrong. See Incident 2 for
+the real cause.
 
-**The first three are the open exposure (#342).** The anon key ships in the frontend
-bundle. Until the requireAuth cutover (WS-3) moves roster writes behind the backend,
-RLS cannot be enabled on them without breaking every coach's save.
+## Incident 2 — why the April access requests were actually stuck
+
+Two of three stuck requests were for emails that already had an active membership on
+that team, and a unique index on `(team_id, email)` rejected the resulting duplicate
+insert — not the role CHECK. The third (a genuinely new email) approved successfully.
+The failure mode was duplicate-membership, not role vocabulary. Filed to correct the
+record after WS-1 shipped a fix aimed at the wrong cause.
+
+## Incident 3 — `access_requests.requested_role` CHECK rejected WS-1's own normalized values
+
+Prod's CHECK on `requested_role` permitted the legacy role set but not `admin`/`viewer`
+— the exact canonical values WS-1's ingestion normalization (`a51db38`) started
+writing. A Head Coach or Parent signup could fail at the DB layer post-WS-1. This was
+the live bug migration 009 fixed (widened the CHECK) — see root `CLAUDE.md`'s
+Multi-team design section, which documents the corrected state.
+
+## Incident 4 — two `SECURITY DEFINER` functions with no pinned `search_path`
+
+`activate_membership` and `restore_game_state` ran `SECURITY DEFINER` with no fixed
+`search_path` — an escalation vector (a caller can shadow an unqualified table name
+with one in their own schema; the function then executes against it as `postgres`).
+Fixed by migration 012 (pins `search_path` on every `SECURITY DEFINER` function).
+Current state: `schema.sql` § 5.
+
+## Incident 5 — `feature_flags.team_id` typed `bigint` while every other `team_id` is `text`
+
+Team IDs include non-numeric slugs (`party-animals-8u`, `bananas-8u`), which cannot be
+stored in a `bigint`. Team-scoped feature flags only ever worked for the one numeric
+team. Not yet fixed at the schema level — tracked as part of #109 (feature_flags
+migration-file gap) and worth re-checking against `schema.sql` § 3 before relying on
+team-scoped flags for a slug-ID team.
+
+## Incident 6 — `teams.owner_id` is `text` defaulting to `''`, not a real FK
+
+Not a `uuid`, no FK to `auth.users`. Team ownership is not actually linked to a user
+record at the DB level. Current state: `schema.sql` § 3.
+
+## Incident 7 — duplicate index on `access_requests`
+
+`access_requests_team_status_created_idx` and `access_requests_team_status_idx` were
+identical: `(team_id, status, requested_at DESC)`. One is redundant. Current state:
+`schema.sql` § 4.
+
+## Incident 8 — a VIEW bypassed the RLS lock on `team_data_history`
+
+Migration 006 locked `team_data_history` (RLS on, anon grants revoked) — verified at
+the time: `anon → permission denied`. But `team_data_history_latest`, a view selecting
+from it, defaulted to `security_invoker = false` (the Postgres default), so it ran
+with the **view owner's** privileges (`postgres`) instead of the caller's. `anon` read
+the base table straight through the view, bypassing the lock entirely. Probed: 11 rows
+leaked.
+
+This was found only because a *second* baseline pass (the addendum that is now merged
+into this file) went looking for views at all — the original capture enumerated
+tables, constraints, indexes, triggers, functions, and RLS on/off state, but had no
+VIEWS section. **You cannot detect drift in objects you never enumerate.**
+
+Fixed by setting `security_invoker = true` on both views (migration 011). A sibling
+view, `roster_snapshots_latest`, selected from a table that was still RLS-OFF at the
+time so it leaked nothing *that day* — but it exposes `roster` (children's names), and
+the instant `roster_snapshots` got locked down it would have become the identical
+bypass. Fixed pre-emptively in the same migration. Both views were confirmed to have
+zero real consumers (the app reads base tables directly) — current state: `schema.sql`
+§ 7.
+
+## Incident 9 — four hardcoded `*_anon_test` policies grant anon full write on live scoring data
+
+**Still open — not fixed by this doc merge.** `at_bats`, `live_game_state`,
+`game_scoring_sessions`, and `scoring_audit_log` each carry a `FOR ALL` policy scoped
+to `team_id IN ('1774297491626', '9000000000001')` — `1774297491626` is the Mud Hens,
+a real, live team. Anyone holding the public anon key can rewrite the score, forge
+at-bats, steal the scorer lock, or fabricate audit entries for that team.
+
+Mitigating context that makes it worse, not better: those same tables also carry
+`allow_scorer_writes` with `USING (true) WITH CHECK (true)` — wide open to everyone,
+for every team. The `*_anon_test` policies are not even the widest door; the scoring
+tables are effectively unprotected regardless, by design, pending the auth cutover
+that lets scoring writes require a real session. Tracked separately — see #355.
+Current policy text: `schema.sql` § 8.
+
+## Incident 10 — `TRUNCATE` granted to `anon` broadly
+
+Every table except `auth_events` and `team_data_history` (+ its view) granted `anon`
+and `authenticated` the full set including `TRUNCATE` — and RLS does not restrict
+`TRUNCATE`. Where RLS was off (`team_data`, `teams`, `roster_snapshots`, pre-WS-3), the
+public anon key could empty the table outright. Current grant state: `schema.sql` § 9.
 
 ---
 
-## TABLES (14)
+## RLS state — history, not current fact
 
-access_requests, at_bats, auth_events, feature_flags, feedback,
-game_scoring_sessions, live_game_state, profiles, roster_snapshots,
-scoring_audit_log, share_links, team_data, team_data_history, team_memberships,
-teams
-
----
-
-## FOREIGN KEYS
-
-| Table | Constraint | Definition |
-|---|---|---|
-| `access_requests` | `access_requests_reviewed_by_fkey` | `(reviewed_by) -> auth.users(id)` |
-| `auth_events` | `auth_events_user_id_fkey` | `(user_id) -> auth.users(id) ON DELETE SET NULL` |
-| `feedback` | `feedback_coach_id_fkey` | `(coach_id) -> auth.users(id) ON DELETE SET NULL` |
-| `profiles` | `profiles_id_fkey` | `(id) -> auth.users(id) ON DELETE CASCADE` |
-| `scoring_audit_log` | `scoring_audit_log_at_bat_id_fkey` | `(at_bat_id) -> at_bats(id) ON DELETE SET NULL` |
-| `team_data` | `team_data_team_id_fkey` | `(team_id) -> teams(id) ON DELETE CASCADE` |
-| `team_memberships` | `team_memberships_team_id_fkey` | `(team_id) -> teams(id) ON DELETE CASCADE` **(added 2026-07-13, migration 008)** |
-| `team_memberships` | `team_memberships_user_id_fkey` | `(user_id) -> auth.users(id) ON DELETE CASCADE` |
-
-**MISSING FKs worth noting:**
-- `access_requests.team_id` -> `teams(id)` - none. (One row holds a NULL `team_id`.)
-- `roster_snapshots.team_id` -> `teams(id)` - none.
-- `team_data_history.team_id` -> `teams(id)` - none.
-- `game_scoring_sessions` / `live_game_state` / `at_bats` / `scoring_audit_log`
-  `.team_id` -> `teams(id)` - none.
-- `game_scoring_sessions.scorer_user_id` and `scoring_audit_log.actor_user_id` are
-  **TEXT, not uuid, and not FK'd** to `auth.users`. The audit trail is forgeable.
-  (This is the WS-4 gap in the auth roadmap.)
+The original 2026-07-13 capture recorded `team_data`/`teams`/`roster_snapshots` as
+RLS-OFF with full CRUD+TRUNCATE for anon — that was true that day and is the reason
+#342 was a P0. It stopped being true on 2026-07-20 (v2.6.0, WS-3: `004_rls_fixes.sql`
+enabled RLS and revoked TRUNCATE on those three tables), confirmed live 2026-08-01 by
+a direct anon-key probe against prod (zero-row RLS-filtered responses, not the earlier
+full-access signature). **For current RLS state, read `schema.sql` § 8 — do not infer
+it from this history section.**
 
 ---
 
-## TRIGGERS
+## Supabase migration ledger — as captured 2026-07-13
 
-| Table | Trigger | Function |
-|---|---|---|
-| `at_bats` | `at_bats_updated_at` | `set_updated_at()` BEFORE UPDATE |
-| `live_game_state` | `live_game_state_updated_at` | `set_updated_at()` BEFORE UPDATE |
-| `profiles` | `profiles_updated_at` | `update_updated_at()` BEFORE UPDATE |
-| `roster_snapshots` | `trg_prune_roster_snapshots` | `prune_roster_snapshots()` AFTER INSERT |
-| `team_data` | `team_data_updated_at` | `update_updated_at()` BEFORE UPDATE |
-| `team_data` | `trg_snapshot_team_data` | `snapshot_team_data()` AFTER INSERT OR UPDATE |
-| `teams` | `teams_updated_at` | `update_updated_at()` BEFORE UPDATE |
-
-Note there is no trigger calling `prune_team_data_history()` - the function exists but
-nothing fires it. `team_data_history` has grown to 2,811 rows.
-
----
-
-## SUPABASE MIGRATION LEDGER
-
-Contains ONLY the five migrations applied 2026-07-13:
+At capture time, prod's Supabase migration ledger contained only the five migrations
+applied that day:
 
 ```
 20260713143900  p0_enable_rls_auth_events
@@ -222,14 +170,46 @@ Contains ONLY the five migrations applied 2026-07-13:
 20260713172035  p0_widen_access_requests_role_check
 ```
 
-**Everything else in this schema was applied by hand.** That is the root problem
-(#351). This baseline is the first step toward fixing it.
+Everything else in the schema at that point had been applied by hand, with no
+migration file behind it. That gap — and whether it has since closed — is what #351
+tracks. This baseline was step one toward fixing it: give the repo something real to
+diff production against.
 
 ---
 
-## HOW TO REGENERATE
+## How to regenerate `schema.sql`
 
-The queries used to build this are in `docs/db/schema_introspection.sql`. Re-run them
-against prod and diff against this file. Any difference is drift.
+The introspection queries live in `docs/db/schema_introspection.sql`. Re-run them
+against prod and diff the result against `schema.sql`. Any difference is drift.
+`schema.sql`'s own header documents a case where the introspection itself was wrong
+(STORED GENERATED columns misread as DEFAULT expressions) — caught only by executing
+the file against DEV, not by reading it. Treat any regenerated version the same way:
+run it against DEV before trusting it.
 
-Better: adopt the Supabase CLI so `supabase db diff` does this automatically.
+Longer-term direction (per #351): adopt the Supabase CLI so `supabase db diff` does
+this automatically instead of a hand-run query-and-compare.
+
+---
+
+## What a schema snapshot must cover, to actually detect drift
+
+The original 2026-07-13 capture missed views entirely and found a live security hole
+(Incident 8) the moment a second pass went looking for them. A drift detector is only
+as good as what it enumerates:
+
+- [x] Tables + columns + defaults
+- [x] Constraints (PK, FK, UNIQUE, CHECK)
+- [x] Indexes
+- [x] Triggers
+- [x] Functions, including `prosecdef` and `proconfig` (an unpinned `search_path` on a
+      `SECURITY DEFINER` function is an escalation vector)
+- [x] RLS enabled/disabled
+- [x] RLS policies themselves
+- [x] Views + `security_invoker`
+- [x] Grants
+- [x] Sequences
+- [ ] Materialized views (none exist currently)
+- [ ] Extensions beyond what's in `schema.sql` § 1
+
+`schema.sql` now covers every checked item above. Any future automated drift check
+(#351) should diff against `schema.sql`, not this file.

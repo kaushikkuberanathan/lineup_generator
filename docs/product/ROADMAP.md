@@ -191,7 +191,7 @@ Audited `CHARTER.md`, `SOLUTION_DESIGN.md`, `SECURITY_FRAMEWORK.md`, and `AUTH_S
 
 **Minor bump** — Story 124 is a genuine new user-facing feature (team search + request-access discovery), not just a fix batch, so this follows the same "size the bump to the release's actual scope" convention established at v2.9.0.
 
-**Team search + request-access discovery (#655, Story 124)** — new `GET /api/v1/teams/search` backend route (service-role mediated, returns only `id`/`name`/`age_group`/`sport`/`year`, never `owner_id`), Home tab search entry point, role picker submitting into the existing `POST /request-access`. Frontend + backend shipped together (PR #663, backend route PR #657); see `docs/product/FEATURE_MAP.md` row 38 for test coverage.
+**Team search + request-access discovery (#655, Story 124)** — new `GET /api/v1/teams/search` backend route (service-role mediated, returns only `id`/`name`/`age_group`/`sport`/`year`, never `owner_id`), Home tab search entry point, role picker submitting into the existing `POST /request-access`. Frontend + backend shipped together (PR #663, backend route PR #657); see `docs/product/FEATURE_MAP.md` row 39 for test coverage (row 38 as of this release; renumbered 2026-08-27, #114).
 
 **RequestAccessScreen confirmation fix (#665, Story 126)** — `preserveSession=true` submissions (an already-authenticated coach requesting a 2nd team) gave no visible confirmation; the success path relied on a `useAuth` authState transition that doesn't apply when the session is preserved. Added a `submitted` state that renders an inline confirmation card on that path (PR #667). Zero dedicated test coverage on the new state yet — tracked as test debt (#664), not blocking since it's UI-only and was verified by eye.
 
@@ -1971,7 +1971,8 @@ Six open issues, one underlying capability (repo/DB/CI don't reliably describe t
 - backend/scripts/tests/ contains test-runner.js, suite-rate-limits.js, suite-validation.js.
 - Cleanup decision needed: keep (document purpose) or delete (reduce confusion with CI_SAFE suite).
 
-### Story 30 (P2): isFlagEnabled — no DB-read path; DB flip has no runtime effect without redeploy <!-- #112 -->
+### ✅ Story 30 (P2): isFlagEnabled — no DB-read path; DB flip has no runtime effect without redeploy <!-- #112 -->
+Status: Resolved (2026-08-27, this branch, #112)
 - **Surfaced:** April 24, 2026 (post-v2.5.0 merge; DB row flipped expecting user-facing change)
 - `isFlagEnabled(flagName)` is synchronous: reads `FEATURE_FLAGS[flagName]` from the JS bundle default + `localStorage.getItem('flag_' + flagName)`. It does NOT query the Supabase `feature_flags` table at runtime.
 - Current rollout method: code deploy (change default in featureFlags.js) or localStorage override per device.
@@ -1980,6 +1981,7 @@ Six open issues, one underlying capability (repo/DB/CI don't reliably describe t
 - Recommend (B) — keeps the evaluation function synchronous at the call site while moving the async fetch to bootstrap. Matches existing `flagBootstrap.js` pattern.
 - Blocks nothing directly; current localStorage override remains available as workaround.
 - Connects to Story 41: until both resolved, runtime flag changes require redeploy + can't be locally test-validated.
+- **Resolution:** confirmed via direct source read that `hooks/useFeatureFlags.js`'s `fetchRuntimeFlags()` already fetched and merged Supabase `feature_flags` every session, but the result (`runtimeFlags`/`flagsLoading` in App.jsx) was only ever consulted for 2 of 6 flags (VIEWER_MODE, MAINTENANCE_MODE) — `isFlagEnabled()` itself, used by ACCESSIBILITY_V1/SCORING_SHEET_V2/COMBINED_GAMEMODE_AND_SCORING, stayed purely static+localStorage. Same replica-divergence shape as the flagBootstrap.js gap the v2.15.0 release already found and fixed elsewhere in this file. Fixed via a module-level runtime cache in `featureFlags.js` (`setRuntimeFlagCache`), wired from App.jsx's existing `useFeatureFlags()` fetch (no new Supabase call) — Option B as originally recommended above. Precedence: localStorage override > DB cache > static default. RED→GREEN mutation-verified; full frontend suite (120 files/1390 passed) + lint + build clean; manually smoke-tested against a real dev server.
 
 ### ✅ Story 26 (P2): Backend RATE-01a test flakiness — stateful against prod rate limiter <!-- #111 -->
 Status: Resolved. `loginLimiter` re-keyed IP→email; rate-limit-touching integration tests use per-run-unique emails. GitHub issue closed 2026-08-26 as root-cause-resolved (see #840, #115).
@@ -2059,8 +2061,8 @@ Proposed fixes:
 Recommendation: A — test gates are cheaper than hooks and run in CI for both
   local and PR pushes.
 
-### Story 34 (P3) — FEATURE_MAP row numbering audit <!-- #114 -->
-Status: Open
+### ✅ Story 34 (P3) — FEATURE_MAP row numbering audit <!-- #114 -->
+Status: Resolved (2026-08-27, this branch, #114)
 Discovered: 2026-04-28, during v2.5.2 docs gap closure
 Target: Next docs cleanup patch
 Symptom: docs/product/FEATURE_MAP.md row numbering has out-of-sequence rows.
@@ -2079,8 +2081,27 @@ Proposed fixes:
   C) Leave as-is, accept the cosmetic debt.
 Recommendation: A in a focused docs cleanup commit — low risk, restores
   consistency. Defer B unless A surfaces deeper structural issues.
-Acceptance criteria:
-  - Hygiene pass complete: Story 27 (P0) collision resolved → renumbered Story 61; P2 table row 47 (dbLoadShareLink) promoted to Story 62; gaps 17/18/25/52 documented in ## 🗃️ Retired / Never Filed stub. Completed 2026-05-14.
+Note: the "Completed 2026-05-14" note this section previously carried described
+  a *different* renumbering — a ROADMAP.md-internal backlog hygiene pass (Story
+  27 collision, gaps 17/18/25/52), not this issue's actual subject. It never
+  touched FEATURE_MAP.md's `#` column, which was still genuinely out of order
+  (rows ...11, 25, 26, 27, 28, 12, 13...) as of 2026-08-27, confirmed by direct
+  read before starting this fix.
+Resolution (Option A, 2026-08-27): FEATURE_MAP.md's 40 rows renumbered
+  sequentially 1-40 to match display order via a small Python script (mapped
+  old→new by position, rewrote only the leading `#` column per matched row —
+  19 of 40 rows changed number). Backreferences ("row N") *within*
+  FEATURE_MAP.md were deliberately left untouched in dated historical notes
+  (the header's "previously updated" log and the Coverage Summary's dated
+  recount notes) to preserve an honest historical record — a banner was added
+  instead, next to the file's "Last updated" line, explaining that older
+  dated notes cite the row number that was correct at the time and won't
+  match a current lookup. The one evergreen cross-file pointer found
+  (`ROADMAP.md`'s own Story 124 entry, "see FEATURE_MAP.md row 38") was
+  updated to the new number (39). Other cross-file mentions in
+  `DOC_TEST_DEBT.md`, `SESSION_RETROSPECTIVES.md`, and
+  `DOC_AUDIT_SPIKE_2026-08-04.md` are dated historical entries and were left
+  alone for the same reason.
 
 ### ✅ Story 35 (P3) — CLAUDE.md docs drift on rate limiter state
 Status: Resolved (v2.5.3, this branch)
@@ -2358,8 +2379,8 @@ Target: Post-pilot validation cycle (v2.6.x)
 
 ---
 
-### Story 49 (P2) — Feature flag key scheme normalization <!-- #120 -->
-Status: Open
+### ✅ Story 49 (P2) — Feature flag key scheme normalization <!-- #120 -->
+Status: Resolved (2026-08-27, this branch, #120) — additive fix, not the full consolidation originally recommended below
 Discovered: 2026-05-04 (Slice 2 dev soak)
 Target: v2.6.x
 
@@ -2380,6 +2401,8 @@ Coaches enabling flags via console must guess which form the specific check uses
 - Option 3: Bootstrap util writes BOTH forms (colon-lowercase + underscore-uppercase) to eliminate ambiguity at the cost of storage redundancy.
 
 **Recommendation:** Option 1 — consolidate to `isFlagEnabled()` everywhere. Adds clean migration code (read both forms, write canonical, delete legacy). Long-term simplest. Largest commit but worth it.
+
+**Resolution (2026-08-27):** Shipped Option 3 instead of the recommended Option 1 — judged full consolidation (removing the legacy `flag:` form entirely) too high-blast-radius for a batch pass, since `MAINTENANCE_MODE` is the whole-app kill switch and `VIEWER_MODE` gates the public share-link viewer, both explicitly protected by the Auth Principle's "must never require login" guarantee. `flagBootstrap.js`'s `applyFlagParams()` now writes both key forms on every enable/disable (additive, zero regression risk — every existing reader of either key keeps working unchanged). App.jsx's `MAINTENANCE_MODE`/`VIEWER_MODE` gates extended with an `isFlagEnabled()` OR-check alongside their existing checks, so the canonical form now works for those two flags too. `docs/features/feature-flags.md` updated — it had its own real drift beyond just the scheme-inconsistency this story tracks (a stale claim that App.jsx ran a separate inline copy of the URL-bootstrap logic instead of importing `flagBootstrap.js`; that wiring was actually fixed 2026-08-26 per #406/#410 Pass 4, the doc just never caught up). Full consolidation (true Option 1) remains a legitimate follow-up if the dual-scheme confusion resurfaces, but is deliberately not this fix.
 
 **Test plan:** Every flag in `featureFlags.js` should have a unit test asserting both legacy localStorage keys (if any) resolve correctly during migration window.
 

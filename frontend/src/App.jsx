@@ -7,7 +7,7 @@ import { isSupabaseEnabled, supabase, dbSaveTeams, dbDeleteTeam,
          dbSaveShareLink, dbLoadShareLink } from './supabase.js';
 import { track, mixpanel, deviceContext } from '@/utils/analytics';
 import { track as vaTrack } from '@vercel/analytics';
-import { FEATURE_FLAGS } from '@/config/featureFlags';
+import { FEATURE_FLAGS, isFlagEnabled, setRuntimeFlagCache } from '@/config/featureFlags';
 import { generateLineupV2 } from '@/utils/lineupEngineV2';
 import { normalizeBattingHand } from '@/utils/playerUtils';
 import { persistTeamBeforeLoad } from './utils/teamCreationPersistence.js';
@@ -1076,6 +1076,16 @@ export default function App() {
   var backendHealth = useBackendHealth();
   var _featureFlags = useFeatureFlags();
   var runtimeFlags = _featureFlags.flags; var flagsLoading = _featureFlags.loading;
+
+  // Story 30 / #112 — feed the same DB-merged flags this hook already fetches
+  // into isFlagEnabled()'s runtime cache, so every isFlagEnabled()-gated flag
+  // (ACCESSIBILITY_V1, SCORING_SHEET_V2, COMBINED_GAMEMODE_AND_SCORING, etc.)
+  // also becomes DB-driven — previously only VIEWER_MODE/MAINTENANCE_MODE got
+  // that via the runtimeFlags.X reads below. No extra fetch: reuses this
+  // hook's existing result.
+  useEffect(function() {
+    if (!flagsLoading) setRuntimeFlagCache(runtimeFlags);
+  }, [runtimeFlags, flagsLoading]);
 
   var _hydratedTeamIds = useState({});
   var hydratedTeamIds = _hydratedTeamIds[0]; var setHydratedTeamIds = _hydratedTeamIds[1];
@@ -4323,7 +4333,8 @@ export default function App() {
                   onClick={function() { setShowShareSheet(false); shareCurrentLineup(); }}>
                   🔗 Share as Link
                 </button>
-                {(runtimeFlags.VIEWER_MODE || localStorage.getItem("flag:viewer_mode") === "1") ? (
+                {/* #120: also honors canonical "flag_VIEWER_MODE" via isFlagEnabled(), additive to the legacy "flag:viewer_mode" check */}
+                {(runtimeFlags.VIEWER_MODE || localStorage.getItem("flag:viewer_mode") === "1" || isFlagEnabled('VIEWER_MODE')) ? (
                   <button style={{ ...S.btn("ghost"), border:"1px solid rgba(15,31,61,0.2)", padding:"13px", fontSize:"14px", textAlign:"left" }}
                     onClick={function() { setShowShareSheet(false); shareViewerLink(); }}>
                     👁 Share Viewer Link
@@ -7360,8 +7371,12 @@ export default function App() {
 
   // Maintenance mode — must be first check, before share links, auth, everything
   var _bypassMaintenance = localStorage.getItem('bypass:maintenance') === '1';
+  // #120: also honors the canonical "flag_MAINTENANCE_MODE" localStorage form
+  // via isFlagEnabled(), alongside the legacy "flag:MAINTENANCE_MODE" form
+  // above — additive, neither existing check was removed.
   var _maintenanceOn = runtimeFlags.MAINTENANCE_MODE ||
-                       localStorage.getItem('flag:MAINTENANCE_MODE') === '1';
+                       localStorage.getItem('flag:MAINTENANCE_MODE') === '1' ||
+                       isFlagEnabled('MAINTENANCE_MODE');
   if (flagsLoading) {
     return (
       <div style={{ display:'flex', alignItems:'center', justifyContent:'center',
