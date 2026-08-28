@@ -8,17 +8,19 @@
  * codebase (formatters.js, migrations.js, utils/storage.js) for exactly
  * this "App.jsx logic isn't independently testable" problem.
  *
- * NOT unified behavior: shareCurrentLineup() and shareViewerLink() were
- * near-duplicates with one real divergence — shareViewerLink() hardcoded
- * songs to {} instead of computing the walk-up-song map. That is existing,
- * shipped behavior, not a bug introduced by this extraction; `includeSongs`
- * preserves it exactly rather than silently changing what viewer links
- * contain.
+ * #502 (KK decision, 2026-08-28): the extraction originally preserved two
+ * pre-existing shipped behaviors verbatim rather than fixing them
+ * unilaterally — shareViewerLink() hardcoded songs to {}, and the songs map
+ * was built from the full, unfiltered roster (leaking an absent player's
+ * walk-up song even though their name was excluded from `roster`). Both are
+ * now fixed: songs are always included, and always filtered by the same
+ * absentTonight list that filters the roster field.
  */
 
-function buildSongsMap(roster) {
+function buildSongsMap(roster, absent) {
   var songs = {};
   (roster || []).forEach(function(p) {
+    if (absent.indexOf(p.name) >= 0) { return; }
     if (p.walkUpSong || p.walkUpArtist) {
       songs[p.name] = {
         song: p.walkUpSong || null,
@@ -36,13 +38,10 @@ function buildSongsMap(roster) {
  * @param {object} grid - player name -> position[] per inning
  * @param {string[]} battingOrder - activeBattingOrder
  * @param {Array} roster - player objects with .name and optional walkUp* fields
- * @param {string[]} absentTonight - names filtered out of the shared roster
- * @param {object} [opts]
- * @param {boolean} [opts.includeSongs=true] - shareViewerLink() passes false
- *   to preserve its existing (songs-omitted) behavior exactly.
+ * @param {string[]} absentTonight - names filtered out of both the roster
+ *   field and the songs map
  */
-export function buildSharePayload(team, grid, battingOrder, roster, absentTonight, opts) {
-  var includeSongs = !opts || opts.includeSongs !== false;
+export function buildSharePayload(team, grid, battingOrder, roster, absentTonight) {
   var absent = absentTonight || [];
   var rosterList = roster || [];
 
@@ -55,6 +54,6 @@ export function buildSharePayload(team, grid, battingOrder, roster, absentTonigh
       .filter(function(r) { return absent.indexOf(r.name) < 0; })
       .map(function(r) { return r.name; }),
     absentNames: absent.length > 0 ? absent.slice() : undefined,
-    songs: includeSongs ? buildSongsMap(rosterList) : {},
+    songs: buildSongsMap(rosterList, absent),
   };
 }

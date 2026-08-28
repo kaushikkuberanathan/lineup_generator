@@ -111,27 +111,24 @@ describe('buildSharePayload — walk-up song preservation', function() {
     expect(p.songs.Benji).toBeUndefined();
   });
 
-  // NOT what was originally guessed here: the songs map is built from the
-  // full, unfiltered roster in the shipped App.jsx logic (buildSongsMap
-  // iterates the raw roster passed in, independent of the roster/absent
-  // filter above). An absent player's walk-up song still appears in the
-  // payload even though their name is excluded from the roster list. This
-  // test asserts the actual current behavior, preserved by the extraction,
-  // not a guessed "should probably be excluded" expectation — confirmed via
-  // a real RED here first. Worth flagging as a product question (should an
-  // absent player's song data leak into a share link?) separately; not
-  // something to silently change as part of a coverage-adding extraction.
-  it('includes an absent player\'s song too — songs are built from the unfiltered roster, matching shipped behavior', function() {
+  // #502 (KK decision, 2026-08-28): an absent player is now fully absent
+  // from the payload — their walk-up song is excluded from `songs` the same
+  // way their name is excluded from `roster`, instead of leaking through.
+  it('excludes an absent player\'s song from the songs map, matching the roster filter', function() {
     var p = buildSharePayload(fixtureTeam, fixtureGrid, fixtureBattingOrder, fixtureRoster(), ['Aiden']);
+    expect(p.songs.Aiden).toBeUndefined();
+  });
+
+  it('still includes a present player\'s song when a different player is absent', function() {
+    var p = buildSharePayload(fixtureTeam, fixtureGrid, fixtureBattingOrder, fixtureRoster(), ['Benji']);
     expect(p.songs.Aiden).toEqual({ song: 'Thunderstruck', artist: 'AC/DC', start: 5, end: 20 });
   });
 
-  it('includeSongs: false forces an empty songs map, preserving shareViewerLink\'s existing behavior', function() {
-    var p = buildSharePayload(fixtureTeam, fixtureGrid, fixtureBattingOrder, fixtureRoster(), [], { includeSongs: false });
-    expect(p.songs).toEqual({});
-  });
-
-  it('includeSongs defaults to true when opts is omitted entirely', function() {
+  // #502: shareViewerLink() previously hardcoded songs to {} via an
+  // includeSongs:false opt. That divergence is gone — both share paths now
+  // build the same songs map, so buildSharePayload no longer takes an opts
+  // param at all.
+  it('always includes songs — there is no way to suppress the songs map', function() {
     var p = buildSharePayload(fixtureTeam, fixtureGrid, fixtureBattingOrder, fixtureRoster(), []);
     expect(Object.keys(p.songs).length).toBeGreaterThan(0);
   });
