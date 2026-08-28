@@ -14,7 +14,7 @@
     "predeploy": "npm run build"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.112.3",
+    "@supabase/supabase-js": "^2.112.4",
     "@vercel/analytics": "^2.0.1",
     "jspdf": "^4.2.1",
     "mixpanel-browser": "^2.82.0",
