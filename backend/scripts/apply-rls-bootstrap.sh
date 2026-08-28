@@ -115,6 +115,14 @@ FILES=(
 # SECURITY DEFINER fix baked in, not 026's role-fallback trigger, so without
 # this the ephemeral stack reproduces the exact prod bug the new test guards.
 #
+# 027 (#736, DROP/ADD on auth_events_event_type_check to add
+# 'magic_link_requested') is deliberately NOT here — docs/db/schema.sql's
+# own auth_events CREATE TABLE statement was edited directly to already
+# include 'magic_link_requested' in the constraint, so the ephemeral stack
+# gets the correct constraint from schema.sql alone, same treatment as
+# 005-012 below. Replaying 027 afterward would just be a redundant
+# DROP+ADD of an already-correct constraint.
+#
 # 019 is deliberately NOT here — Phase 4C scoring RLS, drafted/unapplied, no
 # current test depends on it.
 # 005, 006, 007, 008, 009, 011, 012 are deliberately NOT here — see WHY THIS

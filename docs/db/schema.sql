@@ -273,11 +273,15 @@ CREATE TABLE IF NOT EXISTS public.auth_events (
   CONSTRAINT auth_events_auth_channel_check CHECK (
     auth_channel IS NULL OR auth_channel = ANY (ARRAY['email'::text, 'phone'::text, 'unknown'::text])
   ),
+  -- Widened by migration 027 (#736) to add 'magic_link_requested' — every
+  -- POST /magic-link audit-event insert had been silently rejected by this
+  -- constraint since v2.1.0 (the old 'otp_requested' name predates the
+  -- OTP→magic-link switch and was never updated here).
   CONSTRAINT auth_events_event_type_check CHECK (
     event_type = ANY (ARRAY['otp_requested'::text, 'otp_verified'::text, 'otp_failed'::text,
                             'session_resumed'::text, 'logout'::text, 'access_denied'::text,
                             'access_requested'::text, 'access_approved'::text,
-                            'access_denied_by_admin'::text])
+                            'access_denied_by_admin'::text, 'magic_link_requested'::text])
   )
 );
 
