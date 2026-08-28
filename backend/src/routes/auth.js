@@ -81,6 +81,36 @@ const requestAccessLimiter = rateLimit({
   keyGenerator: (req) => (hasEmail(req) ? req.body.email.trim().toLowerCase() : ipKeyGenerator(req.ip)),
 });
 
+// /me and /logout sit behind requireAuth (mounted before these limiters, so
+// req.user.id is always set), so they're keyed by user id rather than email —
+// the caller already holds a valid session, there's no email to key on, and
+// per-user is the budget that actually matters here. Deliberately NOT a
+// reuse of loginLimiter/requestAccessLimiter's shape (CodeQL #12/#15,
+// tracked under #651): /me fires on every page load and session-resume
+// (useAuth.js), so its budget has to be generous enough to survive multiple
+// tabs and flaky-network reconnects without ever touching a real coach.
+// /logout is a rare, explicit action, so it gets a tighter budget with
+// still-comfortable headroom. keyGenerator's ipKeyGenerator fallback is
+// defensive only — requireAuth guarantees req.user.id is set by the time
+// either limiter runs.
+const meLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: { error: 'TOO_MANY_ATTEMPTS', message: 'Too many requests. Please try again in 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => req.user?.id ?? ipKeyGenerator(req.ip),
+});
+
+const logoutLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  message: { error: 'TOO_MANY_ATTEMPTS', message: 'Too many requests. Please try again in 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => req.user?.id ?? ipKeyGenerator(req.ip),
+});
+
 // ─── POST /request-access ─────────────────────────────────────────────────────
 
 router.post(
@@ -300,7 +330,7 @@ router.post(
 
 // ─── GET /me ──────────────────────────────────────────────────────────────────
 
-router.get('/me', requireAuth, async (req, res) => {
+router.get('/me', requireAuth, meLimiter, async (req, res) => {
   try {
     const userId = req.user.id;
     const userEmail = req.user.email;
@@ -420,7 +450,7 @@ router.patch(
 
 // ─── POST /logout ─────────────────────────────────────────────────────────────
 
-router.post('/logout', requireAuth, async (req, res) => {
+router.post('/logout', requireAuth, logoutLimiter, async (req, res) => {
   try {
     const userId = req.user.id;
     const { deviceContext, teamId } = req.body;
