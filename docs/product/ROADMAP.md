@@ -4243,12 +4243,13 @@ removes a player from all remaining innings and rebalances the rest of the
 lineup automatically — a coach must repeat Quick Swap per inning. Flagged
 as a real product question, not a content problem to write around.
 
-Explicitly not done in this pass (locked file, needs gate phrase "all
-clear — App.jsx editing approved"): the Support sub-tab nav label itself
-still reads "FAQ" (`MORE_SUBTABS` in App.jsx) — content and behavior are
-"Help," the one remaining nav-label string is not. Story 107 (#285, tab
-reorder + default-to-About) is unrelated to this story's scope and remains
-open on its own.
+**Update 2026-08-28:** the one remaining nav-label string is done — KK gave
+the gate phrase, `MORE_SUBTABS`'s `faq` entry now reads `label:"Help"`
+instead of `label:"FAQ"` (App.jsx ~L7486, one line). Verified `skip-worktree`
+was not set on this clone (Bug #11) before editing. Full suite still 1377
+passed / 1 skipped, lint/build clean. Story 107 (#285, tab reorder +
+default-to-About) is unrelated to this story's scope and remains open on
+its own.
 
 Deferred, explicitly rejected rather than silently dropped: a hosted
 external Help Center. Revisit only if `help_search` zero-result rates or

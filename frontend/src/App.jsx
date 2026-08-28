@@ -7483,7 +7483,7 @@ export default function App() {
   ].filter(Boolean);
   var MORE_SUBTABS = [
     { key:"account",  label:"Account"  },
-    { key:"faq",      label:"FAQ"      },
+    { key:"faq",      label:"Help"     },
     { key:"feedback", label:"Feedback" },
     { key:"links",    label:"Links"    },
     { key:"about",    label:"About"    },
