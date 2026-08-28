@@ -210,7 +210,8 @@ If any answer is "no": stop. Document the gap in DOC_TEST_DEBT.md, then decide w
 7. Stage **specific files by path** — never `git add -A` (risks picking up unrelated untracked files)
 8. [x] loginLimiter: 15min window, max 5 — applied to POST /magic-link ✓
 9. [ ] Confirm `RESEND_DOMAIN_VERIFIED=true` in Render env vars (only after domain verified)
-10. [ ] Run `npm test` in `frontend` and `npm run test:unit` in `backend`; record the observed counts in the release PR instead of copying a historical count. Note: Bug #7 worker cold-start flake may drop 1-2 files locally on Windows (passing exit code, not a failure); one retry has always cleared it — `fileParallelism:false` is now the standing default to reduce (not eliminate) this.
+10. [ ] Verify backend Supabase keys are new-style (`sb_secret_...` / `sb_publishable_...`, not a legacy `eyJ...` JWT) in every environment's Render env vars — the specific gap behind the 2026-07-20 cutover incident (#387): a stale legacy `SUPABASE_ANON_KEY` on Render broke every login for ~15min with no startup-time signal. `backend/src/lib/env.js` now warns at boot if either Supabase key looks like a legacy JWT, so this is largely self-checking — confirm via Render logs that the warning hasn't fired, rather than reading the key value directly.
+11. [ ] Run `npm test` in `frontend` and `npm run test:unit` in `backend`; record the observed counts in the release PR instead of copying a historical count. Note: Bug #7 worker cold-start flake may drop 1-2 files locally on Windows (passing exit code, not a failure); one retry has always cleared it — `fileParallelism:false` is now the standing default to reduce (not eliminate) this.
 
 ### VERSION_HISTORY Schema
 
