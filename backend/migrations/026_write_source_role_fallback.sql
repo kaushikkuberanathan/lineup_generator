@@ -1,10 +1,24 @@
 -- Migration 026: write_source role-based fallback (#379)
 --
 -- APPLIED TO DEV: 2026-08-28 (psqvzppphdedqkpmarwx), applied and verified live
--- this session. NOT YET APPLIED TO PROD (hzaajccyurlyeweekvma) — needs an
--- explicit go-ahead before touching prod, same as any other schema/function
--- change; see the verification section below for exactly what to re-check
--- after applying there.
+-- this session. APPLIED TO PROD: 2026-08-28 (hzaajccyurlyeweekvma), same
+-- session — KK confirmed go-ahead, function definitions verified identical
+-- to DEV via pg_get_functiondef (SECURITY DEFINER + search_path pin on
+-- snapshot_team_data() intact, not reverted), Supabase security advisors
+-- re-run after applying. No test write was made against real prod data —
+-- confidence came from DEV's end-to-end proof plus this structural
+-- verification, not a new prod-side write.
+--
+-- capture_write_source_role() below includes `SET search_path = public`
+-- from the start — an earlier apply-then-fix pass on DEV/PROD (this
+-- session) found the Supabase security advisor flags a SECURITY INVOKER
+-- function with no search_path pin too (function_search_path_mutable),
+-- lower severity than the SECURITY DEFINER case migration 012 was written
+-- for (an invoker function can't escalate privilege via a shadowed name the
+-- way a definer function can), but this repo pins search_path on every
+-- function without exception and the advisor was right to flag the gap.
+-- Folded into this file directly since the fix landed before this migration
+-- had even merged — no separate follow-up migration number needed.
 --
 -- ---------------------------------------------------------------------------
 -- WHY
@@ -92,6 +106,7 @@
 CREATE OR REPLACE FUNCTION public.capture_write_source_role()
 RETURNS trigger
 LANGUAGE plpgsql
+SET search_path = public
 AS $function$
 begin
   perform set_config('app.calling_role', current_user::text, true);

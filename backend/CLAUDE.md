@@ -249,7 +249,8 @@ Per-file counts below verified individually via `node --test <file>` on 2026-08-
   PROD, or the ground-truth doc will lie about live PROD schema the same
   way past drift here caused #342/#351/#355.
 - **`026_write_source_role_fallback.sql` — APPLIED TO DEV (psqvzppphdedqkpmarwx)
-  2026-08-28. NOT YET APPLIED TO PROD.** Fixes #379: `team_data_history.write_source`
+  AND PROD (hzaajccyurlyeweekvma), both 2026-08-28 (same session, KK
+  confirmed go-ahead before the prod apply).** Fixes #379: `team_data_history.write_source`
   was `'unknown'` on every row in PROD (3,000/3,000, confirmed live) despite
   `teamData.js` appearing to set it — root cause was `set_config(...,
   is_local: true)` and the `.upsert()` running as two separate Supabase
@@ -271,8 +272,17 @@ Per-file counts below verified individually via `node --test <file>` on 2026-08-
   (WSF1/WSF2 — service_role and authenticated writes each record their real
   role, not `'unknown'`) against both the local ephemeral stack and DEV; also
   added to `backend/scripts/apply-rls-bootstrap.sh`'s replay list so CI's
-  `rls` job validates it. See the migration file's own header for the full
-  debugging trail.
+  `rls` job validates it. Prod apply verified structurally (function
+  definitions confirmed byte-identical to DEV via `pg_get_functiondef`,
+  `SECURITY DEFINER`/search_path pin on `snapshot_team_data()` confirmed
+  intact, not reverted; Supabase security advisors re-run clean) — no test
+  write was made against real prod data. Security advisors also caught a
+  real, separate gap on first apply: `capture_write_source_role()` had no
+  pinned `search_path` (lower severity than the `SECURITY DEFINER` case
+  migration 012 covers, since it's `SECURITY INVOKER`, but flagged and fixed
+  the same session on both DEV and PROD, folded into the migration file
+  directly since it hadn't merged yet). See the migration file's own header
+  for the full debugging trail.
 
 ### !! FIVE NUMERIC COLLISIONS ACROSS THE TWO TREES !!
 
