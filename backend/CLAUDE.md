@@ -248,6 +248,41 @@ Per-file counts below verified individually via `node --test <file>` on 2026-08-
   not "complete" that column definition until 023 has actually run against
   PROD, or the ground-truth doc will lie about live PROD schema the same
   way past drift here caused #342/#351/#355.
+- **`026_write_source_role_fallback.sql` — APPLIED TO DEV (psqvzppphdedqkpmarwx)
+  AND PROD (hzaajccyurlyeweekvma), both 2026-08-28 (same session, KK
+  confirmed go-ahead before the prod apply).** Fixes #379: `team_data_history.write_source`
+  was `'unknown'` on every row in PROD (3,000/3,000, confirmed live) despite
+  `teamData.js` appearing to set it — root cause was `set_config(...,
+  is_local: true)` and the `.upsert()` running as two separate Supabase
+  calls, hence two separate transactions, so the setting never reached the
+  write it was meant to tag. Affects every write path, including the
+  dominant one (`frontend/src/supabase.js`'s `dbSaveTeamData()`, which never
+  touches `app.write_source` at all — see 006's header). Fix: a new BEFORE
+  trigger (`capture_write_source_role`, invoker-rights) stashes
+  `current_user` into a transaction-scoped GUC before the existing AFTER
+  trigger (`snapshot_team_data`, migration 006, `SECURITY DEFINER`) reads it
+  back as the fallback — both fire within the same statement, no cross-call
+  fragility. A single-function version tried first (`current_setting('role',
+  true)` read directly inside the `SECURITY DEFINER` function) does **not**
+  work — `'role'` isn't a real Postgres GUC, so it silently returns NULL;
+  caught only by testing against a real PostgREST/service-role write, not a
+  `SET LOCAL ROLE` simulation through the SQL Editor, which gave inconsistent
+  results that didn't match real request behavior. RED→GREEN verified via
+  the new `backend/src/__tests__/rls/writeSourceRoleFallback.test.js`
+  (WSF1/WSF2 — service_role and authenticated writes each record their real
+  role, not `'unknown'`) against both the local ephemeral stack and DEV; also
+  added to `backend/scripts/apply-rls-bootstrap.sh`'s replay list so CI's
+  `rls` job validates it. Prod apply verified structurally (function
+  definitions confirmed byte-identical to DEV via `pg_get_functiondef`,
+  `SECURITY DEFINER`/search_path pin on `snapshot_team_data()` confirmed
+  intact, not reverted; Supabase security advisors re-run clean) — no test
+  write was made against real prod data. Security advisors also caught a
+  real, separate gap on first apply: `capture_write_source_role()` had no
+  pinned `search_path` (lower severity than the `SECURITY DEFINER` case
+  migration 012 covers, since it's `SECURITY INVOKER`, but flagged and fixed
+  the same session on both DEV and PROD, folded into the migration file
+  directly since it hadn't merged yet). See the migration file's own header
+  for the full debugging trail.
 
 ### !! FIVE NUMERIC COLLISIONS ACROSS THE TWO TREES !!
 
