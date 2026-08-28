@@ -16,7 +16,7 @@
  */
 
 import { POSITION_LABELS } from '../constants/positions.js';
-import { FEATURE_FLAGS, isFlagEnabled } from '../config/featureFlags.js';
+import { FEATURE_FLAGS, isFlagEnabled, setRuntimeFlagCache } from '../config/featureFlags.js';
 
 // ── localStorage mock (node environment has no window.localStorage) ─────────
 var _store = {};
@@ -28,8 +28,13 @@ var localStorageMock = {
 };
 global.localStorage = localStorageMock;
 
-// Reset localStorage between tests so overrides don't bleed across
-beforeEach(function() { localStorageMock.clear(); });
+// Reset localStorage and the runtime flag cache between tests so overrides
+// don't bleed across (Story 30/#112 — setRuntimeFlagCache is module-level
+// state, same bleed risk as localStorage).
+beforeEach(function() {
+  localStorageMock.clear();
+  setRuntimeFlagCache(null);
+});
 
 // ── All field positions used by the lineup engine ────────────────────────────
 const ENGINE_POSITIONS = ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'LC', 'RC', 'RF', 'Bench'];
@@ -206,6 +211,52 @@ describe('5 — ACCESSIBILITY_V1 GA default', function() {
     localStorage.setItem('flag_COMBINED_GAMEMODE_AND_SCORING', 'true');
     expect(isFlagEnabled('COMBINED_GAMEMODE_AND_SCORING')).toBe(true);
     localStorage.removeItem('flag_COMBINED_GAMEMODE_AND_SCORING');
+  });
+
+});
+
+// ============================================================================
+// Group 6 — setRuntimeFlagCache / isFlagEnabled DB-driven precedence (#112)
+// ============================================================================
+
+describe('6 — setRuntimeFlagCache DB-driven runtime flags', function() {
+
+  test('6.1 no cache populated → falls back to static FEATURE_FLAGS default (unchanged pre-#112 behavior)', function() {
+    expect(isFlagEnabled('ACCESSIBILITY_V1')).toBe(true);
+    expect(isFlagEnabled('VIEWER_MODE')).toBe(false);
+  });
+
+  test('6.2 cache populated with a flag flipped ON overrides the static default', function() {
+    expect(isFlagEnabled('VIEWER_MODE')).toBe(false);
+    setRuntimeFlagCache({ VIEWER_MODE: true });
+    expect(isFlagEnabled('VIEWER_MODE')).toBe(true);
+  });
+
+  test('6.3 cache populated with a flag flipped OFF overrides the static default', function() {
+    expect(isFlagEnabled('ACCESSIBILITY_V1')).toBe(true);
+    setRuntimeFlagCache({ ACCESSIBILITY_V1: false });
+    expect(isFlagEnabled('ACCESSIBILITY_V1')).toBe(false);
+  });
+
+  test('6.4 cache does not contain the flag → falls back to static default, not false', function() {
+    setRuntimeFlagCache({ SOME_OTHER_FLAG: true });
+    expect(isFlagEnabled('ACCESSIBILITY_V1')).toBe(true);
+  });
+
+  test('6.5 precedence: per-user localStorage override wins over the DB-driven cache', function() {
+    setRuntimeFlagCache({ VIEWER_MODE: true });
+    localStorage.setItem('flag_VIEWER_MODE', 'false');
+    expect(isFlagEnabled('VIEWER_MODE')).toBe(false);
+  });
+
+  test('6.6 a DB flag flip takes effect on the next call with no redeploy — the actual #112 gap', function() {
+    // Simulates: app boots, DB fetch hasn't resolved yet (default applies)...
+    expect(isFlagEnabled('COMBINED_GAMEMODE_AND_SCORING')).toBe(true);
+    // ...ops flips it off in the DB, fetchRuntimeFlags() resolves and calls
+    // setRuntimeFlagCache() — no code change, no redeploy...
+    setRuntimeFlagCache({ COMBINED_GAMEMODE_AND_SCORING: false });
+    // ...and the very next isFlagEnabled() call reflects it immediately.
+    expect(isFlagEnabled('COMBINED_GAMEMODE_AND_SCORING')).toBe(false);
   });
 
 });
