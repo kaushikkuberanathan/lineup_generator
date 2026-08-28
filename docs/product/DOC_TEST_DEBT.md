@@ -69,18 +69,6 @@
 | **Age** | 43 days |
 | **Target** | v2.4.0 |
 
-### 🟡 P2 — D-S30: isFlagEnabled has no DB-read path (Story 30)
-
-| | |
-|---|---|
-| **Area** | Feature flag system |
-| **Description** | `isFlagEnabled(flagName)` is synchronous: reads `FEATURE_FLAGS[flagName]` from JS bundle default + `localStorage` override only. Does NOT query the Supabase `feature_flags` table at runtime. Flipping a DB row has no effect on active users without a code redeploy. Discovered April 2026 when SCORING_SHEET_V2 DB row was flipped expecting a runtime change. |
-| **Risk if unfixed** | Any ops flag-flip procedure documented as "flip the DB row" is silently ineffective. Risk of mis-communication and delayed rollbacks. |
-| **Proposed fix** | Extend `flagBootstrap.js` to fetch Supabase `feature_flags` table at app boot and merge into a runtime registry. `isFlagEnabled()` stays synchronous at call sites — async fetch happens once in the bootstrap path. Recommend (B) from Story 30 write-up in ROADMAP.md. |
-| **Opened** | 2026-04-24 |
-| **Age** | 36 days |
-| **Target** | v2.6.x |
-
 ### 🟡 P2 — SW update banner lifecycle (Story 85 follow-up)
 
 | | |
@@ -288,6 +276,10 @@
 
 *(Items move here once shipped. Format: date, version, original description summary, resolution commit.)*
 
+### August 27, 2026 — D-S30: isFlagEnabled has no DB-read path (#112)
+
+- ✅ **P2 — D-S30: isFlagEnabled has no DB-read path** — Resolved. `isFlagEnabled()` gains a module-level runtime cache (`setRuntimeFlagCache`, `featureFlags.js`) that App.jsx populates from `useFeatureFlags()`'s existing Supabase fetch (no new query) via a `useEffect`. Precedence: localStorage override > DB cache > static default — matches this item's own recommended fix (Option B: keep `isFlagEnabled()` synchronous at call sites, move the async fetch to bootstrap). Closes the actual gap this item described: previously `useFeatureFlags()`'s result was only consulted for `VIEWER_MODE`/`MAINTENANCE_MODE`, so a DB flag flip for any other flag (`ACCESSIBILITY_V1`, `SCORING_SHEET_V2`, `COMBINED_GAMEMODE_AND_SCORING`) genuinely had no runtime effect without a redeploy, confirmed by direct source read before starting. 6 new tests in `accessibility.v1.test.js` (Group 6), RED→GREEN mutation-verified (reverted the cache wiring, confirmed the import itself broke all 30 tests in that file, restored, confirmed 30/30 green). Full frontend suite clean (120 files, 1390 passed / 1 skipped). Landed together with Story 49/#120 (same PR) since both touch `featureFlags.js`. Issue: [#112](https://github.com/kaushikkuberanathan/lineup_generator/issues/112).
+
 ### August 27, 2026 — FAQ × Feature Flag coverage audit (superseded) + FAQ Linter (retired) — Story 333/#865
 
 - ✅ **P3 — FAQ × Feature Flag coverage audit** — Superseded, not separately fixed. The persona-taxonomy `faqs.js` this item described (48 entries across 7 personas, one describing `liveScoringEnabled`-gated behavior without acknowledging the gate) was fully restructured into task-oriented `HELP_CATEGORIES` (Story 333). The rewritten scoring content ("Start scoring") now opens with an explicit flag-awareness caveat ("Live scoring is on for teams it's enabled for") rather than presenting it as universal. The specific line-191 entry this item pointed at no longer exists in that form.
@@ -408,8 +400,10 @@
 |---|---|---|---|---|
 | 🔴 P0 | 0 | 0 | 0 | **0** |
 | 🟠 P1 | 0 | 1 | 0 | **1** |
-| 🟡 P2 | 8 | 5 | 9 | **22** |
-| **Total** | **8** | **6** | **9** | **23** |
+| 🟡 P2 | 7 | 5 | 7 | **19** |
+| **Total** | **7** | **6** | **7** | **20** |
+
+*(2026-08-27: D-S30 (isFlagEnabled DB-read path, #112) resolved, moved to Resolved section — see that entry; Test Gaps P2 8→7. While doing the direct recount this ledger's own standing practice requires before any edit, found the Process Gaps column was ALSO already drifted, independent of this change: the prior table claimed 9 P2 Process Gaps, but a line-by-line count of every `### 🟡`/`### 🟠`/`### 🔴` heading actually present in `## Open — Tooling / Process Gaps` (line 198 onward) found only 7 — `Confirm intentional default-branch=develop setting`, `Share payload songs-map divergence`, `Orphan Stash Cleanup`, `FEATURE_MAP.md Sync Linter`, `CI workflow BACKEND_URL audit`, `InningModal.jsx POS_COLORS.LC divergence`, `snack_duty column drop` — no 8th or 9th heading exists in that section today. Root cause not identified (same "silently diverging from a prior arithmetic propagation" failure class as D-S31 and the 2026-08-23 Test Gaps correction above); not investigating further, just correcting the count as found, per this ledger's own established practice when this recurs. Doc Gaps (1 P1 + 5 P2 = 6) matched the prior table exactly, untouched. Net: Test Gaps P2 8→7 (Total Test Gaps 8→7), Process Gaps P2 9→7 (Total Process Gaps 9→7, drift correction), P2 row 22→19, Grand Total 23→20.)*
 
 *(2026-08-26: RequestAccessScreen `submitted`-state test gap (#664) resolved, moved to Resolved section — see that entry. Direct recount of every `### 🔴`/`### 🟠`/`### 🟡` heading actually present in each Open section immediately before this edit matched the prior table exactly (0/1/8 Test Gaps P0/P1/P2, Doc Gaps and Process Gaps both untouched) — clean single-item removal, not a drift correction. Test Gaps P1 1→0, Total Test Gaps 9→8, P1 Total 2→1, Grand Total 24→23.)*
 
