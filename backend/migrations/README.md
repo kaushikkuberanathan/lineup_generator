@@ -59,6 +59,7 @@ SQL for `IF NOT EXISTS` / `CREATE OR REPLACE` / `DROP ... IF EXISTS` guards.
 | `021_revoke_teams_delete.sql` | Revoke anon/authenticated `DELETE` on `teams` (#380) | Not stated; REVOKE is naturally idempotent (re-revoking is a no-op) | Applied 2026-08-08 | **Applied 2026-08-08, then reverted the same session. NOT currently live.** Do not re-apply until the compensating `DELETE /api/v1/teams/:teamId` route (#642/#646) is live on `main`, not just `develop` — re-applying without it removes team deletion entirely, for every role. |
 | `022_add_team_season.sql` | Add `teams.season`, nullable + backfilled (phase 1 of 2) | Yes — safe to run any time per header (column starts optional) | Applied 2026-08-18 | Applied 2026-08-19 |
 | `023_enforce_team_season_not_null.sql` | Enforce `teams.season NOT NULL` + CHECK (phase 2 of 2) | **Do not run against PROD** until all 3 preconditions in the file's own header are met (022 live, season-aware release live, zero-NULL query confirmed) | Applied 2026-08-18 | **Not applied — gated, see file header** |
+| `025_document_existing_feature_flags_table.sql` | Retroactively captures the `feature_flags` table + RLS policy + grant, already live in PROD since before this repo had migration discipline (#109, #351) | Yes — every statement is `IF NOT EXISTS` / `DROP...IF EXISTS` / `GRANT` | **Not applied — no rebuild needed** (table already exists on the current DEV project; only relevant on a from-scratch DEV rebuild) | Documentation-only — table already live, running this changes nothing |
 
 ---
 

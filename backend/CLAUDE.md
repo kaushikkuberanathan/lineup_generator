@@ -289,8 +289,11 @@ differently. **Never map a versionHistory migration-number citation onto
 `backend/migrations/` by number.** Verify actual schema state against the
 ground truth below, not migration numbers or version-history prose.
 
-**Ground truth is `docs/db/PROD_SCHEMA_BASELINE.md` + `PROD_SCHEMA_BASELINE_ADDENDUM_1.md`,
-not either migration tree.** Both trees describe databases that do not exist.
+**Ground truth for object definitions is `docs/db/schema.sql`; `docs/db/PROD_SCHEMA_BASELINE.md`
+carries the incident history and narrative only (merged 2026-08-27, #358 — the former
+`PROD_SCHEMA_BASELINE_ADDENDUM_1.md` is now folded into it).** Neither migration tree
+(`backend/migrations/` nor `backend/src/db/migrations/`) can be trusted to describe the
+live database on its own.
 
 ---
 
