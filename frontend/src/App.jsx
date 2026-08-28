@@ -1468,6 +1468,10 @@ export default function App() {
     return !!(new URLSearchParams(window.location.search).get("s"));
   });
   var shareLoading = _shareLoading[0]; var setShareLoading = _shareLoading[1];
+  // Story 62/#127 - which of dbLoadShareLink's failure modes to show, when
+  // sharePayload never resolves. null while loading/succeeded.
+  var _shareError = useState(null);
+  var shareError = _shareError[0]; var setShareError = _shareError[1];
 
   const {
     session,
@@ -1542,7 +1546,8 @@ export default function App() {
   useEffect(function() {
     var sid = new URLSearchParams(window.location.search).get("s");
     if (!sid) { return; }
-    dbLoadShareLink(sid).then(function(payload) {
+    dbLoadShareLink(sid).then(function(result) {
+      var payload = result && result.payload;
       if (payload) {
         setSharePayload(payload);
         track("share_link_viewed", {
@@ -1558,14 +1563,16 @@ export default function App() {
         });
         vaTrack("share_link_viewed");
       } else {
-        track("share_link_view_failed", { error: "fetch_failed" });
+        setShareError((result && result.status) || "not_found");
+        track("share_link_view_failed", { error: (result && result.status) || "not_found" });
       }
       setShareLoading(false);
     }).catch(function() {
+      setShareError("not_found");
       track("share_link_view_failed", { error: "fetch_failed" });
       setShareLoading(false);
     });
-  }, [setShareLoading, setSharePayload]);
+  }, [setShareLoading, setSharePayload, setShareError]);
 
   // Analytics: app opened — fires once on mount; teams is synchronously initialized from localStorage
   useEffect(function() {
@@ -7404,10 +7411,18 @@ export default function App() {
       var isViewer = _vp.get("view") === "true" || _vp.get("role") === "viewer";
       return <ErrorBoundary fallback="Viewer Mode">{isViewer ? <DugoutView payload={sharePayload} isViewer={true} onExit={function() {}} /> : <SharedView payload={sharePayload} renderFieldSVG={renderFieldSVG} />}</ErrorBoundary>;
     }
+    // Story 62/#127 - user-meaningful message per dbLoadShareLink failure
+    // mode, instead of one generic "couldn't be found" for every case.
+    var _shareErrorCopy = {
+      malformed_slug: "This link looks incomplete or broken. Double-check the link you were sent.",
+      rls_blocked: "This share link isn't accessible right now. Ask the coach to re-share it.",
+      timeout: "This is taking a while to load. Check your connection and try again.",
+      not_found: "This share link couldn't be found.",
+    };
     return (
       <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", minHeight:"100vh", background:"#fdf8f0", gap:"12px" }}>
         <div style={{ fontSize:"32px" }}>😕</div>
-        <div style={{ fontSize:"14px", color:"#6a7a9a", fontFamily:"Georgia,serif" }}>This share link couldn&apos;t be found.</div>
+        <div style={{ fontSize:"14px", color:"#6a7a9a", fontFamily:"Georgia,serif" }}>{_shareErrorCopy[shareError] || _shareErrorCopy.not_found}</div>
       </div>
     );
   }
