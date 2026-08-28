@@ -251,17 +251,24 @@ router.post(
 
 router.post(
   '/magic-link',
-  loginLimiter,
   [
     body('email').isEmail().normalizeEmail(),
     body('teamId').notEmpty().trim(),
   ],
-  async (req, res) => {
+  // Validation runs BEFORE loginLimiter (#329): a malformed request (e.g.
+  // missing email) must always get a deterministic 400, never a 429 from a
+  // warm rate-limit window. Reject here so loginLimiter never sees the
+  // request at all, rather than relying on its own skip()/keyGenerator
+  // fallback to sort it out after the fact.
+  (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ error: 'VALIDATION_ERROR', details: errors.array() });
     }
-
+    next();
+  },
+  loginLimiter,
+  async (req, res) => {
     const { email, teamId, deviceContext } = req.body;
 
     try {
