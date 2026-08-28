@@ -2149,7 +2149,7 @@ export default function App() {
 
   function shareViewerLink() {
     track("share_viewer_link", {});
-    var payload = buildSharePayload(activeTeam, grid, activeBattingOrder, roster, absentTonight, { includeSongs: false });
+    var payload = buildSharePayload(activeTeam, grid, activeBattingOrder, roster, absentTonight);
     var base = window.location.href.split("?")[0];
     var url;
     if (isSupabaseEnabled) {
