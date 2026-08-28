@@ -182,17 +182,6 @@
 | **Opened** | 2026-04-17 |
 | **Target** | v2.4.0 |
 
-### 🟡 P2 — D-S31: FEATURE_MAP.md Coverage Summary denominator drift
-
-| | |
-|---|---|
-| **Area** | Governance (Feature Map) |
-| **Status** | Open |
-| **Type** | Doc gap |
-| **Opened** | 2026-05-15 |
-| **Target** | (opportunistic — no version target) |
-| **Summary** | FEATURE_MAP.md Coverage Summary denominators show `/ 27` (lines 60–65) but heading reads "Feature Registry (29 features)" and row recount confirms 29 (row #29 BottomSheet added in v2.5.21). Six summary lines need denominator bump to `/ 29` AND category counts likely need recount across all rows. Cosmetic mismatch but accumulates each release. Discovered during v2.5.9 GA-state reconciliation patch (commit c97d5ae); drift widened by v2.5.21 release-prep. |
-
 ---
 
 ## Open — Tooling / Process Gaps
@@ -275,6 +264,10 @@
 ## Resolved
 
 *(Items move here once shipped. Format: date, version, original description summary, resolution commit.)*
+
+### August 28, 2026 — D-S31: FEATURE_MAP.md Coverage Summary denominator drift
+
+- ✅ **P2 — D-S31: FEATURE_MAP.md Coverage Summary denominator drift** — Resolved, not by a dedicated fix — superseded by the repeated "direct recount before any edit" standing practice this ledger already enforces, which has been applied to `FEATURE_MAP.md`'s Coverage Summary on every row addition/status change since this item was opened (most recently the 967ef07 D-S30 closure, 2026-08-27). This item's original complaint (`/ 27` denominators against a "29 features" heading, later "drift increased from 1 line to 2" per the v2.12 refresh note above) no longer describes the file: confirmed by direct grep just now — `## Feature Registry (40 features)` and all six Coverage Summary lines read `/ 40` uniformly, zero mismatch. No standalone GitHub issue existed for this item (opened 2026-05-15, predates this repo's issue-per-debt-item convention) — none filed retroactively since there's no remaining gap to track.
 
 ### August 27, 2026 — D-S30: isFlagEnabled has no DB-read path (#112)
 
@@ -400,8 +393,10 @@
 |---|---|---|---|---|
 | 🔴 P0 | 0 | 0 | 0 | **0** |
 | 🟠 P1 | 0 | 1 | 0 | **1** |
-| 🟡 P2 | 7 | 5 | 7 | **19** |
-| **Total** | **7** | **6** | **7** | **20** |
+| 🟡 P2 | 7 | 4 | 7 | **18** |
+| **Total** | **7** | **5** | **7** | **19** |
+
+*(2026-08-28: D-S31 (FEATURE_MAP.md Coverage Summary denominator drift) resolved, moved to Resolved section — see that entry. Direct recount of every `### 🟠`/`### 🟡` heading actually present in `## Open — Doc Gaps` immediately before this edit matched the prior table exactly (1 P1 + 5 P2 = 6) — clean single-item removal, not a drift correction. Doc Gaps P2 5→4, Total Doc Gaps 6→5, P2 row 19→18, Grand Total 20→19.)*
 
 *(2026-08-27: D-S30 (isFlagEnabled DB-read path, #112) resolved, moved to Resolved section — see that entry; Test Gaps P2 8→7. While doing the direct recount this ledger's own standing practice requires before any edit, found the Process Gaps column was ALSO already drifted, independent of this change: the prior table claimed 9 P2 Process Gaps, but a line-by-line count of every `### 🟡`/`### 🟠`/`### 🔴` heading actually present in `## Open — Tooling / Process Gaps` (line 198 onward) found only 7 — `Confirm intentional default-branch=develop setting`, `Share payload songs-map divergence`, `Orphan Stash Cleanup`, `FEATURE_MAP.md Sync Linter`, `CI workflow BACKEND_URL audit`, `InningModal.jsx POS_COLORS.LC divergence`, `snack_duty column drop` — no 8th or 9th heading exists in that section today. Root cause not identified (same "silently diverging from a prior arithmetic propagation" failure class as D-S31 and the 2026-08-23 Test Gaps correction above); not investigating further, just correcting the count as found, per this ledger's own established practice when this recurs. Doc Gaps (1 P1 + 5 P2 = 6) matched the prior table exactly, untouched. Net: Test Gaps P2 8→7 (Total Test Gaps 8→7), Process Gaps P2 9→7 (Total Process Gaps 9→7, drift correction), P2 row 22→19, Grand Total 23→20.)*
 
