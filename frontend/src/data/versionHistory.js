@@ -1,5 +1,26 @@
 export var VERSION_HISTORY = [
   {
+    version: '2.15.1',
+    date: 'August 2026',
+    headline: 'Support redesigned as task-oriented Help',
+    techNote: 'Minor fixes and internal improvements',
+    userChanges: [
+      'The Support tab\'s FAQ is now called Help, organized by what you\'re trying to do -- Getting Started, Players & Roster, Lineups, Game Day, Sharing & Scoring, and Account & Troubleshooting -- instead of by which role is holding the phone.',
+      'A new Game-Day Help section puts the most time-sensitive answers front and center -- a late player, an injury, swapping fielders, fixing the lineup mid-game -- so you do not have to dig through categories during a game.',
+      'Help now has a search box.',
+      'A few Game Day answers were rewritten to describe exactly what the app can do today, since the old wording implied a couple of shortcuts (like pulling a player from the rest of an active game in one tap) that do not actually exist yet.',
+    ],
+    internalChanges: [
+      'Story 333/#865, PR #867: replaced the 7-persona FAQ_CATEGORIES taxonomy in content/faqs.js with a flat HELP_ARTICLES list (id/category/title/answer/gameDayCritical/keywords) plus HELP_CATEGORY_META for the 6 task-oriented categories. Flat-with-keywords shape chosen for stable per-article analytics ids, keyword-assisted client-side search (title/answer/keywords substring match, no library/server/AI), gameDayCritical as a flag instead of a hand-maintained id list, and easier future contextual deep-linking.',
+      'FAQSection.jsx (file/export name kept -- its import in App.jsx is a locked-file surface) gained a Game-Day Help quick-access section (deliberately not labeled "Popular" -- no usage analytics existed yet to justify that claim), the search box, and privacy-safe analytics via the existing track() helper: help_search (query_length/result_count/zero_results/category_match, never the raw query text), help_article_open (stable article_id/category_id/entry_point), help_category_view.',
+      'Content-accuracy pass verified Game Day articles against actual code (QuickSwap.jsx, toggleAbsentTonight in App.jsx) rather than trusting the prior FAQ text: Quick Swap is a same-inning two-way swap only and filters out anyone marked Out Tonight; toggling attendance never touches the position grid. Rewrote "Player arrived late", "Replace an injured player", and "Player needs to leave early" to describe the real multi-step, per-inning workflow. Surfaced, not fixed: no single action removes a player from all remaining innings and rebalances the lineup automatically.',
+      'App.jsx MORE_SUBTABS "faq" entry label changed "FAQ" -> "Help" (locked-file edit under explicit gate-phrase approval; skip-worktree verified unset before editing and re-set after, per Known Open Bugs #11).',
+      'Hosted external Help Center evaluated and explicitly rejected for now -- no usage evidence exists to justify it, and it would trade away the app\'s existing offline guarantee (content stays bundled and precached by the existing Workbox config).',
+      'FAQSection.test.jsx grown from 6 to 15 tests (H1-H15). Frontend suite 1368 -> 1377 passed / 1 skipped (120 files); backend unit unchanged at 254/254. Lint and build clean.',
+      'Version note: this entry documents work merged to develop (PR #867, 2026-08-28) after v2.15.0 had already promoted to main (2026-08-27) -- APP_VERSION and both package.json files were deliberately left at 2.15.0 pending an explicit release-cut decision; the 2.15.1 label here is provisional documentation, not an executed version bump.',
+    ],
+  },
+  {
     version: '2.15.0',
     date: 'August 2026',
     headline: 'Dependency currency, git governance, and test-health cleanup',
