@@ -4210,8 +4210,7 @@ FEATURE_MAP row.
 ---
 ### Story 333 (P2) — Task-oriented Help redesign (Game-Day Help + search, still bundled offline) <!-- #865 -->
 
-Status: Open — implemented on branch `claude/support-help-center-redesign-gq1qus`,
-pending push + PR to develop
+Status: Resolved — merged to `develop`
 Discovered: 2026-08-27 — product review of a GameChanger-style Help Center
 proposal; decision was to adopt the information architecture, not hosted
 support infrastructure
@@ -4281,6 +4280,8 @@ contextual deep-linking. Still static, still bundled, still offline —
 shape change only. `FAQSection.test.jsx` grew H1-H14 → H1-H15 (added
 keyword-match coverage); full suite 1377 passed / 1 skipped, lint/build
 clean.
+
+**Closed out 2026-08-28:** merged to `develop` as PR [#867](https://github.com/kaushikkuberanathan/lineup_generator/pull/867) (genuine 2-parent merge, `1b6a948`+`7248318`, not squashed) — resolved one real merge conflict along the way in `DOC_TEST_DEBT.md` (both sides had appended an independent "Resolved" entry at the same anchor line; mechanical, kept both). A same-day follow-up (PR [#869](https://github.com/kaushikkuberanathan/lineup_generator/pull/869)) corrected root `CLAUDE.md`'s stale test count (1368→1377) and added a `VERSION_HISTORY` entry (`frontend/src/data/versionHistory.js`, labeled `2.15.1`) documenting this story — discovered mid-pass that v2.15.0 had already promoted to `main` (PR #857, 2026-08-27) before this story's work started, so per KK's explicit choice the `2.15.1` label is provisional documentation only; `APP_VERSION` and both `package.json` files were deliberately left at `2.15.0` pending a real release-cut decision. Not yet promoted to `main`. Story 107 (#285, Support tab reorder + default-to-About) remains open, unrelated to this story's scope.
 
 ---
 ### Story 109 (P2) - Color token foundation: legacy C disposition <!-- #294 -->
