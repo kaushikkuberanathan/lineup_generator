@@ -652,6 +652,23 @@ describe('M — team_memberships / access_requests / feedback admin-authenticate
       '007\'s cross-table fix may have regressed. Got: ' + JSON.stringify(res.error)
     );
   });
+
+  // #348's own "minimum assertions" list names this scenario directly and it
+  // had no coverage until now: M1 only proves coach A CAN read their OWN row
+  // (query pre-filtered by team_id=TEAM_A) — it never proves RLS actually
+  // BLOCKS visibility into another user's row. Team B's coach has a real,
+  // seeded team_memberships row (seed.js), so a non-empty result here could
+  // only mean user_sees_own_membership's policy is leaking cross-user, never
+  // "the table happened to be empty" — same reasoning S3/T2/RS2 use for
+  // cross-team isolation, applied to cross-USER isolation on this table.
+  test('M5: coach A (non-admin) CANNOT read coach B\'s team_memberships row', async () => {
+    const res = await coachA.from('team_memberships').select('id, role, status').eq('team_id', TEAM_B);
+    assert.ok(
+      !returnedRows(res),
+      'EXPOSURE: coach A read coach B\'s team_memberships row. ' +
+      'user_sees_own_membership is not scoping to auth.uid().'
+    );
+  });
 });
 
 // ═════════════════════════════════════════════════════════════════════════════

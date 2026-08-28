@@ -2109,9 +2109,16 @@ export default function App() {
   }
 
   function generateShareId() {
+    // crypto.getRandomValues(), not Math.random() (#650) — the share ID is
+    // the entire access-control mechanism for an unauthenticated viewer link,
+    // so it needs a CSPRNG, not a PRNG whose internal state is inferable from
+    // prior outputs. Same format/length/alphabet as before — no
+    // backward-compatibility impact on existing share links.
     var chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+    var arr = new Uint32Array(8);
+    crypto.getRandomValues(arr);
     var id = "";
-    for (var i = 0; i < 8; i++) { id += chars[Math.floor(Math.random() * chars.length)]; }
+    for (var i = 0; i < 8; i++) { id += chars[arr[i] % chars.length]; }
     return id;
   }
 
