@@ -9,13 +9,17 @@ describe('BattingOrderStrip', () => {
     expect(screen.getByText(/no batters/i)).toBeInTheDocument();
   });
 
-  it('renders current, on-deck, in-hole and +N more badge for 4+ batters', () => {
-    var order = ['Aiden', 'Benji', 'Cassius', 'Connor'];
+  it('renders the full lineup as current, on-deck, in-hole and upcoming swipe cards', () => {
+    var order = ['Aiden', 'Benji', 'Cassius', 'Connor', 'Ezra'];
     render(<BattingOrderStrip battingOrder={order} currentBatterIndex={0} />);
     expect(screen.getByTestId('bos-now')).toHaveTextContent('Aiden');
     expect(screen.getByTestId('bos-on-deck')).toHaveTextContent('Benji');
     expect(screen.getByTestId('bos-in-hole')).toHaveTextContent('Cassius');
-    expect(screen.getByTestId('bos-more')).toHaveTextContent('+1 more');
+    expect(screen.getByTestId('bos-up-4')).toHaveTextContent('Connor');
+    expect(screen.getByTestId('bos-up-4')).toHaveTextContent('Up 4th');
+    expect(screen.getByTestId('bos-up-5')).toHaveTextContent('Ezra');
+    expect(screen.queryByTestId('bos-more')).toBeNull();
+    expect(screen.getByRole('region', { name: 'Batting order' })).toHaveStyle({ overflowX: 'auto' });
   });
 
   it('highlights current batter at currentBatterIndex', () => {
@@ -39,6 +43,15 @@ describe('BattingOrderStrip', () => {
     expect(screen.queryByTestId('bos-on-deck')).toBeNull();
     expect(screen.queryByTestId('bos-in-hole')).toBeNull();
     expect(screen.queryByTestId('bos-more')).toBeNull();
+  });
+
+  it('rotates every upcoming batter after the active index', () => {
+    var order = ['Aiden', 'Benji', 'Cassius', 'Connor'];
+    render(<BattingOrderStrip battingOrder={order} currentBatterIndex={2} />);
+    expect(screen.getByTestId('bos-now')).toHaveTextContent('Cassius');
+    expect(screen.getByTestId('bos-on-deck')).toHaveTextContent('Connor');
+    expect(screen.getByTestId('bos-in-hole')).toHaveTextContent('Aiden');
+    expect(screen.getByTestId('bos-up-4')).toHaveTextContent('Benji');
   });
 
   it('renders correctly with pre-filtered absent-removed input', () => {
