@@ -2,8 +2,17 @@
 --
 -- DRAFTED 2026-08-06. Section A (lines 88-284) applied to DEV
 --   (psqvzppphdedqkpmarwx) on 2026-08-15T23:08:27Z, per KK go-ahead, Section A
---   scope only. PROD: not applied. Section B: not applied anywhere. Full
---   detail: docs/product/PHASE4C_SCORING_RLS_PROPOSAL.md.
+--   scope only. Section A ALSO APPLIED TO PROD (hzaajccyurlyeweekvma) on
+--   2026-08-29, per KK's explicit go-ahead — verified via direct pg_policies
+--   query before (baseline matched documented 11 pre-existing policies exactly,
+--   no drift) and after (all 11 new auth.uid()-scoped policies present, all
+--   original anon/catch-all/public_read policies untouched — genuinely
+--   additive, confirmed by query, not assumed) and Supabase security advisors
+--   re-run clean (no new findings tied to these tables/policies). Section B:
+--   still not applied anywhere — remains gated on the frontend shim flip
+--   (step 2, needs the game-mode/* gate phrase) and a full prod game-day soak
+--   (step 3) per the sequence below. Full detail:
+--   docs/product/PHASE4C_SCORING_RLS_PROPOSAL.md.
 --
 -- Repo record of a migration authored ahead of its own apply — same
 -- "commit first, apply later" convention as every file in this tree, just an
