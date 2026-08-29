@@ -131,6 +131,12 @@ describe('LiveScoringPanel — STATE 3: another scorer is active', function () {
     expect(screen.getByText(/coach sam is scoring/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Ball' })).toBeDisabled();
   });
+
+  test('does not render a nested scoreboard inside the combined Game Day shell', function () {
+    render(<LiveScoringPanel {...baseProps({ scorerName: 'Coach Sam', isScorer: false })} />);
+    expect(screen.queryByTestId('scoreboard-mine-active-dot')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('scoreboard-opp-active-dot')).not.toBeInTheDocument();
+  });
 });
 
 describe('LiveScoringPanel — STATE 2: I am scorer — batter area', function () {
@@ -261,22 +267,10 @@ describe('LiveScoringPanel — STATE 2: opponent half', function () {
     expect(recordOppPitch).toHaveBeenCalledWith('strike');
   });
 
-  test('#118 — ScoreboardRow shows the active-half dot on our team during our half', function () {
+  test('does not render a nested scoreboard inside the combined Game Day shell', function () {
     render(<LiveScoringPanel {...baseProps({ isScorer: true, scorerName: 'Me' })} />);
-    expect(screen.getByTestId('scoreboard-mine-active-dot')).toBeInTheDocument();
-    expect(screen.queryByTestId('scoreboard-opp-active-dot')).toBeNull();
-  });
-
-  test('#118 — ScoreboardRow shows the active-half dot on the opponent during their half', function () {
-    render(<LiveScoringPanel {...baseProps({
-      isScorer: true, scorerName: 'Me',
-      gameState: baseGameState({ halfInning: 'bottom' }),
-      myTeamHalf: 'top',
-      scoring: { addManualRun: vi.fn(), recordOppPitch: vi.fn(), endHalfInning: vi.fn(), oppRunsThisHalf: 0 },
-    })} />);
-
-    expect(screen.getByTestId('scoreboard-opp-active-dot')).toBeInTheDocument();
-    expect(screen.queryByTestId('scoreboard-mine-active-dot')).toBeNull();
+    expect(screen.queryByTestId('scoreboard-mine-active-dot')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('scoreboard-opp-active-dot')).not.toBeInTheDocument();
   });
 
   test('#105 — diamond shows opponent runners, not our own, during their half', function () {
