@@ -2,7 +2,7 @@ import React from 'react';
 import { describe, test, expect } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { LegalSection } from './LegalSection';
-import { LEGAL_DOCS } from '../../content/legal';
+import { LEGAL_DOCS, getLegalDoc } from '../../content/legal';
 
 // ============================================================================
 // LegalSection — Phase 3 primitive migration regression guard
@@ -51,12 +51,17 @@ describe('LegalSection — primitive migration guard', function () {
   });
 
   test('L3: detail view renders h3, p, and ul section types', function () {
-    var docWithAllTypes = LEGAL_DOCS.find(function (doc) {
-      var types = doc.sections.map(function (s) { return s.type; });
-      return types.indexOf('h3') >= 0
-          && types.indexOf('p')  >= 0
-          && types.indexOf('ul') >= 0;
-    });
+    // Current-version sections, via getLegalDoc — same accessor the
+    // component itself uses (LEGAL_DOCS entries nest text under
+    // versions[], not a flat .sections).
+    var docWithAllTypes = LEGAL_DOCS
+      .map(function (doc) { return getLegalDoc(doc.id); })
+      .find(function (doc) {
+        var types = doc.sections.map(function (s) { return s.type; });
+        return types.indexOf('h3') >= 0
+            && types.indexOf('p')  >= 0
+            && types.indexOf('ul') >= 0;
+      });
 
     if (!docWithAllTypes) {
       throw new Error('L3 requires at least one LEGAL_DOCS entry containing h3, p, and ul sections');

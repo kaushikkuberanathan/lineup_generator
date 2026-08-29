@@ -119,7 +119,7 @@ A second, hermetic test system runs alongside the integration runner:
 - **Env**: still needs `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` / `SUPABASE_ANON_KEY` set, because `src/lib/env.js` + `src/lib/supabase.js` throw at import. Tests never make a real Supabase or network call — they either short-circuit before the client (auth-rejection in `requireAuth.js`) or monkey-patch the seams (`supabaseAdmin.from` / `supabaseAdmin.rpc` / `supabaseAnon.auth.signInWithOtp` / `global.fetch`). `supabaseAdmin` is a shared singleton, so patching `.from` also intercepts `logAuthEvent`'s `auth_events` write. Dummy non-empty values work anywhere.
 - **File convention**: specs live in `src/__tests__/*.test.js` (the `test:unit` glob) — use this path, **not** `src/tests/`.
 
-Unit suite total: **263** (up from 257 — +6 from `authRateLimiter.test.js`, #651 CodeQL follow-up: `meLimiter`/`logoutLimiter` on `GET /me` and `POST /logout`). Prior figure (257, up from 254 — +3 from `env.legacyKeyWarning.test.js`, #387 backend-infra fix batch) verified via `npm run test:unit` with `APPROVE_LINK_HMAC_SECRET` exported directly — the 249 figure before that undercounted by 1 because `teamData.envGuard.test.js` was silently crashing to a single failing marker instead of running its real 2 tests in every local run that session, a purely local `NODE_ENV=production`/dotenv-skip artifact unrelated to any code change; CI has never had this problem, since it sets the var as a real process env var. Up from 232 pre-#474-closure: +17 from `adminRequests.test.js`/`adminMembers.test.js`/`adminMembershipActions.test.js` (#474), +1 net from that recount. Story 99 closed 2026-07-31; see ROADMAP.md Story 99 for the closure writeup.
+Unit suite total: **276** as of this session (re-run directly via `npm run test:unit`, not carried forward — this line's prior "263" was already stale against root `CLAUDE.md`'s independently-verified 269 as of v3.0.0/2026-08-29; 276 = that 269 + 7 new from `legalConsent.test.js`, migration 028's not-yet-applied `POST /api/v1/auth/consent` route). Older history below, up to and including 263 (up from 257 — +6 from `authRateLimiter.test.js`, #651 CodeQL follow-up: `meLimiter`/`logoutLimiter` on `GET /me` and `POST /logout`). Prior figure (257, up from 254 — +3 from `env.legacyKeyWarning.test.js`, #387 backend-infra fix batch) verified via `npm run test:unit` with `APPROVE_LINK_HMAC_SECRET` exported directly — the 249 figure before that undercounted by 1 because `teamData.envGuard.test.js` was silently crashing to a single failing marker instead of running its real 2 tests in every local run that session, a purely local `NODE_ENV=production`/dotenv-skip artifact unrelated to any code change; CI has never had this problem, since it sets the var as a real process env var. Up from 232 pre-#474-closure: +17 from `adminRequests.test.js`/`adminMembers.test.js`/`adminMembershipActions.test.js` (#474), +1 net from that recount. Story 99 closed 2026-07-31; see ROADMAP.md Story 99 for the closure writeup.
 
 **Corrected 2026-08-25:** the prior "147" total (2026-08-19) predated three files that already existed in the repo but were undocumented in this table (`teamsSearch.route.test.js`, `cors.test.js`, `reject.test.js` — 30 tests combined) — same class of drift as the 2026-08-08 corrections below, not new. `admin.auth.test.js`'s count also grew from 9→15 as the 6 new admin.js routes below each got a 401-rejection case added alongside their own dedicated success-path spec file.
 
@@ -148,6 +148,7 @@ Per-file counts below verified individually via `node --test <file>` on 2026-08-
 | `teamData.delete.test.js` (6) | **Pre-existing, added to this table 2026-08-08 (was undocumented).** Route-level `DELETE /api/v1/teams/:teamId` (#380): no-token 401, non-admin 403, authenticated-admin 200 + delete call, membership-check DB error 500, delete-itself DB error 500, legacy `/api/teams` dual-mount smoke. `requireAuth` stubbed via `supabaseAdmin.auth.getUser`. |
 | `aiProxy.test.js` (6) | `POST /api/ai`: 503 unconfigured, **413 oversize (v2.2.4 regression guard)**, 400 bad type, 200 upstream status/body relay + call-shape (`claude-sonnet-4-6`, max_tokens, content), 504 AbortError, 502 unreachable. `global.fetch` stubbed; `ANTHROPIC_API_KEY` save/restore. |
 | `auth.happy.test.js` (4) | `POST /request-access` 201/409 + `POST /magic-link` 200/403. Hermetic via shared-`supabaseAdmin` patch (also covers `logAuthEvent`), `signInWithOtp` stub, and `global.fetch` stub for the Resend send. |
+| `legalConsent.test.js` (7) | **NEW, migration 028 (not yet applied — see Migration Notes).** `POST /api/v1/auth/consent` — multi-doc consent → 201 + one `legal_consents` row per doc with `version` only (never doc text), email normalized the same way as `/request-access` (#374), `context` defaults to `request_access`, missing email / empty `consents` / a consent item missing `version` → 400 with no insert attempted, DB error → 500. A brand-new route (additive only, per the Zero-Downtime Constraint above) — does not touch `/request-access`'s existing handler or `access_requests`. |
 | `approve.role.test.js` (6) | `POST /api/v1/approve` role-transition behavior. Landed between Phase 2 tranche 2 and Story 99's closure without a doc update — backfilled here 2026-07-31. |
 | `approveLink.role.test.js` (7) | `GET /api/v1/admin/approve-link` role-transition behavior (the public 1-tap email link). Backfilled 2026-07-31 — see note above. **Updated 2026-08-25 (#337):** now signs a real token via `approveLinkToken.sign()` instead of passing raw `requestId`/`teamId` query params — WS-1 role-normalization assertions themselves unchanged. |
 | `approveLinkToken.test.js` (9) | **NEW 2026-08-25 (#337).** `lib/approveLinkToken.js` sign/verify round trip — tamper (payload segment, signature segment, wrong secret), expiry (`TOKEN_EXPIRED` distinct from `TOKEN_TAMPERED`), action-binding (an approve token can't verify as a deny token), malformed input, `sign()`'s required-field guard. |
@@ -306,6 +307,22 @@ Per-file counts below verified individually via `node --test <file>` on 2026-08-
   cleanup against each database (not just a `pg_constraint` query), and
   Supabase security advisors re-run clean on both with no new findings.
   Merged via [PR #893](https://github.com/kaushikkuberanathan/lineup_generator/pull/893).
+- **`028_add_legal_consents_table.sql` — NOT YET APPLIED to DEV or PROD.**
+  Adds `legal_consents` (new table, RLS enabled, zero policies — same
+  service-role-only pattern as `team_data_history`, migration 006), keyed
+  by `email`/`doc_id`/`version`/`context`/`accepted_at`, backing the new
+  `POST /api/v1/auth/consent` route (`src/routes/auth.js`, additive-only —
+  see the migration file's own header for why this couldn't be columns on
+  `access_requests` instead: the Zero-Downtime Constraint above forbids
+  modifying `POST /request-access`'s existing handler, and that's still in
+  force pending Phase 4C). Stores only the accepted VERSION of each legal
+  document (`frontend/src/content/legal.js`'s `LEGAL_DOCS[].versions[]`),
+  never the document text — the version string is the pointer back to the
+  exact words in that file's git history. `docs/db/schema.sql` deliberately
+  NOT updated yet — this repo's own convention (see the 022/023 note above)
+  is that the ground-truth schema doc reflects only what's actually live,
+  not a pending migration. Do not apply without KK's go-ahead, same as
+  every migration above.
 
 ### !! FIVE NUMERIC COLLISIONS ACROSS THE TWO TREES !!
 

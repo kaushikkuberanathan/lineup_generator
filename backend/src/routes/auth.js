@@ -7,6 +7,7 @@
  * GET  /me              — return profile + active memberships (requireAuth)
  * PATCH /me             — update the signed-in user's profile name
  * POST /logout          — clear session, log auth_event
+ * POST /consent          — record a legal-doc version accepted (migration 028)
  *
  * Phone-based request-access (a channel this route accepted alongside email)
  * was removed 2026-08-26 — dead code found during the #406/#410 test-health
@@ -94,6 +95,20 @@ const requestAccessLimiter = rateLimit({
 // still-comfortable headroom. keyGenerator's ipKeyGenerator fallback is
 // defensive only — requireAuth guarantees req.user.id is set by the time
 // either limiter runs.
+
+// /consent fires alongside /request-access (same public, pre-auth moment),
+// so it gets the same email-keyed shape and a comparable budget — generous
+// enough to survive a retried submission, tight enough to not be a useful
+// write amplifier for an attacker.
+const legalConsentLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 20,
+  message: { error: 'TOO_MANY_ATTEMPTS', message: 'Too many requests. Please try again in an hour.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => !hasEmail(req),
+  keyGenerator: (req) => (hasEmail(req) ? req.body.email.trim().toLowerCase() : ipKeyGenerator(req.ip)),
+});
 const meLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
@@ -499,5 +514,58 @@ router.post('/logout', requireAuth, logoutLimiter, async (req, res) => {
     return res.status(500).json({ error: 'INTERNAL_ERROR' });
   }
 });
+
+// ─── POST /consent ────────────────────────────────────────────────────────────
+// Records that a specific version of a specific legal document (see
+// frontend/src/content/legal.js's LEGAL_DOCS[].versions[]) was accepted, at
+// what time, by what email. Deliberately does NOT store the document text —
+// only the version string, which is the pointer back to the exact text in
+// that file's version history. A brand-new route + a brand-new table
+// (legal_consents, migration 028) rather than adding fields to
+// POST /request-access's existing insert — see that migration's header for
+// why, per the Zero-Downtime Constraint above.
+//
+// Fired by RequestAccessScreen.jsx alongside (not gating) the access request
+// itself — see frontend/src/utils/legalConsent.js. A person's consent is a
+// fact about that moment regardless of whether the access request that
+// accompanied it later succeeds, is a duplicate, or fails.
+
+router.post(
+  '/consent',
+  legalConsentLimiter,
+  [
+    body('email').isEmail(),
+    body('consents').isArray({ min: 1 }).withMessage('consents must be a non-empty array'),
+    body('consents.*.docId').notEmpty().trim().isLength({ max: 50 }),
+    body('consents.*.version').notEmpty().trim().isLength({ max: 20 }),
+    body('context').optional().isString().trim().isLength({ max: 50 }),
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ error: 'VALIDATION_ERROR', details: errors.array() });
+    }
+
+    const email = normalizeEmail(req.body.email);
+    const context = req.body.context || 'request_access';
+    const rows = req.body.consents.map((c) => ({
+      email,
+      doc_id:  String(c.docId).trim(),
+      version: String(c.version).trim(),
+      context,
+    }));
+
+    try {
+      const { error } = await supabaseAdmin.from('legal_consents').insert(rows);
+      if (error) throw error;
+
+      return res.status(201).json({ success: true, count: rows.length });
+
+    } catch (err) {
+      console.error('[auth/consent]', err.message);
+      return res.status(500).json({ error: 'INTERNAL_ERROR' });
+    }
+  }
+);
 
 module.exports = router;
