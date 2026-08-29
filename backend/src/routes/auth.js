@@ -30,6 +30,7 @@ const requireAuth = require('../middleware/requireAuth');
 const { logAuthEvent } = require('../lib/authEvents');
 const { sendAdminNotification } = require('../lib/email');
 const { normalizeRole, isNormalizableRole } = require('../lib/normalizeRole');
+const { normalizeEmail } = require('../lib/normalizeEmail');
 
 const router = express.Router();
 
@@ -132,7 +133,12 @@ router.post(
     }
 
     const { firstName, lastName, teamId, requestedRole, deviceContext } = req.body;
-    const email = req.body.email.toLowerCase().trim();
+    // normalizeEmail (#374), not a bare toLowerCase/trim: a Gmail dot
+    // variant (sam.jones@ vs samjones@) must land in access_requests (and
+    // from there, team_memberships on approval) in the same canonical form
+    // /magic-link's login check compares against, or a coach who later
+    // types a different-but-equivalent variant gets locked out.
+    const email = normalizeEmail(req.body.email);
 
     // Normalize the requested role to a canonical team_memberships value before
     // it is persisted. WS-1 (#336): access_requests.requested_role was written
@@ -252,7 +258,14 @@ router.post(
 router.post(
   '/magic-link',
   [
-    body('email').isEmail().normalizeEmail(),
+    // isEmail() only here, deliberately no .normalizeEmail() (#374): that
+    // express-validator helper applies broader per-provider rules (Outlook/
+    // Yahoo/iCloud +subaddress stripping) that the write side does not
+    // mirror, which would reintroduce the exact same read/write mismatch
+    // this fix closes for those providers. normalizeEmail() below (the
+    // shared, narrower Gmail-only helper) is applied explicitly instead, to
+    // both sides of the comparison.
+    body('email').isEmail(),
     body('teamId').notEmpty().trim(),
   ],
   // Validation runs BEFORE loginLimiter (#329): a malformed request (e.g.
@@ -269,19 +282,27 @@ router.post(
   },
   loginLimiter,
   async (req, res) => {
-    const { email, teamId, deviceContext } = req.body;
+    const { teamId, deviceContext } = req.body;
+    const email = normalizeEmail(req.body.email);
 
     try {
-      // Verify membership exists and is invited or active
-      const { data: membership, error: membershipError } = await supabaseAdmin
+      // Verify membership exists and is invited or active. Matched in JS
+      // against normalizeEmail(m.email) rather than a DB-side .eq('email',
+      // email) (#374): existing team_memberships rows were written before
+      // this fix landed and may still hold a non-canonical form (a Gmail
+      // dot variant, mixed case) - normalizing both sides at comparison
+      // time fixes login for those rows too, with no backfill required.
+      const { data: candidates, error: membershipError } = await supabaseAdmin
         .from('team_memberships')
-        .select('id, status, role, team_id')
-        .eq('email', email)
+        .select('id, status, role, team_id, email')
         .eq('team_id', String(teamId))
-        .in('status', ['invited', 'active'])
-        .maybeSingle();
+        .in('status', ['invited', 'active']);
 
       if (membershipError) throw membershipError;
+
+      const membership = (candidates ?? []).find(
+        (m) => normalizeEmail(m.email) === email
+      ) ?? null;
 
       if (!membership) {
         await logAuthEvent('access_denied', {
