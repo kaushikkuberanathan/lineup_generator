@@ -85,6 +85,7 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;   -- gen_random_uuid()
 -- ============================================================================
 CREATE SEQUENCE IF NOT EXISTS public.roster_snapshots_id_seq;
 CREATE SEQUENCE IF NOT EXISTS public.team_data_history_id_seq;
+CREATE SEQUENCE IF NOT EXISTS public.legal_consents_id_seq;
 
 
 -- ============================================================================
@@ -406,6 +407,23 @@ CREATE TABLE IF NOT EXISTS public.scoring_audit_log (
     REFERENCES public.at_bats(id) ON DELETE SET NULL
 );
 
+-- Migration 028 (#907/#910's Terms of Service consent flow). Records which
+-- VERSION of a legal document (content/legal.js's LEGAL_DOCS[].versions[])
+-- a coach accepted, never the document text itself. No FK on email -> any
+-- table (mirrors access_requests' own email-keyed design; consent happens
+-- before an auth.users row necessarily exists).
+CREATE TABLE IF NOT EXISTS public.legal_consents (
+  id          bigint                   NOT NULL DEFAULT nextval('legal_consents_id_seq'::regclass),
+  email       text                     NOT NULL,
+  doc_id      text                     NOT NULL,
+  version     text                     NOT NULL,
+  context     text                     NOT NULL DEFAULT 'request_access'::text,
+  accepted_at timestamp with time zone NOT NULL DEFAULT now(),
+  created_at  timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT legal_consents_pkey PRIMARY KEY (id)
+);
+ALTER SEQUENCE public.legal_consents_id_seq OWNED BY public.legal_consents.id;
+
 
 -- ============================================================================
 -- 4. INDEXES
@@ -469,6 +487,12 @@ CREATE INDEX IF NOT EXISTS idx_audit_log_game
   ON public.scoring_audit_log (game_id, team_id, recorded_at DESC);
 CREATE INDEX IF NOT EXISTS idx_audit_log_actor
   ON public.scoring_audit_log (actor_user_id, recorded_at DESC);
+
+-- legal_consents (migration 028)
+CREATE INDEX IF NOT EXISTS idx_legal_consents_email
+  ON public.legal_consents (email);
+CREATE INDEX IF NOT EXISTS idx_legal_consents_doc_version
+  ON public.legal_consents (doc_id, version);
 
 
 -- ============================================================================
@@ -768,6 +792,7 @@ ALTER TABLE public.at_bats               ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.live_game_state       ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.game_scoring_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.scoring_audit_log     ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.legal_consents        ENABLE ROW LEVEL SECURITY;  -- locked, 028 — no policies, service-role only, same pattern as auth_events/team_data_history
 
 
 -- Idempotency guards: this file is written to rebuild an EMPTY database, but the

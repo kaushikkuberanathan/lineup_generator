@@ -309,7 +309,9 @@ Per-file counts below verified individually via `node --test <file>` on 2026-08-
   cleanup against each database (not just a `pg_constraint` query), and
   Supabase security advisors re-run clean on both with no new findings.
   Merged via [PR #893](https://github.com/kaushikkuberanathan/lineup_generator/pull/893).
-- **`028_add_legal_consents_table.sql` — NOT YET APPLIED to DEV or PROD.**
+- **`028_add_legal_consents_table.sql` — APPLIED TO DEV (psqvzppphdedqkpmarwx)
+  AND PROD (hzaajccyurlyeweekvma), both 2026-08-29 (same session, KK
+  confirmed go-ahead: "yes let's go and apply those migrations").**
   Adds `legal_consents` (new table, RLS enabled, zero policies — same
   service-role-only pattern as `team_data_history`, migration 006), keyed
   by `email`/`doc_id`/`version`/`context`/`accepted_at`, backing the new
@@ -320,11 +322,15 @@ Per-file counts below verified individually via `node --test <file>` on 2026-08-
   force pending Phase 4C). Stores only the accepted VERSION of each legal
   document (`frontend/src/content/legal.js`'s `LEGAL_DOCS[].versions[]`),
   never the document text — the version string is the pointer back to the
-  exact words in that file's git history. `docs/db/schema.sql` deliberately
-  NOT updated yet — this repo's own convention (see the 022/023 note above)
-  is that the ground-truth schema doc reflects only what's actually live,
-  not a pending migration. Do not apply without KK's go-ahead, same as
-  every migration above.
+  exact words in that file's git history. Verified live on both DEV and
+  PROD via a real insert + cleanup against each database (not just an
+  `information_schema` query), and Supabase security advisors re-run clean
+  on both — the only finding is the expected INFO-level "RLS enabled, no
+  policies" on `legal_consents` itself, same as the pre-existing finding on
+  `auth_events`/`team_data_history`. `docs/db/schema.sql` updated to
+  include this table now that it's actually live, per this repo's own
+  convention (see the 022/023 note above) that the ground-truth schema doc
+  reflects only what's live, not a pending migration.
 
 ### !! FIVE NUMERIC COLLISIONS ACROSS THE TWO TREES !!
 

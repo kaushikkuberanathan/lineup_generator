@@ -1,10 +1,15 @@
 -- Migration 028: legal_consents table (Terms of Service / Privacy Policy
 -- consent audit trail)
 --
--- NOT YET APPLIED to DEV or PROD as of this migration file's creation —
--- pending KK's review and go-ahead, per this repo's own convention (every
--- migration in this file's history records an explicit "KK confirmed
--- go-ahead" before a live apply). Do not apply without that.
+-- APPLIED TO DEV (psqvzppphdedqkpmarwx) AND PROD (hzaajccyurlyeweekvma),
+-- both 2026-08-29 (same session, KK confirmed go-ahead: "yes let's go and
+-- apply those migrations"). Verified live on both via a real insert +
+-- cleanup against each database (not just an information_schema query),
+-- and Supabase security advisors re-run clean on both — the only finding
+-- is the expected INFO-level "RLS enabled, no policies" on legal_consents
+-- itself, the deliberate design (see below), same as the pre-existing
+-- finding on auth_events/team_data_history. docs/db/schema.sql updated to
+-- include this table (ground truth now that it's actually live).
 --
 -- ---------------------------------------------------------------------------
 -- WHY
