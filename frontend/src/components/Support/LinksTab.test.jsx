@@ -16,13 +16,13 @@ describe('LinksTab', () => {
   it('renders every canonical support destination once', () => {
     render(<LinksTab sectionTitleStyle={{}} />);
     expect(screen.getAllByRole('link')).toHaveLength(EXPECTED_LINKS.length);
-    EXPECTED_LINKS.forEach(([label]) => expect(screen.getByRole('link', { name:new RegExp(label) })).toBeTruthy());
+    EXPECTED_LINKS.forEach(([label]) => expect(screen.getByText(label).closest('a')).toBeTruthy());
   });
 
   it('preserves destination, campaign tracking, and safe new-tab attributes', () => {
     render(<LinksTab sectionTitleStyle={{}} />);
     EXPECTED_LINKS.forEach(([label, destination, campaign, content]) => {
-      const anchor = screen.getByRole('link', { name:new RegExp(label) });
+      const anchor = screen.getByText(label).closest('a');
       const url = new URL(anchor.getAttribute('href'));
       const original = new URL(destination);
       expect(url.origin + url.pathname).toBe(original.origin + original.pathname);
