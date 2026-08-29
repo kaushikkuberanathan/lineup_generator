@@ -15,11 +15,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 
-vi.mock("virtual:pwa-register/react", () => ({
-  useRegisterSW: () => ({ needRefresh: [false], updateServiceWorker: () => {} }),
-}));
-
-import { SharedView } from "../App";
+import { SharedView } from "../screens/Share/SharedView";
 import { tokens } from "../theme/tokens";
 
 function makeRenderFieldSVG() {
