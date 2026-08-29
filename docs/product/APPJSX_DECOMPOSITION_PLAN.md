@@ -187,3 +187,41 @@ Each slice = one PR, one 24h develop soak, then bundled into a release-prep prom
 
 *Execution of any slice is gated on KK direction + the App.jsx gate phrase. This
 doc is updated as slices land. Pairs with `UX_REFACTOR_ROADMAP.md` §Phase 4.*
+
+---
+
+## 8. 2026-08-29 current-state audit — issue #919
+
+The original map above remains useful for sequencing, but several low-risk
+boundaries have moved since its `ca9bd0a` snapshot. At `origin/develop`
+`d1d02f8`, `App.jsx` is 7,821 physical lines. Storage (4.0),
+`PlayerFilterToggle` (4.1), and `AboutTab` are already extracted and must not be
+reopened. The remaining render boundaries were re-read against current source;
+the next tranche is deliberately limited to three independently reviewable
+components:
+
+| Rank | Boundary | User impact | Coupling | Regression consequence | Approx. App.jsx reduction | Child issue |
+|---:|---|---|---|---|---:|---|
+| 1 | `SharedView` | High — unauthenticated lineup sharing | Low — `payload` and `renderFieldSVG` props | High — share links are a no-login surface | ~300 lines | #926 |
+| 2 | `renderLinks` | Medium — league, weather, and score-report destinations | Low — static registry plus tracking helpers | Medium — wrong destinations can disrupt game operations | ~100 lines | #927 |
+| 3 | `renderUpdates` | Low — release communication | Low — version data plus controlled expansion state | Low | ~50 lines | #928 |
+
+### Dependency and contract map
+
+- `SharedView` owns only local filter/view state and derives display data from
+  its payload. App supplies the field renderer. Existing direct
+  characterization coverage (`SharedView.test.jsx` and
+  `SharedViewColorTokens.test.jsx`) makes it the strongest high-consequence
+  candidate, but unauthenticated browser validation remains mandatory.
+- Links consumes the canonical outbound tracking helpers and UI tokens. The
+  extraction must move the registry with the component, not clone it, and must
+  characterize every destination and tracking/safety attribute first.
+- Updates consumes the canonical version-history array and current version.
+  Both remain explicit inputs; expansion state remains controlled by App so no
+  second source of truth is introduced.
+
+Each child ships from its own branch and retains a mutation-tested contract.
+No child touches `components/game-mode/*`, `components/ScoringMode/*`, the
+offline persistence layer, authentication gates, or App navigation state.
+Issue #919 remains the tranche tracker until all three children have completed
+their independent review and soak requirements.

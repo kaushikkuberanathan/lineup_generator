@@ -99,6 +99,13 @@ You cannot replace an inline style with a primitive call that doesn't exist yet.
 
 > **Detailed plan:** [docs/product/APPJSX_DECOMPOSITION_PLAN.md](APPJSX_DECOMPOSITION_PLAN.md) — full structural map, architecture decisions, and incremental slice sequence. Story 104 covers the low-risk tranche (slices 4.0–4.4).
 
+> **Current tranche (audited 2026-08-29):** issue #919 re-measured the
+> 7,821-line current file and selected three still-live boundaries for separate
+> review: `SharedView` (#926), Links (#927), and Updates (#928). Storage,
+> `PlayerFilterToggle`, and `AboutTab` are already extracted and are not part of
+> this tranche. See the decomposition plan's current-state audit for ranking,
+> dependencies, and contract gates.
+
 **Goal:** Break the 9,800-line App.jsx into feature modules. Each tab
 (Roster, GameDay, Season, More) becomes an independently importable component.
 App.jsx becomes a router/shell only.
