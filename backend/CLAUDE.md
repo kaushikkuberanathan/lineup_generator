@@ -284,6 +284,28 @@ Per-file counts below verified individually via `node --test <file>` on 2026-08-
   the same session on both DEV and PROD, folded into the migration file
   directly since it hadn't merged yet). See the migration file's own header
   for the full debugging trail.
+- **`027_add_magic_link_requested_to_auth_events.sql` — APPLIED TO DEV
+  (psqvzppphdedqkpmarwx) AND PROD (hzaajccyurlyeweekvma), both 2026-08-29
+  (same session, KK confirmed go-ahead before the prod apply).** Fixes #736:
+  `auth_events.event_type`'s CHECK constraint (hand-set in Supabase, not
+  tracked in either migration tree) predates the v2.1.0 OTP→magic-link
+  switch and never allowed `'magic_link_requested'` — every `POST
+  /magic-link` audit-event insert had been silently rejected since v2.1.0
+  (`logAuthEvent()` swallows the error; login itself unaffected). Adds
+  `'magic_link_requested'` to the constraint's allowed `ARRAY` (Option A
+  from the issue — the constraint was stale, not the code). `docs/db/schema.sql`'s
+  `auth_events` CREATE TABLE statement was edited directly to already
+  include the new value, so this migration does not need replaying in
+  `apply-rls-bootstrap.sh`'s ephemeral-CI `FILES` list — same treatment as
+  005-012 (see that script's own header). RED→GREEN verified: the new
+  `backend/src/__tests__/rls/authEventsMagicLinkType.test.js` (AEML1)
+  RED-confirmed against real DEV Postgres before the apply (`violates check
+  constraint auth_events_event_type_check`, exact same error text the
+  original issue reports for prod) and GREEN after. Both DEV and PROD
+  additionally verified live, same session, via a direct real insert +
+  cleanup against each database (not just a `pg_constraint` query), and
+  Supabase security advisors re-run clean on both with no new findings.
+  Merged via [PR #893](https://github.com/kaushikkuberanathan/lineup_generator/pull/893).
 
 ### !! FIVE NUMERIC COLLISIONS ACROSS THE TWO TREES !!
 
