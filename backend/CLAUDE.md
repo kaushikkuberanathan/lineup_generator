@@ -89,6 +89,8 @@ Three guards in place:
 - **Runner**: `backend/scripts/tests/test-runner.js` (custom Node runner, not Vitest)
 - **Invocation**: `npm test` from `backend/` — requires local server running on `PORT` and `backend/.env` loaded
 - **CI mode**: `CI_SAFE=true` skips suites that write to the database; runs read-only and rejection tests against prod
+- **Prod blast-radius fence (#339, `scripts/tests/prodGuard.js`):** the five write-heavy suites (auth-flow, idempotency, device-context, audit-trail, data-integrity) now unconditionally refuse to run if `SUPABASE_URL` resolves to the PROD project ref — checked regardless of `CI_SAFE`, not just skipped by it. Root cause of the historical orphaned `team_memberships` rows: those suites' own `state.testEmails` cleanup only runs if the process reaches the end, so a crashed/interrupted local run (plausible before `SUPABASE_TARGET=dev` existed) against a `.env` pointed at prod left rows behind with nothing to stop it. Mirrors the same fence pattern as `src/__tests__/rls/clients.js`'s `assertDevProject()`. Unit-tested in `src/__tests__/prodGuard.test.js`.
+- **Separately, `suite-validation.js`'s VAL-07 fixed (#339):** that spec runs unconditionally (even under `CI_SAFE`, even against prod — it's not one of the five gated suites) and can legitimately get a real `201` back, inserting a real `access_requests` row — but it never pushed its email into `state.testEmails`, so the existing end-of-run cleanup never saw it. This was the live, ongoing mechanism behind the several-hundred-row `access_requests` pollution in #339 (firing on every CI run against the prod-facing `backend` job, not just a one-time historical artifact) — now tracked and cleaned up like every other suite's rows.
 
 #### Suites (13)
 
@@ -117,7 +119,7 @@ A second, hermetic test system runs alongside the integration runner:
 - **Env**: still needs `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` / `SUPABASE_ANON_KEY` set, because `src/lib/env.js` + `src/lib/supabase.js` throw at import. Tests never make a real Supabase or network call — they either short-circuit before the client (auth-rejection in `requireAuth.js`) or monkey-patch the seams (`supabaseAdmin.from` / `supabaseAdmin.rpc` / `supabaseAnon.auth.signInWithOtp` / `global.fetch`). `supabaseAdmin` is a shared singleton, so patching `.from` also intercepts `logAuthEvent`'s `auth_events` write. Dummy non-empty values work anywhere.
 - **File convention**: specs live in `src/__tests__/*.test.js` (the `test:unit` glob) — use this path, **not** `src/tests/`.
 
-Unit suite total: **250** (verified via `npm run test:unit` with `APPROVE_LINK_HMAC_SECRET` exported directly — the prior 249 figure undercounted by 1 because `teamData.envGuard.test.js` was silently crashing to a single failing marker instead of running its real 2 tests in every local run that session, a purely local `NODE_ENV=production`/dotenv-skip artifact unrelated to any code change; CI has never had this problem, since it sets the var as a real process env var. Up from 232 pre-#474-closure: +17 from `adminRequests.test.js`/`adminMembers.test.js`/`adminMembershipActions.test.js` (#474), +1 net from this recount). Story 99 closed 2026-07-31; see ROADMAP.md Story 99 for the closure writeup.
+Unit suite total: **263** (up from 257 — +6 from `authRateLimiter.test.js`, #651 CodeQL follow-up: `meLimiter`/`logoutLimiter` on `GET /me` and `POST /logout`). Prior figure (257, up from 254 — +3 from `env.legacyKeyWarning.test.js`, #387 backend-infra fix batch) verified via `npm run test:unit` with `APPROVE_LINK_HMAC_SECRET` exported directly — the 249 figure before that undercounted by 1 because `teamData.envGuard.test.js` was silently crashing to a single failing marker instead of running its real 2 tests in every local run that session, a purely local `NODE_ENV=production`/dotenv-skip artifact unrelated to any code change; CI has never had this problem, since it sets the var as a real process env var. Up from 232 pre-#474-closure: +17 from `adminRequests.test.js`/`adminMembers.test.js`/`adminMembershipActions.test.js` (#474), +1 net from that recount. Story 99 closed 2026-07-31; see ROADMAP.md Story 99 for the closure writeup.
 
 **Corrected 2026-08-25:** the prior "147" total (2026-08-19) predated three files that already existed in the repo but were undocumented in this table (`teamsSearch.route.test.js`, `cors.test.js`, `reject.test.js` — 30 tests combined) — same class of drift as the 2026-08-08 corrections below, not new. `admin.auth.test.js`'s count also grew from 9→15 as the 6 new admin.js routes below each got a 401-rejection case added alongside their own dedicated success-path spec file.
 
@@ -157,11 +159,14 @@ Per-file counts below verified individually via `node --test <file>` on 2026-08-
 | `normalizeRole.test.js` (34) | `normalizeRole()` — the code-level enforcement of the four-role model documented in root `CLAUDE.md` → Multi-team design. Backfilled 2026-07-31 — see note above. Count corrected 2026-08-08 (was mislabeled `13`; see correction note above the table). |
 | `loginLimiter.test.js` (3) | **NEW 2026-07-31.** `loginLimiter` (auth.js) keyed by email, not IP — Story 26 fix. Same email exhausts its own budget (429 on the 6th attempt); a different email is unaffected by another's exhausted budget (the actual bug); no-email requests are exempt via `skip()`. RED→GREEN mutation-verified. |
 | `auth.session.test.js` (9) | **NEW 2026-07-31.** `GET /me`, `PATCH /me`, `POST /logout` — zero prior coverage. Hydrated-user happy path, missing-profile non-crash, validation and not-found paths, and 401 rejection for all three routes. **+1 2026-08-26 (#406/#410 survey):** a membership row holding a legacy role value (`team_admin`) is returned verbatim by `GET /me`, not normalized — locks in current, presumed-intentional behavior per the documented role model. |
+| `authRateLimiter.test.js` (6) | **NEW (#651, CodeQL js/missing-rate-limiting alerts #12/#15 follow-up).** `meLimiter` (`GET /me`, 100 req/15min) and `logoutLimiter` (`POST /logout`, 20 req/15min) — both user-id-keyed, not email-keyed like `loginLimiter`/`requestAccessLimiter`, since both routes sit behind `requireAuth` and the caller already holds a session. Same-user exhaustion, a different user unaffected by another's exhausted budget, and an unauthenticated request rejected by `requireAuth` (401) before the limiter ever sees it — for both routes. RED→GREEN verified (stashed the route change, confirmed all 4 exhaustion/isolation assertions fail without it, restored). |
 | `requireAdmin.test.js` (4) | **NEW 2026-08-26 (#406/#410 test-health survey).** Direct unit coverage for `middleware/requireAdmin.js`, calling it without the app/route layer — previously exercised only indirectly via other routes' stubs. Active-admin success sets `req.adminMembership` and calls `next()`, no-matching-row → 403, DB error → 403 (fail-closed), and the exact `.eq()` filter shape (`user_id`/`role`='admin'/`status`='active') — the last one is a known-limitation lock-in, not a fix: it confirms a legacy `team_admin`-valued row is excluded by the query before the middleware ever inspects it. |
 | `feedback.test.js` (7) | **NEW 2026-07-31.** `POST /api/v1/feedback` — zero prior coverage. Valid submission, optional fields, validation, DB-error, 401 rejection, and **FB-7**: regression guard for the admin.js mount-order bug this file's authoring discovered (see Zero-Downtime / app.js note below) — a non-admin coach must reach 201, not 403. |
 | `teamData.logInjection.test.js` (5) | **NEW 2026-08-08 (v2.9.0 security hardening).** Log-injection fix (CWE-134) at the 5 `console.error` sites in `teamData.js` — spies on `console.error`, asserts `{ teamId, error }` is passed as a structured second argument (not interpolated into the message string) using a `teamId` containing `%s`. |
 | `teamsSearch.route.test.js` (13) | **Pre-existing, added to this table 2026-08-25 (was undocumented).** `GET /api/v1/teams/search` (Story 124/#655) — the file that originally moved the total from 125→147/2026-08-19 but was never itself added as a row here. |
 | `cors.test.js` (9) | **Pre-existing, added to this table 2026-08-25 (was undocumented).** CORS allowlist behavior across the backend's configured origins. |
+| `prodGuard.test.js` (4) | **NEW 2026-08-27 (#339).** `scripts/tests/prodGuard.js`'s `assertNotProd()` — throws for a URL containing the PROD project ref, passes for DEV/local/unset. Guards `test-runner.js`'s write-heavy suite block unconditionally, regardless of `CI_SAFE`. |
+| `env.legacyKeyWarning.test.js` (3) | **NEW (#387 backend-infra fix batch).** `src/lib/env.js`'s legacy-Supabase-key boot warning — a stale `eyJ...` legacy JWT in `SUPABASE_ANON_KEY` broke every prod login for ~15min in the 2026-07-20 cutover incident with no startup-time signal. Warns (does not throw, since DEV's project still uses legacy keys deliberately) when `SUPABASE_ANON_KEY` or `SUPABASE_SERVICE_ROLE_KEY` matches the `eyJ...` pattern; asserts silence for new-style `sb_secret_`/`sb_publishable_` keys. Clears `require.cache` per case since `env.js` runs its checks as module-level side effects on require. |
 
 **CI**: the `backend-unit` job in `.github/workflows/ci.yml` runs `npm run test:unit` on every push/PR — hermetic, no Render dependency (unlike the integration `backend` job that polls prod). It gates the sync-script and main-deploy (smoke) jobs.
 
@@ -244,6 +249,63 @@ Per-file counts below verified individually via `node --test <file>` on 2026-08-
   not "complete" that column definition until 023 has actually run against
   PROD, or the ground-truth doc will lie about live PROD schema the same
   way past drift here caused #342/#351/#355.
+- **`026_write_source_role_fallback.sql` — APPLIED TO DEV (psqvzppphdedqkpmarwx)
+  AND PROD (hzaajccyurlyeweekvma), both 2026-08-28 (same session, KK
+  confirmed go-ahead before the prod apply).** Fixes #379: `team_data_history.write_source`
+  was `'unknown'` on every row in PROD (3,000/3,000, confirmed live) despite
+  `teamData.js` appearing to set it — root cause was `set_config(...,
+  is_local: true)` and the `.upsert()` running as two separate Supabase
+  calls, hence two separate transactions, so the setting never reached the
+  write it was meant to tag. Affects every write path, including the
+  dominant one (`frontend/src/supabase.js`'s `dbSaveTeamData()`, which never
+  touches `app.write_source` at all — see 006's header). Fix: a new BEFORE
+  trigger (`capture_write_source_role`, invoker-rights) stashes
+  `current_user` into a transaction-scoped GUC before the existing AFTER
+  trigger (`snapshot_team_data`, migration 006, `SECURITY DEFINER`) reads it
+  back as the fallback — both fire within the same statement, no cross-call
+  fragility. A single-function version tried first (`current_setting('role',
+  true)` read directly inside the `SECURITY DEFINER` function) does **not**
+  work — `'role'` isn't a real Postgres GUC, so it silently returns NULL;
+  caught only by testing against a real PostgREST/service-role write, not a
+  `SET LOCAL ROLE` simulation through the SQL Editor, which gave inconsistent
+  results that didn't match real request behavior. RED→GREEN verified via
+  the new `backend/src/__tests__/rls/writeSourceRoleFallback.test.js`
+  (WSF1/WSF2 — service_role and authenticated writes each record their real
+  role, not `'unknown'`) against both the local ephemeral stack and DEV; also
+  added to `backend/scripts/apply-rls-bootstrap.sh`'s replay list so CI's
+  `rls` job validates it. Prod apply verified structurally (function
+  definitions confirmed byte-identical to DEV via `pg_get_functiondef`,
+  `SECURITY DEFINER`/search_path pin on `snapshot_team_data()` confirmed
+  intact, not reverted; Supabase security advisors re-run clean) — no test
+  write was made against real prod data. Security advisors also caught a
+  real, separate gap on first apply: `capture_write_source_role()` had no
+  pinned `search_path` (lower severity than the `SECURITY DEFINER` case
+  migration 012 covers, since it's `SECURITY INVOKER`, but flagged and fixed
+  the same session on both DEV and PROD, folded into the migration file
+  directly since it hadn't merged yet). See the migration file's own header
+  for the full debugging trail.
+- **`027_add_magic_link_requested_to_auth_events.sql` — APPLIED TO DEV
+  (psqvzppphdedqkpmarwx) AND PROD (hzaajccyurlyeweekvma), both 2026-08-29
+  (same session, KK confirmed go-ahead before the prod apply).** Fixes #736:
+  `auth_events.event_type`'s CHECK constraint (hand-set in Supabase, not
+  tracked in either migration tree) predates the v2.1.0 OTP→magic-link
+  switch and never allowed `'magic_link_requested'` — every `POST
+  /magic-link` audit-event insert had been silently rejected since v2.1.0
+  (`logAuthEvent()` swallows the error; login itself unaffected). Adds
+  `'magic_link_requested'` to the constraint's allowed `ARRAY` (Option A
+  from the issue — the constraint was stale, not the code). `docs/db/schema.sql`'s
+  `auth_events` CREATE TABLE statement was edited directly to already
+  include the new value, so this migration does not need replaying in
+  `apply-rls-bootstrap.sh`'s ephemeral-CI `FILES` list — same treatment as
+  005-012 (see that script's own header). RED→GREEN verified: the new
+  `backend/src/__tests__/rls/authEventsMagicLinkType.test.js` (AEML1)
+  RED-confirmed against real DEV Postgres before the apply (`violates check
+  constraint auth_events_event_type_check`, exact same error text the
+  original issue reports for prod) and GREEN after. Both DEV and PROD
+  additionally verified live, same session, via a direct real insert +
+  cleanup against each database (not just a `pg_constraint` query), and
+  Supabase security advisors re-run clean on both with no new findings.
+  Merged via [PR #893](https://github.com/kaushikkuberanathan/lineup_generator/pull/893).
 
 ### !! FIVE NUMERIC COLLISIONS ACROSS THE TWO TREES !!
 
@@ -285,8 +347,11 @@ differently. **Never map a versionHistory migration-number citation onto
 `backend/migrations/` by number.** Verify actual schema state against the
 ground truth below, not migration numbers or version-history prose.
 
-**Ground truth is `docs/db/PROD_SCHEMA_BASELINE.md` + `PROD_SCHEMA_BASELINE_ADDENDUM_1.md`,
-not either migration tree.** Both trees describe databases that do not exist.
+**Ground truth for object definitions is `docs/db/schema.sql`; `docs/db/PROD_SCHEMA_BASELINE.md`
+carries the incident history and narrative only (merged 2026-08-27, #358 — the former
+`PROD_SCHEMA_BASELINE_ADDENDUM_1.md` is now folded into it).** Neither migration tree
+(`backend/migrations/` nor `backend/src/db/migrations/`) can be trusted to describe the
+live database on its own.
 
 ---
 

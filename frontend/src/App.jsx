@@ -7,7 +7,7 @@ import { isSupabaseEnabled, supabase, dbSaveTeams, dbDeleteTeam,
          dbSaveShareLink, dbLoadShareLink } from './supabase.js';
 import { track, mixpanel, deviceContext } from '@/utils/analytics';
 import { track as vaTrack } from '@vercel/analytics';
-import { FEATURE_FLAGS } from '@/config/featureFlags';
+import { FEATURE_FLAGS, isFlagEnabled, setRuntimeFlagCache } from '@/config/featureFlags';
 import { generateLineupV2 } from '@/utils/lineupEngineV2';
 import { normalizeBattingHand } from '@/utils/playerUtils';
 import { persistTeamBeforeLoad } from './utils/teamCreationPersistence.js';
@@ -145,7 +145,7 @@ var DISLIKE_PENALTY = -50;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "2.15.0";
+var APP_VERSION = "3.0.0";
 
 // loadJSON / saveJSON — localStorage with in-memory (_mem) fallback — moved to
 // ./utils/storage (#416). Imported above; call sites unchanged.
@@ -1077,6 +1077,16 @@ export default function App() {
   var _featureFlags = useFeatureFlags();
   var runtimeFlags = _featureFlags.flags; var flagsLoading = _featureFlags.loading;
 
+  // Story 30 / #112 — feed the same DB-merged flags this hook already fetches
+  // into isFlagEnabled()'s runtime cache, so every isFlagEnabled()-gated flag
+  // (ACCESSIBILITY_V1, SCORING_SHEET_V2, COMBINED_GAMEMODE_AND_SCORING, etc.)
+  // also becomes DB-driven — previously only VIEWER_MODE/MAINTENANCE_MODE got
+  // that via the runtimeFlags.X reads below. No extra fetch: reuses this
+  // hook's existing result.
+  useEffect(function() {
+    if (!flagsLoading) setRuntimeFlagCache(runtimeFlags);
+  }, [runtimeFlags, flagsLoading]);
+
   var _hydratedTeamIds = useState({});
   var hydratedTeamIds = _hydratedTeamIds[0]; var setHydratedTeamIds = _hydratedTeamIds[1];
 
@@ -1458,6 +1468,10 @@ export default function App() {
     return !!(new URLSearchParams(window.location.search).get("s"));
   });
   var shareLoading = _shareLoading[0]; var setShareLoading = _shareLoading[1];
+  // Story 62/#127 - which of dbLoadShareLink's failure modes to show, when
+  // sharePayload never resolves. null while loading/succeeded.
+  var _shareError = useState(null);
+  var shareError = _shareError[0]; var setShareError = _shareError[1];
 
   const {
     session,
@@ -1532,7 +1546,8 @@ export default function App() {
   useEffect(function() {
     var sid = new URLSearchParams(window.location.search).get("s");
     if (!sid) { return; }
-    dbLoadShareLink(sid).then(function(payload) {
+    dbLoadShareLink(sid).then(function(result) {
+      var payload = result && result.payload;
       if (payload) {
         setSharePayload(payload);
         track("share_link_viewed", {
@@ -1548,14 +1563,16 @@ export default function App() {
         });
         vaTrack("share_link_viewed");
       } else {
-        track("share_link_view_failed", { error: "fetch_failed" });
+        setShareError((result && result.status) || "not_found");
+        track("share_link_view_failed", { error: (result && result.status) || "not_found" });
       }
       setShareLoading(false);
     }).catch(function() {
+      setShareError("not_found");
       track("share_link_view_failed", { error: "fetch_failed" });
       setShareLoading(false);
     });
-  }, [setShareLoading, setSharePayload]);
+  }, [setShareLoading, setSharePayload, setShareError]);
 
   // Analytics: app opened — fires once on mount; teams is synchronously initialized from localStorage
   useEffect(function() {
@@ -2092,9 +2109,16 @@ export default function App() {
   }
 
   function generateShareId() {
+    // crypto.getRandomValues(), not Math.random() (#650) — the share ID is
+    // the entire access-control mechanism for an unauthenticated viewer link,
+    // so it needs a CSPRNG, not a PRNG whose internal state is inferable from
+    // prior outputs. Same format/length/alphabet as before — no
+    // backward-compatibility impact on existing share links.
     var chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+    var arr = new Uint32Array(8);
+    crypto.getRandomValues(arr);
     var id = "";
-    for (var i = 0; i < 8; i++) { id += chars[Math.floor(Math.random() * chars.length)]; }
+    for (var i = 0; i < 8; i++) { id += chars[arr[i] % chars.length]; }
     return id;
   }
 
@@ -2132,7 +2156,7 @@ export default function App() {
 
   function shareViewerLink() {
     track("share_viewer_link", {});
-    var payload = buildSharePayload(activeTeam, grid, activeBattingOrder, roster, absentTonight, { includeSongs: false });
+    var payload = buildSharePayload(activeTeam, grid, activeBattingOrder, roster, absentTonight);
     var base = window.location.href.split("?")[0];
     var url;
     if (isSupabaseEnabled) {
@@ -2874,6 +2898,15 @@ export default function App() {
     function TeamCard(props) {
       var team = props.team;
 
+      // Story 127 (#666): Edit/Delete are admin-only actions. subscribedTeams
+      // (this function's only caller) is already filtered to membership-backed
+      // teams, so a matching row should always exist here; the true-if-missing
+      // fallback only covers pre-auth/offline rendering, where no memberships
+      // array exists at all and every team is local-only (nothing to protect
+      // from another role, since there's no server-side membership to speak of).
+      var teamMembership = (memberships || []).filter(function(m) { return m.team_id === team.id; })[0];
+      var canManageTeam = teamMembership ? teamMembership.role === "admin" : true;
+
       // Show skeleton while Supabase is fetching this team's data for the first time.
       // Prevents the card from flashing "Missing roster" / no Game Mode button
       // for teams not yet visited on this device.
@@ -2982,6 +3015,7 @@ export default function App() {
                      onClick={function(e) { e.stopPropagation(); setOpenMenuTeamId(null); }} />
                 <div style={{ position:"absolute", top:"100%", right:0, marginTop:"4px", background:"#ffffff", border:"1px solid rgba(0,0,0,0.1)", borderRadius:"6px", boxShadow:"0 4px 12px rgba(0,0,0,0.12)", zIndex:9999, minWidth:"168px", overflow:"hidden" }}
                      onClick={function(e) { e.stopPropagation(); }}>
+                  {canManageTeam && (
                   <div style={{ padding:"10px 16px", cursor:"pointer", color:"#374151", fontSize:"13px", fontFamily:"inherit" }}
                        onMouseEnter={function(e) { e.currentTarget.style.background="#f9fafb"; }}
                        onMouseLeave={function(e) { e.currentTarget.style.background="transparent"; }}
@@ -2992,12 +3026,14 @@ export default function App() {
                        }; }(team)}>
                     ✏ Edit team
                   </div>
+                  )}
                   <div style={{ padding:"10px 16px", cursor:"pointer", color:"#374151", fontSize:"13px", fontFamily:"inherit" }}
                        onMouseEnter={function(e) { e.currentTarget.style.background="#f9fafb"; }}
                        onMouseLeave={function(e) { e.currentTarget.style.background="transparent"; }}
                        onClick={function(e) { e.stopPropagation(); exportTeamData(team); setOpenMenuTeamId(null); }}>
                     ⬇ Download backup
                   </div>
+                  {canManageTeam && (
                   <div style={{ padding:"10px 16px", cursor:"pointer", color:"#e05565", fontSize:"13px", fontFamily:"inherit" }}
                        onMouseEnter={function(e) { e.currentTarget.style.background="#f9fafb"; }}
                        onMouseLeave={function(e) { e.currentTarget.style.background="transparent"; }}
@@ -3008,6 +3044,7 @@ export default function App() {
                        }}>
                     🗑 Delete team
                   </div>
+                  )}
                 </div>
               </>
             )}
@@ -4323,7 +4360,8 @@ export default function App() {
                   onClick={function() { setShowShareSheet(false); shareCurrentLineup(); }}>
                   🔗 Share as Link
                 </button>
-                {(runtimeFlags.VIEWER_MODE || localStorage.getItem("flag:viewer_mode") === "1") ? (
+                {/* #120: also honors canonical "flag_VIEWER_MODE" via isFlagEnabled(), additive to the legacy "flag:viewer_mode" check */}
+                {(runtimeFlags.VIEWER_MODE || localStorage.getItem("flag:viewer_mode") === "1" || isFlagEnabled('VIEWER_MODE')) ? (
                   <button style={{ ...S.btn("ghost"), border:"1px solid rgba(15,31,61,0.2)", padding:"13px", fontSize:"14px", textAlign:"left" }}
                     onClick={function() { setShowShareSheet(false); shareViewerLink(); }}>
                     👁 Share Viewer Link
@@ -7360,8 +7398,12 @@ export default function App() {
 
   // Maintenance mode — must be first check, before share links, auth, everything
   var _bypassMaintenance = localStorage.getItem('bypass:maintenance') === '1';
+  // #120: also honors the canonical "flag_MAINTENANCE_MODE" localStorage form
+  // via isFlagEnabled(), alongside the legacy "flag:MAINTENANCE_MODE" form
+  // above — additive, neither existing check was removed.
   var _maintenanceOn = runtimeFlags.MAINTENANCE_MODE ||
-                       localStorage.getItem('flag:MAINTENANCE_MODE') === '1';
+                       localStorage.getItem('flag:MAINTENANCE_MODE') === '1' ||
+                       isFlagEnabled('MAINTENANCE_MODE');
   if (flagsLoading) {
     return (
       <div style={{ display:'flex', alignItems:'center', justifyContent:'center',
@@ -7389,10 +7431,18 @@ export default function App() {
       var isViewer = _vp.get("view") === "true" || _vp.get("role") === "viewer";
       return <ErrorBoundary fallback="Viewer Mode">{isViewer ? <DugoutView payload={sharePayload} isViewer={true} onExit={function() {}} /> : <SharedView payload={sharePayload} renderFieldSVG={renderFieldSVG} />}</ErrorBoundary>;
     }
+    // Story 62/#127 - user-meaningful message per dbLoadShareLink failure
+    // mode, instead of one generic "couldn't be found" for every case.
+    var _shareErrorCopy = {
+      malformed_slug: "This link looks incomplete or broken. Double-check the link you were sent.",
+      rls_blocked: "This share link isn't accessible right now. Ask the coach to re-share it.",
+      timeout: "This is taking a while to load. Check your connection and try again.",
+      not_found: "This share link couldn't be found.",
+    };
     return (
       <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", minHeight:"100vh", background:"#fdf8f0", gap:"12px" }}>
         <div style={{ fontSize:"32px" }}>😕</div>
-        <div style={{ fontSize:"14px", color:"#6a7a9a", fontFamily:"Georgia,serif" }}>This share link couldn&apos;t be found.</div>
+        <div style={{ fontSize:"14px", color:"#6a7a9a", fontFamily:"Georgia,serif" }}>{_shareErrorCopy[shareError] || _shareErrorCopy.not_found}</div>
       </div>
     );
   }
@@ -7483,7 +7533,7 @@ export default function App() {
   ].filter(Boolean);
   var MORE_SUBTABS = [
     { key:"account",  label:"Account"  },
-    { key:"faq",      label:"FAQ"      },
+    { key:"faq",      label:"Help"     },
     { key:"feedback", label:"Feedback" },
     { key:"links",    label:"Links"    },
     { key:"about",    label:"About"    },

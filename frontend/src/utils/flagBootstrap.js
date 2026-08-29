@@ -1,13 +1,25 @@
 /**
  * flagBootstrap.js — URL-param-driven feature flag + maintenance-bypass activation.
  *
- * Key format: "flag:<flagName>" with value "1" (enable) or removed (disable).
+ * Key format: writes BOTH localStorage key schemes for every ?enable_flag=/
+ * ?disable_flag= call (Story 49/#120):
+ *   - "flag:<lowercase-name>" = "1" (legacy — App.jsx's direct checks for
+ *     VIEWER_MODE/MAINTENANCE_MODE read this form)
+ *   - "flag_<UPPERCASE-NAME>" = "true" (canonical — isFlagEnabled() reads
+ *     this form; every other flag in featureFlags.js uses only this one)
  *
- * NOTE: This scheme uses "flag:" + lowercase name + value "1".
- * It is intentionally separate from isFlagEnabled()'s "flag_" + UPPERCASE + "true"/"false"
- * scheme. The URL bootstrap activates the per-user localStorage override used directly
- * in App.jsx (e.g. localStorage.getItem("flag:viewer_mode") === "1"), NOT the
- * isFlagEnabled() function which reads "flag_VIEWER_MODE".
+ * Before #120, ?enable_flag= wrote only the legacy form, so it silently did
+ * nothing for any flag gated through isFlagEnabled() (ACCESSIBILITY_V1,
+ * SCORING_SHEET_V2, COMBINED_GAMEMODE_AND_SCORING) — a coach following the
+ * documented "enable via URL" instructions for one of those flags would see
+ * no effect, with no error. Dual-writing both forms is additive and
+ * backward-compatible: every existing reader of either key keeps working
+ * unchanged. Full consolidation onto a single scheme (removing the legacy
+ * form entirely) was Story 49's original recommended option but was judged
+ * too high-blast-radius for this pass — MAINTENANCE_MODE and VIEWER_MODE are
+ * both high-stakes gates (whole-app kill switch; public share-link viewer)
+ * — so this ships the low-risk, fully-additive migration-window step
+ * instead (Story 49's own Option 3), not a full removal.
  *
  * Also handles the maintenance bypass: ?coach_access=mudhen2026 sets
  * "bypass:maintenance", ?clear_bypass removes it. Folded in here (2026-08-26,
@@ -37,8 +49,14 @@ export function applyFlagParams(searchString) {
   var ca = p.get("coach_access");
   var cb = p.has("clear_bypass");
   if (!ef && !df && !ca && !cb) return false;
-  if (ef) localStorage.setItem("flag:" + ef, "1");
-  if (df) localStorage.removeItem("flag:" + df);
+  if (ef) {
+    localStorage.setItem("flag:" + ef, "1");
+    localStorage.setItem("flag_" + ef.toUpperCase(), "true");
+  }
+  if (df) {
+    localStorage.removeItem("flag:" + df);
+    localStorage.removeItem("flag_" + df.toUpperCase());
+  }
   if (ca === "mudhen2026") localStorage.setItem("bypass:maintenance", "1");
   if (cb) localStorage.removeItem("bypass:maintenance");
   return true;

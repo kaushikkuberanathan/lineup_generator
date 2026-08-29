@@ -32,12 +32,15 @@ All eight outputs before starting any work.
 ## Environments
 
 - **Local** — development and validation only
+- **Dev** — dev.dugoutlineup.com + lineup-generator-dev-backend + DEV Supabase project (`psqvzppphdedqkpmarwx`) — auto-deploys from `develop`; used for the overnight soak (see § Release Ritual, Phase 4) and, as of #368, the CI smoke job. Not a manual-QA gate on its own — see § Infrastructure Reference for the exact endpoints.
 - **Production** — dugoutlineup.com — live users
 
 Rules:
 - Never test experimental features directly in production without a feature flag
 - Feature flags live at `frontend/src/config/featureFlags.js`
-- No staging environment — feature flags are the safety net
+- Dev exists for soak/CI, not as a substitute for feature-flagging risky work — feature flags are still the primary safety net for anything shipping to production
+
+> **Corrected 2026-08-27 (#368):** this section previously said "No staging environment" — stale by the time it was written given `dev.dugoutlineup.com` already exists and is used for the develop soak elsewhere in this same file. Corrected instead of restated.
 
 ---
 
@@ -271,13 +274,18 @@ Triggers: UptimeRobot alert OR "Server unavailable" pill in prod
 
 | Service | URL | Purpose |
 |---|---|---|
-| Frontend | dugoutlineup.com | Vercel, auto-deploys from main |
-| Backend | lineup-generator-backend.onrender.com | Express on Render Starter plan ($7/mo, no spin-down) |
-| Database | Supabase dashboard | Postgres + RLS |
+| Frontend (prod) | dugoutlineup.com | Vercel, auto-deploys from main |
+| Frontend (dev) | dev.dugoutlineup.com | Vercel preview branches per PR |
+| Backend (prod) | lineup-generator-backend.onrender.com | Express on Render Starter plan ($7/mo, no spin-down) |
+| Backend (dev) | lineup-generator-dev-backend.onrender.com | Render, `srv-da2c7fqjnfac73aefmv0`, auto-deploys from `develop`, `SUPABASE_TARGET=dev` |
+| Database (prod) | Supabase dashboard — `hzaajccyurlyeweekvma` | Postgres + RLS |
+| Database (dev) | Supabase dashboard — `psqvzppphdedqkpmarwx` | Postgres + RLS, used by the RLS test suite and (as of #368) the CI smoke job |
 | Uptime monitor | uptimerobot.com — monitor #802733786 | Pings prod /ping every 5 minutes; alerts via email + push notification (mobile app — see ## Incident Response) |
 | Repo | github.com/kaushikkuberanathan/lineup_generator | monorepo |
 
 > **NOTE:** UptimeRobot only monitors /ping (HTTP 200). Real functional health (DB connectivity, share link rendering, lineup generation) is validated by the GitHub Actions health-check.yml cron — check .github/workflows/health-check.yml for details.
+>
+> **Corrected 2026-08-27 (#368):** this table previously listed only the prod backend/database — CI's "Smoke Test (dev)" job had aliased `DEV_SUPABASE_URL`/`DEV_SUPABASE_ANON_KEY` to the prod secrets and hardcoded `DEV_BACKEND_URL` to the prod Render URL, so every "dev" smoke run had always actually run against prod, mislabeled. Fixed in that PR; the dev rows above are what the job now actually targets. GitHub Actions repo secrets: `DEV_BACKEND_URL`, `DEV_FRONTEND_URL` (pre-existing but previously unused/aliased), `DEV_SUPABASE_URL`, `DEV_SUPABASE_ANON_KEY` (added same session).
 
 ### Key File Locations
 frontend/src/App.jsx                    — APP_VERSION + VERSION_HISTORY

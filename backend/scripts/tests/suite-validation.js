@@ -17,6 +17,13 @@ async function post(BASE_URL, path, body) {
 
 async function run(test, BASE_URL, state) {
   const TEST_EMAIL = `val-suite-${state.runId}@test.com`;
+  // VAL-07 below can legitimately succeed (201) rather than reject — when it
+  // does, it inserts a real access_requests row under TEST_EMAIL. This suite
+  // runs unconditionally (even under CI_SAFE, even against prod), unlike the
+  // gated write-heavy suites, so without this it's an untracked, permanent
+  // leak on every single run. Track it so test-runner.js's end-of-run
+  // cleanup (state.testEmails) actually deletes it. See #339.
+  state.testEmails.push(TEST_EMAIL);
 
   // ─── /request-access validation ─────────────────────────────────────────────
 
@@ -98,10 +105,10 @@ async function run(test, BASE_URL, state) {
   // ─── /magic-link validation ──────────────────────────────────────────────────
 
   await test('VAL-08', '/magic-link: missing teamId', async () => {
-    // loginLimiter runs before express-validator and is email-keyed
-    // (ROADMAP Story 26), so a fixed email here would still consume budget
-    // on every run and could eventually get 429 instead of the 400 this
-    // test actually checks for. Unique per run, same as suite-rate-limits.js.
+    // #329: validation now runs before loginLimiter, so a malformed request
+    // never reaches the rate limiter at all. Still uses a unique email per
+    // run (rather than relying on that) to keep this test independent of
+    // ordering assumptions, same as suite-rate-limits.js.
     const res = await post(BASE_URL, '/api/v1/auth/magic-link', {
       email: `val08-${process.pid}-${Date.now()}@test.com`, deviceContext: DEVICE,
     });

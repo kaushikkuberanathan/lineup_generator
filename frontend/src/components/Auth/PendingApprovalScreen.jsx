@@ -24,7 +24,7 @@ export function PendingApprovalScreen({ onTryLogin }) {
         <h1 style={styles.title}>Request submitted</h1>
 
         <p style={styles.body}>
-          Your access request has been sent to the head coach for review.
+          Your access request has been sent to Dugout Lineup&apos;s admin team for review.
           {pendingEmail && (
             <> You&apos;ll receive an email at <strong>{pendingEmail}</strong> once approved.</>
           )}
@@ -37,7 +37,7 @@ export function PendingApprovalScreen({ onTryLogin }) {
           </div>
           <div style={{ ...styles.step, color: tokens.color.text.tertiary }}>
             <span style={{ ...styles.stepIcon, backgroundColor: '#f1f5f9', color: tokens.color.text.tertiary }}>2</span>
-            <span>Coach reviews and approves</span>
+            <span>Admin reviews and approves</span>
           </div>
           <div style={{ ...styles.step, color: tokens.color.text.tertiary }}>
             <span style={{ ...styles.stepIcon, backgroundColor: '#f1f5f9', color: tokens.color.text.tertiary }}>3</span>

@@ -57,10 +57,15 @@ Located at App.jsx ~458–720. Two-phase auto-assign algorithm:
 - **Hook location**: `frontend/src/hooks/useLiveScoring.js`. UI: `frontend/src/components/ScoringMode/`.
 - **Single render surface for count/outs (added v2.5.2):** Game Mode count and outs render in exactly one place — the top pill in `LiveScoringPanel.jsx`. The pill binds dynamically to the active batter via `const isHomeBatting = gs.halfInning === myTeamHalf`. BALLS reads `gs.balls` when home is batting, `gs.oppBalls || 0` otherwise. STRIKES uses the symmetric pattern. OUTS reads `gs.outs` (shared across halves). Stacked label-above-value pattern (INNING / BALLS / STRIKES / OUTS) is the convention for scoring strips. Future scoring UI must NOT introduce a parallel count display.
 
-#### Auth shims (remove at Phase 4C cutover)
+#### Auth shims — removed 2026-08-29 (#355 step 2)
 
-- `frontend/src/hooks/useLiveScoring.js` — `_effectiveUserId`/`_effectiveUserName` fallback block (marked `AUTH TESTING SHIM`)
-- `frontend/src/components/ScoringMode/index.jsx` — `scoringUserId`/`scoringUserName` fallback + `isAdminTestMode`; also remove `|| true` from `var isEnabled = liveScoringEnabled || true`
+**Correction:** this section previously named `frontend/src/components/ScoringMode/index.jsx` as a shim location. That file was removed in Slice 4 (v2.5.11) — the real location, as of `DugoutView.jsx`'s Slice 0 (v2.5.4) lift-in, was always `frontend/src/components/game-mode/DugoutView.jsx`.
+
+Both shims have now been removed, per `docs/product/PHASE4C_SCORING_RLS_PROPOSAL.md` §3 step 2:
+- `frontend/src/hooks/useLiveScoring.js` — the `_effectiveUserId`/`_effectiveUserName` fallback block is gone; the hook uses its `userId`/`userName` params directly (pure passthrough, no fallback of its own).
+- `frontend/src/components/game-mode/DugoutView.jsx` — the `|| true` override on `isEnabled` is gone (`isEnabled = liveScoringEnabled`, the real flag value). The `scorer_local_id` localStorage device-id fallback is gone — `scoringUserId` now resolves `user.id` → `session.user.id` → `null` (no more zero-UUID or persisted local id for an unauthenticated caller). `isAdminTestMode` stays hardcoded `false` (removing the variable entirely is step 7 of the same sequence, not done here).
+
+**This is step 2 of 7 only — #355 is not closed.** The dangerous permissive RLS policies (`allow_scorer_writes` and the `*_anon_test` backdoors) are still live in prod; Section B of migration 019 (the actual policy drop) still requires step 3 (a full prod game-day soak confirming `scoring_audit_log.actor_user_id` shows real `auth.users` UUIDs, not shim values) before it's safe to run. An unauthenticated scorer today reaches the write path with a `null` identity rather than a stable device id — see the `scoringUserId` declaration's own comment in `DugoutView.jsx` for why that's still safe pre-Section-B (the old permissive policies let it through regardless) and not safe to leave as the end state.
 
 ---
 
@@ -78,7 +83,7 @@ Located at App.jsx ~458–720. Two-phase auto-assign algorithm:
 ## Test Suite
 
 - **Framework**: Vitest
-- **CI target**: 1368 frontend passed / 1 skipped / 0 failed (as of 2026-08-26, v2.15.0 release prep; 120 test files; 1618 total incl. 250 backend unit tests)
+- **CI target**: 1390 frontend passed / 1 skipped / 0 failed (as of 2026-08-27, #112/#116/#120 governance batch; 120 test files; backend unit count unchanged at 250). +22 vs. the 2026-08-26 baseline of 1368: +9 from the v2.15.1 Help redesign (`FAQSection.test.jsx` 6→15, already on `develop` when this batch's branch was cut, not part of this batch's own work) plus +13 from this batch itself — Group 6 `accessibility.v1.test.js` DB-cache precedence (#112, +6), Group 5 `flag-bootstrap.test.js` dual-write (#120, +6), `versionHistory.test.js` banned-token scanner (#116, +1).
 - **Known skip**: bench-equity.test.js test 2.1 (bench rotation fairness — BUG CONFIRMED; identical players, sit-count drift > 1 inning; fix deferred)
 
 #### Test files

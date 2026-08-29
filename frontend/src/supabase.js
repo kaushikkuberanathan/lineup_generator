@@ -211,15 +211,40 @@ export function dbSaveShareLink(id, payload) {
 
 export var SHARE_LINK_FETCH_TIMEOUT_MS = 10000;
 
+// generateShareId() (App.jsx) always produces 8 lowercase alphanumeric
+// chars. Anything else reaching dbLoadShareLink is a malformed slug — a
+// truncated/mangled URL, not a real "row not found" case — so it's caught
+// before ever touching the network.
+export var SHARE_LINK_ID_PATTERN = /^[a-z0-9]+$/;
+
+// Story 62 (#127): dbLoadShareLink used to collapse three distinct failure
+// modes (row not found, RLS/auth block, malformed slug) into a single
+// silent null, making the share-link error surface undiagnosable. It now
+// always resolves { payload, status }, where status is one of:
+//   'ok'             - payload is the real share payload
+//   'not_found'      - no row exists (or a query error of unknown shape)
+//   'rls_blocked'    - Supabase rejected the read (permission denied)
+//   'timeout'        - the query didn't resolve within SHARE_LINK_FETCH_TIMEOUT_MS
+//   'malformed_slug' - the id doesn't look like a real share id
 export function dbLoadShareLink(id) {
-  if (!supabase) { return Promise.resolve(null); }
+  if (!id || typeof id !== 'string' || !SHARE_LINK_ID_PATTERN.test(id)) {
+    return Promise.resolve({ payload: null, status: 'malformed_slug' });
+  }
+  if (!supabase) { return Promise.resolve({ payload: null, status: 'not_found' }); }
   var query = supabase.from('share_links').select('payload').eq('id', id).single()
     .then(function(r) {
-      if (r.error) { return null; }
-      return r.data ? r.data.payload : null;
+      if (r.error) {
+        if (r.error.code === '42501' || r.error.code === 'PGRST301') {
+          return { payload: null, status: 'rls_blocked' };
+        }
+        return { payload: null, status: 'not_found' };
+      }
+      return r.data
+        ? { payload: r.data.payload, status: 'ok' }
+        : { payload: null, status: 'not_found' };
     });
   var timeout = new Promise(function(resolve) {
-    setTimeout(function() { resolve(null); }, SHARE_LINK_FETCH_TIMEOUT_MS);
+    setTimeout(function() { resolve({ payload: null, status: 'timeout' }); }, SHARE_LINK_FETCH_TIMEOUT_MS);
   });
   return Promise.race([query, timeout]);
 }

@@ -12,33 +12,44 @@
  * upsert is rejected by the database constraint.
  *
  * IMPORTANT — where the real fix lives today (read the hook source
- * before touching this file): `_effectiveUserId = userId || null`
- * (useLiveScoring.js ~line 291) is a pure passthrough. It has NO
+ * before touching this file): `useLiveScoring.js`'s `userId`/`userName`
+ * params are used directly — the hook is a pure passthrough with no
  * fallback value of its own. The hook briefly had one
  * ('admin-coach-mud-hens', v2.2.28) and paired null-guards on
  * audit()/startHeartbeat()/claimScorerLock()/releaseScorerLock()
  * (added v2.2.34), but both were removed in v2.2.37 once the call
- * site — now `DugoutView.jsx`'s `scoringUserId` (user.id ->
- * session.user.id -> a `scorer_local_id` UUID persisted in
- * localStorage, itself hardcoded-fallback-safe) — took over
- * guaranteeing a non-null value before the hook is ever invoked. See
+ * site — `DugoutView.jsx`'s `scoringUserId` — took over guaranteeing a
+ * non-null value before the hook is ever invoked. See
  * frontend/src/data/versionHistory.js entries for v2.2.28/29/34/37.
  *
- * Practical consequence for this test file: there is no code path in
- * the shipped app today that invokes `claimScorerLock()` with a
- * null/undefined identity — DugoutView.jsx is the only caller of
- * `useLiveScoring`, and its fallback chain always resolves to a
- * truthy string, even with no session and even if localStorage
- * throws. So these tests model the two REAL invocation shapes
- * DugoutView can produce (a real authenticated user id, or the
- * local-device shim id) and assert the identity that reaches every
- * Supabase write tied to the scorer role is always exactly what was
- * resolved — never silently dropped to null/undefined. The mutation
- * check below (see PR description / session report) simulates the
- * v2.2.29 bug shape by making the hook's identity resolution ignore
- * whatever the caller supplied — reproducing "the resolved identity
- * is null no matter what a real caller passes in" — and confirms
- * these tests catch it.
+ * **Corrected 2026-08-29 (#355 step 2):** that guarantee no longer holds.
+ * DugoutView.jsx's `scorer_local_id` localStorage device-id fallback was
+ * removed (Phase 4C shim removal) — `scoringUserId` now resolves to
+ * `user.id` -> `session.user.id` -> `null`, not a guaranteed-truthy
+ * string. An unauthenticated caller CAN reach `claimScorerLock()` with a
+ * null identity today; the still-active permissive RLS policies (Section
+ * A of migration 019 is additive-only) let the write through regardless,
+ * so this remains a real, currently-exploitable path, not a hypothetical
+ * one — same character as #355 itself. Test 2 below (using a
+ * `SHIM_ID`-shaped string) now models a scenario that can no longer
+ * happen through DugoutView specifically, but the underlying contract it
+ * asserts — "whatever non-null identity useLiveScoring is given reaches
+ * every write, unaltered" — is still real and still worth guarding
+ * directly against the hook. Left in place rather than deleted: it is
+ * still a true statement about the hook's passthrough behavior, just no
+ * longer traceable to that one specific caller shape.
+ *
+ * Practical consequence for this test file: these tests model the
+ * invocation shapes `useLiveScoring` can receive (a real authenticated
+ * user id, or an arbitrary non-null string) and assert the identity that
+ * reaches every Supabase write tied to the scorer role is always exactly
+ * what was resolved — never silently dropped to null/undefined. They do
+ * NOT assert that DugoutView always supplies a non-null identity — that
+ * claim is no longer true (see the correction above). The mutation check
+ * below (see PR description / session report) simulates the v2.2.29 bug
+ * shape by making the hook's identity resolution ignore whatever the
+ * caller supplied — reproducing "the resolved identity is null no matter
+ * what a real caller passes in" — and confirms these tests catch it.
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';

@@ -69,18 +69,6 @@
 | **Age** | 43 days |
 | **Target** | v2.4.0 |
 
-### 🟡 P2 — D-S30: isFlagEnabled has no DB-read path (Story 30)
-
-| | |
-|---|---|
-| **Area** | Feature flag system |
-| **Description** | `isFlagEnabled(flagName)` is synchronous: reads `FEATURE_FLAGS[flagName]` from JS bundle default + `localStorage` override only. Does NOT query the Supabase `feature_flags` table at runtime. Flipping a DB row has no effect on active users without a code redeploy. Discovered April 2026 when SCORING_SHEET_V2 DB row was flipped expecting a runtime change. |
-| **Risk if unfixed** | Any ops flag-flip procedure documented as "flip the DB row" is silently ineffective. Risk of mis-communication and delayed rollbacks. |
-| **Proposed fix** | Extend `flagBootstrap.js` to fetch Supabase `feature_flags` table at app boot and merge into a runtime registry. `isFlagEnabled()` stays synchronous at call sites — async fetch happens once in the bootstrap path. Recommend (B) from Story 30 write-up in ROADMAP.md. |
-| **Opened** | 2026-04-24 |
-| **Age** | 36 days |
-| **Target** | v2.6.x |
-
 ### 🟡 P2 — SW update banner lifecycle (Story 85 follow-up)
 
 | | |
@@ -194,25 +182,6 @@
 | **Opened** | 2026-04-17 |
 | **Target** | v2.4.0 |
 
-### 🟡 P3 — FAQ × Feature Flag coverage audit
-
-- **What:** `frontend/src/content/faqs.js` contains 48 FAQ entries across 7 personas. At least one entry (line 191, scorekeeper category) describes a feature gated by `liveScoringEnabled` flag without acknowledging the gate. Coaches without the flag enabled see referenced UI elements that don't exist for them.
-- **Scope:** Full audit of all 48 entries against current feature flag state. Identify entries describing gated features. Decide on a consistent presentation pattern (caveat language? group flag-gated entries? prefix like "If live scoring is enabled..."?). Apply consistently.
-- **Target:** v2.6.0 P3 (or v2.7.0 if scope creeps)
-- **Source:** Surfaced during v2.6.0 documentation foundation sweep on April 27, 2026.
-- **Why P3:** Not actively misleading — coaches without the flag never reach the relevant FAQ answer expecting it to apply. But represents a content quality gap worth resolving once flag count grows.
-
-### 🟡 P2 — D-S31: FEATURE_MAP.md Coverage Summary denominator drift
-
-| | |
-|---|---|
-| **Area** | Governance (Feature Map) |
-| **Status** | Open |
-| **Type** | Doc gap |
-| **Opened** | 2026-05-15 |
-| **Target** | (opportunistic — no version target) |
-| **Summary** | FEATURE_MAP.md Coverage Summary denominators show `/ 27` (lines 60–65) but heading reads "Feature Registry (29 features)" and row recount confirms 29 (row #29 BottomSheet added in v2.5.21). Six summary lines need denominator bump to `/ 29` AND category counts likely need recount across all rows. Cosmetic mismatch but accumulates each release. Discovered during v2.5.9 GA-state reconciliation patch (commit c97d5ae); drift widened by v2.5.21 release-prep. |
-
 ---
 
 ## Open — Tooling / Process Gaps
@@ -251,16 +220,6 @@
 | **Opened** | 2026-04-17 |
 | **Target** | v2.4.0 |
 
-### 🟡 P2 — FAQ Linter
-
-| | |
-|---|---|
-| **Area** | Governance |
-| **Description** | No automated check that FAQ categories correspond to real personas and that no persona is missing FAQ coverage. |
-| **Proposed action** | Write a small Vitest fixture that asserts every FAQ category in faqs.js has a matching persona in PERSONAS.md. Low priority because manual audit just happened. |
-| **Opened** | 2026-04-17 |
-| **Target** | v2.4.0 |
-
 ### 🟡 P2 — FEATURE_MAP.md Sync Linter
 
 | | |
@@ -278,18 +237,6 @@
 - **Target:** v2.6.0 P2
 - **Source:** Audited during v2.5.1 deploy, April 27, 2026.
 - **Partial mitigation (Story 99, PR #272):** the new `backend-unit` CI job runs in-process supertest tests with no `BACKEND_URL` / prod dependency — admin auth-rejection coverage is now prod-URL-free. The hardcoded-prod-URL concern remains only for the live integration `backend` job and the smoke job.
-
-### 🟡 P2 — Dependency currency: 4 Dependabot bumps held (eslint, jsdom, react-dom, supabase-js)
-
-| | |
-|---|---|
-| **Area** | CI/CD, tooling |
-| **Description** | Methodical PR sweep on 2026-08-07 (post v2.8.5 promote) checked all open Dependabot PRs against required CI before merging any. 4 of 11 failed on distinct, confirmed root causes rather than flakes: `eslint` 8->10 (npm install ERESOLVE against `eslint-plugin-react`'s peer range), `jsdom` 29->30 (`webidl.util.markAsUncloneable is not a function`, kills the Vitest worker pool), `react-dom` 18->19 (partial bump — `react` itself stays at `^18.2.0` in `package.json`, a real major-version mismatch), `@supabase/supabase-js` 2.100->2.112 (pulls in a `realtime-js` requiring native WebSocket, unavailable on CI's pinned Node 20 — breaks the required RLS Policy Suite check). None block a feature or close a security hole (checked: Dependabot alerts #28/#30/#61/#62 are already `state=fixed`, zero currently open). Deliberately deferred as a group rather than chased individually under time pressure. |
-| **Risk if unfixed** | Low and non-urgent by design — Dependabot keeps the 4 PRs current against upstream while they sit open; nothing decays by waiting. Real risk is only if merged blind without the fix each needs. |
-| **Proposed action** | One future "dependency currency" session, grouped: (1) `@supabase/supabase-js` bump + a CI Node-version bump (20->22+, audit every job pinning Node 20 in `ci.yml`, not just `rls`) as its own project; (2) `react-dom` bump + a full React 19 migration (real breaking-change surface beyond aligning version pins) as its own project; (3) `eslint` + `jsdom` bumps as one quick paired fix (bump `eslint-plugin-react` and the Vitest/jsdom-environment version jsdom 30 needs, retry both together — both dev-tooling-only, low-risk once unblocked). |
-| **Opened** | 2026-08-07 |
-| **Target** | Next dedicated tooling session — not opportunistic, scoped as its own work per KK's explicit decision |
-| **Issues** | [#632](https://github.com/kaushikkuberanathan/lineup_generator/issues/632) (eslint), [#633](https://github.com/kaushikkuberanathan/lineup_generator/issues/633) (react-dom), [#634](https://github.com/kaushikkuberanathan/lineup_generator/issues/634) (jsdom), [#635](https://github.com/kaushikkuberanathan/lineup_generator/issues/635) (supabase-js), [#636](https://github.com/kaushikkuberanathan/lineup_generator/issues/636) (umbrella scope) |
 
 ### 🟡 P2 — InningModal.jsx `POS_COLORS.LC` diverges from canonical `color.position.LC` token
 
@@ -317,6 +264,24 @@
 ## Resolved
 
 *(Items move here once shipped. Format: date, version, original description summary, resolution commit.)*
+
+### August 28, 2026 — D-S31: FEATURE_MAP.md Coverage Summary denominator drift
+
+- ✅ **P2 — D-S31: FEATURE_MAP.md Coverage Summary denominator drift** — Resolved, not by a dedicated fix — superseded by the repeated "direct recount before any edit" standing practice this ledger already enforces, which has been applied to `FEATURE_MAP.md`'s Coverage Summary on every row addition/status change since this item was opened (most recently the 967ef07 D-S30 closure, 2026-08-27). This item's original complaint (`/ 27` denominators against a "29 features" heading, later "drift increased from 1 line to 2" per the v2.12 refresh note above) no longer describes the file: confirmed by direct grep just now — `## Feature Registry (40 features)` and all six Coverage Summary lines read `/ 40` uniformly, zero mismatch. No standalone GitHub issue existed for this item (opened 2026-05-15, predates this repo's issue-per-debt-item convention) — none filed retroactively since there's no remaining gap to track.
+
+### August 27, 2026 — D-S30: isFlagEnabled has no DB-read path (#112)
+
+- ✅ **P2 — D-S30: isFlagEnabled has no DB-read path** — Resolved. `isFlagEnabled()` gains a module-level runtime cache (`setRuntimeFlagCache`, `featureFlags.js`) that App.jsx populates from `useFeatureFlags()`'s existing Supabase fetch (no new query) via a `useEffect`. Precedence: localStorage override > DB cache > static default — matches this item's own recommended fix (Option B: keep `isFlagEnabled()` synchronous at call sites, move the async fetch to bootstrap). Closes the actual gap this item described: previously `useFeatureFlags()`'s result was only consulted for `VIEWER_MODE`/`MAINTENANCE_MODE`, so a DB flag flip for any other flag (`ACCESSIBILITY_V1`, `SCORING_SHEET_V2`, `COMBINED_GAMEMODE_AND_SCORING`) genuinely had no runtime effect without a redeploy, confirmed by direct source read before starting. 6 new tests in `accessibility.v1.test.js` (Group 6), RED→GREEN mutation-verified (reverted the cache wiring, confirmed the import itself broke all 30 tests in that file, restored, confirmed 30/30 green). Full frontend suite clean (120 files, 1390 passed / 1 skipped). Landed together with Story 49/#120 (same PR) since both touch `featureFlags.js`. Issue: [#112](https://github.com/kaushikkuberanathan/lineup_generator/issues/112).
+
+### August 27, 2026 — FAQ × Feature Flag coverage audit (superseded) + FAQ Linter (retired) — Story 333/#865
+
+- ✅ **P3 — FAQ × Feature Flag coverage audit** — Superseded, not separately fixed. The persona-taxonomy `faqs.js` this item described (48 entries across 7 personas, one describing `liveScoringEnabled`-gated behavior without acknowledging the gate) was fully restructured into task-oriented `HELP_CATEGORIES` (Story 333). The rewritten scoring content ("Start scoring") now opens with an explicit flag-awareness caveat ("Live scoring is on for teams it's enabled for") rather than presenting it as universal. The specific line-191 entry this item pointed at no longer exists in that form.
+- ✅ **P2 — FAQ Linter** — Retired, not built. This proposal asserted every FAQ category has "a matching persona in PERSONAS.md" — the persona taxonomy it depended on no longer exists after Story 333's task-oriented redesign, so the proposed linter's premise is gone. A future content-integrity check (if wanted) would need a different shape — e.g. asserting every `HELP_CATEGORIES` item has a unique `id`, which `FAQSection.test.jsx`'s H13 now covers directly.
+- Issue: [#865](https://github.com/kaushikkuberanathan/lineup_generator/issues/865).
+
+### August 27, 2026 — Dependency currency: 4 Dependabot bumps held (eslint, jsdom, react-dom, supabase-js) (#632-636)
+
+- ✅ **P2 — Dependency currency: 4 Dependabot bumps held** — Resolved, all 4 root causes cleared, found stale during v2.15.0 post-promote docs audit (this entry sat as "open" after every underlying issue had already closed). `jsdom` 29→30 (#634) and `@supabase/supabase-js` 2.100→2.112 (#635) were both root-caused to CI's Node 20 pin — the v2.10.0 CI Node 20→22 bump (PR #678, 2026-08-15) cleared both blockers; issues closed 2026-08-16, `frontend/package.json`/`backend/package.json` already carry the bumped versions. `react-dom` 18→19 (#633) was resolved in v2.15.0 (PR #834) — `react` and `react-dom` bumped together to 19.2.8, closing the partial-bump mismatch this item was filed to track. `eslint` 8→10 (#632) only partially resolved on its original terms — landed at 9.39.5 instead of 10 (PR #834), since `eslint-plugin-react@7.37.5` still caps its peer range at `^9.7` (confirmed live against the npm registry during the v2.15.0 work, not assumed stale). #632 was closed on that basis. **Not fully closed:** the ESLint 10 bump itself remains blocked on the same peer-dep ceiling — Dependabot PR [#673](https://github.com/kaushikkuberanathan/lineup_generator/pull/673) is open against this exact bump and its "Frontend Tests (Vitest)" check is failing for that reason; per the reopened #636 umbrella's own instructions ("breaking-change surface, blocked peer-dep chains... get filed as their own issue"), this should get its own tracking issue rather than sitting on the umbrella. Issues: [#632](https://github.com/kaushikkuberanathan/lineup_generator/issues/632), [#633](https://github.com/kaushikkuberanathan/lineup_generator/issues/633), [#634](https://github.com/kaushikkuberanathan/lineup_generator/issues/634), [#635](https://github.com/kaushikkuberanathan/lineup_generator/issues/635) — umbrella [#636](https://github.com/kaushikkuberanathan/lineup_generator/issues/636) stays open by design.
 
 ### August 26, 2026 — RequestAccessScreen `submitted` confirmation state test coverage (#664)
 
@@ -428,8 +393,14 @@
 |---|---|---|---|---|
 | 🔴 P0 | 0 | 0 | 0 | **0** |
 | 🟠 P1 | 0 | 1 | 0 | **1** |
-| 🟡 P2 | 8 | 5 | 9 | **22** |
-| **Total** | **8** | **6** | **9** | **23** |
+| 🟡 P2 | 7 | 4 | 7 | **18** |
+| **Total** | **7** | **5** | **7** | **19** |
+
+*(2026-08-29, v3.0.0-prep release-readiness audit: `debt-p0` re-run fresh against `develop` HEAD (`bf097f0`, post #899) — 0 open P0, gate clear. Direct recount of every `### 🔴`/`### 🟠`/`### 🟡` heading actually present in each Open section matched this table exactly (0/0/0 P0, 0/1/0 P1, 7/4/7 P2) — no drift found, no table edit needed. This audit predates a full re-scan for new gaps opened by #893-#899 (the Phase 4C shim-removal and auth-bug-fix batch) — those PRs each shipped with their own test coverage per their descriptions, but no dedicated debt-ledger pass has verified that coverage the way this ledger's own standing practice expects; flagging as the one open item before this release's Ship Gate can be called fully clear, not assuming it silently. Fresh suite counts this pass: frontend 1401 passed / 1 skipped (122 files, up from 1377/1/120), backend unit 269/269 (up from 254) — both run locally with CI's exact dummy-env pattern, not carried forward from a stale figure. CI itself re-confirmed green on `bf097f0`: Backend Integration (CI_SAFE, prod read-only), RLS Policy Suite (ephemeral), Frontend Vitest, Backend Unit, and Sync-script jobs all `success`.)*
+
+*(2026-08-28: D-S31 (FEATURE_MAP.md Coverage Summary denominator drift) resolved, moved to Resolved section — see that entry. Direct recount of every `### 🟠`/`### 🟡` heading actually present in `## Open — Doc Gaps` immediately before this edit matched the prior table exactly (1 P1 + 5 P2 = 6) — clean single-item removal, not a drift correction. Doc Gaps P2 5→4, Total Doc Gaps 6→5, P2 row 19→18, Grand Total 20→19.)*
+
+*(2026-08-27: D-S30 (isFlagEnabled DB-read path, #112) resolved, moved to Resolved section — see that entry; Test Gaps P2 8→7. While doing the direct recount this ledger's own standing practice requires before any edit, found the Process Gaps column was ALSO already drifted, independent of this change: the prior table claimed 9 P2 Process Gaps, but a line-by-line count of every `### 🟡`/`### 🟠`/`### 🔴` heading actually present in `## Open — Tooling / Process Gaps` (line 198 onward) found only 7 — `Confirm intentional default-branch=develop setting`, `Share payload songs-map divergence`, `Orphan Stash Cleanup`, `FEATURE_MAP.md Sync Linter`, `CI workflow BACKEND_URL audit`, `InningModal.jsx POS_COLORS.LC divergence`, `snack_duty column drop` — no 8th or 9th heading exists in that section today. Root cause not identified (same "silently diverging from a prior arithmetic propagation" failure class as D-S31 and the 2026-08-23 Test Gaps correction above); not investigating further, just correcting the count as found, per this ledger's own established practice when this recurs. Doc Gaps (1 P1 + 5 P2 = 6) matched the prior table exactly, untouched. Net: Test Gaps P2 8→7 (Total Test Gaps 8→7), Process Gaps P2 9→7 (Total Process Gaps 9→7, drift correction), P2 row 22→19, Grand Total 23→20.)*
 
 *(2026-08-26: RequestAccessScreen `submitted`-state test gap (#664) resolved, moved to Resolved section — see that entry. Direct recount of every `### 🔴`/`### 🟠`/`### 🟡` heading actually present in each Open section immediately before this edit matched the prior table exactly (0/1/8 Test Gaps P0/P1/P2, Doc Gaps and Process Gaps both untouched) — clean single-item removal, not a drift correction. Test Gaps P1 1→0, Total Test Gaps 9→8, P1 Total 2→1, Grand Total 24→23.)*
 

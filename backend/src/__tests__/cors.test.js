@@ -9,14 +9,31 @@
  * CI-safe: hits GET /ping (no DB, no auth) with varying Origin headers,
  * asserts on the Access-Control-Allow-Origin response header rather than
  * inspecting app.js internals directly.
+ *
+ * #389: a rejection previously returned 500 (a client-side condition
+ * reported as a server fault) and never logged the offending origin. C7/C8
+ * updated from 500 to 403; C9 is new coverage for the origin logging.
  */
-const { test, describe } = require('node:test');
+const { test, describe, afterEach } = require('node:test');
 const assert = require('node:assert/strict');
 
 require('../lib/env');
 
 const request = require('supertest');
 const app = require('../../app');
+
+const originalConsoleWarn = console.warn;
+let warnCalls;
+
+function installConsoleWarnSpy() {
+  warnCalls = [];
+  console.warn = (...args) => { warnCalls.push(args); };
+}
+
+afterEach(() => {
+  console.warn = originalConsoleWarn;
+  warnCalls = undefined;
+});
 
 describe('CORS allowlist', () => {
   test('C1: no Origin header (curl, mobile apps) — allowed, no CORS header expected', async () => {
@@ -63,15 +80,30 @@ describe('CORS allowlist', () => {
     assert.equal(res.headers['access-control-allow-origin'], origin);
   });
 
-  test('C7: unrelated *.vercel.app origin (different team/project) — rejected', async () => {
+  test('C7: unrelated *.vercel.app origin (different team/project) — rejected with 403, not 500', async () => {
     const res = await request(app).get('/ping').set('Origin', 'https://some-other-app-abc123-someone-elses-team.vercel.app');
-    assert.equal(res.status, 500);
+    assert.equal(res.status, 403, 'a rejected origin is a client-side condition, not a server fault — must not be 500');
     assert.equal(res.headers['access-control-allow-origin'], undefined);
   });
 
-  test('C8: arbitrary attacker origin — rejected', async () => {
+  test('C8: arbitrary attacker origin — rejected with 403, not 500', async () => {
     const res = await request(app).get('/ping').set('Origin', 'https://evil.example.com');
-    assert.equal(res.status, 500);
+    assert.equal(res.status, 403, 'a rejected origin is a client-side condition, not a server fault — must not be 500');
     assert.equal(res.headers['access-control-allow-origin'], undefined);
+  });
+
+  test('C9: a rejected origin is logged, so a rejection is diagnosable', async () => {
+    installConsoleWarnSpy();
+    const origin = 'https://evil.example.com';
+    await request(app).get('/ping').set('Origin', origin);
+    // Exact-match on one of the call's arguments, not a substring check --
+    // app.js logs the origin as its own console.warn argument (not embedded
+    // in a larger message), and an exact match is both a more precise
+    // assertion and avoids CodeQL's js/incomplete-url-substring-sanitization
+    // heuristic, which flags `str.includes(url)` regardless of whether the
+    // surrounding code is a security decision (it isn't, here -- this is a
+    // test assertion on a log call).
+    const hit = warnCalls.find((call) => call.some((arg) => arg === origin));
+    assert.ok(hit, `expected the rejected origin (${origin}) to appear in a console.warn call, got: ${JSON.stringify(warnCalls)}`);
   });
 });

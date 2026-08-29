@@ -67,8 +67,7 @@ export function DugoutView({
   // ── Feature flags ─────────────────────────────────────────────────────────
   var _lsFlag = useFeatureFlag('live_scoring', activeTeamId || teamId);
   var liveScoringEnabled = _lsFlag.enabled;
-  // AUTH TESTING SHIM — remove "|| true" when flag is confirmed working in prod
-  var isEnabled = liveScoringEnabled || true;
+  var isEnabled = liveScoringEnabled;
 
   // Combined Game Mode + Scoring flag — matches App.jsx:1530 pattern
   var combinedFlag = FEATURE_FLAGS.COMBINED_GAMEMODE_AND_SCORING ||
@@ -89,43 +88,17 @@ export function DugoutView({
     };
   });
 
-  // ── Scorer identity (AUTH TESTING SHIM — remove at Phase 4C) ─────────────
-  var _storedLocalId = (function() {
-    try {
-      var k = 'scorer_local_id';
-      var existing = localStorage.getItem(k);
-      if (existing) return existing;
-      var generated = (typeof crypto !== 'undefined' && crypto.randomUUID)
-        ? crypto.randomUUID()
-        // Fallback for browsers without crypto.randomUUID (very old
-        // Safari/iOS) — crypto.getRandomValues() has far wider support
-        // (available since ~2011-2013) and is still cryptographically
-        // secure, unlike Math.random(). CodeQL flags any Math.random()
-        // flow into an identity field regardless of whether it's a
-        // fallback branch, so this avoids that path entirely rather than
-        // accepting it as a deliberate risk.
-        : (function() {
-            var bytes = new Uint8Array(16);
-            crypto.getRandomValues(bytes);
-            bytes[6] = (bytes[6] & 0x0f) | 0x40; // version 4
-            bytes[8] = (bytes[8] & 0x3f) | 0x80; // variant 8/9/a/b
-            var hex = Array.prototype.map.call(bytes, function(b) {
-              return b.toString(16).padStart(2, '0');
-            }).join('');
-            return hex.slice(0, 8) + '-' + hex.slice(8, 12) + '-' + hex.slice(12, 16) +
-              '-' + hex.slice(16, 20) + '-' + hex.slice(20);
-          })();
-      localStorage.setItem(k, generated);
-      return generated;
-    } catch(e) {
-      return '00000000-0000-4000-8000-000000000000';
-    }
-  })();
+  // ── Scorer identity — real authenticated user only (Phase 4C shim removed,
+  //    #355 step 2). No localStorage device-id fallback, no zero-UUID
+  //    fallback: an unauthenticated caller resolves to null, matching the
+  //    real auth.uid()-scoped RLS policies (migration 019 Section A) — the
+  //    still-active permissive policies let a null-identity write through
+  //    for now, until Section B ships (see PHASE4C_SCORING_RLS_PROPOSAL.md).
   var scoringUserId = (user && user.id)
     ? user.id
     : (session && session.user && session.user.id)
     ? session.user.id
-    : _storedLocalId;
+    : null;
   var scoringUserName = user && user.profile && user.profile.first_name
     ? user.profile.first_name
     : 'Coach';

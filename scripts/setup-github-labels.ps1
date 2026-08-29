@@ -53,6 +53,9 @@ New-Label "type:hotfix"     "B60205" "Emergency production fix — bypass overni
 New-Label "type:incident"   "B60205" "Live production incident"
 New-Label "type:docs"       "0052CC" "Documentation changes only"
 New-Label "type:refactor"   "6F42C1" "Code refactor with no behavior change"
+New-Label "type:testing"    "5319E7" "Test coverage work"
+New-Label "type:tech-debt"  "D4C5F9" "Technical debt distinct from routine chore cleanup"
+New-Label "type:security"   "EE0701" "Security-specific finding or fix"
 
 # ── AREA ─────────────────────────────────────────────────────────────────────
 Write-Host "`n── Area labels ──────────────────────────────────" -ForegroundColor Yellow
@@ -66,6 +69,10 @@ New-Label "area:share-link"  "F9D0C4" "Share link routing, unauthenticated viewe
 New-Label "area:roster"      "BFD4F2" "Roster management, batting order, lineup engine"
 New-Label "area:supabase"    "C2E0C6" "DB schema, RLS policies, migrations"
 New-Label "area:analytics"   "D4C5F9" "Mixpanel events, Vercel Analytics"
+New-Label "area:governance"  "008672" "Process, docs, backlog hygiene"
+New-Label "area:testing"     "5319E7" "Test infrastructure and coverage"
+New-Label "area:frontend"    "C5DEF5" "Frontend-general, broader than area:ux"
+New-Label "area:infra"       "FEF2C0" "Infrastructure — hosting, deploy, ops surfaces beyond CI"
 
 # ── STATUS ───────────────────────────────────────────────────────────────────
 Write-Host "`n── Status labels ────────────────────────────────" -ForegroundColor Yellow

@@ -93,6 +93,7 @@ FILES=(
   "backend/migrations/018_auto_provision_team_membership_on_create.sql"
   "backend/migrations/020_team_memberships_identity_required.sql"
   "backend/migrations/021_revoke_teams_delete.sql"
+  "backend/migrations/026_write_source_role_fallback.sql"
 )
 # 018 (#561, applied to DEV 2026-08-06 and PROD 2026-08-07 — included here
 # so the ephemeral CI stack validates it too) — its own regression suite is
@@ -106,6 +107,22 @@ FILES=(
 # ephemeral CI job to fail red on PR #647's first push — schema.sql's own
 # 2026-07-13 capture predates 021 by a month, so there is no fallback source
 # for this state the way there is for 005-012.
+# 026 (#379, applied to DEV 2026-08-28 — included here so the ephemeral CI
+# stack validates it too, same reasoning as 018) MUST be here: WSF1/WSF2 in
+# writeSourceRoleFallback.test.js assert team_data_history.write_source
+# falls back to the calling Postgres role (service_role/authenticated)
+# instead of 'unknown' — schema.sql's snapshot_team_data() only has 006's
+# SECURITY DEFINER fix baked in, not 026's role-fallback trigger, so without
+# this the ephemeral stack reproduces the exact prod bug the new test guards.
+#
+# 027 (#736, DROP/ADD on auth_events_event_type_check to add
+# 'magic_link_requested') is deliberately NOT here — docs/db/schema.sql's
+# own auth_events CREATE TABLE statement was edited directly to already
+# include 'magic_link_requested' in the constraint, so the ephemeral stack
+# gets the correct constraint from schema.sql alone, same treatment as
+# 005-012 below. Replaying 027 afterward would just be a redundant
+# DROP+ADD of an already-correct constraint.
+#
 # 019 is deliberately NOT here — Phase 4C scoring RLS, drafted/unapplied, no
 # current test depends on it.
 # 005, 006, 007, 008, 009, 011, 012 are deliberately NOT here — see WHY THIS

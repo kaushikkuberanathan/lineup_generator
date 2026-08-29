@@ -21,6 +21,15 @@
  *            emails' budgets are exhausted (skip() excludes it entirely,
  *            matching VAL-09's real-world shape).
  *
+ * LIMIT-4 (#329) covers a gap LIMIT-3 does not: skip() only excludes a
+ * request with NO email at all. A request that HAS a valid email but fails
+ * validation for another reason (e.g. missing teamId, VAL-08's shape) still
+ * has hasEmail(req) === true, so skip() does not exclude it — before #329's
+ * fix, that meant loginLimiter still ran (and could consume/exhaust that
+ * email's budget) before validation ever rejected the request. #329 moves
+ * validation ahead of loginLimiter in the route's middleware chain so a
+ * malformed-but-not-emailless request also always gets a deterministic 400.
+ *
  * Hermetic / CI-safe — no DB, no network. Same three-seam stub pattern as
  * auth.happy.test.js (team_memberships stubbed to "no membership" for every
  * request, so every request that reaches the handler gets a deterministic
@@ -54,6 +63,11 @@ function installNoMembershipStub() {
       in: () => chain,
       maybeSingle: async () => ({ data: null, error: null }), // no membership → every request that reaches the handler gets 403
       single: async () => ({ data: null, error: null }),
+      // #374: /magic-link's membership lookup ends in a bare .in('status',
+      // ...) with no terminal .maybeSingle()/.single() call — real
+      // supabase-js query builders are themselves thenable. Empty array =
+      // no candidates = no membership, same 403 outcome as before.
+      then: (resolve) => resolve({ data: [], error: null }),
     };
     return chain;
   };
@@ -115,6 +129,23 @@ describe('loginLimiter keying (Story 26 fix D)', () => {
     // many other budgets are already exhausted.
     const res = await magicLink(undefined);
     assert.equal(res.status, 400, 'a request with no email must never be rate-limited (400 from validation, not 429)');
+  });
+
+  test('LIMIT-4 (#329): a request with a valid email but a missing teamId is never rate-limited, even 6 times in a row', async () => {
+    installNoMembershipStub();
+    const email = 'limit4-malformed@example.com';
+
+    // teamId omitted on every request — payload fails validation, never the
+    // membership check. Before #329, loginLimiter ran first and this email's
+    // budget would exhaust on the 6th call (429); validation now runs first,
+    // so every call should get the same deterministic 400.
+    const statuses = [];
+    for (let i = 0; i < 6; i++) {
+      const res = await request(app).post('/api/v1/auth/magic-link').send({ email });
+      statuses.push(res.status);
+    }
+
+    assert.deepEqual(statuses, [400, 400, 400, 400, 400, 400]);
   });
 
 });

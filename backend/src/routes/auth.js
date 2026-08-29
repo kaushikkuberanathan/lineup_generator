@@ -30,6 +30,7 @@ const requireAuth = require('../middleware/requireAuth');
 const { logAuthEvent } = require('../lib/authEvents');
 const { sendAdminNotification } = require('../lib/email');
 const { normalizeRole, isNormalizableRole } = require('../lib/normalizeRole');
+const { normalizeEmail } = require('../lib/normalizeEmail');
 
 const router = express.Router();
 
@@ -81,6 +82,36 @@ const requestAccessLimiter = rateLimit({
   keyGenerator: (req) => (hasEmail(req) ? req.body.email.trim().toLowerCase() : ipKeyGenerator(req.ip)),
 });
 
+// /me and /logout sit behind requireAuth (mounted before these limiters, so
+// req.user.id is always set), so they're keyed by user id rather than email —
+// the caller already holds a valid session, there's no email to key on, and
+// per-user is the budget that actually matters here. Deliberately NOT a
+// reuse of loginLimiter/requestAccessLimiter's shape (CodeQL #12/#15,
+// tracked under #651): /me fires on every page load and session-resume
+// (useAuth.js), so its budget has to be generous enough to survive multiple
+// tabs and flaky-network reconnects without ever touching a real coach.
+// /logout is a rare, explicit action, so it gets a tighter budget with
+// still-comfortable headroom. keyGenerator's ipKeyGenerator fallback is
+// defensive only — requireAuth guarantees req.user.id is set by the time
+// either limiter runs.
+const meLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: { error: 'TOO_MANY_ATTEMPTS', message: 'Too many requests. Please try again in 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => req.user?.id ?? ipKeyGenerator(req.ip),
+});
+
+const logoutLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  message: { error: 'TOO_MANY_ATTEMPTS', message: 'Too many requests. Please try again in 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => req.user?.id ?? ipKeyGenerator(req.ip),
+});
+
 // ─── POST /request-access ─────────────────────────────────────────────────────
 
 router.post(
@@ -102,7 +133,12 @@ router.post(
     }
 
     const { firstName, lastName, teamId, requestedRole, deviceContext } = req.body;
-    const email = req.body.email.toLowerCase().trim();
+    // normalizeEmail (#374), not a bare toLowerCase/trim: a Gmail dot
+    // variant (sam.jones@ vs samjones@) must land in access_requests (and
+    // from there, team_memberships on approval) in the same canonical form
+    // /magic-link's login check compares against, or a coach who later
+    // types a different-but-equivalent variant gets locked out.
+    const email = normalizeEmail(req.body.email);
 
     // Normalize the requested role to a canonical team_memberships value before
     // it is persisted. WS-1 (#336): access_requests.requested_role was written
@@ -221,30 +257,52 @@ router.post(
 
 router.post(
   '/magic-link',
-  loginLimiter,
   [
-    body('email').isEmail().normalizeEmail(),
+    // isEmail() only here, deliberately no .normalizeEmail() (#374): that
+    // express-validator helper applies broader per-provider rules (Outlook/
+    // Yahoo/iCloud +subaddress stripping) that the write side does not
+    // mirror, which would reintroduce the exact same read/write mismatch
+    // this fix closes for those providers. normalizeEmail() below (the
+    // shared, narrower Gmail-only helper) is applied explicitly instead, to
+    // both sides of the comparison.
+    body('email').isEmail(),
     body('teamId').notEmpty().trim(),
   ],
-  async (req, res) => {
+  // Validation runs BEFORE loginLimiter (#329): a malformed request (e.g.
+  // missing email) must always get a deterministic 400, never a 429 from a
+  // warm rate-limit window. Reject here so loginLimiter never sees the
+  // request at all, rather than relying on its own skip()/keyGenerator
+  // fallback to sort it out after the fact.
+  (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ error: 'VALIDATION_ERROR', details: errors.array() });
     }
-
-    const { email, teamId, deviceContext } = req.body;
+    next();
+  },
+  loginLimiter,
+  async (req, res) => {
+    const { teamId, deviceContext } = req.body;
+    const email = normalizeEmail(req.body.email);
 
     try {
-      // Verify membership exists and is invited or active
-      const { data: membership, error: membershipError } = await supabaseAdmin
+      // Verify membership exists and is invited or active. Matched in JS
+      // against normalizeEmail(m.email) rather than a DB-side .eq('email',
+      // email) (#374): existing team_memberships rows were written before
+      // this fix landed and may still hold a non-canonical form (a Gmail
+      // dot variant, mixed case) - normalizing both sides at comparison
+      // time fixes login for those rows too, with no backfill required.
+      const { data: candidates, error: membershipError } = await supabaseAdmin
         .from('team_memberships')
-        .select('id, status, role, team_id')
-        .eq('email', email)
+        .select('id, status, role, team_id, email')
         .eq('team_id', String(teamId))
-        .in('status', ['invited', 'active'])
-        .maybeSingle();
+        .in('status', ['invited', 'active']);
 
       if (membershipError) throw membershipError;
+
+      const membership = (candidates ?? []).find(
+        (m) => normalizeEmail(m.email) === email
+      ) ?? null;
 
       if (!membership) {
         await logAuthEvent('access_denied', {
@@ -300,7 +358,7 @@ router.post(
 
 // ─── GET /me ──────────────────────────────────────────────────────────────────
 
-router.get('/me', requireAuth, async (req, res) => {
+router.get('/me', requireAuth, meLimiter, async (req, res) => {
   try {
     const userId = req.user.id;
     const userEmail = req.user.email;
@@ -420,7 +478,7 @@ router.patch(
 
 // ─── POST /logout ─────────────────────────────────────────────────────────────
 
-router.post('/logout', requireAuth, async (req, res) => {
+router.post('/logout', requireAuth, logoutLimiter, async (req, res) => {
   try {
     const userId = req.user.id;
     const { deviceContext, teamId } = req.body;

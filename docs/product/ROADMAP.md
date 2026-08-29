@@ -1,11 +1,70 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: 2026-08-26 (v2.15.0 release prep — dependency currency, git governance, and Test Health & Regression Protection consolidation; develop only, not yet promoted; see the top entry below.); previously 2026-08-26 (v2.14.0 promoted to `main` and live in prod).
+> Last updated: 2026-08-29 (`develop` frozen for v3.0.0 release soak — see banner immediately below); previously 2026-08-29 (v3.0.0 scoped — release-readiness audit run, develop only, not yet promoted); previously 2026-08-27 (Test/CI environment safety fixes for #339/#368, develop only — not yet promoted); previously 2026-08-27 (v2.15.0 promoted to `main` and live in prod — PR #857, `5a38b08`; post-promote sync PR #858); previously 2026-08-26 (v2.15.0 release prep — dependency currency, git governance, and Test Health & Regression Protection consolidation).
 > MVP launched: March 24, 2026
 
 ---
 
-## v2.15.0 — 2026-08-26 — Dependency currency, git governance, and test-health cleanup (develop only — not yet promoted)
+## ✅ RELEASE SOAK OVERRIDDEN — v3.0.0 promoting to `main`
+
+- **Frozen at:** merge commit `426d052` (PR #900), `develop` HEAD as of the freeze. **Soak start:** 2026-08-29T01:27:53Z.
+- **Soak explicitly overridden 2026-08-29T11:07:18Z by KK** — ~9h40m into the 24h window (~14h20m remaining), not waited out. Same pattern as every prior override (v2.9.0, v2.10.0, v2.11.0, v2.12.0, v2.14.0) — an explicit, logged decision, not a default. **Not yet done at override time:** the real-device Vercel preview phone-smoke-test — KK to perform this himself against the `develop` preview URL, ideally before or immediately after the `main` promote, since a remote session has no way to do this step.
+- **Freeze on `develop` lifted as of this commit** — the prior banner's restriction on merging into `develop` from either track/worktree no longer applies. Normal Branch Strategy rules resume.
+- The `develop → main` promote PR for v3.0.0 follows this commit. See the v3.0.0 entry immediately below for full release content, and root `CLAUDE.md`'s Current Version section for the matching override note.
+
+---
+
+## v3.0.0 — 2026-08-29 (develop only — not yet promoted) — Phase 4C auth-cutover start, security debt closures, Help redesign
+
+**Major version bump — a deliberate departure from this repo's own "size the bump to the release's actual scope" convention, decided by KK 2026-08-29.** Every prior release of comparable or larger bundled scope was still sized minor (v2.9.0 bundled a schema change + routing change + security batch; v2.14.0 bundled 6 unrelated security PRs). This is the first major version this project has ever shipped. **Explicitly not gated on Phase 4C completion** — the shim-removal sequence (Story 129/#688) is 2 of 7 steps done; 5 remain. Recorded here in plain language so a future session doesn't read "v3.0.0" and assume the auth cutover finished — it didn't.
+
+Scope: 104 commits / 34 top-level PRs merged to `develop` since v2.15.0 promoted to `main` (`5a38b08`, 2026-08-27). Full commit list: `git log --first-parent --oneline origin/main..origin/develop` as of `bf097f0`.
+
+**Phase 4C auth cutover — steps 1-2 of 7 (Story 129/#688, tracked under #355):**
+- Step 1 (PR #898): migration 019 Section A applied to PROD.
+- Step 2 (PR #899): auth testing shims removed.
+- 5 steps remain (#688). #355 (live-scoring anon backdoors) stays open — the full 7-step sequence is the precondition for closing it, not any individual step.
+
+**Security debt closures — both flagged open since v2.9.0's original CodeQL batch:**
+- #650: share-link ID generator switched from `Math.random()` to `crypto.getRandomValues()` (PR #886).
+- #651: `GET /me` and `POST /logout` rate-limited by user id (PR #885).
+- Plus new RLS test coverage for non-admin membership isolation (#348, PR #887).
+
+**Real auth bugs fixed:** Gmail dot-variant email lockout at login (#374, PR #894); magic-link validation order — validation now runs before `loginLimiter` on `POST /magic-link` (#329, PR #891); `auth_events` CHECK constraint widened for `magic_link_requested` (#736, migration 027, PR #893 — already logged as resolved in root `CLAUDE.md`'s Known Open Bugs table); Home team card's Edit/Delete menu items now role-gated (#666, PR #895).
+
+**Share link:** error-mode surfacing on load failure (#127, PR #889); song-payload parity restored between the two share paths (#502, PR #888).
+
+**UX:** Support → "Help" redesign (Story 333/#865, PR #867 + follow-up #869) — previously logged in root `CLAUDE.md` as a provisional, un-promoted "v2.15.1" label; folds into this release's real version number, no separate bump needed.
+
+**Backend/infra:** CORS rejections now return 403 and log the origin (#389, PR #881); `write_source` role-based fallback for `team_data_history` (#379, PR #880); DEV protection health-check (#314, PR #884); DEV rebuild seeded with synthetic roster instead of empty (PR #883); backend infra reliability batch (PR #870).
+
+**Dependencies (routine Dependabot):** `@supabase/supabase-js` (both `frontend` and `backend` packages), `@vitejs/plugin-react`, `mixpanel-browser`, `vitest`/`@vitest/ui`.
+
+**Governance/docs:** v2.15.0 promote-correction pass (#861), FEATURE_MAP/debt audit (#862), governance-flags docs batch (#871), two session retros (#872, #882), Story 333 roadmap-status fix (#873), GitHub label-count confirmation closing 7 drift gaps (#897).
+
+**Verification (2026-08-29, this release-scoping pass, re-run fresh against `develop` HEAD `bf097f0`, not carried forward):**
+- `debt-p0` gate: 0 open P0 — clear. Direct recount of every `### 🔴`/`### 🟠`/`### 🟡` heading in `DOC_TEST_DEBT.md` matched its dashboard table exactly (0/0/0 P0, 0/1/0 P1, 7/4/7 P2) — no drift found.
+- Frontend: 1401 passed / 1 skipped (122 files) — up from the previously-documented 1377/1 (120 files).
+- Backend unit: 269/269 — up from 254. Run locally with CI's exact dummy-env pattern (`SUPABASE_URL=https://ci-hermetic.invalid`, etc. — see `.github/workflows/ci.yml`'s `backend-unit` job), not against a real Supabase project.
+- CI re-confirmed green on `bf097f0` via the GitHub Actions API (not assumed from the merge having gone through): Backend Integration Tests (CI_SAFE, prod read-only), RLS Policy Suite (ephemeral), Frontend Tests (Vitest), Backend Unit Tests (supertest), Sync-script unit tests — all `success`.
+- `FEATURE_MAP.md`: row 40 (Help) already current from #865's own landing. No other surface in this batch is a discrete coach-facing feature warranting its own row — matches this file's own precedent of not mapping dependency/governance/infra-only work to feature rows.
+- **Not yet done:** the actual version bump (`frontend/package.json`, `backend/package.json`, `APP_VERSION` in `App.jsx`, root `CLAUDE.md`, `VERSION_HISTORY` entry) — pending KK's gate phrases for those locked files. 24h soak not yet started. Real-device Vercel preview smoke test not yet run.
+
+### Test/CI environment safety (#339, #368) — folded into this release
+
+Internal-only, no user-facing behavior, no app code touched. Picked up the remaining 3 open issues on the Test Health & CI Governance board (#339, #368, #517) after finding the other 3 (#406, #410, and umbrella #840's own disposition table) were stale trackers for already-shipped v2.15.0 work — see the tracker-sync note below.
+
+**#368 fixed (`.github/workflows/ci.yml`).** The "Smoke Test (dev)" job's `DEV_*` values had always resolved to the exact same project/backend as `PROD_*` (`DEV_SUPABASE_URL`/`ANON_KEY` aliased `secrets.SUPABASE_URL`/`SUPABASE_ANON_KEY` — prod's own — and `DEV_BACKEND_URL` was hardcoded to a copy-pasted literal of the prod Render URL, ignoring a `DEV_BACKEND_URL` secret that had existed for this exact purpose since before this session). Every "dev" smoke run has always actually been a second, mislabeled prod run. Audited `scripts/smoke-test.js` before fixing: every check is a GET, so this was a correctness/mislabeling bug, not a data-integrity incident. Fixed: `DEV_BACKEND_URL` now actually reads its own pre-existing secret; `DEV_SUPABASE_URL`/`ANON_KEY` now read new secrets pointed at the real DEV Supabase project (`psqvzppphdedqkpmarwx`). **KK added `DEV_SUPABASE_URL` and `DEV_SUPABASE_ANON_KEY` as new GitHub Actions repo secrets same session** — confirmed present alongside the pre-existing `DEV_BACKEND_URL`/`DEV_FRONTEND_URL`.
+
+**#339 fixed (backend test suites).** Found the live mechanism behind the growing `access_requests` row count: `suite-validation.js`'s VAL-07 test runs unconditionally (even under `CI_SAFE`, even against prod — it's not one of the gated write-heavy suites) and can legitimately get a real `201` back, inserting a real row — but never tracked its email for the existing end-of-run cleanup. Fixed by pushing it into `state.testEmails` like every other suite's rows. Separately, added an unconditional blast-radius fence (`scripts/tests/prodGuard.js`, mirrors `src/__tests__/rls/clients.js`'s `assertDevProject()`) in front of the five write-heavy suites (auth-flow, idempotency, device-context, audit-trail, data-integrity) — they now refuse to run against the PROD project ref regardless of `CI_SAFE`, closing the gap where a crashed/interrupted local run (plausible before `SUPABASE_TARGET=dev` existed) could skip the existing cleanup and leave orphaned `team_memberships` rows, as it evidently did historically. Unit-tested (`prodGuard.test.js`, +4, backend unit suite 250→254). **No purge needed.** KK ran a scoped `email like '%@test.com'` check directly against PROD for both tables — zero rows in either. The historical orphaned rows this issue originally documented (10 `team_memberships`, ~584 `access_requests`) had already been cleaned up by someone/something before this session; the only real remaining work was fixing the mechanism that could still create new ones, which is what this fix does.
+
+**#517** left untouched — its own comment thread explicitly documents it as a permanent known-limitation tracker, not something to close.
+
+**Tracker sync (#406, #410, #840) — GitHub-only, no code:** #406 and #410's survey work (Pass 2 backend auth/roles/API, Pass 4 frontend screens/data) was already completed and shipped in v2.15.0 per this file's own entry above (PRs #842/#844/#846/#847/#848/#845) — the GitHub issues were just never closed. Closed both with a comment citing the shipped evidence. #840's disposition table also still showed #474 and #664 as open despite both already being `closed` on GitHub (verified live) — corrected.
+
+---
+
+## v2.15.0 — 2026-08-26 — Dependency currency, git governance, and test-health cleanup (promoted to `main` 2026-08-27, PR #857)
 
 **Minor bump, dev-tooling/governance/test-infra only — zero new coach-facing features.** Sized above patch per the established "size the bump to the release's actual scope" convention: real dependency major-version migrations (React 18→19) plus a real repo-governance settings change are enough surface area to justify it even with no user-visible feature. Three unrelated consolidation passes bundled together, each following the same shape — audit a cluster of issues KK flagged as fragmented, verify current state directly rather than trust old issue text, consolidate, then execute the real remaining work.
 
@@ -177,7 +236,7 @@ Audited `CHARTER.md`, `SOLUTION_DESIGN.md`, `SECURITY_FRAMEWORK.md`, and `AUTH_S
 
 **Minor bump** — Story 124 is a genuine new user-facing feature (team search + request-access discovery), not just a fix batch, so this follows the same "size the bump to the release's actual scope" convention established at v2.9.0.
 
-**Team search + request-access discovery (#655, Story 124)** — new `GET /api/v1/teams/search` backend route (service-role mediated, returns only `id`/`name`/`age_group`/`sport`/`year`, never `owner_id`), Home tab search entry point, role picker submitting into the existing `POST /request-access`. Frontend + backend shipped together (PR #663, backend route PR #657); see `docs/product/FEATURE_MAP.md` row 38 for test coverage.
+**Team search + request-access discovery (#655, Story 124)** — new `GET /api/v1/teams/search` backend route (service-role mediated, returns only `id`/`name`/`age_group`/`sport`/`year`, never `owner_id`), Home tab search entry point, role picker submitting into the existing `POST /request-access`. Frontend + backend shipped together (PR #663, backend route PR #657); see `docs/product/FEATURE_MAP.md` row 39 for test coverage (row 38 as of this release; renumbered 2026-08-27, #114).
 
 **RequestAccessScreen confirmation fix (#665, Story 126)** — `preserveSession=true` submissions (an already-authenticated coach requesting a 2nd team) gave no visible confirmation; the success path relied on a `useAuth` authState transition that doesn't apply when the session is preserved. Added a `submitted` state that renders an inline confirmation card on that path (PR #667). Zero dedicated test coverage on the new state yet — tracked as test debt (#664), not blocking since it's UI-only and was verified by eye.
 
@@ -1526,12 +1585,16 @@ See also: Story 61 (P0) — recipient-side viewer routing broken (separate fix,
 
 ### Story 62 (P2) — dbLoadShareLink silent null collapses three failure modes <!-- #127 -->
 
-**Problem:** `dbLoadShareLink` returns null for at least three distinct failure modes (row not found, RLS block, malformed slug) and the caller cannot distinguish them — all three collapse into a single silent null, making the share-link error surface undiagnosable.
+**Status:** Resolved — v2.15.1-prep (develop only, not yet promoted)
+
+**Problem:** `dbLoadShareLink` returned null for at least three distinct failure modes (row not found, RLS block, malformed slug) and the caller could not distinguish them — all three collapsed into a single silent null, making the share-link error surface undiagnosable.
+
+**Resolution:** `dbLoadShareLink` (`frontend/src/supabase.js`) now always resolves `{ payload, status }`, where `status` is one of `ok` / `not_found` / `rls_blocked` / `timeout` / `malformed_slug`. Malformed ids are caught client-side against `SHARE_LINK_ID_PATTERN` before ever touching the network; `42501`/`PGRST301` Supabase error codes map to `rls_blocked`, everything else to `not_found`. The `?s=` share-link error screen in `App.jsx` now shows a distinct, user-meaningful message per status instead of one generic "couldn't be found" for every case.
 
 **Acceptance criteria:**
-- Caller receives a typed result or error code distinguishing: (a) not found, (b) RLS/auth block, (c) malformed slug
-- Share-link error UI surfaces a user-meaningful message per failure mode
-- Unit test covers all three paths
+- [x] Caller receives a typed result or error code distinguishing: (a) not found, (b) RLS/auth block, (c) malformed slug
+- [x] Share-link error UI surfaces a user-meaningful message per failure mode
+- [x] Unit test covers all three paths — `shareLink.test.js` (6 tests) + new `AppShareLinkRouting.test.jsx` describe block (4 tests) asserting the rendered copy per status
 
 **Priority:** P2 | **Connects to:** Story 61 (P0 share-link routing)
 
@@ -1957,7 +2020,8 @@ Six open issues, one underlying capability (repo/DB/CI don't reliably describe t
 - backend/scripts/tests/ contains test-runner.js, suite-rate-limits.js, suite-validation.js.
 - Cleanup decision needed: keep (document purpose) or delete (reduce confusion with CI_SAFE suite).
 
-### Story 30 (P2): isFlagEnabled — no DB-read path; DB flip has no runtime effect without redeploy <!-- #112 -->
+### ✅ Story 30 (P2): isFlagEnabled — no DB-read path; DB flip has no runtime effect without redeploy <!-- #112 -->
+Status: Resolved (2026-08-27, this branch, #112)
 - **Surfaced:** April 24, 2026 (post-v2.5.0 merge; DB row flipped expecting user-facing change)
 - `isFlagEnabled(flagName)` is synchronous: reads `FEATURE_FLAGS[flagName]` from the JS bundle default + `localStorage.getItem('flag_' + flagName)`. It does NOT query the Supabase `feature_flags` table at runtime.
 - Current rollout method: code deploy (change default in featureFlags.js) or localStorage override per device.
@@ -1966,6 +2030,7 @@ Six open issues, one underlying capability (repo/DB/CI don't reliably describe t
 - Recommend (B) — keeps the evaluation function synchronous at the call site while moving the async fetch to bootstrap. Matches existing `flagBootstrap.js` pattern.
 - Blocks nothing directly; current localStorage override remains available as workaround.
 - Connects to Story 41: until both resolved, runtime flag changes require redeploy + can't be locally test-validated.
+- **Resolution:** confirmed via direct source read that `hooks/useFeatureFlags.js`'s `fetchRuntimeFlags()` already fetched and merged Supabase `feature_flags` every session, but the result (`runtimeFlags`/`flagsLoading` in App.jsx) was only ever consulted for 2 of 6 flags (VIEWER_MODE, MAINTENANCE_MODE) — `isFlagEnabled()` itself, used by ACCESSIBILITY_V1/SCORING_SHEET_V2/COMBINED_GAMEMODE_AND_SCORING, stayed purely static+localStorage. Same replica-divergence shape as the flagBootstrap.js gap the v2.15.0 release already found and fixed elsewhere in this file. Fixed via a module-level runtime cache in `featureFlags.js` (`setRuntimeFlagCache`), wired from App.jsx's existing `useFeatureFlags()` fetch (no new Supabase call) — Option B as originally recommended above. Precedence: localStorage override > DB cache > static default. RED→GREEN mutation-verified; full frontend suite (120 files/1390 passed) + lint + build clean; manually smoke-tested against a real dev server.
 
 ### ✅ Story 26 (P2): Backend RATE-01a test flakiness — stateful against prod rate limiter <!-- #111 -->
 Status: Resolved. `loginLimiter` re-keyed IP→email; rate-limit-touching integration tests use per-run-unique emails. GitHub issue closed 2026-08-26 as root-cause-resolved (see #840, #115).
@@ -2045,8 +2110,8 @@ Proposed fixes:
 Recommendation: A — test gates are cheaper than hooks and run in CI for both
   local and PR pushes.
 
-### Story 34 (P3) — FEATURE_MAP row numbering audit <!-- #114 -->
-Status: Open
+### ✅ Story 34 (P3) — FEATURE_MAP row numbering audit <!-- #114 -->
+Status: Resolved (2026-08-27, this branch, #114)
 Discovered: 2026-04-28, during v2.5.2 docs gap closure
 Target: Next docs cleanup patch
 Symptom: docs/product/FEATURE_MAP.md row numbering has out-of-sequence rows.
@@ -2065,8 +2130,27 @@ Proposed fixes:
   C) Leave as-is, accept the cosmetic debt.
 Recommendation: A in a focused docs cleanup commit — low risk, restores
   consistency. Defer B unless A surfaces deeper structural issues.
-Acceptance criteria:
-  - Hygiene pass complete: Story 27 (P0) collision resolved → renumbered Story 61; P2 table row 47 (dbLoadShareLink) promoted to Story 62; gaps 17/18/25/52 documented in ## 🗃️ Retired / Never Filed stub. Completed 2026-05-14.
+Note: the "Completed 2026-05-14" note this section previously carried described
+  a *different* renumbering — a ROADMAP.md-internal backlog hygiene pass (Story
+  27 collision, gaps 17/18/25/52), not this issue's actual subject. It never
+  touched FEATURE_MAP.md's `#` column, which was still genuinely out of order
+  (rows ...11, 25, 26, 27, 28, 12, 13...) as of 2026-08-27, confirmed by direct
+  read before starting this fix.
+Resolution (Option A, 2026-08-27): FEATURE_MAP.md's 40 rows renumbered
+  sequentially 1-40 to match display order via a small Python script (mapped
+  old→new by position, rewrote only the leading `#` column per matched row —
+  19 of 40 rows changed number). Backreferences ("row N") *within*
+  FEATURE_MAP.md were deliberately left untouched in dated historical notes
+  (the header's "previously updated" log and the Coverage Summary's dated
+  recount notes) to preserve an honest historical record — a banner was added
+  instead, next to the file's "Last updated" line, explaining that older
+  dated notes cite the row number that was correct at the time and won't
+  match a current lookup. The one evergreen cross-file pointer found
+  (`ROADMAP.md`'s own Story 124 entry, "see FEATURE_MAP.md row 38") was
+  updated to the new number (39). Other cross-file mentions in
+  `DOC_TEST_DEBT.md`, `SESSION_RETROSPECTIVES.md`, and
+  `DOC_AUDIT_SPIKE_2026-08-04.md` are dated historical entries and were left
+  alone for the same reason.
 
 ### ✅ Story 35 (P3) — CLAUDE.md docs drift on rate limiter state
 Status: Resolved (v2.5.3, this branch)
@@ -2344,8 +2428,8 @@ Target: Post-pilot validation cycle (v2.6.x)
 
 ---
 
-### Story 49 (P2) — Feature flag key scheme normalization <!-- #120 -->
-Status: Open
+### ✅ Story 49 (P2) — Feature flag key scheme normalization <!-- #120 -->
+Status: Resolved (2026-08-27, this branch, #120) — additive fix, not the full consolidation originally recommended below
 Discovered: 2026-05-04 (Slice 2 dev soak)
 Target: v2.6.x
 
@@ -2366,6 +2450,8 @@ Coaches enabling flags via console must guess which form the specific check uses
 - Option 3: Bootstrap util writes BOTH forms (colon-lowercase + underscore-uppercase) to eliminate ambiguity at the cost of storage redundancy.
 
 **Recommendation:** Option 1 — consolidate to `isFlagEnabled()` everywhere. Adds clean migration code (read both forms, write canonical, delete legacy). Long-term simplest. Largest commit but worth it.
+
+**Resolution (2026-08-27):** Shipped Option 3 instead of the recommended Option 1 — judged full consolidation (removing the legacy `flag:` form entirely) too high-blast-radius for a batch pass, since `MAINTENANCE_MODE` is the whole-app kill switch and `VIEWER_MODE` gates the public share-link viewer, both explicitly protected by the Auth Principle's "must never require login" guarantee. `flagBootstrap.js`'s `applyFlagParams()` now writes both key forms on every enable/disable (additive, zero regression risk — every existing reader of either key keeps working unchanged). App.jsx's `MAINTENANCE_MODE`/`VIEWER_MODE` gates extended with an `isFlagEnabled()` OR-check alongside their existing checks, so the canonical form now works for those two flags too. `docs/features/feature-flags.md` updated — it had its own real drift beyond just the scheme-inconsistency this story tracks (a stale claim that App.jsx ran a separate inline copy of the URL-bootstrap logic instead of importing `flagBootstrap.js`; that wiring was actually fixed 2026-08-26 per #406/#410 Pass 4, the doc just never caught up). Full consolidation (true Option 1) remains a legitimate follow-up if the dual-scheme confusion resurfaces, but is deliberately not this fix.
 
 **Test plan:** Every flag in `featureFlags.js` should have a unit test asserting both legacy localStorage keys (if any) resolve correctly during migration window.
 
@@ -4194,6 +4280,82 @@ Fix: Patch ROADMAP (Story 105 entry + <!-- #281 --> marker), add
 FEATURE_MAP row.
 
 ---
+### Story 333 (P2) — Task-oriented Help redesign (Game-Day Help + search, still bundled offline) <!-- #865 -->
+
+Status: Resolved — merged to `develop`
+Discovered: 2026-08-27 — product review of a GameChanger-style Help Center
+proposal; decision was to adopt the information architecture, not hosted
+support infrastructure
+Target: Next develop PR
+
+Context: The Support → FAQ sub-tab organized 53 articles by persona (Head
+Coach, Dugout Parent, DJ Parent, Catcher Parent, Base Coaches, Scorekeeper,
+Setup & Sharing) with no search. A coach had to self-identify a role before
+finding an answer. A hosted external Help Center was proposed and evaluated;
+rejected for now — no usage evidence exists to justify the infrastructure,
+and hosting content externally would trade away the app's offline guarantee
+(everything is currently precached via the existing Workbox config).
+
+Scope shipped this pass:
+  - `frontend/src/content/faqs.js` restructured into `HELP_CATEGORIES` (6
+    task-oriented categories: Getting Started, Players & Roster, Lineups,
+    Game Day, Sharing & Scoring, Account & Troubleshooting) with stable
+    per-item `id`s, plus `GAME_DAY_HELP_IDS` (curated quick-access set,
+    deliberately not labeled "Popular" — no analytics exist yet to justify
+    that claim).
+  - `FAQSection.jsx` (file/export name kept to avoid an App.jsx
+    locked-file import change): Game-Day Help quick-access section, a
+    simple client-side search (title + answer substring match, no
+    library/server/AI), Browse Help category picker/accordion retained.
+    Rendered heading changed "Frequently Asked Questions" → "Help".
+  - Privacy-safe analytics: `help_search` (query_length/result_count/
+    zero_results/category_match — never raw query text), `help_article_open`
+    (stable article_id/category_id/entry_point), `help_category_view`.
+  - Content-accuracy pass against actual code, not the prior FAQ text: the
+    Game Day articles ("Player arrived late", "Replace an injured player",
+    "Player needs to leave early") were rewritten after verifying
+    `QuickSwap.jsx` (same-inning two-way swap only, filters out anyone in
+    `absentTonight`) and `toggleAbsentTonight` (App.jsx — flips the
+    attendance flag only, never touches the position grid). The prior FAQ
+    text implied these were closer to one-tap actions than they are; the
+    new copy describes the real multi-step, per-inning workflow.
+  - `FAQSection.test.jsx` rewritten (H1-H14). Full frontend suite green
+    (1376 passed / 1 skipped, up from the 1368/1 baseline). Lint clean,
+    build clean.
+
+Known product gap surfaced, not fixed here: there is no single action that
+removes a player from all remaining innings and rebalances the rest of the
+lineup automatically — a coach must repeat Quick Swap per inning. Flagged
+as a real product question, not a content problem to write around.
+
+**Update 2026-08-28:** the one remaining nav-label string is done — KK gave
+the gate phrase, `MORE_SUBTABS`'s `faq` entry now reads `label:"Help"`
+instead of `label:"FAQ"` (App.jsx ~L7486, one line). Verified `skip-worktree`
+was not set on this clone (Bug #11) before editing. Full suite still 1377
+passed / 1 skipped, lint/build clean. Story 107 (#285, tab reorder +
+default-to-About) is unrelated to this story's scope and remains open on
+its own.
+
+Deferred, explicitly rejected rather than silently dropped: a hosted
+external Help Center. Revisit only if `help_search` zero-result rates or
+real support volume ever justify it.
+
+**Revised same day, before push:** initial draft nested articles inside
+`HELP_CATEGORIES[].items[]`. Reshaped to a flat `HELP_ARTICLES` list
+(`id`/`category`/`title`/`answer`/`gameDayCritical`/`keywords`) plus a
+separate `HELP_CATEGORY_META` array for category display/ordering — flat
+records give more stable analytics identity, keyword-assisted search
+(search now matches `keywords` too, not just title/answer text),
+`gameDayCritical` as a per-article boolean instead of a hand-maintained
+`GAME_DAY_HELP_IDS` list that could drift out of sync, and easier future
+contextual deep-linking. Still static, still bundled, still offline —
+shape change only. `FAQSection.test.jsx` grew H1-H14 → H1-H15 (added
+keyword-match coverage); full suite 1377 passed / 1 skipped, lint/build
+clean.
+
+**Closed out 2026-08-28:** merged to `develop` as PR [#867](https://github.com/kaushikkuberanathan/lineup_generator/pull/867) (genuine 2-parent merge, `1b6a948`+`7248318`, not squashed) — resolved one real merge conflict along the way in `DOC_TEST_DEBT.md` (both sides had appended an independent "Resolved" entry at the same anchor line; mechanical, kept both). A same-day follow-up (PR [#869](https://github.com/kaushikkuberanathan/lineup_generator/pull/869)) corrected root `CLAUDE.md`'s stale test count (1368→1377) and added a `VERSION_HISTORY` entry (`frontend/src/data/versionHistory.js`, labeled `2.15.1`) documenting this story — discovered mid-pass that v2.15.0 had already promoted to `main` (PR #857, 2026-08-27) before this story's work started, so per KK's explicit choice the `2.15.1` label is provisional documentation only; `APP_VERSION` and both `package.json` files were deliberately left at `2.15.0` pending a real release-cut decision. Not yet promoted to `main`. Story 107 (#285, Support tab reorder + default-to-About) remains open, unrelated to this story's scope.
+
+---
 ### Story 109 (P2) - Color token foundation: legacy C disposition <!-- #294 -->
 Status: Resolved
 Discovered: 2026-06-08 - T2 UX track, design-token migration kickoff
@@ -5112,6 +5274,50 @@ Note: any local clone/worktree whose `frontend/.vercel/project.json`
 (gitignored) was linked to the deleted project needs `vercel link` re-run
 against `line-up-generator` (`prj_P1ajLGpY6ZezIsNMeTCPXPSnyZEu`) before using
 the `vercel` CLI from that checkout.
+
+---
+### Story 137 (P3) - Story 133 token-migration follow-up cleanup <!-- #859 -->
+Status: Backlog, not started.
+Discovered: 2026-08-27, while reassessing Story 133's (#698) production
+status. Three separate, unrelated-to-each-other design-token gaps
+surfaced during/after that migration - batched here rather than
+reopening #698, which stays scoped to the original 13-slice migration
+itself.
+Symptom:
+1. **9 literal (non-token) colors resurfaced in the 3 earliest-migrated
+   files** - `BenchStrip.jsx`, `DugoutView.jsx`, `ScoreboardRow.jsx`
+   (slices 1-2, PRs #705/#707). Verified directly against `develop`:
+   `BenchStrip.jsx` 4 `rgba()` occurrences, `DugoutView.jsx` 1,
+   `ScoreboardRow.jsx` 4. Root cause unconfirmed - either the original
+   migration missed sites, or unrelated feature work since reintroduced
+   literals without reaching for the token.
+2. **`#1d4ed8` and `#374151` were independently re-minted as separate
+   component-scoped tokens** in 6 and 5 files respectively during
+   slices 5-13, rather than converging on one shared token. Found by the
+   migration's own author, documented in PR #764's body, not fixed
+   there.
+3. **A full-codebase audit run during the migration found ~818 more
+   untokenized literal-color occurrences** outside Story 133's
+   `game-mode/*` + `ScoringMode/*` + `components/ui/*` scope -
+   `App.jsx` alone accounts for 693 of those.
+Impact: None of these affect coaches today - no visual regression, no
+functional risk. Pure design-system hygiene debt. (1) means the
+migration isn't fully clean in the 3 earliest files; (2) means two
+token names that should be one, inviting future divergence; (3) is the
+single largest remaining untokenized surface in the app (bigger than
+all of Story 133 combined) but deliberately out of scope given
+`App.jsx`'s own pending decomposition plan.
+Root cause: Known-ish for (1) (unconfirmed which of the two
+explanations) and (2) (independent, uncoordinated per-slice token
+minting during the slices 5-13 sandbox run); (3) is scope, not a
+defect.
+Proposed fix: (1) + (2) together in one slice-style PR - inventory,
+propose mapping, KK sign-off, migrate, verify zero literal colors
+remain; same low-risk byte-preserving mechanical pattern as the rest of
+Story 133, small enough not to need its own sandbox branch. (3) stays
+explicitly parked - revisit only alongside or after `App.jsx`'s
+decomposition plan, not standalone.
+Full detail: [#859](https://github.com/kaushikkuberanathan/lineup_generator/issues/859).
 
 ---
 ### Automated Score Reporting (County Integration)

@@ -8,12 +8,17 @@
  *   - Other query params are preserved in the cleaned search string
  *   - Return value: true when params processed, false when none present
  *
- * NOTE on key format:
- *   The URL bootstrap writes "flag:<name>" (colon, lowercase) with value "1".
- *   This is intentionally separate from isFlagEnabled()'s "flag_<NAME>" (underscore,
- *   uppercase) with value "true"/"false". These are two different activation
- *   mechanisms — the URL bootstrap enables per-user localStorage flags that are
- *   checked directly in App.jsx (not via isFlagEnabled).
+ * NOTE on key format (updated Story 49/#120):
+ *   The URL bootstrap now writes BOTH forms on every enable/disable:
+ *     - "flag:<name>" (colon, lowercase, value "1") — legacy, App.jsx's
+ *       direct checks for VIEWER_MODE/MAINTENANCE_MODE read this form.
+ *     - "flag_<NAME>" (underscore, UPPERCASE, value "true") — canonical,
+ *       isFlagEnabled() reads this form; every other flag uses only this one.
+ *   Before #120 the bootstrap wrote only the legacy form, so ?enable_flag=
+ *   silently did nothing for any isFlagEnabled()-gated flag. Group 4 covers
+ *   the dual-write. Full consolidation onto one scheme was judged too
+ *   high-blast-radius for this pass (MAINTENANCE_MODE/VIEWER_MODE are both
+ *   high-stakes gates) — this is the additive, backward-compatible step.
  *
  * Run: npm test  (from frontend/)
  */
@@ -197,5 +202,47 @@ describe('Group 4 — buildCleanSearch: bypass params also stripped', function (
     expect(result).not.toContain('coach_access');
     expect(result).not.toContain('clear_bypass');
     expect(result).toContain('s=abc');
+  });
+});
+
+// ============================================================================
+// Group 5 — applyFlagParams: canonical "flag_UPPERCASE" dual-write (#120)
+// ============================================================================
+
+describe('Group 5 — applyFlagParams: canonical key dual-write', function () {
+
+  test('5.1: ?enable_flag=viewer_mode also sets "flag_VIEWER_MODE" = "true"', function () {
+    applyFlagParams('?enable_flag=viewer_mode');
+    expect(localStorage.getItem('flag_VIEWER_MODE')).toBe('true');
+  });
+
+  test('5.2: ?disable_flag=viewer_mode also removes "flag_VIEWER_MODE"', function () {
+    localStorage.setItem('flag:viewer_mode', '1');
+    localStorage.setItem('flag_VIEWER_MODE', 'true');
+    applyFlagParams('?disable_flag=viewer_mode');
+    expect(localStorage.getItem('flag_VIEWER_MODE')).toBeNull();
+  });
+
+  test('5.3: enabling a lowercase name uppercases it in the canonical key', function () {
+    applyFlagParams('?enable_flag=accessibility_v1');
+    expect(localStorage.getItem('flag_ACCESSIBILITY_V1')).toBe('true');
+  });
+
+  test('5.4: enabling an already-uppercase name writes the canonical key unchanged', function () {
+    applyFlagParams('?enable_flag=GAME_MODE');
+    expect(localStorage.getItem('flag_GAME_MODE')).toBe('true');
+  });
+
+  test('5.5: legacy "flag:" form is still written alongside the canonical form', function () {
+    applyFlagParams('?enable_flag=viewer_mode');
+    expect(localStorage.getItem('flag:viewer_mode')).toBe('1');
+    expect(localStorage.getItem('flag_VIEWER_MODE')).toBe('true');
+  });
+
+  test('5.6: disabling removes both forms, not just the legacy one', function () {
+    applyFlagParams('?enable_flag=viewer_mode');
+    applyFlagParams('?disable_flag=viewer_mode');
+    expect(localStorage.getItem('flag:viewer_mode')).toBeNull();
+    expect(localStorage.getItem('flag_VIEWER_MODE')).toBeNull();
   });
 });

@@ -76,6 +76,12 @@ function installStubs({ queues = {}, signInResult = { error: null } } = {}) {
       insert: () => chain,        // request-access: insert().select('id').single()
       maybeSingle: async () => shift(table),
       single: async () => shift(table),
+      // #374: /magic-link's membership lookup now ends in .in('status', ...)
+      // with no terminal .maybeSingle()/.single() call (it fetches all
+      // candidate rows and matches on normalized email in JS) — real
+      // supabase-js query builders are themselves thenable, so a bare
+      // `await` on the chain resolves directly. Mirrors that here.
+      then: (resolve) => resolve(shift(table)),
     };
     return chain;
   };
@@ -160,8 +166,12 @@ describe('POST /api/v1/auth/magic-link', () => {
   test('AUTH-3: active membership → 200 success, signInWithOtp called once', async () => {
     installStubs({
       queues: {
+        // #374: the route now fetches all candidate rows for the team and
+        // matches on normalized email in JS, so this is an array (one
+        // candidate) rather than a single object, and needs `email` set to
+        // match what the request sends.
         team_memberships: [
-          { data: { id: 'm-1', status: 'active', role: 'coach', team_id: '1774297491626' }, error: null },
+          { data: [{ id: 'm-1', status: 'active', role: 'coach', team_id: '1774297491626', email: 'stan@example.com' }], error: null },
         ],
       },
     });
