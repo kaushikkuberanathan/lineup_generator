@@ -24,7 +24,7 @@ export function LegalDocBody({ doc }) {
         color="tertiary"
         style={{ display: "block", marginBottom: tokens.space.lg }}
       >
-        Last updated {doc.lastUpdated}
+        Effective {doc.effectiveDate}
         {doc.version ? " · v" + doc.version : ""}
       </Text>
 

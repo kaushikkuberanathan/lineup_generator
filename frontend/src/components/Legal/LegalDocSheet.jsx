@@ -1,4 +1,4 @@
-import { LEGAL_DOCS } from "../../content/legal";
+import { getLegalDoc } from "../../content/legal";
 import { LegalDocBody } from "./LegalDocBody";
 import { BottomSheet } from "../ui/BottomSheet";
 import { Button } from "../ui/Button";
@@ -26,7 +26,7 @@ import { tokens } from "../../theme/tokens";
  *  - docId: string          LEGAL_DOCS id to show, e.g. "terms" or "privacy"
  */
 export function LegalDocSheet({ open, onClose, docId }) {
-  var doc = LEGAL_DOCS.find(function(d) { return d.id === docId; });
+  var doc = getLegalDoc(docId);
   if (!doc) return null;
 
   return (

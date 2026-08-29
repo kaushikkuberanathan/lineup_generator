@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { LEGAL_DOCS } from "../../content/legal";
+import { LEGAL_DOCS, getLegalDoc } from "../../content/legal";
 import { LegalDocBody } from "../Legal/LegalDocBody";
 import { ListRow } from "../ui/ListRow";
 import { Button } from "../ui/Button";
@@ -29,7 +29,7 @@ import { tokens } from "../../theme/tokens";
  * exactly as before this prop existed.
  */
 export function LegalSection({ initialDocId = null }) {
-  var _initial = initialDocId ? LEGAL_DOCS.find(function(d) { return d.id === initialDocId; }) : null;
+  var _initial = initialDocId ? getLegalDoc(initialDocId) : null;
   var _open = useState(_initial || null);
   var openDoc = _open[0];
   var setOpenDoc = _open[1];
@@ -59,7 +59,7 @@ export function LegalSection({ initialDocId = null }) {
         return (
           <ListRow
             key={doc.id}
-            onClick={function() { setOpenDoc(doc); }}
+            onClick={function() { setOpenDoc(getLegalDoc(doc.id)); }}
             showDivider={!isLast}
           >
             <span style={{
@@ -97,7 +97,7 @@ export function LegalSection({ initialDocId = null }) {
           color="tertiary"
           style={{ display: "block", textAlign: "center", lineHeight: tokens.font.lineHeight.comfortable }}
         >
-          Last updated April 2026 &middot; Questions? Use the Feedback tab.
+          Each document lists its own effective date &middot; Questions? Use the Feedback tab.
         </Text>
       </div>
     </div>

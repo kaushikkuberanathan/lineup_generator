@@ -1,5 +1,5 @@
 import React from 'react';
-import { describe, test, expect, vi } from 'vitest';
+import { describe, test, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 
 // ============================================================================
@@ -10,11 +10,14 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 // ============================================================================
 
 vi.mock('@/utils/analytics', () => ({ track: vi.fn() }));
+vi.mock('../../utils/legalConsent', () => ({ logLegalConsent: vi.fn().mockResolvedValue({ success: true }) }));
 
 import { RequestAccessScreen } from './RequestAccessScreen';
-import { LEGAL_DOCS } from '../../content/legal';
+import { getLegalDoc } from '../../content/legal';
+import { logLegalConsent } from '../../utils/legalConsent';
 
-var TERMS_DOC = LEGAL_DOCS.find(function (d) { return d.id === 'terms'; });
+var TERMS_DOC = getLegalDoc('terms');
+var PRIVACY_DOC = getLegalDoc('privacy');
 
 function baseProps(overrides) {
   return Object.assign(
@@ -199,6 +202,10 @@ describe('RequestAccessScreen — additive props for the Home tab discovery flow
 // ============================================================================
 describe('RequestAccessScreen — Terms of Service consent', function () {
 
+  beforeEach(function () {
+    logLegalConsent.mockClear();
+  });
+
   function fillNameAndEmailOnly() {
     fireEvent.change(screen.getByPlaceholderText('Jane'), { target: { value: 'Jane' } });
     fireEvent.change(screen.getByPlaceholderText('Smith'), { target: { value: 'Smith' } });
@@ -229,7 +236,7 @@ describe('RequestAccessScreen — Terms of Service consent', function () {
     expect(requestAccess).not.toHaveBeenCalled();
   });
 
-  test('a successful submit stamps acceptedTerms, the current terms version, and an ISO timestamp onto the request payload', async function () {
+  test('a successful submit logs consent as version-only — doc ids + current versions, never the document text — and never stamps it onto the request payload', async function () {
     var requestAccess = vi.fn().mockResolvedValue({ success: true });
     render(<RequestAccessScreen {...baseProps({ requestAccess })} />);
 
@@ -239,10 +246,21 @@ describe('RequestAccessScreen — Terms of Service consent', function () {
     await waitFor(function () {
       expect(requestAccess).toHaveBeenCalledTimes(1);
     });
-    var payload = requestAccess.mock.calls[0][0];
-    expect(payload.acceptedTerms).toBe(true);
-    expect(payload.acceptedTermsVersion).toBe(TERMS_DOC.version);
-    expect(payload.acceptedAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
+
+    expect(logLegalConsent).toHaveBeenCalledTimes(1);
+    var consentCall = logLegalConsent.mock.calls[0][0];
+    expect(consentCall.email).toBe('jane@example.com');
+    expect(consentCall.context).toBe('request_access');
+    expect(consentCall.consents).toEqual([
+      { docId: 'terms', version: TERMS_DOC.version },
+      { docId: 'privacy', version: PRIVACY_DOC.version },
+    ]);
+    // No section text anywhere in the logged payload — version only.
+    expect(JSON.stringify(consentCall)).not.toContain('sections');
+
+    var requestPayload = requestAccess.mock.calls[0][0];
+    expect(requestPayload.acceptedTerms).toBeUndefined();
+    expect(requestPayload.acceptedTermsVersion).toBeUndefined();
   });
 
   test('tapping "Terms of Service" opens the same document the Account tab\'s Legal section shows, without losing in-progress form values', function () {

@@ -15,12 +15,18 @@
  *                          see Legal/LegalDocSheet.jsx)
  *
  * Terms of Service consent: added alongside the Account tab's own Terms of
- * Service entry point (both render content/legal.js's "terms" doc through
- * the same LegalDocBody component — see that file's header comment for why
- * there is exactly one copy of this text). A coach can't submit an access
- * request without checking "I agree" first; the checked version is stamped
- * onto the request payload (acceptedTermsVersion) so we always know which
- * text a given approval was granted against.
+ * Service entry point (both render content/legal.js's current doc version
+ * through the same LegalDocBody component — see that file's header comment
+ * for why there is exactly one copy of this text). A coach can't submit an
+ * access request without checking "I agree" first.
+ *
+ * What gets persisted is only the VERSION each doc was at when the coach
+ * checked the box (getCurrentLegalVersion), never the text — logged via a
+ * separate, non-blocking call to POST /api/v1/auth/consent (see
+ * utils/legalConsent.js and migration 028's legal_consents table). Bumping
+ * a document's text later (content/legal.js) is the only change needed for
+ * the next coach to see and consent to the new version — nothing here
+ * hardcodes a version number.
  *
  * On submit: POST /auth/request-access → PendingApprovalScreen
  */
@@ -28,11 +34,13 @@
 import { useState, useEffect } from 'react';
 import { track } from '@/utils/analytics';
 import { tokens } from "../../theme/tokens";
-import { LEGAL_DOCS } from "../../content/legal";
+import { getLegalDoc } from "../../content/legal";
 import { LegalDocSheet } from "../Legal/LegalDocSheet";
+import { logLegalConsent } from "../../utils/legalConsent";
 
 const TEAM_ID = import.meta.env.VITE_DEFAULT_TEAM_ID || '1774297491626';
-const TERMS_DOC = LEGAL_DOCS.find(function(d) { return d.id === 'terms'; });
+const TERMS_DOC = getLegalDoc('terms');
+const PRIVACY_DOC = getLegalDoc('privacy');
 
 // Label layer (WS-1 #336): what the coach SEES is richer than what we STORE.
 // `value` is sent to POST /request-access as `requestedRole`; the backend's
@@ -97,17 +105,24 @@ export function RequestAccessScreen({
     setError('');
     setLoading(true);
 
+    const consentEmail = email.trim().toLowerCase();
     track("tos_consented", { version: TERMS_DOC ? TERMS_DOC.version : null });
+    // Fire-and-forget: this is a supplementary audit record, not a gate.
+    // logLegalConsent never throws — see its own header comment.
+    logLegalConsent({
+      email: consentEmail,
+      consents: [TERMS_DOC, PRIVACY_DOC]
+        .filter(Boolean)
+        .map(function (doc) { return { docId: doc.id, version: doc.version }; }),
+      context: 'request_access',
+    });
 
     const result = await requestAccess({
       firstName: firstName.trim(),
       lastName:  lastName.trim(),
-      email:     email.trim().toLowerCase(),
+      email:     consentEmail,
       role:      selectedRoleOption.value,
       tid:       teamId.trim() || TEAM_ID,
-      acceptedTerms:        true,
-      acceptedTermsVersion: TERMS_DOC ? TERMS_DOC.version : null,
-      acceptedAt:           new Date().toISOString(),
     }, { preserveSession });
 
     setLoading(false);
