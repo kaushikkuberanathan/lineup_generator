@@ -1,13 +1,49 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: 2026-08-27 (Test/CI environment safety fixes for #339/#368, develop only — not yet promoted); previously 2026-08-27 (v2.15.0 promoted to `main` and live in prod — PR #857, `5a38b08`; post-promote sync PR #858); previously 2026-08-26 (v2.15.0 release prep — dependency currency, git governance, and Test Health & Regression Protection consolidation).
+> Last updated: 2026-08-29 (v3.0.0 scoped — release-readiness audit run, develop only, not yet promoted); previously 2026-08-27 (Test/CI environment safety fixes for #339/#368, develop only — not yet promoted); previously 2026-08-27 (v2.15.0 promoted to `main` and live in prod — PR #857, `5a38b08`; post-promote sync PR #858); previously 2026-08-26 (v2.15.0 release prep — dependency currency, git governance, and Test Health & Regression Protection consolidation).
 > MVP launched: March 24, 2026
 
 ---
 
-## Unreleased (develop only — not yet promoted) — Test/CI environment safety (#339, #368)
+## v3.0.0 — 2026-08-29 (develop only — not yet promoted) — Phase 4C auth-cutover start, security debt closures, Help redesign
 
-Internal-only, no version bump (no user-facing behavior, no app code touched). Picked up the remaining 3 open issues on the Test Health & CI Governance board (#339, #368, #517) after finding the other 3 (#406, #410, and umbrella #840's own disposition table) were stale trackers for already-shipped v2.15.0 work — see the tracker-sync note below.
+**Major version bump — a deliberate departure from this repo's own "size the bump to the release's actual scope" convention, decided by KK 2026-08-29.** Every prior release of comparable or larger bundled scope was still sized minor (v2.9.0 bundled a schema change + routing change + security batch; v2.14.0 bundled 6 unrelated security PRs). This is the first major version this project has ever shipped. **Explicitly not gated on Phase 4C completion** — the shim-removal sequence (Story 129/#688) is 2 of 7 steps done; 5 remain. Recorded here in plain language so a future session doesn't read "v3.0.0" and assume the auth cutover finished — it didn't.
+
+Scope: 104 commits / 34 top-level PRs merged to `develop` since v2.15.0 promoted to `main` (`5a38b08`, 2026-08-27). Full commit list: `git log --first-parent --oneline origin/main..origin/develop` as of `bf097f0`.
+
+**Phase 4C auth cutover — steps 1-2 of 7 (Story 129/#688, tracked under #355):**
+- Step 1 (PR #898): migration 019 Section A applied to PROD.
+- Step 2 (PR #899): auth testing shims removed.
+- 5 steps remain (#688). #355 (live-scoring anon backdoors) stays open — the full 7-step sequence is the precondition for closing it, not any individual step.
+
+**Security debt closures — both flagged open since v2.9.0's original CodeQL batch:**
+- #650: share-link ID generator switched from `Math.random()` to `crypto.getRandomValues()` (PR #886).
+- #651: `GET /me` and `POST /logout` rate-limited by user id (PR #885).
+- Plus new RLS test coverage for non-admin membership isolation (#348, PR #887).
+
+**Real auth bugs fixed:** Gmail dot-variant email lockout at login (#374, PR #894); magic-link validation order — validation now runs before `loginLimiter` on `POST /magic-link` (#329, PR #891); `auth_events` CHECK constraint widened for `magic_link_requested` (#736, migration 027, PR #893 — already logged as resolved in root `CLAUDE.md`'s Known Open Bugs table); Home team card's Edit/Delete menu items now role-gated (#666, PR #895).
+
+**Share link:** error-mode surfacing on load failure (#127, PR #889); song-payload parity restored between the two share paths (#502, PR #888).
+
+**UX:** Support → "Help" redesign (Story 333/#865, PR #867 + follow-up #869) — previously logged in root `CLAUDE.md` as a provisional, un-promoted "v2.15.1" label; folds into this release's real version number, no separate bump needed.
+
+**Backend/infra:** CORS rejections now return 403 and log the origin (#389, PR #881); `write_source` role-based fallback for `team_data_history` (#379, PR #880); DEV protection health-check (#314, PR #884); DEV rebuild seeded with synthetic roster instead of empty (PR #883); backend infra reliability batch (PR #870).
+
+**Dependencies (routine Dependabot):** `@supabase/supabase-js` (both `frontend` and `backend` packages), `@vitejs/plugin-react`, `mixpanel-browser`, `vitest`/`@vitest/ui`.
+
+**Governance/docs:** v2.15.0 promote-correction pass (#861), FEATURE_MAP/debt audit (#862), governance-flags docs batch (#871), two session retros (#872, #882), Story 333 roadmap-status fix (#873), GitHub label-count confirmation closing 7 drift gaps (#897).
+
+**Verification (2026-08-29, this release-scoping pass, re-run fresh against `develop` HEAD `bf097f0`, not carried forward):**
+- `debt-p0` gate: 0 open P0 — clear. Direct recount of every `### 🔴`/`### 🟠`/`### 🟡` heading in `DOC_TEST_DEBT.md` matched its dashboard table exactly (0/0/0 P0, 0/1/0 P1, 7/4/7 P2) — no drift found.
+- Frontend: 1401 passed / 1 skipped (122 files) — up from the previously-documented 1377/1 (120 files).
+- Backend unit: 269/269 — up from 254. Run locally with CI's exact dummy-env pattern (`SUPABASE_URL=https://ci-hermetic.invalid`, etc. — see `.github/workflows/ci.yml`'s `backend-unit` job), not against a real Supabase project.
+- CI re-confirmed green on `bf097f0` via the GitHub Actions API (not assumed from the merge having gone through): Backend Integration Tests (CI_SAFE, prod read-only), RLS Policy Suite (ephemeral), Frontend Tests (Vitest), Backend Unit Tests (supertest), Sync-script unit tests — all `success`.
+- `FEATURE_MAP.md`: row 40 (Help) already current from #865's own landing. No other surface in this batch is a discrete coach-facing feature warranting its own row — matches this file's own precedent of not mapping dependency/governance/infra-only work to feature rows.
+- **Not yet done:** the actual version bump (`frontend/package.json`, `backend/package.json`, `APP_VERSION` in `App.jsx`, root `CLAUDE.md`, `VERSION_HISTORY` entry) — pending KK's gate phrases for those locked files. 24h soak not yet started. Real-device Vercel preview smoke test not yet run.
+
+### Test/CI environment safety (#339, #368) — folded into this release
+
+Internal-only, no user-facing behavior, no app code touched. Picked up the remaining 3 open issues on the Test Health & CI Governance board (#339, #368, #517) after finding the other 3 (#406, #410, and umbrella #840's own disposition table) were stale trackers for already-shipped v2.15.0 work — see the tracker-sync note below.
 
 **#368 fixed (`.github/workflows/ci.yml`).** The "Smoke Test (dev)" job's `DEV_*` values had always resolved to the exact same project/backend as `PROD_*` (`DEV_SUPABASE_URL`/`ANON_KEY` aliased `secrets.SUPABASE_URL`/`SUPABASE_ANON_KEY` — prod's own — and `DEV_BACKEND_URL` was hardcoded to a copy-pasted literal of the prod Render URL, ignoring a `DEV_BACKEND_URL` secret that had existed for this exact purpose since before this session). Every "dev" smoke run has always actually been a second, mislabeled prod run. Audited `scripts/smoke-test.js` before fixing: every check is a GET, so this was a correctness/mislabeling bug, not a data-integrity incident. Fixed: `DEV_BACKEND_URL` now actually reads its own pre-existing secret; `DEV_SUPABASE_URL`/`ANON_KEY` now read new secrets pointed at the real DEV Supabase project (`psqvzppphdedqkpmarwx`). **KK added `DEV_SUPABASE_URL` and `DEV_SUPABASE_ANON_KEY` as new GitHub Actions repo secrets same session** — confirmed present alongside the pre-existing `DEV_BACKEND_URL`/`DEV_FRONTEND_URL`.
 
