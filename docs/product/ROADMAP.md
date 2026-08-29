@@ -1,7 +1,20 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: 2026-08-29 (v3.0.0 scoped — release-readiness audit run, develop only, not yet promoted); previously 2026-08-27 (Test/CI environment safety fixes for #339/#368, develop only — not yet promoted); previously 2026-08-27 (v2.15.0 promoted to `main` and live in prod — PR #857, `5a38b08`; post-promote sync PR #858); previously 2026-08-26 (v2.15.0 release prep — dependency currency, git governance, and Test Health & Regression Protection consolidation).
+> Last updated: 2026-08-29 (`develop` frozen for v3.0.0 release soak — see banner immediately below); previously 2026-08-29 (v3.0.0 scoped — release-readiness audit run, develop only, not yet promoted); previously 2026-08-27 (Test/CI environment safety fixes for #339/#368, develop only — not yet promoted); previously 2026-08-27 (v2.15.0 promoted to `main` and live in prod — PR #857, `5a38b08`; post-promote sync PR #858); previously 2026-08-26 (v2.15.0 release prep — dependency currency, git governance, and Test Health & Regression Protection consolidation).
 > MVP launched: March 24, 2026
+
+---
+
+## 🔒 RELEASE SOAK IN PROGRESS — `develop` frozen for v3.0.0
+
+**Read this before merging anything into `develop`, on either track/worktree.**
+
+- **Frozen at:** merge commit `426d052` (PR #900), `develop` HEAD as of the freeze.
+- **Soak start:** 2026-08-29T01:27:53Z (2026-08-28T21:27:53-04:00 ET)
+- **Soak clears:** 2026-08-30T01:27:53Z (2026-08-29T21:27:53-04:00 ET), unless KK explicitly overrides per the established pattern (see prior releases' Current Version entries in root `CLAUDE.md`)
+- **Scope of the freeze:** No PRs merge into `develop` from either the Dugout Track (`lineup-generator/`) or the UX Track (`lineup-generator-ux/`) until the soak clears or KK explicitly overrides it. This is a documentation-level convention, not a GitHub branch-protection technical lock — no repo setting currently enforces it, so it depends on every session reading this banner (and root `CLAUDE.md` § Cross-track discipline) at session start, per the existing standing practice.
+- **Exception:** a declared hotfix cut from `main` (`[hotfix-exception]` in the commit body) remains permitted per the standing Branch Strategy rules — the freeze applies to `develop`-bound feature/fix work, not emergency production hotfixes.
+- **Unlocks when:** the soak clears (or KK overrides) and the `develop → main` promote PR for v3.0.0 is ready to open. Remove this banner as part of that promote's release-prep commit.
 
 ---
 
