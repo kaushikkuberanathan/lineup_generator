@@ -51,9 +51,23 @@ After running: always review inferred labels and correct misfires in the GitHub 
 
 ## Label Taxonomy
 
-The canonical set — as defined in `scripts/setup-github-labels.ps1`, re-verified directly against that script 2026-08-23 — is **31 labels**: 4 priority + 8 type + 10 area + 5 status + 4 meta (2 of the 4 meta labels, `auto-created` and `needs-overnight-soak`, are bare labels without a `prefix:name` colon; the rest follow `prefix:name`).
+**Live count confirmed 2026-08-23: 44 labels.** `scripts/setup-github-labels.ps1` only defines **31** — it is stale and understates the real taxonomy by at least 13. This is exactly the "Label drift" scenario the rule below exists to prevent: labels have been created by hand, directly in the GitHub UI, outside the script.
 
-**Not independently verified this pass:** a prior repository audit (#773) flagged the live GitHub label count as 44, not 31 — i.e. possible drift from labels created manually outside the script, which the "Label drift" rule below exists to prevent. This session's available GitHub tooling has no list-all-labels call, so that discrepancy could not be confirmed or resolved here. Before trusting either number, check the repo's live Labels page (Issues → Labels) against the script's 31 and reconcile — do not assume 31 is still accurate just because the script and this doc agree with each other.
+**Confirmed by direct evidence, not just the 44 figure taken on faith:** with no list-all-labels tool available this session, all 255 issues (119 open + 136 closed) were pulled via the GitHub MCP server and their applied labels aggregated. That surfaced **7 labels in active use that the script has never defined**:
+
+| Label | Seen on |
+|---|---|
+| `type:testing` | #431, #424, #423, #481, #478, #477, #586 |
+| `type:tech-debt` | #735 |
+| `type:security` | #651, #650 |
+| `area:governance` | #644, #234, #225, #242, #302, #300, #770 |
+| `area:testing` | #517, #482, #410, #406, #378, #425, #407, #721, #599 |
+| `area:frontend` | #650, #721, #719, #718, #716 |
+| `area:infra` | #715 |
+
+31 (script) + 7 (confirmed above) = 38 verified. The remaining ~6 toward the confirmed 44 are real but not yet individually identified — this aggregation method only sees labels applied to at least one issue, so a label that exists with zero issues currently on it (plausible for something rare like `hotfix-exception`) stays invisible to it. Full reconciliation still needs an actual label-list call (`gh label list`, the repo's Labels settings page, or a session with broader GitHub API access) — treat 38 as a floor, not the ceiling, and 44 as the number to design against.
+
+**Action needed, not yet done:** `scripts/setup-github-labels.ps1` should be updated to define at least these 7 confirmed labels (and the rest, once identified) so it's trustworthy again as the "reset drift" tool — right now running it would not restore the actual taxonomy, only the stale 31-label subset.
 
 ### Priority (required on every issue)
 
@@ -76,6 +90,9 @@ The canonical set — as defined in `scripts/setup-github-labels.ps1`, re-verifi
 | `type:incident` | Live production incident |
 | `type:docs` | Documentation changes only |
 | `type:refactor` | Code refactor with no behavior change |
+| `type:testing` | Test coverage work (confirmed live 2026-08-23, undocumented until now — not in `setup-github-labels.ps1`) |
+| `type:tech-debt` | Technical debt distinct from `type:chore` (confirmed live 2026-08-23, undocumented until now) |
+| `type:security` | Security-specific findings/fixes (confirmed live 2026-08-23, undocumented until now) |
 
 ### Area (strongly recommended)
 
@@ -91,6 +108,10 @@ The canonical set — as defined in `scripts/setup-github-labels.ps1`, re-verifi
 | `area:roster` | Roster management, batting order, lineup engine |
 | `area:supabase` | DB schema, RLS policies, migrations |
 | `area:analytics` | Mixpanel events, Vercel Analytics |
+| `area:governance` | Process, docs, backlog hygiene (confirmed live 2026-08-23, undocumented until now — overlaps `type:governance`; usage distinction not yet defined) |
+| `area:testing` | Test infrastructure/coverage, distinct from `type:testing` above (confirmed live 2026-08-23, undocumented until now) |
+| `area:frontend` | Frontend-general, broader than `area:ux` (confirmed live 2026-08-23, undocumented until now — usage distinction from `area:ux` not yet defined) |
+| `area:infra` | Infrastructure (confirmed live 2026-08-23, undocumented until now — overlaps `area:ci-ops`/`area:backend`; usage distinction not yet defined) |
 
 ### Status (apply when relevant)
 
@@ -120,7 +141,7 @@ $env:GITHUB_TOKEN = $TOKEN
 .\scripts\setup-github-labels.ps1
 ```
 
-Safe to re-run — uses `--force` which updates existing labels without duplicating.
+Safe to re-run — uses `--force` which updates existing labels without duplicating. **Does not currently reconcile drift** — as of 2026-08-23 the script only defines 31 of the confirmed-live 44 labels (see the 7 confirmed-missing ones above), so re-running it will not remove or flag labels that exist outside its list, and won't create the ~6 still-unidentified ones either. Add the missing labels to the script before treating a re-run as a full reset.
 
 ---
 
