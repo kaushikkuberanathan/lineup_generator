@@ -5,16 +5,12 @@
 
 ---
 
-## 🔒 RELEASE SOAK IN PROGRESS — `develop` frozen for v3.0.0
+## ✅ RELEASE SOAK OVERRIDDEN — v3.0.0 promoting to `main`
 
-**Read this before merging anything into `develop`, on either track/worktree.**
-
-- **Frozen at:** merge commit `426d052` (PR #900), `develop` HEAD as of the freeze.
-- **Soak start:** 2026-08-29T01:27:53Z (2026-08-28T21:27:53-04:00 ET)
-- **Soak clears:** 2026-08-30T01:27:53Z (2026-08-29T21:27:53-04:00 ET), unless KK explicitly overrides per the established pattern (see prior releases' Current Version entries in root `CLAUDE.md`)
-- **Scope of the freeze:** No PRs merge into `develop` from either the Dugout Track (`lineup-generator/`) or the UX Track (`lineup-generator-ux/`) until the soak clears or KK explicitly overrides it. This is a documentation-level convention, not a GitHub branch-protection technical lock — no repo setting currently enforces it, so it depends on every session reading this banner (and root `CLAUDE.md` § Cross-track discipline) at session start, per the existing standing practice.
-- **Exception:** a declared hotfix cut from `main` (`[hotfix-exception]` in the commit body) remains permitted per the standing Branch Strategy rules — the freeze applies to `develop`-bound feature/fix work, not emergency production hotfixes.
-- **Unlocks when:** the soak clears (or KK overrides) and the `develop → main` promote PR for v3.0.0 is ready to open. Remove this banner as part of that promote's release-prep commit.
+- **Frozen at:** merge commit `426d052` (PR #900), `develop` HEAD as of the freeze. **Soak start:** 2026-08-29T01:27:53Z.
+- **Soak explicitly overridden 2026-08-29T11:07:18Z by KK** — ~9h40m into the 24h window (~14h20m remaining), not waited out. Same pattern as every prior override (v2.9.0, v2.10.0, v2.11.0, v2.12.0, v2.14.0) — an explicit, logged decision, not a default. **Not yet done at override time:** the real-device Vercel preview phone-smoke-test — KK to perform this himself against the `develop` preview URL, ideally before or immediately after the `main` promote, since a remote session has no way to do this step.
+- **Freeze on `develop` lifted as of this commit** — the prior banner's restriction on merging into `develop` from either track/worktree no longer applies. Normal Branch Strategy rules resume.
+- The `develop → main` promote PR for v3.0.0 follows this commit. See the v3.0.0 entry immediately below for full release content, and root `CLAUDE.md`'s Current Version section for the matching override note.
 
 ---
 
