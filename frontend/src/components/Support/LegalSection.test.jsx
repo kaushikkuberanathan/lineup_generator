@@ -116,4 +116,47 @@ describe('LegalSection — primitive migration guard', function () {
     expect(screen.queryByText('Questions about this policy? Use the Feedback tab.')).not.toBeNull();
   });
 
+  // ============================================================================
+  // initialDocId — the Account tab's "Terms of Service" row deep-links here
+  // (App.jsx's renderAccount(), via legalInitialDoc state). Covered at the
+  // component level since App.jsx has no dedicated render harness in this
+  // suite; these tests lock in the actual contract App.jsx relies on.
+  // ============================================================================
+
+  test('initialDocId opens straight to that doc\'s detail view — no click needed, Back button present immediately', function () {
+    render(<LegalSection initialDocId="terms" />);
+
+    expect(screen.queryByText('‹ Back')).not.toBeNull();
+    var termsDoc = getLegalDoc('terms');
+    // Detail-view header renders "{emoji} {title}" as one text node —
+    // regex substring match, not exact equality.
+    expect(screen.queryByText(new RegExp(termsDoc.title))).not.toBeNull();
+    expect(screen.queryByText('Questions about this policy? Use the Feedback tab.')).not.toBeNull();
+  });
+
+  test('initialDocId resolves to the CURRENT version of the doc, matching getLegalDoc', function () {
+    render(<LegalSection initialDocId="terms" />);
+
+    var current = getLegalDoc('terms');
+    expect(screen.queryByText(new RegExp('Effective ' + current.effectiveDate))).not.toBeNull();
+    // "Liability" and the "In Plain English" tldr card exist only on terms
+    // v2.0, not the historical v1.0 entry — proves this rendered the
+    // CURRENT version, not an arbitrary/first entry in versions[].
+    expect(screen.queryByText('Liability')).not.toBeNull();
+    expect(screen.queryByText('In Plain English')).not.toBeNull();
+  });
+
+  test('an unknown initialDocId falls back to the list view, not a crash', function () {
+    render(<LegalSection initialDocId="does-not-exist" />);
+    expect(screen.queryByText('‹ Back')).toBeNull();
+    LEGAL_DOCS.forEach(function (doc) {
+      expect(screen.queryByText(doc.title)).not.toBeNull();
+    });
+  });
+
+  test('omitting initialDocId behaves exactly as before this prop existed — list view first', function () {
+    render(<LegalSection />);
+    expect(screen.queryByText('‹ Back')).toBeNull();
+  });
+
 });
