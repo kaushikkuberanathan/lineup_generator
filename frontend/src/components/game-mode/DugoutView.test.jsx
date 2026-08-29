@@ -244,75 +244,13 @@ describe('dugoutFocusMode state machine', function() {
 
 });
 
-// ── Security hardening batch 1: crypto.randomUUID for scorer_local_id ────────
-
-describe('scorer_local_id generation (crypto.randomUUID fix)', function() {
-  it('uses crypto.randomUUID() when available and persists a valid UUID v4 to localStorage', function() {
-    var spy = vi.spyOn(globalThis.crypto, 'randomUUID');
-    render(<DugoutView {...defaultProps} />);
-    expect(spy).toHaveBeenCalledTimes(1);
-
-    var stored = localStorage.getItem('scorer_local_id');
-    expect(stored).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
-    expect(stored).toBe(spy.mock.results[0].value);
-
-    spy.mockRestore();
-  });
-
-  it('reuses an existing scorer_local_id from localStorage without generating a new one', function() {
-    localStorage.setItem('scorer_local_id', 'existing-id-123');
-    var spy = vi.spyOn(globalThis.crypto, 'randomUUID');
-    render(<DugoutView {...defaultProps} />);
-    expect(spy).not.toHaveBeenCalled();
-    expect(localStorage.getItem('scorer_local_id')).toBe('existing-id-123');
-    spy.mockRestore();
-  });
-
-  it('falls back to crypto.getRandomValues() (not Math.random()) when crypto.randomUUID is unavailable, and still produces a valid v4 UUID', function() {
-    var original = globalThis.crypto.randomUUID;
-    // Simulate an older browser without crypto.randomUUID. randomUUID is
-    // defined on the Crypto prototype (writable/configurable), so this
-    // direct assignment creates a shadowing own-property that reads back
-    // as undefined — verified empirically, not assumed.
-    // eslint-disable-next-line no-param-reassign
-    globalThis.crypto.randomUUID = undefined;
-
-    // Precondition: fail loudly here, before rendering, if the override
-    // above didn't take (e.g. a future crypto polyfill makes randomUUID
-    // non-configurable). Without this, a silently-failed override would
-    // let the real crypto.randomUUID() run and this test would still
-    // "pass" for the wrong reason - it would never touch the fallback
-    // branch this test exists to cover.
-    expect(globalThis.crypto.randomUUID).toBeUndefined();
-
-    var getRandomValuesSpy = vi.spyOn(globalThis.crypto, 'getRandomValues');
-
-    render(<DugoutView {...defaultProps} />);
-
-    // The fallback branch must be the one that actually ran. Can't also
-    // spy on crypto.randomUUID here to assert "not called" - it's been set
-    // to undefined above (vi.spyOn requires an existing function to wrap),
-    // and it doesn't need to be: the precondition assertion above already
-    // guarantees crypto.randomUUID is genuinely falsy, so the source's
-    // ternary condition short-circuits without ever evaluating
-    // crypto.randomUUID() as a call in the first place.
-    expect(getRandomValuesSpy).toHaveBeenCalledTimes(1);
-
-    var stored = localStorage.getItem('scorer_local_id');
-    // Full UUID v4 shape check, not just "hex string of the right length":
-    // version nibble must be '4' (13th hex digit), variant nibble must be
-    // one of 8/9/a/b (17th hex digit) — this is what CodeQL's insecure-
-    // randomness rule actually cares about not being predictable/degraded.
-    expect(stored).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
-    var versionNibble = stored.charAt(14);
-    var variantNibble = stored.charAt(19);
-    expect(versionNibble).toBe('4');
-    expect(['8', '9', 'a', 'b']).toContain(variantNibble.toLowerCase());
-
-    getRandomValuesSpy.mockRestore();
-    globalThis.crypto.randomUUID = original;
-  });
-});
+// ── #355 step 2 (2026-08-29): scorer_local_id shim removed from DugoutView.jsx.
+//    The three tests that lived here (crypto.randomUUID generation, localStorage
+//    reuse, crypto.getRandomValues legacy fallback) tested that removed code path
+//    directly and are gone with it — scoringUserId no longer falls back to any
+//    localStorage-persisted device id, only to null when unauthenticated. See
+//    PHASE4C_SCORING_RLS_PROPOSAL.md §3 step 2 and the DugoutView.jsx comment at
+//    the scoringUserId declaration for the full rationale.
 
 // ── Slice 2 fix-up: exit affordance across modes (Story 50) ──────────────────
 
