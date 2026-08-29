@@ -54,6 +54,7 @@ import { LinksTab } from './components/Support/LinksTab';
 import { useAuth } from './hooks/useAuth';
 import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 import { VERSION_HISTORY } from './data/versionHistory';
+import { UpdatesTab } from './components/Support/UpdatesTab';
 import { currentSeasonGuess, formatSeason, compareTeamsNewestFirst } from './utils/season.js';
 import { firstName } from './utils/playerName';
 import { SharedView } from './screens/Share/SharedView';
@@ -6861,56 +6862,6 @@ export default function App() {
     );
   }
 
-  function renderUpdates() {
-    return (
-      <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
-        <div style={S.sectionTitle}>What&#x27;s New</div>
-        {VERSION_HISTORY.map(function(v, vi) {
-          var isCurrent = v.version === APP_VERSION;
-          var isOpen = expandedVersion === v.version;
-          return (
-            <div key={v.version} style={{
-              borderLeft: isCurrent ? "3px solid #27ae60" : "3px solid rgba(15,31,61,0.1)",
-              background: isCurrent ? "rgba(39,174,96,0.04)" : "transparent",
-              borderRadius: "0 6px 6px 0",
-              padding: "10px 14px",
-              marginBottom: vi < VERSION_HISTORY.length - 1 ? "12px" : "0"
-            }}>
-              <div
-                onClick={function(ver) { return function() { setExpandedVersion(expandedVersion === ver ? null : ver); }; }(v.version)}
-                style={{ display:"flex", gap:"10px", alignItems:"baseline", marginBottom: isOpen ? "8px" : "0", flexWrap:"wrap", cursor:"pointer" }}>
-                <span style={{ fontSize:"14px", fontWeight:"bold", color:tokens.color.brand.navy }}>v{v.version}</span>
-                <span style={{ fontSize:"11px", color:tokens.color.text.muted }}>{v.date}</span>
-                {isCurrent ? <span style={{ fontSize:"10px", padding:"1px 7px", borderRadius:"10px", background:"#27ae60", color:"#fff", fontWeight:"bold" }}>Current</span> : null}
-                <span style={{ marginLeft:"auto", fontSize:"11px", color:tokens.color.text.muted }}>{isOpen ? "▲" : "▼"}</span>
-              </div>
-              {isOpen ? (
-                <div>
-                  <div style={{ fontSize:"0.95rem", fontWeight:"600", color:tokens.color.text.ink, marginBottom:"6px", lineHeight:"1.4" }}>{v.headline}</div>
-                  {v.userChanges && v.userChanges.length > 0 ? (
-                    <ul style={{ margin:"0 0 6px 0", paddingLeft:"0", listStyle:"none" }}>
-                      {v.userChanges.map(function(ch, ci) {
-                        return (
-                          <li key={ci} style={{ fontSize:"0.875rem", color:tokens.color.text.muted, marginBottom:"3px", lineHeight:"1.5", display:"flex", gap:"6px" }}>
-                            <span style={{ color:"#b8a040", flexShrink:0 }}>✦</span>
-                            <span>{ch}</span>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  ) : null}
-                  {v.techNote ? (
-                    <div style={{ fontSize:"0.75rem", color:"#9ca3af", fontStyle:"italic" }}>🔧 {v.techNote}</div>
-                  ) : null}
-                </div>
-              ) : null}
-            </div>
-          );
-        })}
-      </Card>
-    );
-  }
-
   // ============================================================
   // PIN MODAL
   // ============================================================
@@ -7319,7 +7270,7 @@ export default function App() {
       {primaryTab === "more" && moreTab === "feedback" ? renderFeedback() : null}
       {primaryTab === "more" && moreTab === "links"    ? <LinksTab sectionTitleStyle={S.sectionTitle} /> : null}
       {primaryTab === "more" && moreTab === "about"    ? renderAbout()    : null}
-      {primaryTab === "more" && moreTab === "updates"  ? renderUpdates()  : null}
+      {primaryTab === "more" && moreTab === "updates"  ? <UpdatesTab versionHistory={VERSION_HISTORY} appVersion={APP_VERSION} expandedVersion={expandedVersion} onExpandedVersionChange={setExpandedVersion} sectionTitleStyle={S.sectionTitle} /> : null}
       {primaryTab === "more" && moreTab === "legal"    ? <LegalSection initialDocId={legalInitialDoc} /> : null}
       {primaryTab === "more" && moreTab === "faq"      ? <FAQSection />   : null}
     </div>
