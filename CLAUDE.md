@@ -628,3 +628,4 @@ This project runs two parallel tracks. Each has its own roadmap; both promote to
 - At session start on either track, read this section + `git log` since last session
 - User-visible work on either track ships behind a flag default-OFF, soaks, then GA-promotes in a separate release
 - Track manifest gets updated whenever a track-related PR merges or current work changes
+- **🔒 `develop` frozen for v3.0.0 release soak as of 2026-08-29 (merge `426d052`) — see `docs/product/ROADMAP.md`'s banner for the full freeze scope/timing before merging anything into `develop` from either track.** Documentation-level convention only, not a GitHub branch-protection lock — enforced by every session reading this at session start.
