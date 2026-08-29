@@ -13,6 +13,7 @@ import { normalizeBattingHand } from '@/utils/playerUtils';
 import { persistTeamBeforeLoad } from './utils/teamCreationPersistence.js';
 import { outboundLinkProps, CAMPAIGNS, CONTENT } from './utils/trackingUrl';
 import { migrateRoster, migrateSchedule, migrateBattingPerf, mergeLocalScheduleFields } from '@/utils/migrations';
+import { MERGE_FIELDS } from '@/utils/scheduleHydrationFields';
 import { fmtAvg, fmtStat } from '@/utils/formatters';
 import { applyFlagParams, buildCleanSearch } from './utils/flagBootstrap';
 import { loadJSON, saveJSON } from './utils/storage';
@@ -1129,7 +1130,6 @@ export default function App() {
   var initInnings  = initActiveId ? (loadJSON("team:" + initActiveId + ":innings", 6) || 6) : 6;
   var initGrid_    = initActiveId ? migrateGrid(loadJSON("team:" + initActiveId + ":grid", null), initRoster, initInnings) : null;
 
-  var MERGE_FIELDS = ['scoreReported', 'snackDuty', 'snackNote', 'gameBall', 'usScore', 'oppScore', 'gameStatus', 'finalizedAt'];
 
   function normalizeGameBall(val) {
     if (!val || val === "") return [];
