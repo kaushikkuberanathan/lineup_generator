@@ -24,7 +24,6 @@ import { useLiveScoring } from '../../hooks/useLiveScoring';
 import { useFeatureFlag } from '../../hooks/useFeatureFlag';
 import { BattingOrderStrip } from '../BattingOrderStrip';
 import { FEATURE_FLAGS } from '../../config/featureFlags';
-import { truncateTeamName } from '../../utils/formatters';
 
 var FF = "Georgia,'Times New Roman',serif";
 
@@ -186,8 +185,8 @@ export function DugoutView({
     myScore: 0, opponentScore: 0, runners: [], battingOrderIndex: 0,
   };
   var opponentName  = selectedGame ? selectedGame.opponent : 'Opponent';
-  var myTeamLabelSB = truncateTeamName(activeTeam ? activeTeam.name : '', 10);
-  var teamLabelSB   = truncateTeamName(opponentName, 10);
+  var myTeamLabelSB = activeTeam ? activeTeam.name : '';
+  var teamLabelSB   = opponentName;
 
   // Story 48 (#119) — 0-indexed inning currently shown on the diamond
   // vs. the live game's current inning; "drifted" gates the sync banner.

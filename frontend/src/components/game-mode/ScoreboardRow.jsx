@@ -29,8 +29,10 @@ export default function ScoreboardRow(props) {
     : null;
 
   var labelStyle = {
-    fontSize: '16px', fontWeight: 700, color: tokens.color.gameDay.text.label,
+    fontSize: 'clamp(11px, 3.2vw, 16px)', fontWeight: 700, color: tokens.color.gameDay.text.label,
     letterSpacing: '0.08em', textTransform: 'uppercase',
+    lineHeight: 1.05, textAlign: 'center', whiteSpace: 'normal',
+    overflowWrap: 'anywhere', minWidth: 0,
   };
   var scoreStyle = {
     fontSize: '22px', fontWeight: '800', color: tokens.color.gameDay.text.primary,
@@ -42,7 +44,7 @@ export default function ScoreboardRow(props) {
     fontSize: '10px', cursor: 'pointer',
     fontFamily: "Georgia,'Times New Roman',serif",
     padding: '2px 6px', lineHeight: '1.4',
-    marginLeft: '6px',
+    flexShrink: 0,
   };
 
   function activeDot(testId) {
@@ -62,8 +64,9 @@ export default function ScoreboardRow(props) {
   return (
     <div style={{
       position: 'relative',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      gap: '24px', padding: '8px 16px',
+      display: 'grid', alignItems: 'center',
+      gridTemplateColumns: 'minmax(0, 1fr) auto minmax(0, 1fr)',
+      columnGap: '6px', padding: onExit ? '8px 44px' : '8px',
       background: tokens.color.gameDay.surface.scoreboard,
       borderTop: '2px solid rgba(245, 200, 66, 0.4)',
       borderBottom: '1px solid rgba(255,255,255,0.05)',
@@ -88,9 +91,9 @@ export default function ScoreboardRow(props) {
           }}
         >✕</button>
       ) : null}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1 }}>
-          <span style={{ display: 'flex', alignItems: 'center' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', minWidth: 0 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1, minWidth: 0 }}>
+          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: 0 }}>
             <span style={labelStyle}>{myTeamLabel.toUpperCase()}</span>
             {isAtBat === true ? activeDot('scoreboard-mine-active-dot') : null}
           </span>
@@ -105,7 +108,7 @@ export default function ScoreboardRow(props) {
         ) : null}
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', minWidth: '34px' }}>
         <span style={{ color: tokens.color.gameDay.text.separator, fontSize: '20px' }}>:</span>
         {inningLabel ? (
           <span style={{
@@ -115,9 +118,9 @@ export default function ScoreboardRow(props) {
         ) : null}
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1 }}>
-          <span style={{ display: 'flex', alignItems: 'center' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', minWidth: 0 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1, minWidth: 0 }}>
+          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: 0 }}>
             <span style={labelStyle}>{oppLabel.toUpperCase()}</span>
             {isAtBat === false ? activeDot('scoreboard-opp-active-dot') : null}
           </span>

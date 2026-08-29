@@ -15,6 +15,13 @@ describe('ScoreboardRow', function() {
     expect(screen.getByText('BANANAS')).toBeInTheDocument();
   });
 
+  it('renders complete multi-word team names without abbreviating them', function() {
+    render(<ScoreboardRow myTeamLabel="Demo All-Stars" oppLabel="Metropolis Meteors" />);
+    expect(screen.getByText('DEMO ALL-STARS')).toBeInTheDocument();
+    expect(screen.getByText('METROPOLIS METEORS')).toBeInTheDocument();
+    expect(screen.queryByText(/…/)).toBeNull();
+  });
+
   it('shows +1 buttons when isScorer is true and fires callbacks', function() {
     var onMyRun = vi.fn();
     var onOppRun = vi.fn();
