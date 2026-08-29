@@ -96,7 +96,14 @@ describe('CORS allowlist', () => {
     installConsoleWarnSpy();
     const origin = 'https://evil.example.com';
     await request(app).get('/ping').set('Origin', origin);
-    const hit = warnCalls.find((call) => call.some((arg) => typeof arg === 'string' && arg.includes(origin)));
+    // Exact-match on one of the call's arguments, not a substring check --
+    // app.js logs the origin as its own console.warn argument (not embedded
+    // in a larger message), and an exact match is both a more precise
+    // assertion and avoids CodeQL's js/incomplete-url-substring-sanitization
+    // heuristic, which flags `str.includes(url)` regardless of whether the
+    // surrounding code is a security decision (it isn't, here -- this is a
+    // test assertion on a log call).
+    const hit = warnCalls.find((call) => call.some((arg) => arg === origin));
     assert.ok(hit, `expected the rejected origin (${origin}) to appear in a console.warn call, got: ${JSON.stringify(warnCalls)}`);
   });
 });
