@@ -1,6 +1,9 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
+import { installPendingFinalizationRecovery } from './utils/pendingFinalizationSync'
+
+installPendingFinalizationRecovery()
 import './index.css'
 import { inject } from '@vercel/analytics'
 
