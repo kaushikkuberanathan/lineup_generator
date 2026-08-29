@@ -24,3 +24,5 @@ html, body { margin: 0; padding: 0; height: 100%; overscroll-behavior: none; }
   50%      { opacity: 0.35; }
 }
 .animate-scoreboard-pulse { animation: scoreboard-pulse 1.6s ease-in-out infinite; }
+
+.batting-order-carousel::-webkit-scrollbar { display: none; }
