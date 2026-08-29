@@ -287,12 +287,6 @@ export function useLiveScoring(params) {
   var myTeamHalf   = params.myTeamHalf  || 'top';
   var isPractice   = params.isPractice  || false;
 
-  // AUTH TESTING SHIM — remove when auth goes live (Phase 4C)
-  // When auth gate is commented out, userId/userName are null.
-  // Use hardcoded admin identity so scorer lock writes succeed.
-  var _effectiveUserId   = userId   || null;
-  var _effectiveUserName = userName || 'Coach';
-
   // ── State — all unconditional (Rules of Hooks) ────────────────────────────
   var _gs = useState(makeDefaultGs);
   var gameState = _gs[0]; var setGameState = _gs[1];
@@ -404,8 +398,8 @@ export function useLiveScoring(params) {
       .insert({
         game_id:       gameId,
         team_id:       String(teamId),
-        actor_user_id: _effectiveUserId,
-        actor_name:    _effectiveUserName,
+        actor_user_id: userId,
+        actor_name:    userName,
         action:        action,
         payload:       payload  || null,
         recorded_at:   new Date().toISOString(),
@@ -431,8 +425,8 @@ export function useLiveScoring(params) {
           {
             game_id:        gameId,
             team_id:        String(teamId),
-            scorer_user_id: _effectiveUserId,
-            scorer_name:    _effectiveUserName,
+            scorer_user_id: userId,
+            scorer_name:    userName,
             last_heartbeat: new Date().toISOString(),
           },
           { onConflict: 'game_id,team_id' }
@@ -580,7 +574,7 @@ export function useLiveScoring(params) {
     // Practice mode — local-only claim, no network effects.
     if (isPractice) {
       setScorer(true);
-      setScorerName(_effectiveUserName);
+      setScorerName(userName);
       setScorerLockExpired(false);
       setClaimError('');
       return;
@@ -593,8 +587,8 @@ export function useLiveScoring(params) {
         {
           game_id:        gameId,
           team_id:        String(teamId),
-          scorer_user_id: _effectiveUserId,
-          scorer_name:    _effectiveUserName,
+          scorer_user_id: userId,
+          scorer_name:    userName,
           last_heartbeat: new Date().toISOString(),
         },
         { onConflict: 'game_id,team_id' }
@@ -611,7 +605,7 @@ export function useLiveScoring(params) {
           return;
         }
         setScorer(true);
-        setScorerName(_effectiveUserName);
+        setScorerName(userName);
         setScorerLockExpired(false);
         setClaimError('');
         startHeartbeat();
@@ -667,7 +661,7 @@ export function useLiveScoring(params) {
       .delete()
       .eq('game_id', gameId)
       .eq('team_id', String(teamId))
-      .eq('scorer_user_id', _effectiveUserId)
+      .eq('scorer_user_id', userId)
       .then(function() {});
     audit('lock_released');
   }
@@ -1005,7 +999,7 @@ export function useLiveScoring(params) {
       teamId:    teamId,
       usScore:   gs.myScore,
       oppScore:  gs.opponentScore,
-      userId:    _effectiveUserId,
+      userId:    userId,
     });
     if (!result.ok) {
       return { ok: false, error: result.error };
