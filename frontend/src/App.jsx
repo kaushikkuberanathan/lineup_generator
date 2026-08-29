@@ -11,7 +11,6 @@ import { FEATURE_FLAGS, isFlagEnabled, setRuntimeFlagCache } from '@/config/feat
 import { generateLineupV2 } from '@/utils/lineupEngineV2';
 import { normalizeBattingHand } from '@/utils/playerUtils';
 import { persistTeamBeforeLoad } from './utils/teamCreationPersistence.js';
-import { outboundLinkProps, CAMPAIGNS, CONTENT } from './utils/trackingUrl';
 import { migrateRoster, migrateSchedule, migrateBattingPerf, mergeLocalScheduleFields } from '@/utils/migrations';
 import { MERGE_FIELDS } from '@/utils/scheduleHydrationFields';
 import { fmtAvg, fmtStat } from '@/utils/formatters';
@@ -51,6 +50,7 @@ import { buildSharePayload } from './utils/buildSharePayload';
 import { buildBoxScorePrompt } from './utils/buildBoxScorePrompt';
 import Toast from './components/ui/Toast';
 import { Card } from './components/ui/Card';
+import { LinksTab } from './components/Support/LinksTab';
 import { useAuth } from './hooks/useAuth';
 import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 import { VERSION_HISTORY } from './data/versionHistory';
@@ -66,7 +66,6 @@ import { SharedView } from './screens/Share/SharedView';
 // CONSTANTS
 // ============================================================
 
-var COUNTY_SCHEDULE_URL = "https://forsythcounty.kaizendemos.app/schedule/2026-youth-baseball-and-softball-mmt6617n";
 
 var ALL_POSITIONS    = ["P","C","1B","2B","3B","SS","LF","LC","RC","RF","Bench"];
 var FIELD_POSITIONS  = ["P","C","1B","2B","3B","SS","LF","LC","RC","RF"];
@@ -6759,101 +6758,6 @@ export default function App() {
   // ============================================================
   // LINKS TAB
   // ============================================================
-  function renderLinks() {
-    var LINKS = [
-      {
-        group: "Schedule & Registration",
-        items: [
-          {
-            label: "County Official Game Schedule",
-            desc: "Forsyth County 2026 Youth Baseball & Softball — full season schedule",
-            url: COUNTY_SCHEDULE_URL,
-            emoji: "📅",
-            campaign: CAMPAIGNS.COUNTY_LEAGUE,
-            content: CONTENT.SCHEDULE_TAB
-          },
-          {
-            label: "Report Game Score",
-            desc: "Submit the final score after a completed game — must be done within 24 hours",
-            url: "https://forms.office.com/pages/responsepage.aspx?id=vf3EubbvekefszJiSiLNcOoWxPqaa4FBtgle0rAQ6bBURVExSDNDNEFTTkRaMVlRR0lNUDVGOUtFVy4u&route=shorturl",
-            emoji: "📝",
-            campaign: CAMPAIGNS.COUNTY_LEAGUE,
-            content: CONTENT.GAME_INFO_CARD
-          },
-          {
-            label: "Field & Cage Request",
-            desc: "Request field or batting cage time from Forsyth County Parks",
-            url: "https://docs.google.com/forms/d/e/1FAIpQLSeCIvqZlGsxonkWpFJ52q_6PWrOl3mmOTjTdiPGcz3ZQGzJDQ/viewform",
-            emoji: "⚾",
-            campaign: CAMPAIGNS.COUNTY_LEAGUE,
-            content: CONTENT.GAME_INFO_CARD
-          }
-        ]
-      },
-      {
-        group: "League & Club",
-        items: [
-          {
-            label: "Sharon Springs Athletics",
-            desc: "Sharon Springs community athletics — league info, teams, and events",
-            url: "https://sharonspringsathletics.org/",
-            emoji: "🏆",
-            campaign: CAMPAIGNS.SHARON_SPRINGS,
-            content: CONTENT.STANDINGS_LINK
-          }
-        ]
-      },
-      {
-        group: "Weather & Alerts",
-        items: [
-          {
-            label: "Inclement Weather Updates",
-            desc: "Forsyth County Parks — field closures and weather delays",
-            url: "https://parks.forsythco.com/Athletic-Leagues/Inclement-Weather-Information",
-            emoji: "⛈️",
-            campaign: CAMPAIGNS.GENERAL,
-            content: CONTENT.SCHEDULE_TAB
-          },
-          {
-            label: "Status Me Auto Alerts",
-            desc: "Sign up for automatic game status notifications",
-            url: "https://statusme.com/",
-            emoji: "🔔",
-            campaign: CAMPAIGNS.GENERAL,
-            content: CONTENT.SCHEDULE_TAB
-          }
-        ]
-      }
-    ];
-
-    return (
-      <div>
-        {LINKS.map(function(section) {
-          return (
-            <Card key={section.group} padding="16px 18px" radius="md" style={{ border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
-              <div style={S.sectionTitle}>{section.group}</div>
-              {section.items.map(function(link, li) {
-                return (
-                  <a key={li}
-                     {...outboundLinkProps(link.url, { campaign: link.campaign, content: link.content })}
-                     style={{ display:"flex", alignItems:"flex-start", gap:"12px", padding:"12px 0",
-                       borderBottom: li < section.items.length - 1 ? "1px solid rgba(15,31,61,0.07)" : "none",
-                       textDecoration:"none", cursor:"pointer" }}>
-                    <span style={{ fontSize:"22px", lineHeight:"1", marginTop:"2px", flexShrink:0 }}>{link.emoji}</span>
-                    <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ fontSize:"13px", fontWeight:"700", color:tokens.color.brand.navy, marginBottom:"3px" }}>{link.label}</div>
-                      <div style={{ fontSize:"11px", color:tokens.color.text.muted, lineHeight:"1.5", marginBottom:"5px" }}>{link.desc}</div>
-                    </div>
-                  </a>
-                );
-              })}
-            </Card>
-          );
-        })}
-      </div>
-    );
-  }
-
   // ============================================================
   // ABOUT TAB
   // ============================================================
@@ -7413,7 +7317,7 @@ export default function App() {
       </ErrorBoundary>
       {primaryTab === "more" && moreTab === "account"  ? renderAccount()  : null}
       {primaryTab === "more" && moreTab === "feedback" ? renderFeedback() : null}
-      {primaryTab === "more" && moreTab === "links"    ? renderLinks()    : null}
+      {primaryTab === "more" && moreTab === "links"    ? <LinksTab sectionTitleStyle={S.sectionTitle} /> : null}
       {primaryTab === "more" && moreTab === "about"    ? renderAbout()    : null}
       {primaryTab === "more" && moreTab === "updates"  ? renderUpdates()  : null}
       {primaryTab === "more" && moreTab === "legal"    ? <LegalSection initialDocId={legalInitialDoc} /> : null}
