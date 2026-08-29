@@ -1462,6 +1462,11 @@ export default function App() {
   var selectedParentPlayer = _selectedParentPlayer[0]; var setSelectedParentPlayer = _selectedParentPlayer[1];
   var _moreTab = useState("faq");
   var moreTab = _moreTab[0]; var setMoreTab = _moreTab[1];
+  // Deep-link target for LegalSection (e.g. "terms") — set by the Account
+  // tab's Terms of Service row so Legal opens straight to that doc instead
+  // of its list view. null = no override, LegalSection shows its list.
+  var _legalInitialDoc = useState(null);
+  var legalInitialDoc = _legalInitialDoc[0]; var setLegalInitialDoc = _legalInitialDoc[1];
   var _sharePayload = useState(null);
   var sharePayload = _sharePayload[0]; var setSharePayload = _sharePayload[1];
   var _shareLoading = useState(function() {
@@ -7248,7 +7253,20 @@ export default function App() {
           );
         })}
 
-        <button style={Object.assign({}, S.btn("danger"), { marginTop:"16px", width:"100%" })} onClick={logout}>
+        <div style={{ fontSize:"11px", letterSpacing:"0.08em", textTransform:"uppercase", color:tokens.color.text.muted, marginTop:"16px", marginBottom:"8px" }}>Legal</div>
+        <div
+          onClick={function() { setPrimaryTab("more"); setMoreTab("legal"); setLegalInitialDoc("terms"); }}
+          style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:"12px",
+            padding:"12px 14px", marginBottom:"8px", borderRadius:"10px",
+            border:"1px solid " + tokens.color.border.neutral, background:tokens.color.surface.card, cursor:"pointer" }}>
+          <div style={{ display:"flex", alignItems:"center", gap:"10px", minWidth:0 }}>
+            <span aria-hidden="true" style={{ fontSize:"18px", flexShrink:0 }}>📋</span>
+            <span style={{ fontSize:"14px", fontWeight:"600", color:tokens.color.brand.navy }}>Terms of Service</span>
+          </div>
+          <span aria-hidden="true" style={{ fontSize:"20px", color:tokens.color.text.muted, lineHeight:1 }}>›</span>
+        </div>
+
+        <button style={Object.assign({}, S.btn("danger"), { marginTop:"8px", width:"100%" })} onClick={logout}>
           Sign out
         </button>
         <div style={{ fontSize:"11px", color:tokens.color.text.muted, marginTop:"12px", lineHeight:"1.5", textAlign:"center" }}>
@@ -7644,7 +7662,13 @@ export default function App() {
         {MORE_SUBTABS.map(function(st) {
           return (
             <button key={st.key}
-              onClick={function(k) { return function() { setMoreTab(k); }; }(st.key)}
+              onClick={function(k) { return function() {
+                // Direct tab-bar navigation always shows Legal's list view —
+                // legalInitialDoc is a one-shot deep-link set only by the
+                // Account tab's Terms of Service row (see renderAccount()).
+                if (k === "legal") { setLegalInitialDoc(null); }
+                setMoreTab(k);
+              }; }(st.key)}
               style={subTabStyle(moreTab === st.key)}>
               {st.label}
             </button>
@@ -7711,7 +7735,7 @@ export default function App() {
       {primaryTab === "more" && moreTab === "links"    ? renderLinks()    : null}
       {primaryTab === "more" && moreTab === "about"    ? renderAbout()    : null}
       {primaryTab === "more" && moreTab === "updates"  ? renderUpdates()  : null}
-      {primaryTab === "more" && moreTab === "legal"    ? <LegalSection /> : null}
+      {primaryTab === "more" && moreTab === "legal"    ? <LegalSection initialDocId={legalInitialDoc} /> : null}
       {primaryTab === "more" && moreTab === "faq"      ? <FAQSection />   : null}
     </div>
   );
