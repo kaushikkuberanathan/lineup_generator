@@ -1,5 +1,26 @@
 export var VERSION_HISTORY = [
   {
+    version: '3.0.0',
+    date: 'August 2026',
+    headline: 'Security hardening, sign-in fixes, and the start of the auth cutover',
+    techNote: 'Bug fixes and performance improvements',
+    userChanges: [
+      'Fixed a login bug that could lock some coaches with a dotted Gmail address (like first.last@gmail.com) out of their account.',
+      'Share links now show a clear message when a link cannot be opened, instead of failing silently.',
+      'The Edit and Delete options on a team card now only appear for coaches who are actually allowed to use them.',
+      'A round of behind-the-scenes security and sign-in reliability work -- tighter protections around live scoring, sign-in, and share links. No visible change to how you use the app day to day.',
+    ],
+    internalChanges: [
+      'Major version bump -- a deliberate departure from this repo\'s own "size the bump to the release\'s actual scope" convention (every prior release this size or bigger, including v2.9.0 and v2.14.0\'s security batches, was still sized minor). Decided by KK 2026-08-29. Explicitly NOT gated on Phase 4C completion -- the auth-shim-removal sequence (Story 129/#688) is 2 of 7 steps done, 5 remain. Recorded here so a future session does not read "v3.0.0" and assume the auth cutover finished.',
+      'Phase 4C auth cutover, steps 1-2 of 7 (Story 129/#688, tracked under #355): migration 019 Section A applied to PROD (step 1, PR #898); auth testing shims removed from useLiveScoring.js and DugoutView.jsx -- no more zero-UUID/device-id fallback for an unauthenticated scorer (step 2, PR #899). The dangerous permissive RLS policies (allow_scorer_writes, the *_anon_test backdoors) are still live in prod; #355 stays open pending the remaining 5 steps.',
+      'Security debt closed, both flagged open since v2.9.0\'s original CodeQL batch: share-link ID generation switched from Math.random() to crypto.getRandomValues() (#650, PR #886); GET /me and POST /logout rate-limited by user id (#651, PR #885). Plus new RLS test coverage for non-admin membership isolation (#348, PR #887).',
+      'Real bugs fixed: Gmail dot-variant email lockout at login (#374, PR #894); magic-link validation now runs before loginLimiter on POST /magic-link (#329, PR #891); auth_events CHECK constraint widened for magic_link_requested (#736, migration 027, PR #893); Home team card Edit/Delete menu items role-gated (#666, PR #895); share-link error-mode surfacing on load failure (#127, PR #889); song-payload parity restored between the two share paths (#502, PR #888).',
+      'Support -> "Help" redesign (Story 333/#865) folds into this release\'s real version number -- see the 2.15.1 entry below for full detail; that label was always documentation-only, never an executed bump.',
+      'Routine Dependabot bumps: @supabase/supabase-js (both packages), @vitejs/plugin-react, mixpanel-browser, vitest/@vitest/ui. Backend/infra: CORS rejections now return 403 and log the origin (#389, PR #881); write_source role-based fallback for team_data_history (#379, PR #880); DEV protection health-check (#314, PR #884); DEV rebuild seeded with synthetic roster (PR #883); test/CI environment safety fixes for #339/#368.',
+      'Verification (2026-08-29, re-run fresh against develop HEAD bf097f0, not carried forward): debt-p0 gate 0 open P0 (direct recount matched the DOC_TEST_DEBT.md dashboard exactly, no drift). Frontend 1401 passed / 1 skipped (122 files, up from 1377/1/120). Backend unit 269/269 (up from 254), run with CI\'s own dummy-env pattern. CI re-confirmed green via the GitHub Actions API on bf097f0: Backend Integration (CI_SAFE, prod read-only), RLS Policy Suite (ephemeral), Frontend Vitest, Backend Unit, Sync-script -- all success.',
+    ],
+  },
+  {
     version: '2.15.1',
     date: 'August 2026',
     headline: 'Support redesigned as task-oriented Help',
