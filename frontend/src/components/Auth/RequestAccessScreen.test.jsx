@@ -225,6 +225,30 @@ describe('RequestAccessScreen — Terms of Service consent', function () {
     expect(screen.getByRole('button', { name: /request access/i })).toBeDisabled();
   });
 
+  // A `disabled` button whose background/text color are set via inline
+  // style (as this one's are) shows NO visual difference from enabled in
+  // most browsers — disabled:not() UA styles don't override an explicit
+  // inline background-color. Caught live on the dev deployment: the CTA
+  // looked identical, and thus looked broken/clickable, before consent was
+  // given. This locks in that the disabled and enabled states are actually
+  // visually distinct, not just functionally gated.
+  test('the disabled (unconsented) submit button is visually distinct from its enabled state, not just functionally inert', function () {
+    render(<RequestAccessScreen {...baseProps()} />);
+    fillNameAndEmailOnly();
+
+    var button = screen.getByRole('button', { name: /request access/i });
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute('aria-disabled', 'true');
+    var disabledBackground = button.style.backgroundColor;
+    var disabledCursor = button.style.cursor;
+
+    fireEvent.click(screen.getByLabelText(/i agree to the/i));
+    expect(button).not.toBeDisabled();
+    expect(button).toHaveAttribute('aria-disabled', 'false');
+    expect(button.style.backgroundColor).not.toBe(disabledBackground);
+    expect(button.style.cursor).not.toBe(disabledCursor);
+  });
+
   test('a form submit fired without consent (bypassing the disabled button) is rejected with an inline error, not sent to the server', function () {
     var requestAccess = vi.fn().mockResolvedValue({ success: true });
     render(<RequestAccessScreen {...baseProps({ requestAccess })} />);
