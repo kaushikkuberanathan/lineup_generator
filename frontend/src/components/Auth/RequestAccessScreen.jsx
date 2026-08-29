@@ -9,6 +9,18 @@
  * URL params:
  *   ?team=1774297491626  — pre-fills team ID
  *   ?role=coach          — pre-fills role
+ *   ?terms=open          — auto-opens the Terms of Service sheet on load
+ *                          (the "deep link" a support email or the Account
+ *                          tab's Terms of Service row can send someone to;
+ *                          see Legal/LegalDocSheet.jsx)
+ *
+ * Terms of Service consent: added alongside the Account tab's own Terms of
+ * Service entry point (both render content/legal.js's "terms" doc through
+ * the same LegalDocBody component — see that file's header comment for why
+ * there is exactly one copy of this text). A coach can't submit an access
+ * request without checking "I agree" first; the checked version is stamped
+ * onto the request payload (acceptedTermsVersion) so we always know which
+ * text a given approval was granted against.
  *
  * On submit: POST /auth/request-access → PendingApprovalScreen
  */
@@ -16,8 +28,11 @@
 import { useState, useEffect } from 'react';
 import { track } from '@/utils/analytics';
 import { tokens } from "../../theme/tokens";
+import { LEGAL_DOCS } from "../../content/legal";
+import { LegalDocSheet } from "../Legal/LegalDocSheet";
 
 const TEAM_ID = import.meta.env.VITE_DEFAULT_TEAM_ID || '1774297491626';
+const TERMS_DOC = LEGAL_DOCS.find(function(d) { return d.id === 'terms'; });
 
 // Label layer (WS-1 #336): what the coach SEES is richer than what we STORE.
 // `value` is sent to POST /request-access as `requestedRole`; the backend's
@@ -52,15 +67,21 @@ export function RequestAccessScreen({
   const [loading, setLoading]     = useState(false);
   const [error, setError]         = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [openLegalDoc, setOpenLegalDoc]   = useState(null); // "terms" | "privacy" | null
 
   const selectedRoleOption = ROLE_OPTIONS.find(r => r.id === roleId);
 
-  // Pre-fill from URL params
+  // Pre-fill from URL params; ?terms=open deep-links straight into the ToS sheet
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const roleParam = params.get('role');
     if (roleParam && ROLE_OPTIONS.find(r => r.id === roleParam)) {
       setRoleId(roleParam);
+    }
+    if (params.get('terms') === 'open') {
+      setOpenLegalDoc('terms');
+      track("tos_link_opened", { source: "deep_link" });
     }
   }, []);
 
@@ -71,9 +92,12 @@ export function RequestAccessScreen({
     if (!email.trim())     return setError('Email address is required');
     if (!email.includes('@')) return setError('Enter a valid email address');
     if (!teamId.trim() && !TEAM_ID) return setError('Team ID is required');
+    if (!agreedToTerms) return setError('Please agree to the Terms of Service to continue');
 
     setError('');
     setLoading(true);
+
+    track("tos_consented", { version: TERMS_DOC ? TERMS_DOC.version : null });
 
     const result = await requestAccess({
       firstName: firstName.trim(),
@@ -81,6 +105,9 @@ export function RequestAccessScreen({
       email:     email.trim().toLowerCase(),
       role:      selectedRoleOption.value,
       tid:       teamId.trim() || TEAM_ID,
+      acceptedTerms:        true,
+      acceptedTermsVersion: TERMS_DOC ? TERMS_DOC.version : null,
+      acceptedAt:           new Date().toISOString(),
     }, { preserveSession });
 
     setLoading(false);
@@ -217,9 +244,38 @@ export function RequestAccessScreen({
             )}
           </div>
 
+          <label style={styles.consentRow} htmlFor="request-access-consent">
+            <input
+              type="checkbox"
+              id="request-access-consent"
+              checked={agreedToTerms}
+              onChange={e => { setAgreedToTerms(e.target.checked); setError(''); }}
+              style={styles.consentCheckbox}
+              disabled={loading}
+            />
+            <span style={styles.consentText}>
+              I agree to the{' '}
+              <button
+                type="button"
+                style={styles.consentLink}
+                onClick={() => { setOpenLegalDoc('terms'); track("tos_link_opened", { source: "checkbox_label" }); }}
+              >
+                Terms of Service
+              </button>
+              {' '}and{' '}
+              <button
+                type="button"
+                style={styles.consentLink}
+                onClick={() => { setOpenLegalDoc('privacy'); track("tos_link_opened", { source: "checkbox_label", doc: "privacy" }); }}
+              >
+                Privacy Policy
+              </button>
+            </span>
+          </label>
+
           {error && <p style={styles.error}>{error}</p>}
 
-          <button type="submit" style={styles.primaryBtn} disabled={loading}>
+          <button type="submit" style={styles.primaryBtn} disabled={loading || !agreedToTerms}>
             {loading ? 'Submitting…' : 'Request access'}
           </button>
 
@@ -238,6 +294,12 @@ export function RequestAccessScreen({
         )}
 
       </div>
+
+      <LegalDocSheet
+        open={!!openLegalDoc}
+        docId={openLegalDoc}
+        onClose={() => setOpenLegalDoc(null)}
+      />
     </div>
   );
 }
@@ -329,6 +391,38 @@ const styles = {
     margin: '6px 0 0',
     fontSize: '12px',
     color: tokens.color.status.warningText,
+  },
+  consentRow: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: '10px',
+    padding: '4px 2px',
+    cursor: 'pointer',
+    minHeight: '44px',
+  },
+  consentCheckbox: {
+    marginTop: '2px',
+    width: '18px',
+    height: '18px',
+    flexShrink: 0,
+    accentColor: tokens.color.status.info,
+    cursor: 'pointer',
+  },
+  consentText: {
+    fontSize: '13px',
+    lineHeight: '1.5',
+    color: tokens.color.text.body,
+  },
+  consentLink: {
+    background: 'none',
+    border: 'none',
+    padding: 0,
+    margin: 0,
+    font: 'inherit',
+    fontWeight: '600',
+    color: tokens.color.status.info,
+    textDecoration: 'underline',
+    cursor: 'pointer',
   },
   preselectedTeam: {
     padding: '11px 13px',

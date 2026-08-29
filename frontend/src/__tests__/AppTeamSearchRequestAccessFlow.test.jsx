@@ -105,6 +105,7 @@ describe("App Home -> TeamSearch -> RequestAccessScreen wired flow (#664 item 1)
     fireEvent.change(screen.getByPlaceholderText("Jane"), { target: { value: "Jane" } });
     fireEvent.change(screen.getByPlaceholderText("Smith"), { target: { value: "Smith" } });
     fireEvent.change(screen.getByPlaceholderText("you@example.com"), { target: { value: "jane@example.com" } });
+    fireEvent.click(screen.getByLabelText(/i agree to the/i));
     fireEvent.click(screen.getByRole("button", { name: /request access/i }));
 
     await waitFor(function () {
