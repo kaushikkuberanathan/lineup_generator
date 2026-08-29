@@ -290,7 +290,12 @@ export function RequestAccessScreen({
 
           {error && <p style={styles.error}>{error}</p>}
 
-          <button type="submit" style={styles.primaryBtn} disabled={loading || !agreedToTerms}>
+          <button
+            type="submit"
+            style={agreedToTerms ? styles.primaryBtn : styles.primaryBtnDisabled}
+            disabled={loading || !agreedToTerms}
+            aria-disabled={loading || !agreedToTerms}
+          >
             {loading ? 'Submitting…' : 'Request access'}
           </button>
 
@@ -458,6 +463,24 @@ const styles = {
     border: 'none',
     borderRadius: '10px',
     cursor: 'pointer',
+    marginTop: '4px',
+  },
+  // Visually distinct from primaryBtn — without this, a `disabled` button
+  // whose background/color are set inline (as primaryBtn's are) shows no
+  // visual difference from enabled: browsers don't override an explicit
+  // inline background-color/color for :disabled, so "disabled" was
+  // functionally real (clicking did nothing) but invisible to the user
+  // until they'd already tried. tokens.color.text.disabled is this repo's
+  // established gray-400 "disabled states" token.
+  primaryBtnDisabled: {
+    padding: '13px',
+    fontSize: '16px',
+    fontWeight: '600',
+    backgroundColor: tokens.color.text.disabled,
+    color: tokens.color.text.onDark,
+    border: 'none',
+    borderRadius: '10px',
+    cursor: 'not-allowed',
     marginTop: '4px',
   },
   linkBtn: {
