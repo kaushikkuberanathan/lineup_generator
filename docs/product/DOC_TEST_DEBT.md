@@ -34,7 +34,13 @@ files; 295 backend unit tests passed.
 - QA Coverage Scope follow-up (#965): `playerMapper.test.js` closes #945 —
   34 new tests covering each `mapPlayerToV2` inference branch individually,
   including a lock-in for the deliberately-unwired V1 speed/contact/power
-  bridges. New totals: 1520 frontend tests across 137 files.
+  bridges. `useAuth.logout.test.js` closes #944 — 5 new tests covering
+  `logout()` (the one exported function of `useAuth.js` with zero prior
+  coverage; `checkSession`/`onAuthStateChange`/`sendMagicLink` were already
+  covered by `auth.test.js`, and `requestAccess`/`updateProfileName`/
+  `refreshMemberships` by their own dedicated files) plus a lock-in that an
+  unhandled `onAuthStateChange` event type is a no-op. New totals: 1525
+  frontend tests across 138 files.
 
 ---
 
