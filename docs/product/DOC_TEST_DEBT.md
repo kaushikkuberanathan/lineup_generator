@@ -61,16 +61,19 @@ files; 295 backend unit tests passed.
   grep — `isStandalone` is derived purely from `matchMedia`), and the
   already-installed exclusion suppressing the banner on both platforms.
   The old standalone "🟡 P2 — PWA Install Prompt Logic" entry further down
-  in this file is moved to Resolved below. New totals: 1530 frontend tests
-  across 140 files.
-
----
-
-## QA Coverage Scope follow-up (#965)
-
-Child issues opened from the 2026-08-30 QA & Reliability Audit ([#941](https://github.com/kaushikkuberanathan/lineup_generator/issues/941)) tracking specific test-coverage gaps identified during that pass, filed under the umbrella [#965](https://github.com/kaushikkuberanathan/lineup_generator/issues/965).
-
-- [#969](https://github.com/kaushikkuberanathan/lineup_generator/issues/969) — `loadDemoTeam()` demo team seeding + seed-version upgrade path had zero automated coverage. Resolved — see the Resolved section's "D-S332" entry for full detail, including a real finding that the upgrade branch is currently unreachable via the UI as wired today.
+  in this file is moved to Resolved below.
+- QA Coverage Scope follow-up (#969): `AppDemoTeamGoldenPath.test.jsx`
+  closes #969 — 3 new tests covering `loadDemoTeam()`'s fresh-creation
+  path, the dedup guard at the current seed version, and an existing
+  older-version demo team. **Real finding, not fixed here (out of scope,
+  App.jsx is a locked file):** the "Try Demo Team" button is hidden by
+  team-name match only, not `demoSeedVersion` — so `loadDemoTeam()`'s own
+  version-comparison/old-key-cleanup branch is currently unreachable via
+  the UI as wired today. See the Resolved section's "D-S332" entry for full
+  detail. Final totals, directly re-measured against `develop` HEAD
+  `6caf0dc`: 1533 frontend tests across 141 files; 299 backend unit tests.
+  (This line previously showed 1530/140, stale from a merge race between
+  two concurrent sessions resolving the same branch's conflicts.)
 
 ---
 
