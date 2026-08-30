@@ -11,11 +11,10 @@
 // dbSaveTeamData() writes team_data directly from the browser and never touches
 // app.write_source at all (see migration 006's header).
 //
-// Migration 026 adds a role-based fallback instead: a new BEFORE trigger
-// (capture_write_source_role, SECURITY INVOKER) stashes current_user into a
-// transaction-scoped GUC before the existing AFTER trigger (snapshot_team_data,
-// SECURITY DEFINER, migration 006) reads it back. Both fire within the SAME
-// statement/transaction, so no cross-call fragility.
+// Migration 026 adds a role-based fallback instead: snapshot_team_data reads
+// PostgREST's transaction-local request.jwt.claims and records its `role` claim.
+// The final live implementation is one SECURITY DEFINER trigger function; an
+// earlier two-trigger/GUC attempt was removed before the migration settled.
 //
 // This is real-role behavior, not something a monkey-patched supabase-js client can
 // exercise — it needs an actual Postgres role switch per write, which is exactly
@@ -80,7 +79,7 @@ describe('WSF — write_source role-based fallback (#379 / migration 026)', () =
     if (userErr) throw new Error('createUser failed for ' + TEST_EMAIL + ': ' + userErr.message);
 
     const { error: teamErr } = await admin.from('teams').insert({
-      id: TEST_TEAM_ID, name: 'ZZZ RLS Test Write-Source Fallback', age_group: '8U', year: 2026, sport: 'baseball',
+      id: TEST_TEAM_ID, name: 'ZZZ RLS Test Write-Source Fallback', age_group: '8U', year: 2026, season: 'Spring', sport: 'baseball',
     });
     if (teamErr) throw new Error('teams insert failed: ' + teamErr.message);
 

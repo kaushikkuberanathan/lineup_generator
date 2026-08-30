@@ -50,7 +50,7 @@ describe('Schema integrity — foreign key inventory (#347)', () => {
     await teardown();
     const admin = adminClient();
     const { error } = await admin.from('teams').insert({
-      id: TEST_TEAM_ID, name: 'ZZZ RLS Test Schema Integrity', age_group: '8U', year: 2026, sport: 'baseball',
+      id: TEST_TEAM_ID, name: 'ZZZ RLS Test Schema Integrity', age_group: '8U', year: 2026, season: 'Spring', sport: 'baseball',
     });
     if (error) throw new Error('seed teams insert failed: ' + error.message);
   });
