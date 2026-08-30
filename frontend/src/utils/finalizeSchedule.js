@@ -4,6 +4,7 @@ import { supabase } from '../supabase';
 // in-session recovery fallback storage.js has for quota-blocked/unavailable
 // localStorage, which the old private copy lacked.
 import { loadJSON, saveJSON } from './storage';
+import { rememberPendingFinalization } from './pendingFinalizationSync';
 
 // Writes usScore/oppScore/gameStatus/finalizedAt to the game object in
 // team_data.schedule. Idempotent — re-calling on an already-final game is a no-op.
@@ -41,11 +42,19 @@ export async function finalizeSchedule({ gameId, teamId, usScore, oppScore, user
         .update({ schedule: updatedSchedule })
         .eq('team_id', String(teamId));
       if (r.error) {
-        saveJSON('pending_sync:' + teamId + ':finalize', { gameId: gameId, ts: new Date().toISOString() });
+        rememberPendingFinalization({
+          teamId: teamId,
+          gameId: gameId,
+          finalizedAt: updatedSchedule[gameIndex].finalizedAt,
+        });
         return { ok: false, error: 'sync_failed' };
       }
     } catch(e) {
-      saveJSON('pending_sync:' + teamId + ':finalize', { gameId: gameId, ts: new Date().toISOString() });
+      rememberPendingFinalization({
+        teamId: teamId,
+        gameId: gameId,
+        finalizedAt: updatedSchedule[gameIndex].finalizedAt,
+      });
       return { ok: false, error: 'sync_failed' };
     }
   }

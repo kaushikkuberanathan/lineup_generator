@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { tokens } from "../../theme/tokens";
 import { Text } from "../ui/Text";
 import { PlayerHandBadge } from "../PlayerHandBadge";
@@ -7,7 +8,28 @@ function firstName(name) {
   return name.split(' ')[0];
 }
 
+function ordinal(n) {
+  var s = n % 100;
+  if (s >= 11 && s <= 13) return n + 'th';
+  switch (n % 10) {
+    case 1: return n + 'st';
+    case 2: return n + 'nd';
+    case 3: return n + 'rd';
+    default: return n + 'th';
+  }
+}
+
 export function BattingOrderStrip({ battingOrder, currentBatterIndex, roster }) {
+  var stripRef = useRef(null);
+  var len = battingOrder ? battingOrder.length : 0;
+  var idx = len > 0 ? (currentBatterIndex || 0) % len : 0;
+
+  useEffect(function() {
+    if (stripRef.current) {
+      stripRef.current.scrollLeft = 0;
+    }
+  }, [idx]);
+
   // #128: NowBattingBar (App.jsx's own strip + GameModeScreen) has always
   // shown batting-hand badges via this same roster.find(r => r.name ===
   // name) pattern; BattingOrderStrip (DugoutView's strip, the GA-default
@@ -36,16 +58,14 @@ export function BattingOrderStrip({ battingOrder, currentBatterIndex, roster }) 
     );
   }
 
-  var len = battingOrder.length;
-  var idx = (currentBatterIndex || 0) % len;
-  var nowName    = battingOrder[idx];
-  var onDeckName = len > 1 ? battingOrder[(idx + 1) % len] : null;
-  var inHoleName = len > 2 ? battingOrder[(idx + 2) % len] : null;
-  var remaining  = Math.max(0, len - 3);
+  var orderedBatters = battingOrder.map(function(_, offset) {
+    return battingOrder[(idx + offset) % len];
+  });
 
   var pillBase = {
-    flex: 1, minWidth: 0, textAlign: 'center',
+    flex: '0 0 clamp(112px, 31vw, 148px)', minWidth: 0, textAlign: 'center',
     borderRadius: '8px', padding: '6px 8px',
+    scrollSnapAlign: 'start', boxSizing: 'border-box',
   };
 
   function pillStyle(active) {
@@ -71,51 +91,48 @@ export function BattingOrderStrip({ battingOrder, currentBatterIndex, roster }) 
     };
   }
 
+  function roleForOffset(offset) {
+    if (offset === 0) return 'Now Batting';
+    if (offset === 1) return 'On Deck';
+    if (offset === 2) return 'In Hole';
+    return 'Up ' + ordinal(offset + 1);
+  }
+
+  function testIdForOffset(offset) {
+    if (offset === 0) return 'bos-now';
+    if (offset === 1) return 'bos-on-deck';
+    if (offset === 2) return 'bos-in-hole';
+    return 'bos-up-' + (offset + 1);
+  }
+
   return (
-    <div style={{
+    <div
+      ref={stripRef}
+      className="batting-order-carousel"
+      data-testid="batting-order-carousel"
+      role="region"
+      aria-label="Batting order"
+      tabIndex={0}
+      style={{
       background: tokens.color.surface.chrome, color: '#ffffff',
       fontFamily: "Georgia,'Times New Roman',serif",
       padding: '8px 10px', width: '100%', boxSizing: 'border-box',
       display: 'flex', alignItems: 'stretch', gap: '8px',
+      overflowX: 'auto', overscrollBehaviorX: 'contain',
+      scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch',
+      scrollbarWidth: 'none',
     }}>
-      <div data-testid="bos-now" style={pillStyle(true)}>
-        <Text as="div" style={nameStyle(true)}>
-          {firstName(nowName)}{' '}<PlayerHandBadge hand={getHand(nowName)} context="dark" />
-        </Text>
-        <Text as="div" uppercase style={labelStyle(true)}>Now Batting</Text>
-      </div>
-
-      {onDeckName ? (
-        <div data-testid="bos-on-deck" style={pillStyle(false)}>
-          <Text as="div" style={nameStyle(false)}>
-            {firstName(onDeckName)}{' '}<PlayerHandBadge hand={getHand(onDeckName)} context="dark" />
-          </Text>
-          <Text as="div" uppercase style={labelStyle(false)}>On Deck</Text>
-        </div>
-      ) : null}
-
-      {inHoleName ? (
-        <div data-testid="bos-in-hole" style={pillStyle(false)}>
-          <Text as="div" style={nameStyle(false)}>
-            {firstName(inHoleName)}{' '}<PlayerHandBadge hand={getHand(inHoleName)} context="dark" />
-          </Text>
-          <Text as="div" uppercase style={labelStyle(false)}>In Hole</Text>
-        </div>
-      ) : null}
-
-      {remaining > 0 ? (
-        <Text
-          as="div"
-          data-testid="bos-more"
-          style={{
-            flexShrink: 0, alignSelf: 'center',
-            fontSize: '11px', color: 'rgba(255,255,255,0.4)',
-            letterSpacing: '0.04em', whiteSpace: 'nowrap',
-          }}
-        >
-          +{remaining} more
-        </Text>
-      ) : null}
+      {orderedBatters.map(function(name, offset) {
+        var active = offset === 0;
+        return (
+          <div key={name + '-' + offset} data-testid={testIdForOffset(offset)} style={pillStyle(active)}>
+            <Text as="div" style={nameStyle(active)}>
+              {firstName(name)}{' '}<PlayerHandBadge hand={getHand(name)} context="dark" />
+            </Text>
+            <Text as="div" uppercase style={labelStyle(active)}>{roleForOffset(offset)}</Text>
+          </div>
+        );
+      })}
     </div>
   );
 }

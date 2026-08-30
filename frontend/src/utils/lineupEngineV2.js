@@ -16,7 +16,12 @@ function buildEmptyGrid(players, innings) {
   return grid;
 }
 
-function chooseBenchPlayers(players, benchCount) {
+// Large enough to dominate getBenchCandidateScore's own range so rotation
+// fairness always wins once a player is over-benched relative to the group
+// average — see bench-equity.test.js Group 2 for the rationale.
+const BENCH_FAIRNESS_WEIGHT = 1000;
+
+function chooseBenchPlayers(players, benchCount, benchHistory) {
   if (benchCount <= 0) return [];
 
   const benchEligible = players.filter((p) => !p.skipBench);
@@ -27,8 +32,18 @@ function chooseBenchPlayers(players, benchCount) {
     );
   }
 
+  const totalBenchSoFar = benchEligible.reduce(
+    (sum, p) => sum + (benchHistory[p.name] || 0),
+    0
+  );
+  const averageBenchCount = benchEligible.length > 0 ? totalBenchSoFar / benchEligible.length : 0;
+
+  const fairnessAdjustedScore = (p) =>
+    getBenchCandidateScore(p) +
+    BENCH_FAIRNESS_WEIGHT * ((benchHistory[p.name] || 0) - averageBenchCount);
+
   return [...benchEligible]
-    .sort((a, b) => getBenchCandidateScore(a) - getBenchCandidateScore(b))
+    .sort((a, b) => fairnessAdjustedScore(a) - fairnessAdjustedScore(b))
     .slice(0, benchCount);
 }
 
@@ -79,12 +94,18 @@ export function generateLineupV2(roster, innings) {
     (a, b) => getBattingOrderScore(b) - getBattingOrderScore(a)
   );
 
+  const benchHistory = {};
+
   for (let inning = 0; inning < innings; inning++) {
     let inningBench = [];
 
     if (benchCountPerInning > 0) {
-      inningBench = chooseBenchPlayers(players, benchCountPerInning);
+      inningBench = chooseBenchPlayers(players, benchCountPerInning, benchHistory);
     }
+
+    inningBench.forEach((p) => {
+      benchHistory[p.name] = (benchHistory[p.name] || 0) + 1;
+    });
 
     const benchNames = new Set(inningBench.map((p) => p.name));
     const activePlayers = players.filter((p) => !benchNames.has(p.name));

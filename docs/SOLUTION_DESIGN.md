@@ -486,18 +486,31 @@ primary gate for backend routes.
 Migration file: `backend/migrations/004_rls_fixes.sql` (idempotent, safe to
 re-run — its policies are already live, so re-running is a no-op, not a re-application)
 
-### Auth Shims Still Outstanding (Phase 4C, scoring tables only)
+### Auth Shims — Phase 4C, scoring tables only (steps 1-2 of 7 done as of v3.0.0)
 
-The auth cutover above is complete for `team_data`/`teams`/`roster_snapshots` and
-the sign-in flow generally. What's still deferred is narrower than "auth isn't
-done" — it's specifically the live-scoring tables:
+**Corrected 2026-08-29** — this section previously described the shims below as "still outstanding." Two of the four are gone as of v3.0.0's Phase 4C steps 1-2 (Story 129/#688, PRs #898/#899, 2026-08-29); the section had gone stale by describing removed code as live. It also named `ScoringMode/` as a shim location — that file (`ScoringMode/index.jsx`) was deleted in Slice 4 (v2.5.11); the real location, as of `DugoutView.jsx`'s Slice 0 (v2.5.4) lift-in, was always `frontend/src/components/game-mode/DugoutView.jsx`.
 
-- `_effectiveUserId`/`_effectiveUserName` fallback in `useLiveScoring.js` (marked `AUTH TESTING SHIM`)
-- `scoringUserId`/`scoringUserName` fallback + `isAdminTestMode` in `ScoringMode/`
-- `var isEnabled = liveScoringEnabled || true` in `DugoutView.jsx` — forces live scoring on regardless of the real per-team flag (see Feature Flag System § `live_scoring` below)
-- The scoring tables' own RLS (#355, table above) is not gated by `auth.uid()` yet
+Removed (step 2, PR #899):
+- `_effectiveUserId`/`_effectiveUserName` fallback in `useLiveScoring.js` — the hook now uses its `userId`/`userName` params directly, no fallback of its own.
+- `var isEnabled = liveScoringEnabled || true` in `DugoutView.jsx` — gone; `isEnabled = liveScoringEnabled`, the real per-team flag value, now actually gates the surface (see Feature Flag System § `live_scoring` below).
+- The `scorer_local_id` localStorage device-id fallback in `DugoutView.jsx` — gone. `scoringUserId` now resolves `user.id` → `session.user.id` → `null`; an unauthenticated scorer reaches the write path with a `null` identity, not a stable device id.
 
-All four are scoped to Phase 4C, tracked in `docs/ops/PHASE4C_CUTOVER.md` and root `CLAUDE.md`'s Phase 4C checklist. Do not remove without walking that checklist.
+**Still outstanding (steps 3-7):**
+- `isAdminTestMode` in `DugoutView.jsx` — stays hardcoded `false`; removing the variable entirely is step 7, not done yet.
+- The scoring tables' own RLS is only additively hardened so far: step 1 (PR #898) added 11 new `auth.uid()`-scoped policies alongside the existing ones, but the dangerous permissive policies (`allow_scorer_writes` × 3, `*_anon_test` backdoors × 4) are **still live in prod** — dropping them is step 3+ (Section B of migration 019), gated on a full prod game-day soak confirming `scoring_audit_log.actor_user_id` shows real `auth.users` UUIDs, not shim values. #355 (this section's own tracking issue) stays open until that drop happens.
+
+All remaining steps scoped to Phase 4C, tracked in `docs/ops/PHASE4C_CUTOVER.md`, `docs/product/PHASE4C_SCORING_RLS_PROPOSAL.md`, and root `CLAUDE.md`'s Phase 4C checklist. Do not remove `isAdminTestMode` or drop the permissive policies without walking that checklist.
+
+### Terms of Service Consent (registration gate)
+
+**Added 2026-08-29**, documenting PRs #907/#910/#913 (`develop`-only as of this writing, not yet promoted or version-bumped) — by a session other than the one that authored the feature, from reading the code directly.
+
+The registration screen (`RequestAccessScreen.jsx`) gates `POST /request-access` submission on a required "I agree to the Terms of Service and Privacy Policy" checkbox. Two independent concerns, kept deliberately separate:
+
+1. **What the coach read** — `frontend/src/content/legal.js`. Every doc in `LEGAL_DOCS` (`privacy`, `terms`, `safety`, `content`, `access`, `report`) carries a `versions[]` array, oldest first. `getLegalDoc(id)` always resolves to the latest version; `getLegalDocVersion(id, version)` retrieves any prior version's exact text for audit. Bumping a document's text is one edit — append a new `versions[]` entry — with no component, route, or migration change required, since every consumer (`LegalDocBody`, shared by the Account tab's `LegalSection` and the registration screen's `LegalDocSheet`) reads through `getLegalDoc()`. `terms` was rewritten v1.0→v2.0 as part of this work into a fuller, Dugout-Lineup-specific Terms of Service; the original text is preserved as v1.0, not overwritten.
+2. **That the coach agreed, and to what version** — a new, additive-only table (`legal_consents`, migration 028) and route (`POST /api/v1/auth/consent`). Stores only `email`/`doc_id`/`version`/`context`/`accepted_at` — never the document text itself; the version string is the pointer back into `legal.js`'s git history. Deliberately a new table rather than columns on `access_requests`, per the Zero-Downtime Constraint (`backend/CLAUDE.md`) still in force pending Phase 4C — adding columns there would mean editing `POST /request-access`'s existing handler, which that constraint forbids. RLS enabled, zero policies (service-role only, same pattern as `team_data_history` in the Data Protection section below) — a consent record must never be forgeable or readable via a client-side key. The frontend call (`utils/legalConsent.js`'s `logLegalConsent()`) is fire-and-forget and swallows all errors; a failed consent log must never block or surface an error on registration.
+
+**Migration 028 applied 2026-08-29** to both DEV (`psqvzppphdedqkpmarwx`) and PROD (`hzaajccyurlyeweekvma`), same session, KK confirmed go-ahead — verified live on both via a real insert + cleanup, security advisors re-run clean. `POST /api/v1/auth/consent` is functional on the live DEV backend, not the earlier 500-on-every-call state this note originally flagged.
 
 ---
 

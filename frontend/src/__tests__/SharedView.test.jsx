@@ -1,6 +1,6 @@
 // DOC_TEST_DEBT.md "Share Link Payload Integrity" (P0) — second half of the
 // ticket's ask: "a DOM test that SharedView renders all sections without
-// errors given the payload." SharedView (App.jsx) is the component every
+// errors given the payload." SharedView is the component every
 // share link and viewer link ultimately renders; buildSharePayload.test.js
 // covers the payload-building half, this covers the render half.
 //
@@ -11,17 +11,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 
-// App.jsx imports `virtual:pwa-register/react` — a Vite-plugin-generated
-// virtual module that vite-plugin-pwa only resolves in real dev/build
-// pipelines, not under Vitest's module loader (confirmed: importing App.jsx
-// unmocked throws "argument 'filename' must be a file URL..." trying to
-// resolve it). SharedView itself never touches the SW registration hook
-// (that's only called inside the App() component), so a no-op mock is safe.
-vi.mock("virtual:pwa-register/react", () => ({
-  useRegisterSW: () => ({ needRefresh: [false], updateServiceWorker: () => {} }),
-}));
-
-import { SharedView } from "../App";
+import { SharedView } from "../screens/Share/SharedView";
 
 function makeRenderFieldSVG() {
   return vi.fn(function () {

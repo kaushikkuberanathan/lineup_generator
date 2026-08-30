@@ -91,7 +91,7 @@ describe('TM — auto-provisioned team_memberships on team creation (#561)', () 
   // This is what stopped being RLS-denied — see bug #1 in the file header.
   test('TM1: authenticated coach CAN create a new team via plain INSERT (bug #1 fix)', async () => {
     const res = await coach.from('teams').insert(
-      { id: TEST_TEAM_ID, name: 'ZZZ RLS Test Auto-Provision', age_group: '8U', year: 2026, sport: 'baseball' }
+      { id: TEST_TEAM_ID, name: 'ZZZ RLS Test Auto-Provision', age_group: '8U', year: 2026, season: 'Spring', sport: 'baseball' }
     );
     assert.equal(
       res.error, null,
@@ -141,12 +141,12 @@ describe('TM — auto-provisioned team_memberships on team creation (#561)', () 
   // fire the teams AFTER INSERT trigger again (no duplicate membership row).
   test('TM4: re-saving the same team (INSERT-conflict -> UPDATE fallback) succeeds and does not duplicate the membership row', async () => {
     const conflictRes = await coach.from('teams').insert(
-      { id: TEST_TEAM_ID, name: 'ZZZ RLS Test Auto-Provision (conflict attempt)', age_group: '8U', year: 2026, sport: 'baseball' }
+      { id: TEST_TEAM_ID, name: 'ZZZ RLS Test Auto-Provision (conflict attempt)', age_group: '8U', year: 2026, season: 'Spring', sport: 'baseball' }
     );
     assert.equal(conflictRes.error?.code, '23505', 're-inserting the same id must hit a real unique-constraint conflict');
 
     const updateRes = await coach.from('teams').update(
-      { id: TEST_TEAM_ID, name: 'ZZZ RLS Test Auto-Provision (renamed)', age_group: '8U', year: 2026, sport: 'baseball' }
+      { id: TEST_TEAM_ID, name: 'ZZZ RLS Test Auto-Provision (renamed)', age_group: '8U', year: 2026, season: 'Spring', sport: 'baseball' }
     ).eq('id', TEST_TEAM_ID);
     assert.equal(updateRes.error, null, 'the fallback UPDATE must succeed for the rightful (admin) owner');
 

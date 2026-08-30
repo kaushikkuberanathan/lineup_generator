@@ -15,6 +15,7 @@ import {
   migrateBattingPerf,
   mergeLocalScheduleFields,
 } from '../utils/migrations.js';
+import { MERGE_FIELDS } from '../utils/scheduleHydrationFields.js';
 
 // ============================================================================
 // Group 1 — migrateRoster: V2 field defaults and legacy skill rename
@@ -264,7 +265,6 @@ describe('Group 3 — migrateBattingPerf', function () {
 // reset bug. Changes here can silently destroy coach-entered data.
 // ============================================================================
 
-const MERGE_FIELDS = ['scoreReported', 'snackDuty', 'snackNote', 'gameBall', 'usScore', 'oppScore', 'gameStatus', 'finalizedAt'];
 
 describe('Group 4 — mergeLocalScheduleFields (hydration rescue)', function () {
 

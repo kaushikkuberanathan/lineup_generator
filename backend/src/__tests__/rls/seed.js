@@ -140,7 +140,7 @@ async function seedAdminDeleteFixture() {
   if (userErr) throw new Error('createUser failed for ' + ADMIN_EMAIL + ': ' + userErr.message);
 
   const { error: teamErr } = await admin.from('teams').insert({
-    id: TEAM_C, name: 'ZZZ RLS Test C (admin delete)', age_group: '8U', year: 2026, sport: 'baseball',
+    id: TEAM_C, name: 'ZZZ RLS Test C (admin delete)', age_group: '8U', year: 2026, season: 'Spring', sport: 'baseball',
   });
   if (teamErr) throw new Error('teams insert failed for TEAM_C: ' + teamErr.message);
 
@@ -181,7 +181,7 @@ async function seedAdminRecursionFixture() {
   if (userErr) throw new Error('createUser failed for ' + ADMIN_RECURSION_EMAIL + ': ' + userErr.message);
 
   const { error: teamErr } = await admin.from('teams').insert({
-    id: TEAM_E, name: 'ZZZ RLS Test E (recursion admin)', age_group: '8U', year: 2026, sport: 'baseball',
+    id: TEAM_E, name: 'ZZZ RLS Test E (recursion admin)', age_group: '8U', year: 2026, season: 'Spring', sport: 'baseball',
   });
   if (teamErr) throw new Error('teams insert failed for TEAM_E: ' + teamErr.message);
 
@@ -221,8 +221,8 @@ async function seed() {
   // teams.id is TEXT (schema.sql) — slugs are valid, no uuid cast needed.
   {
     const { error } = await admin.from('teams').insert([
-      { id: TEAM_A, name: 'ZZZ RLS Test A', age_group: '8U', year: 2026, sport: 'baseball' },
-      { id: TEAM_B, name: 'ZZZ RLS Test B', age_group: '8U', year: 2026, sport: 'baseball' },
+      { id: TEAM_A, name: 'ZZZ RLS Test A', age_group: '8U', year: 2026, season: 'Spring', sport: 'baseball' },
+      { id: TEAM_B, name: 'ZZZ RLS Test B', age_group: '8U', year: 2026, season: 'Spring', sport: 'baseball' },
     ]);
     if (error) throw new Error('teams insert failed: ' + error.message);
   }

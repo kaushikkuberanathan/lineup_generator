@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { LEGAL_DOCS } from "../../content/legal";
+import { LEGAL_DOCS, getLegalDoc } from "../../content/legal";
+import { LegalDocBody } from "../Legal/LegalDocBody";
 import { ListRow } from "../ui/ListRow";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
@@ -15,12 +16,21 @@ import { tokens } from "../../theme/tokens";
  * Phase 3 Step 3 migration: C/S props removed; consumes ui primitives.
  *   Doc rows  → ListRow
  *   Back nav  → Button variant="ghost" + border:none style escape
- *   Doc body  → Card (style escape — S.card has no clean token equivalent)
+ *   Doc body  → LegalDocBody (shared with the registration-screen consent
+ *               sheet, Legal/LegalDocSheet.jsx — single rendering path, see
+ *               that file's header comment)
  *   Layout    → Stack
  *   Typography → Text
+ *
+ * initialDocId (optional): pre-opens a specific doc (e.g. "terms") instead
+ * of the list view. Wired for the Account tab's "Terms of Service" entry
+ * point — see the hand-off snippet for renderAccount() in App.jsx (not
+ * applied here; App.jsx is a gated file). Passing null/omitting behaves
+ * exactly as before this prop existed.
  */
-export function LegalSection() {
-  var _open = useState(null);
+export function LegalSection({ initialDocId = null }) {
+  var _initial = initialDocId ? getLegalDoc(initialDocId) : null;
+  var _open = useState(_initial || null);
   var openDoc = _open[0];
   var setOpenDoc = _open[1];
 
@@ -49,7 +59,7 @@ export function LegalSection() {
         return (
           <ListRow
             key={doc.id}
-            onClick={function() { setOpenDoc(doc); }}
+            onClick={function() { setOpenDoc(getLegalDoc(doc.id)); }}
             showDivider={!isLast}
           >
             <span style={{
@@ -87,7 +97,7 @@ export function LegalSection() {
           color="tertiary"
           style={{ display: "block", textAlign: "center", lineHeight: tokens.font.lineHeight.comfortable }}
         >
-          Last updated April 2026 &middot; Questions? Use the Feedback tab.
+          Each document lists its own effective date &middot; Questions? Use the Feedback tab.
         </Text>
       </div>
     </div>
@@ -139,65 +149,7 @@ function LegalViewer({ doc, onBack }) {
             border: "1px solid " + tokens.color.border.default,
           }}
         >
-          <Text
-            size="xs"
-            color="tertiary"
-            style={{ display: "block", marginBottom: tokens.space.lg }}
-          >
-            Last updated {doc.lastUpdated}
-          </Text>
-          {doc.sections.map(function(section, idx) {
-            if (section.type === "h3") {
-              return (
-                <Text
-                  key={idx}
-                  size="body"
-                  weight="bold"
-                  color="navy"
-                  style={{
-                    display: "block",
-                    marginTop: idx === 0 ? 0 : tokens.space.lg,
-                    marginBottom: "6px",
-                    letterSpacing: "0.02em",
-                  }}
-                >
-                  {section.text}
-                </Text>
-              );
-            }
-            if (section.type === "p") {
-              return (
-                <Text
-                  key={idx}
-                  size="body"
-                  color="primary"
-                  style={{
-                    display: "block",
-                    lineHeight: tokens.font.lineHeight.relaxed,
-                    marginBottom: "10px",
-                  }}
-                >
-                  {section.text}
-                </Text>
-              );
-            }
-            if (section.type === "ul") {
-              return (
-                <ul key={idx} style={{
-                  margin: "0 0 10px",
-                  paddingLeft: tokens.space.xl,
-                  fontSize: tokens.font.size.body,
-                  color: tokens.color.text.primary,
-                  lineHeight: tokens.font.lineHeight.relaxed,
-                }}>
-                  {section.items.map(function(item, i) {
-                    return <li key={i} style={{ marginBottom: tokens.space.xs }}>{item}</li>;
-                  })}
-                </ul>
-              );
-            }
-            return null;
-          })}
+          <LegalDocBody doc={doc} />
         </Card>
       </div>
 

@@ -83,7 +83,7 @@ Both shims have now been removed, per `docs/product/PHASE4C_SCORING_RLS_PROPOSAL
 ## Test Suite
 
 - **Framework**: Vitest
-- **CI target**: 1401 frontend passed / 1 skipped / 0 failed (as of v3.0.0, 2026-08-29; 122 test files; backend unit count 269 — see `backend/CLAUDE.md` § Test Suite for that count's own history). Corrected from the stale 1390/120-files figure (2026-08-27, #112/#116/#120 governance batch) during the v3.0.0 release audit — directly measured via `npx vitest run --no-file-parallelism`, not carried forward. The prior entry's own file-by-file breakdown (Help redesign +9, Group 6 DB-cache precedence +6, Group 5 dual-write +6, banned-token scanner +1) is left as historical record below rather than re-derived; the +11-test/+2-file delta to 1401/122 accumulated across the v3.0.0 batch's own PRs (auth fixes, RLS coverage, etc.), not attributed line-by-line here. +22 vs. the 2026-08-26 baseline of 1368: +9 from the v2.15.1 Help redesign (`FAQSection.test.jsx` 6→15, already on `develop` when this batch's branch was cut, not part of this batch's own work) plus +13 from this batch itself — Group 6 `accessibility.v1.test.js` DB-cache precedence (#112, +6), Group 5 `flag-bootstrap.test.js` dual-write (#120, +6), `versionHistory.test.js` banned-token scanner (#116, +1).
+- **CI target**: **1486 frontend passed / 0 failed across 136 test files** (backend unit 295 — see `backend/CLAUDE.md` § Test Suite), measured on final v3.1.0 candidate `1da474e` after the #942 fairness fix and PR #956 coverage sweep.
 - **Known skip**: bench-equity.test.js test 2.1 (bench rotation fairness — BUG CONFIRMED; identical players, sit-count drift > 1 inning; fix deferred)
 
 #### Test files

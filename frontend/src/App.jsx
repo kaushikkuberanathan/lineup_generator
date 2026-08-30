@@ -11,8 +11,8 @@ import { FEATURE_FLAGS, isFlagEnabled, setRuntimeFlagCache } from '@/config/feat
 import { generateLineupV2 } from '@/utils/lineupEngineV2';
 import { normalizeBattingHand } from '@/utils/playerUtils';
 import { persistTeamBeforeLoad } from './utils/teamCreationPersistence.js';
-import { outboundLinkProps, CAMPAIGNS, CONTENT } from './utils/trackingUrl';
 import { migrateRoster, migrateSchedule, migrateBattingPerf, mergeLocalScheduleFields } from '@/utils/migrations';
+import { MERGE_FIELDS } from '@/utils/scheduleHydrationFields';
 import { fmtAvg, fmtStat } from '@/utils/formatters';
 import { applyFlagParams, buildCleanSearch } from './utils/flagBootstrap';
 import { loadJSON, saveJSON } from './utils/storage';
@@ -29,7 +29,6 @@ import { ParentView } from './components/GameDay/ParentView';
 import { ValidationBanner } from './components/Shared/ValidationBanner';
 import { OfflineIndicator } from './components/Shared/OfflineIndicator';
 import { MaintenanceScreen } from './components/Shared/MaintenanceScreen';
-import { PlayerFilterToggle } from './components/Shared/PlayerFilterToggle';
 import { DefenseDiamond }  from './components/GameDay/DefenseDiamond';
 import { GameModeScreen }  from './components/game-mode/GameModeScreen';
 import { DugoutView }      from './components/game-mode/DugoutView';
@@ -51,25 +50,23 @@ import { buildSharePayload } from './utils/buildSharePayload';
 import { buildBoxScorePrompt } from './utils/buildBoxScorePrompt';
 import Toast from './components/ui/Toast';
 import { Card } from './components/ui/Card';
+import { LinksTab } from './components/Support/LinksTab';
 import { useAuth } from './hooks/useAuth';
 import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 import { VERSION_HISTORY } from './data/versionHistory';
+import { UpdatesTab } from './components/Support/UpdatesTab';
 import { currentSeasonGuess, formatSeason, compareTeamsNewestFirst } from './utils/season.js';
+import { firstName } from './utils/playerName';
+import { SharedView } from './screens/Share/SharedView';
 
 // ============================================================
 // HELPERS
 // ============================================================
 
-function firstName(name) {
-  if (!name) return name;
-  return name.split(" ")[0];
-}
-
 // ============================================================
 // CONSTANTS
 // ============================================================
 
-var COUNTY_SCHEDULE_URL = "https://forsythcounty.kaizendemos.app/schedule/2026-youth-baseball-and-softball-mmt6617n";
 
 var ALL_POSITIONS    = ["P","C","1B","2B","3B","SS","LF","LC","RC","RF","Bench"];
 var FIELD_POSITIONS  = ["P","C","1B","2B","3B","SS","LF","LC","RC","RF"];
@@ -145,7 +142,7 @@ var DISLIKE_PENALTY = -50;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "3.0.0";
+var APP_VERSION = "3.1.0";
 
 // loadJSON / saveJSON — localStorage with in-memory (_mem) fallback — moved to
 // ./utils/storage (#416). Imported above; call sites unchanged.
@@ -756,321 +753,6 @@ var S = {
 
 // PLAYER FILTER TOGGLE — extracted to components/Shared/PlayerFilterToggle.jsx (Story 104 slice 4.1, #279)
 
-export function SharedView({ payload, renderFieldSVG }) {
-  // Derive inning count from grid
-  var innCount = 0;
-  for (var k in payload.grid) {
-    if ((payload.grid[k] || []).length > innCount) { innCount = payload.grid[k].length; }
-  }
-  var innArr = [];
-  for (var i = 0; i < innCount; i++) { innArr.push(i); }
-  var rosterNames = payload.roster || [];
-
-  // Local state for inning filter, view mode, and player filter
-  var _svInn = useState(null);
-  var svInn = _svInn[0]; var setSvInn = _svInn[1];
-  var _svView = useState("diamond");
-  var svView = _svView[0]; var setSvView = _svView[1];
-  var _svPlayer = useState(null);
-  var svPlayer = _svPlayer[0]; var setSvPlayer = _svPlayer[1];
-
-  // Bench for selected inning(s)
-  var benchByInning = innArr.map(function(ii) {
-    return rosterNames.filter(function(n) { return (payload.grid[n] || [])[ii] === "Bench"; });
-  });
-  var outByInning = innArr.map(function(ii) {
-    return rosterNames.filter(function(n) { return (payload.grid[n] || [])[ii] === "Out"; });
-  });
-  var benchDisplay   = svInn !== null ? [benchByInning[svInn] || []] : benchByInning;
-  var outDisplay     = svInn !== null ? [outByInning[svInn] || []]   : outByInning;
-  var benchLabels    = svInn !== null ? [svInn] : innArr;
-  function getSharedPlayerFn(pos, inn) {
-    for (var pi = 0; pi < rosterNames.length; pi++) {
-      if ((payload.grid[rosterNames[pi]] || [])[inn] === pos) { return rosterNames[pi]; }
-    }
-    return "";
-  }
-
-  var teamInitial = payload.team ? payload.team.charAt(0).toUpperCase() : "L";
-
-  return (
-    <div style={{ minHeight:"100vh", background:tokens.color.surface.cream, fontFamily:"Georgia,'Times New Roman',serif", color:tokens.color.text.ink }}>
-
-      {/* ── Header ─────────────────────────────────────────────── */}
-      <div style={{ background:"linear-gradient(135deg,"+tokens.color.brand.navy+","+tokens.color.brand.navyLight+")", borderBottom:"4px solid " + tokens.color.brand.red, padding:"14px 20px" }}>
-        <div style={{ maxWidth:"800px", margin:"0 auto", display:"flex", alignItems:"center", gap:"12px" }}>
-          <BrandMark size={42} />
-          <div style={{ width:"30px", height:"30px", borderRadius:"50%", background:tokens.color.brand.navy, border:"2px solid "+tokens.color.brand.gold,
-            display:"flex", alignItems:"center", justifyContent:"center", fontSize:"13px", fontWeight:"bold", color:tokens.color.brand.gold, flexShrink:0 }}>
-            {teamInitial}
-          </div>
-          <div style={{ flex:1, minWidth:0 }}>
-            <div style={{ fontSize:"17px", fontWeight:"bold", color:tokens.color.brand.gold, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-              {payload.team}
-            </div>
-            {payload.game ? (
-              <div style={{ fontSize:"11px", color:"rgba(255,255,255,0.6)", marginTop:"1px" }}>
-                vs {payload.game.opponent}
-                {payload.game.date ? " · " + new Date(payload.game.date+"T12:00:00").toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"}) : ""}
-                {payload.game.time ? " · " + payload.game.time : ""}
-              </div>
-            ) : (
-              <div style={{ fontSize:"11px", color:"rgba(255,255,255,0.45)", marginTop:"1px" }}>Game Day Lineup</div>
-            )}
-          </div>
-          <button onClick={function() { window.print(); }}
-            style={{ padding:"6px 14px", borderRadius:"6px", border:"1px solid rgba(255,255,255,0.25)", background:"rgba(255,255,255,0.1)",
-              color:"rgba(255,255,255,0.75)", fontSize:"11px", fontWeight:"bold", fontFamily:"inherit", cursor:"pointer", flexShrink:0 }}>
-            Print
-          </button>
-        </div>
-      </div>
-
-      <div style={{ maxWidth:"800px", margin:"0 auto", padding:"16px 20px" }}>
-
-        {/* ── Player filter pills ──────────────────────────────── */}
-        {rosterNames.length > 0 ? (
-          <div style={{ marginBottom:"12px" }}>
-            <PlayerFilterToggle
-              players={payload.absentNames && payload.absentNames.length > 0 ? rosterNames.filter(function(n) { return payload.absentNames.indexOf(n) < 0; }) : rosterNames}
-              selected={svPlayer}
-              onSelect={setSvPlayer}
-            />
-          </div>
-        ) : null}
-
-        {/* ── Controls row: inning filter + view toggle ───────── */}
-        <div style={{ display:"flex", gap:"8px", alignItems:"center", marginBottom:"16px", flexWrap:"wrap" }}>
-          {/* Inning pills */}
-          <div style={{ display:"flex", flexWrap:"nowrap", gap:"4px", alignItems:"center", overflowX:"auto", WebkitOverflowScrolling:"touch", flex:1, minWidth:0 }}>
-            <span style={{ fontSize:"9px", color:tokens.color.text.muted, fontWeight:"bold", textTransform:"uppercase", letterSpacing:"0.08em", flexShrink:0 }}>Inn</span>
-            <button onClick={function() { setSvInn(null); }}
-              style={{ padding:"3px 8px", borderRadius:"10px", border:"none", cursor:"pointer", fontSize:"11px", fontWeight:"bold", fontFamily:"inherit", flexShrink:0,
-                background: svInn === null ? tokens.color.brand.navy : "rgba(15,31,61,0.08)", color: svInn === null ? "#fff" : tokens.color.text.muted }}>All</button>
-            {innArr.map(function(i) {
-              var active = svInn === i;
-              return (
-                <button key={i} onClick={function(idx) { return function() { setSvInn(idx); }; }(i)}
-                  style={{ padding:"3px 8px", borderRadius:"10px", border:"none", cursor:"pointer", fontSize:"11px", fontWeight:"bold", fontFamily:"inherit", flexShrink:0,
-                    background: active ? tokens.color.brand.red : "rgba(15,31,61,0.08)", color: active ? "#fff" : tokens.color.text.muted }}>
-                  {i + 1}
-                </button>
-              );
-            })}
-          </div>
-          {/* View toggle */}
-          <div style={{ display:"flex", gap:"3px", background:"rgba(15,31,61,0.06)", borderRadius:"8px", padding:"3px", flexShrink:0 }}>
-            {[["◆","diamond"],["≡","table"]].map(function(opt) {
-              var active = svView === opt[1];
-              return (
-                <button key={opt[1]} onClick={function(v) { return function() { setSvView(v); }; }(opt[1])}
-                  title={opt[1] === "diamond" ? "Diamond view" : "Table view"}
-                  style={{ padding:"4px 10px", borderRadius:"5px", border:"none", cursor:"pointer", fontSize:"12px", fontFamily:"inherit", fontWeight:"bold",
-                    background: active ? tokens.color.surface.card : "transparent", color: active ? tokens.color.brand.navy : tokens.color.text.muted,
-                    boxShadow: active ? "0 1px 3px rgba(0,0,0,0.1)" : "none" }}>
-                  {opt[0]}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* ── Diamond view ─────────────────────────────────────── */}
-        {svView === "diamond" ? (
-          <div style={{ marginBottom:"16px" }}>
-            {renderFieldSVG(getSharedPlayerFn, svInn, innArr)}
-                          {/* Bench strip */}
-            <div style={{ borderTop:"2px solid rgba(15,31,61,0.12)", paddingTop:"8px" }}>
-              <div style={{ fontSize:"10px", fontWeight:"bold", color:"#555", textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"6px" }}>Bench</div>
-              <div style={{ overflowX:"auto" }}>
-                <table style={{ borderCollapse:"collapse", fontSize:"11px", width:"100%" }}>
-                  <thead>
-                    <tr style={{ background:"#f5efe4" }}>
-                      {benchLabels.map(function(ii) {
-                        return <th key={ii} style={{ padding:"4px 10px", textAlign:"center", fontSize:"10px", color:"#555", fontWeight:"bold", borderBottom:"2px solid rgba(15,31,61,0.12)", minWidth:"52px" }}>Inn {ii+1}</th>;
-                      })}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(function() {
-                      var maxB = 0;
-                      for (var di = 0; di < benchDisplay.length; di++) { if (benchDisplay[di].length > maxB) maxB = benchDisplay[di].length; }
-                      var maxOut = 0;
-                      for (var doi = 0; doi < outDisplay.length; doi++) { if (outDisplay[doi].length > maxOut) maxOut = outDisplay[doi].length; }
-                      var rows = [];
-                      for (var r = 0; r < maxB; r++) {
-                        rows.push(
-                          <tr key={r}>
-                            {benchLabels.map(function(lbl, ci) {
-                              var pn = benchDisplay[ci][r] || "";
-                              return <td key={lbl} style={{ padding:"4px 10px", textAlign:"center", borderBottom:"1px solid rgba(15,31,61,0.06)", fontWeight:"bold", color: pn ? tokens.color.brand.navy : "#ccc" }}>{pn ? firstName(pn) : "-"}</td>;
-                            })}
-                          </tr>
-                        );
-                      }
-                      if (maxOut > 0) {
-                        rows.push(
-                          <tr key="out-hdr">
-                            {benchLabels.map(function(lbl) {
-                              return (
-                                <td key={lbl} style={{ padding:"3px 10px", textAlign:"center",
-                                  borderTop:"2px solid " + tokens.color.overlay.errorMedium,
-                                  background:tokens.color.overlay.errorFaint,
-                                  fontSize:"9px", fontWeight:"bold", color:"#dc2626",
-                                  letterSpacing:"0.08em", textTransform:"uppercase" }}>
-                                  Out
-                                </td>
-                              );
-                            })}
-                          </tr>
-                        );
-                        for (var or = 0; or < maxOut; or++) {
-                          rows.push(
-                            <tr key={"out-" + or}>
-                              {benchLabels.map(function(lbl, ci) {
-                                var pn = outDisplay[ci][or] || "";
-                                return <td key={lbl} style={{ padding:"4px 10px", textAlign:"center", borderBottom:"1px solid " + tokens.color.overlay.errorSubtle, fontWeight:"bold", color: pn ? "#dc2626" : "#ccc", background:tokens.color.overlay.errorFaintest }}>{pn ? firstName(pn) : "-"}</td>;
-                              })}
-                            </tr>
-                          );
-                        }
-                      }
-                      return rows;
-                    })()}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        ) : (
-          /* ── Table view ──────────────────────────────────────── */
-          <div style={{ marginBottom:"16px" }}>
-            <div style={{ overflowX:"auto" }}>
-              <table style={{ width:"100%", borderCollapse:"collapse", fontSize:"12px" }}>
-                <thead>
-                  <tr style={{ background:"#f5efe4" }}>
-                    <th style={{ padding:"7px 12px", textAlign:"left", fontSize:"10px", color:tokens.color.text.muted, borderBottom:"2px solid rgba(15,31,61,0.1)", position:"sticky", left:0, background:"#f5efe4" }}>Player</th>
-                    {(svInn !== null ? [svInn] : innArr).map(function(i) {
-                      return <th key={i} style={{ padding:"7px 10px", textAlign:"center", fontSize:"10px", color:tokens.color.text.muted, borderBottom:"2px solid rgba(15,31,61,0.1)", minWidth:"60px" }}>Inn {i+1}</th>;
-                    })}
-                  </tr>
-                </thead>
-                <tbody>
-                  {rosterNames.map(function(name, ri) {
-                    var isSelectedRow = svPlayer && name === svPlayer;
-                    var rowBg = isSelectedRow ? "rgba(245,166,35,0.12)" : (ri%2===0 ? "#fff" : "#faf8f5");
-                    return (
-                      <tr key={name} style={{ background: rowBg }}>
-                        <td style={{ padding:"6px 12px", fontWeight:"bold", position:"sticky", left:0, background: rowBg, borderBottom:"1px solid rgba(15,31,61,0.04)", color: isSelectedRow ? "#b45309" : tokens.color.brand.navy }}>{firstName(name)}</td>
-                        {(svInn !== null ? [svInn] : innArr).map(function(i) {
-                          var pos = (payload.grid[name] || [])[i] || "";
-                          return (
-                            <td key={i} style={{ padding:"4px 6px", textAlign:"center", borderBottom:"1px solid rgba(15,31,61,0.04)" }}>
-                              {pos === "Out" ? (
-                                <span style={{ display:"inline-block", padding:"2px 5px", borderRadius:"4px", fontWeight:"bold", fontSize:"11px", background:"#fee2e2", color:"#dc2626" }}>OUT</span>
-                              ) : pos ? (
-                                <span style={{ display:"inline-block", padding:"2px 5px", borderRadius:"4px", fontWeight:"bold", fontSize:"11px", background:(tokens.color.position[pos]||tokens.color.position.Bench)+"cc", color:"#fff" }}>{pos}</span>
-                              ) : (
-                                <span style={{ color:"#ccc" }}>-</span>
-                              )}
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* ── Batting order ─────────────────────────────────────── */}
-        {payload.batting && payload.batting.length > 0 ? (
-          <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px", marginTop:"4px" }}>
-            <div style={S.sectionTitle}>Batting Order</div>
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))", gap:"6px" }}>
-              {payload.batting.map(function(name, idx) {
-                var isSelectedBatter = svPlayer && name === svPlayer;
-                var fieldPos = [];
-                for (var ii = 0; ii < innCount; ii++) {
-                  var pos = (payload.grid[name] || [])[ii];
-                  if (!pos || pos === "") {
-                    fieldPos.push("-");
-                  } else if (pos === "Bench") {
-                    fieldPos.push("–");
-                  } else if (pos === "Out") {
-                    fieldPos.push("OUT");
-                  } else {
-                    fieldPos.push(pos);
-                  }
-                }
-                return (
-                  <div key={name} style={{ display:"flex", alignItems:"center", gap:"8px", padding:"7px 10px",
-                    border:"1px solid " + (isSelectedBatter ? "#f5a623" : "rgba(15,31,61,0.08)"),
-                    background: isSelectedBatter ? "rgba(245,166,35,0.08)" : undefined,
-                    borderRadius:"6px" }}>
-                    <div style={{ width:"20px", height:"20px", borderRadius:"50%",
-                      background: isSelectedBatter ? "#f5a623" : tokens.color.brand.navy,
-                      color: isSelectedBatter ? tokens.color.brand.navy : "#fff",
-                      fontSize:"10px", fontWeight:"bold", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{idx+1}</div>
-                    <div style={{ minWidth:0 }}>
-                      <div style={{ fontWeight:"bold", fontSize:"12px", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",
-                        color: isSelectedBatter ? "#b45309" : undefined }}>{firstName(name)}</div>
-                      {fieldPos.length > 0 ? (
-                        <div style={{ fontSize:"9px", color:tokens.color.text.muted }}>
-                          {fieldPos.map(function(fp, fpi) {
-                            return (
-                              <span key={fpi} style={{ color: fp === "OUT" ? "#dc2626" : "inherit", fontWeight: fp === "OUT" ? "bold" : "inherit" }}>
-                                {fpi > 0 ? ", " : ""}{fp}
-                              </span>
-                            );
-                          })}
-                        </div>
-                      ) : null}
-                      {(function() {
-                        var songData = payload.songs && payload.songs[name];
-                        if (!songData || (!songData.song && !songData.artist)) return null;
-                        return (
-                          <div style={{ marginTop:"4px", paddingTop:"4px", borderTop:"1px solid rgba(15,31,61,0.08)" }}>
-                            {songData.song && <div style={{ fontSize:"10px", fontWeight:"600", color:"#1e293b" }}>🎵 {songData.song}</div>}
-                            {songData.artist && <div style={{ fontSize:"9px", color:"#64748b" }}>🎤 {songData.artist}</div>}
-                            {songData.start && songData.end && <div style={{ fontSize:"9px", color:"#94a3b8" }}>⏱ {songData.start} → {songData.end}</div>}
-                          </div>
-                        );
-                      })()}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            {payload.absentNames && payload.absentNames.length > 0 ? (
-              <div style={{ marginTop:"10px", paddingTop:"10px", borderTop:"1px solid rgba(15,31,61,0.08)", fontSize:"11px", color:"#94a3b8", fontStyle:"italic" }}>
-                Not playing tonight: {payload.absentNames.map(function(n) { return n.split(" ")[0]; }).join(", ")}
-              </div>
-            ) : null}
-          </Card>
-        ) : null}
-
-        {/* ── Footer ─────────────────────────────────────────────── */}
-        <div style={{ textAlign:"center", marginTop:"24px", fontSize:"11px", color:tokens.color.text.muted, borderTop:"1px solid rgba(15,31,61,0.08)", paddingTop:"16px" }}>
-          <div style={{ marginBottom:"4px" }}>View-only lineup · Dugout Lineup</div>
-          <div style={{ fontSize:"10px", color:"rgba(15,31,61,0.25)" }}>Tap Print to save as PDF or screenshot this page</div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// LockFlow — extracted to components/GameDay/LockFlow.jsx
-
-// currentSeasonGuess/formatSeason/compareTeamsNewestFirst -> ./utils/season.js
-// (extracted for test coverage — see that file's header and #718).
-
-// ============================================================
-// MAIN COMPONENT
-// ============================================================
-
 export default function App() {
 
   var backendHealth = useBackendHealth();
@@ -1129,7 +811,6 @@ export default function App() {
   var initInnings  = initActiveId ? (loadJSON("team:" + initActiveId + ":innings", 6) || 6) : 6;
   var initGrid_    = initActiveId ? migrateGrid(loadJSON("team:" + initActiveId + ":grid", null), initRoster, initInnings) : null;
 
-  var MERGE_FIELDS = ['scoreReported', 'snackDuty', 'snackNote', 'gameBall', 'usScore', 'oppScore', 'gameStatus', 'finalizedAt'];
 
   function normalizeGameBall(val) {
     if (!val || val === "") return [];
@@ -1462,6 +1143,11 @@ export default function App() {
   var selectedParentPlayer = _selectedParentPlayer[0]; var setSelectedParentPlayer = _selectedParentPlayer[1];
   var _moreTab = useState("faq");
   var moreTab = _moreTab[0]; var setMoreTab = _moreTab[1];
+  // Deep-link target for LegalSection (e.g. "terms") — set by the Account
+  // tab's Terms of Service row so Legal opens straight to that doc instead
+  // of its list view. null = no override, LegalSection shows its list.
+  var _legalInitialDoc = useState(null);
+  var legalInitialDoc = _legalInitialDoc[0]; var setLegalInitialDoc = _legalInitialDoc[1];
   var _sharePayload = useState(null);
   var sharePayload = _sharePayload[0]; var setSharePayload = _sharePayload[1];
   var _shareLoading = useState(function() {
@@ -7073,101 +6759,6 @@ export default function App() {
   // ============================================================
   // LINKS TAB
   // ============================================================
-  function renderLinks() {
-    var LINKS = [
-      {
-        group: "Schedule & Registration",
-        items: [
-          {
-            label: "County Official Game Schedule",
-            desc: "Forsyth County 2026 Youth Baseball & Softball — full season schedule",
-            url: COUNTY_SCHEDULE_URL,
-            emoji: "📅",
-            campaign: CAMPAIGNS.COUNTY_LEAGUE,
-            content: CONTENT.SCHEDULE_TAB
-          },
-          {
-            label: "Report Game Score",
-            desc: "Submit the final score after a completed game — must be done within 24 hours",
-            url: "https://forms.office.com/pages/responsepage.aspx?id=vf3EubbvekefszJiSiLNcOoWxPqaa4FBtgle0rAQ6bBURVExSDNDNEFTTkRaMVlRR0lNUDVGOUtFVy4u&route=shorturl",
-            emoji: "📝",
-            campaign: CAMPAIGNS.COUNTY_LEAGUE,
-            content: CONTENT.GAME_INFO_CARD
-          },
-          {
-            label: "Field & Cage Request",
-            desc: "Request field or batting cage time from Forsyth County Parks",
-            url: "https://docs.google.com/forms/d/e/1FAIpQLSeCIvqZlGsxonkWpFJ52q_6PWrOl3mmOTjTdiPGcz3ZQGzJDQ/viewform",
-            emoji: "⚾",
-            campaign: CAMPAIGNS.COUNTY_LEAGUE,
-            content: CONTENT.GAME_INFO_CARD
-          }
-        ]
-      },
-      {
-        group: "League & Club",
-        items: [
-          {
-            label: "Sharon Springs Athletics",
-            desc: "Sharon Springs community athletics — league info, teams, and events",
-            url: "https://sharonspringsathletics.org/",
-            emoji: "🏆",
-            campaign: CAMPAIGNS.SHARON_SPRINGS,
-            content: CONTENT.STANDINGS_LINK
-          }
-        ]
-      },
-      {
-        group: "Weather & Alerts",
-        items: [
-          {
-            label: "Inclement Weather Updates",
-            desc: "Forsyth County Parks — field closures and weather delays",
-            url: "https://parks.forsythco.com/Athletic-Leagues/Inclement-Weather-Information",
-            emoji: "⛈️",
-            campaign: CAMPAIGNS.GENERAL,
-            content: CONTENT.SCHEDULE_TAB
-          },
-          {
-            label: "Status Me Auto Alerts",
-            desc: "Sign up for automatic game status notifications",
-            url: "https://statusme.com/",
-            emoji: "🔔",
-            campaign: CAMPAIGNS.GENERAL,
-            content: CONTENT.SCHEDULE_TAB
-          }
-        ]
-      }
-    ];
-
-    return (
-      <div>
-        {LINKS.map(function(section) {
-          return (
-            <Card key={section.group} padding="16px 18px" radius="md" style={{ border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
-              <div style={S.sectionTitle}>{section.group}</div>
-              {section.items.map(function(link, li) {
-                return (
-                  <a key={li}
-                     {...outboundLinkProps(link.url, { campaign: link.campaign, content: link.content })}
-                     style={{ display:"flex", alignItems:"flex-start", gap:"12px", padding:"12px 0",
-                       borderBottom: li < section.items.length - 1 ? "1px solid rgba(15,31,61,0.07)" : "none",
-                       textDecoration:"none", cursor:"pointer" }}>
-                    <span style={{ fontSize:"22px", lineHeight:"1", marginTop:"2px", flexShrink:0 }}>{link.emoji}</span>
-                    <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ fontSize:"13px", fontWeight:"700", color:tokens.color.brand.navy, marginBottom:"3px" }}>{link.label}</div>
-                      <div style={{ fontSize:"11px", color:tokens.color.text.muted, lineHeight:"1.5", marginBottom:"5px" }}>{link.desc}</div>
-                    </div>
-                  </a>
-                );
-              })}
-            </Card>
-          );
-        })}
-      </div>
-    );
-  }
-
   // ============================================================
   // ABOUT TAB
   // ============================================================
@@ -7248,62 +6839,25 @@ export default function App() {
           );
         })}
 
-        <button style={Object.assign({}, S.btn("danger"), { marginTop:"16px", width:"100%" })} onClick={logout}>
+        <div style={{ fontSize:"11px", letterSpacing:"0.08em", textTransform:"uppercase", color:tokens.color.text.muted, marginTop:"16px", marginBottom:"8px" }}>Legal</div>
+        <div
+          onClick={function() { setPrimaryTab("more"); setMoreTab("legal"); setLegalInitialDoc("terms"); }}
+          style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:"12px",
+            padding:"12px 14px", marginBottom:"8px", borderRadius:"10px",
+            border:"1px solid " + tokens.color.border.neutral, background:tokens.color.surface.card, cursor:"pointer" }}>
+          <div style={{ display:"flex", alignItems:"center", gap:"10px", minWidth:0 }}>
+            <span aria-hidden="true" style={{ fontSize:"18px", flexShrink:0 }}>📋</span>
+            <span style={{ fontSize:"14px", fontWeight:"600", color:tokens.color.brand.navy }}>Terms of Service</span>
+          </div>
+          <span aria-hidden="true" style={{ fontSize:"20px", color:tokens.color.text.muted, lineHeight:1 }}>›</span>
+        </div>
+
+        <button style={Object.assign({}, S.btn("danger"), { marginTop:"8px", width:"100%" })} onClick={logout}>
           Sign out
         </button>
         <div style={{ fontSize:"11px", color:tokens.color.text.muted, marginTop:"12px", lineHeight:"1.5", textAlign:"center" }}>
           Your teams and lineups stay saved on this device. You&apos;ll need to sign in again to make changes.
         </div>
-      </Card>
-    );
-  }
-
-  function renderUpdates() {
-    return (
-      <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
-        <div style={S.sectionTitle}>What&#x27;s New</div>
-        {VERSION_HISTORY.map(function(v, vi) {
-          var isCurrent = v.version === APP_VERSION;
-          var isOpen = expandedVersion === v.version;
-          return (
-            <div key={v.version} style={{
-              borderLeft: isCurrent ? "3px solid #27ae60" : "3px solid rgba(15,31,61,0.1)",
-              background: isCurrent ? "rgba(39,174,96,0.04)" : "transparent",
-              borderRadius: "0 6px 6px 0",
-              padding: "10px 14px",
-              marginBottom: vi < VERSION_HISTORY.length - 1 ? "12px" : "0"
-            }}>
-              <div
-                onClick={function(ver) { return function() { setExpandedVersion(expandedVersion === ver ? null : ver); }; }(v.version)}
-                style={{ display:"flex", gap:"10px", alignItems:"baseline", marginBottom: isOpen ? "8px" : "0", flexWrap:"wrap", cursor:"pointer" }}>
-                <span style={{ fontSize:"14px", fontWeight:"bold", color:tokens.color.brand.navy }}>v{v.version}</span>
-                <span style={{ fontSize:"11px", color:tokens.color.text.muted }}>{v.date}</span>
-                {isCurrent ? <span style={{ fontSize:"10px", padding:"1px 7px", borderRadius:"10px", background:"#27ae60", color:"#fff", fontWeight:"bold" }}>Current</span> : null}
-                <span style={{ marginLeft:"auto", fontSize:"11px", color:tokens.color.text.muted }}>{isOpen ? "▲" : "▼"}</span>
-              </div>
-              {isOpen ? (
-                <div>
-                  <div style={{ fontSize:"0.95rem", fontWeight:"600", color:tokens.color.text.ink, marginBottom:"6px", lineHeight:"1.4" }}>{v.headline}</div>
-                  {v.userChanges && v.userChanges.length > 0 ? (
-                    <ul style={{ margin:"0 0 6px 0", paddingLeft:"0", listStyle:"none" }}>
-                      {v.userChanges.map(function(ch, ci) {
-                        return (
-                          <li key={ci} style={{ fontSize:"0.875rem", color:tokens.color.text.muted, marginBottom:"3px", lineHeight:"1.5", display:"flex", gap:"6px" }}>
-                            <span style={{ color:"#b8a040", flexShrink:0 }}>✦</span>
-                            <span>{ch}</span>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  ) : null}
-                  {v.techNote ? (
-                    <div style={{ fontSize:"0.75rem", color:"#9ca3af", fontStyle:"italic" }}>🔧 {v.techNote}</div>
-                  ) : null}
-                </div>
-              ) : null}
-            </div>
-          );
-        })}
       </Card>
     );
   }
@@ -7429,7 +6983,7 @@ export default function App() {
     if (sharePayload) {
       var _vp = new URLSearchParams(window.location.search);
       var isViewer = _vp.get("view") === "true" || _vp.get("role") === "viewer";
-      return <ErrorBoundary fallback="Viewer Mode">{isViewer ? <DugoutView payload={sharePayload} isViewer={true} onExit={function() {}} /> : <SharedView payload={sharePayload} renderFieldSVG={renderFieldSVG} />}</ErrorBoundary>;
+      return <ErrorBoundary fallback="Viewer Mode">{isViewer ? <DugoutView payload={sharePayload} isViewer={true} onExit={function() {}} /> : <SharedView payload={sharePayload} renderFieldSVG={renderFieldSVG} sectionTitleStyle={S.sectionTitle} />}</ErrorBoundary>;
     }
     // Story 62/#127 - user-meaningful message per dbLoadShareLink failure
     // mode, instead of one generic "couldn't be found" for every case.
@@ -7455,7 +7009,7 @@ export default function App() {
     if (shareParam) {
       var payload = JSON.parse(decodeURIComponent(escape(atob(shareParam))));
       var isViewer64 = urlParams.get("view") === "true" || urlParams.get("role") === "viewer";
-      return <ErrorBoundary fallback="Viewer Mode">{isViewer64 ? <DugoutView payload={payload} isViewer={true} onExit={function() {}} /> : <SharedView payload={payload} renderFieldSVG={renderFieldSVG} />}</ErrorBoundary>;
+      return <ErrorBoundary fallback="Viewer Mode">{isViewer64 ? <DugoutView payload={payload} isViewer={true} onExit={function() {}} /> : <SharedView payload={payload} renderFieldSVG={renderFieldSVG} sectionTitleStyle={S.sectionTitle} />}</ErrorBoundary>;
     }
   } catch (e) { /* ignored */ }
 
@@ -7644,7 +7198,13 @@ export default function App() {
         {MORE_SUBTABS.map(function(st) {
           return (
             <button key={st.key}
-              onClick={function(k) { return function() { setMoreTab(k); }; }(st.key)}
+              onClick={function(k) { return function() {
+                // Direct tab-bar navigation always shows Legal's list view —
+                // legalInitialDoc is a one-shot deep-link set only by the
+                // Account tab's Terms of Service row (see renderAccount()).
+                if (k === "legal") { setLegalInitialDoc(null); }
+                setMoreTab(k);
+              }; }(st.key)}
               style={subTabStyle(moreTab === st.key)}>
               {st.label}
             </button>
@@ -7708,10 +7268,10 @@ export default function App() {
       </ErrorBoundary>
       {primaryTab === "more" && moreTab === "account"  ? renderAccount()  : null}
       {primaryTab === "more" && moreTab === "feedback" ? renderFeedback() : null}
-      {primaryTab === "more" && moreTab === "links"    ? renderLinks()    : null}
+      {primaryTab === "more" && moreTab === "links"    ? <LinksTab sectionTitleStyle={S.sectionTitle} /> : null}
       {primaryTab === "more" && moreTab === "about"    ? renderAbout()    : null}
-      {primaryTab === "more" && moreTab === "updates"  ? renderUpdates()  : null}
-      {primaryTab === "more" && moreTab === "legal"    ? <LegalSection /> : null}
+      {primaryTab === "more" && moreTab === "updates"  ? <UpdatesTab versionHistory={VERSION_HISTORY} appVersion={APP_VERSION} expandedVersion={expandedVersion} onExpandedVersionChange={setExpandedVersion} sectionTitleStyle={S.sectionTitle} /> : null}
+      {primaryTab === "more" && moreTab === "legal"    ? <LegalSection initialDocId={legalInitialDoc} /> : null}
       {primaryTab === "more" && moreTab === "faq"      ? <FAQSection />   : null}
     </div>
   );
