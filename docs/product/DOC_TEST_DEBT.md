@@ -31,21 +31,31 @@ aggregate count alone. New dedicated test files since v3.0.0:
 Final-candidate totals at `1da474e`: 1486 frontend tests passed across 136
 files; 295 backend unit tests passed.
 
----
-
-## QA Coverage Scope follow-up (#965)
-
-Tracking bullets for the individual coverage gaps #965 re-confirmed and split
-into child issues (#966/#967/#968/#969). Each lands as its own PR against
-`develop`; expect this block to need reconciling if it's edited by more than
-one of those PRs concurrently.
-
-- #968 — PWA install-prompt platform branches (Android `beforeinstallprompt`,
-  iOS `standalone`-mode detection, already-installed exclusion) had zero test
-  coverage. Added `frontend/src/__tests__/AppPwaInstallPrompt.test.jsx` (3
-  tests, golden-path `<App/>` render) covering all three branches. See the
-  matching entry moved to Resolved below (was "🟡 P2 — PWA Install Prompt
-  Logic").
+- QA Coverage Scope follow-up (#965): `playerMapper.test.js` closes #945 —
+  34 new tests covering each `mapPlayerToV2` inference branch individually,
+  including a lock-in for the deliberately-unwired V1 speed/contact/power
+  bridges. `useAuth.logout.test.js` closes #944 — 5 new tests covering
+  `logout()` (the one exported function of `useAuth.js` with zero prior
+  coverage; `checkSession`/`onAuthStateChange`/`sendMagicLink` were already
+  covered by `auth.test.js`, and `requestAccess`/`updateProfileName`/
+  `refreshMemberships` by their own dedicated files) plus a lock-in that an
+  unhandled `onAuthStateChange` event type is a no-op. New totals: 1525
+  frontend tests across 138 files.
+- QA Coverage Scope follow-up (#966): backend `requireAuth.phoneHint.test.js`
+  closes #966 — 4 new tests covering `middleware/requireAuth.js`'s
+  rejection-logging phone-hint branch, the one shape none of the ~15
+  existing `getUser()`-mocking tests constructed (`error` truthy AND
+  `data.user.phone` present simultaneously). Confirmed reachable in prod
+  (7 `auth.users` rows, 1 with `phone` set) rather than dead phone-auth-era
+  code, so the branch was kept, not removed. New backend total: 299.
+- QA Coverage Scope follow-up (#968): `AppPwaInstallPrompt.test.jsx` closes
+  #968 — 3 new tests covering the PWA install banner's platform branches:
+  Android `beforeinstallprompt` capture, iOS `standalone`-mode detection
+  (no `navigator.standalone` check exists in the real code — verified by
+  grep — `isStandalone` is derived purely from `matchMedia`), and the
+  already-installed exclusion suppressing the banner on both platforms.
+  The old standalone "🟡 P2 — PWA Install Prompt Logic" entry further down
+  in this file is moved to Resolved below.
 
 ---
 
