@@ -22,9 +22,14 @@ aggregate count alone. New dedicated test files since v3.0.0:
   `LegalSection.test.jsx` also grew consent/rendering coverage.
 - CI confidence: `scripts/verify-vitest-file-inventory.test.mjs` tests the
   executable guard that proves every discovered frontend test file ran.
+- Post-prep engine coverage: `bench-equity.test.js` Test 2.1 is now active and
+  guards the #942 fair-rotation fix.
+- QA sweep (PR #956): `LegalDocBody.test.jsx`, `LegalDocSheet.test.jsx`,
+  `featureFlags.test.js`, `positions.test.js`, `analytics.test.js`,
+  `deviceContext.test.js`, `roleLabels.test.js`, and backend `phone.test.js`.
 
-Direct v3.1.0 release-prep totals: 1444 frontend passed / 1 skipped across
-129 files; 287 backend unit tests passed.
+Final-candidate totals at `1da474e`: 1486 frontend tests passed across 136
+files; 295 backend unit tests passed.
 
 ---
 

@@ -83,7 +83,7 @@ Both shims have now been removed, per `docs/product/PHASE4C_SCORING_RLS_PROPOSAL
 ## Test Suite
 
 - **Framework**: Vitest
-- **CI target**: **1444 frontend passed / 1 skipped / 0 failed across 129 test files** (backend unit 287 — see `backend/CLAUDE.md` § Test Suite), directly measured with `npm test` during v3.1.0 release prep on 2026-08-29. This supersedes the post-Terms-of-Service 1422/1/124 baseline after the scoring, pending-sync, extraction, and executable test-inventory work merged.
+- **CI target**: **1486 frontend passed / 0 failed across 136 test files** (backend unit 295 — see `backend/CLAUDE.md` § Test Suite), measured on final v3.1.0 candidate `1da474e` after the #942 fairness fix and PR #956 coverage sweep.
 - **Known skip**: bench-equity.test.js test 2.1 (bench rotation fairness — BUG CONFIRMED; identical players, sit-count drift > 1 inning; fix deferred)
 
 #### Test files

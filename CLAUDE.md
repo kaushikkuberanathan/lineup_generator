@@ -252,7 +252,7 @@ Target: resolved within 10 min of detection.
 ---
 
 ## Test Suite
-Changes to `lineupEngineV2.js`, `scoringEngine.js`, or `playerMapper.js` → must pass frontend `npm test` (Vitest, **1444 passing / 1 skipped across 129 files** as of the v3.1.0 release-prep run on 2026-08-29 — fewer may be observed locally on Windows due to Bug #7 cold-start flake). Backend unit suite is **287/287** (see `backend/CLAUDE.md` § Test Suite). The v3.1.0 recount supersedes the post-ToS 1422/1 frontend and 276 backend figures after the scoring, sync, extraction, and test-inventory PRs merged.
+Changes to `lineupEngineV2.js`, `scoringEngine.js`, or `playerMapper.js` → must pass frontend `npm test` (Vitest, **1486 passing across 136 files** on final v3.1.0 candidate `1da474e`, 2026-08-30 — fewer may be observed locally on Windows due to Bug #7 cold-start flake). Backend unit suite is **295/295** (see `backend/CLAUDE.md` § Test Suite).
 Changes to `featureFlags.js` or `positions.js` → must pass frontend `npm test`.
 Changes to backend code → must pass **both** backend test systems: the custom integration runner (`backend/scripts/tests/test-runner.js`, 13 suites, requires a running server) and the in-process unit suite (`npm run test:unit` — node:test + supertest, `backend/src/__tests__/*.test.js`, no server). The unit suite is enforced in CI by the `backend-unit` job; the integration suite by the `backend` job (CI_SAFE, prod read-only).
 > Full suite detail: see `frontend/CLAUDE.md` → **## Test Suite** and `backend/CLAUDE.md` → **## Test Suite**

@@ -7,11 +7,13 @@ export var VERSION_HISTORY = [
     userChanges: [
       'New coaches now review and accept the Terms of Service and Privacy Policy while requesting access, with clear links to the exact documents they are accepting.',
       'Game Day now shows full team names on the scoreboard, removes a duplicated scoring header, and lets coaches swipe through the full batting order.',
+      'Auto-Assign now rotates the bench fairly when players have similar ratings, instead of repeatedly sitting the same one or two players.',
       'Completed-game changes that cannot sync immediately are now retried automatically when the app reconnects.',
     ],
     internalChanges: [
       'Release tracker #939. Terms of Service experience landed through PRs #907/#910/#913: versioned legal content, shared legal rendering, registration consent gate, and version-only consent audit records through migration 028. Migration 028 was applied and functionally verified on both DEV and PROD before this release cut.',
       'Game-day reliability and presentation batch: duplicate scoreboard removal (#922), swipeable batting order (#924), full scoreboard team names (#925), and pending game-finalization retry (#921). Automated regression coverage was added for the affected scoring and schedule paths; #698 remains open until the required real-device Game-Day Validation is recorded.',
+      'Post-prep scope addition: PR #952 fixed #942 by adding deterministic bench-history balancing to lineupEngineV2; PR #956 added eight focused test files without changing runtime behavior. Candidate and 24-hour soak were re-anchored to develop merge 1da474e on 2026-08-30.',
       'App decomposition continued without intended behavior changes: SharedView and the Support Links/Updates surfaces moved out of App.jsx, schedule hydration fields were centralized, and an executable Vitest inventory guard now fails CI if a frontend test file is silently skipped.',
       'Ship Gate documentation reconciled for the legal-consent flow: FEATURE_MAP row 41, AUTH_SECURITY_AUDIT_ROADMAP, and the analytics event reference now agree on the shipped behavior and coverage.',
       'Release verification and 24-hour soak evidence are recorded on #939 and the v3.1.0 release PR. Production promotion still requires the explicit confirmation phrase and a develop-to-main merge commit.',

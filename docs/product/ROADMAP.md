@@ -1,6 +1,6 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: 2026-08-30 (v3.1.0 Supabase reconciliation: migrations 023/029/030 applied and verified, 026 repo/live definition reconciled, 019B and 024 explicitly deferred); previously 2026-08-29 (v3.1.0 release candidate scoped under #939; version/docs aligned and Ship Gate documentation reconciled).
+> Last updated: 2026-08-30 (v3.1.0 candidate re-anchored to `1da474e` after the intentional post-prep scope batch, including bench-rotation fairness #942 and test PR #956); previously 2026-08-30 (Supabase reconciliation: migrations 023/029/030 applied and verified).
 > MVP launched: March 24, 2026
 
 ---
@@ -24,9 +24,10 @@ Release tracker: [#939](https://github.com/kaushikkuberanathan/lineup_generator/
 - Behavior-preserving decomposition: SharedView and Support's Links/Updates surfaces extracted from `App.jsx` (PRs #935-#937).
 - CI confidence: the Vitest inventory guard now verifies every frontend test file executed rather than trusting a green exit code alone (#918, PR #931); email-delivery and ops-health contracts gained dedicated coverage (#916/#917, PRs #929/#930).
 - Branch ancestry repaired before the release cut through PR #938; its sync merge was content-identical to the pre-sync develop tree.
+- **Intentional pre-soak scope addition (2026-08-30):** `develop` advanced after release-prep merge `6292a97` through PRs #950-#956. The only new coach-facing runtime behavior is PR #952/#942: Auto-Assign now tracks bench history and rotates statistically similar players fairly instead of benching the same one or two every inning. PR #950 reconciled already-applied Supabase state; PR #953 added draft-only migration 031 and applied it nowhere; PRs #951/#954/#955 were documentation/governance; PR #956 added tests only. Because the prior soak anchor did not contain #952, no override was assumed: the candidate and full 24-hour soak were restarted from two-parent merge `1da474e` at 2026-08-30T07:37:44-04:00.
 
 **Release gates still open:**
-- Full 24-hour soak starts only after this release-prep PR merges and the candidate SHA is frozen.
+- Candidate is frozen at `1da474e`; the restarted 24-hour soak is eligible no earlier than 2026-08-31T07:37:44-04:00 and remains active until the production SHA and health are verified.
 - Real-device Game-Day Validation is required because this batch changes the live game surface; #698 remains open until that pass is recorded.
 - Production promotion requires KK's explicit `confirmed — push to main` approval after the soak/manual evidence is reviewed.
 
