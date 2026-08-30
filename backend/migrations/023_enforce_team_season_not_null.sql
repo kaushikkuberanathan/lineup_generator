@@ -1,10 +1,10 @@
 -- Migration 023: enforce teams.season NOT NULL + CHECK (phase 2 of 2)
 --
--- STATUS: APPLIED TO DEV (psqvzppphdedqkpmarwx) 2026-08-18, same session as
--- 022 (see that file's header — DEV is low-stakes, both phases ran back to
--- back). NOT YET APPLIED to PROD.
+-- STATUS: APPLIED TO DEV 2026-08-18 and PROD 2026-08-30. Before the PROD
+-- apply, the live precheck returned 6 total teams, 0 NULL seasons, and 0
+-- invalid seasons; the season-aware application had been live since v2.11.0.
 --
--- !! DO NOT RUN AGAINST PROD until ALL of the following are true !!
+-- The following PROD preconditions were all confirmed before the apply:
 --   1. Migration 022 has been applied to PROD.
 --   2. The season-aware release (this branch, once promoted through
 --      develop -> main) has been deployed to PROD and has been live long

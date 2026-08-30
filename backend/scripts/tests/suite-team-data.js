@@ -50,6 +50,7 @@ async function run(test, BASE_URL, supabaseAdmin, state) {
         name: 'TD Suite Test',
         age_group: '8U',
         year: 2026,
+        season: 'Spring',
         sport: 'baseball',
         owner_id: '',
       });
@@ -88,6 +89,7 @@ async function run(test, BASE_URL, supabaseAdmin, state) {
         name: 'TD Suite Empty Test',
         age_group: '8U',
         year: 2026,
+        season: 'Spring',
         sport: 'baseball',
         owner_id: '',
       });

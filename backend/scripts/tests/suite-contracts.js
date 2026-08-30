@@ -101,6 +101,7 @@ async function run(test, BASE_URL, supabaseAdmin, state) {
         name: 'CON Suite Test',
         age_group: '8U',
         year: 2026,
+        season: 'Spring',
         sport: 'baseball',
         owner_id: '',
       });
