@@ -41,6 +41,13 @@ files; 295 backend unit tests passed.
   `refreshMemberships` by their own dedicated files) plus a lock-in that an
   unhandled `onAuthStateChange` event type is a no-op. New totals: 1525
   frontend tests across 138 files.
+- QA Coverage Scope follow-up (#966): backend `requireAuth.phoneHint.test.js`
+  closes #966 — 4 new tests covering `middleware/requireAuth.js`'s
+  rejection-logging phone-hint branch, the one shape none of the ~15
+  existing `getUser()`-mocking tests constructed (`error` truthy AND
+  `data.user.phone` present simultaneously). Confirmed reachable in prod
+  (7 `auth.users` rows, 1 with `phone` set) rather than dead phone-auth-era
+  code, so the branch was kept, not removed. New backend total: 299.
 
 ---
 
