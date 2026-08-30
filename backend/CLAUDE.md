@@ -228,9 +228,9 @@ Per-file counts below verified individually via `node --test <file>` on 2026-08-
   session). `022` also APPLIED TO PROD (hzaajccyurlyeweekvma) 2026-08-19,
   ahead of the v2.11.0 main promote (soak-override day) — verified via
   direct query: 6/6 teams, 0 NULL season, all backfilled to `'Spring'`.
-  `023` is still NOT applied to PROD — per the sequence below, it cannot
-  run until the season-aware release has actually promoted to `main` and
-  been live for a while.** Adds `teams.season` (`'Spring'` |
+  `023` APPLIED TO PROD 2026-08-30 after a live precheck confirmed 6/6 teams,
+  0 NULL and 0 invalid seasons; the season-aware release had been live since
+  v2.11.0.** Adds `teams.season` (`'Spring'` |
   `'Fall'`, paired with the existing `year` column — display sites combine
   them, e.g. "Spring 26"). Deliberately split into two migrations for the
   eventual PROD rollout, per the Zero-Downtime Constraint above — running
@@ -241,19 +241,11 @@ Per-file counts below verified individually via `node --test <file>` on 2026-08-
        `'Spring'`. Safe to run against PROD any time; the currently-deployed
        code never references the column. **Done — applied to PROD
        2026-08-19.**
-    2. Deploy the season-aware release (`feature/team-season-tracking`, once
-       promoted through `develop` → `main`). **Not yet done as of this
-       entry — 022 was deliberately applied ahead of the promote since it's
-       backward-compatible; the promote itself is separate and still
-       pending.**
-    3. **023** — only after that release has been live in PROD long enough
+    2. Deploy the season-aware release. **Done in v2.11.0.**
+    3. **023** — after that release has been live in PROD long enough
        to verify `SELECT count(*) FROM public.teams WHERE season IS NULL`
        returns `0`, add `NOT NULL` + `CHECK (season IN ('Spring', 'Fall'))`.
-  See each file's own header for the full reasoning. `docs/db/schema.sql`
-  currently reflects PROD's actual state (season nullable, no CHECK) — do
-  not "complete" that column definition until 023 has actually run against
-  PROD, or the ground-truth doc will lie about live PROD schema the same
-  way past drift here caused #342/#351/#355.
+       **Done 2026-08-30; schema.sql now reflects the constrained live state.**
 - **`026_write_source_role_fallback.sql` — APPLIED TO DEV (psqvzppphdedqkpmarwx)
   AND PROD (hzaajccyurlyeweekvma), both 2026-08-28 (same session, KK
   confirmed go-ahead before the prod apply).** Fixes #379: `team_data_history.write_source`
@@ -263,17 +255,12 @@ Per-file counts below verified individually via `node --test <file>` on 2026-08-
   calls, hence two separate transactions, so the setting never reached the
   write it was meant to tag. Affects every write path, including the
   dominant one (`frontend/src/supabase.js`'s `dbSaveTeamData()`, which never
-  touches `app.write_source` at all — see 006's header). Fix: a new BEFORE
-  trigger (`capture_write_source_role`, invoker-rights) stashes
-  `current_user` into a transaction-scoped GUC before the existing AFTER
-  trigger (`snapshot_team_data`, migration 006, `SECURITY DEFINER`) reads it
-  back as the fallback — both fire within the same statement, no cross-call
-  fragility. A single-function version tried first (`current_setting('role',
-  true)` read directly inside the `SECURITY DEFINER` function) does **not**
-  work — `'role'` isn't a real Postgres GUC, so it silently returns NULL;
-  caught only by testing against a real PostgREST/service-role write, not a
-  `SET LOCAL ROLE` simulation through the SQL Editor, which gave inconsistent
-  results that didn't match real request behavior. RED→GREEN verified via
+  touches `app.write_source` at all — see 006's header). Final fix:
+  `snapshot_team_data()` reads PostgREST's transaction-local
+  `request.jwt.claims` JSON and uses its `role` claim as the fallback. An
+  earlier two-trigger/GUC attempt (`capture_write_source_role`) was removed
+  before the live implementation settled but remained stale in the committed
+  migration and test comments until the 2026-08-30 reconciliation. RED→GREEN verified via
   the new `backend/src/__tests__/rls/writeSourceRoleFallback.test.js`
   (WSF1/WSF2 — service_role and authenticated writes each record their real
   role, not `'unknown'`) against both the local ephemeral stack and DEV; also
@@ -281,14 +268,9 @@ Per-file counts below verified individually via `node --test <file>` on 2026-08-
   `rls` job validates it. Prod apply verified structurally (function
   definitions confirmed byte-identical to DEV via `pg_get_functiondef`,
   `SECURITY DEFINER`/search_path pin on `snapshot_team_data()` confirmed
-  intact, not reverted; Supabase security advisors re-run clean) — no test
-  write was made against real prod data. Security advisors also caught a
-  real, separate gap on first apply: `capture_write_source_role()` had no
-  pinned `search_path` (lower severity than the `SECURITY DEFINER` case
-  migration 012 covers, since it's `SECURITY INVOKER`, but flagged and fixed
-  the same session on both DEV and PROD, folded into the migration file
-  directly since it hadn't merged yet). See the migration file's own header
-  for the full debugging trail.
+  intact, not reverted; Supabase security advisors re-run) — no test write
+  was made against real prod data. Live DEV/PROD function hashes were still
+  identical on 2026-08-30, and recent history rows recorded `authenticated`.
 - **`027_add_magic_link_requested_to_auth_events.sql` — APPLIED TO DEV
   (psqvzppphdedqkpmarwx) AND PROD (hzaajccyurlyeweekvma), both 2026-08-29
   (same session, KK confirmed go-ahead before the prod apply).** Fixes #736:
