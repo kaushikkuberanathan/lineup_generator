@@ -9,6 +9,24 @@
  * URL params:
  *   ?team=1774297491626  — pre-fills team ID
  *   ?role=coach          — pre-fills role
+ *   ?terms=open          — auto-opens the Terms of Service sheet on load
+ *                          (the "deep link" a support email or the Account
+ *                          tab's Terms of Service row can send someone to;
+ *                          see Legal/LegalDocSheet.jsx)
+ *
+ * Terms of Service consent: added alongside the Account tab's own Terms of
+ * Service entry point (both render content/legal.js's current doc version
+ * through the same LegalDocBody component — see that file's header comment
+ * for why there is exactly one copy of this text). A coach can't submit an
+ * access request without checking "I agree" first.
+ *
+ * What gets persisted is only the VERSION each doc was at when the coach
+ * checked the box (getCurrentLegalVersion), never the text — logged via a
+ * separate, non-blocking call to POST /api/v1/auth/consent (see
+ * utils/legalConsent.js and migration 028's legal_consents table). Bumping
+ * a document's text later (content/legal.js) is the only change needed for
+ * the next coach to see and consent to the new version — nothing here
+ * hardcodes a version number.
  *
  * On submit: POST /auth/request-access → PendingApprovalScreen
  */
@@ -16,8 +34,13 @@
 import { useState, useEffect } from 'react';
 import { track } from '@/utils/analytics';
 import { tokens } from "../../theme/tokens";
+import { getLegalDoc } from "../../content/legal";
+import { LegalDocSheet } from "../Legal/LegalDocSheet";
+import { logLegalConsent } from "../../utils/legalConsent";
 
 const TEAM_ID = import.meta.env.VITE_DEFAULT_TEAM_ID || '1774297491626';
+const TERMS_DOC = getLegalDoc('terms');
+const PRIVACY_DOC = getLegalDoc('privacy');
 
 // Label layer (WS-1 #336): what the coach SEES is richer than what we STORE.
 // `value` is sent to POST /request-access as `requestedRole`; the backend's
@@ -52,15 +75,21 @@ export function RequestAccessScreen({
   const [loading, setLoading]     = useState(false);
   const [error, setError]         = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [openLegalDoc, setOpenLegalDoc]   = useState(null); // "terms" | "privacy" | null
 
   const selectedRoleOption = ROLE_OPTIONS.find(r => r.id === roleId);
 
-  // Pre-fill from URL params
+  // Pre-fill from URL params; ?terms=open deep-links straight into the ToS sheet
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const roleParam = params.get('role');
     if (roleParam && ROLE_OPTIONS.find(r => r.id === roleParam)) {
       setRoleId(roleParam);
+    }
+    if (params.get('terms') === 'open') {
+      setOpenLegalDoc('terms');
+      track("tos_link_opened", { source: "deep_link" });
     }
   }, []);
 
@@ -71,14 +100,27 @@ export function RequestAccessScreen({
     if (!email.trim())     return setError('Email address is required');
     if (!email.includes('@')) return setError('Enter a valid email address');
     if (!teamId.trim() && !TEAM_ID) return setError('Team ID is required');
+    if (!agreedToTerms) return setError('Please agree to the Terms of Service to continue');
 
     setError('');
     setLoading(true);
 
+    const consentEmail = email.trim().toLowerCase();
+    track("tos_consented", { version: TERMS_DOC ? TERMS_DOC.version : null });
+    // Fire-and-forget: this is a supplementary audit record, not a gate.
+    // logLegalConsent never throws — see its own header comment.
+    logLegalConsent({
+      email: consentEmail,
+      consents: [TERMS_DOC, PRIVACY_DOC]
+        .filter(Boolean)
+        .map(function (doc) { return { docId: doc.id, version: doc.version }; }),
+      context: 'request_access',
+    });
+
     const result = await requestAccess({
       firstName: firstName.trim(),
       lastName:  lastName.trim(),
-      email:     email.trim().toLowerCase(),
+      email:     consentEmail,
       role:      selectedRoleOption.value,
       tid:       teamId.trim() || TEAM_ID,
     }, { preserveSession });
@@ -217,9 +259,43 @@ export function RequestAccessScreen({
             )}
           </div>
 
+          <label style={styles.consentRow} htmlFor="request-access-consent">
+            <input
+              type="checkbox"
+              id="request-access-consent"
+              checked={agreedToTerms}
+              onChange={e => { setAgreedToTerms(e.target.checked); setError(''); }}
+              style={styles.consentCheckbox}
+              disabled={loading}
+            />
+            <span style={styles.consentText}>
+              I agree to the{' '}
+              <button
+                type="button"
+                style={styles.consentLink}
+                onClick={() => { setOpenLegalDoc('terms'); track("tos_link_opened", { source: "checkbox_label" }); }}
+              >
+                Terms of Service
+              </button>
+              {' '}and{' '}
+              <button
+                type="button"
+                style={styles.consentLink}
+                onClick={() => { setOpenLegalDoc('privacy'); track("tos_link_opened", { source: "checkbox_label", doc: "privacy" }); }}
+              >
+                Privacy Policy
+              </button>
+            </span>
+          </label>
+
           {error && <p style={styles.error}>{error}</p>}
 
-          <button type="submit" style={styles.primaryBtn} disabled={loading}>
+          <button
+            type="submit"
+            style={agreedToTerms ? styles.primaryBtn : styles.primaryBtnDisabled}
+            disabled={loading || !agreedToTerms}
+            aria-disabled={loading || !agreedToTerms}
+          >
             {loading ? 'Submitting…' : 'Request access'}
           </button>
 
@@ -238,6 +314,12 @@ export function RequestAccessScreen({
         )}
 
       </div>
+
+      <LegalDocSheet
+        open={!!openLegalDoc}
+        docId={openLegalDoc}
+        onClose={() => setOpenLegalDoc(null)}
+      />
     </div>
   );
 }
@@ -330,6 +412,38 @@ const styles = {
     fontSize: '12px',
     color: tokens.color.status.warningText,
   },
+  consentRow: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: '10px',
+    padding: '4px 2px',
+    cursor: 'pointer',
+    minHeight: '44px',
+  },
+  consentCheckbox: {
+    marginTop: '2px',
+    width: '18px',
+    height: '18px',
+    flexShrink: 0,
+    accentColor: tokens.color.status.info,
+    cursor: 'pointer',
+  },
+  consentText: {
+    fontSize: '13px',
+    lineHeight: '1.5',
+    color: tokens.color.text.body,
+  },
+  consentLink: {
+    background: 'none',
+    border: 'none',
+    padding: 0,
+    margin: 0,
+    font: 'inherit',
+    fontWeight: '600',
+    color: tokens.color.status.info,
+    textDecoration: 'underline',
+    cursor: 'pointer',
+  },
   preselectedTeam: {
     padding: '11px 13px',
     fontSize: '15px',
@@ -349,6 +463,24 @@ const styles = {
     border: 'none',
     borderRadius: '10px',
     cursor: 'pointer',
+    marginTop: '4px',
+  },
+  // Visually distinct from primaryBtn — without this, a `disabled` button
+  // whose background/color are set inline (as primaryBtn's are) shows no
+  // visual difference from enabled: browsers don't override an explicit
+  // inline background-color/color for :disabled, so "disabled" was
+  // functionally real (clicking did nothing) but invisible to the user
+  // until they'd already tried. tokens.color.text.disabled is this repo's
+  // established gray-400 "disabled states" token.
+  primaryBtnDisabled: {
+    padding: '13px',
+    fontSize: '16px',
+    fontWeight: '600',
+    backgroundColor: tokens.color.text.disabled,
+    color: tokens.color.text.onDark,
+    border: 'none',
+    borderRadius: '10px',
+    cursor: 'not-allowed',
     marginTop: '4px',
   },
   linkBtn: {

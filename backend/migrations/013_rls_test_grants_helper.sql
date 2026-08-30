@@ -53,6 +53,11 @@ AS $$
     AND privilege_type IN ('TRUNCATE', 'DELETE');
 $$;
 
+-- PostgreSQL grants EXECUTE on new functions to PUBLIC by default. Granting
+-- service_role without first revoking PUBLIC does not make the function
+-- service-role-only: anon/authenticated inherit PUBLIC and can still call it.
+REVOKE ALL ON FUNCTION public.rls_test_anon_grants(text[]) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.rls_test_anon_grants(text[]) FROM anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.rls_test_anon_grants(text[]) TO service_role;
 
 

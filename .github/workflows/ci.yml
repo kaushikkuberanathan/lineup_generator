@@ -32,9 +32,12 @@ jobs:
         run: npm run build
         working-directory: frontend
 
-      - name: Run Vitest
-        run: npm test
+      - name: Run Vitest with machine-readable inventory
+        run: npm test -- --reporter=default --reporter=json --outputFile.json=vitest-results.json
         working-directory: frontend
+
+      - name: Verify every frontend test file executed
+        run: node scripts/verify-vitest-file-inventory.mjs frontend frontend/vitest-results.json
 
   # ── Job 2: Backend Integration Tests (CI_SAFE / read-only) ─────────────────
   # Runs against the PRODUCTION Render backend — no local server needed.
@@ -190,8 +193,8 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Run sync-patch tests
-        run: node --test scripts/__tests__/sync-patch.test.js
+      - name: Run repository-script tests
+        run: node --test scripts/__tests__/sync-patch.test.js scripts/verify-vitest-file-inventory.test.mjs
 
   # ── Job 3b: RLS Policy Suite (ephemeral local stack) ────────────────────────
   # #415 — the executable spec for the WS-3 auth-gate cutover
@@ -245,7 +248,7 @@ jobs:
       - name: Start local Supabase stack
         run: supabase start
 
-      - name: Apply schema + RLS bootstrap (schema.sql + migrations 004, 013-016)
+      - name: Apply schema + current RLS bootstrap migrations
         env:
           # supabase start's fixed local DB port/credentials (config.toml [db]).
           DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres

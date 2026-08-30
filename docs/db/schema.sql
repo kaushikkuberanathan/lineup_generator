@@ -85,6 +85,7 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;   -- gen_random_uuid()
 -- ============================================================================
 CREATE SEQUENCE IF NOT EXISTS public.roster_snapshots_id_seq;
 CREATE SEQUENCE IF NOT EXISTS public.team_data_history_id_seq;
+CREATE SEQUENCE IF NOT EXISTS public.legal_consents_id_seq;
 
 
 -- ============================================================================
@@ -97,23 +98,14 @@ CREATE TABLE IF NOT EXISTS public.teams (
   age_group   text                     DEFAULT ''::text,
   year        integer                  DEFAULT 2026,
   sport       text                     DEFAULT 'baseball'::text,
-  -- season: intended 'Spring' | 'Fall' only, paired with `year` above,
-  -- combined at display time ("Spring 26"). Two-phase PROD rollout
-  -- (migrations 022 + 023, see their headers) — this file tracks CURRENT
-  -- PROD ground truth. As of 2026-08-19, PROD is in phase 1 (nullable, no
-  -- CHECK, no DEFAULT): 022 applied to PROD 2026-08-19, ahead of the
-  -- v2.11.0 main promote (verified 6/6 teams, 0 NULL, all backfilled to
-  -- 'Spring'). DEV already has both phases applied (2026-08-18). Once 023
-  -- later runs against PROD (after the season-aware release has actually
-  -- promoted to main and a fresh zero-NULL check passes), update this
-  -- block to NOT NULL + the teams_season_check CHECK constraint — do not
-  -- add either here until that has actually happened, or this file stops
-  -- matching live PROD.
-  season      text,
+  -- Migration 023 applied to PROD 2026-08-30 after the season-aware app had
+  -- been live since v2.11.0 and the live precheck returned 0 NULL/invalid rows.
+  season      text                     NOT NULL,
   owner_id    text                     DEFAULT ''::text,   -- NOTE: text, not uuid. Not FK'd to auth.users.
   created_at  timestamp with time zone DEFAULT now(),
   updated_at  timestamp with time zone DEFAULT now(),
-  CONSTRAINT teams_pkey PRIMARY KEY (id)
+  CONSTRAINT teams_pkey PRIMARY KEY (id),
+  CONSTRAINT teams_season_check CHECK (season IN ('Spring', 'Fall'))
 );
 
 CREATE TABLE IF NOT EXISTS public.team_data (
@@ -406,6 +398,23 @@ CREATE TABLE IF NOT EXISTS public.scoring_audit_log (
     REFERENCES public.at_bats(id) ON DELETE SET NULL
 );
 
+-- Migration 028 (#907/#910's Terms of Service consent flow). Records which
+-- VERSION of a legal document (content/legal.js's LEGAL_DOCS[].versions[])
+-- a coach accepted, never the document text itself. No FK on email -> any
+-- table (mirrors access_requests' own email-keyed design; consent happens
+-- before an auth.users row necessarily exists).
+CREATE TABLE IF NOT EXISTS public.legal_consents (
+  id          bigint                   NOT NULL DEFAULT nextval('legal_consents_id_seq'::regclass),
+  email       text                     NOT NULL,
+  doc_id      text                     NOT NULL,
+  version     text                     NOT NULL,
+  context     text                     NOT NULL DEFAULT 'request_access'::text,
+  accepted_at timestamp with time zone NOT NULL DEFAULT now(),
+  created_at  timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT legal_consents_pkey PRIMARY KEY (id)
+);
+ALTER SEQUENCE public.legal_consents_id_seq OWNED BY public.legal_consents.id;
+
 
 -- ============================================================================
 -- 4. INDEXES
@@ -469,6 +478,12 @@ CREATE INDEX IF NOT EXISTS idx_audit_log_game
   ON public.scoring_audit_log (game_id, team_id, recorded_at DESC);
 CREATE INDEX IF NOT EXISTS idx_audit_log_actor
   ON public.scoring_audit_log (actor_user_id, recorded_at DESC);
+
+-- legal_consents (migration 028)
+CREATE INDEX IF NOT EXISTS idx_legal_consents_email
+  ON public.legal_consents (email);
+CREATE INDEX IF NOT EXISTS idx_legal_consents_doc_version
+  ON public.legal_consents (doc_id, version);
 
 
 -- ============================================================================
@@ -768,6 +783,7 @@ ALTER TABLE public.at_bats               ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.live_game_state       ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.game_scoring_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.scoring_audit_log     ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.legal_consents        ENABLE ROW LEVEL SECURITY;  -- locked, 028 — no policies, service-role only, same pattern as auth_events/team_data_history
 
 
 -- Idempotency guards: this file is written to rebuild an EMPTY database, but the

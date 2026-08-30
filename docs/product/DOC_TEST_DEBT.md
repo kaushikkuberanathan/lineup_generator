@@ -7,6 +7,57 @@
 
 ---
 
+## v3.1.0 Release Test Inventory Additions
+
+Recorded during release prep so the PR checklist does not rely on a drifting
+aggregate count alone. New dedicated test files since v3.0.0:
+
+- Backend: `legalConsent.test.js`, `email.test.js`, `ops.health.test.js`.
+- Frontend behavior: `pendingFinalizationSync.test.js`,
+  `scheduleHydrationFields.test.js`, `playerName.test.js`,
+  `components/Support/LinksTab.test.jsx`, and
+  `components/Support/UpdatesTab.test.jsx`.
+- Frontend legal flow: `content/legal.test.js` and
+  `utils/legalConsent.test.js`; existing `RequestAccessScreen.test.jsx` and
+  `LegalSection.test.jsx` also grew consent/rendering coverage.
+- CI confidence: `scripts/verify-vitest-file-inventory.test.mjs` tests the
+  executable guard that proves every discovered frontend test file ran.
+- Post-prep engine coverage: `bench-equity.test.js` Test 2.1 is now active and
+  guards the #942 fair-rotation fix.
+- QA sweep (PR #956): `LegalDocBody.test.jsx`, `LegalDocSheet.test.jsx`,
+  `featureFlags.test.js`, `positions.test.js`, `analytics.test.js`,
+  `deviceContext.test.js`, `roleLabels.test.js`, and backend `phone.test.js`.
+
+Final-candidate totals at `1da474e`: 1486 frontend tests passed across 136
+files; 295 backend unit tests passed.
+
+- QA Coverage Scope follow-up (#965): `playerMapper.test.js` closes #945 —
+  34 new tests covering each `mapPlayerToV2` inference branch individually,
+  including a lock-in for the deliberately-unwired V1 speed/contact/power
+  bridges. `useAuth.logout.test.js` closes #944 — 5 new tests covering
+  `logout()` (the one exported function of `useAuth.js` with zero prior
+  coverage; `checkSession`/`onAuthStateChange`/`sendMagicLink` were already
+  covered by `auth.test.js`, and `requestAccess`/`updateProfileName`/
+  `refreshMemberships` by their own dedicated files) plus a lock-in that an
+  unhandled `onAuthStateChange` event type is a no-op. New totals: 1525
+  frontend tests across 138 files.
+- QA Coverage Scope follow-up (#966): backend `requireAuth.phoneHint.test.js`
+  closes #966 — 4 new tests covering `middleware/requireAuth.js`'s
+  rejection-logging phone-hint branch, the one shape none of the ~15
+  existing `getUser()`-mocking tests constructed (`error` truthy AND
+  `data.user.phone` present simultaneously). Confirmed reachable in prod
+  (7 `auth.users` rows, 1 with `phone` set) rather than dead phone-auth-era
+  code, so the branch was kept, not removed. New backend total: 299.
+- QA Coverage Scope follow-up (#967): `AppSongsGoldenPath.test.jsx` closes
+  #967 — 2 new tests covering the Songs view (`App.jsx renderSongs`): the
+  Game Day View filters walk-up songs to `activeBattingOrder` (an
+  absent-tonight player's song never renders), and the Play action's Open
+  Song link href/target wiring. New frontend total: 1527 across 139 files.
+  The old standalone "🟡 P2 — Walk-Up Song Navigation" entry further down
+  in this file is moved to Resolved below.
+
+---
+
 ## How to Use This File
 
 1. **When a gap is identified** (during a feature session, an audit, or a retro) — add a row here with priority, age, and target version.
@@ -23,12 +74,6 @@
 ---
 
 ## Open — Test Gaps
-
-### 📋 QA Coverage Scope follow-up (#965)
-
-Individual coverage-gap issues spun out of the QA & Reliability Audit's parent tracker [#965](https://github.com/kaushikkuberanathan/lineup_generator/issues/965). Each closes independently via its own branch/PR; this bullet list is just an index. (Note: parallel sessions are landing #966/#968/#969 around the same time as #967 below — expect this block to need a merge reconciliation, not a sign anything is wrong.)
-
-- #967 — Walk-Up Song navigation had no test coverage — **resolved**, see the Resolved section below (`AppSongsGoldenPath.test.jsx`).
 
 ### ✅ RESOLVED — useAuth.js `onAuthStateChange` silently strands user on failed `/me` call after `SIGNED_IN`
 

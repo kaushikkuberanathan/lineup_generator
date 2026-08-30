@@ -93,27 +93,38 @@ FILES=(
   "backend/migrations/018_auto_provision_team_membership_on_create.sql"
   "backend/migrations/020_team_memberships_identity_required.sql"
   "backend/migrations/021_revoke_teams_delete.sql"
+  "backend/migrations/023_enforce_team_season_not_null.sql"
   "backend/migrations/026_write_source_role_fallback.sql"
+  "backend/migrations/028_add_legal_consents_table.sql"
+  "backend/migrations/029_restrict_rls_test_grants_helper.sql"
+  "backend/migrations/030_reassert_teams_delete_revocation.sql"
+  "backend/migrations/032_harden_database_permissions.sql"
 )
 # 018 (#561, applied to DEV 2026-08-06 and PROD 2026-08-07 — included here
 # so the ephemeral CI stack validates it too) — its own regression suite is
 # backend/src/__tests__/rls/teamMembershipAutoProvision.test.js.
 # 020 (#375, applied to DEV+PROD 2026-08-07) has no dedicated RLS-suite test
 # but is included for consistency with every other applied migration here.
-# 021 (#380, applied to DEV 2026-08-08 — see its own header for prod status,
-# deliberately NOT yet re-applied to prod) MUST be here: S4b and T7-control
+# 021 (#380, live on DEV and PROD; migration 030 records the reconciled state)
+# MUST be here: S4b and T7-control
 # in policies.test.js assert teams.DELETE is revoked for anon/authenticated,
 # which is false until 021 runs. Omitting it here is exactly what caused the
 # ephemeral CI job to fail red on PR #647's first push — schema.sql's own
 # 2026-07-13 capture predates 021 by a month, so there is no fallback source
 # for this state the way there is for 005-012.
-# 026 (#379, applied to DEV 2026-08-28 — included here so the ephemeral CI
+# 023 is now live on DEV and PROD; replay remains idempotent.
+# 026 (#379, applied to DEV/PROD 2026-08-28 — included here so the ephemeral CI
 # stack validates it too, same reasoning as 018) MUST be here: WSF1/WSF2 in
 # writeSourceRoleFallback.test.js assert team_data_history.write_source
 # falls back to the calling Postgres role (service_role/authenticated)
 # instead of 'unknown' — schema.sql's snapshot_team_data() only has 006's
-# SECURITY DEFINER fix baked in, not 026's role-fallback trigger, so without
+# SECURITY DEFINER fix baked in, not 026's JWT-role fallback, so without
 # this the ephemeral stack reproduces the exact prod bug the new test guards.
+# 028 creates the service-only legal_consents table that 032 locks down.
+# 029 closes migration 013's default-PUBLIC EXECUTE gap. 030 durably reasserts
+# the already-live teams DELETE revocation on both projects. 032 closes the
+# post-v3.1 client-grant and exposed SECURITY DEFINER findings and pins the
+# remaining mutable function search paths.
 #
 # 027 (#736, DROP/ADD on auth_events_event_type_check to add
 # 'magic_link_requested') is deliberately NOT here — docs/db/schema.sql's

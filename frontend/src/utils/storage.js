@@ -25,3 +25,10 @@ export function saveJSON(key, val) {
   var str = JSON.stringify(val);
   try { localStorage.setItem(key, str); } catch (e) { _mem[key] = str; }
 }
+
+export function removeJSON(key) {
+  delete _mem[key];
+  try { localStorage.removeItem(key); } catch (e) {
+    // localStorage can be unavailable in privacy mode; the memory copy is already removed.
+  }
+}

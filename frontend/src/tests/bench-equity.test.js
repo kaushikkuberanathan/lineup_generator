@@ -7,12 +7,11 @@
  *   - No player is both benched AND fielded in the same inning
  *   - BENCH entries appear in grid output at the correct count
  *
- * Known limitation (documented below):
- *   The V2 engine uses deterministic score-based bench selection with no
- *   rotation tracking. With identical players, the same lowest-scoring players
- *   are always benched — fair rotation across innings is NOT guaranteed.
- *   Test 2.1 documents this as a BUG CONFIRMED so it is skipped to avoid
- *   blocking pushes. When the engine gains bench-rotation tracking, un-skip it.
+ * Bench rotation fairness (Test 2.1, see #942):
+ *   chooseBenchPlayers tracks a benchHistory per player across innings and
+ *   penalizes players who are already over-benched relative to the group
+ *   average, so identical/near-identical players rotate through the bench
+ *   evenly instead of the same lowest-scoring players sitting every inning.
  *
  * Run: npm test  (from frontend/)
  */
@@ -120,17 +119,14 @@ describe('Group 1 — Bench count correctness (12-player, 6 innings)', function 
 
 describe('Group 2 — Bench rotation fairness', function () {
 
-  // BUG CONFIRMED: V2 engine uses deterministic score-based bench selection
-  // with no rotation tracking. With identical-attribute players, the same
-  // lowest-ranked players are benched every inning. With 12 identical players
-  // over 6 innings, a perfectly fair rotation would have each player sitting
-  // exactly once. The engine currently has 2 players sitting all 6 innings
-  // and 10 players never sitting.
-  //
-  // Fix approach: add a benchHistory tracker per player and apply a penalty
-  // proportional to (playerBenchCount - averageBenchCount) in chooseBenchPlayers.
-  // Un-skip this test once the fix is in.
-  test.skip('2.1: BUG CONFIRMED — with identical players, no player sits more than 1 inning more than any other', function () {
+  // FIXED (was BUG CONFIRMED): chooseBenchPlayers now tracks a benchHistory
+  // per player across innings and adjusts getBenchCandidateScore by
+  // BENCH_FAIRNESS_WEIGHT * (playerBenchCount - averageBenchCount) before
+  // sorting, so a player who is already over-benched relative to the group
+  // average is pushed out of the bottom-N bench slice. With 12 identical
+  // players over 6 innings this produces a perfectly even rotation (every
+  // player sits exactly once).
+  test('2.1: with identical players, no player sits more than 1 inning more than any other', function () {
     var result = generateLineupV2(mockRoster12, INNINGS);
     var benchCounts = Object.entries(result.grid).map(function (entry) {
       return entry[1].filter(function (pos) { return pos === 'BENCH'; }).length;

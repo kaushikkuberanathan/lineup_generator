@@ -11,7 +11,7 @@
  * Run: npm test  (from frontend/)
  */
 
-import { loadJSON, saveJSON } from '../utils/storage.js';
+import { loadJSON, removeJSON, saveJSON } from '../utils/storage.js';
 
 describe('storage — round trip', function () {
 
@@ -41,6 +41,15 @@ describe('storage — loadJSON defaults', function () {
   test('default can itself be an object, returned as-is (not cloned/parsed)', function () {
     var def = { empty: true };
     expect(loadJSON('missing_key_obj', def)).toBe(def);
+  });
+});
+
+describe('storage — removeJSON', function () {
+  test('removes a saved value from localStorage and the shared abstraction', function () {
+    saveJSON('remove_me', { pending: true });
+    removeJSON('remove_me');
+    expect(localStorage.getItem('remove_me')).toBe(null);
+    expect(loadJSON('remove_me', 'missing')).toBe('missing');
   });
 });
 

@@ -218,6 +218,10 @@ reflects whatever the team/membership record holds.
 | `login_succeeded` | Login confirmed | components/Auth/LoginScreen.jsx | `method: "magic_link"` |
 | `login_failed` | Login error | components/Auth/LoginScreen.jsx | `method`, `error` |
 | `access_requested` | Access request submitted (via Home tab team search, not a form) | components/Auth/RequestAccessScreen.jsx | `team_id` |
+| `tos_consented` | Registration submitted with the Terms of Service / Privacy Policy checkbox checked | components/Auth/RequestAccessScreen.jsx | `version` (the accepted `terms` doc version, e.g. `"2.0"`) |
+| `tos_link_opened` | Coach taps the "Terms of Service" or "Privacy Policy" link inline in the consent checkbox label, opening `LegalDocSheet` | components/Auth/RequestAccessScreen.jsx | `source: "checkbox_label"`, `doc` (present for the privacy link) |
+
+> **Added 2026-08-29**, documenting the Terms of Service experience (PRs #907/#910/#913, `develop`-only as of this writing, not yet promoted) — by a session other than the one that authored the feature, from reading the code directly rather than the authoring session's own notes. See `content/legal.js` and `utils/legalConsent.js` for the full consent-versioning system these two events sit alongside; the consent record itself (`POST /api/v1/auth/consent`, migration 028's `legal_consents` table) is a separate, non-Mixpanel audit trail, not one of these two events.
 
 > Path correction: access requests are submitted via "Find your team…" on the Home tab → team search → role picker → `POST /request-access` (Story 124/#655, v2.10.0), not via a Feedback form as a prior version of this doc and `legal.js` both stated (see #774).
 

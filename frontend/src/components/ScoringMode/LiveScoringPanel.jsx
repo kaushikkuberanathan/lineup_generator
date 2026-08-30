@@ -8,7 +8,6 @@ import { track } from '../../utils/analytics';
 import { truncateTeamName, deriveGameHeader } from '../../utils/formatters';
 import { isFlagEnabled } from '../../config/featureFlags';
 import Toast from '../ui/Toast';
-import ScoreboardRow from '../game-mode/ScoreboardRow';
 import { tokens } from '../../theme/tokens';
 
 var FF = "Georgia,'Times New Roman',serif";
@@ -389,14 +388,6 @@ export default function LiveScoringPanel(props) {
         minHeight: '100vh', background: tokens.color.gameDay.surface.shell, color: tokens.color.gameDay.text.primary,
         fontFamily: FF, display: 'flex', flexDirection: 'column',
       }}>
-        <ScoreboardRow
-          myTeamLabel={myTeamLabelSB}
-          oppLabel={teamLabelSB}
-          myScore={gs.myScore}
-          oppScore={gs.opponentScore}
-          isAtBat={isHomeBatting}
-          isScorer={false}
-        />
         {/* Header strip */}
         <div style={{
           display: 'flex', alignItems: 'center',
@@ -721,17 +712,6 @@ export default function LiveScoringPanel(props) {
       background: tokens.color.gameDay.surface.shell, color: tokens.color.gameDay.text.primary,
       fontFamily: FF, display: 'flex', flexDirection: 'column',
     }}>
-      <ScoreboardRow
-        myTeamLabel={myTeamLabelSB}
-        oppLabel={teamLabelSB}
-        myScore={gs.myScore}
-        oppScore={gs.opponentScore}
-        isScorer={isScorer}
-        isAtBat={isHomeBatting}
-        onAddMyRun={function() { scoring.addManualRun('us'); }}
-        onAddOppRun={function() { scoring.addManualRun('opp'); }}
-      />
-
       {/* ── Header strip ──────────────────────────────────────────────────────── */}
       <div style={{
         display: 'flex', alignItems: 'center',

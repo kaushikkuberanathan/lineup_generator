@@ -119,7 +119,7 @@ A second, hermetic test system runs alongside the integration runner:
 - **Env**: still needs `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` / `SUPABASE_ANON_KEY` set, because `src/lib/env.js` + `src/lib/supabase.js` throw at import. Tests never make a real Supabase or network call — they either short-circuit before the client (auth-rejection in `requireAuth.js`) or monkey-patch the seams (`supabaseAdmin.from` / `supabaseAdmin.rpc` / `supabaseAnon.auth.signInWithOtp` / `global.fetch`). `supabaseAdmin` is a shared singleton, so patching `.from` also intercepts `logAuthEvent`'s `auth_events` write. Dummy non-empty values work anywhere.
 - **File convention**: specs live in `src/__tests__/*.test.js` (the `test:unit` glob) — use this path, **not** `src/tests/`.
 
-Unit suite total: **269** — directly measured via `npm run test:unit` with CI's exact dummy-env pattern (`SUPABASE_URL=https://ci-hermetic.invalid`, etc.), during a v3.0.0 release-ritual audit (2026-08-29). **Corrected from the prior "263" figure**, which itself undercounted the per-file table below by 1 (262 summed) even before accounting for two files that existed in the codebase but were never added to this table at all: `emailNormalization.test.js` (4, PR #894/#374) and `teamsSearchLimiter.test.js` (1). 262 + 4 + 1 = 267, still 2 short of the measured 269 — root cause of that residual 2-count gap not identified; recording the directly-measured total as ground truth rather than reconciling the table's own arithmetic further, per this file's established practice for this class of drift (see the 254→257→263 history immediately below, which has recurred before). Prior figure (257, up from 254 — +3 from `env.legacyKeyWarning.test.js`, #387 backend-infra fix batch) verified via `npm run test:unit` with `APPROVE_LINK_HMAC_SECRET` exported directly — the 249 figure before that undercounted by 1 because `teamData.envGuard.test.js` was silently crashing to a single failing marker instead of running its real 2 tests in every local run that session, a purely local `NODE_ENV=production`/dotenv-skip artifact unrelated to any code change; CI has never had this problem, since it sets the var as a real process env var. Up from 232 pre-#474-closure: +17 from `adminRequests.test.js`/`adminMembers.test.js`/`adminMembershipActions.test.js` (#474), +1 net from that recount. Story 99 closed 2026-07-31; see ROADMAP.md Story 99 for the closure writeup.
+Unit suite total: **299** — up from 295 after `requireAuth.phoneHint.test.js` (#966, QA Coverage Scope follow-up #965) added the missing error-truthy-with-a-phone-present rejection-branch coverage for `middleware/requireAuth.js`. Tests are hermetic; no live database or external network was used.
 
 **Corrected 2026-08-25:** the prior "147" total (2026-08-19) predated three files that already existed in the repo but were undocumented in this table (`teamsSearch.route.test.js`, `cors.test.js`, `reject.test.js` — 30 tests combined) — same class of drift as the 2026-08-08 corrections below, not new. `admin.auth.test.js`'s count also grew from 9→15 as the 6 new admin.js routes below each got a 401-rejection case added alongside their own dedicated success-path spec file.
 
@@ -148,6 +148,9 @@ Per-file counts below verified individually via `node --test <file>` on 2026-08-
 | `teamData.delete.test.js` (6) | **Pre-existing, added to this table 2026-08-08 (was undocumented).** Route-level `DELETE /api/v1/teams/:teamId` (#380): no-token 401, non-admin 403, authenticated-admin 200 + delete call, membership-check DB error 500, delete-itself DB error 500, legacy `/api/teams` dual-mount smoke. `requireAuth` stubbed via `supabaseAdmin.auth.getUser`. |
 | `aiProxy.test.js` (6) | `POST /api/ai`: 503 unconfigured, **413 oversize (v2.2.4 regression guard)**, 400 bad type, 200 upstream status/body relay + call-shape (`claude-sonnet-4-6`, max_tokens, content), 504 AbortError, 502 unreachable. `global.fetch` stubbed; `ANTHROPIC_API_KEY` save/restore. |
 | `auth.happy.test.js` (4) | `POST /request-access` 201/409 + `POST /magic-link` 200/403. Hermetic via shared-`supabaseAdmin` patch (also covers `logAuthEvent`), `signInWithOtp` stub, and `global.fetch` stub for the Resend send. |
+| `legalConsent.test.js` (7) | **NEW, migration 028 (applied and functionally verified on DEV and PROD 2026-08-29).** `POST /api/v1/auth/consent` — multi-doc consent → 201 + one `legal_consents` row per doc with `version` only (never doc text), email normalized the same way as `/request-access` (#374), `context` defaults to `request_access`, missing email / empty `consents` / a consent item missing `version` → 400 with no insert attempted, DB error → 500. A brand-new route (additive only, per the Zero-Downtime Constraint above) — does not touch `/request-access`'s existing handler or `access_requests`. |
+| `email.test.js` (7) | **NEW 2026-08-29 (#917).** Pins the Resend delivery contract: missing-key skip, production recipient, DEV recipient override, signed admin action links, denial email, and swallowed non-2xx/thrown-fetch failures. |
+| `ops.health.test.js` (4) | **NEW 2026-08-29 (#916).** Covers healthy/degraded/unreachable `GET /api/v1/ops/health` responses and proves `GET /api/v1/ops/ping` is a DB-free liveness endpoint. |
 | `approve.role.test.js` (6) | `POST /api/v1/approve` role-transition behavior. Landed between Phase 2 tranche 2 and Story 99's closure without a doc update — backfilled here 2026-07-31. |
 | `approveLink.role.test.js` (7) | `GET /api/v1/admin/approve-link` role-transition behavior (the public 1-tap email link). Backfilled 2026-07-31 — see note above. **Updated 2026-08-25 (#337):** now signs a real token via `approveLinkToken.sign()` instead of passing raw `requestId`/`teamId` query params — WS-1 role-normalization assertions themselves unchanged. |
 | `approveLinkToken.test.js` (9) | **NEW 2026-08-25 (#337).** `lib/approveLinkToken.js` sign/verify round trip — tamper (payload segment, signature segment, wrong secret), expiry (`TOKEN_EXPIRED` distinct from `TOKEN_TAMPERED`), action-binding (an approve token can't verify as a deny token), malformed input, `sign()`'s required-field guard. |
@@ -161,12 +164,13 @@ Per-file counts below verified individually via `node --test <file>` on 2026-08-
 | `auth.session.test.js` (9) | **NEW 2026-07-31.** `GET /me`, `PATCH /me`, `POST /logout` — zero prior coverage. Hydrated-user happy path, missing-profile non-crash, validation and not-found paths, and 401 rejection for all three routes. **+1 2026-08-26 (#406/#410 survey):** a membership row holding a legacy role value (`team_admin`) is returned verbatim by `GET /me`, not normalized — locks in current, presumed-intentional behavior per the documented role model. |
 | `authRateLimiter.test.js` (6) | **NEW (#651, CodeQL js/missing-rate-limiting alerts #12/#15 follow-up).** `meLimiter` (`GET /me`, 100 req/15min) and `logoutLimiter` (`POST /logout`, 20 req/15min) — both user-id-keyed, not email-keyed like `loginLimiter`/`requestAccessLimiter`, since both routes sit behind `requireAuth` and the caller already holds a session. Same-user exhaustion, a different user unaffected by another's exhausted budget, and an unauthenticated request rejected by `requireAuth` (401) before the limiter ever sees it — for both routes. RED→GREEN verified (stashed the route change, confirmed all 4 exhaustion/isolation assertions fail without it, restored). |
 | `requireAdmin.test.js` (4) | **NEW 2026-08-26 (#406/#410 test-health survey).** Direct unit coverage for `middleware/requireAdmin.js`, calling it without the app/route layer — previously exercised only indirectly via other routes' stubs. Active-admin success sets `req.adminMembership` and calls `next()`, no-matching-row → 403, DB error → 403 (fail-closed), and the exact `.eq()` filter shape (`user_id`/`role`='admin'/`status`='active') — the last one is a known-limitation lock-in, not a fix: it confirms a legacy `team_admin`-valued row is excluded by the query before the middleware ever inspects it. |
+| `requireAuth.phoneHint.test.js` (4) | **NEW (#966, QA Coverage Scope follow-up #965).** Direct unit coverage for `middleware/requireAuth.js`'s rejection-logging phone-hint branch, calling the middleware without the app/route layer (same pattern as `requireAdmin.test.js`). The speculated dead-code question is resolved: a live read-only prod query (`hzaajccyurlyeweekvma`) found 7 `auth.users` rows, 1 with `phone` set, so the branch is reachable — not removed. No Authorization header → 401, `getUser()` never called; `{ data: null, error }` → 401 with no phone hint; **the real gap**: `error` truthy AND `data.user.phone` present simultaneously → 401 with the `console.warn` line containing `phone=` followed by the real `maskPhone()` output (computed via the actual import, not hardcoded); successful `getUser()` → `next()` called, `req.user` set, no 401. `maskPhone`'s own masking behavior is covered separately by `phone.test.js` — this file only asserts `requireAuth` calls it correctly. RED→GREEN mutation-verified: temporarily blanked the `hint` line, confirmed the phone-hint test (only that one) went RED with the exact expected-vs-actual mismatch, restored the file byte-for-byte (`git diff --stat` empty), confirmed GREEN again. |
 | `feedback.test.js` (7) | **NEW 2026-07-31.** `POST /api/v1/feedback` — zero prior coverage. Valid submission, optional fields, validation, DB-error, 401 rejection, and **FB-7**: regression guard for the admin.js mount-order bug this file's authoring discovered (see Zero-Downtime / app.js note below) — a non-admin coach must reach 201, not 403. |
 | `teamData.logInjection.test.js` (5) | **NEW 2026-08-08 (v2.9.0 security hardening).** Log-injection fix (CWE-134) at the 5 `console.error` sites in `teamData.js` — spies on `console.error`, asserts `{ teamId, error }` is passed as a structured second argument (not interpolated into the message string) using a `teamId` containing `%s`. |
 | `teamsSearch.route.test.js` (13) | **Pre-existing, added to this table 2026-08-25 (was undocumented).** `GET /api/v1/teams/search` (Story 124/#655) — the file that originally moved the total from 125→147/2026-08-19 but was never itself added as a row here. |
 | `teamsSearchLimiter.test.js` (1) | **Found undocumented during v3.0.0 release audit (2026-08-29) — landed on `develop` before this pass but never added to this table.** `searchLimiter` (20 req/15min, IP-keyed) on `GET /api/v1/teams/search` — one ordered test confirming 20 requests reach the real handler and the 21st is blocked. |
 | `cors.test.js` (9) | **Pre-existing, added to this table 2026-08-25 (was undocumented).** CORS allowlist behavior across the backend's configured origins. **C9's assertion rewritten in v3.0.0** (PR #904) from a substring `.includes()` check to exact match — fixed a CodeQL `js/incomplete-url-substring-sanitization` false positive that blocked the v3.0.0 `develop → main` promote; test count and behavior unchanged. |
-| `emailNormalization.test.js` (4) | **Found undocumented during v3.0.0 release audit (2026-08-29) — landed via PR #894 but never added to this table.** Gmail dot-variant login match (#374): membership stored with/without dots vs. login typed the opposite way both match (EN1/EN2), case-insensitive match (EN3), and a genuinely different email is still correctly rejected, not over-matched (EN4). |
+| `emailNormalization.test.js` (4) | **Found undocumented during v3.0.0 release audit (2026-08-29) — landed on `develop` via PR #894 but never added to this table.** Gmail dot-variant login match (#374): membership stored with/without dots vs. login typed the opposite way both match (EN1/EN2), case-insensitive match (EN3), and a genuinely different email is still correctly rejected, not over-matched (EN4). |
 | `prodGuard.test.js` (4) | **NEW 2026-08-27 (#339).** `scripts/tests/prodGuard.js`'s `assertNotProd()` — throws for a URL containing the PROD project ref, passes for DEV/local/unset. Guards `test-runner.js`'s write-heavy suite block unconditionally, regardless of `CI_SAFE`. |
 | `env.legacyKeyWarning.test.js` (3) | **NEW (#387 backend-infra fix batch).** `src/lib/env.js`'s legacy-Supabase-key boot warning — a stale `eyJ...` legacy JWT in `SUPABASE_ANON_KEY` broke every prod login for ~15min in the 2026-07-20 cutover incident with no startup-time signal. Warns (does not throw, since DEV's project still uses legacy keys deliberately) when `SUPABASE_ANON_KEY` or `SUPABASE_SERVICE_ROLE_KEY` matches the `eyJ...` pattern; asserts silence for new-style `sb_secret_`/`sb_publishable_` keys. Clears `require.cache` per case since `env.js` runs its checks as module-level side effects on require. |
 
@@ -225,9 +229,9 @@ Per-file counts below verified individually via `node --test <file>` on 2026-08-
   session). `022` also APPLIED TO PROD (hzaajccyurlyeweekvma) 2026-08-19,
   ahead of the v2.11.0 main promote (soak-override day) — verified via
   direct query: 6/6 teams, 0 NULL season, all backfilled to `'Spring'`.
-  `023` is still NOT applied to PROD — per the sequence below, it cannot
-  run until the season-aware release has actually promoted to `main` and
-  been live for a while.** Adds `teams.season` (`'Spring'` |
+  `023` APPLIED TO PROD 2026-08-30 after a live precheck confirmed 6/6 teams,
+  0 NULL and 0 invalid seasons; the season-aware release had been live since
+  v2.11.0.** Adds `teams.season` (`'Spring'` |
   `'Fall'`, paired with the existing `year` column — display sites combine
   them, e.g. "Spring 26"). Deliberately split into two migrations for the
   eventual PROD rollout, per the Zero-Downtime Constraint above — running
@@ -238,19 +242,11 @@ Per-file counts below verified individually via `node --test <file>` on 2026-08-
        `'Spring'`. Safe to run against PROD any time; the currently-deployed
        code never references the column. **Done — applied to PROD
        2026-08-19.**
-    2. Deploy the season-aware release (`feature/team-season-tracking`, once
-       promoted through `develop` → `main`). **Not yet done as of this
-       entry — 022 was deliberately applied ahead of the promote since it's
-       backward-compatible; the promote itself is separate and still
-       pending.**
-    3. **023** — only after that release has been live in PROD long enough
+    2. Deploy the season-aware release. **Done in v2.11.0.**
+    3. **023** — after that release has been live in PROD long enough
        to verify `SELECT count(*) FROM public.teams WHERE season IS NULL`
        returns `0`, add `NOT NULL` + `CHECK (season IN ('Spring', 'Fall'))`.
-  See each file's own header for the full reasoning. `docs/db/schema.sql`
-  currently reflects PROD's actual state (season nullable, no CHECK) — do
-  not "complete" that column definition until 023 has actually run against
-  PROD, or the ground-truth doc will lie about live PROD schema the same
-  way past drift here caused #342/#351/#355.
+       **Done 2026-08-30; schema.sql now reflects the constrained live state.**
 - **`026_write_source_role_fallback.sql` — APPLIED TO DEV (psqvzppphdedqkpmarwx)
   AND PROD (hzaajccyurlyeweekvma), both 2026-08-28 (same session, KK
   confirmed go-ahead before the prod apply).** Fixes #379: `team_data_history.write_source`
@@ -260,17 +256,12 @@ Per-file counts below verified individually via `node --test <file>` on 2026-08-
   calls, hence two separate transactions, so the setting never reached the
   write it was meant to tag. Affects every write path, including the
   dominant one (`frontend/src/supabase.js`'s `dbSaveTeamData()`, which never
-  touches `app.write_source` at all — see 006's header). Fix: a new BEFORE
-  trigger (`capture_write_source_role`, invoker-rights) stashes
-  `current_user` into a transaction-scoped GUC before the existing AFTER
-  trigger (`snapshot_team_data`, migration 006, `SECURITY DEFINER`) reads it
-  back as the fallback — both fire within the same statement, no cross-call
-  fragility. A single-function version tried first (`current_setting('role',
-  true)` read directly inside the `SECURITY DEFINER` function) does **not**
-  work — `'role'` isn't a real Postgres GUC, so it silently returns NULL;
-  caught only by testing against a real PostgREST/service-role write, not a
-  `SET LOCAL ROLE` simulation through the SQL Editor, which gave inconsistent
-  results that didn't match real request behavior. RED→GREEN verified via
+  touches `app.write_source` at all — see 006's header). Final fix:
+  `snapshot_team_data()` reads PostgREST's transaction-local
+  `request.jwt.claims` JSON and uses its `role` claim as the fallback. An
+  earlier two-trigger/GUC attempt (`capture_write_source_role`) was removed
+  before the live implementation settled but remained stale in the committed
+  migration and test comments until the 2026-08-30 reconciliation. RED→GREEN verified via
   the new `backend/src/__tests__/rls/writeSourceRoleFallback.test.js`
   (WSF1/WSF2 — service_role and authenticated writes each record their real
   role, not `'unknown'`) against both the local ephemeral stack and DEV; also
@@ -278,14 +269,9 @@ Per-file counts below verified individually via `node --test <file>` on 2026-08-
   `rls` job validates it. Prod apply verified structurally (function
   definitions confirmed byte-identical to DEV via `pg_get_functiondef`,
   `SECURITY DEFINER`/search_path pin on `snapshot_team_data()` confirmed
-  intact, not reverted; Supabase security advisors re-run clean) — no test
-  write was made against real prod data. Security advisors also caught a
-  real, separate gap on first apply: `capture_write_source_role()` had no
-  pinned `search_path` (lower severity than the `SECURITY DEFINER` case
-  migration 012 covers, since it's `SECURITY INVOKER`, but flagged and fixed
-  the same session on both DEV and PROD, folded into the migration file
-  directly since it hadn't merged yet). See the migration file's own header
-  for the full debugging trail.
+  intact, not reverted; Supabase security advisors re-run) — no test write
+  was made against real prod data. Live DEV/PROD function hashes were still
+  identical on 2026-08-30, and recent history rows recorded `authenticated`.
 - **`027_add_magic_link_requested_to_auth_events.sql` — APPLIED TO DEV
   (psqvzppphdedqkpmarwx) AND PROD (hzaajccyurlyeweekvma), both 2026-08-29
   (same session, KK confirmed go-ahead before the prod apply).** Fixes #736:
@@ -308,6 +294,28 @@ Per-file counts below verified individually via `node --test <file>` on 2026-08-
   cleanup against each database (not just a `pg_constraint` query), and
   Supabase security advisors re-run clean on both with no new findings.
   Merged via [PR #893](https://github.com/kaushikkuberanathan/lineup_generator/pull/893).
+- **`028_add_legal_consents_table.sql` — APPLIED TO DEV (psqvzppphdedqkpmarwx)
+  AND PROD (hzaajccyurlyeweekvma), both 2026-08-29 (same session, KK
+  confirmed go-ahead: "yes let's go and apply those migrations").**
+  Adds `legal_consents` (new table, RLS enabled, zero policies — same
+  service-role-only pattern as `team_data_history`, migration 006), keyed
+  by `email`/`doc_id`/`version`/`context`/`accepted_at`, backing the new
+  `POST /api/v1/auth/consent` route (`src/routes/auth.js`, additive-only —
+  see the migration file's own header for why this couldn't be columns on
+  `access_requests` instead: the Zero-Downtime Constraint above forbids
+  modifying `POST /request-access`'s existing handler, and that's still in
+  force pending Phase 4C). Stores only the accepted VERSION of each legal
+  document (`frontend/src/content/legal.js`'s `LEGAL_DOCS[].versions[]`),
+  never the document text — the version string is the pointer back to the
+  exact words in that file's git history. Verified live on both DEV and
+  PROD via a real insert + cleanup against each database (not just an
+  `information_schema` query), and Supabase security advisors re-run clean
+  on both — the only finding is the expected INFO-level "RLS enabled, no
+  policies" on `legal_consents` itself, same as the pre-existing finding on
+  `auth_events`/`team_data_history`. `docs/db/schema.sql` updated to
+  include this table now that it's actually live, per this repo's own
+  convention (see the 022/023 note above) that the ground-truth schema doc
+  reflects only what's live, not a pending migration.
 
 ### !! FIVE NUMERIC COLLISIONS ACROSS THE TWO TREES !!
 
