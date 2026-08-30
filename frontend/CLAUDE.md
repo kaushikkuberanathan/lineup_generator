@@ -83,8 +83,7 @@ Both shims have now been removed, per `docs/product/PHASE4C_SCORING_RLS_PROPOSAL
 ## Test Suite
 
 - **Framework**: Vitest
-- **CI target**: **1489 frontend passed / 0 failed across 137 test files** (backend unit 295 — see `backend/CLAUDE.md` § Test Suite), measured locally after adding `AppDemoTeamGoldenPath.test.jsx` (#969, +3 tests / +1 file) on top of the final v3.1.0 candidate `1da474e` baseline (1486/136) after the #942 fairness fix and PR #956 coverage sweep.
-- **CI target**: **1530 frontend passed / 0 failed across 140 test files** (backend unit 299 — see `backend/CLAUDE.md` § Test Suite), after `playerMapper.test.js` closed #945 (34 new tests), `useAuth.logout.test.js` closed #944 (5 new tests), `AppSongsGoldenPath.test.jsx` closed #967 (2 new tests), and `AppPwaInstallPrompt.test.jsx` closed #968 (3 new tests) — all QA Coverage Scope #965. Prior baseline was 1486/136 on final v3.1.0 candidate `1da474e`.
+- **CI target**: **1533 frontend passed / 0 failed across 141 test files** (backend unit 299/299 — see `backend/CLAUDE.md` § Test Suite), directly re-measured against `develop` HEAD `6caf0dc` (2026-08-30) after `playerMapper.test.js` closed #945 (34 new tests), `useAuth.logout.test.js` closed #944 (5 new tests), `AppSongsGoldenPath.test.jsx` closed #967 (2 new tests), `AppPwaInstallPrompt.test.jsx` closed #968 (3 new tests), and `AppDemoTeamGoldenPath.test.jsx` closed #969 (3 new tests) — all QA Coverage Scope #965. Prior baseline was 1486/136 on final v3.1.0 candidate `1da474e`. This line previously carried two stale, un-reconciled counts (1489/137 and 1530/140) left over from a merge race between two concurrent sessions both resolving the same branch's conflicts — corrected here via a direct re-run rather than trusting either.
 - **Known skip**: bench-equity.test.js test 2.1 (bench rotation fairness — BUG CONFIRMED; identical players, sit-count drift > 1 inning; fix deferred)
 
 #### Test files
