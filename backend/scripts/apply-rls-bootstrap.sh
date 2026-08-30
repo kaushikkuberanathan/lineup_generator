@@ -95,8 +95,10 @@ FILES=(
   "backend/migrations/021_revoke_teams_delete.sql"
   "backend/migrations/023_enforce_team_season_not_null.sql"
   "backend/migrations/026_write_source_role_fallback.sql"
+  "backend/migrations/028_add_legal_consents_table.sql"
   "backend/migrations/029_restrict_rls_test_grants_helper.sql"
   "backend/migrations/030_reassert_teams_delete_revocation.sql"
+  "backend/migrations/032_harden_database_permissions.sql"
 )
 # 018 (#561, applied to DEV 2026-08-06 and PROD 2026-08-07 — included here
 # so the ephemeral CI stack validates it too) — its own regression suite is
@@ -118,8 +120,11 @@ FILES=(
 # instead of 'unknown' — schema.sql's snapshot_team_data() only has 006's
 # SECURITY DEFINER fix baked in, not 026's JWT-role fallback, so without
 # this the ephemeral stack reproduces the exact prod bug the new test guards.
+# 028 creates the service-only legal_consents table that 032 locks down.
 # 029 closes migration 013's default-PUBLIC EXECUTE gap. 030 durably reasserts
-# the already-live teams DELETE revocation on both projects.
+# the already-live teams DELETE revocation on both projects. 032 closes the
+# post-v3.1 client-grant and exposed SECURITY DEFINER findings and pins the
+# remaining mutable function search paths.
 #
 # 027 (#736, DROP/ADD on auth_events_event_type_check to add
 # 'magic_link_requested') is deliberately NOT here — docs/db/schema.sql's
