@@ -185,13 +185,30 @@ function releaseShippingSummary(pr) {
   return '';
 }
 
+const INTERNAL_TRACKING_FRAGMENT = /\bstory\s*#?\d+\b/i;
+
+// Release titles that fall back to the raw PR title (no `Release X.Y.Z —` match)
+// can carry internal issue-tracking fragments like "Story 133 slices 1-4/13".
+// Drop just those comma-separated clauses so the public feed stays coach/recruiter-readable.
+export function stripInternalTrackingFragments(title) {
+  return String(title || '')
+    .split(/,\s*/)
+    .filter((segment) => !INTERNAL_TRACKING_FRAGMENT.test(segment))
+    .join(', ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function releaseNote(pr) {
   const body = normalize(pr.body);
   if (body.includes('internal-only release') || body.includes('no user-facing change')) return null;
 
   const version = releaseVersion(pr);
   const summary = releaseShippingSummary(pr);
-  const title = version && summary ? `Release ${version} — ${summary}` : pr.title;
+  const rawTitle = version && summary ? `Release ${version} — ${summary}` : pr.title;
+  const title = stripInternalTrackingFragments(rawTitle);
+  if (!title) return null;
+
   return { number: pr.number, title, url: pr.html_url };
 }
 
