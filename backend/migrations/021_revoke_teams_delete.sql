@@ -1,11 +1,13 @@
 -- Migration 021: close the #380 anon/authenticated DELETE exception on teams
 --
--- STATUS: APPLIED TO DEV (psqvzppphdedqkpmarwx) 2026-08-08. Applied to PROD
--- (hzaajccyurlyeweekvma) 2026-08-08, then IMMEDIATELY REVERTED the same
--- session — see "PROD DEFERRAL" below. NOT currently live on prod.
+-- STATUS: LIVE ON DEV AND PROD. The original PROD apply on 2026-08-08 was
+-- immediately reverted, but a later re-apply was not recorded in migration
+-- history. Live grants were reconciled 2026-08-30: anon/authenticated DELETE
+-- was already absent on both projects; migration 030 idempotently reasserted
+-- the revocation and created durable ledger entries on both.
 --
 -- ---------------------------------------------------------------------------
--- PROD DEFERRAL — do not re-apply until this precondition is confirmed true
+-- HISTORICAL PROD DEFERRAL — precondition is now satisfied
 -- ---------------------------------------------------------------------------
 -- The two PRs this migration depends on (#642, #646) are merged to `develop`
 -- only, not `main`. Render deploys the backend from `main`

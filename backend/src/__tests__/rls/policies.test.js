@@ -250,6 +250,21 @@ describe('S4 — anon write protection', () => {
       'Found: ' + offending.join(', ')
     );
   });
+
+  test('S4c: migration-013 grant helper is service-role-only', async () => {
+    const args = { table_names: ['team_data', 'teams', 'roster_snapshots'] };
+    const anonResult = await anon.rpc('rls_test_anon_grants', args);
+    const authenticatedResult = await coachA.rpc('rls_test_anon_grants', args);
+
+    assert.ok(
+      isGrantDenied(anonResult),
+      'EXPOSURE: anon can execute the SECURITY DEFINER grant-introspection helper'
+    );
+    assert.ok(
+      isGrantDenied(authenticatedResult),
+      'EXPOSURE: authenticated can execute the SECURITY DEFINER grant-introspection helper'
+    );
+  });
 });
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -413,7 +428,7 @@ describe('T — teams write isolation (INSERT)', () => {
   // No anon policy exists for INSERT either.
   test('T3: anon CANNOT insert into teams', async () => {
     const res = await anon.from('teams').insert({
-      id: 'zzz-rls-test-anon-insert', name: 'HACKED', age_group: '8U', year: 2026, sport: 'baseball',
+      id: 'zzz-rls-test-anon-insert', name: 'HACKED', age_group: '8U', year: 2026, season: 'Spring', sport: 'baseball',
     }).select();
     assert.ok(
       isWriteBlocked(res) || !returnedRows(res),
@@ -442,7 +457,7 @@ describe('T — teams write isolation (INSERT)', () => {
   // admin-bypassed follow-up read is the correct match for actual usage.
   test('T3-control: authenticated coach CAN insert a new team (unscoped by design)', async () => {
     const res = await coachA.from('teams').insert({
-      id: TEAM_D, name: 'ZZZ RLS Test D (insert control)', age_group: '8U', year: 2026, sport: 'baseball',
+      id: TEAM_D, name: 'ZZZ RLS Test D (insert control)', age_group: '8U', year: 2026, season: 'Spring', sport: 'baseball',
     });
     assert.equal(res.error, null, 'an authenticated user must be able to create a new team');
 
