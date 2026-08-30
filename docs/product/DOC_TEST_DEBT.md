@@ -33,6 +33,22 @@ files; 295 backend unit tests passed.
 
 ---
 
+## QA Coverage Scope follow-up (#965)
+
+Tracking bullets for the individual coverage gaps #965 re-confirmed and split
+into child issues (#966/#967/#968/#969). Each lands as its own PR against
+`develop`; expect this block to need reconciling if it's edited by more than
+one of those PRs concurrently.
+
+- #968 — PWA install-prompt platform branches (Android `beforeinstallprompt`,
+  iOS `standalone`-mode detection, already-installed exclusion) had zero test
+  coverage. Added `frontend/src/__tests__/AppPwaInstallPrompt.test.jsx` (3
+  tests, golden-path `<App/>` render) covering all three branches. See the
+  matching entry moved to Resolved below (was "🟡 P2 — PWA Install Prompt
+  Logic").
+
+---
+
 ## How to Use This File
 
 1. **When a gap is identified** (during a feature session, an audit, or a retro) — add a row here with priority, age, and target version.
@@ -67,18 +83,6 @@ files; 295 backend unit tests passed.
 | **Description** | No test that Songs tab filters to active players only, or that Play button invokes navigation with correct URL. Deep-link to native apps is OS-mediated (untestable at unit level) but the call site is testable. |
 | **Risk if unfixed** | A future refactor of `activeBattingOrder` filtering could silently unfilter Songs view — would go unnoticed until a DJ parent complains about absent kids in the playlist. |
 | **Proposed test** | Add to existing test or new `frontend/src/tests/songs.test.js` — assert Songs renders only `activeBattingOrder` players, assert Play button's href matches `player.walkUpSong.url`. |
-| **Opened** | 2026-04-17 |
-| **Age** | 43 days |
-| **Target** | v2.4.0 |
-
-### 🟡 P2 — PWA Install Prompt Logic
-
-| | |
-|---|---|
-| **Area** | PWA Setup |
-| **Description** | Install banner has platform branches (Android `beforeinstallprompt` vs iOS `standalone` detection vs already-installed) that are untested. |
-| **Risk if unfixed** | Platform-specific install UX regressions; user confusion on a non-critical path. |
-| **Proposed test** | `frontend/src/tests/pwaInstall.test.js` — mock `window.navigator.standalone`, `window.matchMedia("(display-mode: standalone)")`, and `beforeinstallprompt` event, assert correct banner variant renders. |
 | **Opened** | 2026-04-17 |
 | **Age** | 43 days |
 | **Target** | v2.4.0 |
@@ -290,6 +294,10 @@ files; 295 backend unit tests passed.
 ## Resolved
 
 *(Items move here once shipped. Format: date, version, original description summary, resolution commit.)*
+
+### August 30, 2026 — PWA Install Prompt Logic test coverage (#968)
+
+- ✅ **P2 — PWA Install Prompt Logic** — Resolved. Re-confirmed still-open by the 2026-08-30 QA Coverage Scope reassessment (#965) via direct grep (`grep -rl "PWA\|beforeinstallprompt" frontend/src --include="*.test.*"` — zero results) before work started. The install banner's three platform branches live inline in the locked `App.jsx` (Android `beforeinstallprompt` capture ~line 1283-1303, iOS `standalone`-detection effect ~line 1305-1310, render gating ~line 7549-7581) with no extraction point, so coverage is a golden-path `<App/>` render test rather than a unit test — matching the pattern already used for other App.jsx-internal features (`AppHomeMembershipTeams.test.jsx`, `AppBattingOrderGoldenPath.test.jsx`). Added `frontend/src/__tests__/AppPwaInstallPrompt.test.jsx` (3 tests): dispatching a real `beforeinstallprompt` event shows the Android banner + Install button; an iOS user agent shows the "Add to Home Screen" banner variant on mount with no event needed; `window.matchMedia('(display-mode: standalone)').matches === true` suppresses the banner on both platforms, including when `beforeinstallprompt` still fires. **Note on the original proposed test's shape:** the actual code has no `navigator.standalone` check anywhere (verified by direct grep) — `isStandalone` is derived purely from `matchMedia`, so the test mocks only that, not `navigator.standalone`. **Mutation-test RED checkpoint** (coverage-after-the-fact for already-shipped, already-correct behavior — no natural RED state to capture): two separate one-line mutations run in sequence, each reverted before the next. (1) Flipped the Android handler's `if (!isStandalone)` to `if (isStandalone)` — the Android test and the already-installed test both went RED (banner failed to show for Android; banner incorrectly showed once installed). Reverted, confirmed `git diff --stat frontend/src/App.jsx` empty, re-ran green. (2) Flipped the iOS effect's `if (!isIOS || isStandalone) return;` to `if (isIOS || isStandalone) return;` — the iOS test went RED (banner never shown). Reverted, confirmed the diff empty again, re-ran green — all 3/3 tests passing with zero net change to `App.jsx`. Full frontend suite 1489/1489 passed across 137 files (up from 1486/136), `npm run lint` clean. Issue: [#968](https://github.com/kaushikkuberanathan/lineup_generator/issues/968) (child of QA Coverage Scope #965).
 
 ### August 28, 2026 — D-S31: FEATURE_MAP.md Coverage Summary denominator drift
 
