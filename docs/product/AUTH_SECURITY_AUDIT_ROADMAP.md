@@ -86,6 +86,23 @@ Because of this, `RequestAccessScreen.jsx` tracks an option **`id`** in state an
 resolves `id -> value` at submit. `value` cannot serve as the React key or the
 `<select>` value, or the picker collapses Coordinator into Assistant Coach.
 
+### Registration consent gate
+
+As of v3.1.0, `RequestAccessScreen.jsx` requires the coach to accept the current
+Terms of Service and Privacy Policy before submitting an access request. The
+inline document links open the same versioned legal content rendered in the
+Account tab; there is no second registration-only copy.
+
+Consent persistence is deliberately separate from `access_requests`. The
+frontend sends the accepted document ids and versions to
+`POST /api/v1/auth/consent`; the backend writes one service-role-only
+`legal_consents` row per document. Rows contain email, document id, version,
+context, and timestamps, never the legal text itself. Migration 028 created
+this additive table and was applied and functionally verified on both DEV and
+PROD on 2026-08-29. A consent-log failure is fire-and-forget and does not turn a
+valid access request into a failed registration. Implementation: PRs
+#907/#910/#913; production-release tracking: #939.
+
 ### Scoring is a capability, not a role
 
 Any user - including a `viewer` parent - can claim the scorer lock for a specific

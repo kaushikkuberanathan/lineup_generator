@@ -1,13 +1,13 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: 2026-08-29 (migration 028 status corrected to "applied to DEV and PROD" after a parallel session applied it mid-audit; see entry immediately below); previously 2026-08-29 (Terms of Service experience documented — develop only, not yet promoted); previously 2026-08-29 (v3.0.0 promoted to `main` and confirmed live in prod — PR #903, `c865d4e`; post-promote sync PR #905; real-device smoke test confirmed passing by KK); previously 2026-08-29 (`develop` frozen for v3.0.0 release soak); previously 2026-08-29 (v3.0.0 scoped — release-readiness audit run, develop only, not yet promoted); previously 2026-08-27 (Test/CI environment safety fixes for #339/#368, develop only — not yet promoted); previously 2026-08-27 (v2.15.0 promoted to `main` and live in prod — PR #857, `5a38b08`; post-promote sync PR #858); previously 2026-08-26 (v2.15.0 release prep — dependency currency, git governance, and Test Health & Regression Protection consolidation).
+> Last updated: 2026-08-29 (v3.1.0 release candidate scoped under #939; version/docs aligned and Ship Gate documentation reconciled); previously 2026-08-29 (migration 028 status corrected to "applied to DEV and PROD" after a parallel session applied it mid-audit); previously 2026-08-29 (v3.0.0 promoted to `main` and confirmed live in prod — PR #903, `c865d4e`; post-promote sync PR #905; real-device smoke test confirmed passing by KK).
 > MVP launched: March 24, 2026
 
 ---
 
-## Unreleased (develop only — not yet promoted) — Terms of Service experience + registration consent gate
+## v3.1.0 RELEASE CANDIDATE (develop only — not yet promoted) — consent, Game Day, and sync reliability
 
-Landed as 3 PRs on `develop` (#907, #910, #913) on top of the v3.0.0 promote. **This entry is written from the code as it stands, by a session other than the one that authored the feature — treat it as a best-effort documentation pass, not the authoring session's own account, and expect a follow-up correction once that session documents its own work.** No version bump yet, no GitHub issue confirmed linked (flagging per this file's own Issue & Backlog Hygiene rule — a real story with 3 merged PRs needs one).
+Release tracker: [#939](https://github.com/kaushikkuberanathan/lineup_generator/issues/939). The Terms of Service experience landed as 3 PRs on `develop` (#907, #910, #913) on top of the v3.0.0 promote. This release cut also includes the Game Day and reliability work merged afterward. Version target is 3.1.0 because registration consent is a new coach-facing capability, not a patch-only change.
 
 **What shipped:**
 - **Versioned legal-doc content model** (`frontend/src/content/legal.js`): every doc in `LEGAL_DOCS` now carries a `versions[]` array (oldest first) instead of a single flat text blob. `getLegalDoc(id)` resolves to the latest version automatically; `getLegalDocVersion(id, version)` retrieves any prior version's exact text for audit purposes. Bumping a document going forward is one edit — append a new `versions[]` entry — with no component, route, or migration change required. The original April 2026 "Terms of Use" text is preserved verbatim as `terms` v1.0, not overwritten. `terms` has been rewritten to v2.0: a fuller, plain-spoken Terms of Service tailored to Dugout Lineup (replacing the prior third-party-template-adapted text), with a "Plain English" (`tldr[]`) summary card. 6 docs total: `privacy`, `terms`, `safety`, `content`, `access`, `report` — all others still at v1.0.
@@ -18,10 +18,17 @@ Landed as 3 PRs on `develop` (#907, #910, #913) on top of the v3.0.0 promote. **
 
 **Test coverage added:** backend `legalConsent.test.js` (7 tests — multi-doc consent → 201 + one row per doc, email normalized the same way as `/request-access`, `context` defaults to `request_access`, validation failures → 400 with no insert attempted, DB error → 500); frontend `content/legal.test.js` (12), `utils/legalConsent.test.js` (3), plus growth in `RequestAccessScreen.test.jsx` and `LegalSection.test.jsx`. Backend unit suite 269→276, frontend 1401→1422 (122→124 files) — both already reconciled in `CLAUDE.md`/`backend/CLAUDE.md`/`frontend/CLAUDE.md` during the v3.0.0 release-ritual audit.
 
-**Known gaps as of this documentation pass** (not fixed here — flagging for the authoring session or a follow-up):
-- `docs/product/AUTH_SECURITY_AUDIT_ROADMAP.md` doesn't mention the new registration consent gate, even though it changes the registration flow that doc tracks.
-- No GitHub issue found linked to this work (3 merged PRs, no story number) — should be filed per this file's own Issue & Backlog Hygiene rule.
-- ~~Migration 028 not yet applied~~ — **resolved same day (2026-08-29):** a separate session applied migration 028 to both DEV and PROD (KK confirmed go-ahead), verified live via a real insert + cleanup against each database, security advisors re-run clean on both. `POST /api/v1/auth/consent` is functional on DEV now, not 500ing.
+**Additional v3.1.0 scope:**
+- Game Day presentation and navigation: duplicate live-scoring scoreboard removed (#922), batting order made fully swipeable (#924), and full team names restored on the scoreboard (#925), merged through PR #923.
+- Offline reliability: pending completed-game finalization now retries after reconnect (#921, PR #933), with schedule hydration fields centralized to prevent merge-field drift (#920, PR #934).
+- Behavior-preserving decomposition: SharedView and Support's Links/Updates surfaces extracted from `App.jsx` (PRs #935-#937).
+- CI confidence: the Vitest inventory guard now verifies every frontend test file executed rather than trusting a green exit code alone (#918, PR #931); email-delivery and ops-health contracts gained dedicated coverage (#916/#917, PRs #929/#930).
+- Branch ancestry repaired before the release cut through PR #938; its sync merge was content-identical to the pre-sync develop tree.
+
+**Release gates still open:**
+- Full 24-hour soak starts only after this release-prep PR merges and the candidate SHA is frozen.
+- Real-device Game-Day Validation is required because this batch changes the live game surface; #698 remains open until that pass is recorded.
+- Production promotion requires KK's explicit `confirmed — push to main` approval after the soak/manual evidence is reviewed.
 
 ---
 
