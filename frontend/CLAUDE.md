@@ -83,7 +83,7 @@ Both shims have now been removed, per `docs/product/PHASE4C_SCORING_RLS_PROPOSAL
 ## Test Suite
 
 - **Framework**: Vitest
-- **CI target**: **1486 frontend passed / 0 failed across 136 test files** (backend unit 295 — see `backend/CLAUDE.md` § Test Suite), measured on final v3.1.0 candidate `1da474e` after the #942 fairness fix and PR #956 coverage sweep.
+- **CI target**: **1489 frontend passed / 0 failed across 137 test files** (backend unit 295 — see `backend/CLAUDE.md` § Test Suite), measured locally after adding `AppDemoTeamGoldenPath.test.jsx` (#969, +3 tests / +1 file) on top of the final v3.1.0 candidate `1da474e` baseline (1486/136) after the #942 fairness fix and PR #956 coverage sweep.
 - **Known skip**: bench-equity.test.js test 2.1 (bench rotation fairness — BUG CONFIRMED; identical players, sit-count drift > 1 inning; fix deferred)
 
 #### Test files
@@ -104,6 +104,7 @@ Both shims have now been removed, per `docs/product/PHASE4C_SCORING_RLS_PROPOSAL
 | `ScoreboardRow.test.jsx` | ScoreboardRow: scores from props, team labels, +1 button visibility (isScorer), default prop fallbacks (4 tests) |
 | `a11y-component-fixes.test.jsx` | F1-F7 a11y assertions: DefenseDiamond font floors (F1/F2), OfflineIndicator font floor (F3), NowBattingStrip aria-labels (F4/F5), LockFlow dialog role (F6), DefenseDiamond inning pill contrast (F7) (11 tests) |
 | `theme.tokens.test.js` | Design token contract shape: top-level groups, color palette, font, spacing, zIndex, barrel exports (34 tests) |
+| `AppDemoTeamGoldenPath.test.jsx` | `loadDemoTeam()` golden path (#969): fresh demo creation via a real "Try Demo Team" click (roster/schedule/grid/innings/batting counts vs. the real `demoSeed.js` constants + `demoSeedVersion`), the dedup guard at the current seed version, and an existing older-version demo team — documents that the button-visibility guard hides "Try Demo Team" by name only, making `loadDemoTeam()`'s own version-comparison/cleanup branch currently unreachable via the UI (3 tests) |
 
 #### Rules
 

@@ -33,6 +33,14 @@ files; 295 backend unit tests passed.
 
 ---
 
+## QA Coverage Scope follow-up (#965)
+
+Child issues opened from the 2026-08-30 QA & Reliability Audit ([#941](https://github.com/kaushikkuberanathan/lineup_generator/issues/941)) tracking specific test-coverage gaps identified during that pass, filed under the umbrella [#965](https://github.com/kaushikkuberanathan/lineup_generator/issues/965).
+
+- [#969](https://github.com/kaushikkuberanathan/lineup_generator/issues/969) — `loadDemoTeam()` demo team seeding + seed-version upgrade path had zero automated coverage. Resolved — see the Resolved section's "D-S332" entry for full detail, including a real finding that the upgrade branch is currently unreachable via the UI as wired today.
+
+---
+
 ## How to Use This File
 
 1. **When a gap is identified** (during a feature session, an audit, or a retro) — add a row here with priority, age, and target version.
@@ -117,18 +125,6 @@ files; 295 backend unit tests passed.
 | **Proposed test** | `scripts/__tests__/sync-stories-to-issues.test.js` — mock `fetch`, exercise: (a) happy path creates issue + patches marker, (b) 401 returns failure object — guard prevents ROADMAP write, (c) de-dup check skips on existing issue. Node test runner (node:test) is sufficient — no Vitest pull-in needed for a tools-side test. |
 | **Opened** | 2026-05-27 |
 | **Age** | 3 days |
-| **Target** | v2.6.x |
-
-### 🟡 P2 — D-S332: Demo team seeding + seed-version upgrade (loadDemoTeam)
-
-| | |
-|---|---|
-| **Area** | Demo team seeding + seed-version upgrade (`loadDemoTeam`) |
-| **Description** | `loadDemoTeam()` now seeds from `demoSeed.js` and has a `demoSeedVersion` upgrade path (older/unversioned demos cleared + rebuilt on next open). NO automated test covers: (a) fresh demo creation builds 11-player roster + grid + 11-game schedule correctly, (b) the upgrade path clears old per-team keys + `deleteTeam` + rebuilds as v2 without duplicating the team, (c) the dedup guard still prevents double-create at the same version. Verified manually in dev (fresh-create path only; upgrade path reviewed but not runtime-tested). |
-| **Risk if unfixed** | A refactor of `loadDemoTeam` could silently break demo onboarding (Strategic North Star #4: frictionless onboarding) or, worse, the upgrade path could clobber/duplicate teams for existing users. The upgrade branch is the least-exercised code and hits every existing demo user. |
-| **Proposed test** | `frontend/src/tests/demoTeam.test.js` — assert fresh load creates correct roster/grid/schedule counts + `demoSeedVersion` stamp; assert upgrade path (seed a v1 demo → `loadDemoTeam` → old keys cleared, single team, v2 stamp); assert dedup no-op at current version. |
-| **Opened** | 2026-06-15 |
-| **Age** | 0 days |
 | **Target** | v2.6.x |
 
 ### 🟡 P2 — D-S348c: `access_requests`, `profiles`, `feedback`, `feature_flags` RLS policies untested (Test-Health Survey Pass 3)
@@ -290,6 +286,10 @@ files; 295 backend unit tests passed.
 ## Resolved
 
 *(Items move here once shipped. Format: date, version, original description summary, resolution commit.)*
+
+### August 30, 2026 — D-S332: Demo team seeding + seed-version upgrade (loadDemoTeam) (#969)
+
+- ✅ **P2 — D-S332: Demo team seeding + seed-version upgrade (`loadDemoTeam`)** — Resolved. Added `frontend/src/__tests__/AppDemoTeamGoldenPath.test.jsx` (3 tests), mounting `<App/>` the same way `AppHomeMembershipTeams.test.jsx`/`AppBattingOrderGoldenPath.test.jsx` do since `loadDemoTeam` is an inline closure in the locked `App.jsx`. Covers: (a) fresh demo creation via a real click on "Try Demo Team", asserting roster/schedule/grid/innings/batting counts against the real `DEMO_ROSTER`/`DEMO_SCHEDULE`/`DEMO_GRID`/`DEMO_INNINGS` constants and `demoSeedVersion === DEMO_SEED_VERSION`; (b) the dedup guard at the current seed version; (c) an existing OLDER-version demo team. **Real finding, not assumed:** (b) and (c) do not exercise `loadDemoTeam()`'s own `existingVer`/cleanup branch (App.jsx lines 2111-2116) as this item's original "Proposed test" assumed — verified directly against a real render that the "Try Demo Team" button (App.jsx ~line 2926) is hidden whenever ANY team named "Demo All-Stars" already exists, matched by name only, not gated on `demoSeedVersion`. `loadDemoTeam()`'s own `existingDemo` lookup reads that identical `teams` state, so whenever the button is clickable, `existingDemo` is always falsy (fresh-create path only) — the version-comparison/old-key-cleanup branch is currently unreachable through the UI as wired today. Tests (b)/(c) assert this real, current behavior (button absent, no duplicate, old team/keys left untouched) instead. RED→GREEN mutation-verified for all 3 tests: (1) mutated the fresh-create roster save to `DEMO_ROSTER.slice(1)` → test (a) went red on the roster-length assertion; (2) mutated the button-visibility guard to always render → tests (b) and (c) both went red on the button-absence assertion; both mutations reverted (`git diff --stat frontend/src/App.jsx` empty), full suite re-confirmed green (137 files / 1489 tests). Issue: [#969](https://github.com/kaushikkuberanathan/lineup_generator/issues/969) (child of QA Coverage Scope [#965](https://github.com/kaushikkuberanathan/lineup_generator/issues/965)).
 
 ### August 28, 2026 — D-S31: FEATURE_MAP.md Coverage Summary denominator drift
 
