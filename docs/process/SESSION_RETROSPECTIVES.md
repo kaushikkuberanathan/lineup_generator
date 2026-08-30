@@ -12,9 +12,9 @@
 
 ## 2026-08-30-A — v3.1.0 post-prep scope reconciliation and #355 auto-close incident
 
-**Version shipped to production:** None. **Final develop candidate:** `1da474e` (PR #956 merge). **Soak:** restarted at 2026-08-30T07:37:44-04:00; no override assumed.
+**Version shipped to production:** None. **Verified scope baseline:** `1da474e` (PR #956 merge). **Soak:** restarted after the release-documentation merge; the shared `release.v3-1-0.*` Git marker holds the authoritative final SHA/time. No override assumed.
 
-After release-prep merge `6292a97`, parallel sessions merged PRs #950-#956. Live Git verification found one coach-facing runtime change: PR #952 fixed #942 so `lineupEngineV2` tracks bench history and rotates similarly rated players fairly. PR #950 reconciled Supabase migration source-of-truth, PR #953 added draft-only migration 031 without applying it, PRs #951/#954/#955 were documentation/governance, and PR #956 added eight test files. The prior soak anchor therefore did not cover the actual candidate; the shared release marker was moved to `1da474e` and the complete 24-hour window restarted.
+After release-prep merge `6292a97`, parallel sessions merged PRs #950-#956. Live Git verification found one coach-facing runtime change: PR #952 fixed #942 so `lineupEngineV2` tracks bench history and rotates similarly rated players fairly. PR #950 reconciled Supabase migration source-of-truth, PR #953 added draft-only migration 031 without applying it, PRs #951/#954/#955 were documentation/governance, and PR #956 added eight test files. The prior soak anchor therefore did not cover the actual candidate; the complete 24-hour window restarted after the release-documentation merge rather than treating `1da474e` as a self-referential final SHA.
 
 PR #953's body used the negated phrase "does not fix #355". GitHub still recognized the embedded closing keyword and incorrectly closed #355 even though the migration was draft-only and the production scoring policies were unchanged. This repeated the earlier #698/#503 class of incident and prompted PR #954's template warning. The release session independently verified #355 remained closed incorrectly, but its personal access token returned HTTP 403 for issue state, comment, and label writes; reopening remains a human/token-scope action, not evidence that the security issue is resolved.
 
