@@ -24,6 +24,12 @@
 
 ## Open — Test Gaps
 
+### 📋 QA Coverage Scope follow-up (#965)
+
+Individual coverage-gap issues spun out of the QA & Reliability Audit's parent tracker [#965](https://github.com/kaushikkuberanathan/lineup_generator/issues/965). Each closes independently via its own branch/PR; this bullet list is just an index. (Note: parallel sessions are landing #966/#968/#969 around the same time as #967 below — expect this block to need a merge reconciliation, not a sign anything is wrong.)
+
+- #967 — Walk-Up Song navigation had no test coverage — **resolved**, see the Resolved section below (`AppSongsGoldenPath.test.jsx`).
+
 ### ✅ RESOLVED — useAuth.js `onAuthStateChange` silently strands user on failed `/me` call after `SIGNED_IN`
 
 - **Discovered:** 2026-08-05 (Sprint 2 Story 6, Auth Flow End-to-End)
@@ -32,18 +38,6 @@
 - **Test:** `frontend/src/tests/auth.test.js` test B4 rewritten to assert the fixed behavior (RED confirmed against the pre-fix code before applying the fix, then GREEN after).
 - **Residual gap closed same day:** the hook's `error` field was not initially wired into `LoginScreen.jsx`'s UI (that would touch the locked `App.jsx` prop-wiring) — PR [#782](https://github.com/kaushikkuberanathan/lineup_generator/pull/782) closed this later the same session (2026-08-23), wiring `authError` into `LoginScreen`'s existing error display via a `useEffect`, reusing the form's existing error state and clear-on-edit behavior. `LoginScreen.test.jsx` gained 24 lines of coverage for the new wiring. A real user now sees the surfaced error, not just an internally-consistent `authState`.
 - **Issue** | [#579](https://github.com/kaushikkuberanathan/lineup_generator/issues/579) — had been auto-closed by PR #580 (docs-only filing, not a fix); reopened 2026-08-23 and closed for real by PR #767's merge. Tracked alongside the rest of this session's coverage work under [#766](https://github.com/kaushikkuberanathan/lineup_generator/issues/766), also closed by #767.
-
-### 🟡 P2 — Walk-Up Song Navigation
-
-| | |
-|---|---|
-| **Area** | Walk-up songs per player |
-| **Description** | No test that Songs tab filters to active players only, or that Play button invokes navigation with correct URL. Deep-link to native apps is OS-mediated (untestable at unit level) but the call site is testable. |
-| **Risk if unfixed** | A future refactor of `activeBattingOrder` filtering could silently unfilter Songs view — would go unnoticed until a DJ parent complains about absent kids in the playlist. |
-| **Proposed test** | Add to existing test or new `frontend/src/tests/songs.test.js` — assert Songs renders only `activeBattingOrder` players, assert Play button's href matches `player.walkUpSong.url`. |
-| **Opened** | 2026-04-17 |
-| **Age** | 43 days |
-| **Target** | v2.4.0 |
 
 ### 🟡 P2 — PWA Install Prompt Logic
 
@@ -264,6 +258,10 @@
 ## Resolved
 
 *(Items move here once shipped. Format: date, version, original description summary, resolution commit.)*
+
+### August 30, 2026 — Walk-Up Song Navigation test coverage (#967, child of QA Coverage Scope #965)
+
+- ✅ **P2 — Walk-Up Song Navigation** — Resolved. Added `frontend/src/__tests__/AppSongsGoldenPath.test.jsx` (2 tests), mounting the real `<App/>` the same way `AppBattingOrderGoldenPath.test.jsx` does — the walk-up-song render logic lives inline in `App.jsx`'s `renderSongs()` (~line 5433, locked file, not separately extracted). Confirmed by direct code read that the Game Day View (`songsView === "display"`, the default state) maps over `activeBattingOrder` — `battingOrder` filtered by `absentTonight`, itself sourced from the global `attendanceOverrides` localStorage key keyed by local calendar date, not `battingOrder`/the raw `roster` — while the separate Edit view intentionally maps over the full `battingOrder`. Test 1 seeds a roster with one active player (song set) and one absent-tonight player (song set) and asserts the absent player's song text never renders anywhere on the page, while the active player's does; a third batting-order player with no song set is asserted to still render via the "No song set" empty state, confirming list membership comes from `activeBattingOrder`, not merely "has a song". Test 2 asserts the Play action's actual call site — an `<a href={player.walkUpLink} target="_blank">🔗 Open Song</a>` link, not a button/`onClick` — has the correct `href`/`target`, and that exactly one such link renders (not one per absent/song-less player). Per this item's own original framing, the OS-mediated deep-link/media-playback behavior itself is untestable at unit level and out of scope; only the call site is asserted. **RED-checkpoint (mutation-test substitute, per this doc's own rule — coverage-after-the-fact for already-shipped, already-correct behavior, so no natural RED state exists to capture):** temporarily changed the Game Day View's `activeBattingOrder.map(...)` to map over `roster.map(function(p){return p.name;})` instead (reintroducing the exact "unfilter Songs view" regression this item warned about). Both tests failed RED (Casey Kim's absent-but-present song broke test 1's exclusion assertion; the Open Song link count broke test 2's uniqueness assertion, since Casey Kim's link then rendered too). Reverted via `git checkout -- frontend/src/App.jsx`, confirmed `git diff --stat frontend/src/App.jsx` empty, re-ran and confirmed 2/2 green again. Full frontend suite re-run clean: 123 files / 1403 passed / 1 skipped (up from 122/1401/1), `npm run lint` clean. No real production bug found — the existing `activeBattingOrder` filter and Open Song link were already correct; this closes a coverage gap only. Issue: [#967](https://github.com/kaushikkuberanathan/lineup_generator/issues/967) (child of QA Coverage Scope [#965](https://github.com/kaushikkuberanathan/lineup_generator/issues/965)). Branch: `test/songs-golden-path-967`.
 
 ### August 28, 2026 — D-S31: FEATURE_MAP.md Coverage Summary denominator drift
 
