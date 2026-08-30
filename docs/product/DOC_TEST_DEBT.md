@@ -7,6 +7,27 @@
 
 ---
 
+## v3.1.0 Release Test Inventory Additions
+
+Recorded during release prep so the PR checklist does not rely on a drifting
+aggregate count alone. New dedicated test files since v3.0.0:
+
+- Backend: `legalConsent.test.js`, `email.test.js`, `ops.health.test.js`.
+- Frontend behavior: `pendingFinalizationSync.test.js`,
+  `scheduleHydrationFields.test.js`, `playerName.test.js`,
+  `components/Support/LinksTab.test.jsx`, and
+  `components/Support/UpdatesTab.test.jsx`.
+- Frontend legal flow: `content/legal.test.js` and
+  `utils/legalConsent.test.js`; existing `RequestAccessScreen.test.jsx` and
+  `LegalSection.test.jsx` also grew consent/rendering coverage.
+- CI confidence: `scripts/verify-vitest-file-inventory.test.mjs` tests the
+  executable guard that proves every discovered frontend test file ran.
+
+Direct v3.1.0 release-prep totals: 1444 frontend passed / 1 skipped across
+129 files; 287 backend unit tests passed.
+
+---
+
 ## How to Use This File
 
 1. **When a gap is identified** (during a feature session, an audit, or a retro) — add a row here with priority, age, and target version.

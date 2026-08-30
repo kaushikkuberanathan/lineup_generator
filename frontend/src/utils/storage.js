@@ -28,5 +28,7 @@ export function saveJSON(key, val) {
 
 export function removeJSON(key) {
   delete _mem[key];
-  try { localStorage.removeItem(key); } catch (e) {}
+  try { localStorage.removeItem(key); } catch (e) {
+    // localStorage can be unavailable in privacy mode; the memory copy is already removed.
+  }
 }
