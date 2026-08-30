@@ -4,6 +4,10 @@ What changed and why?
 ## Related Issue
 Closes #
 
+**⚠️ Never write a closing verb (`fix(es/ed)`, `close(s/d)`, `resolve(s/d)`) immediately before an issue number anywhere in this body or in commit messages — including in a negated sentence.** GitHub's auto-close linker matches the keyword+number pattern literally and has no concept of negation: "this does **not** fix #355" still auto-closes #355 on merge, exactly as if the "not" weren't there. Hit this repo three times (#503, #698, #355 — see `docs/process/SESSION_RETROSPECTIVES.md` and that issue's own comment history) before it was traced to this exact cause.
+- If a PR is related to an issue but should **not** close it: write the number without an adjacent closing verb — e.g. "See #N", "issue N remains open", "N is unaffected" — never "does not fix #N" / "doesn't close #N".
+- If in doubt, don't put the reference in this section at all — mention it in Summary/Screenshots instead, in prose that doesn't pattern-match.
+
 ## Type of Change
 - [ ] Bug fix
 - [ ] Feature / Story
