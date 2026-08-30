@@ -83,7 +83,7 @@ Both shims have now been removed, per `docs/product/PHASE4C_SCORING_RLS_PROPOSAL
 ## Test Suite
 
 - **Framework**: Vitest
-- **CI target**: **1527 frontend passed / 0 failed across 139 test files** (backend unit 299 — see `backend/CLAUDE.md` § Test Suite), after `playerMapper.test.js` closed #945 (34 new tests), `useAuth.logout.test.js` closed #944 (5 new tests), and `AppSongsGoldenPath.test.jsx` closed #967 (2 new tests) — all QA Coverage Scope #965. Prior baseline was 1486/136 on final v3.1.0 candidate `1da474e`.
+- **CI target**: **1530 frontend passed / 0 failed across 140 test files** (backend unit 299 — see `backend/CLAUDE.md` § Test Suite), after `playerMapper.test.js` closed #945 (34 new tests), `useAuth.logout.test.js` closed #944 (5 new tests), `AppSongsGoldenPath.test.jsx` closed #967 (2 new tests), and `AppPwaInstallPrompt.test.jsx` closed #968 (3 new tests) — all QA Coverage Scope #965. Prior baseline was 1486/136 on final v3.1.0 candidate `1da474e`.
 - **Known skip**: bench-equity.test.js test 2.1 (bench rotation fairness — BUG CONFIRMED; identical players, sit-count drift > 1 inning; fix deferred)
 
 #### Test files
@@ -107,6 +107,7 @@ Both shims have now been removed, per `docs/product/PHASE4C_SCORING_RLS_PROPOSAL
 | `playerMapper.test.js` | mapPlayerToV2: fielding-inference branches (skills[] → reliability/armStrength/reaction) with explicit-value-wins-over-inference checks, the deliberately unwired V1 tag bridges (speed/contact/power/swingDiscipline stay at their defaults — locks in the file's own documented-deferred TODOs), all awareness-boolean defaults, outThisGame explicit-vs-inferred precedence, prefs/dislikes source priority, name/firstName/lastName fallback chain, remaining scalar defaults, walk-up song field passthrough (34 tests, closes #945) |
 | `useAuth.logout.test.js` | `useAuth`'s `logout()` — active-session backend POST shape, no-session skip, thrown/non-2xx backend response both still complete client-side reset; plus a lock-in that an `onAuthStateChange` event outside SIGNED_IN/SIGNED_OUT (e.g. TOKEN_REFRESHED) is a no-op (5 tests, closes #944 — the hook's checkSession/onAuthStateChange/sendMagicLink were already covered by `auth.test.js`, and requestAccess/updateProfileName/refreshMemberships by their own dedicated files; `logout()` was the one remaining uncovered exported function) |
 | `AppSongsGoldenPath.test.jsx` | Songs view (App.jsx renderSongs) golden path: Game Day View filters walk-up songs to `activeBattingOrder` (absent players excluded), Play action's Open Song link href/target wiring (2 tests, #967) |
+| `AppPwaInstallPrompt.test.jsx` | PWA install banner platform branches (#968): Android `beforeinstallprompt` capture shows the banner + Install button, iOS shows the "Add to Home Screen" variant on mount with no event needed, already-installed (`matchMedia('(display-mode: standalone)').matches`) suppresses the banner on both platforms (3 tests) |
 
 #### Rules
 

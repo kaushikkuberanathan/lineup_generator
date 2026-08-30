@@ -52,9 +52,17 @@ files; 295 backend unit tests passed.
   #967 — 2 new tests covering the Songs view (`App.jsx renderSongs`): the
   Game Day View filters walk-up songs to `activeBattingOrder` (an
   absent-tonight player's song never renders), and the Play action's Open
-  Song link href/target wiring. New frontend total: 1527 across 139 files.
-  The old standalone "🟡 P2 — Walk-Up Song Navigation" entry further down
-  in this file is moved to Resolved below.
+  Song link href/target wiring. The old standalone "🟡 P2 — Walk-Up Song
+  Navigation" entry further down in this file is moved to Resolved below.
+- QA Coverage Scope follow-up (#968): `AppPwaInstallPrompt.test.jsx` closes
+  #968 — 3 new tests covering the PWA install banner's platform branches:
+  Android `beforeinstallprompt` capture, iOS `standalone`-mode detection
+  (no `navigator.standalone` check exists in the real code — verified by
+  grep — `isStandalone` is derived purely from `matchMedia`), and the
+  already-installed exclusion suppressing the banner on both platforms.
+  The old standalone "🟡 P2 — PWA Install Prompt Logic" entry further down
+  in this file is moved to Resolved below. New totals: 1530 frontend tests
+  across 140 files.
 
 ---
 
@@ -83,18 +91,6 @@ files; 295 backend unit tests passed.
 - **Test:** `frontend/src/tests/auth.test.js` test B4 rewritten to assert the fixed behavior (RED confirmed against the pre-fix code before applying the fix, then GREEN after).
 - **Residual gap closed same day:** the hook's `error` field was not initially wired into `LoginScreen.jsx`'s UI (that would touch the locked `App.jsx` prop-wiring) — PR [#782](https://github.com/kaushikkuberanathan/lineup_generator/pull/782) closed this later the same session (2026-08-23), wiring `authError` into `LoginScreen`'s existing error display via a `useEffect`, reusing the form's existing error state and clear-on-edit behavior. `LoginScreen.test.jsx` gained 24 lines of coverage for the new wiring. A real user now sees the surfaced error, not just an internally-consistent `authState`.
 - **Issue** | [#579](https://github.com/kaushikkuberanathan/lineup_generator/issues/579) — had been auto-closed by PR #580 (docs-only filing, not a fix); reopened 2026-08-23 and closed for real by PR #767's merge. Tracked alongside the rest of this session's coverage work under [#766](https://github.com/kaushikkuberanathan/lineup_generator/issues/766), also closed by #767.
-
-### 🟡 P2 — PWA Install Prompt Logic
-
-| | |
-|---|---|
-| **Area** | PWA Setup |
-| **Description** | Install banner has platform branches (Android `beforeinstallprompt` vs iOS `standalone` detection vs already-installed) that are untested. |
-| **Risk if unfixed** | Platform-specific install UX regressions; user confusion on a non-critical path. |
-| **Proposed test** | `frontend/src/tests/pwaInstall.test.js` — mock `window.navigator.standalone`, `window.matchMedia("(display-mode: standalone)")`, and `beforeinstallprompt` event, assert correct banner variant renders. |
-| **Opened** | 2026-04-17 |
-| **Age** | 43 days |
-| **Target** | v2.4.0 |
 
 ### 🟡 P2 — Analytics track() Wrapper + SSR Guards
 
@@ -307,6 +303,10 @@ files; 295 backend unit tests passed.
 ### August 30, 2026 — Walk-Up Song Navigation test coverage (#967, child of QA Coverage Scope #965)
 
 - ✅ **P2 — Walk-Up Song Navigation** — Resolved. Added `frontend/src/__tests__/AppSongsGoldenPath.test.jsx` (2 tests), mounting the real `<App/>` the same way `AppBattingOrderGoldenPath.test.jsx` does — the walk-up-song render logic lives inline in `App.jsx`'s `renderSongs()` (~line 5433, locked file, not separately extracted). Confirmed by direct code read that the Game Day View (`songsView === "display"`, the default state) maps over `activeBattingOrder` — `battingOrder` filtered by `absentTonight`, itself sourced from the global `attendanceOverrides` localStorage key keyed by local calendar date, not `battingOrder`/the raw `roster` — while the separate Edit view intentionally maps over the full `battingOrder`. Test 1 seeds a roster with one active player (song set) and one absent-tonight player (song set) and asserts the absent player's song text never renders anywhere on the page, while the active player's does; a third batting-order player with no song set is asserted to still render via the "No song set" empty state, confirming list membership comes from `activeBattingOrder`, not merely "has a song". Test 2 asserts the Play action's actual call site — an `<a href={player.walkUpLink} target="_blank">🔗 Open Song</a>` link, not a button/`onClick` — has the correct `href`/`target`, and that exactly one such link renders (not one per absent/song-less player). Per this item's own original framing, the OS-mediated deep-link/media-playback behavior itself is untestable at unit level and out of scope; only the call site is asserted. **RED-checkpoint (mutation-test substitute, per this doc's own rule — coverage-after-the-fact for already-shipped, already-correct behavior, so no natural RED state exists to capture):** temporarily changed the Game Day View's `activeBattingOrder.map(...)` to map over `roster.map(function(p){return p.name;})` instead (reintroducing the exact "unfilter Songs view" regression this item warned about). Both tests failed RED (Casey Kim's absent-but-present song broke test 1's exclusion assertion; the Open Song link count broke test 2's uniqueness assertion, since Casey Kim's link then rendered too). Reverted via `git checkout -- frontend/src/App.jsx`, confirmed `git diff --stat frontend/src/App.jsx` empty, re-ran and confirmed 2/2 green again. Full frontend suite re-run clean: 123 files / 1403 passed / 1 skipped (up from 122/1401/1), `npm run lint` clean. No real production bug found — the existing `activeBattingOrder` filter and Open Song link were already correct; this closes a coverage gap only. Issue: [#967](https://github.com/kaushikkuberanathan/lineup_generator/issues/967) (child of QA Coverage Scope [#965](https://github.com/kaushikkuberanathan/lineup_generator/issues/965)). Branch: `test/songs-golden-path-967`.
+
+### August 30, 2026 — PWA Install Prompt Logic test coverage (#968)
+
+- ✅ **P2 — PWA Install Prompt Logic** — Resolved. Re-confirmed still-open by the 2026-08-30 QA Coverage Scope reassessment (#965) via direct grep (`grep -rl "PWA\|beforeinstallprompt" frontend/src --include="*.test.*"` — zero results) before work started. The install banner's three platform branches live inline in the locked `App.jsx` (Android `beforeinstallprompt` capture ~line 1283-1303, iOS `standalone`-detection effect ~line 1305-1310, render gating ~line 7549-7581) with no extraction point, so coverage is a golden-path `<App/>` render test rather than a unit test — matching the pattern already used for other App.jsx-internal features (`AppHomeMembershipTeams.test.jsx`, `AppBattingOrderGoldenPath.test.jsx`). Added `frontend/src/__tests__/AppPwaInstallPrompt.test.jsx` (3 tests): dispatching a real `beforeinstallprompt` event shows the Android banner + Install button; an iOS user agent shows the "Add to Home Screen" banner variant on mount with no event needed; `window.matchMedia('(display-mode: standalone)').matches === true` suppresses the banner on both platforms, including when `beforeinstallprompt` still fires. **Note on the original proposed test's shape:** the actual code has no `navigator.standalone` check anywhere (verified by direct grep) — `isStandalone` is derived purely from `matchMedia`, so the test mocks only that, not `navigator.standalone`. **Mutation-test RED checkpoint** (coverage-after-the-fact for already-shipped, already-correct behavior — no natural RED state to capture): two separate one-line mutations run in sequence, each reverted before the next. (1) Flipped the Android handler's `if (!isStandalone)` to `if (isStandalone)` — the Android test and the already-installed test both went RED (banner failed to show for Android; banner incorrectly showed once installed). Reverted, confirmed `git diff --stat frontend/src/App.jsx` empty, re-ran green. (2) Flipped the iOS effect's `if (!isIOS || isStandalone) return;` to `if (isIOS || isStandalone) return;` — the iOS test went RED (banner never shown). Reverted, confirmed the diff empty again, re-ran green — all 3/3 tests passing with zero net change to `App.jsx`. Full frontend suite 1530 passed across 140 files (up from 1486/136), `npm run lint` clean. Issue: [#968](https://github.com/kaushikkuberanathan/lineup_generator/issues/968) (child of QA Coverage Scope #965).
 
 ### August 28, 2026 — D-S31: FEATURE_MAP.md Coverage Summary denominator drift
 
