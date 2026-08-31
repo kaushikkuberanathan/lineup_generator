@@ -1,5 +1,13 @@
 # Phase 4C Auth Cutover — Scoring Shim Removal Checklist
 
+**Status update, 2026-08-30:** items 1 and 2 below are **done** — PR
+[#899](https://github.com/kaushikkuberanathan/lineup_generator/pull/899) (`fix/355-shim-removal-step2`,
+merged 2026-08-29, v3.0.0) removed both frontend shims, verified directly against current code.
+Item 3 (dropping the anon RLS policies) and item 4 (restoring uuid column types) remain open,
+gated on a real prod game-day soak — see `docs/product/PHASE4C_SCORING_RLS_PROPOSAL.md` §3 for
+the authoritative, more detailed version of this same sequence (that doc supersedes this one
+where they conflict).
+
 When auth goes live, remove these three shims IN ORDER:
 
 1. `frontend/src/hooks/useLiveScoring.js`
