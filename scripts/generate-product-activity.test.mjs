@@ -9,6 +9,7 @@ import {
   isEligibleDevelopmentCommit,
   isProductionRelease,
   rollingMonths,
+  stripInternalTrackingFragments,
 } from './generate-product-activity.mjs';
 
 function pr(overrides = {}) {
@@ -184,6 +185,40 @@ test('latest release notes are ordered by merge date and exclude story PRs and i
     result.latestReleaseNotes.map((note) => note.title),
     ['Release 2.9.0 — Newest capability', 'Release 2.8.0 — Middle capability', 'Release 2.7.0 — Older capability'],
   );
+});
+
+test('stripInternalTrackingFragments drops Story-number clauses but leaves the rest intact', () => {
+  assert.equal(
+    stripInternalTrackingFragments('v2.11.0: team seasons, first-save race fix, Story 133 slices 1-4/13'),
+    'v2.11.0: team seasons, first-save race fix',
+  );
+  assert.equal(
+    stripInternalTrackingFragments('release: promote v2.13.0 to production'),
+    'release: promote v2.13.0 to production',
+  );
+  assert.equal(stripInternalTrackingFragments('Story 133 slices 1-4/13'), '');
+});
+
+test('release notes that fall back to the raw PR title still exclude internal Story fragments', () => {
+  const months = rollingMonths(1, new Date('2026-08-30T12:00:00Z'));
+  const result = aggregateActivity({
+    months,
+    pullRequests: [
+      pr({
+        number: 731,
+        title: 'v2.11.0: team seasons, first-save race fix, Story 133 slices 1-4/13',
+        body: '## Summary\n\nPromotes v2.11.0 from `develop` to `main`.',
+        base: { ref: 'main' },
+        head: { ref: 'develop' },
+        merged_at: '2026-08-21T21:56:29Z',
+      }),
+    ],
+    commits: [],
+  });
+
+  assert.deepEqual(result.latestReleaseNotes.map((note) => note.title), [
+    'v2.11.0: team seasons, first-save race fix',
+  ]);
 });
 
 test('pull-request pagination does not stop on an out-of-order updated_at value', async () => {
