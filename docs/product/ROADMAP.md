@@ -1,7 +1,23 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: 2026-08-30 (production documentation reconciliation, Stories 334-340/#981-#987; v3.1.0 promoted to `main` through PR #959 at `02abfc0`; post-release `develop` work begins after that production boundary).
+> Last updated: 2026-08-31 (v3.1.1 release preparation; scope frozen at `34ff2b2`, release tracker #989).
 > MVP launched: March 24, 2026
+
+---
+
+## v3.1.1 RELEASE CANDIDATE — security hardening and confidence coverage
+
+Release tracker: [#989](https://github.com/kaushikkuberanathan/lineup_generator/issues/989). Candidate scope is frozen at `develop` commit `34ff2b2` against production v3.1.0 merge `02abfc0`. No later feature, fix, dependency, retrospective, or scoring-security work enters this release; open PRs #874/#892 and the unmerged `feature/scoring-security-cutover` branch are excluded.
+
+**Patch-version rationale:** this batch hardens and documents existing behavior and expands regression confidence without adding a new coach-facing capability. Bench-rotation fairness #942/#952 already shipped in v3.1.0 through PR #959 and is not part of this delta.
+
+**Included scope:**
+- Database permission hardening through migration 032 and PR #970: table-grant and `SECURITY DEFINER` defense in depth plus matching RLS coverage. This does not complete the deferred Phase 4C scoring-policy cutover tracked by #355/#688/#689.
+- Targeted QA coverage through PR #980: `playerMapper`, `useAuth.logout`, `requireAuth` phone-hint handling, Songs, PWA installation, demo-team loading, Roster, coach-PIN unlock, and Bottom Nav. Documented baseline before release prep is 1543 frontend tests across 144 files and 299 backend unit tests.
+- Public product-activity cleanup through PR #978, removing internal Story-number fragments from coach-facing release summaries.
+- Phase 4C status correction and production-documentation reconciliation through PRs #979/#988.
+
+**Ship Gate:** golden-path coverage is present for the touched runtime behavior; living documentation and `FEATURE_MAP.md` are current; `debt-p0` returned 0 open P0 items on 2026-08-31. The release remains blocked on final local verification, release-prep PR CI, DEV deployment/soak evidence, real-device validation, and explicit `confirmed — push to main` approval.
 
 ---
 
@@ -9,8 +25,8 @@
 
 ### Story 334 (P1) — Master: reconcile public, architecture, security, and product docs to production v3.1.0 <!-- #981 -->
 
-**Status:** In Progress — all six children implemented and validated locally;
-push/PR/merge plus GitHub label/body normalization remain open.
+**Status:** Complete — PR #988 merged to `develop` as genuine two-parent merge
+`34ff2b2`; #981-#987 are closed and their metadata was reconciled.
 
 **Classification:** Doc governance.
 

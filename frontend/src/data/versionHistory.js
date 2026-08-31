@@ -1,5 +1,22 @@
 export var VERSION_HISTORY = [
   {
+    version: '3.1.1',
+    date: 'August 2026',
+    headline: 'Security hardening and stronger regression coverage',
+    techNote: 'Under-the-hood stability improvements',
+    userChanges: [
+      'Behind-the-scenes security, reliability, and test-coverage improvements. No changes to the way coaches build or use a lineup.',
+      'Public release notes now stay coach-readable by removing internal Story-number references from generated activity summaries.',
+    ],
+    internalChanges: [
+      'Release tracker #989. Scope frozen at develop commit 34ff2b2 against production v3.1.0 merge 02abfc0; open PRs #874/#892 and the unmerged Phase 4C scoring-security branch are explicitly excluded.',
+      'PR #970 added migration 032 and supporting RLS coverage to harden table grants and SECURITY DEFINER execution boundaries. The migration was verified separately against DEV and PROD; it is defense in depth and does not complete the still-deferred Phase 4C scoring-policy cutover tracked by #355/#688/#689.',
+      'QA coverage batch: playerMapper branch coverage (#945), useAuth logout coverage (#944), requireAuth phone-hint coverage (#966), and golden-path App coverage for Songs, PWA installation, demo-team loading, Roster, coach-PIN unlock, and Bottom Nav (#943/#967-#969). Final documented baseline before release prep: 1543 frontend tests across 144 files and 299 backend unit tests.',
+      'PR #978 strips internal Story-number fragments from public product-activity summaries. PRs #979/#988 reconcile Phase 4C status and the living product, architecture, security, and operations documentation to the actual v3.1.0 production boundary.',
+      'Version rationale: patch release. This batch hardens and documents existing behavior and expands regression confidence; it adds no new coach-facing capability. Bench-rotation fairness #942/#952 already shipped in v3.1.0 and is not part of this delta.',
+    ],
+  },
+  {
     version: '3.1.0',
     date: 'August 2026',
     headline: 'Clearer registration consent and a smoother Game Day flow',
