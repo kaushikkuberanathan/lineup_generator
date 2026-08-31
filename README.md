@@ -1,5 +1,5 @@
 # ⚾ Lineup Generator
-> **Last Updated:** August 23, 2026 (v2.12.0 in production — see [ROADMAP.md](docs/product/ROADMAP.md) for release history)
+> **Last Updated:** August 30, 2026 (v3.1.0 in production — promoted through PR #959; see [ROADMAP.md](docs/product/ROADMAP.md) for release history)
 
 > **Baseball and softball lineup management for youth coaches — built on the sideline, for the sideline.**
 
@@ -135,7 +135,7 @@ This is vibe coding at its best — not generating boilerplate, but genuinely co
 
 ## Roadmap
 
-The authoritative roadmap — including release history through v2.12.0, the current backlog, and longer-term planning — lives in [docs/product/ROADMAP.md](docs/product/ROADMAP.md). README is intentionally kept minimal here to avoid drift between docs.
+The authoritative roadmap — including release history through v3.1.0, the current backlog, and longer-term planning — lives in [docs/product/ROADMAP.md](docs/product/ROADMAP.md). README is intentionally kept minimal here to avoid drift between docs.
 
 ---
 

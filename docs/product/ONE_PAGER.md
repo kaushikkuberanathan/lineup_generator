@@ -1,6 +1,6 @@
 # Dugout Lineup — 1-Pager
 
-> v2.2 — 2026-08-23 — App v2.12.0 in production
+> v2.3 — 2026-08-30 — App v3.1.0 in production
 
 ---
 
@@ -45,7 +45,7 @@ Dugout Lineup eliminates the pre-game scramble for recreational youth baseball a
 
 ## Tech Stack
 
-React 18 + Vite PWA on Vercel (auto-deploys from main); Node.js / Express backend on Render (Starter plan $7/mo, no spin-down; UptimeRobot availability monitoring); Supabase (Postgres + JSONB) for cloud sync and short link storage; Claude API (`claude-sonnet-4-6`) proxied through backend for AI schedule import; Mixpanel (32+ events) + Vercel Analytics for usage tracking; localStorage as primary store with Supabase as async background sync.
+React 19.2.8 + Vite 8.2.1 PWA on Vercel (auto-deploys from main); Node.js / Express 5.2.1 backend on Render (Starter plan $7/mo, no spin-down; UptimeRobot availability monitoring); Supabase (Postgres + JSONB) for cloud sync, authentication, live scoring, consent records, and short-link storage; Claude API (`claude-sonnet-4-6`) proxied through the backend for AI schedule import; Mixpanel + Vercel Analytics for usage tracking; localStorage as the instant/offline layer with authenticated Supabase synchronization.
 
 ---
 

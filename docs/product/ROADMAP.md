@@ -1,13 +1,172 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: 2026-08-30 (v3.1.0 scope reconciled through `1da474e` after the intentional post-prep batch, including bench-rotation fairness #942 and test PR #956; the shared Git soak marker is authoritative for the later release-documentation merge); previously 2026-08-30 (Supabase reconciliation: migrations 023/029/030 applied and verified).
+> Last updated: 2026-08-30 (production documentation reconciliation, Stories 334-340/#981-#987; v3.1.0 promoted to `main` through PR #959 at `02abfc0`; post-release `develop` work begins after that production boundary).
 > MVP launched: March 24, 2026
 
 ---
 
-## v3.1.0 RELEASE CANDIDATE (develop only — not yet promoted) — consent, Game Day, and sync reliability
+## Production documentation reconciliation — v3.1.0
 
-Release tracker: [#939](https://github.com/kaushikkuberanathan/lineup_generator/issues/939). The Terms of Service experience landed as 3 PRs on `develop` (#907, #910, #913) on top of the v3.0.0 promote. This release cut also includes the Game Day and reliability work merged afterward. Version target is 3.1.0 because registration consent is a new coach-facing capability, not a patch-only change.
+### Story 334 (P1) — Master: reconcile public, architecture, security, and product docs to production v3.1.0 <!-- #981 -->
+
+**Status:** In Progress — all six children implemented and validated locally;
+push/PR/merge plus GitHub label/body normalization remain open.
+
+**Classification:** Doc governance.
+
+**Parent:** Master tracking story for the six bounded documentation workstreams below.
+
+**Problem:** Production is v3.1.0 at `main` commit `02abfc0` (PR #959), and the
+live backend `/health` endpoint reports `version: 3.1.0`, `db: ok`. Several living
+documents still say v2.12.0, React 18/Vite 5, Render free tier, or describe already
+promoted v3.0/v3.1 scope as develop-only. Other files mix historical snapshots with
+current-state language, making it difficult to distinguish durable history from live
+operational truth.
+
+**Scope:** Coordinate Stories 335-340. Each child owns a non-overlapping document
+group, current-source verification, link checks, and its own completion evidence.
+This master closes only after all six children are complete, living-doc contradictions
+are removed, historical artifacts are clearly scoped, documentation checks pass, and
+the resulting PR is merged to `develop` with a genuine merge commit.
+
+**Acceptance criteria:**
+- Production facts are anchored to `main`/live service evidence; post-v3.1 work is
+  explicitly identified as develop-only.
+- No living document describes v3.0.0 or v3.1.0 as unpromoted.
+- No living architecture document describes React 18, Vite 5/6, the Render free tier,
+  or the obsolete DEV Render hostname as current.
+- Every file in `docs/product/` has an explicit disposition: updated, historical
+  snapshot, intentionally archived, or verified-current.
+- Story links, labels, local documentation validation, diff review, and merge evidence
+  are recorded before closure.
+
+### Story 335 (P1) — Docs: reconcile production release truth and public product narrative <!-- #982 -->
+
+**Status:** Complete locally — production facts reconciled in all four files.
+
+**Classification:** Doc governance.
+
+**Parent:** Story 334.
+
+**Files:** `README.md`, `docs/product/ROADMAP.md`, `docs/product/CHARTER.md`,
+`docs/product/ONE_PAGER.md`.
+
+**Work:** Establish v3.1.0/PR #959 as the production baseline; remove duplicate or
+contradictory release-candidate narratives; update stack/version statements; describe
+the production Game Day, Help, legal-consent, sync-reliability, and bench-fairness
+capabilities without copying internal release mechanics into public-facing prose.
+
+**Acceptance criteria:** All four files agree on current production version and release
+status; historical release entries remain intact; `develop`-only migration 032 and the
+post-release test batch are not presented as production.
+
+### Story 336 (P1) — Docs: rebuild solution design from current production architecture <!-- #983 -->
+
+**Status:** Complete locally — source, package, schema, route, and live-service facts reconciled.
+
+**Classification:** Doc governance.
+
+**Parent:** Story 334. Blocked on Story 335's production baseline.
+
+**Files:** `docs/SOLUTION_DESIGN.md`.
+
+**Work:** Reconcile the runtime stack, deployment topology, persistence model, schema,
+API inventory, auth/admin boundaries, legal-consent flow, live-scoring security state,
+PWA setup, version management, and links against production source and live health.
+
+**Acceptance criteria:** React 19.2.8, Vite 8.2.1, Express 5.2.1, Render Starter,
+current production tables/routes, and the real production/develop security boundary are
+accurately documented; obsolete free-tier/deleted-DEV-backend claims are removed.
+
+### Story 337 (P1) — Docs: reconcile security policy, framework, roadmap, and Phase 4C state <!-- #984 -->
+
+**Status:** Complete locally — production, deferred-cutover, and develop-only controls separated.
+
+**Classification:** Doc governance.
+
+**Parent:** Story 334. Blocked on Story 335's production baseline.
+
+**Files:** `SECURITY.md`, `docs/product/AUTH_SECURITY_AUDIT_ROADMAP.md`,
+`docs/product/PHASE4C_SCORING_RLS_PROPOSAL.md`,
+`docs/product/SECURITY_FRAMEWORK.md`.
+
+**Work:** Update public reporting scope and safe testing boundaries; reconcile shipped
+auth/grant hardening, Section A, removed shims, still-open scoring-policy exposure, and
+migration 032's develop-only status. Do not publish exploit instructions or imply an
+unpromoted migration is live.
+
+**Acceptance criteria:** All four docs distinguish production controls, known deferred
+cutover work, and current develop-only hardening; durable security contact/reporting
+language is actionable and does not over-exclude project-owned third-party configuration.
+
+### Story 338 (P2) — Docs: reconcile living product, operations, onboarding, and coverage references <!-- #985 -->
+
+**Status:** Complete locally — eight living references re-baselined without rewriting ledgers.
+
+**Classification:** Doc governance.
+
+**Parent:** Story 334. Blocked on Stories 335-337 for shared facts.
+
+**Files:** `docs/product/APPJSX_DECOMPOSITION_PLAN.md`, `DOC_TEST_DEBT.md`,
+`FEATURE_MAP.md`, `MASTER_DEV_REFERENCE.md`, `ONBOARDING.md`, `PERSONAS.md`,
+`PRODUCT_OPS.md`, and `UX_REFACTOR_ROADMAP.md`.
+
+**Work:** Re-baseline living plans and operating references against current source,
+production navigation, current dependency/tool versions, release governance, completed
+extractions, test inventory, and promotion status. Preserve historical ledgers while
+making their current status unambiguous.
+
+**Acceptance criteria:** No stale pending-PR/pending-promotion or obsolete topology
+claim remains in a living section; feature/test coverage totals are directly recounted;
+onboarding and persona flows match the production app.
+
+### Story 339 (P2) — Docs: mark historical product artifacts as snapshots without rewriting history <!-- #986 -->
+
+**Status:** Complete locally — 13 dated artifacts carry historical-snapshot treatment.
+
+**Classification:** Doc governance.
+
+**Parent:** Story 334.
+
+**Files:** dated audits, handoffs, execution logs, and Story 133 sandbox artifacts in
+`docs/product/`, including A11Y/DESIGN audits, both CLAUDE handoffs, doc-audit records,
+Phase 4/Sprint 2/release execution records, Story 133 handoffs/progress, and the UX
+worktree cleanup log.
+
+**Work:** Add a consistent historical-snapshot banner and link to the appropriate living
+reference where one is missing. Do not alter dated evidence, old SHAs, test counts, or
+then-true conclusions merely because they are no longer current.
+
+**Acceptance criteria:** A reader cannot mistake any scoped historical artifact for the
+current backlog or production state; historical content remains unchanged apart from
+the banner/cross-reference treatment.
+
+### Story 340 (P2) — Docs: verify intentionally current or archived product references <!-- #987 -->
+
+**Status:** Complete locally — five files verified without change; all 32 product docs inventoried exactly once across Stories 335-340.
+
+**Classification:** Doc governance.
+
+**Parent:** Story 334. Final verification child after Stories 335-339.
+
+**Files:** `docs/product/ACTIVITY_FEED.md`,
+`ADMIN_HTML_BYPASS_REMEDIATION_PLAN.md`, `LINT_BASELINE.md`, `RELEASE_NOTES.md`,
+and `VERSION_HISTORY_SCHEMA.md`, plus a final inventory of every file under
+`docs/product/`.
+
+**Work:** Verify links, status banners, and claims against current source. Make only
+evidence-backed corrections; record an explicit no-change disposition when a file is
+already accurate or intentionally archived.
+
+**Acceptance criteria:** Every `docs/product/*.md` file appears exactly once in the
+master disposition inventory; Markdown links resolve; no verification-only document is
+changed merely to create diff volume.
+
+---
+
+## ✅ v3.1.0 PROMOTED AND LIVE IN PROD — consent, Game Day, and sync reliability
+
+Release tracker: [#939](https://github.com/kaushikkuberanathan/lineup_generator/issues/939). Promoted to `main` on 2026-08-30 through PR [#959](https://github.com/kaushikkuberanathan/lineup_generator/pull/959), merge commit `02abfc0`. Production verification: `dugoutlineup.com` returned HTTP 200 and the Render `/health` endpoint reported `version: 3.1.0`, `status: ok`, and `db: ok` during the 2026-08-30 documentation reconciliation. The Terms of Service experience landed as 3 PRs (#907, #910, #913) on top of v3.0.0; the release also includes the Game Day and reliability work merged afterward.
 
 **What shipped:**
 - **Versioned legal-doc content model** (`frontend/src/content/legal.js`): every doc in `LEGAL_DOCS` now carries a `versions[]` array (oldest first) instead of a single flat text blob. `getLegalDoc(id)` resolves to the latest version automatically; `getLegalDocVersion(id, version)` retrieves any prior version's exact text for audit purposes. Bumping a document going forward is one edit — append a new `versions[]` entry — with no component, route, or migration change required. The original April 2026 "Terms of Use" text is preserved verbatim as `terms` v1.0, not overwritten. `terms` has been rewritten to v2.0: a fuller, plain-spoken Terms of Service tailored to Dugout Lineup (replacing the prior third-party-template-adapted text), with a "Plain English" (`tldr[]`) summary card. 6 docs total: `privacy`, `terms`, `safety`, `content`, `access`, `report` — all others still at v1.0.
@@ -26,10 +185,11 @@ Release tracker: [#939](https://github.com/kaushikkuberanathan/lineup_generator/
 - Branch ancestry repaired before the release cut through PR #938; its sync merge was content-identical to the pre-sync develop tree.
 - **Intentional pre-soak scope addition (2026-08-30):** `develop` advanced after release-prep merge `6292a97` through PRs #950-#956. The only new coach-facing runtime behavior is PR #952/#942: Auto-Assign now tracks bench history and rotates statistically similar players fairly instead of benching the same one or two every inning. PR #950 reconciled already-applied Supabase state; PR #953 added draft-only migration 031 and applied it nowhere; PRs #951/#954/#955 were documentation/governance; PR #956 added tests only. Because the prior soak anchor did not contain #952, no override was assumed. Scope verification used two-parent merge `1da474e`; the full soak restarts from the later release-documentation merge recorded in the shared Git marker.
 
-**Release gates still open:**
-- Candidate and eligibility are recorded in the shared `release.v3-1-0.*` Git marker after the final release-documentation merge; the soak remains active until the production SHA and health are verified.
-- Real-device Game-Day Validation is required because this batch changes the live game surface; #698 remains open until that pass is recorded.
-- Production promotion requires KK's explicit `confirmed — push to main` approval after the soak/manual evidence is reviewed.
+**Promotion evidence:**
+- Production merge: PR #959, `02abfc0` on `main`.
+- Live service checks during this reconciliation: frontend HTTP 200; backend `/health` returned v3.1.0 with database status `ok`.
+- The real-device validation history remains tracked separately under #698; automated or documentation evidence must not be used to fabricate closure of that checklist.
+- Commits after `02abfc0` on `develop` are post-v3.1 work and must retain an explicit develop-only qualifier until a later production promotion.
 
 ---
 
@@ -46,7 +206,7 @@ Release tracker: [#939](https://github.com/kaushikkuberanathan/lineup_generator/
 
 ---
 
-## v3.0.0 — 2026-08-29 (develop only — not yet promoted) — Phase 4C auth-cutover start, security debt closures, Help redesign
+## v3.0.0 — 2026-08-29 — Detailed release record (promoted via PR #903) — Phase 4C auth-cutover start, security debt closures, Help redesign
 
 **Major version bump — a deliberate departure from this repo's own "size the bump to the release's actual scope" convention, decided by KK 2026-08-29.** Every prior release of comparable or larger bundled scope was still sized minor (v2.9.0 bundled a schema change + routing change + security batch; v2.14.0 bundled 6 unrelated security PRs). This is the first major version this project has ever shipped. **Explicitly not gated on Phase 4C completion** — the shim-removal sequence (Story 129/#688) is 2 of 7 steps done; 5 remain. Recorded here in plain language so a future session doesn't read "v3.0.0" and assume the auth cutover finished — it didn't.
 
@@ -80,7 +240,7 @@ Scope: 104 commits / 34 top-level PRs merged to `develop` since v2.15.0 promoted
 - Backend unit: 269/269 — up from 254. Run locally with CI's exact dummy-env pattern (`SUPABASE_URL=https://ci-hermetic.invalid`, etc. — see `.github/workflows/ci.yml`'s `backend-unit` job), not against a real Supabase project.
 - CI re-confirmed green on `bf097f0` via the GitHub Actions API (not assumed from the merge having gone through): Backend Integration Tests (CI_SAFE, prod read-only), RLS Policy Suite (ephemeral), Frontend Tests (Vitest), Backend Unit Tests (supertest), Sync-script unit tests — all `success`.
 - `FEATURE_MAP.md`: row 40 (Help) already current from #865's own landing. No other surface in this batch is a discrete coach-facing feature warranting its own row — matches this file's own precedent of not mapping dependency/governance/infra-only work to feature rows.
-- **Not yet done:** the actual version bump (`frontend/package.json`, `backend/package.json`, `APP_VERSION` in `App.jsx`, root `CLAUDE.md`, `VERSION_HISTORY` entry) — pending KK's gate phrases for those locked files. 24h soak not yet started. Real-device Vercel preview smoke test not yet run.
+- **Historical release-prep note:** the version bump, soak decision, preview verification, promotion, and post-promote sync were completed later in the release sequence documented by the preceding “PROMOTED AND LIVE IN PROD” section. This paragraph replaces the stale pre-promotion checklist that remained after v3.0.0 shipped.
 
 ### Test/CI environment safety (#339, #368) — folded into this release
 
@@ -5084,7 +5244,8 @@ scoping writeup. Summary: in scope is the 9 shipped `components/ui/`
 primitives + the token system; out of scope is the 4 Auth screens (don't
 consume primitives yet) and App.jsx's own split (separate tracked
 initiative, `APPJSX_DECOMPOSITION_PLAN.md`). Tooling recommendation:
-`@storybook/react-vite` (this repo is already Vite 6 + React 18, no
+`@storybook/react-vite` (the repo is now Vite 8.2.1 + React 19.2.8; the old
+Vite 6 + React 18 compatibility assumption must be re-validated; no
 `.storybook/` exists yet - from-scratch add), with a 1-day timeboxed spike
 against Ladle as a lighter alternative before committing repo-wide.
 Recommendation: Do not start implementation until Phase 5 promotes to

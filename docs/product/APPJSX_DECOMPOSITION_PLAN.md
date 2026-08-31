@@ -1,5 +1,11 @@
 # App.jsx Decomposition Plan — UX Phase 4
 
+> **Re-baselined 2026-08-30:** this plan was originally mapped at `ca9bd0a`
+> against an approximately 9,800-line `App.jsx`. Production v3.1.0 is about
+> 7,770 lines after multiple bounded extractions. Function names and ownership
+> boundaries remain useful; line numbers and “not extracted” claims below must
+> be re-verified against current source before execution.
+
 **Status:** Planning (docs only — zero code changes in this artifact)
 **Track:** UX Refactor → Phase 4 (App.jsx Decomposition)
 **Created:** 2026-06-02 (Terminal 2, UX track)

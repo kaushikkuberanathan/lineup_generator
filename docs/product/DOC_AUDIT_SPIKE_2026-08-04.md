@@ -1,5 +1,7 @@
 # Doc Audit Spike — docs/product/* + SOLUTION_DESIGN.md + TROUBLESHOOTING.md vs. Prod (2026-08-04)
 
+> **Historical audit snapshot.** Its findings are preserved as then-current evidence; the v3.1.0 reconciliation is tracked by Stories 334-340 in `ROADMAP.md`.
+
 > **Status:** Discovery only. No doc edits made in this spike. This file is the punch list for a separate execution pass (KK will issue that as its own command/session).
 > **Branch:** `feature/docs-product-audit-spike` (cut from `develop` @ `71629e9`)
 > **Method:** 6 parallel research agents, each auditing a cluster of files by reading them in full and cross-checking every material claim against live source (grep/Read/git log), not against other docs. A few of the highest-severity claims were independently re-verified by the orchestrating session (spot checks noted inline). Every finding below has file:line evidence — treat findings without a specific citation as suspect.

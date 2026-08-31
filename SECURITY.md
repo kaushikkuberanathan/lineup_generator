@@ -1,7 +1,10 @@
 # Security Policy
 
-Dugout Lineup stores youth sports roster data (player names, team rosters, game schedules) on
-behalf of volunteer coaches. Security reports are taken seriously and triaged promptly.
+Dugout Lineup stores youth sports roster and game data on behalf of volunteer
+coaches. Depending on the feature used, this can include player names, team
+rosters, schedules, live-game scoring, account email/profile data, access
+requests, feedback, legal-consent audit records, and security/audit events.
+Security reports are taken seriously and triaged promptly.
 
 ## Supported Versions
 
@@ -37,10 +40,23 @@ In scope:
 
 - The production frontend (dugoutlineup.com) and backend (Render-hosted API)
 - Authentication, authorization, and Row Level Security (RLS) policies in Supabase
+- Project-controlled Vercel, Render, Supabase, email, and analytics configuration
 - Share-link access controls (read-only viewer links must never allow writes)
+- Authenticated coach/admin APIs and live-scoring authorization boundaries
 
 Out of scope:
 
-- Third-party services (Supabase, Vercel, Render, Anthropic) — report directly to those
-  providers
+- Vulnerabilities in the third-party platforms themselves (Supabase, Vercel,
+  Render, Anthropic, and other providers) — report those to the provider; a
+  misconfiguration owned by Dugout Lineup remains in scope here
 - Denial-of-service or load-testing against the production environment
+
+## Safe Testing
+
+Good-faith research that follows this policy will not be pursued merely for
+reporting a vulnerability. Keep testing proportionate and stop when you have
+enough evidence to report the issue. Do not access or retain another person's
+data, alter production records, degrade service, run automated/high-volume
+scans, attempt social engineering, or disclose a vulnerability before a fix is
+deployed. If proof would require any of those actions, report the suspected path
+without executing it and coordinate a safe reproduction with the maintainer.
