@@ -1,5 +1,7 @@
 # UX Worktree Cleanup — Execution Log
 
+> **Historical execution log.** Preserve the cleanup decisions and worktree evidence; current worktree state must always be re-read with `git worktree list`.
+
 > Autonomous run, 2026-08-07. Parked items 3-5 from the same session's baseline
 > conversation: delete a stale handoff doc, fix a stale roadmap header. Docs-only,
 > zero locked files, zero schema/DB changes, zero merge-to-develop/main. This log

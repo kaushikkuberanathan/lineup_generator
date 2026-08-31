@@ -231,7 +231,7 @@ describe('S4 — anon write protection', () => {
   // with no per-table carve-out.
   test('S4b: anon holds no ungoverned TRUNCATE/DELETE grant on exposed tables', async () => {
     const admin = adminClient();
-    const exposed = ['team_data', 'teams', 'roster_snapshots'];
+    const exposed = ['team_data', 'teams', 'roster_snapshots', 'legal_consents'];
 
     const { data, error } = await admin.rpc('rls_test_anon_grants', {
       table_names: exposed,

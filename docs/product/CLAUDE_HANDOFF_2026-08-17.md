@@ -1,5 +1,7 @@
 # Handoff — 2026-08-17, T1 → next session (T2 or future T1)
 
+> **Archived handoff.** Preserve the dated coordination record; verify every branch, issue, migration, and production claim against current source and `ROADMAP.md`.
+
 Read this before starting Dugout-track or Phase 4C work. This is the condensed,
 actionable version of a long session — full detail is in the git history of the
 PRs cited below, not repeated here.

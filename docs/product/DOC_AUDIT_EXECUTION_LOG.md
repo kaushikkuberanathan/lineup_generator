@@ -1,5 +1,7 @@
 # Doc Audit Execution Log
 
+> **Historical execution log.** This records the 2026-08-04 remediation run and must not be used as the current production baseline; see Stories 334-340 in `ROADMAP.md`.
+
 > Created at the start of Phase 2 (autonomous execution) of the Doc Audit Spike remediation run. Records every mid-run decision point per the handoff's standing rule: "make the most reasonable, lowest-risk decision, log it, keep moving." Sorted by story number.
 
 ## Phase 1 answers (for reference)

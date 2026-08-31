@@ -1,6 +1,6 @@
 # Dugout Lineup — User Personas
 
-> **Last Updated:** 2026-08-04 (Doc Audit Spike Story 6 — auth status + Live Scoring rollout language corrected against live prod; content otherwise current as of v2.0, April 2026 v2.2.31 refresh). See `## Revision History` at end of file.
+> **Last Updated:** 2026-08-30 (production v3.1.0 reconciliation: authenticated editing, account-free viewing/share links, unified Game Day, Help, and registration-consent context re-verified; persona definitions otherwise preserved). See `## Revision History` at end of file.
 
 ## Overview
 

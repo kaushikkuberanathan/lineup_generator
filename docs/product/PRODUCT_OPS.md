@@ -1,5 +1,11 @@
 # Product Operations Playbook
 
+> **Reconciled 2026-08-30:** production is v3.1.0. The current workflow uses
+> feature/fix branches from `develop`, required GitHub issues, merge commits,
+> the shared Git soak marker, branch-specific push approval, production smoke
+> evidence, and immediate `main`→`develop` ancestry sync. Current root
+> `CLAUDE.md` rules govern where older examples differ.
+
 **What this doc is:** The end-to-end operational reference for how work moves through Dugout Lineup — from idea to shipped. Covers story creation, labeling, branching, PR conventions, fix promotion, and the release ritual.
 
 **Related docs:**
@@ -288,4 +294,4 @@ In progress:     https://github.com/kaushikkuberanathan/lineup_generator/issues?
 
 ---
 
-*Last updated: 2026-05-19. Maintained alongside `CLAUDE.md` and `docs/process/ISSUE_TRACKING.md`. Update when process changes — this doc is the operational north star.*
+*Last updated: 2026-08-30. Maintained alongside `CLAUDE.md` and `docs/process/ISSUE_TRACKING.md`. Update when process changes — this doc is the operational north star.*

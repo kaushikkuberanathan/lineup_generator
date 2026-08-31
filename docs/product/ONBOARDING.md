@@ -1,5 +1,10 @@
 # Lineup Generator — Coach Onboarding Guide
 
+> **Production-checked:** 2026-08-30 against v3.1.0 navigation and account
+> boundaries. Viewing and share links remain account-free; editing requires a
+> session. Registration includes the Terms/Privacy consent gate, and live
+> scoring remains under Game Day → Dugout View.
+
 > For coaches opening the app for the first time via a shared URL.
 
 ---

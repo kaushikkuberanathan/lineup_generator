@@ -1,5 +1,9 @@
 # Dugout Lineup — Doc & Test Debt Ledger
 
+> **Branch boundary — 2026-08-30:** production is v3.1.0 at `02abfc0`.
+> Counts and coverage additions after that commit describe current `develop`,
+> not production. Every new entry must identify the SHA it was measured against.
+
 > **Purpose:** Running ledger of known documentation and test coverage gaps. The debt backlog — not the backlog of features, but the backlog of things that *should* be documented or tested and aren't.
 > **Rule:** Items over 30 days old must be addressed or explicitly deferred (with a reason) before the next minor version bump (x.Y.0).
 > **Cadence:** Scanned every Friday (~5 min) during the weekly audit. Grown from FEATURE_MAP.md gaps and from session retros.
@@ -31,6 +35,50 @@ aggregate count alone. New dedicated test files since v3.0.0:
 Final-candidate totals at `1da474e`: 1486 frontend tests passed across 136
 files; 295 backend unit tests passed.
 
+- QA Coverage Scope follow-up (#965): `playerMapper.test.js` closes #945 —
+  34 new tests covering each `mapPlayerToV2` inference branch individually,
+  including a lock-in for the deliberately-unwired V1 speed/contact/power
+  bridges. `useAuth.logout.test.js` closes #944 — 5 new tests covering
+  `logout()` (the one exported function of `useAuth.js` with zero prior
+  coverage; `checkSession`/`onAuthStateChange`/`sendMagicLink` were already
+  covered by `auth.test.js`, and `requestAccess`/`updateProfileName`/
+  `refreshMemberships` by their own dedicated files) plus a lock-in that an
+  unhandled `onAuthStateChange` event type is a no-op. New totals: 1525
+  frontend tests across 138 files.
+- QA Coverage Scope follow-up (#966): backend `requireAuth.phoneHint.test.js`
+  closes #966 — 4 new tests covering `middleware/requireAuth.js`'s
+  rejection-logging phone-hint branch, the one shape none of the ~15
+  existing `getUser()`-mocking tests constructed (`error` truthy AND
+  `data.user.phone` present simultaneously). Confirmed reachable in prod
+  (7 `auth.users` rows, 1 with `phone` set) rather than dead phone-auth-era
+  code, so the branch was kept, not removed. New backend total: 299.
+- QA Coverage Scope follow-up (#967): `AppSongsGoldenPath.test.jsx` closes
+  #967 — 2 new tests covering the Songs view (`App.jsx renderSongs`): the
+  Game Day View filters walk-up songs to `activeBattingOrder` (an
+  absent-tonight player's song never renders), and the Play action's Open
+  Song link href/target wiring. The old standalone "🟡 P2 — Walk-Up Song
+  Navigation" entry further down in this file is moved to Resolved below.
+- QA Coverage Scope follow-up (#968): `AppPwaInstallPrompt.test.jsx` closes
+  #968 — 3 new tests covering the PWA install banner's platform branches:
+  Android `beforeinstallprompt` capture, iOS `standalone`-mode detection
+  (no `navigator.standalone` check exists in the real code — verified by
+  grep — `isStandalone` is derived purely from `matchMedia`), and the
+  already-installed exclusion suppressing the banner on both platforms.
+  The old standalone "🟡 P2 — PWA Install Prompt Logic" entry further down
+  in this file is moved to Resolved below.
+- QA Coverage Scope follow-up (#969): `AppDemoTeamGoldenPath.test.jsx`
+  closes #969 — 3 new tests covering `loadDemoTeam()`'s fresh-creation
+  path, the dedup guard at the current seed version, and an existing
+  older-version demo team. **Real finding, not fixed here (out of scope,
+  App.jsx is a locked file):** the "Try Demo Team" button is hidden by
+  team-name match only, not `demoSeedVersion` — so `loadDemoTeam()`'s own
+  version-comparison/old-key-cleanup branch is currently unreachable via
+  the UI as wired today. See the Resolved section's "D-S332" entry for full
+  detail. Final totals, directly re-measured against `develop` HEAD
+  `6caf0dc`: 1533 frontend tests across 141 files; 299 backend unit tests.
+  (This line previously showed 1530/140, stale from a merge race between
+  two concurrent sessions resolving the same branch's conflicts.)
+
 ---
 
 ## How to Use This File
@@ -58,30 +106,6 @@ files; 295 backend unit tests passed.
 - **Test:** `frontend/src/tests/auth.test.js` test B4 rewritten to assert the fixed behavior (RED confirmed against the pre-fix code before applying the fix, then GREEN after).
 - **Residual gap closed same day:** the hook's `error` field was not initially wired into `LoginScreen.jsx`'s UI (that would touch the locked `App.jsx` prop-wiring) — PR [#782](https://github.com/kaushikkuberanathan/lineup_generator/pull/782) closed this later the same session (2026-08-23), wiring `authError` into `LoginScreen`'s existing error display via a `useEffect`, reusing the form's existing error state and clear-on-edit behavior. `LoginScreen.test.jsx` gained 24 lines of coverage for the new wiring. A real user now sees the surfaced error, not just an internally-consistent `authState`.
 - **Issue** | [#579](https://github.com/kaushikkuberanathan/lineup_generator/issues/579) — had been auto-closed by PR #580 (docs-only filing, not a fix); reopened 2026-08-23 and closed for real by PR #767's merge. Tracked alongside the rest of this session's coverage work under [#766](https://github.com/kaushikkuberanathan/lineup_generator/issues/766), also closed by #767.
-
-### 🟡 P2 — Walk-Up Song Navigation
-
-| | |
-|---|---|
-| **Area** | Walk-up songs per player |
-| **Description** | No test that Songs tab filters to active players only, or that Play button invokes navigation with correct URL. Deep-link to native apps is OS-mediated (untestable at unit level) but the call site is testable. |
-| **Risk if unfixed** | A future refactor of `activeBattingOrder` filtering could silently unfilter Songs view — would go unnoticed until a DJ parent complains about absent kids in the playlist. |
-| **Proposed test** | Add to existing test or new `frontend/src/tests/songs.test.js` — assert Songs renders only `activeBattingOrder` players, assert Play button's href matches `player.walkUpSong.url`. |
-| **Opened** | 2026-04-17 |
-| **Age** | 43 days |
-| **Target** | v2.4.0 |
-
-### 🟡 P2 — PWA Install Prompt Logic
-
-| | |
-|---|---|
-| **Area** | PWA Setup |
-| **Description** | Install banner has platform branches (Android `beforeinstallprompt` vs iOS `standalone` detection vs already-installed) that are untested. |
-| **Risk if unfixed** | Platform-specific install UX regressions; user confusion on a non-critical path. |
-| **Proposed test** | `frontend/src/tests/pwaInstall.test.js` — mock `window.navigator.standalone`, `window.matchMedia("(display-mode: standalone)")`, and `beforeinstallprompt` event, assert correct banner variant renders. |
-| **Opened** | 2026-04-17 |
-| **Age** | 43 days |
-| **Target** | v2.4.0 |
 
 ### 🟡 P2 — Analytics track() Wrapper + SSR Guards
 
@@ -117,18 +141,6 @@ files; 295 backend unit tests passed.
 | **Proposed test** | `scripts/__tests__/sync-stories-to-issues.test.js` — mock `fetch`, exercise: (a) happy path creates issue + patches marker, (b) 401 returns failure object — guard prevents ROADMAP write, (c) de-dup check skips on existing issue. Node test runner (node:test) is sufficient — no Vitest pull-in needed for a tools-side test. |
 | **Opened** | 2026-05-27 |
 | **Age** | 3 days |
-| **Target** | v2.6.x |
-
-### 🟡 P2 — D-S332: Demo team seeding + seed-version upgrade (loadDemoTeam)
-
-| | |
-|---|---|
-| **Area** | Demo team seeding + seed-version upgrade (`loadDemoTeam`) |
-| **Description** | `loadDemoTeam()` now seeds from `demoSeed.js` and has a `demoSeedVersion` upgrade path (older/unversioned demos cleared + rebuilt on next open). NO automated test covers: (a) fresh demo creation builds 11-player roster + grid + 11-game schedule correctly, (b) the upgrade path clears old per-team keys + `deleteTeam` + rebuilds as v2 without duplicating the team, (c) the dedup guard still prevents double-create at the same version. Verified manually in dev (fresh-create path only; upgrade path reviewed but not runtime-tested). |
-| **Risk if unfixed** | A refactor of `loadDemoTeam` could silently break demo onboarding (Strategic North Star #4: frictionless onboarding) or, worse, the upgrade path could clobber/duplicate teams for existing users. The upgrade branch is the least-exercised code and hits every existing demo user. |
-| **Proposed test** | `frontend/src/tests/demoTeam.test.js` — assert fresh load creates correct roster/grid/schedule counts + `demoSeedVersion` stamp; assert upgrade path (seed a v1 demo → `loadDemoTeam` → old keys cleared, single team, v2 stamp); assert dedup no-op at current version. |
-| **Opened** | 2026-06-15 |
-| **Age** | 0 days |
 | **Target** | v2.6.x |
 
 ### 🟡 P2 — D-S348c: `access_requests`, `profiles`, `feedback`, `feature_flags` RLS policies untested (Test-Health Survey Pass 3)
@@ -291,6 +303,17 @@ files; 295 backend unit tests passed.
 
 *(Items move here once shipped. Format: date, version, original description summary, resolution commit.)*
 
+### August 30, 2026 — D-S332: Demo team seeding + seed-version upgrade (loadDemoTeam) (#969)
+
+- ✅ **P2 — D-S332: Demo team seeding + seed-version upgrade (`loadDemoTeam`)** — Resolved. Added `frontend/src/__tests__/AppDemoTeamGoldenPath.test.jsx` (3 tests), mounting `<App/>` the same way `AppHomeMembershipTeams.test.jsx`/`AppBattingOrderGoldenPath.test.jsx` do since `loadDemoTeam` is an inline closure in the locked `App.jsx`. Covers: (a) fresh demo creation via a real click on "Try Demo Team", asserting roster/schedule/grid/innings/batting counts against the real `DEMO_ROSTER`/`DEMO_SCHEDULE`/`DEMO_GRID`/`DEMO_INNINGS` constants and `demoSeedVersion === DEMO_SEED_VERSION`; (b) the dedup guard at the current seed version; (c) an existing OLDER-version demo team. **Real finding, not assumed:** (b) and (c) do not exercise `loadDemoTeam()`'s own `existingVer`/cleanup branch (App.jsx lines 2111-2116) as this item's original "Proposed test" assumed — verified directly against a real render that the "Try Demo Team" button (App.jsx ~line 2926) is hidden whenever ANY team named "Demo All-Stars" already exists, matched by name only, not gated on `demoSeedVersion`. `loadDemoTeam()`'s own `existingDemo` lookup reads that identical `teams` state, so whenever the button is clickable, `existingDemo` is always falsy (fresh-create path only) — the version-comparison/old-key-cleanup branch is currently unreachable through the UI as wired today. Tests (b)/(c) assert this real, current behavior (button absent, no duplicate, old team/keys left untouched) instead. RED→GREEN mutation-verified for all 3 tests: (1) mutated the fresh-create roster save to `DEMO_ROSTER.slice(1)` → test (a) went red on the roster-length assertion; (2) mutated the button-visibility guard to always render → tests (b) and (c) both went red on the button-absence assertion; both mutations reverted (`git diff --stat frontend/src/App.jsx` empty), full suite re-confirmed green (137 files / 1489 tests). Issue: [#969](https://github.com/kaushikkuberanathan/lineup_generator/issues/969) (child of QA Coverage Scope [#965](https://github.com/kaushikkuberanathan/lineup_generator/issues/965)).
+### August 30, 2026 — Walk-Up Song Navigation test coverage (#967, child of QA Coverage Scope #965)
+
+- ✅ **P2 — Walk-Up Song Navigation** — Resolved. Added `frontend/src/__tests__/AppSongsGoldenPath.test.jsx` (2 tests), mounting the real `<App/>` the same way `AppBattingOrderGoldenPath.test.jsx` does — the walk-up-song render logic lives inline in `App.jsx`'s `renderSongs()` (~line 5433, locked file, not separately extracted). Confirmed by direct code read that the Game Day View (`songsView === "display"`, the default state) maps over `activeBattingOrder` — `battingOrder` filtered by `absentTonight`, itself sourced from the global `attendanceOverrides` localStorage key keyed by local calendar date, not `battingOrder`/the raw `roster` — while the separate Edit view intentionally maps over the full `battingOrder`. Test 1 seeds a roster with one active player (song set) and one absent-tonight player (song set) and asserts the absent player's song text never renders anywhere on the page, while the active player's does; a third batting-order player with no song set is asserted to still render via the "No song set" empty state, confirming list membership comes from `activeBattingOrder`, not merely "has a song". Test 2 asserts the Play action's actual call site — an `<a href={player.walkUpLink} target="_blank">🔗 Open Song</a>` link, not a button/`onClick` — has the correct `href`/`target`, and that exactly one such link renders (not one per absent/song-less player). Per this item's own original framing, the OS-mediated deep-link/media-playback behavior itself is untestable at unit level and out of scope; only the call site is asserted. **RED-checkpoint (mutation-test substitute, per this doc's own rule — coverage-after-the-fact for already-shipped, already-correct behavior, so no natural RED state exists to capture):** temporarily changed the Game Day View's `activeBattingOrder.map(...)` to map over `roster.map(function(p){return p.name;})` instead (reintroducing the exact "unfilter Songs view" regression this item warned about). Both tests failed RED (Casey Kim's absent-but-present song broke test 1's exclusion assertion; the Open Song link count broke test 2's uniqueness assertion, since Casey Kim's link then rendered too). Reverted via `git checkout -- frontend/src/App.jsx`, confirmed `git diff --stat frontend/src/App.jsx` empty, re-ran and confirmed 2/2 green again. Full frontend suite re-run clean: 123 files / 1403 passed / 1 skipped (up from 122/1401/1), `npm run lint` clean. No real production bug found — the existing `activeBattingOrder` filter and Open Song link were already correct; this closes a coverage gap only. Issue: [#967](https://github.com/kaushikkuberanathan/lineup_generator/issues/967) (child of QA Coverage Scope [#965](https://github.com/kaushikkuberanathan/lineup_generator/issues/965)). Branch: `test/songs-golden-path-967`.
+
+### August 30, 2026 — PWA Install Prompt Logic test coverage (#968)
+
+- ✅ **P2 — PWA Install Prompt Logic** — Resolved. Re-confirmed still-open by the 2026-08-30 QA Coverage Scope reassessment (#965) via direct grep (`grep -rl "PWA\|beforeinstallprompt" frontend/src --include="*.test.*"` — zero results) before work started. The install banner's three platform branches live inline in the locked `App.jsx` (Android `beforeinstallprompt` capture ~line 1283-1303, iOS `standalone`-detection effect ~line 1305-1310, render gating ~line 7549-7581) with no extraction point, so coverage is a golden-path `<App/>` render test rather than a unit test — matching the pattern already used for other App.jsx-internal features (`AppHomeMembershipTeams.test.jsx`, `AppBattingOrderGoldenPath.test.jsx`). Added `frontend/src/__tests__/AppPwaInstallPrompt.test.jsx` (3 tests): dispatching a real `beforeinstallprompt` event shows the Android banner + Install button; an iOS user agent shows the "Add to Home Screen" banner variant on mount with no event needed; `window.matchMedia('(display-mode: standalone)').matches === true` suppresses the banner on both platforms, including when `beforeinstallprompt` still fires. **Note on the original proposed test's shape:** the actual code has no `navigator.standalone` check anywhere (verified by direct grep) — `isStandalone` is derived purely from `matchMedia`, so the test mocks only that, not `navigator.standalone`. **Mutation-test RED checkpoint** (coverage-after-the-fact for already-shipped, already-correct behavior — no natural RED state to capture): two separate one-line mutations run in sequence, each reverted before the next. (1) Flipped the Android handler's `if (!isStandalone)` to `if (isStandalone)` — the Android test and the already-installed test both went RED (banner failed to show for Android; banner incorrectly showed once installed). Reverted, confirmed `git diff --stat frontend/src/App.jsx` empty, re-ran green. (2) Flipped the iOS effect's `if (!isIOS || isStandalone) return;` to `if (isIOS || isStandalone) return;` — the iOS test went RED (banner never shown). Reverted, confirmed the diff empty again, re-ran green — all 3/3 tests passing with zero net change to `App.jsx`. Full frontend suite 1530 passed across 140 files (up from 1486/136), `npm run lint` clean. Issue: [#968](https://github.com/kaushikkuberanathan/lineup_generator/issues/968) (child of QA Coverage Scope #965).
+
 ### August 28, 2026 — D-S31: FEATURE_MAP.md Coverage Summary denominator drift
 
 - ✅ **P2 — D-S31: FEATURE_MAP.md Coverage Summary denominator drift** — Resolved, not by a dedicated fix — superseded by the repeated "direct recount before any edit" standing practice this ledger already enforces, which has been applied to `FEATURE_MAP.md`'s Coverage Summary on every row addition/status change since this item was opened (most recently the 967ef07 D-S30 closure, 2026-08-27). This item's original complaint (`/ 27` denominators against a "29 features" heading, later "drift increased from 1 line to 2" per the v2.12 refresh note above) no longer describes the file: confirmed by direct grep just now — `## Feature Registry (40 features)` and all six Coverage Summary lines read `/ 40` uniformly, zero mismatch. No standalone GitHub issue existed for this item (opened 2026-05-15, predates this repo's issue-per-debt-item convention) — none filed retroactively since there's no remaining gap to track.
@@ -327,7 +350,7 @@ files; 295 backend unit tests passed.
 
 ### August 5, 2026 — AppShareLinkRouting.test.jsx / AppNoMembershipRouting.test.jsx incomplete Supabase mocks fixed (Story 121, #535)
 
-- ✅ **P0 — Incomplete Supabase mocks fire real network writes/deletes** — Resolved, and the blast radius was larger than this ticket originally scoped. Investigated as a hard-stop item per this repo's standing severity tier for live-data-mutation findings (same tier as D-S355) before any fix was attempted. **Confirmed by direct evidence, not assumption:** `frontend/.env`'s `VITE_SUPABASE_URL` (`hzaajccyurlyeweekvma.supabase.co` — the one real Supabase project this app uses, per `CLAUDE.md`'s own infra section) plus a real anon key are loaded by Vite for `test` mode (no test-mode override exists, `src/tests/setup.js` stubs only `window.matchMedia`), so `isSupabaseEnabled` is genuinely `true` under Vitest in this worktree — nothing neutralizes it. `App.jsx`'s boot-hydration effect ([App.jsx:1170](frontend/src/App.jsx:1170)) runs unconditionally on the first render of a fresh `<App/>`, gated only by `window._lineupDbBooted` (fresh per test file — Vitest's default `isolate: true`) and `isSupabaseEnabled`; when local `app:teams` storage is empty (true at the start of both affected files) it seeds/migrates 5 hardcoded real team IDs (the actual division rivals named in `CLAUDE.md`) and runs a one-time "Mud Hens" schedule-patch — real writes against the real coaching team's record, not a coverage abstraction. **A second file, `AppNoMembershipRouting.test.jsx`, had zero Supabase mocking at all** (not scoped in the original ticket) — its own second test even uses the real Mud Hens team ID (`1774297491626`) as a fixture. **CI is not exposed**: `frontend/.env` is gitignored and CI's `frontend` job injects no Supabase secrets, so `isSupabaseEnabled` is `false` there — the original ticket's "including in CI" framing was incorrect. **Confirmed not an active incident**: a read-only probe against the real REST endpoint (`teams?select=id&limit=1`, same anon key) returned `401 Legacy API keys are disabled` — disabled 2026-07-14T17:11:14Z, over three weeks before this investigation. Every write attempt through this path, past and present, fails identically; no real data was ever successfully mutated via this path. **Fix**: both files' `../supabase.js` mocks replaced with a fully self-contained mock (no `importOriginal` spread) listing every export (`supabase: null`, `isSupabaseEnabled: false`, and a `vi.fn()` stub for every `db*` function) — spreading `actual` doesn't get fixed by only overriding the `isSupabaseEnabled`/`supabase` export names, since `actual.dbSaveTeams` etc. are the real functions closed over the real module's own internal `supabase` binding, unaffected by what the mock factory returns under those names. **RED→GREEN evidence, real not synthetic**: reverted both fixes via `git stash` (files were tracked) and re-ran — 19 unhandled `Error: Legacy API keys are disabled` rejections fired from `src/supabase.js`'s real `dbSaveTeams`/`dbSaveTeamData` call sites, with all 8 tests still reporting "passed" throughout (proving the original defect: a broken mock that no assertion catches). Restored the fix, re-ran — 0 unhandled errors, same 8/8 passed. **Also traces and corrects a mischaracterization from earlier this same session**: the "11/16/18/19 errors" seen at the end of several `npx vitest run` full-suite executions during Sprint 2 work were attributed to the documented Bug #7 unhandled-rejection flake without verifying the source — they were actually these exact 401'd real-network-call attempts, not Bug #7 at all. Issue: [#535](https://github.com/kaushikkuberanathan/lineup_generator/issues/535). Branch: `issue/535-appsharelinkrouting-mock-fix`.
+- ✅ **P0 — Incomplete Supabase mocks fire real network writes/deletes** — Resolved, and the blast radius was larger than this ticket originally scoped. Investigated as a hard-stop item per this repo's standing severity tier for live-data-mutation findings (same tier as D-S355) before any fix was attempted. **Confirmed by direct evidence, not assumption:** `frontend/.env`'s `VITE_SUPABASE_URL` (`hzaajccyurlyeweekvma.supabase.co` — the one real Supabase project this app uses, per `CLAUDE.md`'s own infra section) plus a real anon key are loaded by Vite for `test` mode (no test-mode override exists, `src/tests/setup.js` stubs only `window.matchMedia`), so `isSupabaseEnabled` is genuinely `true` under Vitest in this worktree — nothing neutralizes it. `App.jsx`'s boot-hydration effect ([App.jsx](../../frontend/src/App.jsx)) runs unconditionally on the first render of a fresh `<App/>`, gated only by `window._lineupDbBooted` (fresh per test file — Vitest's default `isolate: true`) and `isSupabaseEnabled`; when local `app:teams` storage is empty (true at the start of both affected files) it seeds/migrates 5 hardcoded real team IDs (the actual division rivals named in `CLAUDE.md`) and runs a one-time "Mud Hens" schedule-patch — real writes against the real coaching team's record, not a coverage abstraction. **A second file, `AppNoMembershipRouting.test.jsx`, had zero Supabase mocking at all** (not scoped in the original ticket) — its own second test even uses the real Mud Hens team ID (`1774297491626`) as a fixture. **CI is not exposed**: `frontend/.env` is gitignored and CI's `frontend` job injects no Supabase secrets, so `isSupabaseEnabled` is `false` there — the original ticket's "including in CI" framing was incorrect. **Confirmed not an active incident**: a read-only probe against the real REST endpoint (`teams?select=id&limit=1`, same anon key) returned `401 Legacy API keys are disabled` — disabled 2026-07-14T17:11:14Z, over three weeks before this investigation. Every write attempt through this path, past and present, fails identically; no real data was ever successfully mutated via this path. **Fix**: both files' `../supabase.js` mocks replaced with a fully self-contained mock (no `importOriginal` spread) listing every export (`supabase: null`, `isSupabaseEnabled: false`, and a `vi.fn()` stub for every `db*` function) — spreading `actual` doesn't get fixed by only overriding the `isSupabaseEnabled`/`supabase` export names, since `actual.dbSaveTeams` etc. are the real functions closed over the real module's own internal `supabase` binding, unaffected by what the mock factory returns under those names. **RED→GREEN evidence, real not synthetic**: reverted both fixes via `git stash` (files were tracked) and re-ran — 19 unhandled `Error: Legacy API keys are disabled` rejections fired from `src/supabase.js`'s real `dbSaveTeams`/`dbSaveTeamData` call sites, with all 8 tests still reporting "passed" throughout (proving the original defect: a broken mock that no assertion catches). Restored the fix, re-ran — 0 unhandled errors, same 8/8 passed. **Also traces and corrects a mischaracterization from earlier this same session**: the "11/16/18/19 errors" seen at the end of several `npx vitest run` full-suite executions during Sprint 2 work were attributed to the documented Bug #7 unhandled-rejection flake without verifying the source — they were actually these exact 401'd real-network-call attempts, not Bug #7 at all. Issue: [#535](https://github.com/kaushikkuberanathan/lineup_generator/issues/535). Branch: `issue/535-appsharelinkrouting-mock-fix`.
 
 ### August 5, 2026 — Auto-Staging Git Hook re-triaged as stale
 
@@ -404,7 +427,7 @@ files; 295 backend unit tests passed.
 - ✅ **Add ADMIN_KEY to Render production env vars** — verified present in prod Render dashboard during deploy verification.
 - ✅ **`.isUUID()` rejects numeric team ID — silent admin approval bug** — fixed in earlier release. Confirmed by K during v2.6.0 foundation audit.
 - ✅ **`scoring-updates` long-lived exploratory branch** — deleted local + remote on April 27, 2026. No novel work was on the branch beyond a stale sync commit. CLAUDE.md updated.
-- ✅ **`lineup-generator-backend-dev` Render service** — deleted entirely on April 27, 2026. Local dev uses `npm run dev` (per K's existing workflow). Only unique env var (`RESEND_TEST_RECIPIENT`) preserved in local `backend/.env`.
+- ✅ **Historical April 27 cleanup:** the then-named `lineup-generator-backend-dev` Render service was deleted. **Current correction (2026-08-30):** a later DEV service exists at `lineup-generator-dev-backend.onrender.com` and returned HTTP 200 from `/ping`; the old deletion record is preserved here because it was true for the superseded service, not because DEV is local-only today.
 - ✅ **GitHub branch protection on `main`** — enabled April 27, 2026. Status checks required, admin bypass disabled, force pushes blocked. Prevents the "merge with failing CI" pattern that almost shipped during v2.5.1 deploy.
 - ✅ **UptimeRobot push notification alerting** — added April 27, 2026 after a 2-day production outage went unnoticed on email-only alerts. Mobile app installed, push contact attached to monitor #802733786.
 - ✅ **Render free-tier hosting trap documented** — `CLAUDE.md ## Key Infrastructure` now has a "Free-tier hosting trap (LESSON LEARNED)" subsection. Triggered by April 25-27 outage when UptimeRobot 5-min pings × two free-tier services × 24/7 keep-alive exceeded 750h/month cap.

@@ -1,5 +1,11 @@
 # UX Architecture Refactor — Canonical Roadmap
 
+> **Production reconciliation — 2026-08-30:** production v3.1.0 uses React
+> 19.2.8 and Vite 8.2.1. Phase 1-3 work and legacy color retirement have
+> promoted. “Pending PR” and “pending next promotion” phrases in the dated
+> Done-So-Far ledger describe their original checkpoint, not current deployment
+> status. Current execution must re-check source and open issues.
+
 **Branch:** `develop` (working trunk; per-phase feature branches off develop)
 **Worktree:** a second git worktree of this repo, conventionally named
 `lineup-generator-ux` as a directory (the branch checked out inside it can
@@ -183,9 +189,10 @@ split — that's `docs/product/APPJSX_DECOMPOSITION_PLAN.md`'s separate,
 already-tracked initiative; Phase 6 documents the primitives App.jsx
 *consumes*, not App.jsx itself.
 
-**Tooling recommendation:** `@storybook/react-vite` — this repo is
-already on Vite 6.4 + React 18, which is Storybook 8's primary supported
-target; no separate bundler config needed. No `.storybook/` directory
+**Tooling recommendation:** `@storybook/react-vite` — the repo was on Vite
+6.4 + React 18 when this option was assessed. Production now uses Vite 8.2.1
++ React 19.2.8, so Storybook compatibility must be re-checked before selecting
+a target; no separate bundler config should be assumed. No `.storybook/` directory
 exists yet (checked 2026-08-17) — this would be a from-scratch add, not a
 partial setup to resume. Lighter alternative worth a look before
 committing: Ladle (`@ladle/react`) — same MDX-free story-file model,

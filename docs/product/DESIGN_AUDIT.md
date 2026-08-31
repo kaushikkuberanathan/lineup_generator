@@ -1,5 +1,7 @@
 # Design Audit — Dugout Lineup
 
+> **Historical snapshot.** Preserve as the 2026-04-30 design-token audit record; current execution status lives in `UX_REFACTOR_ROADMAP.md`.
+
 **Branch:** `feature/design-tokens`
 **Audit date:** 2026-04-30
 **Auditor:** Claude Code (claude-sonnet-4-6) — recon-driven, values sourced from live codebase scan

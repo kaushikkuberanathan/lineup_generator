@@ -1,5 +1,7 @@
 # Handoff — 2026-08-08, T1 → next session (T2 or future T1)
 
+> **Archived handoff.** All branch, SHA, promotion, and “open now” statements are point-in-time evidence, not current instructions; use `ROADMAP.md` for current status.
+
 Read this before starting UX-track or Dugout-track work. Full detail lives in
 `docs/process/SESSION_RETROSPECTIVES.md`'s `2026-08-07-B` entry — this is the
 condensed, actionable version.

@@ -1,5 +1,12 @@
 # Auth / Security / Audit Roadmap
 
+> **Production reconciliation — 2026-08-30:** production is v3.1.0 through
+> PR #959 (`02abfc0`). Phase 4C Section A is live and the frontend auth shims
+> are removed, but the permissive scoring policies tracked by #355 remain a
+> production risk pending the coordinated Section B/grant cutover. Migration
+> 032 and its post-v3.1 permission hardening exist on `develop` only and must
+> not be described as production until a later promotion.
+
 **Status:** v1.2
 **Owner:** Kaushik
 **Last Updated:** 2026-08-25 (WS-2 row now references PR #822, open against #337 — see inline note; prior update 2026-08-08 was the role-model table, scoring-capability section, and WS-1 known-gaps for Story 124/#655; before that, 2026-08-04 was the role-model + WS-3 correction, Doc Audit Spike Story 2)

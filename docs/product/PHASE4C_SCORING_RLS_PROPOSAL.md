@@ -1,9 +1,15 @@
 # Phase 4C Auth Cutover — Live Scoring RLS Design Proposal
 
-**Status: PROPOSAL, Section A fully applied (DEV + PROD), Section B not started.** Written per
-KK's explicit instruction (overnight handoff, 2026-08-06): recon + design only, no code
-changes, no SQL executed against any database — that constraint held for this doc's own
-drafting session. Section A of the drafted migration
+> **Current-state boundary — 2026-08-30:** production v3.1.0 includes Section
+> A and the shim-removal work, but not Section B. The permissive scoring
+> policies remain in production and #355 stays open. Migration 032 is later
+> `develop`-only defense-in-depth work; it does not complete or replace this
+> proposal's coordinated scoring cutover.
+
+**Status: PROPOSAL, Section A fully applied (DEV + PROD), Steps 1-2 of §3 complete, Section B not started.**
+Written per KK's explicit instruction (overnight handoff, 2026-08-06): recon + design only,
+no code changes, no SQL executed against any database — that constraint held for this doc's
+own drafting session. Section A of the drafted migration
 (`backend/migrations/019_scoring_auth_uid_rls.sql`) **was applied to DEV**
 (`psqvzppphdedqkpmarwx`) on **2026-08-15T23:08:27Z**, per KK go-ahead, Section A scope
 only — confirmed via direct DEV policy query and the raw Postgres log of the applying
@@ -11,11 +17,23 @@ statement. **Section A was also applied to PROD (`hzaajccyurlyeweekvma`) on 2026
 per KK's explicit go-ahead — confirmed via a direct `pg_policies` query both before (baseline
 matched this doc's §1.3 table exactly, no drift) and after (all 11 new policies present,
 all original policies untouched) and a clean Supabase security-advisor re-run. **Step 1
-of §3's sequence is now complete on both environments.** Section B (dropping the old
-permissive policies, on either database) has still not run anywhere — it remains gated on
-step 2 (frontend shim flip, needs the `game-mode/*` gate phrase) and step 3 (a full prod
-game-day soak, which by nature cannot be completed in a single session — it requires real
-coaches scoring real games over real elapsed time).
+of §3's sequence is now complete on both environments.**
+
+**Correction, 2026-08-30: this doc's "step 2 not granted tonight" framing below was already
+stale the day it was written.** Step 2 (the frontend shim flip) shipped the same day as this
+doc's own last edit — PR [#899](https://github.com/kaushikkuberanathan/lineup_generator/pull/899)
+(`fix/355-shim-removal-step2`, commit `fea1872`, 2026-08-29T00:44:30Z, merged via `bf097f0` into
+v3.0.0) removed `useLiveScoring.js`'s `_effectiveUserId`/`_effectiveUserName` fallback and
+`DugoutView.jsx`'s `isEnabled = liveScoringEnabled || true` / `scoringUserId` localStorage/zero-UUID
+chain, exactly as this doc's §3 step 2 specifies. Verified directly against current code
+(2026-08-30): `useLiveScoring.js` takes `params.userId`/`params.userName` with no fallback;
+`DugoutView.jsx` has `isEnabled = liveScoringEnabled` and `scoringUserId` resolves only through
+`user.id` → `session.user.id` → `null` (no shim). `isAdminTestMode` is hardcoded `false` but the
+variable itself has not yet been deleted — step 7 remains open. **Step 2 of §3 is complete on
+`develop`/`main` both.** Section B (dropping the old permissive policies, on either database) has
+still not run anywhere — it remains gated on step 3 only now (a full prod game-day soak, which by
+nature cannot be completed in a single session — it requires real coaches scoring real games over
+real elapsed time).
 
 **Both open design decisions confirmed by KK (2026-08-07):** (1) `scorekeeper` stays in
 the write-scoping — a non-admin/non-coach scorekeeper is an intended near-term user; (2)
@@ -143,15 +161,15 @@ if it's done out of turn — see also §5 for the consolidated worst-case list.
    old wide-open policies still gate every write more permissively than the new ones.
    **DEV: done, 2026-08-15T23:08:27Z. PROD: done, 2026-08-29** (see the status note at
    the top of this doc). **Step 1 complete on both environments.**
-2. **Flip the frontend shim** (needs the `game-mode/*` gate phrase — not granted
-   tonight): remove `useLiveScoring.js`'s `_effectiveUserId`/`_effectiveUserName`
-   fallback, restore direct `userId`/`userName` param use; in `DugoutView.jsx`, change
-   `isEnabled = liveScoringEnabled || true` → `= liveScoringEnabled`, and replace the
+2. **Flip the frontend shim.** ✅ **Done — PR [#899](https://github.com/kaushikkuberanathan/lineup_generator/pull/899),
+   merged 2026-08-29 (v3.0.0).** Removed `useLiveScoring.js`'s `_effectiveUserId`/`_effectiveUserName`
+   fallback, restored direct `userId`/`userName` param use; in `DugoutView.jsx`, changed
+   `isEnabled = liveScoringEnabled || true` → `= liveScoringEnabled`, and replaced the
    `scoringUserId`/`_storedLocalId` fallback chain with the real authenticated
-   `user.id`/`session.user.id` only (no `localStorage` fallback, no zero-UUID). Safe to
-   deploy at this point *because Section B hasn't run yet* — if anything about the real-
-   identity path is subtly wrong, the old permissive policies still let writes through
-   while it's diagnosed.
+   `user.id`/`session.user.id` only (no `localStorage` fallback, no zero-UUID) — verified
+   directly against current code 2026-08-30. This was safe to deploy ahead of Section B
+   *because Section B hasn't run yet* — if anything about the real-identity path were subtly
+   wrong, the old permissive policies still let writes through while it was diagnosed.
 3. **Soak in prod** for at least one full real game-day cycle with real authenticated
    coaches: scorer claim, heartbeat, pitch recording, hand-off, finish-game. Confirm via
    `scoring_audit_log` that `actor_user_id` values are now real `auth.users` UUIDs
@@ -198,9 +216,9 @@ if it's done out of turn — see also §5 for the consolidated worst-case list.
 
 | File / path | Locked? | What changes |
 |---|---|---|
-| `frontend/src/components/game-mode/DugoutView.jsx` | **Yes** — `game-mode/*` gate phrase | Shim flip (step 2), `isAdminTestMode` removal (step 7) |
-| `frontend/src/components/ScoringMode/*` | **Yes** — `ScoringMode/*` gate phrase | Likely none directly (the shim lives in the hook + DugoutView), but any of the 7 children reading `scoringUserId`/`isAdminTestMode` as a prop would need re-verifying once the identity source changes upstream — not confirmed here, flag for whoever does step 2 |
-| `frontend/src/hooks/useLiveScoring.js` | **Not** on the literal Locked Files list, but tightly coupled to `game-mode/*` — treat it as requiring the same care/gate discipline in practice | Shim removal (step 2) |
+| `frontend/src/components/game-mode/DugoutView.jsx` | **Yes** — `game-mode/*` gate phrase | ~~Shim flip (step 2)~~ done, PR #899. `isAdminTestMode` removal (step 7) still open |
+| `frontend/src/components/ScoringMode/*` | **Yes** — `ScoringMode/*` gate phrase | Step 2 shipped without touching these 7 children (PR #899's diff was scoped to the hook + DugoutView only) — the re-verification this row originally flagged was not done and remains open if step 7 (`isAdminTestMode` removal) touches any of their props |
+| `frontend/src/hooks/useLiveScoring.js` | **Not** on the literal Locked Files list, but tightly coupled to `game-mode/*` — treat it as requiring the same care/gate discipline in practice | ~~Shim removal (step 2)~~ done, PR #899 |
 | `backend/migrations/019_scoring_auth_uid_rls.sql` (this proposal's draft) | Not locked | Section A apply (step 1), Section B apply (step 4) |
 | `backend/src/__tests__/rls/policies.test.js` | Not locked | Un-skip LS1-LS7 (step 5) |
 | `docs/ops/PHASE4C_CUTOVER.md` | Not locked | Needs a correction pass regardless of this proposal's fate — its step 2 file path is stale (§1.1) |
@@ -214,13 +232,15 @@ only `game-mode/*` and possibly `ScoringMode/*`.
 
 ## 5. What could go wrong — failure modes specific to a live game-day transition window
 
-- **Section B before step 2/3 (the worst case)**: every coach's live scoring write is
-  RLS-denied instantly, mid-game, for every team, simultaneously — the shimmed frontend
-  isn't sending a real authenticated identity yet, so nothing satisfies the new
-  `auth.uid()`-scoped policies once the old permissive ones are gone. No graceful
-  degradation exists for this — `isRlsError()` in `useLiveScoring.js` currently treats a
-  `42501` as "your scorer lock expired," which would be actively misleading here (the
-  real cause would be "the backend cutover shipped out of order," not an expired lock).
+- **Section B before step 3's soak is clean (the worst case, now that step 2 has shipped)**:
+  if a real bug in the now-live real-identity path (step 2) is still silently failing for
+  some coaches — a null `userId` for a not-fully-hydrated session, say — Section B would turn
+  that into an instant, simultaneous RLS-denial for every affected coach mid-game, since
+  nothing would satisfy the new `auth.uid()`-scoped policies once the old permissive ones are
+  gone. No graceful degradation exists for this — `isRlsError()` in `useLiveScoring.js`
+  currently treats a `42501` as "your scorer lock expired," which would be actively
+  misleading here (the real cause would be "the backend cutover shipped out of order," not
+  an expired lock). This is exactly what step 3's soak exists to catch before Section B runs.
 - **Step 6 before step 4's soak is clean**: if any lingering shim-era write pattern still
   reaches these tables with a fabricated identity, the `TEXT`→`uuid` cast fails the
   whole `ALTER COLUMN` outright (a hard schema-migration failure, not a silent one — the

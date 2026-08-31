@@ -1,5 +1,7 @@
 # Story 133 slices 5-13 — sandbox branch handoff
 
+> **Archived sandbox handoff.** Commands, branch names, counts, and pending steps are point-in-time evidence, not the current execution plan.
+
 You are executing one slice of Story 133 (umbrella [#698](https://github.com/kaushikkuberanathan/lineup_generator/issues/698)) — migrating `frontend/src/components/game-mode/*` and `frontend/src/components/ScoringMode/*` off literal hex/rgba colors onto `tokens.js`. Slices 1-4 are already merged to `develop` (72/384 occurrences). You are working on one of slices 5-13 (312 occurrences remaining), told to you in your task prompt.
 
 ## THE ONE RULE THAT OVERRIDES EVERYTHING ELSE

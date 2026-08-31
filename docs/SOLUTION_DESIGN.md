@@ -2,7 +2,12 @@
 
 > Technical architecture, system design, data models, scoring engine, API contracts, and deployment details.
 >
-> For product overview, user stories, and the vibe coding story — see the **[README](../../README.md)**.
+> For product overview, user stories, and the vibe coding story — see the **[README](../README.md)**.
+>
+> **Production baseline:** v3.1.0, promoted through PR #959 (`main` merge
+> `02abfc0`). Runtime versions and live-service facts below were reconciled on
+> 2026-08-30 against `main`, package manifests, route/schema source, and the
+> production `/health` endpoint. Later `develop` commits are called out explicitly.
 
 ---
 
@@ -28,8 +33,8 @@
 
 A two-tier Progressive Web App:
 
-- **Frontend** — React 18 + Vite 5, deployed on Vercel
-- **Backend** — Node.js / Express, deployed on Render (free tier)
+- **Frontend** — React 19.2.8 + Vite 8.2.1, deployed on Vercel
+- **Backend** — Node.js / Express 5.2.1, deployed on Render Starter
 - **Database** — Supabase (Postgres + JSONB)
 - **AI** — Anthropic Claude API (proxied through backend)
 - **Offline layer** — localStorage as cache; Supabase as source of truth
@@ -69,8 +74,8 @@ A two-tier Progressive Web App:
 ### Why This Split
 
 - Constraint scoring and AI calls live server-side to keep API keys out of the browser
-- Supabase handles persistence and will support auth + realtime in Phase 3 without infrastructure changes
-- Render free tier is sufficient for current load; cold-start risk mitigated by UptimeRobot keep-alive
+- Supabase handles production persistence and authentication today; realtime remains optional future infrastructure
+- Render Starter avoids free-tier suspension/spin-down risk; UptimeRobot polls `/ping` every 5 minutes for availability alerting
 
 ---
 
@@ -113,7 +118,7 @@ teams (
   year        int,
   sport       text,           -- 'baseball' | 'softball'
   season      text,           -- 'Spring' | 'Fall', paired with `year` (v2.11.0, migration 022/023 — see backend/CLAUDE.md § Migration Notes for PROD rollout phase)
-  owner_id    uuid,           -- reserved for Phase 3 auth
+  owner_id    uuid,           -- legacy ownership field; authorization uses memberships + RLS
   created_at  timestamptz
 )
 
@@ -143,6 +148,14 @@ roster_snapshots (id, team_id, team_name, roster, player_count,
 -- Views: roster_snapshots_latest
 -- trigger_event: 'auto_save' | 'app_load' | 'pre_migration' | 'manual_export'
 ```
+
+The snippet above explains the team-data core; it is not the complete production
+schema. Production v3.1.0 also includes `team_data_history`, `profiles`,
+`team_memberships`, `access_requests`, `auth_events`, `feedback`, `share_links`,
+`feature_flags`, `at_bats`, `live_game_state`, `game_scoring_sessions`,
+`scoring_audit_log`, and `legal_consents`. Column types, constraints, grants,
+policies, functions, triggers, and views belong in `docs/db/schema.sql`; do not
+reconstruct security decisions from this abbreviated architecture diagram.
 
 ---
 
@@ -239,7 +252,12 @@ First-name-only display is enforced in all views — diamond, grid, print, and s
 
 ## API Design
 
-The backend is a thin proxy. Business logic lives in the frontend scoring engine for now; the backend handles API key security and CORS.
+The backend is an authenticated application API as well as an AI proxy. The lineup
+solver remains client-side for instant/offline use, while Express owns token
+verification, profile and membership workflows, access requests, consent logging,
+feedback, team-data writes, administrative mutations, feature flags, rate limits,
+environment guards, operational health, and the Claude proxy. Supabase RLS remains
+the database authorization backstop; service-role operations stay server-side.
 
 ### `POST /api/ai`
 
@@ -262,7 +280,8 @@ Proxies requests to the Anthropic Claude API. Used for:
 ### `GET /ping`
 
 Keep-alive endpoint. Returns `{ "status": "ok" }`.
-Polled by UptimeRobot every 5 minutes to prevent Render free-tier cold starts.
+Polled by UptimeRobot every 5 minutes for availability monitoring. Production is
+on Render Starter and does not depend on keep-alive traffic to avoid free-tier sleep.
 
 ### `GET /health`
 
@@ -271,7 +290,7 @@ Returns server version and uptime. Used for deploy verification.
 ```json
 {
   "status": "healthy",
-  "version": "2.2.38",
+  "version": "3.1.0",
   "uptime": 3820,
   "db": "ok",
   "db_latency_ms": 12
@@ -503,7 +522,8 @@ All remaining steps scoped to Phase 4C, tracked in `docs/ops/PHASE4C_CUTOVER.md`
 
 ### Terms of Service Consent (registration gate)
 
-**Added 2026-08-29**, documenting PRs #907/#910/#913 (`develop`-only as of this writing, not yet promoted or version-bumped) — by a session other than the one that authored the feature, from reading the code directly.
+**Added 2026-08-29 and promotion status reconciled 2026-08-30.** PRs
+#907/#910/#913 are live in production v3.1.0 through PR #959.
 
 The registration screen (`RequestAccessScreen.jsx`) gates `POST /request-access` submission on a required "I agree to the Terms of Service and Privacy Policy" checkbox. Two independent concerns, kept deliberately separate:
 
@@ -520,8 +540,8 @@ The registration screen (`RequestAccessScreen.jsx`) gates `POST /request-access`
 
 | Layer | Technology |
 |---|---|
-| Framework | React 18 (functional components + hooks) |
-| Build | Vite 5 |
+| Framework | React 19.2.8 (functional components + hooks; one supported error-boundary class) |
+| Build | Vite 8.2.1 |
 | Styling | Inline styles only — no Tailwind, no CSS modules. Design tokens defined in `theme/tokens.js` as plain JS constants; consumed via inline `style={{}}` references across components. Hex literals used at call sites until full token migration is complete. |
 | PDF | jsPDF (loaded on demand, not bundled) |
 | Analytics | Vercel Analytics + Mixpanel |
@@ -687,13 +707,14 @@ Consumer pattern: import the primitive, control its visibility via `isOpen` from
 - `frontend/vercel.json` handles build config
 - Env vars: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
 
-### Backend — Render (Free Tier)
+### Backend — Render (Starter)
 
 - Node.js web service, root directory: `backend/`
 - Auto-deploys on push to `main`
-- Spins down after 15 minutes of inactivity
-- Env vars: `ANTHROPIC_API_KEY`
-- **Cold-start mitigation:** UptimeRobot pings `/ping` every 5 minutes
+- Runs on the Starter plan with no free-tier spin-down
+- Core env vars include Supabase URL/service-role credentials, Anthropic key,
+  admin and approve-link secrets, mail configuration, application URLs, and port
+- **Availability monitoring:** UptimeRobot pings `/ping` every 5 minutes
 
 **UptimeRobot setup:**
 1. Create free account at [uptimerobot.com](https://uptimerobot.com)
@@ -703,8 +724,10 @@ Consumer pattern: import the primitive, control its visibility via `isOpen` from
 
 ### Database — Supabase
 
-- Run schema SQL from `SUPABASE-IMPLEMENTATION.md` in the Supabase SQL Editor
-- Anon key used for client access (RLS policies will gate this in Phase 3 auth)
+- Migration/application history is ledgered in `backend/migrations/README.md`;
+  `docs/db/schema.sql` is the executable production-schema reference
+- The publishable client key is constrained by RLS and grants; authenticated
+  sessions carry the user's JWT, while service-role operations stay in Express
 
 ### Deploy Checklist
 
@@ -1072,8 +1095,8 @@ Validates reachability and schema health:
 ### Dev Environment
 
 - Frontend: `dev.dugoutlineup.com` → Vercel preview deploy
-- Backend: `lineup-generator-backend-dev.onrender.com` (Render free tier)
-- Wait-for-Render race fix: 90s sleep + `/ping` polling before smoke tests run (added v2.2.12 — Render free-tier cold-start takes up to 60s)
+- Backend: `lineup-generator-dev-backend.onrender.com` (verified `/ping` HTTP 200 on 2026-08-30); local development remains supported
+- CI smoke tests poll the configured target's `/ping` endpoint rather than assuming a fixed startup delay
 
 ### Deployment Gate
 
@@ -1122,9 +1145,9 @@ See `docs/analytics/ANALYTICS.md` for the complete list of 32+ Mixpanel events a
 
 | Decision | Current Rationale | When to Revisit |
 |---|---|---|
-| All logic in `App.jsx` (~9,834 lines) | Single-file build simplified early iteration | Before Phase 3 auth ships — file split is P3 backlog, will reduce feature velocity by ~40% if not done first |
-| No auth in MVP | Single-coach, single-device scope; share link is read-only | Phase 2 auth cutover — Supabase email magic-link + Google OAuth, pending 2–3 pilot users |
-| Render free tier | Zero cost for personal tool | Upgrade if cold-start latency becomes user-facing despite UptimeRobot |
+| Large application shell remains in `App.jsx` (~7,770 lines at v3.1.0) | Incremental extraction preserves behavior while moving bounded surfaces into tested modules | Continue the decomposition plan by stable ownership boundary; do not tie it to the already-shipped auth cutover |
+| Authenticated editing with unauthenticated viewing | Email magic link + Google OAuth protect edits while lineup/share viewing remains account-free | Revisit only if product roles or sharing semantics change; never gate read-only Game Day/share links |
+| Render Starter | Predictable production availability without free-tier sleep or monthly-hour exhaustion | Continue uptime and latency monitoring; scale only from measured demand |
 | JSONB for all team data | Mirrors localStorage, zero transformation overhead | Normalize if query patterns require filtering inside game/player arrays |
 | Backtracking solver in frontend | Fast enough at 11-player / 6-inning scale | Move server-side if multi-game batch generation or 20+ player rosters are added |
 | No TypeScript | Moved fast in MVP phase | Increasing tech debt — migration is a Phase 4 quality item |

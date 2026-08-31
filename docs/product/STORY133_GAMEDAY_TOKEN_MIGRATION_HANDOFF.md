@@ -1,5 +1,7 @@
 # Story 133 — Live Game-Day Surface Token Migration — Handoff
 
+> **Archived handoff.** Preserve as Story 133 execution evidence; current Game Day status and required real-device validation remain tracked in `ROADMAP.md`/#698.
+
 **MIGRATION COMPLETE as of 2026-08-23 — all 13 slices merged to `develop`
 (PR #764).** This doc's per-slice workflow (§3 below) was followed exactly
 for slices 1-4; slices 5-13 diverged from it deliberately — see

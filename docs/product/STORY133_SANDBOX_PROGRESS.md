@@ -1,5 +1,7 @@
 # Story 133 slices 5-13 — sandbox progress log
 
+> **Historical progress log.** Preserve its checkpoints and test evidence; use current source and `ROADMAP.md` for live status.
+
 Companion doc to `docs/product/STORY133_SANDBOX_HANDOFF.md`. One checkpoint
 section per merged slice, appended in order. Same evidentiary bar as the
 real slice 3/4 checkpoints on `develop` — computed values quoted exactly,

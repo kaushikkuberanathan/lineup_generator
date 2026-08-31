@@ -1,5 +1,7 @@
 # Phase 4a/4b Execution Log — Region Slices Remaining
 
+> **Historical execution log.** Preserve decisions and SHAs as recorded; current architecture and backlog status live in `SOLUTION_DESIGN.md` and `ROADMAP.md`.
+
 > Companion to `docs/product/CLAUDE_HANDOFF_2026-08-05.md`. Every autonomous decision made during this run, in order. Hard-stop items (main merges, slice 8, security/data-integrity findings) are called out explicitly.
 
 ---

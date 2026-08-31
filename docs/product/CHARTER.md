@@ -1,6 +1,6 @@
 # Dugout Lineup — Product Charter
 
-> Version 1.3 — 2026-08-23 — App v2.12.0 in production
+> Version 1.4 — 2026-08-30 — App v3.1.0 in production
 > Owner: KK (Product + Engineering)
 
 ---
@@ -217,7 +217,7 @@ Success metric: fix any data problem using admin.html or Supabase SQL Editor wit
 
 | Layer | Technology | Host |
 |-------|-----------|------|
-| Frontend | React 18 + Vite, mobile-first PWA | Vercel (auto-deploy from main) |
+| Frontend | React 19.2.8 + Vite 8.2.1, mobile-first PWA | Vercel (auto-deploy from main) |
 | Backend | Node.js / Express | Render (Starter plan $7/mo, no spin-down) |
 | Database | Supabase (Postgres + JSONB) | Supabase cloud |
 | AI proxy | Claude API (`claude-sonnet-4-6`) | Via backend `/api/ai` route |
