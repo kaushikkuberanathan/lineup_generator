@@ -1,5 +1,11 @@
 # Security Framework — Dugout Lineup
 
+> **Production reconciliation — 2026-08-30:** production is v3.1.0 through
+> PR #959 (`02abfc0`). Treat the detailed framework below as a control backlog,
+> not proof that every checked item is deployed. Section A and auth-shim removal
+> are live; #355's permissive scoring policies remain live; migration 032 and
+> its permission hardening are post-v3.1 `develop` work only.
+
 **Status:** Draft v1.0
 **Owner:** Kaushik
 **Last Updated:** 2026-08-25 (Status Tracker corrected against actual shipped state — see notes inline; prior update 2026-07-13 added the #0 threat-model entry and the Phase 4 row, but never re-verified the Phase 0/1 checkboxes against what had actually shipped by then)

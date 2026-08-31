@@ -1,5 +1,7 @@
 # Release Audit — develop since v2.8.3 (2026-08-04)
 
+> **Historical release audit.** This is evidence for the v2.8.3-era boundary only; current production is v3.1.0 and is documented in `ROADMAP.md`.
+
 > Produced for the go/no-go gate ahead of the next develop → main promote. Every claim below is sourced from a live `git log`/GitHub API check run today, not from memory of earlier session summaries.
 
 ## 1. Scope of this audit

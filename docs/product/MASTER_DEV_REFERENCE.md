@@ -1,5 +1,11 @@
 # Lineup Generator — Master Development & Deployment Reference
 
+> **Production reconciliation — 2026-08-30:** production is v3.1.0 through
+> PR #959 (`02abfc0`), using React 19.2.8, Vite 8.2.1, Express 5.2.1,
+> Vercel, Render Starter, and Supabase. The DEV Render service is
+> `lineup-generator-dev-backend.onrender.com`; post-v3.1 migration 032 is
+> `develop`-only.
+
 > **Last Updated:** 2026-08-04 (Doc Audit Spike Story 8 — label count + taxonomy + stale cross-reference fixes; substantive content last revised 2026-06-12, RED→GREEN test-first workflow). The header previously said "April 27, 2026" — provably false by this file's own git history even before today's pass; don't trust a header claim over `git log -- <file>`.
 
 ## Core Principles (Non-Negotiable)

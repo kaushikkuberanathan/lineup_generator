@@ -1,5 +1,7 @@
 # Accessibility Audit — Non-Game-Mode Surfaces
 
+> **Historical snapshot.** Preserve as 2026-05-01 audit evidence; verify current findings against source and `UX_REFACTOR_ROADMAP.md` before acting.
+
 **Date:** 2026-05-01
 **Branch:** `feature/design-tokens`
 **Auditor:** Claude Code (recon-driven, values sourced from live codebase scan)

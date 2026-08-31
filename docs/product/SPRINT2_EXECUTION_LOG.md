@@ -1,5 +1,7 @@
 # Sprint 2 Execution Log (Items 6-10 continuation)
 
+> **Historical execution log.** Preserve the dated test counts and decisions; consult `DOC_TEST_DEBT.md` and live source for current status.
+
 > Created at the start of Phase 2 (autonomous execution) of the Sprint 2 P1 debt closure continuation. Records every mid-run decision point per the handoff's standing rule: "make the most reasonable, lowest-risk decision, log it, keep moving." Sorted by item number.
 
 ## Phase 1 recon findings (for reference)

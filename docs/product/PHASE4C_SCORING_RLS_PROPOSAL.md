@@ -1,5 +1,11 @@
 # Phase 4C Auth Cutover — Live Scoring RLS Design Proposal
 
+> **Current-state boundary — 2026-08-30:** production v3.1.0 includes Section
+> A and the shim-removal work, but not Section B. The permissive scoring
+> policies remain in production and #355 stays open. Migration 032 is later
+> `develop`-only defense-in-depth work; it does not complete or replace this
+> proposal's coordinated scoring cutover.
+
 **Status: PROPOSAL, Section A fully applied (DEV + PROD), Section B not started.** Written per
 KK's explicit instruction (overnight handoff, 2026-08-06): recon + design only, no code
 changes, no SQL executed against any database — that constraint held for this doc's own

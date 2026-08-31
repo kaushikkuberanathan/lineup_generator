@@ -1,5 +1,9 @@
 # Dugout Lineup — Feature Map
 
+> **Production reconciliation — 2026-08-30:** v3.1.0 promoted through PR #959.
+> The Terms of Service/consent row is production, not develop-only. Test-file
+> additions after `02abfc0` remain develop-only until a later promotion.
+
 > Authoritative mapping of every shipped feature to its documentation and test coverage.
 > Update this file whenever a feature ships, changes behavior, or gains new tests.
 > Owner: KK | Last updated: 2026-08-27 (#114 — full row-numbering audit: the `#`
@@ -84,7 +88,7 @@
 | ⚠ Tests Partial | 16 / 41 |
 | ❌ No Tests | 8 / 41 |
 
-> **Recounted 2026-08-29** (row 41 added, Terms of Service experience — #907/#910/#913, `develop`-only, not yet promoted). Direct recount of every row's Doc/Test Status columns immediately before this edit matched the prior table exactly (36/4/0 Doc; 16/16/8 Test, the second axis's row-11 typo already fixed earlier the same day — see that row's own history). Net change: denominator 40→41, Doc Current 36→37, Tests Exist 16→17; all other categories unchanged.
+> **Recounted 2026-08-29** (row 41 added, Terms of Service experience — #907/#910/#913; promoted in v3.1.0 through PR #959 on 2026-08-30). Direct recount of every row's Doc/Test Status columns immediately before this edit matched the prior table exactly (36/4/0 Doc; 16/16/8 Test, the second axis's row-11 typo already fixed earlier the same day — see that row's own history). Net change: denominator 40→41, Doc Current 36→37, Tests Exist 16→17; all other categories unchanged.
 >
 > **Recounted 2026-08-27** (row 19 closure, #112/#120): row 19's Test Status moved `⚠ Partial` → `✅ Yes` (D-S30 actually closed — see that row's Debt column). A full column-scoped direct tally of all 40 rows, done before this edit per this file's own standing practice, found the *prior* table (35/5/0 Doc; 14/15/11 Test) itself didn't match the table's actual contents even before today's row 19 change — real counts were 36 Doc Current/4 Doc Stale (not 35/5) and, pre-row-19-edit, 15 Tests Exist/17 Tests Partial/8 No Tests (not 14/15/11). Root cause not chased further (same recurring "summary silently diverges from content" failure class this file has hit before, e.g. the 2026-08-19 denominator-drift entry below). Corrected to the real, current, post-edit values: Doc axis unchanged by row 19 (its Doc Status was already `✅ Current`) at 36/4/0; Test axis 15→16 Tests Exist (row 19's flip) plus the pre-existing 17→16 Partial correction, No Tests corrected 11→8.
 >
