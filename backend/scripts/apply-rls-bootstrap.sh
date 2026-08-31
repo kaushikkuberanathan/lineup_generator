@@ -99,6 +99,9 @@ FILES=(
   "backend/migrations/029_restrict_rls_test_grants_helper.sql"
   "backend/migrations/030_reassert_teams_delete_revocation.sql"
   "backend/migrations/032_harden_database_permissions.sql"
+  "backend/migrations/019_scoring_auth_uid_rls.sql"
+  "backend/migrations/033_scoring_rls_lockdown_section_b.sql"
+  "backend/migrations/031_scoring_grant_revocation.sql"
 )
 # 018 (#561, applied to DEV 2026-08-06 and PROD 2026-08-07 — included here
 # so the ephemeral CI stack validates it too) — its own regression suite is
@@ -134,8 +137,22 @@ FILES=(
 # 005-012 below. Replaying 027 afterward would just be a redundant
 # DROP+ADD of an already-correct constraint.
 #
-# 019 is deliberately NOT here — Phase 4C scoring RLS, drafted/unapplied, no
-# current test depends on it.
+# 019 + 033 + 031 (#355 fix, branch fix/355-scoring-rls-lockdown, NOT applied
+# to DEV or PROD, NOT merged to develop) — 019 applies Section A (already
+# live on real DBs; here for ephemeral-stack parity), 033 formalizes 019's
+# own commented-out Section B as a real runnable file (drops the four
+# *_anon_test backdoors + three allow_scorer_writes catch-alls that
+# docs/db/schema.sql's own CREATE POLICY statements reproduce "because they
+# are in prod, not because they are correct"), 031 revokes the underlying
+# table-level GRANTs to anon/authenticated once no policy needs them. Order
+# matters: 019 before 033 (Section A before Section B), 033 before 031 (drop
+# policies before trimming grants), matching each file's own header. This
+# is the ONLY place this fix is validated — the ephemeral scratch database
+# has no real coaches or live games, so it is safe to apply the full fix
+# here even though the same SQL must NOT run against DEV/PROD until
+# docs/product/PHASE4C_SCORING_RLS_PROPOSAL.md's step 3 (a real production
+# game-day soak) completes. backend/src/__tests__/rls/policies.test.js's
+# LS1-LS7 are un-skipped to assert this state.
 # 005, 006, 007, 008, 009, 011, 012 are deliberately NOT here — see WHY THIS
 # EXISTS above. schema.sql's 2026-07-13 capture already contains their effects.
 
