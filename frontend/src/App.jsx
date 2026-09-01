@@ -7302,105 +7302,150 @@ export default function App() {
     }).length;
 
     var TEAM_SUBTABS = [
-      { key:"roster",   label:"🧢 Roster"   },
-      { key:"schedule", label:"📅 Schedule" },
-      { key:"snacks",   label:"🍎 Snacks"   },
+      { key:"roster",   label:"Roster",   icon:"👥", value:roster.length + " players" },
+      { key:"schedule", label:"Schedule", icon:"📅", value:schedule.length + " games" },
+      { key:"snacks",   label:"Snacks",   icon:"🍎", value:(schedule.length - noSnacks) + " assigned" },
     ];
+
+    var nextGameDate = nextGame ? new Date(nextGame.date + "T12:00:00") : null;
+    var daysUntilNextGame = nextGameDate ? Math.round((nextGameDate - today) / 86400000) : null;
+    var gameDayReady = daysUntilNextGame !== null && daysUntilNextGame <= 2;
+    var nextGameLabel = daysUntilNextGame === 0 ? "Today"
+      : daysUntilNextGame === 1 ? "Tomorrow"
+      : nextGameDate ? nextGameDate.toLocaleDateString("en-US", { weekday:"long" })
+      : "";
+
+    function openTeamSection(section) {
+      setTeamSubTab(section);
+    }
+
+    function openNextGame() {
+      if (gameDayReady) {
+        setGameDayTab("lineups");
+        setPrimaryTab("gameday");
+      } else {
+        openTeamSection("schedule");
+      }
+    }
 
     return (
       <div style={{ paddingBottom:"80px" }}>
 
-        {/* ── Team dashboard header ──────────────────────────────── */}
-        <div style={{ background:tokens.color.surface.card, borderRadius:"12px", padding:"16px",
-          margin:"12px 12px 0", border:"1px solid " + tokens.color.border.neutral,
-          boxShadow:"0 1px 4px rgba(15,31,61,0.06)" }}>
-          <div style={{ fontWeight:"bold", fontSize:"18px", color:tokens.color.brand.navy, marginBottom:"2px" }}>
-            {activeTeam ? activeTeam.name : ""}
-          </div>
-          <div style={{ fontSize:"12px", color:tokens.color.text.muted, marginBottom:"12px" }}>
-            {activeTeam ? ((activeTeam.ageGroup || "") + (activeTeam.sport ? " \u00b7 " + (activeTeam.sport.charAt(0).toUpperCase() + activeTeam.sport.slice(1)) : "") + (activeTeam.season ? " \u00b7 " + formatSeason(activeTeam.season, activeTeam.year) : "")) : ""}
-          </div>
-
-          {/* Stats row */}
-          <div style={{ display:"flex", borderTop:"1px solid " + tokens.color.border.neutral, paddingTop:"12px", marginTop:"4px" }}>
-            <div style={{ flex:1, textAlign:"center" }}>
-              <div style={{ fontSize:"16px", marginBottom:"2px" }}>👥</div>
-              <div style={{ fontSize:"20px", fontWeight:"bold", color:tokens.color.brand.navy, lineHeight:1 }}>{roster.length}</div>
-              <div style={{ fontSize:"10px", color:tokens.color.text.muted, textTransform:"uppercase", letterSpacing:"0.05em", marginTop:"3px" }}>Players</div>
+        {/* ── Team identity ──────────────────────────────────────── */}
+        <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:"12px", margin:"14px 14px 10px" }}>
+          <div style={{ minWidth:0 }}>
+            <div style={{ fontFamily:"Georgia,serif", fontWeight:"bold", fontSize:"20px", color:tokens.color.brand.navy,
+              whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+              {activeTeam ? activeTeam.name : ""}
             </div>
-            <div style={{ flex:1, textAlign:"center", borderLeft:"1px solid " + tokens.color.border.neutral }}>
-              <div style={{ fontSize:"16px", marginBottom:"2px" }}>🏆</div>
-              <div style={{ fontSize:"20px", fontWeight:"bold", lineHeight:1 }}>
-                <span style={{ color:tokens.color.status.success }}>{wins}</span>
-                <span style={{ color:tokens.color.text.muted }}>–</span>
-                <span style={{ color:tokens.color.brand.red }}>{losses}</span>
-                {ties > 0 ? <><span style={{ color:tokens.color.text.muted }}>–</span><span style={{ color:tokens.color.status.warning }}>{ties}</span></> : null}
-              </div>
-              <div style={{ fontSize:"10px", color:tokens.color.text.muted, textTransform:"uppercase", letterSpacing:"0.05em", marginTop:"3px" }}>Record</div>
-            </div>
-            <div style={{ flex:1, textAlign:"center", borderLeft:"1px solid " + tokens.color.border.neutral }}>
-              <div style={{ fontSize:"16px", marginBottom:"2px" }}>📅</div>
-              {nextGame ? (
-                <>
-                  <div style={{ fontSize:"12px", fontWeight:"bold", color:tokens.color.brand.navy, lineHeight:1.2 }}>
-                    {new Date(nextGame.date + "T12:00:00").toLocaleDateString("en-US", { weekday:"short", month:"short", day:"numeric" })}
-                  </div>
-                  {nextGame.time ? <div style={{ fontSize:"11px", color:tokens.color.text.muted }}>{nextGame.time}</div> : null}
-                </>
-              ) : (
-                <div style={{ fontSize:"12px", color:tokens.color.text.muted, lineHeight:1.2 }}>–</div>
-              )}
-              <div style={{ fontSize:"10px", color:tokens.color.text.muted, textTransform:"uppercase", letterSpacing:"0.05em", marginTop:"3px" }}>Next Game</div>
+            <div style={{ fontSize:"12px", color:tokens.color.text.muted, marginTop:"3px" }}>
+              {activeTeam ? ((activeTeam.ageGroup || "") + (activeTeam.sport ? " \u00b7 " + (activeTeam.sport.charAt(0).toUpperCase() + activeTeam.sport.slice(1)) : "") + (activeTeam.season ? " \u00b7 " + formatSeason(activeTeam.season, activeTeam.year) : "")) : ""}
             </div>
           </div>
-
+          <div aria-label="Season record" style={{ flexShrink:0, textAlign:"right" }}>
+            <div style={{ fontSize:"16px", fontWeight:"bold", color:tokens.color.brand.navy }}>{wins}–{losses}{ties > 0 ? "–" + ties : ""}</div>
+            <div style={{ fontSize:"10px", color:tokens.color.text.muted, textTransform:"uppercase", letterSpacing:"0.06em" }}>Record</div>
+          </div>
         </div>
+
+        {/* ── Next game ──────────────────────────────────────────── */}
+        {nextGame ? (
+          <div style={{ background:tokens.color.brand.navy, color:tokens.color.text.onDark, borderRadius:"14px", padding:"16px",
+            margin:"0 12px", boxShadow:"0 4px 14px rgba(15,31,61,0.16)" }}>
+            <div style={{ color:tokens.color.brand.gold, fontSize:"10px", fontWeight:"bold", textTransform:"uppercase", letterSpacing:"0.08em" }}>
+              Next game · {nextGameLabel}
+            </div>
+            <div style={{ fontFamily:"Georgia,serif", fontWeight:"bold", fontSize:"21px", marginTop:"7px" }}>
+              {nextGame.opponent ? "vs. " + nextGame.opponent : "Upcoming game"}
+            </div>
+            <div style={{ fontSize:"12px", color:"rgba(255,255,255,0.78)", marginTop:"5px" }}>
+              {nextGameDate.toLocaleDateString("en-US", { month:"short", day:"numeric" })}
+              {nextGame.time ? " · " + nextGame.time : ""}
+              {nextGame.location ? " · " + nextGame.location : ""}
+              {typeof nextGame.home === "boolean" ? " · " + (nextGame.home ? "Home" : "Away") : ""}
+            </div>
+            <div style={{ display:"flex", gap:"8px", marginTop:"14px", flexWrap:"wrap" }}>
+              <button onClick={openNextGame} style={{ ...S.btn("primary"), background:tokens.color.brand.gold, color:tokens.color.brand.navy,
+                border:"none", minHeight:"42px", flex:"1 1 150px" }}>
+                {gameDayReady ? "Open Game Day" : "View game"}
+              </button>
+              <button onClick={function() { openTeamSection("schedule"); }} style={{ ...S.btn("ghost"), color:tokens.color.text.onDark,
+                border:"1px solid rgba(255,255,255,0.4)", minHeight:"42px", flex:"0 1 auto" }}>
+                Schedule
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button aria-label="Add upcoming game" onClick={function() { openTeamSection("schedule"); }} style={{ display:"block", width:"calc(100% - 24px)", margin:"0 12px",
+            padding:"15px", borderRadius:"12px", border:"1px dashed " + tokens.color.border.neutral, background:tokens.color.surface.card,
+            color:tokens.color.brand.navy, textAlign:"left", cursor:"pointer", fontFamily:"inherit" }}>
+            <span style={{ display:"block", fontWeight:"bold", fontSize:"14px" }}>No upcoming game</span>
+            <span style={{ display:"block", fontSize:"12px", color:tokens.color.text.muted, marginTop:"3px" }}>Open Schedule to add the next game →</span>
+          </button>
+        )}
 
         {/* ── Status warnings ────────────────────────────────────── */}
         {(missingPrefs > 0 || noSnacks > 0) ? (
-          <div style={{ margin:"8px 12px 0", padding:"12px 14px", borderRadius:"10px",
-            background:"rgba(245,200,66,0.12)", border:"1px solid rgba(245,200,66,0.4)" }}>
-            <div style={{ fontWeight:"bold", marginBottom:"8px", color:tokens.color.brand.navy, fontSize:"12px", display:"flex", alignItems:"center", gap:"6px" }}>
-              <span style={{ fontSize:"15px" }}>⚠️</span> Needs attention
+          <div style={{ margin:"10px 12px 0", padding:"14px", borderRadius:"12px", background:tokens.color.surface.card,
+            border:"1px solid " + tokens.color.border.neutral, boxShadow:"0 1px 4px rgba(15,31,61,0.05)" }}>
+            <div style={{ fontWeight:"bold", marginBottom:"4px", color:tokens.color.brand.navy, fontSize:"14px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:"6px" }}>
+              <span>Needs attention</span>
+              <span style={{ fontSize:"11px", fontWeight:"normal", color:tokens.color.text.muted }}>{(missingPrefs > 0 ? 1 : 0) + (noSnacks > 0 ? 1 : 0)} items</span>
             </div>
             {missingPrefs > 0 ? (
-              <div style={{ display:"flex", alignItems:"center", gap:"8px", marginBottom: noSnacks > 0 ? "6px" : 0,
-                background:"rgba(255,255,255,0.55)", borderRadius:"6px", padding:"8px 10px" }}>
+              <button onClick={function() { openTeamSection("roster"); }} style={{ display:"flex", width:"100%", alignItems:"center", gap:"10px",
+                border:"none", borderBottom:noSnacks > 0 ? "1px solid " + tokens.color.border.neutral : "none", background:"transparent",
+                padding:"12px 2px", textAlign:"left", cursor:"pointer", fontFamily:"inherit", color:"inherit" }}>
                 <span style={{ fontSize:"18px", flexShrink:0 }}>{(activeTeam && (activeTeam.sport || "baseball").toLowerCase() === "softball") ? "🥎" : "⚾"}</span>
-                <div>
-                  <div style={{ fontSize:"12px", fontWeight:"600", color:tokens.color.brand.navy }}>Missing position preferences</div>
-                  <div style={{ fontSize:"11px", color:tokens.color.text.muted }}>{missingPrefs} player{missingPrefs !== 1 ? "s" : ""} — set in Roster tab</div>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontSize:"13px", fontWeight:"600", color:tokens.color.brand.navy }}>{missingPrefs} player preference{missingPrefs !== 1 ? "s" : ""} missing</div>
+                  <div style={{ fontSize:"11px", color:tokens.color.text.muted, marginTop:"2px" }}>Improve automatic lineup assignments</div>
                 </div>
-              </div>
+                <span aria-hidden="true" style={{ color:tokens.color.text.muted, fontSize:"18px" }}>›</span>
+              </button>
             ) : null}
             {noSnacks > 0 ? (
-              <div style={{ display:"flex", alignItems:"center", gap:"8px",
-                background:"rgba(255,255,255,0.55)", borderRadius:"6px", padding:"8px 10px" }}>
+              <button onClick={function() { openTeamSection("snacks"); }} style={{ display:"flex", width:"100%", alignItems:"center", gap:"10px",
+                border:"none", background:"transparent", padding:"12px 2px", textAlign:"left", cursor:"pointer", fontFamily:"inherit", color:"inherit" }}>
                 <span style={{ fontSize:"18px", flexShrink:0 }}>🍎</span>
-                <div>
-                  <div style={{ fontSize:"12px", fontWeight:"600", color:tokens.color.brand.navy }}>Snacks unassigned</div>
-                  <div style={{ fontSize:"11px", color:tokens.color.text.muted }}>{noSnacks} upcoming game{noSnacks !== 1 ? "s" : ""} — assign in Snacks tab</div>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontSize:"13px", fontWeight:"600", color:tokens.color.brand.navy }}>Snacks needed for {noSnacks} game{noSnacks !== 1 ? "s" : ""}</div>
+                  <div style={{ fontSize:"11px", color:tokens.color.text.muted, marginTop:"2px" }}>Assign families before game day</div>
                 </div>
-              </div>
+                <span aria-hidden="true" style={{ color:tokens.color.text.muted, fontSize:"18px" }}>›</span>
+              </button>
             ) : null}
           </div>
         ) : null}
 
-        {/* ── Team subtab bar ────────────────────────────────────── */}
-        <div style={{ display:"flex", gap:"4px", padding:"12px 12px 0" }}>
+        {/* ── Team at a glance / section navigation ─────────────── */}
+        <div style={{ background:tokens.color.surface.card, borderRadius:"12px", padding:"14px", margin:"10px 12px 0",
+          border:"1px solid " + tokens.color.border.neutral, boxShadow:"0 1px 4px rgba(15,31,61,0.05)" }}>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:"8px", marginBottom:"10px" }}>
+            <div style={{ fontSize:"14px", fontWeight:"bold", color:tokens.color.brand.navy }}>Team at a glance</div>
+            <div style={{ fontSize:"11px", color:tokens.color.text.muted }}>{wins}–{losses}{ties > 0 ? "–" + ties : ""} record</div>
+          </div>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(3,minmax(0,1fr))", gap:"7px" }}>
           {TEAM_SUBTABS.map(function(st) {
+            var selected = teamSubTab === st.key;
             return (
               <button key={st.key}
                 onClick={function(k) { return function() { setTeamSubTab(k); }; }(st.key)}
-                style={subTabStyle(teamSubTab === st.key)}>
-                {st.label}
+                aria-pressed={selected}
+                style={{ minHeight:"78px", borderRadius:"9px", border:"1px solid " + (selected ? tokens.color.brand.navy : tokens.color.border.neutral),
+                  background:selected ? "rgba(15,31,61,0.06)" : tokens.color.surface.card, color:tokens.color.brand.navy,
+                  padding:"9px 4px", cursor:"pointer", fontFamily:"inherit", minWidth:0 }}>
+                <span aria-hidden="true" style={{ display:"block", fontSize:"18px" }}>{st.icon}</span>
+                <span style={{ display:"block", fontWeight:"bold", fontSize:"11px", marginTop:"5px" }}>{st.label}</span>
+                <span style={{ display:"block", fontSize:"10px", color:tokens.color.text.muted, marginTop:"2px", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{st.value}</span>
               </button>
             );
           })}
+          </div>
         </div>
 
         {/* ── Subtab content ─────────────────────────────────────── */}
-        <div style={{ marginTop:"4px" }}>
+        <div style={{ margin:"12px 12px 0" }}>
           {teamSubTab === "roster"   ? renderRoster()    : null}
           {teamSubTab === "schedule" ? renderSchedule()  : null}
           {teamSubTab === "snacks"   ? renderSnackDuty() : null}
