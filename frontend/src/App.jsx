@@ -1355,6 +1355,8 @@ export default function App() {
   var showAddForm = _showAddForm[0]; var setShowAddForm = _showAddForm[1];
   var _summaryOpen = useState(true);
   var summaryOpen = _summaryOpen[0]; var setSummaryOpen = _summaryOpen[1];
+  var _rosterDetailMode = useState(null);
+  var rosterDetailMode = _rosterDetailMode[0]; var setRosterDetailMode = _rosterDetailMode[1];
   var _drag = useState(null);
   var dragPlayer = _drag[0]; var setDragPlayer = _drag[1];
   // Touch drag uses a mutable ref (window object) instead of useState to avoid
@@ -3058,6 +3060,9 @@ export default function App() {
       var nameB = (b.firstName || b.name || '').toLowerCase();
       return nameA.localeCompare(nameB);
     });
+    var rosterDetailPlayers = rosterDetailMode === "all"
+      ? sortedRoster
+      : sortedRoster.filter(function(player) { return player.name === rosterDetailMode; });
 
     function toggle(arr, key) {
       var idx = arr.indexOf(key);
@@ -3116,7 +3121,21 @@ export default function App() {
           </div>
         ) : null}
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"14px", flexWrap:"wrap", gap:"8px" }}>
-          <div style={S.sectionTitle}>Roster and Player Profiles</div>
+          <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
+            {rosterDetailMode !== null ? (
+              <button
+                type="button"
+                onClick={function() { setRosterDetailMode(null); }}
+                aria-label="Back to roster summary"
+                style={{ background:"none", border:"none", color:tokens.color.brand.red, cursor:"pointer", fontFamily:"inherit", fontSize:"13px", fontWeight:"bold", padding:"6px 0" }}>
+                ‹ Roster
+              </button>
+            ) : null}
+            <div style={S.sectionTitle}>
+              {rosterDetailMode === "all" ? "All Player Profiles" : rosterDetailMode || "Roster and Player Profiles"}
+            </div>
+          </div>
+          {rosterDetailMode === "all" ? (
           <div style={{ display:"flex", gap:"6px", flexWrap:"wrap", alignItems:"center" }}>
             {rosterHistory.length > 0 ? (
               <button style={{ ...S.btn("ghost"), color:tokens.color.brand.red, border:"1px solid rgba(200,16,46,0.3)" }}
@@ -3140,9 +3159,18 @@ export default function App() {
               })()}
             </button>
           </div>
+          ) : null}
         </div>
 
-        {lineupDirty && !lineupLocked && roster.length > 0 && (
+        {rosterDetailMode !== null ? (
+          <div style={{ fontSize:"12px", color:tokens.color.text.muted, marginBottom:"14px" }}>
+            {rosterDetailMode === "all"
+              ? "Review and edit every player profile in one place."
+              : "Review and edit this player's complete roster profile."}
+          </div>
+        ) : null}
+
+        {rosterDetailMode === null && lineupDirty && !lineupLocked && roster.length > 0 && (
           <div style={{ background:"rgba(245,200,66,0.12)", border:"1px solid rgba(245,200,66,0.4)", borderRadius:"8px", padding:"10px 14px", marginBottom:"10px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:"10px", flexWrap:"wrap" }}>
             <div style={{ fontSize:"12px", color:"#92620a", fontWeight:"600", flex:1 }}>⚡ Player profiles updated — regenerate lineup when ready</div>
             <div style={{ display:"flex", gap:"8px", alignItems:"center", flexShrink:0 }}>
@@ -3152,7 +3180,7 @@ export default function App() {
           </div>
         )}
 
-        {lineupLocked ? (
+        {rosterDetailMode === null && (lineupLocked ? (
           <div style={{ fontSize:"11px", color:tokens.color.text.muted, textAlign:"center", padding:"8px 12px", marginBottom:"14px", background:"rgba(15,31,61,0.03)", borderRadius:"8px", border:"1px dashed rgba(15,31,61,0.15)" }}>
             🔒 Lineup is finalized — unlock to add or remove players
           </div>
@@ -3180,8 +3208,9 @@ export default function App() {
               <BattingHandSelector value={newBattingHand} onChange={setNewBattingHand} teamId={activeTeamId} />
             </div>
           </div>
-        )}
+        ))}
 
+        {rosterDetailMode === null ? (
         <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
           <div
             onClick={function() { setSummaryOpen(!summaryOpen); }}
@@ -3268,7 +3297,22 @@ export default function App() {
                       var avgColor = avg === null ? tokens.color.text.muted : avg >= 0.300 ? "#27ae60" : avg >= 0.200 ? "#e67e22" : tokens.color.text.ink;
                       return (
                         <tr key={info.name} style={{ borderBottom:"1px solid rgba(15,31,61,0.05)", background: ri % 2 === 0 ? "transparent" : "rgba(15,31,61,0.03)" }}>
-                          <td style={{ padding:"4px 6px", fontWeight:"600", textAlign:"left" }}>{firstName(info.name)}</td>
+                          <td style={{ padding:"4px 6px", fontWeight:"600", textAlign:"left" }}>
+                            <button
+                              type="button"
+                              onClick={function(playerName) { return function() {
+                                setCollapsed(function(current) {
+                                  var next = { ...current };
+                                  next[playerName] = false;
+                                  return next;
+                                });
+                                setRosterDetailMode(playerName);
+                              }; }(info.name)}
+                              aria-label={"Open " + info.name + " player profile"}
+                              style={{ background:"none", border:"none", color:tokens.color.brand.red, cursor:"pointer", fontFamily:"inherit", fontSize:"inherit", fontWeight:"bold", padding:"6px 0", textDecoration:"underline", textUnderlineOffset:"2px" }}>
+                              {firstName(info.name)}
+                            </button>
+                          </td>
                           <td style={{ padding:"4px 6px", maxWidth:"80px", wordBreak:"break-word", verticalAlign:"top" }}>
                             {(info.prefs || []).length > 0
                               ? (info.prefs || []).map(function(pos) {
@@ -3296,6 +3340,21 @@ export default function App() {
             );
           })()}
         </Card>
+        ) : null}
+
+        {rosterDetailMode === null && roster.length > 0 ? (
+          <div style={{ textAlign:"center", padding:"2px 12px 18px" }}>
+            <div style={{ fontSize:"12px", color:tokens.color.text.muted, marginBottom:"8px" }}>
+              Select a player name above to open their individual profile, or review every detailed player card together.
+            </div>
+            <button
+              type="button"
+              onClick={function() { setRosterDetailMode("all"); }}
+              style={{ background:"none", border:"none", color:tokens.color.brand.red, cursor:"pointer", fontFamily:"inherit", fontSize:"13px", fontWeight:"bold", padding:"6px", textDecoration:"underline", textUnderlineOffset:"2px" }}>
+              View All Players
+            </button>
+          </div>
+        ) : null}
 
         {isHydrating && roster.length === 0 && (
           <div style={{ textAlign:"center", padding:"20px", color:"#94a3b8", fontSize:"13px" }}>
@@ -3370,8 +3429,9 @@ export default function App() {
           </div>
         )}
 
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))", gap:"12px" }}>
-          {sortedRoster.map(function(info) {
+        {rosterDetailMode !== null ? (
+        <div style={{ display:"grid", gridTemplateColumns: rosterDetailMode === "all" ? "repeat(auto-fill,minmax(300px,1fr))" : "minmax(0, 680px)", justifyContent:"center", gap:"12px" }}>
+          {rosterDetailPlayers.map(function(info) {
             var isCol = lineupLocked || !!collapsed[info.name];
             var sk = info.skills || [];
             var tg = info.tags || [];
@@ -3816,6 +3876,7 @@ export default function App() {
             );
           })}
         </div>
+        ) : null}
       </div>
     );
   }

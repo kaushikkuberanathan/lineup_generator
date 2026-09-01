@@ -135,4 +135,24 @@ describe("My Team game-ready dashboard (#993)", function () {
 
     await waitFor(function () { expect(screen.getByText("🍎 Snack Duty")).toBeInTheDocument(); });
   });
+
+  it("keeps the roster summary compact and opens individual or all-player detail screens", async function () {
+    setSchedule(7);
+    await openMyTeam();
+    fireEvent.click(screen.getByRole("button", { name: /Roster 2 players/ }));
+
+    expect(await screen.findByText("All Players — Quick Summary")).toBeInTheDocument();
+    expect(screen.getByText(/Select a player name above/)).toBeInTheDocument();
+    expect(screen.queryByText("Alex Rivera")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Open Alex Rivera player profile" }));
+    expect(await screen.findByText("Review and edit this player's complete roster profile.")).toBeInTheDocument();
+    expect(screen.getAllByText("Alex Rivera").length).toBeGreaterThan(0);
+
+    fireEvent.click(screen.getByRole("button", { name: "Back to roster summary" }));
+    fireEvent.click(screen.getByRole("button", { name: "View All Players" }));
+    expect(await screen.findByText("Review and edit every player profile in one place.")).toBeInTheDocument();
+    expect(screen.getByText("Alex Rivera")).toBeInTheDocument();
+    expect(screen.getByText("Blair Chen")).toBeInTheDocument();
+  });
 });
