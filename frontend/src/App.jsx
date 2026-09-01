@@ -5533,17 +5533,13 @@ export default function App() {
           </div>
         ) : null}
 
-        <div style={{ display:"flex", gap:"8px", marginBottom:"14px", flexWrap:"wrap" }}>
-          <button style={S.btn("primary")} onClick={function() {
+        <div style={{ marginBottom:"14px" }}>
+          <button style={{ ...S.btn("primary"), width:"100%" }} onClick={function() {
             setNewGame({ date:"", time:"", location:"", opponent:"", result:"", ourScore:"", theirScore:"", battingPerf:{}, snackDuty:"", gameBall:[], gameBallSearch:"", scoreReported:false, usScore:null, oppScore:null, gameStatus:'scheduled', finalizedAt:null });
             setEditingGame(null);
             setShowGameForm(true);
             setImportMode(null);
           }}>+ Add Game</button>
-          <button style={S.btn("ghost")} onClick={function() {
-            setImportMode(importMode ? null : "choose");
-            setShowGameForm(false);
-          }}>{importMode ? "Cancel Import" : "Import Schedule"}</button>
         </div>
 
         {importMode === "choose" ? (
