@@ -7145,6 +7145,7 @@ export default function App() {
   var PRIMARY_TABS = [
     { key:"home",    label:"Home",     icon:"🏠" },
     { key:"team",    label:"My Team",  icon:"👥" },
+    { key:"schedule", label:"Schedule", icon:"🗓️" },
     { key:"gameday", label:"Game Day", icon:"🏟" },
     { key:"more",    label:"Support",  icon:"⚙️" },
   ].filter(Boolean);
@@ -7289,7 +7290,7 @@ export default function App() {
     contextLabel = "Batting Order \u2022 " + roster.length + " Players";
   } else if (primaryTab === "gameday" && gameDayTab === "lineups") {
     contextLabel = "Print / Share View";
-  } else if (primaryTab === "team" && teamSubTab === "schedule") {
+  } else if (primaryTab === "schedule") {
     contextLabel = "Schedule";
   }
 
@@ -7318,7 +7319,8 @@ export default function App() {
           </button>
         </div>
       ) : null}
-      {primaryTab === "team" ? renderTeamTab() : null}
+      {primaryTab === "team" ? renderTeamPeopleTab() : null}
+      {primaryTab === "schedule" ? renderPrimaryScheduleTab() : null}
       <ErrorBoundary fallback="Game Day">
         <ErrorBoundary fallback="MyPlayer View">
           {primaryTab === "gameday" && parentViewActive ? (
@@ -7345,6 +7347,105 @@ export default function App() {
   );
 
   // renderParentView — extracted to components/GameDay/ParentView.jsx
+
+  function renderTeamPeopleTab() {
+    var missingPrefs = roster.filter(function(player) {
+      return !player.prefs || player.prefs.length === 0;
+    }).length;
+
+    if (rosterDetailMode !== null) {
+      return <div style={{ padding:"14px 12px 80px" }}>{renderRoster()}</div>;
+    }
+
+    return (
+      <div style={{ paddingBottom:"80px" }}>
+        <div style={{ margin:"14px 14px 10px" }}>
+          <div style={{ fontFamily:"Georgia,serif", fontWeight:"bold", fontSize:"20px", color:tokens.color.brand.navy,
+            whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+            {activeTeam ? activeTeam.name : ""}
+          </div>
+          <div style={{ fontSize:"12px", color:tokens.color.text.muted, marginTop:"3px" }}>
+            {activeTeam ? ((activeTeam.ageGroup || "") + (activeTeam.sport ? " · " + (activeTeam.sport.charAt(0).toUpperCase() + activeTeam.sport.slice(1)) : "") + (activeTeam.season ? " · " + formatSeason(activeTeam.season, activeTeam.year) : "")) : ""}
+          </div>
+        </div>
+
+        <div style={{ margin:"0 12px 10px", padding:"14px", borderRadius:"12px", background:tokens.color.surface.card,
+          border:"1px solid " + tokens.color.border.neutral, boxShadow:"0 1px 4px rgba(15,31,61,0.05)", display:"flex", alignItems:"center", gap:"12px" }}>
+          <span aria-hidden="true" style={{ fontSize:"20px" }}>👥</span>
+          <div style={{ fontSize:"13px", color:tokens.color.brand.navy }}>
+            <strong>{roster.length} player{roster.length !== 1 ? "s" : ""}</strong>
+            <span style={{ color:tokens.color.text.muted }}> · {missingPrefs} profile{missingPrefs !== 1 ? "s need" : " needs"} attention</span>
+          </div>
+        </div>
+
+        {missingPrefs > 0 ? (
+          <div style={{ margin:"0 12px 10px", fontSize:"12px", color:tokens.color.text.muted }}>
+            Complete player preferences to improve automatic lineup assignments.
+          </div>
+        ) : null}
+
+        <div style={{ margin:"12px 12px 0" }}>{renderRoster()}</div>
+      </div>
+    );
+  }
+
+  function renderPrimaryScheduleTab() {
+    var today = new Date(); today.setHours(0,0,0,0);
+    var wins = 0; var losses = 0; var ties = 0;
+    for (var resultIndex = 0; resultIndex < schedule.length; resultIndex++) {
+      if (schedule[resultIndex].result === "W") { wins++; }
+      else if (schedule[resultIndex].result === "L") { losses++; }
+      else if (schedule[resultIndex].result === "T") { ties++; }
+    }
+    var upcoming = schedule.filter(function(game) {
+      return game.result !== "X" && game.date && new Date(game.date + "T12:00:00") >= today;
+    }).sort(function(a, b) {
+      return new Date(a.date + "T12:00:00") - new Date(b.date + "T12:00:00");
+    });
+    var nextGame = upcoming[0] || null;
+    var nextDate = nextGame ? new Date(nextGame.date + "T12:00:00") : null;
+
+    return (
+      <div style={{ paddingBottom:"80px" }}>
+        <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:"12px", margin:"14px 14px 10px" }}>
+          <div>
+            <div style={{ fontFamily:"Georgia,serif", fontWeight:"bold", fontSize:"20px", color:tokens.color.brand.navy }}>Schedule</div>
+            <div style={{ fontSize:"12px", color:tokens.color.text.muted, marginTop:"3px" }}>{activeTeam ? activeTeam.name : ""}</div>
+          </div>
+          <div aria-label="Season record" style={{ textAlign:"right" }}>
+            <div style={{ fontSize:"16px", fontWeight:"bold", color:tokens.color.brand.navy }}>{wins}–{losses}{ties > 0 ? "–" + ties : ""}</div>
+            <div style={{ fontSize:"10px", color:tokens.color.text.muted, textTransform:"uppercase", letterSpacing:"0.06em" }}>Record</div>
+          </div>
+        </div>
+
+        {nextGame ? (
+          <div style={{ background:tokens.color.brand.navy, color:tokens.color.text.onDark, borderRadius:"14px", padding:"16px", margin:"0 12px 12px", boxShadow:"0 4px 14px rgba(15,31,61,0.16)" }}>
+            <div style={{ color:tokens.color.brand.gold, fontSize:"10px", fontWeight:"bold", textTransform:"uppercase", letterSpacing:"0.08em" }}>Next game</div>
+            <div style={{ fontFamily:"Georgia,serif", fontWeight:"bold", fontSize:"21px", marginTop:"7px" }}>{nextGame.opponent ? "vs. " + nextGame.opponent : "Upcoming game"}</div>
+            <div style={{ fontSize:"12px", color:"rgba(255,255,255,0.78)", marginTop:"5px" }}>
+              {nextDate.toLocaleDateString("en-US", { month:"short", day:"numeric" })}
+              {nextGame.time ? " · " + nextGame.time : ""}
+              {nextGame.location ? " · " + nextGame.location : ""}
+              {typeof nextGame.home === "boolean" ? " · " + (nextGame.home ? "Home" : "Away") : ""}
+            </div>
+            <button onClick={function() { setPrimaryTab("gameday"); setGameDayTab("lineups"); }}
+              style={{ ...S.btn("primary"), background:tokens.color.brand.gold, color:tokens.color.brand.navy, border:"none", width:"100%", minHeight:"42px", marginTop:"14px" }}>
+              Open Game Day
+            </button>
+          </div>
+        ) : (
+          <div style={{ margin:"0 12px 12px", padding:"14px", borderRadius:"12px", border:"1px dashed " + tokens.color.border.neutral, background:tokens.color.surface.card, color:tokens.color.text.muted, fontSize:"12px" }}>
+            No upcoming game. Add one below when the schedule is ready.
+          </div>
+        )}
+
+        <div style={{ margin:"0 12px" }}>
+          {renderSchedule()}
+          <div style={{ marginTop:"16px" }}>{renderSnackDuty()}</div>
+        </div>
+      </div>
+    );
+  }
 
   function renderTeamTab() {
     var today = new Date(); today.setHours(0,0,0,0);
@@ -7588,7 +7689,7 @@ export default function App() {
             <button key={t.key}
               onClick={function(k, d) { return function() {
                 if (k === "home") {
-                  if (primaryTab === "team" || primaryTab === "gameday") { setShowExitSheet(true); return; }
+                  if (primaryTab === "team" || primaryTab === "schedule" || primaryTab === "gameday") { setShowExitSheet(true); return; }
                   setScreen("home"); setPrimaryTab("home"); setHomeMode("welcome"); return;
                 }
                 if (d) return;
@@ -7622,7 +7723,7 @@ export default function App() {
       />
       <div style={Object.assign({}, S.header, isLandscape ? { padding:"5px 16px" } : {})}>
         <div style={S.logoWrap} onClick={function() {
-          if (primaryTab === "team" || primaryTab === "gameday") { setShowExitSheet(true); return; }
+          if (primaryTab === "team" || primaryTab === "schedule" || primaryTab === "gameday") { setShowExitSheet(true); return; }
           setScreen("home"); setPrimaryTab("home"); setHomeMode("welcome");
         }}>
           <BrandMark size={isLandscape ? 30 : 42} />

@@ -101,46 +101,38 @@ describe("My Team game-ready dashboard (#993)", function () {
   async function openMyTeam() {
     render(<App />);
     fireEvent.click(await screen.findByRole("button", { name: /My Team/ }));
-    await waitFor(function () { expect(screen.getByText("Team at a glance")).toBeInTheDocument(); });
+    await waitFor(function () { expect(screen.getByText("Roster and Player Profiles")).toBeInTheDocument(); });
   }
 
-  it("prioritizes the next game and opens Game Day when it is within two days", async function () {
+  it("moves the next game into Schedule and opens Game Day from there", async function () {
     setSchedule(1);
     await openMyTeam();
 
+    expect(screen.queryByText("vs. River Cats")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Schedule/ }));
     expect(screen.getByText("vs. River Cats")).toBeInTheDocument();
-    expect(screen.getByText(/Field 2/)).toHaveTextContent("Home");
+    expect(screen.getAllByText(/Field 2/).some(function(node) { return node.textContent.includes("Home"); })).toBe(true);
 
     fireEvent.click(screen.getByRole("button", { name: "Open Game Day" }));
     await waitFor(function () { expect(screen.getByRole("button", { name: /^Songs$/ })).toBeInTheDocument(); });
   });
 
-  it("routes a farther upcoming game to Schedule instead of opening Game Day", async function () {
+  it("keeps game, record, and snack information out of My Team", async function () {
     setSchedule(7);
     await openMyTeam();
 
-    fireEvent.click(screen.getByRole("button", { name: "View game" }));
-    await waitFor(function () {
-      expect(screen.getByRole("button", { name: /Schedule 1 games/ })).toHaveAttribute("aria-pressed", "true");
-    });
-    expect(screen.queryByRole("button", { name: "Open Game Day" })).not.toBeInTheDocument();
-  });
+    expect(screen.getByText(/1 profile needs attention/)).toBeInTheDocument();
+    expect(screen.queryByText("vs. River Cats")).not.toBeInTheDocument();
+    expect(screen.queryByText("🍎 Snack Duty")).not.toBeInTheDocument();
 
-  it("turns preparation gaps into direct section links", async function () {
-    setSchedule(7);
-    await openMyTeam();
-
-    expect(screen.getByText("1 player preference missing")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /Snacks needed for 1 game/ }));
-
-    await waitFor(function () { expect(screen.getByText("🍎 Snack Duty")).toBeInTheDocument(); });
+    fireEvent.click(screen.getByRole("button", { name: /Schedule/ }));
+    await waitFor(function () { expect(screen.getAllByText("🍎 Snack Duty").length).toBeGreaterThan(0); });
+    expect(screen.getByLabelText("Season record")).toHaveTextContent("0–0");
   });
 
   it("keeps the roster summary compact and opens individual or all-player detail screens", async function () {
     setSchedule(7);
     await openMyTeam();
-    fireEvent.click(screen.getByRole("button", { name: /Roster 2 players/ }));
-
     expect(await screen.findByText("All Players — Quick Summary")).toBeInTheDocument();
     expect(screen.getByText(/Select a player name above/)).toBeInTheDocument();
     expect(screen.queryByText("Alex Rivera")).not.toBeInTheDocument();
