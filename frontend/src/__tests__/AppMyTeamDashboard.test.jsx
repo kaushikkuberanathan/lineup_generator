@@ -136,6 +136,10 @@ describe("My Team game-ready dashboard (#993)", function () {
     expect(await screen.findByText("All Players — Quick Summary")).toBeInTheDocument();
     expect(screen.getByText(/Select a player name above/)).toBeInTheDocument();
     expect(screen.queryByText("Alex Rivera")).not.toBeInTheDocument();
+    expect(screen.getByText("Highlighted players need position preferences.")).toBeInTheDocument();
+    expect(screen.getByRole("row", { name: "Alex Rivera — needs profile update" })).toHaveStyle({ background:"rgba(245, 200, 66, 0.16)" });
+    expect(screen.getByRole("row", { name: "Blair Chen — profile complete" })).toBeInTheDocument();
+    expect(screen.getAllByText("Needs update")).toHaveLength(1);
 
     fireEvent.click(screen.getByRole("button", { name: "Open Alex Rivera player profile" }));
     expect(await screen.findByText("Review and edit this player's complete roster profile.")).toBeInTheDocument();

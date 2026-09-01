@@ -3265,6 +3265,12 @@ export default function App() {
             ];
             return (
               <div style={{ overflowX:"auto" }}>
+                {summaryRows.some(function(row) { return !row.info.prefs || row.info.prefs.length === 0; }) ? (
+                  <div style={{ display:"flex", alignItems:"center", gap:"6px", fontSize:"10px", color:tokens.color.text.muted, marginBottom:"8px" }}>
+                    <span aria-hidden="true" style={{ width:"8px", height:"8px", borderRadius:"50%", background:tokens.color.brand.gold, display:"inline-block", flexShrink:0 }}></span>
+                    Highlighted players need position preferences.
+                  </div>
+                ) : null}
                 <table style={{ width:"100%", borderCollapse:"collapse", fontSize:"11px" }}>
                   <thead>
                     <tr style={{ background:"#f5efe4" }}>
@@ -3297,9 +3303,12 @@ export default function App() {
                       var info = row.info;
                       var stats = row.stats;
                       var avg = row.avg;
+                      var needsProfileUpdate = !info.prefs || info.prefs.length === 0;
                       var avgColor = avg === null ? tokens.color.text.muted : avg >= 0.300 ? "#27ae60" : avg >= 0.200 ? "#e67e22" : tokens.color.text.ink;
                       return (
-                        <tr key={info.name} style={{ borderBottom:"1px solid rgba(15,31,61,0.05)", background: ri % 2 === 0 ? "transparent" : "rgba(15,31,61,0.03)" }}>
+                        <tr key={info.name}
+                          aria-label={info.name + (needsProfileUpdate ? " — needs profile update" : " — profile complete")}
+                          style={{ borderBottom:"1px solid rgba(15,31,61,0.05)", background: needsProfileUpdate ? "rgba(245,200,66,0.16)" : ri % 2 === 0 ? "transparent" : "rgba(15,31,61,0.03)" }}>
                           <td style={{ padding:"4px 6px", fontWeight:"600", textAlign:"left" }}>
                             <button
                               type="button"
@@ -3315,6 +3324,11 @@ export default function App() {
                               style={{ background:"none", border:"none", color:tokens.color.brand.red, cursor:"pointer", fontFamily:"inherit", fontSize:"inherit", fontWeight:"bold", padding:"6px 0", textDecoration:"underline", textUnderlineOffset:"2px" }}>
                               {firstName(info.name)}
                             </button>
+                            {needsProfileUpdate ? (
+                              <span style={{ display:"block", width:"max-content", maxWidth:"72px", marginTop:"-2px", padding:"2px 5px", borderRadius:"8px", background:"rgba(245,200,66,0.28)", color:"#8a5b00", fontSize:"8px", fontWeight:"bold", lineHeight:1.2, whiteSpace:"nowrap" }}>
+                                Needs update
+                              </span>
+                            ) : null}
                           </td>
                           <td style={{ padding:"4px 6px", maxWidth:"80px", wordBreak:"break-word", verticalAlign:"top" }}>
                             {(info.prefs || []).length > 0
