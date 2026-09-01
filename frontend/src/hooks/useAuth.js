@@ -38,6 +38,10 @@ export function useAuth() {
 
   useEffect(() => {
     async function checkSession() {
+      if (!supabase) {
+        setAuthState('unauthenticated');
+        return;
+      }
       // Tracks whether this load carried a callback token, so the two
       // silent-fallback branches below can distinguish "never logged in"
       // (normal, no log needed) from "a callback token didn't produce a

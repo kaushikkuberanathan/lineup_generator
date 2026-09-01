@@ -76,12 +76,15 @@ describe("App Bottom Nav golden path (#943)", function () {
     });
   });
 
-  it("switches primaryTab when tapping My Team, Game Day, and Support", async function () {
+  it("switches primaryTab through My Team, Schedule, Game Day, and Support", async function () {
     render(<App />);
 
     var myTeamNav = await screen.findByRole("button", { name: /My Team/ });
     fireEvent.click(myTeamNav);
     await waitFor(function () { expect(screen.getByText("Roster and Player Profiles")).toBeInTheDocument(); });
+
+    fireEvent.click(screen.getByRole("button", { name: /Schedule/ }));
+    await waitFor(function () { expect(screen.getByLabelText("Season record")).toBeInTheDocument(); });
 
     fireEvent.click(screen.getByRole("button", { name: /Game Day/ }));
     await waitFor(function () { expect(screen.getByRole("button", { name: /^Songs$/ })).toBeInTheDocument(); });

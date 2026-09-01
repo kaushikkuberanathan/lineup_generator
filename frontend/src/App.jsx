@@ -1355,6 +1355,11 @@ export default function App() {
   var showAddForm = _showAddForm[0]; var setShowAddForm = _showAddForm[1];
   var _summaryOpen = useState(true);
   var summaryOpen = _summaryOpen[0]; var setSummaryOpen = _summaryOpen[1];
+  var _rosterDetailMode = useState(null);
+  var rosterDetailMode = _rosterDetailMode[0]; var setRosterDetailMode = _rosterDetailMode[1];
+  useEffect(function() {
+    setRosterDetailMode(null);
+  }, [activeTeamId]);
   var _drag = useState(null);
   var dragPlayer = _drag[0]; var setDragPlayer = _drag[1];
   // Touch drag uses a mutable ref (window object) instead of useState to avoid
@@ -2907,7 +2912,9 @@ export default function App() {
                 </button>
                 {(function() {
                   var membershipTeamIds = (memberships || []).map(function(m) { return m.team_id; });
-                  var subscribedTeams = teams.filter(function(t) { return membershipTeamIds.indexOf(t.id) >= 0; });
+                  var subscribedTeams = _authBypassed
+                    ? teams
+                    : teams.filter(function(t) { return membershipTeamIds.indexOf(t.id) >= 0; });
                   if (subscribedTeams.length === 0) {
                     return (
                       <div style={{ fontSize:"13px", color:tokens.color.text.muted, fontStyle:"italic", padding:"8px 2px 14px" }}>
@@ -3054,6 +3061,9 @@ export default function App() {
       var nameB = (b.firstName || b.name || '').toLowerCase();
       return nameA.localeCompare(nameB);
     });
+    var rosterDetailPlayers = rosterDetailMode === "all"
+      ? sortedRoster
+      : sortedRoster.filter(function(player) { return player.name === rosterDetailMode; });
 
     function toggle(arr, key) {
       var idx = arr.indexOf(key);
@@ -3112,7 +3122,21 @@ export default function App() {
           </div>
         ) : null}
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"14px", flexWrap:"wrap", gap:"8px" }}>
-          <div style={S.sectionTitle}>Roster and Player Profiles</div>
+          <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
+            {rosterDetailMode !== null ? (
+              <button
+                type="button"
+                onClick={function() { setRosterDetailMode(null); }}
+                aria-label="Back to roster summary"
+                style={{ background:"none", border:"none", color:tokens.color.brand.red, cursor:"pointer", fontFamily:"inherit", fontSize:"13px", fontWeight:"bold", padding:"6px 0" }}>
+                ‹ Roster
+              </button>
+            ) : null}
+            <div style={S.sectionTitle}>
+              {rosterDetailMode === "all" ? "All Player Profiles" : rosterDetailMode || "Roster and Player Profiles"}
+            </div>
+          </div>
+          {rosterDetailMode === "all" ? (
           <div style={{ display:"flex", gap:"6px", flexWrap:"wrap", alignItems:"center" }}>
             {rosterHistory.length > 0 ? (
               <button style={{ ...S.btn("ghost"), color:tokens.color.brand.red, border:"1px solid rgba(200,16,46,0.3)" }}
@@ -3136,9 +3160,18 @@ export default function App() {
               })()}
             </button>
           </div>
+          ) : null}
         </div>
 
-        {lineupDirty && !lineupLocked && roster.length > 0 && (
+        {rosterDetailMode !== null ? (
+          <div style={{ fontSize:"12px", color:tokens.color.text.muted, marginBottom:"14px" }}>
+            {rosterDetailMode === "all"
+              ? "Review and edit every player profile in one place."
+              : "Review and edit this player's complete roster profile."}
+          </div>
+        ) : null}
+
+        {rosterDetailMode === null && lineupDirty && !lineupLocked && roster.length > 0 && (
           <div style={{ background:"rgba(245,200,66,0.12)", border:"1px solid rgba(245,200,66,0.4)", borderRadius:"8px", padding:"10px 14px", marginBottom:"10px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:"10px", flexWrap:"wrap" }}>
             <div style={{ fontSize:"12px", color:"#92620a", fontWeight:"600", flex:1 }}>⚡ Player profiles updated — regenerate lineup when ready</div>
             <div style={{ display:"flex", gap:"8px", alignItems:"center", flexShrink:0 }}>
@@ -3148,13 +3181,13 @@ export default function App() {
           </div>
         )}
 
-        {lineupLocked ? (
+        {rosterDetailMode === null && (lineupLocked ? (
           <div style={{ fontSize:"11px", color:tokens.color.text.muted, textAlign:"center", padding:"8px 12px", marginBottom:"14px", background:"rgba(15,31,61,0.03)", borderRadius:"8px", border:"1px dashed rgba(15,31,61,0.15)" }}>
             🔒 Lineup is finalized — unlock to add or remove players
           </div>
         ) : !showAddForm ? (
           <button
-            style={{ ...S.btn("secondary"), width:"100%", marginBottom:"14px" }}
+            style={{ ...S.btn("primary"), width:"100%", marginBottom:"14px" }}
             onClick={function() { setShowAddForm(true); }}>
             + Add a New Player to Your Roster
           </button>
@@ -3176,8 +3209,9 @@ export default function App() {
               <BattingHandSelector value={newBattingHand} onChange={setNewBattingHand} teamId={activeTeamId} />
             </div>
           </div>
-        )}
+        ))}
 
+        {rosterDetailMode === null ? (
         <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
           <div
             onClick={function() { setSummaryOpen(!summaryOpen); }}
@@ -3229,6 +3263,12 @@ export default function App() {
             ];
             return (
               <div style={{ overflowX:"auto" }}>
+                {summaryRows.some(function(row) { return !row.info.prefs || row.info.prefs.length === 0; }) ? (
+                  <div style={{ display:"flex", alignItems:"center", gap:"6px", fontSize:"10px", color:tokens.color.text.muted, marginBottom:"8px" }}>
+                    <span aria-hidden="true" style={{ width:"8px", height:"8px", borderRadius:"50%", background:tokens.color.brand.gold, display:"inline-block", flexShrink:0 }}></span>
+                    Highlighted players need position preferences.
+                  </div>
+                ) : null}
                 <table style={{ width:"100%", borderCollapse:"collapse", fontSize:"11px" }}>
                   <thead>
                     <tr style={{ background:"#f5efe4" }}>
@@ -3261,10 +3301,33 @@ export default function App() {
                       var info = row.info;
                       var stats = row.stats;
                       var avg = row.avg;
+                      var needsProfileUpdate = !info.prefs || info.prefs.length === 0;
                       var avgColor = avg === null ? tokens.color.text.muted : avg >= 0.300 ? "#27ae60" : avg >= 0.200 ? "#e67e22" : tokens.color.text.ink;
                       return (
-                        <tr key={info.name} style={{ borderBottom:"1px solid rgba(15,31,61,0.05)", background: ri % 2 === 0 ? "transparent" : "rgba(15,31,61,0.03)" }}>
-                          <td style={{ padding:"4px 6px", fontWeight:"600", textAlign:"left" }}>{firstName(info.name)}</td>
+                        <tr key={info.name}
+                          aria-label={info.name + (needsProfileUpdate ? " — needs profile update" : " — profile complete")}
+                          style={{ borderBottom:"1px solid rgba(15,31,61,0.05)", background: needsProfileUpdate ? "rgba(245,200,66,0.16)" : ri % 2 === 0 ? "transparent" : "rgba(15,31,61,0.03)" }}>
+                          <td style={{ padding:"4px 6px", fontWeight:"600", textAlign:"left" }}>
+                            <button
+                              type="button"
+                              onClick={function(playerName) { return function() {
+                                setCollapsed(function(current) {
+                                  var next = { ...current };
+                                  next[playerName] = false;
+                                  return next;
+                                });
+                                setRosterDetailMode(playerName);
+                              }; }(info.name)}
+                              aria-label={"Open " + info.name + " player profile"}
+                              style={{ background:"none", border:"none", color:tokens.color.brand.red, cursor:"pointer", fontFamily:"inherit", fontSize:"inherit", fontWeight:"bold", padding:"6px 0", textDecoration:"underline", textUnderlineOffset:"2px" }}>
+                              {firstName(info.name)}
+                            </button>
+                            {needsProfileUpdate ? (
+                              <span style={{ display:"block", width:"max-content", maxWidth:"72px", marginTop:"-2px", padding:"2px 5px", borderRadius:"8px", background:"rgba(245,200,66,0.28)", color:"#8a5b00", fontSize:"8px", fontWeight:"bold", lineHeight:1.2, whiteSpace:"nowrap" }}>
+                                Needs update
+                              </span>
+                            ) : null}
+                          </td>
                           <td style={{ padding:"4px 6px", maxWidth:"80px", wordBreak:"break-word", verticalAlign:"top" }}>
                             {(info.prefs || []).length > 0
                               ? (info.prefs || []).map(function(pos) {
@@ -3292,6 +3355,21 @@ export default function App() {
             );
           })()}
         </Card>
+        ) : null}
+
+        {rosterDetailMode === null && roster.length > 0 ? (
+          <div style={{ textAlign:"center", padding:"2px 12px 18px" }}>
+            <div style={{ fontSize:"12px", color:tokens.color.text.muted, marginBottom:"8px" }}>
+              Select a player name above to open their individual profile, or review every detailed player card together.
+            </div>
+            <button
+              type="button"
+              onClick={function() { setRosterDetailMode("all"); }}
+              style={{ background:"none", border:"none", color:tokens.color.brand.red, cursor:"pointer", fontFamily:"inherit", fontSize:"13px", fontWeight:"bold", padding:"6px", textDecoration:"underline", textUnderlineOffset:"2px" }}>
+              View All Players
+            </button>
+          </div>
+        ) : null}
 
         {isHydrating && roster.length === 0 && (
           <div style={{ textAlign:"center", padding:"20px", color:"#94a3b8", fontSize:"13px" }}>
@@ -3366,8 +3444,9 @@ export default function App() {
           </div>
         )}
 
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))", gap:"12px" }}>
-          {sortedRoster.map(function(info) {
+        {rosterDetailMode !== null ? (
+        <div style={{ display:"grid", gridTemplateColumns: rosterDetailMode === "all" ? "repeat(auto-fill,minmax(300px,1fr))" : "minmax(0, 680px)", justifyContent:"center", gap:"12px" }}>
+          {rosterDetailPlayers.map(function(info) {
             var isCol = lineupLocked || !!collapsed[info.name];
             var sk = info.skills || [];
             var tg = info.tags || [];
@@ -3812,6 +3891,7 @@ export default function App() {
             );
           })}
         </div>
+        ) : null}
       </div>
     );
   }
@@ -5451,17 +5531,13 @@ export default function App() {
           </div>
         ) : null}
 
-        <div style={{ display:"flex", gap:"8px", marginBottom:"14px", flexWrap:"wrap" }}>
-          <button style={S.btn("primary")} onClick={function() {
+        <div style={{ marginBottom:"14px" }}>
+          <button style={{ ...S.btn("primary"), width:"100%" }} onClick={function() {
             setNewGame({ date:"", time:"", location:"", opponent:"", result:"", ourScore:"", theirScore:"", battingPerf:{}, snackDuty:"", gameBall:[], gameBallSearch:"", scoreReported:false, usScore:null, oppScore:null, gameStatus:'scheduled', finalizedAt:null });
             setEditingGame(null);
             setShowGameForm(true);
             setImportMode(null);
           }}>+ Add Game</button>
-          <button style={S.btn("ghost")} onClick={function() {
-            setImportMode(importMode ? null : "choose");
-            setShowGameForm(false);
-          }}>{importMode ? "Cancel Import" : "Import Schedule"}</button>
         </div>
 
         {importMode === "choose" ? (
@@ -7014,9 +7090,11 @@ export default function App() {
   // AUTH GATE — LIVE as of #342 cutover. Editing requires a session;
   // viewing does not (both share viewers return above this block).
   // AUTH GATE
-  // Dev-only bypass: in browser console run `localStorage.setItem('auth_bypass','1')`
-  // then reload. `import.meta.env.DEV` is false in production builds — Vite removes this.
-  var _authBypassed = import.meta.env.DEV && localStorage.getItem('auth_bypass') === '1';
+  // Dev-only bypass: use `?dev_bypass=1` for a disposable local review, or
+  // persist it from the browser console with `localStorage.setItem('auth_bypass','1')`.
+  // `import.meta.env.DEV` is false in production builds — Vite removes this.
+  var _devParams = new URLSearchParams(window.location.search);
+  var _authBypassed = import.meta.env.DEV && (_devParams.get('dev_bypass') === '1' || localStorage.getItem('auth_bypass') === '1');
   if (!_authBypassed) {
     if (authState === 'loading') {
       return (
@@ -7075,6 +7153,7 @@ export default function App() {
   var PRIMARY_TABS = [
     { key:"home",    label:"Home",     icon:"🏠" },
     { key:"team",    label:"My Team",  icon:"👥" },
+    { key:"schedule", label:"Schedule", icon:"🗓️" },
     { key:"gameday", label:"Game Day", icon:"🏟" },
     { key:"more",    label:"Support",  icon:"⚙️" },
   ].filter(Boolean);
@@ -7219,7 +7298,7 @@ export default function App() {
     contextLabel = "Batting Order \u2022 " + roster.length + " Players";
   } else if (primaryTab === "gameday" && gameDayTab === "lineups") {
     contextLabel = "Print / Share View";
-  } else if (primaryTab === "team" && teamSubTab === "schedule") {
+  } else if (primaryTab === "schedule") {
     contextLabel = "Schedule";
   }
 
@@ -7248,7 +7327,8 @@ export default function App() {
           </button>
         </div>
       ) : null}
-      {primaryTab === "team" ? renderTeamTab() : null}
+      {primaryTab === "team" ? renderTeamPeopleTab() : null}
+      {primaryTab === "schedule" ? renderPrimaryScheduleTab() : null}
       <ErrorBoundary fallback="Game Day">
         <ErrorBoundary fallback="MyPlayer View">
           {primaryTab === "gameday" && parentViewActive ? (
@@ -7276,6 +7356,105 @@ export default function App() {
 
   // renderParentView — extracted to components/GameDay/ParentView.jsx
 
+  function renderTeamPeopleTab() {
+    var missingPrefs = roster.filter(function(player) {
+      return !player.prefs || player.prefs.length === 0;
+    }).length;
+
+    if (rosterDetailMode !== null) {
+      return <div style={{ padding:"14px 12px 80px" }}>{renderRoster()}</div>;
+    }
+
+    return (
+      <div style={{ paddingBottom:"80px" }}>
+        <div style={{ margin:"14px 14px 10px" }}>
+          <div style={{ fontFamily:"Georgia,serif", fontWeight:"bold", fontSize:"20px", color:tokens.color.brand.navy,
+            whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+            {activeTeam ? activeTeam.name : ""}
+          </div>
+          <div style={{ fontSize:"12px", color:tokens.color.text.muted, marginTop:"3px" }}>
+            {activeTeam ? ((activeTeam.ageGroup || "") + (activeTeam.sport ? " · " + (activeTeam.sport.charAt(0).toUpperCase() + activeTeam.sport.slice(1)) : "") + (activeTeam.season ? " · " + formatSeason(activeTeam.season, activeTeam.year) : "")) : ""}
+          </div>
+        </div>
+
+        <div style={{ margin:"0 12px 10px", padding:"14px", borderRadius:"12px", background:tokens.color.surface.card,
+          border:"1px solid " + tokens.color.border.neutral, boxShadow:"0 1px 4px rgba(15,31,61,0.05)", display:"flex", alignItems:"center", gap:"12px" }}>
+          <span aria-hidden="true" style={{ fontSize:"20px" }}>👥</span>
+          <div style={{ fontSize:"13px", color:tokens.color.brand.navy }}>
+            <strong>{roster.length} player{roster.length !== 1 ? "s" : ""}</strong>
+            <span style={{ color:tokens.color.text.muted }}> · {missingPrefs} profile{missingPrefs !== 1 ? "s need" : " needs"} attention</span>
+          </div>
+        </div>
+
+        {missingPrefs > 0 ? (
+          <div style={{ margin:"0 12px 10px", fontSize:"12px", color:tokens.color.text.muted }}>
+            Complete player preferences to improve automatic lineup assignments.
+          </div>
+        ) : null}
+
+        <div style={{ margin:"12px 12px 0" }}>{renderRoster()}</div>
+      </div>
+    );
+  }
+
+  function renderPrimaryScheduleTab() {
+    var today = new Date(); today.setHours(0,0,0,0);
+    var wins = 0; var losses = 0; var ties = 0;
+    for (var resultIndex = 0; resultIndex < schedule.length; resultIndex++) {
+      if (schedule[resultIndex].result === "W") { wins++; }
+      else if (schedule[resultIndex].result === "L") { losses++; }
+      else if (schedule[resultIndex].result === "T") { ties++; }
+    }
+    var upcoming = schedule.filter(function(game) {
+      return game.result !== "X" && game.date && new Date(game.date + "T12:00:00") >= today;
+    }).sort(function(a, b) {
+      return new Date(a.date + "T12:00:00") - new Date(b.date + "T12:00:00");
+    });
+    var nextGame = upcoming[0] || null;
+    var nextDate = nextGame ? new Date(nextGame.date + "T12:00:00") : null;
+
+    return (
+      <div style={{ paddingBottom:"80px" }}>
+        <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:"12px", margin:"14px 14px 10px" }}>
+          <div>
+            <div style={{ fontFamily:"Georgia,serif", fontWeight:"bold", fontSize:"20px", color:tokens.color.brand.navy }}>Schedule</div>
+            <div style={{ fontSize:"12px", color:tokens.color.text.muted, marginTop:"3px" }}>{activeTeam ? activeTeam.name : ""}</div>
+          </div>
+          <div aria-label="Season record" style={{ textAlign:"right" }}>
+            <div style={{ fontSize:"16px", fontWeight:"bold", color:tokens.color.brand.navy }}>{wins}–{losses}{ties > 0 ? "–" + ties : ""}</div>
+            <div style={{ fontSize:"10px", color:tokens.color.text.muted, textTransform:"uppercase", letterSpacing:"0.06em" }}>Record</div>
+          </div>
+        </div>
+
+        {nextGame ? (
+          <div style={{ background:tokens.color.brand.navy, color:tokens.color.text.onDark, borderRadius:"14px", padding:"16px", margin:"0 12px 12px", boxShadow:"0 4px 14px rgba(15,31,61,0.16)" }}>
+            <div style={{ color:tokens.color.brand.gold, fontSize:"10px", fontWeight:"bold", textTransform:"uppercase", letterSpacing:"0.08em" }}>Next game</div>
+            <div style={{ fontFamily:"Georgia,serif", fontWeight:"bold", fontSize:"21px", marginTop:"7px" }}>{nextGame.opponent ? "vs. " + nextGame.opponent : "Upcoming game"}</div>
+            <div style={{ fontSize:"12px", color:"rgba(255,255,255,0.78)", marginTop:"5px" }}>
+              {nextDate.toLocaleDateString("en-US", { month:"short", day:"numeric" })}
+              {nextGame.time ? " · " + nextGame.time : ""}
+              {nextGame.location ? " · " + nextGame.location : ""}
+              {typeof nextGame.home === "boolean" ? " · " + (nextGame.home ? "Home" : "Away") : ""}
+            </div>
+            <button onClick={function() { setPrimaryTab("gameday"); setGameDayTab("lineups"); }}
+              style={{ ...S.btn("primary"), background:tokens.color.brand.gold, color:tokens.color.brand.navy, border:"none", width:"100%", minHeight:"42px", marginTop:"14px" }}>
+              Open Game Day
+            </button>
+          </div>
+        ) : (
+          <div style={{ margin:"0 12px 12px", padding:"14px", borderRadius:"12px", border:"1px dashed " + tokens.color.border.neutral, background:tokens.color.surface.card, color:tokens.color.text.muted, fontSize:"12px" }}>
+            No upcoming game. Add one below when the schedule is ready.
+          </div>
+        )}
+
+        <div style={{ margin:"0 12px" }}>
+          {renderSchedule()}
+          <div style={{ marginTop:"16px" }}>{renderSnackDuty()}</div>
+        </div>
+      </div>
+    );
+  }
+
   function renderTeamTab() {
     var today = new Date(); today.setHours(0,0,0,0);
 
@@ -7300,105 +7479,161 @@ export default function App() {
     }).length;
 
     var TEAM_SUBTABS = [
-      { key:"roster",   label:"🧢 Roster"   },
-      { key:"schedule", label:"📅 Schedule" },
-      { key:"snacks",   label:"🍎 Snacks"   },
+      { key:"roster",   label:"Roster",   icon:"👥", value:roster.length + " players" },
+      { key:"schedule", label:"Schedule", icon:"📅", value:schedule.length + " games" },
+      { key:"snacks",   label:"Snacks",   icon:"🍎", value:(schedule.length - noSnacks) + " assigned" },
     ];
+
+    var nextGameDate = nextGame ? new Date(nextGame.date + "T12:00:00") : null;
+    var daysUntilNextGame = nextGameDate ? Math.round((nextGameDate - today) / 86400000) : null;
+    var gameDayReady = daysUntilNextGame !== null && daysUntilNextGame <= 2;
+    var nextGameLabel = daysUntilNextGame === 0 ? "Today"
+      : daysUntilNextGame === 1 ? "Tomorrow"
+      : nextGameDate ? nextGameDate.toLocaleDateString("en-US", { weekday:"long" })
+      : "";
+
+    function openTeamSection(section) {
+      setTeamSubTab(section);
+    }
+
+    function openNextGame() {
+      if (gameDayReady) {
+        setGameDayTab("lineups");
+        setPrimaryTab("gameday");
+      } else {
+        openTeamSection("schedule");
+      }
+    }
+
+    // Player profile modes are full My Team screens. Keeping them outside the
+    // dashboard shell prevents the team overview from appearing above a
+    // supposedly dedicated player page.
+    if (teamSubTab === "roster" && rosterDetailMode !== null) {
+      return (
+        <div style={{ padding:"14px 12px 80px" }}>
+          {renderRoster()}
+        </div>
+      );
+    }
 
     return (
       <div style={{ paddingBottom:"80px" }}>
 
-        {/* ── Team dashboard header ──────────────────────────────── */}
-        <div style={{ background:tokens.color.surface.card, borderRadius:"12px", padding:"16px",
-          margin:"12px 12px 0", border:"1px solid " + tokens.color.border.neutral,
-          boxShadow:"0 1px 4px rgba(15,31,61,0.06)" }}>
-          <div style={{ fontWeight:"bold", fontSize:"18px", color:tokens.color.brand.navy, marginBottom:"2px" }}>
-            {activeTeam ? activeTeam.name : ""}
-          </div>
-          <div style={{ fontSize:"12px", color:tokens.color.text.muted, marginBottom:"12px" }}>
-            {activeTeam ? ((activeTeam.ageGroup || "") + (activeTeam.sport ? " \u00b7 " + (activeTeam.sport.charAt(0).toUpperCase() + activeTeam.sport.slice(1)) : "") + (activeTeam.season ? " \u00b7 " + formatSeason(activeTeam.season, activeTeam.year) : "")) : ""}
-          </div>
-
-          {/* Stats row */}
-          <div style={{ display:"flex", borderTop:"1px solid " + tokens.color.border.neutral, paddingTop:"12px", marginTop:"4px" }}>
-            <div style={{ flex:1, textAlign:"center" }}>
-              <div style={{ fontSize:"16px", marginBottom:"2px" }}>👥</div>
-              <div style={{ fontSize:"20px", fontWeight:"bold", color:tokens.color.brand.navy, lineHeight:1 }}>{roster.length}</div>
-              <div style={{ fontSize:"10px", color:tokens.color.text.muted, textTransform:"uppercase", letterSpacing:"0.05em", marginTop:"3px" }}>Players</div>
+        {/* ── Team identity ──────────────────────────────────────── */}
+        <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:"12px", margin:"14px 14px 10px" }}>
+          <div style={{ minWidth:0 }}>
+            <div style={{ fontFamily:"Georgia,serif", fontWeight:"bold", fontSize:"20px", color:tokens.color.brand.navy,
+              whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+              {activeTeam ? activeTeam.name : ""}
             </div>
-            <div style={{ flex:1, textAlign:"center", borderLeft:"1px solid " + tokens.color.border.neutral }}>
-              <div style={{ fontSize:"16px", marginBottom:"2px" }}>🏆</div>
-              <div style={{ fontSize:"20px", fontWeight:"bold", lineHeight:1 }}>
-                <span style={{ color:tokens.color.status.success }}>{wins}</span>
-                <span style={{ color:tokens.color.text.muted }}>–</span>
-                <span style={{ color:tokens.color.brand.red }}>{losses}</span>
-                {ties > 0 ? <><span style={{ color:tokens.color.text.muted }}>–</span><span style={{ color:tokens.color.status.warning }}>{ties}</span></> : null}
-              </div>
-              <div style={{ fontSize:"10px", color:tokens.color.text.muted, textTransform:"uppercase", letterSpacing:"0.05em", marginTop:"3px" }}>Record</div>
-            </div>
-            <div style={{ flex:1, textAlign:"center", borderLeft:"1px solid " + tokens.color.border.neutral }}>
-              <div style={{ fontSize:"16px", marginBottom:"2px" }}>📅</div>
-              {nextGame ? (
-                <>
-                  <div style={{ fontSize:"12px", fontWeight:"bold", color:tokens.color.brand.navy, lineHeight:1.2 }}>
-                    {new Date(nextGame.date + "T12:00:00").toLocaleDateString("en-US", { weekday:"short", month:"short", day:"numeric" })}
-                  </div>
-                  {nextGame.time ? <div style={{ fontSize:"11px", color:tokens.color.text.muted }}>{nextGame.time}</div> : null}
-                </>
-              ) : (
-                <div style={{ fontSize:"12px", color:tokens.color.text.muted, lineHeight:1.2 }}>–</div>
-              )}
-              <div style={{ fontSize:"10px", color:tokens.color.text.muted, textTransform:"uppercase", letterSpacing:"0.05em", marginTop:"3px" }}>Next Game</div>
+            <div style={{ fontSize:"12px", color:tokens.color.text.muted, marginTop:"3px" }}>
+              {activeTeam ? ((activeTeam.ageGroup || "") + (activeTeam.sport ? " \u00b7 " + (activeTeam.sport.charAt(0).toUpperCase() + activeTeam.sport.slice(1)) : "") + (activeTeam.season ? " \u00b7 " + formatSeason(activeTeam.season, activeTeam.year) : "")) : ""}
             </div>
           </div>
-
+          <div aria-label="Season record" style={{ flexShrink:0, textAlign:"right" }}>
+            <div style={{ fontSize:"16px", fontWeight:"bold", color:tokens.color.brand.navy }}>{wins}–{losses}{ties > 0 ? "–" + ties : ""}</div>
+            <div style={{ fontSize:"10px", color:tokens.color.text.muted, textTransform:"uppercase", letterSpacing:"0.06em" }}>Record</div>
+          </div>
         </div>
+
+        {/* ── Next game ──────────────────────────────────────────── */}
+        {nextGame ? (
+          <div style={{ background:tokens.color.brand.navy, color:tokens.color.text.onDark, borderRadius:"14px", padding:"16px",
+            margin:"0 12px", boxShadow:"0 4px 14px rgba(15,31,61,0.16)" }}>
+            <div style={{ color:tokens.color.brand.gold, fontSize:"10px", fontWeight:"bold", textTransform:"uppercase", letterSpacing:"0.08em" }}>
+              Next game · {nextGameLabel}
+            </div>
+            <div style={{ fontFamily:"Georgia,serif", fontWeight:"bold", fontSize:"21px", marginTop:"7px" }}>
+              {nextGame.opponent ? "vs. " + nextGame.opponent : "Upcoming game"}
+            </div>
+            <div style={{ fontSize:"12px", color:"rgba(255,255,255,0.78)", marginTop:"5px" }}>
+              {nextGameDate.toLocaleDateString("en-US", { month:"short", day:"numeric" })}
+              {nextGame.time ? " · " + nextGame.time : ""}
+              {nextGame.location ? " · " + nextGame.location : ""}
+              {typeof nextGame.home === "boolean" ? " · " + (nextGame.home ? "Home" : "Away") : ""}
+            </div>
+            <div style={{ display:"flex", gap:"8px", marginTop:"14px", flexWrap:"wrap" }}>
+              <button onClick={openNextGame} style={{ ...S.btn("primary"), background:tokens.color.brand.gold, color:tokens.color.brand.navy,
+                border:"none", minHeight:"42px", flex:"1 1 150px" }}>
+                {gameDayReady ? "Open Game Day" : "View game"}
+              </button>
+              <button onClick={function() { openTeamSection("schedule"); }} style={{ ...S.btn("ghost"), color:tokens.color.text.onDark,
+                border:"1px solid rgba(255,255,255,0.4)", minHeight:"42px", flex:"0 1 auto" }}>
+                Schedule
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button aria-label="Add upcoming game" onClick={function() { openTeamSection("schedule"); }} style={{ display:"block", width:"calc(100% - 24px)", margin:"0 12px",
+            padding:"15px", borderRadius:"12px", border:"1px dashed " + tokens.color.border.neutral, background:tokens.color.surface.card,
+            color:tokens.color.brand.navy, textAlign:"left", cursor:"pointer", fontFamily:"inherit" }}>
+            <span style={{ display:"block", fontWeight:"bold", fontSize:"14px" }}>No upcoming game</span>
+            <span style={{ display:"block", fontSize:"12px", color:tokens.color.text.muted, marginTop:"3px" }}>Open Schedule to add the next game →</span>
+          </button>
+        )}
 
         {/* ── Status warnings ────────────────────────────────────── */}
         {(missingPrefs > 0 || noSnacks > 0) ? (
-          <div style={{ margin:"8px 12px 0", padding:"12px 14px", borderRadius:"10px",
-            background:"rgba(245,200,66,0.12)", border:"1px solid rgba(245,200,66,0.4)" }}>
-            <div style={{ fontWeight:"bold", marginBottom:"8px", color:tokens.color.brand.navy, fontSize:"12px", display:"flex", alignItems:"center", gap:"6px" }}>
-              <span style={{ fontSize:"15px" }}>⚠️</span> Needs attention
+          <div style={{ margin:"10px 12px 0", padding:"14px", borderRadius:"12px", background:tokens.color.surface.card,
+            border:"1px solid " + tokens.color.border.neutral, boxShadow:"0 1px 4px rgba(15,31,61,0.05)" }}>
+            <div style={{ fontWeight:"bold", marginBottom:"4px", color:tokens.color.brand.navy, fontSize:"14px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:"6px" }}>
+              <span>Needs attention</span>
+              <span style={{ fontSize:"11px", fontWeight:"normal", color:tokens.color.text.muted }}>{(missingPrefs > 0 ? 1 : 0) + (noSnacks > 0 ? 1 : 0)} items</span>
             </div>
             {missingPrefs > 0 ? (
-              <div style={{ display:"flex", alignItems:"center", gap:"8px", marginBottom: noSnacks > 0 ? "6px" : 0,
-                background:"rgba(255,255,255,0.55)", borderRadius:"6px", padding:"8px 10px" }}>
+              <button onClick={function() { openTeamSection("roster"); }} style={{ display:"flex", width:"100%", alignItems:"center", gap:"10px",
+                border:"none", borderBottom:noSnacks > 0 ? "1px solid " + tokens.color.border.neutral : "none", background:"transparent",
+                padding:"12px 2px", textAlign:"left", cursor:"pointer", fontFamily:"inherit", color:"inherit" }}>
                 <span style={{ fontSize:"18px", flexShrink:0 }}>{(activeTeam && (activeTeam.sport || "baseball").toLowerCase() === "softball") ? "🥎" : "⚾"}</span>
-                <div>
-                  <div style={{ fontSize:"12px", fontWeight:"600", color:tokens.color.brand.navy }}>Missing position preferences</div>
-                  <div style={{ fontSize:"11px", color:tokens.color.text.muted }}>{missingPrefs} player{missingPrefs !== 1 ? "s" : ""} — set in Roster tab</div>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontSize:"13px", fontWeight:"600", color:tokens.color.brand.navy }}>{missingPrefs} player preference{missingPrefs !== 1 ? "s" : ""} missing</div>
+                  <div style={{ fontSize:"11px", color:tokens.color.text.muted, marginTop:"2px" }}>Improve automatic lineup assignments</div>
                 </div>
-              </div>
+                <span aria-hidden="true" style={{ color:tokens.color.text.muted, fontSize:"18px" }}>›</span>
+              </button>
             ) : null}
             {noSnacks > 0 ? (
-              <div style={{ display:"flex", alignItems:"center", gap:"8px",
-                background:"rgba(255,255,255,0.55)", borderRadius:"6px", padding:"8px 10px" }}>
+              <button onClick={function() { openTeamSection("snacks"); }} style={{ display:"flex", width:"100%", alignItems:"center", gap:"10px",
+                border:"none", background:"transparent", padding:"12px 2px", textAlign:"left", cursor:"pointer", fontFamily:"inherit", color:"inherit" }}>
                 <span style={{ fontSize:"18px", flexShrink:0 }}>🍎</span>
-                <div>
-                  <div style={{ fontSize:"12px", fontWeight:"600", color:tokens.color.brand.navy }}>Snacks unassigned</div>
-                  <div style={{ fontSize:"11px", color:tokens.color.text.muted }}>{noSnacks} upcoming game{noSnacks !== 1 ? "s" : ""} — assign in Snacks tab</div>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontSize:"13px", fontWeight:"600", color:tokens.color.brand.navy }}>Snacks needed for {noSnacks} game{noSnacks !== 1 ? "s" : ""}</div>
+                  <div style={{ fontSize:"11px", color:tokens.color.text.muted, marginTop:"2px" }}>Assign families before game day</div>
                 </div>
-              </div>
+                <span aria-hidden="true" style={{ color:tokens.color.text.muted, fontSize:"18px" }}>›</span>
+              </button>
             ) : null}
           </div>
         ) : null}
 
-        {/* ── Team subtab bar ────────────────────────────────────── */}
-        <div style={{ display:"flex", gap:"4px", padding:"12px 12px 0" }}>
+        {/* ── Team at a glance / section navigation ─────────────── */}
+        <div style={{ background:tokens.color.surface.card, borderRadius:"12px", padding:"14px", margin:"10px 12px 0",
+          border:"1px solid " + tokens.color.border.neutral, boxShadow:"0 1px 4px rgba(15,31,61,0.05)" }}>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:"8px", marginBottom:"10px" }}>
+            <div style={{ fontSize:"14px", fontWeight:"bold", color:tokens.color.brand.navy }}>Team at a glance</div>
+            <div style={{ fontSize:"11px", color:tokens.color.text.muted }}>{wins}–{losses}{ties > 0 ? "–" + ties : ""} record</div>
+          </div>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(3,minmax(0,1fr))", gap:"7px" }}>
           {TEAM_SUBTABS.map(function(st) {
+            var selected = teamSubTab === st.key;
             return (
               <button key={st.key}
                 onClick={function(k) { return function() { setTeamSubTab(k); }; }(st.key)}
-                style={subTabStyle(teamSubTab === st.key)}>
-                {st.label}
+                aria-pressed={selected}
+                style={{ minHeight:"78px", borderRadius:"9px", border:"1px solid " + (selected ? tokens.color.brand.navy : tokens.color.border.neutral),
+                  background:selected ? "rgba(15,31,61,0.06)" : tokens.color.surface.card, color:tokens.color.brand.navy,
+                  padding:"9px 4px", cursor:"pointer", fontFamily:"inherit", minWidth:0 }}>
+                <span aria-hidden="true" style={{ display:"block", fontSize:"18px" }}>{st.icon}</span>
+                <span style={{ display:"block", fontWeight:"bold", fontSize:"11px", marginTop:"5px" }}>{st.label}</span>
+                <span style={{ display:"block", fontSize:"10px", color:tokens.color.text.muted, marginTop:"2px", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{st.value}</span>
               </button>
             );
           })}
+          </div>
         </div>
 
         {/* ── Subtab content ─────────────────────────────────────── */}
-        <div style={{ marginTop:"4px" }}>
+        <div style={{ margin:"12px 12px 0" }}>
           {teamSubTab === "roster"   ? renderRoster()    : null}
           {teamSubTab === "schedule" ? renderSchedule()  : null}
           {teamSubTab === "snacks"   ? renderSnackDuty() : null}
@@ -7462,7 +7697,7 @@ export default function App() {
             <button key={t.key}
               onClick={function(k, d) { return function() {
                 if (k === "home") {
-                  if (primaryTab === "team" || primaryTab === "gameday") { setShowExitSheet(true); return; }
+                  if (primaryTab === "team" || primaryTab === "schedule" || primaryTab === "gameday") { setShowExitSheet(true); return; }
                   setScreen("home"); setPrimaryTab("home"); setHomeMode("welcome"); return;
                 }
                 if (d) return;
@@ -7496,7 +7731,7 @@ export default function App() {
       />
       <div style={Object.assign({}, S.header, isLandscape ? { padding:"5px 16px" } : {})}>
         <div style={S.logoWrap} onClick={function() {
-          if (primaryTab === "team" || primaryTab === "gameday") { setShowExitSheet(true); return; }
+          if (primaryTab === "team" || primaryTab === "schedule" || primaryTab === "gameday") { setShowExitSheet(true); return; }
           setScreen("home"); setPrimaryTab("home"); setHomeMode("welcome");
         }}>
           <BrandMark size={isLandscape ? 30 : 42} />
