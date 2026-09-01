@@ -3189,7 +3189,7 @@ export default function App() {
           </div>
         ) : !showAddForm ? (
           <button
-            style={{ ...S.btn("secondary"), width:"100%", marginBottom:"14px" }}
+            style={{ ...S.btn("primary"), width:"100%", marginBottom:"14px" }}
             onClick={function() { setShowAddForm(true); }}>
             + Add a New Player to Your Roster
           </button>

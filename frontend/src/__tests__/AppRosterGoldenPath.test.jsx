@@ -97,6 +97,8 @@ describe("App Roster tab golden path (#943)", function () {
     await openRosterTab();
 
     var addButton = screen.getByRole("button", { name: /Add a New Player to Your Roster/ });
+    expect(addButton.style.background).toContain("linear-gradient");
+    expect(addButton).toHaveStyle({ color:"rgb(255, 255, 255)" });
     fireEvent.click(addButton);
 
     var firstNameInput = screen.getByPlaceholderText("First name*");
