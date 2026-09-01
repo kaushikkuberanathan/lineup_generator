@@ -2909,7 +2909,9 @@ export default function App() {
                 </button>
                 {(function() {
                   var membershipTeamIds = (memberships || []).map(function(m) { return m.team_id; });
-                  var subscribedTeams = teams.filter(function(t) { return membershipTeamIds.indexOf(t.id) >= 0; });
+                  var subscribedTeams = _authBypassed
+                    ? teams
+                    : teams.filter(function(t) { return membershipTeamIds.indexOf(t.id) >= 0; });
                   if (subscribedTeams.length === 0) {
                     return (
                       <div style={{ fontSize:"13px", color:tokens.color.text.muted, fontStyle:"italic", padding:"8px 2px 14px" }}>
