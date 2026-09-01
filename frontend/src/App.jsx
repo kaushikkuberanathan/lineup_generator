@@ -1357,6 +1357,9 @@ export default function App() {
   var summaryOpen = _summaryOpen[0]; var setSummaryOpen = _summaryOpen[1];
   var _rosterDetailMode = useState(null);
   var rosterDetailMode = _rosterDetailMode[0]; var setRosterDetailMode = _rosterDetailMode[1];
+  useEffect(function() {
+    setRosterDetailMode(null);
+  }, [activeTeamId]);
   var _drag = useState(null);
   var dragPlayer = _drag[0]; var setDragPlayer = _drag[1];
   // Touch drag uses a mutable ref (window object) instead of useState to avoid
@@ -7391,6 +7394,17 @@ export default function App() {
       } else {
         openTeamSection("schedule");
       }
+    }
+
+    // Player profile modes are full My Team screens. Keeping them outside the
+    // dashboard shell prevents the team overview from appearing above a
+    // supposedly dedicated player page.
+    if (teamSubTab === "roster" && rosterDetailMode !== null) {
+      return (
+        <div style={{ padding:"14px 12px 80px" }}>
+          {renderRoster()}
+        </div>
+      );
     }
 
     return (
