@@ -5,7 +5,7 @@ import { isSupabaseEnabled, supabase, dbSaveTeams, dbDeleteTeam,
          dbLoadTeams, dbLoadTeamData, dbSaveTeamData,
          dbSnapshotRoster, dbGetRosterSnapshots,
          dbSaveShareLink, dbLoadShareLink } from './supabase.js';
-import { track, mixpanel, deviceContext } from '@/utils/analytics';
+import { track, identifyTeam, mixpanel, deviceContext } from '@/utils/analytics';
 import { track as vaTrack } from '@vercel/analytics';
 import { FEATURE_FLAGS, isFlagEnabled, setRuntimeFlagCache } from '@/config/featureFlags';
 import { generateLineupV2 } from '@/utils/lineupEngineV2';
@@ -1982,10 +1982,8 @@ export default function App() {
     setTeamSubTab("roster");
     setScreen("app");
     track("load_team", { team_id: team.id, team_name: team.name });
-    mixpanel.identify(team.id);
     var coachName = user && user.profile && user.profile.first_name ? user.profile.first_name : null;
-    try { if (coachName) { mixpanel.alias(coachName + "_" + team.id); } } catch(e) { /* ignored */ }
-    mixpanel.people.set({
+    identifyTeam(team.id, coachName ? coachName + "_" + team.id : null, {
       $name: coachName || team.name,
       coach_name: coachName || null,
       team_id: team.id,
