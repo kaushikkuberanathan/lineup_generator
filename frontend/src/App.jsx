@@ -7016,9 +7016,11 @@ export default function App() {
   // AUTH GATE — LIVE as of #342 cutover. Editing requires a session;
   // viewing does not (both share viewers return above this block).
   // AUTH GATE
-  // Dev-only bypass: in browser console run `localStorage.setItem('auth_bypass','1')`
-  // then reload. `import.meta.env.DEV` is false in production builds — Vite removes this.
-  var _authBypassed = import.meta.env.DEV && localStorage.getItem('auth_bypass') === '1';
+  // Dev-only bypass: use `?dev_bypass=1` for a disposable local review, or
+  // persist it from the browser console with `localStorage.setItem('auth_bypass','1')`.
+  // `import.meta.env.DEV` is false in production builds — Vite removes this.
+  var _devParams = new URLSearchParams(window.location.search);
+  var _authBypassed = import.meta.env.DEV && (_devParams.get('dev_bypass') === '1' || localStorage.getItem('auth_bypass') === '1');
   if (!_authBypassed) {
     if (authState === 'loading') {
       return (
