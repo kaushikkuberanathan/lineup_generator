@@ -316,6 +316,58 @@ Per-file counts below verified individually via `node --test <file>` on 2026-08-
   include this table now that it's actually live, per this repo's own
   convention (see the 022/023 note above) that the ground-truth schema doc
   reflects only what's live, not a pending migration.
+- **`033_scoring_rls_lockdown_section_b.sql` + `031_scoring_grant_revocation.sql`
+  — APPLIED TO DEV (psqvzppphdedqkpmarwx) AND PROD (hzaajccyurlyeweekvma),
+  both 2026-08-31 (033 then 031, same window, DEV first then PROD, KK
+  confirmed go-ahead separately for each step including a dedicated
+  confirmation before the PROD apply specifically).** Closes the core
+  exploitable vulnerability in #355 (Phase 4C steps 4a/4b): drops the four
+  hardcoded-team-id anon backdoor policies (`at_bats_anon_test`/
+  `game_state_anon_test`/`scorer_lock_anon_test`/`audit_log_anon_test`) and
+  the three unscoped `allow_scorer_writes FOR ALL USING(true)` catch-alls
+  on the four live-scoring tables (033 — formalizes migration 019's dormant
+  Section B as its own runnable file), then revokes the table-level GRANTs
+  underneath them so `anon` holds zero privileges and `authenticated` holds
+  exactly what migration 019 Section A's real policies use, no more (031 —
+  RLS alone doesn't stop `TRUNCATE`, same reasoning as migration 004).
+  Gated on the Phase 4C proposal doc's step 3 (a real production game-day
+  soak, post-shim-flip) — confirmed complete by KK before this apply.
+  **Verification, both databases:** `pg_policies` before/after confirmed
+  all 7 backdoor/catch-all policies removed; `information_schema.role_table_grants`
+  before/after confirmed `anon` at zero privileges and `authenticated`
+  matching `031`'s own per-table enumeration exactly; `get_advisors`
+  (security) re-run clean on both, no new findings on the four tables.
+  **DEV additionally verified** via a live SQL-level probe simulating the
+  `anon` role attempting a SELECT and two INSERTs (including the exact
+  hardcoded-team-id backdoor payload) — all three rejected with
+  `insufficient_privilege`. **PROD additionally verified** the same way for
+  the SELECT probe; the equivalent live INSERT/UPDATE probe on PROD was
+  blocked by this session's own tooling permissions before it could run, so
+  PROD's live-probe confirmation rests on the identical catalog-level match
+  to DEV's already-probe-confirmed state, not a repeated live probe. **Real
+  end-to-end proof on PROD:** immediately after the apply, KK scored a real
+  game (Mud Hens vs GHH, top and bottom of inning 1) through the live app;
+  independently confirmed via `scoring_audit_log` — `at_bat_opened`,
+  `pitch_recorded`, `at_bat_resolved`, `opp_pitch` ×7, `half_inning_ended`
+  ×2, all recorded 2026-08-31 21:25:38–21:25:50 UTC, every row's
+  `actor_user_id` = `951f66cc-afec-41b2-8c1a-58fc61f1b847` (KK's real
+  `auth.users` UUID per root `CLAUDE.md`, not a device-id fallback or the
+  zero-UUID shim this migration set out to make unreachable). **Not run:**
+  the real `npm run test:rls` suite (`LS1`-`LS7` plus the full
+  `S`/`T`/`M`/`RS` blocks covering `team_data`/`teams`/`roster_snapshots`/
+  `team_memberships`) — no `backend/.env.rls.local` credentials were
+  available in the session that did this apply. The branch's own
+  `apply-rls-bootstrap.sh` update replays 019 → 033 → 031 on the ephemeral
+  CI stack and un-skips `LS1`-`LS7`; the `rls` CI job on this branch's PR to
+  `develop` is the first time that full suite actually runs against these
+  two migrations. Deliberately left alone, a separate KK decision: the four
+  `public_read_*` SELECT policies (019's own header flags these as probable
+  un-narrowed leftovers with no real anon viewer route, but says explicitly
+  to confirm with KK before dropping — not yet confirmed). Two of the
+  proposal doc's seven steps remain open as tracked follow-up, out of scope
+  for this apply: restoring `scorer_user_id`/`actor_user_id`/
+  `recorded_by_id` from `TEXT` to `uuid`+FK, and removing the now-dead
+  `isAdminTestMode` variable.
 
 ### !! FIVE NUMERIC COLLISIONS ACROSS THE TWO TREES !!
 
