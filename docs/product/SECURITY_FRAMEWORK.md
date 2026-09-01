@@ -1,10 +1,18 @@
 # Security Framework — Dugout Lineup
 
-> **Production reconciliation — 2026-08-30:** production is v3.1.0 through
-> PR #959 (`02abfc0`). Treat the detailed framework below as a control backlog,
-> not proof that every checked item is deployed. Section A and auth-shim removal
-> are live; #355's permissive scoring policies remain live; migration 032 and
-> its permission hardening are post-v3.1 `develop` work only.
+> **Production reconciliation — 2026-08-31 (supersedes 2026-08-30 below):**
+> #355's permissive scoring policies are no longer live — migrations `033`
+> (drops the anon backdoors + catch-all) and `031` (revokes the underlying
+> GRANTs) are both applied to PROD, `anon` now holds zero privileges on all
+> four live-scoring tables. See root `CLAUDE.md`'s Known Open Bugs row 4 and
+> `docs/product/AUTH_SECURITY_AUDIT_ROADMAP.md`'s WS-3 row for verification
+> detail. Treat the detailed framework below as a control backlog, not proof
+> that every other checked item is deployed.
+>
+> **Superseded — 2026-08-30 (kept for history):** production is v3.1.0
+> through PR #959 (`02abfc0`). Section A and auth-shim removal are live;
+> #355's permissive scoring policies remain live; migration 032 and its
+> permission hardening are post-v3.1 `develop` work only.
 
 **Status:** Draft v1.0
 **Owner:** Kaushik
