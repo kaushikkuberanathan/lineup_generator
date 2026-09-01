@@ -1,0 +1,87 @@
+-- Migration 033: drop the live-scoring anon backdoors (#355 fix, migration
+-- 019 Section B, formalized as its own runnable file)
+--
+-- DRAFTED 2026-08-31 on branch fix/355-scoring-rls-lockdown. NOT APPLIED TO
+-- DEV OR PROD. This branch is explicitly NOT merged to develop or main in
+-- this session — see the branch's own commit messages. Validated only
+-- against the ephemeral CI scratch database (backend/scripts/apply-rls-
+-- bootstrap.sh + the `rls` CI job), which holds no real coach or roster
+-- data. Applying this to a real database is a separate, later, human
+-- decision gated on docs/product/PHASE4C_SCORING_RLS_PROPOSAL.md's step 3
+-- (a real production game-day soak) — see that doc and the STOP banner
+-- migration 019 itself carries on this exact SQL.
+--
+-- ---------------------------------------------------------------------------
+-- WHY THIS IS ITS OWN FILE INSTEAD OF UNCOMMENTING 019's SECTION B IN PLACE
+-- ---------------------------------------------------------------------------
+-- Migration 019 is committed history — Section A of that file is already
+-- live on DEV and PROD, and its Section B is a deliberately-inert, human-
+-- gated proposal block (commented out on purpose, per its own header: "this
+-- is not a guard the file enforces for you, it is a human decision gate").
+-- Editing 019 in place to activate Section B would mutate an
+-- already-applied migration file, which this repo's own migrations/README.md
+-- convention treats as unsafe once a file has shipped to any real database.
+-- This file reproduces Section B's DROP POLICY statements verbatim as a new,
+-- separately-numbered, independently-applyable migration instead — same SQL,
+-- same effect, but 019 itself stays untouched.
+--
+-- ---------------------------------------------------------------------------
+-- WHAT THIS DOES
+-- ---------------------------------------------------------------------------
+-- Drops the four hardcoded-team-id anon backdoors and the three unscoped
+-- allow_scorer_writes catch-alls documented in migration 019's own header
+-- and exercised by backend/src/__tests__/rls/policies.test.js's LS1-LS7.
+-- Once these are gone, the ONLY remaining write policies on these four
+-- tables are migration 019 Section A's auth.uid()-scoped ones (TO
+-- authenticated) — an anon caller has no permissive policy left to satisfy,
+-- so RLS's deny-by-default takes over and every LS1-LS7 write attempt is
+-- blocked. This migration does not touch table-level GRANTs — that is
+-- migration 031's job, and 031's own header requires it run in the same
+-- maintenance window as this file, after it, never standalone.
+--
+-- Deliberately NOT included here: the four public_read_* SELECT policies
+-- (public_read_scoring_sessions / public_read_live_state /
+-- public_read_audit_log / public_read_at_bats). Migration 019's header
+-- flags these as probable un-narrowed leftovers with no real anon viewer
+-- route depending on them, but says explicitly "confirm this with KK before
+-- dropping." That confirmation has not happened. LS1-LS7 test INSERT/write
+-- paths only, not SELECT, so leaving these four alone does not block this
+-- migration's acceptance test — narrowing or removing them is left as a
+-- separate, later decision.
+--
+-- ---------------------------------------------------------------------------
+-- PRECONDITION (same STOP as migration 019's own Section B banner)
+-- ---------------------------------------------------------------------------
+-- Do not apply this to DEV or PROD until:
+--   (a) the frontend shim is flipped and soaked (proposal doc steps 2-3 —
+--       step 2 is done, per root CLAUDE.md's #355 row; step 3, a real
+--       production game-day soak, is NOT done and cannot be simulated here);
+--   (b) migration 031 is ready to run in the same window immediately after.
+-- Running this against a live database before both are true breaks every
+-- coach's live scoring mid-game — the shimmed frontend would stop sending
+-- an identity these tighter policies can recognize. See
+-- docs/product/PHASE4C_SCORING_RLS_PROPOSAL.md for the full failure-mode
+-- analysis. This file is safe to run ONLY against the ephemeral CI scratch
+-- database, which has no coaches, no live games, and is destroyed after
+-- each run.
+--
+-- ---------------------------------------------------------------------------
+-- ROLLBACK
+-- ---------------------------------------------------------------------------
+-- Re-create the dropped policies from migration 019's own header/Section B
+-- comment block (the exact USING(true)/hardcoded-array definitions this file
+-- removes) — not reproduced again here to avoid a second copy of backdoor
+-- SQL living un-commented in the tree. On the ephemeral stack, rollback is
+-- simply not replaying this file.
+--
+-- Related: #355, migration 019 (Section A, already live; this file is its
+-- Section B), migration 031 (the companion GRANT revocation — apply after
+-- this file, same window, never standalone).
+
+DROP POLICY IF EXISTS "scorer_lock_anon_test" ON public.game_scoring_sessions;
+DROP POLICY IF EXISTS "game_state_anon_test"  ON public.live_game_state;
+DROP POLICY IF EXISTS "audit_log_anon_test"   ON public.scoring_audit_log;
+DROP POLICY IF EXISTS "at_bats_anon_test"     ON public.at_bats;
+DROP POLICY IF EXISTS "allow_scorer_writes"   ON public.game_scoring_sessions;
+DROP POLICY IF EXISTS "allow_scorer_writes"   ON public.live_game_state;
+DROP POLICY IF EXISTS "allow_scorer_writes"   ON public.scoring_audit_log;

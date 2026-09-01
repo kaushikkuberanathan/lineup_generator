@@ -1,12 +1,26 @@
 # Phase 4C Auth Cutover — Live Scoring RLS Design Proposal
 
-> **Current-state boundary — 2026-08-30:** production v3.1.0 includes Section
-> A and the shim-removal work, but not Section B. The permissive scoring
-> policies remain in production and #355 stays open. Migration 032 is later
-> `develop`-only defense-in-depth work; it does not complete or replace this
-> proposal's coordinated scoring cutover.
+> **Correction, 2026-08-31: the boundary below is now stale.** Section B
+> (as migration `033_scoring_rls_lockdown_section_b.sql`, a separately-
+> numbered formalization of this file's Section B — see that file's own
+> header for why) plus the companion GRANT revocation
+> (`031_scoring_grant_revocation.sql`) are both now **applied to DEV and
+> PROD**, 2026-08-31, after step 3's soak was confirmed complete. **The core
+> exploitable vulnerability #355 tracks is fixed on both databases.** See
+> the Step 3/4 updates below and `backend/CLAUDE.md` → Migration Notes for
+> full verification detail. Steps 6-7 (column type restore, `isAdminTestMode`
+> removal) remain open — tracked separately, see the note at the bottom of
+> §3.
+>
+> **Superseded — 2026-08-30 boundary (kept for history):** production v3.1.0
+> includes Section A and the shim-removal work, but not Section B. The
+> permissive scoring policies remain in production and #355 stays open.
+> Migration 032 is later `develop`-only defense-in-depth work; it does not
+> complete or replace this proposal's coordinated scoring cutover.
 
-**Status: PROPOSAL, Section A fully applied (DEV + PROD), Steps 1-2 of §3 complete, Section B not started.**
+**Status: Section A fully applied (DEV + PROD). Section B + GRANT revocation
+(033/031) fully applied (DEV + PROD), 2026-08-31. Steps 1-5 of §3 complete.
+Steps 6-7 open, tracked as follow-up.**
 Written per KK's explicit instruction (overnight handoff, 2026-08-06): recon + design only,
 no code changes, no SQL executed against any database — that constraint held for this doc's
 own drafting session. Section A of the drafted migration
@@ -170,33 +184,45 @@ if it's done out of turn — see also §5 for the consolidated worst-case list.
    directly against current code 2026-08-30. This was safe to deploy ahead of Section B
    *because Section B hasn't run yet* — if anything about the real-identity path were subtly
    wrong, the old permissive policies still let writes through while it was diagnosed.
-3. **Soak in prod** for at least one full real game-day cycle with real authenticated
-   coaches: scorer claim, heartbeat, pitch recording, hand-off, finish-game. Confirm via
-   `scoring_audit_log` that `actor_user_id` values are now real `auth.users` UUIDs
-   (as text), not `scorer_local_id` values or the zero-UUID.
-4. **Apply migration 019, Section B** (drops the four `*_anon_test` backdoors and three
-   `allow_scorer_writes` catch-alls) — **only after step 3's soak is confirmed clean.**
-   This is the actual #355 fix. The `public_read_*` policies' anon-viewer question
-   (§1.4) is confirmed — include them in this step.
-   **Section B alone does not close the precondition — a separate GRANT-revocation step
-   is required too, confirmed by a direct read-only query against prod (2026-08-15):
-   `anon` and `authenticated` both currently hold full `TRUNCATE`/`DELETE`/`INSERT`/
-   `UPDATE` table-level grants on all four scoring tables** (`live_game_state`,
-   `game_scoring_sessions`, `scoring_audit_log`, `at_bats`) — untouched by anything in
-   this proposal or by tonight's #355 work. RLS policies and table GRANTs are
-   independent Postgres layers; dropping the anon RLS policies in Section B does not
-   revoke these grants. Matching the pattern migration 004 already used for
-   `team_data`/`teams`/`roster_snapshots` (`REVOKE TRUNCATE, DELETE ... FROM anon,
-   authenticated`, then re-grant only what `auth.uid()`-scoped policies should allow),
-   a parallel `REVOKE`/re-`GRANT` step for these four scoring tables needs its own
-   migration, drafted and sequenced alongside (not instead of) Section B before this
-   step can be considered complete. Not drafted as of this note — flagged here so
-   whoever executes step 4 doesn't miss it.
-5. **Un-skip `LS1`-`LS7`** in `policies.test.js` (remove the `{skip: '#355 tracked...'}`
-   annotations) — these were committed RED-by-design specifically to go GREEN once this
-   step lands; premature un-skipping before step 4 actually ships would fail the
-   required `rls` CI check for every PR in the repo (the exact scenario KK's original
-   2026-08-02 skip decision was designed to avoid).
+3. **Soak in prod.** ✅ **Confirmed complete by KK, 2026-08-31**, before the Section
+   B/GRANT-revocation apply below. (Full first-person confirmation of every named
+   criterion below — scorer claim, heartbeat, pitch recording, hand-off, finish-game,
+   individually re-verified against `scoring_audit_log` before/after this step — was not
+   independently re-derived in this pass; the step-4 evidence below is what was actually
+   captured live.)
+4. **Apply migration 019 Section B, formalized as `033_scoring_rls_lockdown_section_b.sql`**
+   (drops the four `*_anon_test` backdoors and three `allow_scorer_writes` catch-alls),
+   **plus the GRANT-revocation companion, `031_scoring_grant_revocation.sql`** (revokes
+   the table-level `TRUNCATE`/`DELETE`/`INSERT`/`UPDATE` grants underneath — RLS alone
+   doesn't stop `TRUNCATE`, same reasoning as migration 004). ✅ **Both applied to DEV
+   (psqvzppphdedqkpmarwx) and PROD (hzaajccyurlyeweekvma), 2026-08-31** — 033 then 031,
+   same window, DEV first then PROD with a separate KK go-ahead before the PROD step.
+   **This closes the core #355 exploitable vulnerability on both databases.** Full
+   verification detail (before/after `pg_policies` and `role_table_grants`, `get_advisors`,
+   live anon-write rejection probes, and the real end-to-end game-day proof on PROD) is in
+   `backend/CLAUDE.md` → Migration Notes and `backend/migrations/README.md`'s rows for
+   `033`/`031` — not restated here to avoid two copies of the same evidence drifting apart.
+   **Deviation from this step's original plan, worth flagging explicitly:** the four
+   `public_read_*` SELECT policies were confirmed by KK 2026-08-07 as safe to drop in this
+   step, but `033`'s own header states they were deliberately left in place pending a
+   separate confirmation that, per that file's header, "has not happened" — so despite
+   §1.4/§3-step-4's original framing above, dropping them did **not** happen in this apply.
+   Functionally this is low-risk (the GRANT revocation in `031` already removes `anon`'s
+   underlying SELECT privilege regardless of whether these four policy objects still exist,
+   so they are now inert either way) but it means a real, still-open decision remains:
+   either drop these four now-inert policy objects for cleanliness in a small follow-up, or
+   explicitly re-confirm they should stay. Not resolved by this pass.
+5. **Un-skip `LS1`-`LS7`** in `policies.test.js`. ✅ **Code-complete on branch
+   `fix/355-scoring-rls-lockdown`** — the `{skip: '#355 tracked...'}` annotations are
+   removed and `backend/scripts/apply-rls-bootstrap.sh` replays `019 → 033 → 031` on the
+   ephemeral CI stack. **Not yet confirmed GREEN against a real Postgres instance by this
+   session** — no `backend/.env.rls.local` credentials were available locally, so the real
+   `npm run test:rls` suite was never run here (against DEV or the ephemeral stack). The
+   `rls` CI job on this branch's PR to `develop` is the first time the full suite —
+   `LS1`-`LS7` plus the pre-existing `S`/`T`/`M`/`RS` blocks covering
+   `team_data`/`teams`/`roster_snapshots`/`team_memberships` — actually runs against these
+   two migrations. Treat that CI run's outcome as the real completion signal for this step,
+   not this document.
 6. **Restore column types**: `game_scoring_sessions.scorer_user_id`,
    `scoring_audit_log.actor_user_id`, `at_bats.recorded_by_id` — `TEXT` → `uuid` + `FK`
    to `auth.users`. Requires clearing shim-era rows first (`scorer_local_id` UUIDs and
