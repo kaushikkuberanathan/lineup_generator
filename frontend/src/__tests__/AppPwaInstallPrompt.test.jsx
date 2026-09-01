@@ -35,6 +35,7 @@ vi.mock("../hooks/useAuth", () => ({
 
 vi.mock("../utils/analytics", () => ({
   track: vi.fn(),
+  identifyTeam: vi.fn(),
   mixpanel: {
     identify: vi.fn(),
     alias: vi.fn(),
