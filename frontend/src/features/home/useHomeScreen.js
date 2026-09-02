@@ -60,9 +60,23 @@ export function useHomeScreen({ userId, getAccessToken, isOnline = true, fetchIm
   // recreated. This ref is the one place load() reads "what team IDs did
   // we have before this fetch" from.
   const homeRef = useRef(null);
+  // getAccessToken must never go stale: clientRef is created exactly once
+  // (below), so a getAccessToken captured directly at that first render
+  // would keep returning whatever the caller's session was at MOUNT time
+  // forever — wrong the moment a real caller (App.jsx) mounts this before
+  // an async magic-link session resolves. Read it through a ref that's
+  // refreshed every render instead, wrapped in a stable function the
+  // client is created with once.
+  const getAccessTokenRef = useRef(getAccessToken);
+  getAccessTokenRef.current = getAccessToken;
   const clientRef = useRef(null);
   if (!clientRef.current) {
-    clientRef.current = createApiClient({ baseUrl: BACKEND_URL, getAccessToken, fetchImpl, waitImpl });
+    clientRef.current = createApiClient({
+      baseUrl: BACKEND_URL,
+      getAccessToken: function () { return getAccessTokenRef.current ? getAccessTokenRef.current() : null; },
+      fetchImpl,
+      waitImpl,
+    });
   }
   const guardRef = useRef(null);
   if (!guardRef.current) guardRef.current = createGenerationGuard();

@@ -299,3 +299,22 @@ describe('useHomeScreen — analytics (#1032)', function () {
     expect(homeAnalytics.trackHomeTeamFilterChanged).toHaveBeenCalledWith({ viewFilter: 'all' });
   });
 });
+
+describe('useHomeScreen — getAccessToken must not go stale after mount (App.jsx integration)', function () {
+  test('a refetch after getAccessToken changes across a re-render uses the LATEST function, not the one captured at mount', async function () {
+    var fetchImpl = vi.fn(() => jsonResponse(200, HOME_ONE_TEAM, {}));
+    var { result, rerenderProps } = await renderHookWithProps(function (props) {
+      return useHomeScreen(props);
+    }, { userId: 'user-1', getAccessToken: async () => null, fetchImpl: fetchImpl, cacheStorage: storage });
+
+    expect(fetchImpl.mock.calls[0][1].headers.Authorization).toBeUndefined();
+
+    // Session resolves after mount — a common real sequence (magic-link
+    // auth completes asynchronously after the component first renders).
+    await rerenderProps({ userId: 'user-1', getAccessToken: async () => 'real-token', fetchImpl: fetchImpl, cacheStorage: storage });
+    await act(async function () { await result.current.refetch(); });
+
+    var lastCall = fetchImpl.mock.calls[fetchImpl.mock.calls.length - 1];
+    expect(lastCall[1].headers.Authorization).toBe('Bearer real-token');
+  });
+});
