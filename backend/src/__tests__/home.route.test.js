@@ -264,4 +264,121 @@ describe('GET /api/v1/home', () => {
     assert.equal(res.body.error.code, 'INTERNAL_ERROR');
     assert.equal(typeof res.body.error.requestId, 'string');
   });
+
+  test('H15: cross-team resource leakage is rejected — each team\'s nextEvent/action IDs never reference another team (#1024)', async () => {
+    installStubs({
+      memberships: [
+        { team_id: 'team_a', role: 'admin', status: 'active' },
+        { team_id: 'team_b', role: 'admin', status: 'active' },
+      ],
+      teams: [
+        { id: 'team_a', name: 'Team A', age_group: '8U', season: 'Fall', year: 2026, sport: 'baseball' },
+        { id: 'team_b', name: 'Team B', age_group: '8U', season: 'Fall', year: 2026, sport: 'baseball' },
+      ],
+      teamData: [
+        {
+          team_id: 'team_a',
+          roster: [], grid: {}, batting_order: [], locked: false, attendance_overrides: {},
+          schedule: [{ id: 'game_a1', date: '2099-01-01', time: '18:00', type: 'game', opponent: 'Rivals A' }],
+        },
+        {
+          team_id: 'team_b',
+          roster: [], grid: {}, batting_order: [], locked: false, attendance_overrides: {},
+          schedule: [{ id: 'game_b1', date: '2099-01-02', time: '18:00', type: 'game', opponent: 'Rivals B' }],
+        },
+      ],
+    });
+    const res = await request(app).get('/api/v1/home').set('Authorization', `Bearer ${TOKEN}`);
+    assert.equal(res.status, 200);
+    const teamA = res.body.teams.find((t) => t.id === 'team_a');
+    const teamB = res.body.teams.find((t) => t.id === 'team_b');
+
+    assert.equal(teamA.nextEvent.id, 'game_a1');
+    assert.equal(teamB.nextEvent.id, 'game_b1');
+
+    // Every href on team A's actions must be scoped under team_a and must
+    // never reference team B's team ID or game ID, and vice versa.
+    for (const action of teamA.actions) {
+      assert.match(action.href, /^\/app\/teams\/team_a(\/|$)/);
+      assert.ok(!action.href.includes('team_b'));
+      assert.ok(!action.href.includes('game_b1'));
+    }
+    for (const action of teamB.actions) {
+      assert.match(action.href, /^\/app\/teams\/team_b(\/|$)/);
+      assert.ok(!action.href.includes('team_a'));
+      assert.ok(!action.href.includes('game_a1'));
+    }
+  });
+
+  test('H16: a malformed/expired token is rejected with 401 before any query runs', async () => {
+    const calls = installStubs({ rejectAuth: true });
+    const res = await request(app).get('/api/v1/home').set('Authorization', 'Bearer garbage-token');
+    assert.equal(res.status, 401);
+    assert.equal(calls.fromTables.length, 0);
+  });
+
+  test('H17: the profiles table is never queried — a missing profile row cannot hide a valid membership (#1025)', async () => {
+    const calls = installStubs({
+      memberships: [{ team_id: 't1', role: 'coach', status: 'active' }],
+      teams: [{ id: 't1', name: 'No Profile Yet', age_group: '8U', season: 'Fall', year: 2026, sport: 'baseball' }],
+      teamData: [{ team_id: 't1', roster: [], schedule: [], grid: {}, batting_order: [], locked: false, attendance_overrides: {} }],
+    });
+    const res = await request(app).get('/api/v1/home').set('Authorization', `Bearer ${TOKEN}`);
+    assert.equal(res.status, 200);
+    assert.equal(res.body.teams.length, 1);
+    assert.ok(!calls.fromTables.includes('profiles'));
+  });
+
+  test('H18: mixed roles across teams in one response — each team carries only its own role\'s actions', async () => {
+    installStubs({
+      memberships: [
+        { team_id: 't_admin', role: 'admin', status: 'active' },
+        { team_id: 't_viewer', role: 'parent', status: 'active' },
+      ],
+      teams: [
+        { id: 't_admin', name: 'Admin Team', age_group: '8U', season: 'Fall', year: 2026, sport: 'baseball' },
+        { id: 't_viewer', name: 'Viewer Team', age_group: '8U', season: 'Fall', year: 2026, sport: 'baseball' },
+      ],
+      teamData: [
+        { team_id: 't_admin', roster: [], schedule: [{ id: 'g1', date: '2099-01-01', time: '18:00' }], grid: {}, batting_order: [], locked: false, attendance_overrides: {} },
+        { team_id: 't_viewer', roster: [], schedule: [{ id: 'g2', date: '2099-01-01', time: '18:00' }], grid: {}, batting_order: [], locked: false, attendance_overrides: {} },
+      ],
+    });
+    const res = await request(app).get('/api/v1/home').set('Authorization', `Bearer ${TOKEN}`);
+    const admin = res.body.teams.find((t) => t.id === 't_admin');
+    const viewer = res.body.teams.find((t) => t.id === 't_viewer');
+    assert.equal(admin.role.code, 'admin');
+    assert.equal(viewer.role.code, 'viewer');
+    assert.ok(admin.actions.some((a) => a.id === 'manage_roster'));
+    assert.ok(!viewer.actions.some((a) => a.id === 'manage_roster' || a.id === 'claim_scoring'));
+  });
+
+  test('H19: no event — schedule present but empty yields nextEvent null and no game-mode/scoring actions', async () => {
+    installStubs({
+      memberships: [{ team_id: 't1', role: 'admin', status: 'active' }],
+      teams: [{ id: 't1', name: 'Offseason', age_group: '8U', season: 'Fall', year: 2026, sport: 'baseball' }],
+      teamData: [{ team_id: 't1', roster: [], schedule: [], grid: {}, batting_order: [], locked: false, attendance_overrides: {} }],
+    });
+    const res = await request(app).get('/api/v1/home').set('Authorization', `Bearer ${TOKEN}`);
+    const team = res.body.teams[0];
+    assert.equal(team.nextEvent, null);
+    assert.ok(!team.actions.some((a) => a.id === 'start_game_mode' || a.id === 'claim_scoring'));
+  });
+
+  test('H20: ten teams — payload stays under the 50KB budget and query count stays at 3 (section 4.3)', async () => {
+    const memberships = Array.from({ length: 10 }, (_, i) => ({ team_id: `team_${i}`, role: 'coach', status: 'active' }));
+    const teams = memberships.map((m, i) => ({ id: m.team_id, name: `Team ${i}`, age_group: '8U', season: 'Fall', year: 2026, sport: 'baseball' }));
+    const teamData = memberships.map((m) => ({
+      team_id: m.team_id, roster: Array.from({ length: 12 }, (_, j) => ({ name: `Player ${j}` })),
+      schedule: [{ id: `g_${m.team_id}`, date: '2099-01-01', time: '18:00', type: 'game', opponent: 'Rivals' }],
+      grid: {}, batting_order: [], locked: false, attendance_overrides: {},
+    }));
+    const calls = installStubs({ memberships, teams, teamData });
+    const res = await request(app).get('/api/v1/home').set('Authorization', `Bearer ${TOKEN}`);
+    assert.equal(res.status, 200);
+    assert.equal(res.body.teams.length, 10);
+    assert.equal(calls.fromTables.length, 3);
+    const payloadBytes = Buffer.byteLength(JSON.stringify(res.body), 'utf8');
+    assert.ok(payloadBytes < 50 * 1024, `payload was ${payloadBytes} bytes, budget is 50KB`);
+  });
 });
