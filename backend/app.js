@@ -7,6 +7,7 @@ const adminRouter = require('./src/routes/admin');
 const feedbackRouter = require('./src/routes/feedback');
 const teamDataRouter = require('./src/routes/teamData');
 const opsRouter = require('./src/routes/ops');
+const homeRouter = require('./src/routes/home');
 const { supabaseAdmin } = require('./src/lib/supabase');
 
 const app = express();
@@ -175,6 +176,14 @@ app.get('/ping', function(req, res) {
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/ops', opsRouter);
 app.use('/api/v1/teams', teamDataRouter);
+// homeRouter MUST mount before adminRouter, same reasoning as feedbackRouter
+// directly below: adminRouter's router.use(requireAuth, requireAdmin) gate
+// (admin.js:172) is unconditional for ANY path under its bare /api/v1
+// mount, matched or not. Mounting homeRouter first lets its one specific
+// path (/api/v1/home) claim that exact route before adminRouter's catch-all
+// ever sees it; every other path still falls through to adminRouter
+// exactly as before (#1023).
+app.use('/api/v1/home', homeRouter);
 // feedbackRouter MUST mount before adminRouter (Story 99 closure, 2026-07-31).
 // Both share the /api/v1 base. adminRouter has an unconditional, path-agnostic
 // router.use(requireAuth, requireAdmin) gate (admin.js:172) that runs for ANY

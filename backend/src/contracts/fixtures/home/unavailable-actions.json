@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "generatedAt": "2026-09-02T18:12:00Z",
+  "requestId": "req_fixture_unavailable_actions",
+  "defaultTeamId": "team_locked_1",
+  "teams": [
+    {
+      "id": "team_locked_1",
+      "name": "Panthers",
+      "displayName": "Panthers",
+      "ageGroup": "11U",
+      "season": "Fall",
+      "year": 2026,
+      "sport": "baseball",
+      "role": { "code": "coach", "label": "Coach / Coordinator" },
+      "capabilities": [
+        "team.view", "roster.view", "roster.manage",
+        "schedule.view", "schedule.manage",
+        "lineup.view", "lineup.create", "lineup.manage", "lineup.lock",
+        "game.view_mode", "game.start_mode",
+        "scoring.view", "scoring.claim", "scoring.record", "scoring.finalize"
+      ],
+      "nextEvent": {
+        "id": "game_601",
+        "type": "game",
+        "opponent": "Timberwolves",
+        "startsAt": "2026-09-02T20:00:00Z",
+        "location": "Panther Stadium",
+        "homeAway": "home"
+      },
+      "readiness": { "rosterCount": 9, "confirmedCount": 6, "lineupStatus": "ready", "lineupId": "lineup_601" },
+      "actions": [
+        {
+          "id": "edit_lineup",
+          "label": "Edit Panthers lineup",
+          "href": "/app/teams/team_locked_1/lineups/lineup_601",
+          "enabled": false,
+          "disabledReason": "Lineup is locked for this game. Unlock it from the Lineups screen to make changes."
+        },
+        {
+          "id": "start_game_mode",
+          "label": "Start Panthers Game Mode",
+          "href": "/app/teams/team_locked_1/games/game_601/mode",
+          "enabled": true,
+          "disabledReason": null
+        },
+        {
+          "id": "manage_roster",
+          "label": "Manage Panthers roster",
+          "href": "/app/teams/team_locked_1/roster",
+          "enabled": false,
+          "disabledReason": "Fewer than the minimum 9 confirmed players — add confirmations before game day to avoid a forfeit."
+        }
+      ]
+    }
+  ]
+}

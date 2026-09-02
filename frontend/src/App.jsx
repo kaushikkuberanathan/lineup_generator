@@ -60,6 +60,9 @@ import { firstName } from './utils/playerName';
 import { SharedView } from './screens/Share/SharedView';
 import { readRosterProfileRoute, buildRosterProfileSearch } from './utils/rosterProfileRoute';
 import { getScheduleOverview } from './utils/scheduleOverview';
+import { HomeScreen as ApiHomeScreen } from './features/home/HomeScreen.jsx';
+import { parseAppRoute, buildAppRoute, resolveDestination, savePendingDestination, consumePendingDestination } from './api/routes.js';
+import { getHomeCache } from './api/homeCache.js';
 
 // ============================================================
 // HELPERS
@@ -1404,6 +1407,18 @@ export default function App() {
   var v2SectionOpen = _v2sec[0]; var setV2SectionOpen = _v2sec[1];
   var _hm = useState("welcome");
   var homeMode = _hm[0]; var setHomeMode = _hm[1];
+  // #1030 — which team the API-driven Home surface should reopen expanded
+  // on, set only when Back returns to Home from a compatibility-adapter
+  // navigation (see the popstate handler near loadTeam). null otherwise,
+  // meaning HomeScreen falls back to the API's own defaultTeamId.
+  // Known limitation, accepted as low-severity: this isn't cleared when
+  // Home is reached by some OTHER path (e.g. the exit sheet's "Go to Home
+  // Screen") after a Back-driven value was set — a later fresh Home mount
+  // could reuse a stale override in that specific sequence. Worst case is
+  // a mildly wrong initial expansion, not a security or data issue, and
+  // it self-corrects the moment the coach taps any team card.
+  var _apiHomeReturnTeamId = useState(null);
+  var apiHomeReturnTeamId = _apiHomeReturnTeamId[0]; var setApiHomeReturnTeamId = _apiHomeReturnTeamId[1];
   var _discoveredTeam = useState(null);
   var discoveredTeam = _discoveredTeam[0]; var setDiscoveredTeam = _discoveredTeam[1];
   var _nt = useState({ name:"", ageGroup:"", sport:"", season:currentSeasonGuess(), year: new Date().getFullYear() });
@@ -2085,6 +2100,191 @@ export default function App() {
       }).catch(function() { setIsHydrating(false); });
     }
   }
+
+  // ============================================================
+  // #1030 — API-driven Home compatibility adapters
+  // ============================================================
+  // This app is served from a single root path — window.location.pathname
+  // is always "/" (no server-side path routing). The canonical
+  // /app/teams/:teamId/... path strings from api/routes.js are real and
+  // still parsed/validated as such; in THIS app's actual deployed URL
+  // they're carried as a `route` query-string parameter, mirroring the
+  // existing ?player= roster-detail pattern (navigateRosterDetail, above)
+  // rather than a literal path segment. Serving real paths is a separate,
+  // infrastructure-level decision outside this story's scope.
+  function readApiHomeRoute(search) {
+    try {
+      var params = new URLSearchParams(search);
+      return params.get('route') || null;
+    } catch (e) { return null; }
+  }
+  function buildApiHomeRouteSearch(currentSearch, path) {
+    var params = new URLSearchParams(currentSearch);
+    if (path) { params.set('route', path); } else { params.delete('route'); }
+    var qs = params.toString();
+    return qs ? '?' + qs : '';
+  }
+  function getAccessTokenForApiHome() {
+    return Promise.resolve(session ? session.access_token : null);
+  }
+
+  // Resolves a canonical route against this app's own membership list
+  // (`teams`, loaded from the same backend membership data the Home API
+  // reads) and enters the matching legacy screen — the compatibility
+  // adapter section 27.1 requires ("explicitly calls the existing
+  // team-load boundary for the verified route team before selecting the
+  // legacy tab/subtab"). loadTeam() always wins the team, regardless of
+  // whatever was previously active — Team A can never override a Team B
+  // link, since the resolved `team` here is the only team ever passed in.
+  //
+  // trustGameLaunch=false (used for restored routes — refresh/Back/
+  // Forward) deliberately does NOT auto-launch the live Game Mode/Scoring
+  // overlay: this layer has no fresh Home response to re-verify game/
+  // lineup ownership against (section 26.2), so it falls back to the safe
+  // defense-tab view instead of guessing. A live CTA tap (below) doesn't
+  // have this limitation — its action came from the just-rendered,
+  // already-authorized Home response.
+  function enterLegacyScreenForApiRoute(route, trustGameLaunch) {
+    var team = teams.find(function(t) { return t.id === route.teamId; });
+    if (!team) return false;
+
+    // Nested resource ownership check (section 6.2/26.2 of the API-driven
+    // architecture doc — #1032 gap fix). `teams.find()` above only proves
+    // this app knows about the team; it carries no per-game or per-lineup
+    // identity, so a gameId/lineupId in the URL was previously never
+    // verified at all. resolveDestination() (api/routes.js) is the
+    // authoritative check, but it needs a real Home response to check
+    // against — the last-cached one (api/homeCache.js), written by
+    // useHomeScreen.js on every successful fetch, is the only copy
+    // available at this layer (no live Home component is necessarily
+    // mounted here — this runs on cold restore/Back/Forward too).
+    if (route.gameId || route.lineupId) {
+      var cachedHome = user ? getHomeCache(user.id) : null;
+      var resolution = resolveDestination({
+        pathname: buildAppRoute(route),
+        isAuthenticated: authState === 'authenticated',
+        home: cachedHome ? cachedHome.response : null,
+      });
+      // 'loading' means there is no cached Home response yet to verify
+      // against (e.g. a cold deep-link open before Home has ever been
+      // fetched this session) — that is "unverifiable," not "denied," but
+      // a nested ID is never trusted on unverifiable input either. Only
+      // 'resolved' proceeds; every other status (cross_team_denied,
+      // not_found — lineupId always resolves not_found, since no
+      // addressable per-game lineup resource exists in the live schema —
+      // team_access_denied, loading) falls back to doing nothing here,
+      // same as the pre-existing "unknown team" behavior above.
+      if (resolution.status !== 'resolved') return false;
+    }
+
+    loadTeam(team);
+    switch (route.type) {
+      case 'roster':
+      case 'team':
+        setPrimaryTab('team');
+        break;
+      case 'schedule':
+        setPrimaryTab('schedule');
+        break;
+      case 'lineups':
+      case 'lineup':
+        setPrimaryTab('gameday'); setGameDayTab('lineups');
+        break;
+      case 'gameMode':
+        setPrimaryTab('gameday'); setGameDayTab('defense');
+        if (trustGameLaunch) { setGameModeActive(true); }
+        break;
+      case 'gameScore':
+        setPrimaryTab('gameday'); setGameDayTab('defense');
+        if (trustGameLaunch) { setDugoutViewActive(true); }
+        break;
+      default:
+        setPrimaryTab('home'); setHomeMode('welcome');
+        break;
+    }
+    return true;
+  }
+
+  // Called from the API-driven Home surface when a coach taps a real
+  // action. Pushes the canonical path as this app's `route` param and
+  // stashes the resolved team id in history state so a later Back press
+  // (see the popstate handler below) can reopen Home already expanded on
+  // that same team, not whatever the API's defaultTeamId happens to be.
+  function handleApiHomeActionSelected(action) {
+    var route = parseAppRoute(action.href);
+    if (!route) return;
+    var entered = enterLegacyScreenForApiRoute(route, true);
+    if (!entered) return;
+    var path = buildAppRoute(route);
+    var searchStr = buildApiHomeRouteSearch(window.location.search, path);
+    var url = window.location.pathname + searchStr + window.location.hash;
+    window.history.pushState({ apiHomeRoute: path, apiHomeReturnTeamId: route.teamId }, '', url);
+  }
+
+  // Refresh / app-restart: once auth resolves, restore whatever
+  // destination the URL's `route` param encodes. Share-link routing
+  // (?s=, ?share=) is a completely separate query param handled elsewhere
+  // and is untouched by this effect.
+  //
+  // Pending-destination resume (#1032, section 27.1 rule 2): while
+  // unauthenticated, stash the current deep link to sessionStorage before
+  // the coach navigates away to authenticate (magic link / Google OAuth).
+  // On the authenticated transition, prefer the stashed destination over
+  // re-reading the live URL — the auth round trip's landing URL may not
+  // carry `route=` at all (e.g. an OAuth callback that lands on the bare
+  // app root). This is session-scoped by design (api/routes.js's own
+  // doc comment): a magic link opened in a DIFFERENT browser tab than the
+  // one that requested it has no shared sessionStorage to resume from —
+  // a real product/email-client constraint, not something more code here
+  // can fix. Google OAuth's same-tab redirect is the case this reliably
+  // covers.
+  useEffect(function() {
+    if (!isFlagEnabled('API_DRIVEN_ROUTES')) return;
+    if (authState === 'unauthenticated') {
+      var currentPath = readApiHomeRoute(window.location.search);
+      var currentRoute = currentPath ? parseAppRoute(currentPath) : null;
+      if (currentRoute && currentRoute.type !== 'home') {
+        savePendingDestination(currentPath);
+      }
+      return;
+    }
+    if (authState !== 'authenticated') return;
+    var pending = consumePendingDestination();
+    var path = pending || readApiHomeRoute(window.location.search);
+    if (!path) return;
+    var route = parseAppRoute(path);
+    if (!route || route.type === 'home') return;
+    var entered = enterLegacyScreenForApiRoute(route, false);
+    if (entered && pending) {
+      // The live URL may not already carry `route=` when the resume came
+      // from sessionStorage rather than the current address bar — sync
+      // it so a later refresh/Back/Forward sees the same destination.
+      var searchStr = buildApiHomeRouteSearch(window.location.search, path);
+      var url = window.location.pathname + searchStr + window.location.hash;
+      window.history.replaceState({ apiHomeRoute: path, apiHomeReturnTeamId: route.teamId }, '', url);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authState]);
+
+  // Back/Forward: re-derive app state from the URL on every popstate,
+  // rather than relying on whatever tab state happened to be in memory.
+  useEffect(function() {
+    function onApiHomePopState(event) {
+      if (!isFlagEnabled('API_DRIVEN_ROUTES')) return;
+      var path = readApiHomeRoute(window.location.search);
+      var route = path ? parseAppRoute(path) : null;
+      if (!route || route.type === 'home') {
+        setPrimaryTab('home');
+        setHomeMode('welcome');
+        var returnTeamId = event && event.state && event.state.apiHomeReturnTeamId;
+        if (returnTeamId) { setApiHomeReturnTeamId(returnTeamId); }
+        return;
+      }
+      enterLegacyScreenForApiRoute(route, false);
+    }
+    window.addEventListener('popstate', onApiHomePopState);
+    return function() { window.removeEventListener('popstate', onApiHomePopState); };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // When absentTonight changes and a grid exists, mark absent players "Out"
   // in every inning immediately — without requiring a full re-auto-assign.
@@ -7622,7 +7822,20 @@ export default function App() {
       {subTabBar}
       <div id="app-scroll-body" style={Object.assign({}, S.body, showInstallBanner && !gameModeActive && !dugoutViewActive ? { paddingBottom:"136px" } : {})}>
         <div style={{ width:"100%", maxWidth:"480px", marginLeft:"auto", marginRight:"auto", paddingLeft:"16px", paddingRight:"16px", boxSizing:"border-box" }}>
-          {(primaryTab === "home" || (!activeTeam && primaryTab !== "more")) ? renderHome() : tabContent}
+          {(primaryTab === "home" || (!activeTeam && primaryTab !== "more")) ? (
+            isFlagEnabled('API_DRIVEN_HOME') && homeMode === "welcome" && authState === 'authenticated' ? (
+              <ErrorBoundary fallback="Home">
+                <ApiHomeScreen
+                  userId={user ? user.id : null}
+                  getAccessToken={getAccessTokenForApiHome}
+                  isOnline={isOnline}
+                  initialExpandedTeamId={apiHomeReturnTeamId}
+                  onFindTeam={function() { setHomeMode("search"); }}
+                  onSelectAction={handleApiHomeActionSelected}
+                />
+              </ErrorBoundary>
+            ) : renderHome()
+          ) : tabContent}
         </div>
       </div>
       <ErrorBoundary fallback="Now Batting">

@@ -39,6 +39,20 @@ export const FEATURE_FLAGS = {
   // GA default-on as of Slice 3 (v2.5.9). Legacy ScoringMode removed.
   // Roll back per-user: localStorage.setItem("flag_COMBINED_GAMEMODE_AND_SCORING", "false")
   COMBINED_GAMEMODE_AND_SCORING: true,
+
+  // API-Driven Architecture Redesign (#1012) — three independently
+  // reversible flags per docs/product/API_DRIVEN_ARCHITECTURE_REDESIGN.md
+  // section 17. All default off; unknown/missing/malformed config resolves
+  // to Off by isFlagEnabled()'s own existing fallback chain, matching the
+  // baseline's "must not enable a migration stage" requirement.
+  //   API_HOME_SHADOW_READ — defined for the section 17 rollout plan;
+  //     not wired to any behavior yet (Release 1 scope, not part of #1030).
+  //   API_DRIVEN_ROUTES / API_DRIVEN_HOME — #1030: selects the new
+  //     features/home/HomeScreen surface and its compatibility adapters
+  //     into legacy tabs, in place of the legacy renderHome().
+  API_HOME_SHADOW_READ: false,
+  API_DRIVEN_ROUTES: false,
+  API_DRIVEN_HOME: false,
 };
 
 // Story 30 / #112 — DB-driven runtime flag cache. Populated once per app
