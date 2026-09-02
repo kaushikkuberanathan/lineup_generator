@@ -300,6 +300,32 @@ describe('useHomeScreen — analytics (#1032)', function () {
   });
 });
 
+describe('useHomeScreen — initialExpandedTeamId override (#1030, Back returns to the expected team)', function () {
+  test('when provided and the team exists in the response, it wins over defaultTeamId on first load', async function () {
+    var fetchImpl = vi.fn(() => jsonResponse(200, HOME_TWO_TEAMS, {})); // defaultTeamId is t2
+    var { result } = await renderHook(function () {
+      return useHomeScreen({ userId: 'user-1', getAccessToken: async () => 't', initialExpandedTeamId: 't1', fetchImpl: fetchImpl, cacheStorage: storage });
+    });
+    expect(result.current.expandedTeamId).toBe('t1');
+  });
+
+  test('when the override team is not in the response, falls back to defaultTeamId rather than pointing at nothing', async function () {
+    var fetchImpl = vi.fn(() => jsonResponse(200, HOME_TWO_TEAMS, {}));
+    var { result } = await renderHook(function () {
+      return useHomeScreen({ userId: 'user-1', getAccessToken: async () => 't', initialExpandedTeamId: 'no-such-team', fetchImpl: fetchImpl, cacheStorage: storage });
+    });
+    expect(result.current.expandedTeamId).toBe('t2');
+  });
+
+  test('omitted -> unchanged behavior, defaultTeamId wins', async function () {
+    var fetchImpl = vi.fn(() => jsonResponse(200, HOME_TWO_TEAMS, {}));
+    var { result } = await renderHook(function () {
+      return useHomeScreen({ userId: 'user-1', getAccessToken: async () => 't', fetchImpl: fetchImpl, cacheStorage: storage });
+    });
+    expect(result.current.expandedTeamId).toBe('t2');
+  });
+});
+
 describe('useHomeScreen — getAccessToken must not go stale after mount (App.jsx integration)', function () {
   test('a refetch after getAccessToken changes across a re-render uses the LATEST function, not the one captured at mount', async function () {
     var fetchImpl = vi.fn(() => jsonResponse(200, HOME_ONE_TEAM, {}));

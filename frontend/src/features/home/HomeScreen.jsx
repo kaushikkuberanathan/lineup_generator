@@ -27,13 +27,16 @@ import { OfflineIndicator } from '../../components/Shared/OfflineIndicator';
  *   component doesn't own that journey (TeamSearch/RequestAccessScreen
  *   live outside frontend/src/features/home), so it's a callback the
  *   #1030 integration wires to the real navigation.
+ * @param {string} [props.initialExpandedTeamId] - Story #1030: restores
+ *   the expected expanded team when Back returns to Home after a
+ *   compatibility-adapter navigation
  * @param {typeof fetch} [props.fetchImpl] - test seam
  * @param {(ms:number) => Promise<void>} [props.waitImpl] - test seam
  * @param {object} [props.cacheStorage] - test seam
  * @param {Function} [props.onSelectAction]
  */
-export function HomeScreen({ userId, getAccessToken, isOnline = true, onFindTeam, fetchImpl, waitImpl, cacheStorage, onSelectAction }) {
-  const homeScreen = useHomeScreen({ userId, getAccessToken, isOnline, fetchImpl, waitImpl, cacheStorage });
+export function HomeScreen({ userId, getAccessToken, isOnline = true, onFindTeam, initialExpandedTeamId, fetchImpl, waitImpl, cacheStorage, onSelectAction }) {
+  const homeScreen = useHomeScreen({ userId, getAccessToken, isOnline, initialExpandedTeamId, fetchImpl, waitImpl, cacheStorage });
 
   if (homeScreen.status === 'loading') {
     return <HomeSkeleton />;

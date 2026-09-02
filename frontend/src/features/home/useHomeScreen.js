@@ -38,8 +38,14 @@ const HOME_CONTRACT_VERSION = 1;
  * @param {typeof fetch} [args.fetchImpl] - test seam, forwarded to createApiClient
  * @param {(ms:number) => Promise<void>} [args.waitImpl] - test seam, forwarded to createApiClient
  * @param {object} [args.cacheStorage] - test seam, forwarded to homeCache
+ * @param {string} [args.initialExpandedTeamId] - Story #1030: when a
+ *   compatibility adapter restores a canonical route back to Home (e.g.
+ *   the browser Back button), this wins over the API's own defaultTeamId
+ *   for the very first expansion, so Home reopens on the team the caller
+ *   was actually viewing — falls back to defaultTeamId if this team
+ *   isn't present in the response (revoked access, stale link).
  */
-export function useHomeScreen({ userId, getAccessToken, isOnline = true, fetchImpl, waitImpl, cacheStorage }) {
+export function useHomeScreen({ userId, getAccessToken, isOnline = true, initialExpandedTeamId, fetchImpl, waitImpl, cacheStorage }) {
   // 'loading' | 'ready' | 'error' | 'offline' ('offline' = no network attempted
   // because isOnline is false AND there is no cache to fall back on — distinct
   // from 'error', which means a real request failed).
@@ -93,6 +99,21 @@ export function useHomeScreen({ userId, getAccessToken, isOnline = true, fetchIm
     isOnlineRef.current = isOnline;
   }, [isOnline]);
 
+  // Same staleness hazard as isOnline above — load() is memoized on
+  // [userId] only, so this must be read through a ref, not the prop
+  // directly, or a caller passing a fresh initialExpandedTeamId on a
+  // later render (e.g. resolving it asynchronously) would never see it.
+  const initialExpandedTeamIdRef = useRef(initialExpandedTeamId);
+  initialExpandedTeamIdRef.current = initialExpandedTeamId;
+
+  function resolveInitialExpandedTeamId(responseTeams, defaultTeamId) {
+    const override = initialExpandedTeamIdRef.current;
+    if (override && (responseTeams || []).some(function (t) { return t.id === override; })) {
+      return override;
+    }
+    return defaultTeamId;
+  }
+
   const load = useCallback(async function load() {
     const online = isOnlineRef.current;
 
@@ -115,7 +136,7 @@ export function useHomeScreen({ userId, getAccessToken, isOnline = true, fetchIm
       setExpandedTeamId(function (prev) {
         if (expandedInitializedRef.current) return prev;
         expandedInitializedRef.current = true;
-        return cached.response.defaultTeamId;
+        return resolveInitialExpandedTeamId(cached.response.teams, cached.response.defaultTeamId);
       });
       trackHomeApiCacheRendered({ teamCount: (cached.response.teams || []).length, cacheState: cacheState });
     }
@@ -157,7 +178,7 @@ export function useHomeScreen({ userId, getAccessToken, isOnline = true, fetchIm
       setExpandedTeamId(function (prev) {
         if (!expandedInitializedRef.current) {
           expandedInitializedRef.current = true;
-          return result.data.defaultTeamId;
+          return resolveInitialExpandedTeamId(result.data.teams, result.data.defaultTeamId);
         }
         const stillPresent = prev && newTeamIds.has(prev);
         if (!stillPresent && prev && previousTeamIds.has(prev)) {
