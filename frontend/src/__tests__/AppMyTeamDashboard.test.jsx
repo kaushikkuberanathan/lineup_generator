@@ -176,6 +176,22 @@ describe("My Team game-ready dashboard (#993)", function () {
     expect(window.location.search).toBe("?dev_bypass=1");
   });
 
+  it("enables primary navigation after mounting from a player deep link", async function () {
+    window.history.replaceState(null, "", "/?dev_bypass=1&player=Alex+Rivera");
+    render(<App />);
+
+    expect(await screen.findByText("Review and edit this player's complete roster profile.")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Schedule/ }));
+
+    await waitFor(function() {
+      expect(screen.getByText("No upcoming game. Add one below when the schedule is ready.")).toBeInTheDocument();
+    });
+    expect(window.location.search).toBe("?dev_bypass=1");
+
+    fireEvent.click(screen.getByRole("button", { name: /My Team/ }));
+    expect(await screen.findByText("All Players — Quick Summary")).toBeInTheDocument();
+  });
+
   it("persists profile edits and safely returns after removing an individual player", async function () {
     window.confirm = vi.fn(function() { return true; });
     await openMyTeam();

@@ -1370,20 +1370,22 @@ export default function App() {
     var routeMode = readRosterProfileRoute(window.location.search);
     setRosterDetailMode(routeMode);
     if (routeMode !== null) {
+      setScreen("app");
       setPrimaryTab("team");
     }
-  }, [activeTeamId, setPrimaryTab, setRosterDetailMode]);
+  }, [activeTeamId, setPrimaryTab, setRosterDetailMode, setScreen]);
   useEffect(function() {
     function onPopState() {
       var routeMode = readRosterProfileRoute(window.location.search);
       setRosterDetailMode(routeMode);
       if (routeMode !== null) {
+        setScreen("app");
         setPrimaryTab("team");
       }
     }
     window.addEventListener("popstate", onPopState);
     return function() { window.removeEventListener("popstate", onPopState); };
-  }, [setPrimaryTab, setRosterDetailMode]);
+  }, [setPrimaryTab, setRosterDetailMode, setScreen]);
   var _drag = useState(null);
   var dragPlayer = _drag[0]; var setDragPlayer = _drag[1];
   // Touch drag uses a mutable ref (window object) instead of useState to avoid
