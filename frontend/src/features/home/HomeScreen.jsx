@@ -1,42 +1,100 @@
 /**
- * HomeScreen — the redesigned Home feature shell (Story #1028). Extracted
- * as far as approved integration boundaries allow: this component and
- * everything it renders is brand new, standalone, and not yet mounted
- * anywhere in App.jsx — that wiring is a separate story (#1030) requiring
- * the literal "all clear — App.jsx editing approved" gate phrase.
- *
- * The loading/error/empty branches below are deliberately minimal
- * placeholders, not the polished states — #1031 ("Loading, cache,
- * offline, slow-backend, empty, and access-loss states") owns those.
- * This story's acceptance criteria are about the Team Hub itself.
+ * HomeScreen — the redesigned Home feature shell (Story #1028, extended
+ * in #1031 for loading/cached/offline/slow-backend/empty/access-loss/
+ * cache-version states). Not yet mounted anywhere in App.jsx — that
+ * wiring is #1030, requiring the literal "all clear — App.jsx editing
+ * approved" gate phrase.
  */
 import { useHomeScreen } from './useHomeScreen.js';
 import { TeamHub } from './TeamHub.jsx';
+import { HomeSkeleton } from './HomeSkeleton.jsx';
+import { HomeErrorState } from './HomeErrorState.jsx';
+import { applyOfflineActionGating } from './offlineActionGating.js';
+import { Stack } from '../../components/ui/Stack';
+import { Text } from '../../components/ui/Text';
+import { Button } from '../../components/ui/Button';
+import { OfflineIndicator } from '../../components/Shared/OfflineIndicator';
 
-export function HomeScreen({ userId, getAccessToken, fetchImpl, cacheStorage, onSelectAction }) {
-  const homeScreen = useHomeScreen({ userId, getAccessToken, fetchImpl, cacheStorage });
+/**
+ * @param {object} props
+ * @param {string|null} props.userId
+ * @param {() => Promise<string|null>} props.getAccessToken
+ * @param {boolean} [props.isOnline] - parent-provided navigator.onLine state
+ * @param {() => void} [props.onFindTeam] - Story #1031: "No-membership state
+ *   routes to the existing discovery/request-access journey" — this
+ *   component doesn't own that journey (TeamSearch/RequestAccessScreen
+ *   live outside frontend/src/features/home), so it's a callback the
+ *   #1030 integration wires to the real navigation.
+ * @param {typeof fetch} [props.fetchImpl] - test seam
+ * @param {(ms:number) => Promise<void>} [props.waitImpl] - test seam
+ * @param {object} [props.cacheStorage] - test seam
+ * @param {Function} [props.onSelectAction]
+ */
+export function HomeScreen({ userId, getAccessToken, isOnline = true, onFindTeam, fetchImpl, waitImpl, cacheStorage, onSelectAction }) {
+  const homeScreen = useHomeScreen({ userId, getAccessToken, isOnline, fetchImpl, waitImpl, cacheStorage });
 
   if (homeScreen.status === 'loading') {
-    return <p role="status">Loading your teams…</p>;
+    return <HomeSkeleton />;
+  }
+
+  if (homeScreen.status === 'offline') {
+    return (
+      <Stack direction="col" gap="sm">
+        <OfflineIndicator isOnline={false} hasCache={false} />
+        <Text as="p" size="sm" color="body">
+          You&apos;re offline and we don&apos;t have any saved team data on this device yet.
+          Reconnect to load your teams.
+        </Text>
+      </Stack>
+    );
   }
 
   if (homeScreen.status === 'error' && !homeScreen.home) {
-    return <p role="alert">We couldn&apos;t load your teams. Please try again.</p>;
+    return <HomeErrorState onRetry={homeScreen.refetch} />;
   }
 
   const teams = (homeScreen.home && homeScreen.home.teams) || [];
+
   if (teams.length === 0) {
-    return <p>No teams yet.</p>;
+    return (
+      <Stack direction="col" gap="sm">
+        <Text as="p" size="sm" color="body">
+          You&apos;re not on any team yet.
+        </Text>
+        {onFindTeam && (
+          <Button variant="secondary" size="sm" onClick={onFindTeam}>
+            Find your team
+          </Button>
+        )}
+      </Stack>
+    );
   }
 
+  const gatedTeams = applyOfflineActionGating(teams, isOnline);
+
   return (
-    <TeamHub
-      teams={teams}
-      expandedTeamId={homeScreen.expandedTeamId}
-      viewFilter={homeScreen.viewFilter}
-      onExpand={homeScreen.expandTeam}
-      onViewFilterChange={homeScreen.setViewFilter}
-      onSelectAction={onSelectAction}
-    />
+    <Stack direction="col" gap="sm">
+      <OfflineIndicator isOnline={isOnline} hasCache={homeScreen.fromCache || !!homeScreen.home} />
+
+      {homeScreen.justLostAccessTeamId && (
+        <Stack direction="row" justify="between" align="center" role="status">
+          <Text size="xs" color="secondary">
+            You no longer have access to a team you were viewing. Showing your current teams instead.
+          </Text>
+          <Button variant="ghost" size="sm" onClick={homeScreen.dismissAccessLostNotice}>
+            Dismiss
+          </Button>
+        </Stack>
+      )}
+
+      <TeamHub
+        teams={gatedTeams}
+        expandedTeamId={homeScreen.expandedTeamId}
+        viewFilter={homeScreen.viewFilter}
+        onExpand={homeScreen.expandTeam}
+        onViewFilterChange={homeScreen.setViewFilter}
+        onSelectAction={onSelectAction}
+      />
+    </Stack>
   );
 }

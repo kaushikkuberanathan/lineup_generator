@@ -1,6 +1,6 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest';
 import { act } from 'react';
-import { renderHook } from '../../tests/helpers/renderHook.js';
+import { renderHook, renderHookWithProps } from '../../tests/helpers/renderHook.js';
 import { useHomeScreen } from './useHomeScreen.js';
 import { setHomeCache } from '../../api/homeCache.js';
 
@@ -33,13 +33,13 @@ var HOME_TWO_TEAMS = {
   ],
 };
 
+var storage;
+
+beforeEach(function () {
+  storage = memoryStorage();
+});
+
 describe('useHomeScreen', function () {
-  var storage;
-
-  beforeEach(function () {
-    storage = memoryStorage();
-  });
-
   test('no userId -> status ready immediately with no fetch', async function () {
     var fetchImpl = vi.fn();
     var { result } = await renderHook(function () {
@@ -143,5 +143,92 @@ describe('useHomeScreen', function () {
     });
 
     expect(result.current.home).toEqual(HOME_TWO_TEAMS);
+  });
+});
+
+describe('useHomeScreen — cache version mismatch (#1031)', function () {
+  test('a cached entry from an older contract version is never rendered — treated as absent, not silently accepted', async function () {
+    storage.setItem('api:home:user-1', JSON.stringify({
+      userId: 'user-1', response: HOME_ONE_TEAM, generatedAt: HOME_ONE_TEAM.generatedAt,
+      fetchedAt: new Date().toISOString(), version: 0, // stale contract version
+    }));
+    var fetchImpl = vi.fn(() => new Promise(function () {})); // never resolves — isolate the cache read
+    var { result } = await renderHook(function () {
+      return useHomeScreen({ userId: 'user-1', getAccessToken: async () => 't', fetchImpl: fetchImpl, cacheStorage: storage });
+    });
+    expect(result.current.fromCache).toBe(false);
+    expect(result.current.home).toBeNull();
+  });
+});
+
+describe('useHomeScreen — offline (#1031)', function () {
+  test('offline with no cache -> status "offline", no fetch attempted', async function () {
+    var fetchImpl = vi.fn();
+    var { result } = await renderHook(function () {
+      return useHomeScreen({ userId: 'user-1', getAccessToken: async () => 't', isOnline: false, fetchImpl: fetchImpl, cacheStorage: storage });
+    });
+    expect(result.current.status).toBe('offline');
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  test('offline with a cached snapshot -> status "ready", cached content shown, no fetch attempted', async function () {
+    setHomeCache('user-1', HOME_ONE_TEAM, { storage: storage });
+    var fetchImpl = vi.fn();
+    var { result } = await renderHook(function () {
+      return useHomeScreen({ userId: 'user-1', getAccessToken: async () => 't', isOnline: false, fetchImpl: fetchImpl, cacheStorage: storage });
+    });
+    expect(result.current.status).toBe('ready');
+    expect(result.current.fromCache).toBe(true);
+    expect(result.current.home).toEqual(HOME_ONE_TEAM);
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  test('reconnecting (isOnline flips false -> true) triggers a revalidation fetch', async function () {
+    var fetchImpl = vi.fn(() => jsonResponse(200, HOME_ONE_TEAM, {}));
+    var { result, rerenderProps } = await renderHookWithProps(function (props) {
+      return useHomeScreen(props);
+    }, { userId: 'user-1', getAccessToken: async () => 't', isOnline: false, fetchImpl: fetchImpl, cacheStorage: storage });
+
+    expect(fetchImpl).not.toHaveBeenCalled();
+    await rerenderProps({ userId: 'user-1', getAccessToken: async () => 't', isOnline: true, fetchImpl: fetchImpl, cacheStorage: storage });
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    expect(result.current.status).toBe('ready');
+    expect(result.current.home).toEqual(HOME_ONE_TEAM);
+  });
+});
+
+describe('useHomeScreen — slow/warming backend does not blank cached Home (#1031)', function () {
+  test('a fetch failure with a cached snapshot already rendered keeps status "ready", not "error"', async function () {
+    setHomeCache('user-1', HOME_ONE_TEAM, { storage: storage });
+    var fetchImpl = vi.fn(() => jsonResponse(503, { error: { code: 'SERVICE_UNAVAILABLE', message: 'x', requestId: 'r', retryable: true } }, {}));
+    var { result } = await renderHook(function () {
+      return useHomeScreen({ userId: 'user-1', getAccessToken: async () => 't', fetchImpl: fetchImpl, waitImpl: async function () {}, cacheStorage: storage });
+    });
+    expect(result.current.status).toBe('ready');
+    expect(result.current.home).toEqual(HOME_ONE_TEAM);
+    expect(result.current.error).not.toBeNull();
+  });
+});
+
+describe('useHomeScreen — access-loss notice (#1031)', function () {
+  test('a team disappearing between two real fetches sets justLostAccessTeamId; a team missing on the very FIRST fetch does not (nothing to have lost yet)', async function () {
+    var call = 0;
+    var fetchImpl = vi.fn(function () {
+      call += 1;
+      return jsonResponse(200, call === 1 ? HOME_TWO_TEAMS : HOME_ONE_TEAM, {});
+    });
+    var { result } = await renderHook(function () {
+      return useHomeScreen({ userId: 'user-1', getAccessToken: async () => 't', fetchImpl: fetchImpl, cacheStorage: storage });
+    });
+    expect(result.current.justLostAccessTeamId).toBeNull();
+
+    await act(async function () { result.current.expandTeam('t2'); });
+    await act(async function () { await result.current.refetch(); });
+
+    expect(result.current.justLostAccessTeamId).toBe('t2');
+    expect(result.current.expandedTeamId).toBe('t1'); // fell back safely, t1's data is untouched
+
+    await act(async function () { result.current.dismissAccessLostNotice(); });
+    expect(result.current.justLostAccessTeamId).toBeNull();
   });
 });
