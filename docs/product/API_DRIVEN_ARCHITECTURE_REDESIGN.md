@@ -944,3 +944,75 @@ This section is normative for every `/api/v1` screen migration.
   cannot safely serve with `400 API_VERSION_UNSUPPORTED`.
 - Deprecation requires caller telemetry, a published sunset boundary, and proof
   that supported clients no longer depend on the old contract.
+
+## 26. Canonical role and capability policy
+
+The live normalization boundary is `backend/src/lib/normalizeRole.js`. The
+database currently tolerates seven historical values, while API policy always
+normalizes them before capability evaluation:
+
+| Stored or submitted value | API role | Product label |
+|---|---|---|
+| `admin`, `team_admin` | `admin` | Team Admin / Head Coach |
+| `coach`, `coordinator` | `coach` | Coach / Coordinator |
+| `scorekeeper` | `scorekeeper` | Scorekeeper |
+| `viewer`, `parent` | `viewer` | Team Member / Parent |
+| `platform_admin` | forbidden as a team role | Global capability evaluated separately |
+
+Unknown roles fail closed with `ROLE_UNKNOWN`; `platform_admin` at a team-role
+boundary fails with `ROLE_FORBIDDEN`. Only `status=active` memberships contribute
+team capabilities. Invited, suspended, inactive, revoked, missing, or
+un-normalizable memberships advertise no team actions.
+
+### 26.1 Capability vocabulary and baseline matrix
+
+`V` means discover/view, `M` means mutate/manage, and `-` means the capability is
+not advertised by default. Resource state can further remove or disable an
+action; it can never add a role capability.
+
+| Domain | Capability | Admin | Coach | Scorekeeper | Viewer |
+|---|---|:---:|:---:|:---:|:---:|
+| Team | `team.view` | V | V | V | V |
+| Team | `team.manage` | M | - | - | - |
+| Membership | `membership.manage` | M | - | - | - |
+| Roster | `roster.view` | V | V | V | V |
+| Roster | `roster.manage` | M | M | - | - |
+| Schedule/practice | `schedule.view` | V | V | V | V |
+| Schedule/practice | `schedule.manage` | M | M | - | - |
+| Lineup | `lineup.view` | V | V | V | V |
+| Lineup | `lineup.create`, `lineup.manage`, `lineup.lock` | M | M | - | - |
+| Game Mode | `game.view_mode` | V | V | V | V |
+| Game Mode | `game.start_mode` | M | M | M | - |
+| Scoring | `scoring.view` | V | V | V | V |
+| Scoring | `scoring.claim`, `scoring.record` | M | M | M | M* |
+| Scoring | `scoring.finalize` | M | M | M | - |
+
+`*` Scoring is ultimately a per-game capability and lock, not merely a team-role
+shortcut. A viewer/parent may claim scoring only when the specific game policy
+allows it. The Home response must not advertise that action from role alone.
+
+This is the restrictive Phase 0 baseline for new APIs, not permission to narrow
+legacy production behavior silently. Before implementing each domain, compare
+the matrix with live UI behavior, RLS, and product intent; record any compatible
+exception or update this decision explicitly.
+
+### 26.2 Three authorization checkpoints
+
+1. **Discovery:** Home returns capabilities and enabled/disabled actions derived
+   from verified identity, active normalized membership, and resource state.
+2. **Destination:** Opening an href re-verifies membership and nested resource
+   ownership. Possessing an advertised or cached href grants nothing.
+3. **Command:** The mutating endpoint independently re-verifies identity,
+   membership, capability, current resource state, revision, and idempotency.
+
+Global platform-administration capability is evaluated outside this team matrix
+and does not imply membership in every team. Cross-team IDs are rejected or
+concealed even when the caller holds a capability on a different team.
+
+### 26.3 Reusable authorization fixtures
+
+Every migrated API supplies fixtures for canonical and legacy inputs, all
+membership states, every matrix role, global-admin-without-membership, mixed
+roles across multiple teams, revoked access, cross-team nested resources, and
+resource states that disable otherwise permitted actions. Tests assert both the
+capability list and the independently reauthorized destination/command result.
