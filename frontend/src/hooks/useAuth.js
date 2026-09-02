@@ -13,6 +13,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabase';
 import { getDeviceContext } from '../utils/deviceContext';
+import { clearPendingDestination } from '../api/routes.js';
+import { clearAllHomeCaches } from '../api/homeCache.js';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://lineup-generator-backend.onrender.com';
 const APP_VERSION = import.meta.env.VITE_APP_VERSION || '2.1.0';
@@ -281,6 +283,13 @@ export function useAuth() {
     await supabase.auth.signOut();
     localStorage.removeItem('lg_team_id');
     localStorage.removeItem('lg_pending_email');
+    // #1032: clear the departing user's stashed deep link and every
+    // cached Home response on this device. getHomeCache() is already
+    // scoped per-userId (so a different coach signing in next never
+    // reads someone else's cache), but leaving stale entries around
+    // after logout is unnecessary retention on a shared device.
+    clearPendingDestination();
+    clearAllHomeCaches();
     setSession(null);
     setUser(null);
     setMembership(null);
