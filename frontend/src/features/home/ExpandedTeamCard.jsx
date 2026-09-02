@@ -10,6 +10,7 @@ import { Stack } from '../../components/ui/Stack';
 import { Text } from '../../components/ui/Text';
 import { truncateTeamName } from '../../utils/formatters';
 import { TeamAction } from './TeamAction';
+import { describeRole } from './roleDescriptions';
 
 function formatNextEventLine(nextEvent) {
   if (!nextEvent) return 'No upcoming event';
@@ -35,6 +36,7 @@ function formatReadinessLine(readiness) {
 
 export function ExpandedTeamCard({ team, onSelectAction }) {
   var readinessLine = formatReadinessLine(team.readiness);
+  var roleExplanation = describeRole(team.role && team.role.code);
 
   return (
     <Card padding="md" shadow role="region" aria-label={`${team.displayName} details`}>
@@ -51,6 +53,10 @@ export function ExpandedTeamCard({ team, onSelectAction }) {
         </Text>
 
         <Text size="sm" color="body">{formatNextEventLine(team.nextEvent)}</Text>
+
+        {roleExplanation && (
+          <Text size="xs" color="tertiary">{roleExplanation}</Text>
+        )}
 
         {readinessLine && (
           <Text size="xs" color="tertiary">{readinessLine}</Text>

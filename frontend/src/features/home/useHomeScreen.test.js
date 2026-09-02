@@ -112,4 +112,36 @@ describe('useHomeScreen', function () {
     // never keep pointing at a team the caller can no longer see.
     expect(result.current.expandedTeamId).toBe('t1');
   });
+
+  test('a superseded refetch is discarded — only the latest request\'s data is ever applied (#1029)', async function () {
+    var resolvers = [];
+    var fetchImpl = vi.fn(function () {
+      return new Promise(function (resolve) { resolvers.push(resolve); });
+    });
+    var { result } = await renderHook(function () {
+      return useHomeScreen({ userId: 'user-1', getAccessToken: async () => 't', fetchImpl: fetchImpl, cacheStorage: storage });
+    });
+
+    // First request in flight (from the initial load), fire a second
+    // (refetch) before it resolves — this must abort/supersede the first.
+    var secondRefetchPromise;
+    await act(async function () {
+      secondRefetchPromise = result.current.refetch();
+    });
+
+    expect(resolvers.length).toBe(2);
+
+    // Resolve the STALE (first) request last, with different data, to
+    // prove a late-arriving stale response can't win even if it settles
+    // after the newer one.
+    await act(async function () {
+      resolvers[1](await jsonResponse(200, HOME_TWO_TEAMS, {})); // newer request resolves first
+      await secondRefetchPromise;
+    });
+    await act(async function () {
+      resolvers[0](await jsonResponse(200, HOME_ONE_TEAM, {})); // stale request resolves after
+    });
+
+    expect(result.current.home).toEqual(HOME_TWO_TEAMS);
+  });
 });

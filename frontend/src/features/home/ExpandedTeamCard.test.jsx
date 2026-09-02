@@ -58,3 +58,20 @@ describe('ExpandedTeamCard', function () {
     expect(screen.getByRole('region', { name: /Mud Hens/ })).toBeInTheDocument();
   });
 });
+
+describe('ExpandedTeamCard — role explanation (#1029)', function () {
+  test('admin gets no restriction caption — full access needs no explanation', function () {
+    render(<ExpandedTeamCard team={Object.assign({}, TEAM, { role: { code: 'admin', label: 'Team Admin / Head Coach' } })} onSelectAction={vi.fn()} />);
+    expect(screen.queryByText(/changes are made by/i)).toBeNull();
+  });
+
+  test('a viewer/parent sees a human-readable explanation of what they can and can\'t do', function () {
+    render(<ExpandedTeamCard team={Object.assign({}, TEAM, { role: { code: 'viewer', label: 'Team Member / Parent' } })} onSelectAction={vi.fn()} />);
+    expect(screen.getByText(/changes are made by this team's coaches/i)).toBeInTheDocument();
+  });
+
+  test('a scorekeeper sees a human-readable explanation scoped to scoring', function () {
+    render(<ExpandedTeamCard team={Object.assign({}, TEAM, { role: { code: 'scorekeeper', label: 'Scorekeeper' } })} onSelectAction={vi.fn()} />);
+    expect(screen.getByText(/start game mode and score games/i)).toBeInTheDocument();
+  });
+});

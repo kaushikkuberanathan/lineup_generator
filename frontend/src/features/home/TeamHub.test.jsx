@@ -89,3 +89,65 @@ describe('TeamHub — "All teams" view filter', function () {
     expect(screen.getByRole('region', { name: /Knights/ })).toBeInTheDocument();
   });
 });
+
+describe('TeamHub — mixed-role, multi-team, permission-aware behavior (#1029)', function () {
+  test('switching the expanded team never leaks the previous team\'s actions into the document', function () {
+    var teamA = makeTeam({ id: 't1', displayName: 'Mud Hens', actions: [{ id: 'manage_roster', label: 'Manage Mud Hens roster', href: '/app/teams/t1/roster', enabled: true, disabledReason: null }] });
+    var teamB = makeTeam({ id: 't2', displayName: 'Knights', actions: [{ id: 'view_roster', label: 'View Knights roster', href: '/app/teams/t2/roster', enabled: true, disabledReason: null }] });
+
+    var { rerender } = render(<TeamHub teams={[teamA, teamB]} expandedTeamId="t1" onExpand={vi.fn()} />);
+    expect(screen.getByText('Manage Mud Hens roster')).toBeInTheDocument();
+    expect(screen.queryByText('View Knights roster')).toBeNull();
+
+    rerender(<TeamHub teams={[teamA, teamB]} expandedTeamId="t2" onExpand={vi.fn()} />);
+    expect(screen.queryByText('Manage Mud Hens roster')).toBeNull();
+    expect(screen.getByText('View Knights roster')).toBeInTheDocument();
+  });
+
+  test('coach, parent, and scorekeeper roles are all visible and human-readable across teams in one Hub', function () {
+    var coachTeam = makeTeam({ id: 't1', displayName: 'Mud Hens', role: { code: 'coach', label: 'Coach / Coordinator' } });
+    var viewerTeam = makeTeam({ id: 't2', displayName: 'Knights', role: { code: 'viewer', label: 'Team Member / Parent' } });
+    var scorerTeam = makeTeam({ id: 't3', displayName: 'Eagles', role: { code: 'scorekeeper', label: 'Scorekeeper' } });
+
+    render(<TeamHub teams={[coachTeam, viewerTeam, scorerTeam]} expandedTeamId="t1" onExpand={vi.fn()} />);
+    expect(screen.getByText(/Coach \/ Coordinator/)).toBeInTheDocument(); // expanded team's role
+    expect(screen.getByText(/Team Member \/ Parent/)).toBeInTheDocument(); // compact card role
+    expect(screen.getByText(/Scorekeeper/)).toBeInTheDocument(); // compact card role
+  });
+
+  test('duplicate team names are disambiguated end-to-end — the Hub renders whatever displayName the API already computed', function () {
+    var teamFall = makeTeam({ id: 't1', name: 'Mud Hens', displayName: 'Mud Hens (Fall 2026)' });
+    var teamSpring = makeTeam({ id: 't2', name: 'Mud Hens', displayName: 'Mud Hens (Spring 2026)' });
+    render(<TeamHub teams={[teamFall, teamSpring]} expandedTeamId="t1" onExpand={vi.fn()} />);
+    expect(screen.getByRole('region', { name: /Mud Hens \(Fall 2026\)/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Mud Hens \(Spring 2026\)/ })).toBeInTheDocument();
+  });
+
+  test('React renders exactly the actions the API provided, even an unusual set — it never recreates or filters role policy client-side', function () {
+    // A viewer role would never realistically get a "manage_roster" action
+    // from the real backend (homeCapabilities.js), but this component must
+    // not be the place that would catch or block it either way — proving
+    // there is no hardcoded "if role==='viewer', hide manage actions"
+    // branch hiding here, only in the API.
+    var unusualTeam = makeTeam({
+      id: 't1',
+      displayName: 'Mud Hens',
+      role: { code: 'viewer', label: 'Team Member / Parent' },
+      actions: [{ id: 'manage_roster', label: 'Manage Mud Hens roster', href: '/app/teams/t1/roster', enabled: true, disabledReason: null }],
+    });
+    render(<TeamHub teams={[unusualTeam]} expandedTeamId="t1" onExpand={vi.fn()} />);
+    expect(screen.getByText('Manage Mud Hens roster')).toBeInTheDocument();
+  });
+
+  test('every action label names its own team — no CTA is ambiguous about which team it affects', function () {
+    var teamA = makeTeam({ id: 't1', displayName: 'Mud Hens', actions: [
+      { id: 'manage_roster', label: 'Manage Mud Hens roster', href: '/app/teams/t1/roster', enabled: true, disabledReason: null },
+      { id: 'manage_schedule', label: 'Manage Mud Hens schedule', href: '/app/teams/t1/schedule', enabled: true, disabledReason: null },
+    ] });
+    render(<TeamHub teams={[teamA]} expandedTeamId="t1" onExpand={vi.fn()} />);
+    teamA.actions.forEach(function (action) {
+      expect(screen.getByText(action.label)).toBeInTheDocument();
+      expect(action.label.includes('Mud Hens')).toBe(true);
+    });
+  });
+});
