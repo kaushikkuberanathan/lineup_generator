@@ -17,6 +17,62 @@ function resolveRequestId(req) {
 }
 
 /**
+ * Computed from only the stable, caller-visible content (defaultTeamId +
+ * teams) — deliberately excludes generatedAt/requestId, which change on
+ * every call and would defeat 304 entirely if included. Two requests
+ * against unchanged underlying state must produce the same ETag (section
+ * 25.4). Not a security boundary — a plain content hash, not HMAC'd —
+ * since ETag is cache-validation metadata, not an authorization token.
+ */
+function computeEtag({ defaultTeamId, teams }) {
+  const hash = crypto
+    .createHash('sha256')
+    .update(JSON.stringify({ version: CONTRACT_VERSION, defaultTeamId, teams }))
+    .digest('hex')
+    .slice(0, 32);
+  return `"${hash}"`;
+}
+
+/**
+ * Sends the Home response with ETag/If-None-Match (section 25.4) and
+ * private-cache headers, sharing the 200/304 decision between the
+ * zero-membership early return and the main path so neither can drift.
+ * Also owns the structured request log so every exit path logs exactly
+ * once with the status actually sent.
+ */
+function sendHomeResponse(req, res, { requestId, startedAt, defaultTeamId, teams, skippedForRole }) {
+  const etag = computeEtag({ defaultTeamId, teams });
+  const body = {
+    version: CONTRACT_VERSION,
+    generatedAt: new Date().toISOString(),
+    requestId,
+    defaultTeamId,
+    teams,
+  };
+
+  res.setHeader('X-Request-ID', requestId);
+  res.setHeader('Cache-Control', 'private, no-cache');
+  res.setHeader('Vary', 'Authorization');
+  res.setHeader('ETag', etag);
+
+  const ifNoneMatch = req.headers['if-none-match'];
+  const notModified = ifNoneMatch === etag;
+  const status = notModified ? 304 : 200;
+
+  logHomeRequest({
+    requestId,
+    startedAt,
+    status,
+    teamCount: teams.length,
+    payloadBytes: notModified ? 0 : byteLength(body),
+    skippedForRole,
+  });
+
+  if (notModified) return res.status(304).end();
+  return res.status(200).json(body);
+}
+
+/**
  * GET /api/v1/home — Story #1023.
  *
  * Query shape (batched, no per-team amplification):
@@ -49,18 +105,7 @@ router.get('/', requireAuth, async (req, res) => {
     const teamIds = [...new Set(activeMemberships.map((m) => m.team_id))];
 
     if (teamIds.length === 0) {
-      const body = {
-        version: CONTRACT_VERSION,
-        generatedAt: new Date().toISOString(),
-        requestId,
-        defaultTeamId: null,
-        teams: [],
-      };
-      logHomeRequest({ requestId, startedAt, status: 200, teamCount: 0, payloadBytes: byteLength(body) });
-      res.setHeader('X-Request-ID', requestId);
-      res.setHeader('Cache-Control', 'private, no-cache');
-      res.setHeader('Vary', 'Authorization');
-      return res.status(200).json(body);
+      return sendHomeResponse(req, res, { requestId, startedAt, defaultTeamId: null, teams: [] });
     }
 
     const [{ data: teamRows, error: teamError }, { data: teamDataRows, error: teamDataError }] = await Promise.all([
@@ -149,27 +194,7 @@ router.get('/', requireAuth, async (req, res) => {
       ? withEvent.sort((a, b) => new Date(a.nextEvent.startsAt) - new Date(b.nextEvent.startsAt))[0].id
       : (teams[0]?.id ?? null);
 
-    const body = {
-      version: CONTRACT_VERSION,
-      generatedAt: new Date().toISOString(),
-      requestId,
-      defaultTeamId,
-      teams,
-    };
-
-    logHomeRequest({
-      requestId,
-      startedAt,
-      status: 200,
-      teamCount: teams.length,
-      payloadBytes: byteLength(body),
-      skippedForRole,
-    });
-
-    res.setHeader('X-Request-ID', requestId);
-    res.setHeader('Cache-Control', 'private, no-cache');
-    res.setHeader('Vary', 'Authorization');
-    return res.status(200).json(body);
+    return sendHomeResponse(req, res, { requestId, startedAt, defaultTeamId, teams, skippedForRole });
   } catch (err) {
     logHomeRequest({ requestId, startedAt, status: 500, error: err.message });
     res.setHeader('X-Request-ID', requestId);

@@ -381,4 +381,79 @@ describe('GET /api/v1/home', () => {
     const payloadBytes = Buffer.byteLength(JSON.stringify(res.body), 'utf8');
     assert.ok(payloadBytes < 50 * 1024, `payload was ${payloadBytes} bytes, budget is 50KB`);
   });
+
+  test('H21: response includes an ETag header (section 25.4)', async () => {
+    installStubs({
+      memberships: [{ team_id: 't1', role: 'admin', status: 'active' }],
+      teams: [{ id: 't1', name: 'Mud Hens', age_group: '8U', season: 'Fall', year: 2026, sport: 'baseball' }],
+      teamData: [{ team_id: 't1', roster: [], schedule: [], grid: {}, batting_order: [], locked: false, attendance_overrides: {} }],
+    });
+    const res = await request(app).get('/api/v1/home').set('Authorization', `Bearer ${TOKEN}`);
+    assert.equal(res.status, 200);
+    assert.equal(typeof res.headers['etag'], 'string');
+    assert.ok(res.headers['etag'].length > 0);
+  });
+
+  test('H22: two requests against unchanged underlying state produce the same ETag', async () => {
+    const opts = {
+      memberships: [{ team_id: 't1', role: 'admin', status: 'active' }],
+      teams: [{ id: 't1', name: 'Mud Hens', age_group: '8U', season: 'Fall', year: 2026, sport: 'baseball' }],
+      teamData: [{ team_id: 't1', roster: [], schedule: [], grid: {}, batting_order: [], locked: false, attendance_overrides: {} }],
+    };
+    installStubs(opts);
+    const res1 = await request(app).get('/api/v1/home').set('Authorization', `Bearer ${TOKEN}`);
+    installStubs(opts);
+    const res2 = await request(app).get('/api/v1/home').set('Authorization', `Bearer ${TOKEN}`);
+    assert.equal(res1.headers['etag'], res2.headers['etag']);
+  });
+
+  test('H23: matching If-None-Match returns 304 with no body, but still carries X-Request-ID and cache headers', async () => {
+    const opts = {
+      memberships: [{ team_id: 't1', role: 'admin', status: 'active' }],
+      teams: [{ id: 't1', name: 'Mud Hens', age_group: '8U', season: 'Fall', year: 2026, sport: 'baseball' }],
+      teamData: [{ team_id: 't1', roster: [], schedule: [], grid: {}, batting_order: [], locked: false, attendance_overrides: {} }],
+    };
+    installStubs(opts);
+    const first = await request(app).get('/api/v1/home').set('Authorization', `Bearer ${TOKEN}`);
+    const etag = first.headers['etag'];
+
+    installStubs(opts);
+    const second = await request(app)
+      .get('/api/v1/home')
+      .set('Authorization', `Bearer ${TOKEN}`)
+      .set('If-None-Match', etag);
+
+    assert.equal(second.status, 304);
+    assert.deepEqual(second.body, {});
+    assert.equal(typeof second.headers['x-request-id'], 'string');
+    assert.match(second.headers['cache-control'], /private/);
+  });
+
+  test('H24: a stale If-None-Match (state changed) still returns 200 with the new ETag', async () => {
+    installStubs({
+      memberships: [{ team_id: 't1', role: 'admin', status: 'active' }],
+      teams: [{ id: 't1', name: 'Mud Hens', age_group: '8U', season: 'Fall', year: 2026, sport: 'baseball' }],
+      teamData: [{ team_id: 't1', roster: [], schedule: [], grid: {}, batting_order: [], locked: false, attendance_overrides: {} }],
+    });
+    const stale = await request(app)
+      .get('/api/v1/home')
+      .set('Authorization', `Bearer ${TOKEN}`)
+      .set('If-None-Match', '"not-the-real-etag"');
+    assert.equal(stale.status, 200);
+    assert.ok(stale.body.teams.length === 1);
+    assert.notEqual(stale.headers['etag'], '"not-the-real-etag"');
+  });
+
+  test('H25: the zero-membership empty response also carries a stable ETag and honors If-None-Match', async () => {
+    installStubs({ memberships: [] });
+    const first = await request(app).get('/api/v1/home').set('Authorization', `Bearer ${TOKEN}`);
+    assert.equal(typeof first.headers['etag'], 'string');
+
+    installStubs({ memberships: [] });
+    const second = await request(app)
+      .get('/api/v1/home')
+      .set('Authorization', `Bearer ${TOKEN}`)
+      .set('If-None-Match', first.headers['etag']);
+    assert.equal(second.status, 304);
+  });
 });
