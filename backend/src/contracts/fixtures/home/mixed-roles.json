@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generatedAt": "2026-09-02T18:12:00Z",
+  "requestId": "req_fixture_mixed_roles",
+  "defaultTeamId": "team_scorekeeper_1",
+  "teams": [
+    {
+      "id": "team_scorekeeper_1",
+      "name": "Riverdale Owls",
+      "displayName": "Riverdale Owls",
+      "ageGroup": "12U",
+      "season": "Fall",
+      "year": 2026,
+      "sport": "baseball",
+      "role": { "code": "scorekeeper", "label": "Scorekeeper" },
+      "capabilities": [
+        "team.view", "roster.view", "schedule.view",
+        "lineup.view", "game.view_mode", "game.start_mode",
+        "scoring.view", "scoring.claim", "scoring.record"
+      ],
+      "nextEvent": {
+        "id": "game_501",
+        "type": "game",
+        "opponent": "Hawks",
+        "startsAt": "2026-09-03T21:00:00Z",
+        "location": "Owl Field",
+        "homeAway": "home"
+      },
+      "readiness": { "rosterCount": 14, "confirmedCount": 12, "lineupStatus": "ready", "lineupId": "lineup_501" },
+      "actions": [
+        { "id": "claim_scoring", "label": "Claim scoring for Riverdale Owls", "href": "/app/teams/team_scorekeeper_1/games/game_501/score", "enabled": true, "disabledReason": null }
+      ]
+    },
+    {
+      "id": "team_viewer_1",
+      "name": "Riverdale Owls 10U",
+      "displayName": "Riverdale Owls 10U",
+      "ageGroup": "10U",
+      "season": "Fall",
+      "year": 2026,
+      "sport": "baseball",
+      "role": { "code": "viewer", "label": "Team Member / Parent" },
+      "capabilities": [
+        "team.view", "roster.view", "schedule.view", "lineup.view", "game.view_mode", "scoring.view"
+      ],
+      "nextEvent": {
+        "id": "game_502",
+        "type": "game",
+        "opponent": "Falcons",
+        "startsAt": "2026-09-04T22:00:00Z",
+        "location": "South Complex",
+        "homeAway": "away"
+      },
+      "readiness": { "rosterCount": 12, "confirmedCount": 8, "lineupStatus": "draft", "lineupId": "lineup_502" },
+      "actions": [
+        {
+          "id": "claim_scoring",
+          "label": "Claim scoring for Riverdale Owls 10U",
+          "href": "/app/teams/team_viewer_1/games/game_502/score",
+          "enabled": false,
+          "disabledReason": "Scoring is currently claimed by another scorekeeper for this game."
+        },
+        { "id": "view_lineup", "label": "View Riverdale Owls 10U lineup", "href": "/app/teams/team_viewer_1/lineups/lineup_502", "enabled": true, "disabledReason": null }
+      ]
+    }
+  ]
+}

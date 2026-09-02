@@ -418,6 +418,45 @@ X-Time-Zone: America/New_York
 
 Measure before introducing denormalized views or stored summary tables. The endpoint must avoid per-team query amplification.
 
+### 11.4 Normative schema, fixtures, and exclusions (Story #1022)
+
+- `backend/src/contracts/homeReadModel.v1.schema.json` is the normative JSON
+  Schema for this response. Section 11.2's response above is illustrative;
+  the schema file is authoritative for required fields, enums (role codes,
+  capability vocabulary per section 26.1, lineup status, home/away), and
+  the `requestId`/`version` framing required by section 25.1/25.4.
+- `backend/src/contracts/fixtures/home/*.json` are representative fixtures,
+  each structurally validated against the schema (required keys, role/
+  capability enums, action `href` shape) without adding a schema-validation
+  library dependency — that wiring is #1023/#1025's job, not this story's:
+  - `one-team.json` — single admin-role team, full readiness, all actions enabled.
+  - `many-teams-duplicate-names.json` — three teams, two sharing the name
+    "Mud Hens" across two seasons; demonstrates `displayName` disambiguation.
+  - `mixed-roles.json` — scorekeeper and viewer roles on different teams in
+    one response, including a `scoring.claim` action advertised but disabled
+    (section 26.1's footnote: a viewer's scoring capability is a per-game
+    lock state, never a bare role grant).
+  - `empty-events.json` — a team with no upcoming game or practice
+    (`nextEvent: null`, `lineupStatus: "none"`); no game-mode action is
+    offered at all rather than a disabled action pointing at a fake game ID.
+  - `unavailable-actions.json` — a locked lineup and an under-roster team,
+    each producing a real, real-destination action with `enabled: false`
+    and a human-readable `disabledReason`.
+- **Duplicate-name disambiguation rule:** `team.name` is the raw stored
+  value and may collide across a caller's teams (e.g. two seasons of the
+  same club). `team.displayName` is server-computed and equals `name`
+  unless another team in the *same response* shares it, in which case
+  season/year (and age group if still colliding) is appended. This keeps
+  the disambiguation logic in one place per section 6.3 — React renders
+  `displayName`, it never re-derives collision handling client-side.
+- **Explicit exclusions:** this contract never returns full roster arrays,
+  defense/batting grids, roster-snapshot history, or any live-scoring
+  table content (`live_game_state`, `game_scoring_sessions`,
+  `scoring_audit_log`). Those remain behind their own screen-scoped read
+  APIs in later migration waves (section 30, "Live migration inventory"). This is a summary/discovery contract, not a data export —
+  keeping it small is also how the 50 KB/ten-team payload budget in
+  section 4.3 stays achievable.
+
 ## 12. Home UX contract
 
 ### 12.1 Team Hub model

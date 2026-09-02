@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "generatedAt": "2026-09-02T18:12:00Z",
+  "requestId": "req_fixture_many_teams",
+  "defaultTeamId": "1774297491626",
+  "teams": [
+    {
+      "id": "1774297491626",
+      "name": "Mud Hens",
+      "displayName": "Mud Hens (Fall 2026)",
+      "ageGroup": "8U",
+      "season": "Fall",
+      "year": 2026,
+      "sport": "baseball",
+      "role": { "code": "admin", "label": "Team Admin / Head Coach" },
+      "capabilities": ["team.view", "team.manage", "membership.manage", "roster.view", "roster.manage", "schedule.view", "schedule.manage", "lineup.view", "lineup.create", "lineup.manage", "lineup.lock", "game.view_mode", "game.start_mode", "scoring.view", "scoring.claim", "scoring.record", "scoring.finalize"],
+      "nextEvent": {
+        "id": "game_123",
+        "type": "game",
+        "opponent": "Braves",
+        "startsAt": "2026-09-02T22:00:00Z",
+        "location": "Riverside Field",
+        "homeAway": "home"
+      },
+      "readiness": { "rosterCount": 11, "confirmedCount": 9, "lineupStatus": "ready", "lineupId": "lineup_456" },
+      "actions": [
+        { "id": "start_game_mode", "label": "Start Mud Hens (Fall 2026) Game Mode", "href": "/app/teams/1774297491626/games/game_123/mode", "enabled": true, "disabledReason": null }
+      ]
+    },
+    {
+      "id": "1774297491999",
+      "name": "Mud Hens",
+      "displayName": "Mud Hens (Spring 2026)",
+      "ageGroup": "8U",
+      "season": "Spring",
+      "year": 2026,
+      "sport": "baseball",
+      "role": { "code": "admin", "label": "Team Admin / Head Coach" },
+      "capabilities": ["team.view", "team.manage", "membership.manage", "roster.view", "roster.manage", "schedule.view", "schedule.manage", "lineup.view", "lineup.create", "lineup.manage", "lineup.lock", "game.view_mode", "game.start_mode", "scoring.view", "scoring.claim", "scoring.record", "scoring.finalize"],
+      "nextEvent": null,
+      "readiness": { "rosterCount": 12, "confirmedCount": 0, "lineupStatus": "none", "lineupId": null },
+      "actions": [
+        { "id": "view_roster", "label": "View Mud Hens (Spring 2026) roster", "href": "/app/teams/1774297491999/roster", "enabled": true, "disabledReason": null }
+      ]
+    },
+    {
+      "id": "1774297492500",
+      "name": "Knights",
+      "displayName": "Knights",
+      "ageGroup": "10U",
+      "season": "Fall",
+      "year": 2026,
+      "sport": "baseball",
+      "role": { "code": "coach", "label": "Coach / Coordinator" },
+      "capabilities": ["team.view", "roster.view", "roster.manage", "schedule.view", "schedule.manage", "lineup.view", "lineup.create", "lineup.manage", "lineup.lock", "game.view_mode", "game.start_mode", "scoring.view", "scoring.claim", "scoring.record", "scoring.finalize"],
+      "nextEvent": {
+        "id": "game_789",
+        "type": "game",
+        "opponent": "Eagles",
+        "startsAt": "2026-09-05T23:30:00Z",
+        "location": "North Park",
+        "homeAway": "away"
+      },
+      "readiness": { "rosterCount": 13, "confirmedCount": 10, "lineupStatus": "draft", "lineupId": "lineup_890" },
+      "actions": [
+        { "id": "view_lineup", "label": "View Knights lineup", "href": "/app/teams/1774297492500/lineups/lineup_890", "enabled": true, "disabledReason": null }
+      ]
+    }
+  ]
+}

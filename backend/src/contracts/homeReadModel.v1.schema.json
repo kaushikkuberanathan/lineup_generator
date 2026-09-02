@@ -1,0 +1,153 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dugoutlineup.com/contracts/home-read-model.v1.schema.json",
+  "title": "GET /api/v1/home response (contract version 1)",
+  "description": "Reference API-driven screen contract for Story #1022. Governed by docs/product/API_DRIVEN_ARCHITECTURE_REDESIGN.md sections 8, 11, 25, 26, 27, 28. Full rosters, defense/batting grids, roster snapshots/history, and live scoring state are deliberately excluded — this is a summary read model, not a data export.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "generatedAt", "requestId", "defaultTeamId", "teams"],
+  "properties": {
+    "version": {
+      "const": 1,
+      "description": "Contract version per section 25.4. A future breaking change ships as version 2 with a measured compatibility window, not a silent field rename."
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Server timestamp the summary was computed, per section 25.1 (\"successful reads return the resource/read model directly, with version and generatedAt in the representation\")."
+    },
+    "requestId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._:-]{1,128}$",
+      "description": "Echoes the caller's X-Request-ID or a server-generated one, per section 25.1."
+    },
+    "defaultTeamId": {
+      "type": ["string", "null"],
+      "description": "The team the Team Hub should expand by default (section 12.1: exactly one team is expanded). Null only when the caller has zero active team memberships."
+    },
+    "teams": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/team" }
+    }
+  },
+  "$defs": {
+    "role": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "label"],
+      "properties": {
+        "code": {
+          "type": "string",
+          "enum": ["admin", "coach", "scorekeeper", "viewer"],
+          "description": "Normalized canonical role per section 26 / backend/src/lib/normalizeRole.js. Never a raw legacy DB value (team_admin, coordinator, parent)."
+        },
+        "label": {
+          "type": "string",
+          "description": "Product-facing label per section 26's mapping table, e.g. 'Team Admin / Head Coach' for code=admin."
+        }
+      }
+    },
+    "capability": {
+      "type": "string",
+      "description": "One capability string from the section 26.1 baseline matrix (e.g. team.view, roster.manage, game.start_mode). Resource state may narrow which actions a capability actually enables; it never grants a capability beyond the role matrix.",
+      "enum": [
+        "team.view", "team.manage",
+        "membership.manage",
+        "roster.view", "roster.manage",
+        "schedule.view", "schedule.manage",
+        "lineup.view", "lineup.create", "lineup.manage", "lineup.lock",
+        "game.view_mode", "game.start_mode",
+        "scoring.view", "scoring.claim", "scoring.record", "scoring.finalize"
+      ]
+    },
+    "nextEvent": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["id", "type", "startsAt"],
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string", "enum": ["game", "practice"] },
+        "opponent": { "type": ["string", "null"] },
+        "startsAt": { "type": "string", "format": "date-time" },
+        "location": { "type": ["string", "null"] },
+        "homeAway": { "type": ["string", "null"], "enum": ["home", "away", "neutral", null] }
+      },
+      "description": "Null when the team has no upcoming game or practice on the schedule."
+    },
+    "readiness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rosterCount", "confirmedCount", "lineupStatus", "lineupId"],
+      "properties": {
+        "rosterCount": { "type": "integer", "minimum": 0 },
+        "confirmedCount": { "type": "integer", "minimum": 0 },
+        "lineupStatus": {
+          "type": "string",
+          "enum": ["none", "draft", "ready"],
+          "description": "'none' = no lineup started for the next event; 'draft' = grid/batting order started but not locked; 'ready' = locked and complete."
+        },
+        "lineupId": { "type": ["string", "null"] }
+      }
+    },
+    "action": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label", "href", "enabled", "disabledReason"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Stable action ID, e.g. start_game_mode, view_roster, view_schedule. Stable across releases so frontend/analytics can key off it without parsing the label."
+        },
+        "label": {
+          "type": "string",
+          "description": "Contextual, team-named label per section 12.2, e.g. 'Start Mud Hens Game Mode' — never a bare verb."
+        },
+        "href": {
+          "type": "string",
+          "pattern": "^/app/teams/[^/]+(/.*)?$|^/app$",
+          "description": "Canonical destination per section 6.2/27. Always team-scoped for a per-team action; this is discovery only — section 26.2 requires the destination and any command to reauthorize independently."
+        },
+        "enabled": { "type": "boolean" },
+        "disabledReason": {
+          "type": ["string", "null"],
+          "description": "Required (may be null) even when enabled=true, so clients never have to special-case a missing key. Human-safe reason when enabled=false, e.g. 'Lineup already locked for this game.'"
+        }
+      }
+    },
+    "team": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id", "name", "displayName", "ageGroup", "season", "year", "sport",
+        "role", "capabilities", "nextEvent", "readiness", "actions"
+      ],
+      "properties": {
+        "id": { "type": "string" },
+        "name": {
+          "type": "string",
+          "description": "Raw team name as stored. May collide with another team's name in the same response (e.g. two seasons of 'Mud Hens')."
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Human-disambiguated name for list/card rendering, per #1022 acceptance criteria. Equal to name unless another team in this same response shares the same name, in which case season/year (and age group if still colliding) is appended, e.g. 'Mud Hens (Fall 2026)'. Computed server-side so the frontend never re-derives disambiguation logic per section 6.3 (React must not invent business logic already represented by the API)."
+        },
+        "ageGroup": { "type": "string" },
+        "season": { "type": "string", "enum": ["Spring", "Fall"] },
+        "year": { "type": "integer", "minimum": 2000 },
+        "sport": { "type": "string" },
+        "role": { "$ref": "#/$defs/role" },
+        "capabilities": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/capability" },
+          "description": "Discovery only per section 26.2 checkpoint 1 — the destination and command layers reauthorize independently and this list grants nothing by itself."
+        },
+        "nextEvent": { "$ref": "#/$defs/nextEvent" },
+        "readiness": { "$ref": "#/$defs/readiness" },
+        "actions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/action" }
+        }
+      }
+    }
+  }
+}
