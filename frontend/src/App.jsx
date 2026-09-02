@@ -58,6 +58,8 @@ import { UpdatesTab } from './components/Support/UpdatesTab';
 import { currentSeasonGuess, formatSeason, compareTeamsNewestFirst } from './utils/season.js';
 import { firstName } from './utils/playerName';
 import { SharedView } from './screens/Share/SharedView';
+import { readRosterProfileRoute, buildRosterProfileSearch } from './utils/rosterProfileRoute';
+import { getScheduleOverview } from './utils/scheduleOverview';
 
 // ============================================================
 // HELPERS
@@ -1353,11 +1355,35 @@ export default function App() {
   var showAddForm = _showAddForm[0]; var setShowAddForm = _showAddForm[1];
   var _summaryOpen = useState(true);
   var summaryOpen = _summaryOpen[0]; var setSummaryOpen = _summaryOpen[1];
-  var _rosterDetailMode = useState(null);
+  var _rosterDetailMode = useState(function() { return readRosterProfileRoute(window.location.search); });
   var rosterDetailMode = _rosterDetailMode[0]; var setRosterDetailMode = _rosterDetailMode[1];
+  function navigateRosterDetail(mode, replace) {
+    var search = buildRosterProfileSearch(window.location.search, mode);
+    var url = window.location.pathname + search + window.location.hash;
+    window.history[replace ? "replaceState" : "pushState"]({ rosterDetailMode: mode }, "", url);
+    setRosterDetailMode(mode);
+    if (mode !== null) {
+      setPrimaryTab("team");
+    }
+  }
   useEffect(function() {
-    setRosterDetailMode(null);
-  }, [activeTeamId, setRosterDetailMode]);
+    var routeMode = readRosterProfileRoute(window.location.search);
+    setRosterDetailMode(routeMode);
+    if (routeMode !== null) {
+      setPrimaryTab("team");
+    }
+  }, [activeTeamId, setPrimaryTab, setRosterDetailMode]);
+  useEffect(function() {
+    function onPopState() {
+      var routeMode = readRosterProfileRoute(window.location.search);
+      setRosterDetailMode(routeMode);
+      if (routeMode !== null) {
+        setPrimaryTab("team");
+      }
+    }
+    window.addEventListener("popstate", onPopState);
+    return function() { window.removeEventListener("popstate", onPopState); };
+  }, [setPrimaryTab, setRosterDetailMode]);
   var _drag = useState(null);
   var dragPlayer = _drag[0]; var setDragPlayer = _drag[1];
   // Touch drag uses a mutable ref (window object) instead of useState to avoid
@@ -3123,7 +3149,7 @@ export default function App() {
             {rosterDetailMode !== null ? (
               <button
                 type="button"
-                onClick={function() { setRosterDetailMode(null); }}
+                onClick={function() { navigateRosterDetail(null); }}
                 aria-label="Back to roster summary"
                 style={{ background:"none", border:"none", color:tokens.color.brand.red, cursor:"pointer", fontFamily:"inherit", fontSize:"13px", fontWeight:"bold", padding:"6px 0" }}>
                 ‹ Roster
@@ -3313,7 +3339,7 @@ export default function App() {
                                   next[playerName] = false;
                                   return next;
                                 });
-                                setRosterDetailMode(playerName);
+                                navigateRosterDetail(playerName);
                               }; }(info.name)}
                               aria-label={"Open " + info.name + " player profile"}
                               style={{ background:"none", border:"none", color:tokens.color.brand.red, cursor:"pointer", fontFamily:"inherit", fontSize:"inherit", fontWeight:"bold", padding:"6px 0", textDecoration:"underline", textUnderlineOffset:"2px" }}>
@@ -3361,7 +3387,7 @@ export default function App() {
             </div>
             <button
               type="button"
-              onClick={function() { setRosterDetailMode("all"); }}
+              onClick={function() { navigateRosterDetail("all"); }}
               style={{ background:"none", border:"none", color:tokens.color.brand.red, cursor:"pointer", fontFamily:"inherit", fontSize:"13px", fontWeight:"bold", padding:"6px", textDecoration:"underline", textUnderlineOffset:"2px" }}>
               View All Players
             </button>
@@ -3475,7 +3501,7 @@ export default function App() {
                     </div>
                   ) : null}
                   {!lineupLocked ? (
-                    <button onClick={function(n) { return function() { if (confirm("Remove " + n + "?")) { removePlayer(n); } }; }(info.name)}
+                    <button aria-label={"Remove " + info.name} onClick={function(n) { return function() { if (confirm("Remove " + n + "?")) { removePlayer(n); if (rosterDetailMode !== "all") { navigateRosterDetail(null, true); } } }; }(info.name)}
                       style={{ background:"none", border:"none", color:"#b0a0a0", cursor:"pointer", fontSize:"13px", padding:"2px 6px" }}>x</button>
                   ) : null}
                 </div>
@@ -5516,15 +5542,18 @@ export default function App() {
     return (
       <div>
         {wins + losses + ties > 0 ? (
-          <div style={{ display:"flex", gap:"10px", padding:"12px 16px", borderRadius:"10px", background:"linear-gradient(135deg,#0f1f3d,#1a3260)", marginBottom:"14px" }}>
-            {[["W", wins, tokens.color.status.success], ["L", losses, tokens.color.brand.red], ["T", ties, "#d4a017"]].map(function(row) {
-              return (
-                <div key={row[0]} style={{ textAlign:"center", flex:1 }}>
-                  <div style={{ fontSize:"22px", fontWeight:"bold", color:row[2] }}>{row[1]}</div>
-                  <div style={{ fontSize:"10px", color:"rgba(255,255,255,0.4)", letterSpacing:"0.12em" }}>{row[0]}</div>
-                </div>
-              );
-            })}
+          <div aria-label="Season record" style={{ padding:"12px 16px 14px", borderRadius:"10px", background:"linear-gradient(135deg,#0f1f3d,#1a3260)", marginBottom:"14px" }}>
+            <div style={{ color:tokens.color.text.onDark, fontSize:"11px", fontWeight:"bold", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:"10px" }}>Season record</div>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(3, minmax(0, 1fr))", gap:"10px" }}>
+              {[["Wins", wins, tokens.color.status.success], ["Losses", losses, tokens.color.brand.red], ["Ties", ties, "#d4a017"]].map(function(row) {
+                return (
+                  <div key={row[0]} style={{ textAlign:"center" }}>
+                    <div style={{ fontSize:"22px", fontWeight:"bold", color:row[2] }}>{row[1]}</div>
+                    <div style={{ fontSize:"10px", color:"rgba(255,255,255,0.68)", letterSpacing:"0.05em", textTransform:"uppercase" }}>{row[0]}</div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         ) : null}
 
@@ -6002,9 +6031,9 @@ export default function App() {
             var resultColor = game.result === "W" ? tokens.color.status.success : game.result === "L" ? tokens.color.brand.red : game.result === "T" ? "#d4a017" : "#888";
             var cancelColor = tokens.color.status.neutral;
             return (
-              <Card key={game.id} padding="14px 16px" radius="md" style={{ border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px", borderLeft:"3px solid " + (isCanceled ? cancelColor : isPlayed ? resultColor : tokens.color.brand.red), opacity: isCanceled ? 0.72 : 1 }}>
-                <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:"10px" }}>
-                  <div style={{ flex:1 }}>
+              <Card key={game.id} padding="0" radius="md" style={{ overflow:"hidden", border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px", borderLeft:"4px solid " + (isCanceled ? cancelColor : isPlayed ? resultColor : tokens.color.brand.red), opacity: isCanceled ? 0.78 : 1 }}>
+                <div style={{ padding:"16px 16px 14px" }}>
+                  <div>
                     <div style={{ display:"flex", alignItems:"center", gap:"8px", marginBottom:"4px", flexWrap:"wrap" }}>
                       <div style={{ fontWeight:"bold", fontSize:"15px" }}>{game.opponent}</div>
                       {isCanceled ? (
@@ -6013,7 +6042,7 @@ export default function App() {
                         </span>
                       ) : isPlayed && game.result ? (
                         <span style={{ fontSize:"11px", padding:"2px 8px", borderRadius:"10px", fontWeight:"bold", background:resultColor+"22", color:resultColor }}>
-                          {game.result} {game.ourScore ? game.ourScore + "-" + game.theirScore : ""}
+                          Final · {game.result === "W" ? "Win" : game.result === "L" ? "Loss" : "Tie"}
                         </span>
                       ) : (function() {
                         var today2 = new Date(); today2.setHours(0,0,0,0);
@@ -6067,13 +6096,25 @@ export default function App() {
                           onClick={function() { setInlineScoreGame(null); }}>Done</button>
                       </div>
                     ) : null}
-                    <div style={{ fontSize:"12px", color:tokens.color.text.muted, display:"flex", gap:"12px", flexWrap:"wrap" }}>
+                    <div style={{ fontSize:"12px", color:tokens.color.text.muted, display:"flex", gap:"6px 12px", flexWrap:"wrap", alignItems:"center" }}>
                       {game.date ? <span>{new Date(game.date + "T12:00:00").toLocaleDateString("en-US", { weekday:"short", month:"short", day:"numeric" })}</span> : null}
                       {game.time ? <span>{game.time}</span> : null}
                       {game.location ? <span>{game.location}</span> : null}
                     </div>
+                    {isPlayed && game.ourScore !== undefined && game.ourScore !== "" && game.theirScore !== undefined && game.theirScore !== "" ? (
+                      <div aria-label={"Final score against " + game.opponent} style={{ marginTop:"12px", padding:"9px 11px", borderRadius:"9px", background:resultColor+"0D", border:"1px solid "+resultColor+"2B" }}>
+                        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:"12px", fontSize:"12px", fontWeight:game.result === "W" ? 700 : 500, color:tokens.color.text.ink }}>
+                          <span>{activeTeam ? activeTeam.name : "Our team"}</span>
+                          <strong style={{ fontSize:"15px", color:game.result === "W" ? resultColor : tokens.color.text.ink }}>{game.ourScore}</strong>
+                        </div>
+                        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:"12px", marginTop:"5px", paddingTop:"5px", borderTop:"1px solid "+resultColor+"1F", fontSize:"12px", fontWeight:game.result === "L" ? 700 : 500, color:tokens.color.text.muted }}>
+                          <span>{game.opponent}</span>
+                          <strong style={{ fontSize:"15px", color:game.result === "L" ? resultColor : tokens.color.text.ink }}>{game.theirScore}</strong>
+                        </div>
+                      </div>
+                    ) : null}
                     {isPlayed ? (
-                      <div style={{ marginTop:"6px", paddingTop:"6px", borderTop:"1px solid " + tokens.color.overlay.neutralWash, display:"flex", alignItems:"center", gap:"8px" }}>
+                      <div style={{ marginTop:"12px", paddingTop:"12px", borderTop:"1px solid " + tokens.color.overlay.neutralWash, display:"flex", alignItems:"center", gap:"8px" }}>
                         <input
                           type="checkbox"
                           id={"county-" + game.id}
@@ -6096,44 +6137,45 @@ export default function App() {
                       var sa = { playerName: game.snackDuty || "", note: game.snackNote || "" };
                       var hasSa = !!sa.playerName;
                       return (
-                        <div style={{ marginTop:"6px", paddingTop:"6px", borderTop:"1px solid " + tokens.color.overlay.neutralWash }}>
-                          <div style={{ display:"flex", gap:"6px", alignItems:"center", flexWrap:"wrap" }}>
-                            <span style={{ fontSize:"11px", color:tokens.color.text.muted, flexShrink:0 }}>🍎 Snack Duty</span>
+                        <div style={{ marginTop:"12px", paddingTop:"12px", borderTop:"1px solid " + tokens.color.overlay.neutralWash }}>
+                          <div style={{ display:"grid", gridTemplateColumns:"minmax(92px, auto) minmax(0, 1fr)", columnGap:"10px", rowGap:"12px", alignItems:"center" }}>
+                            <span style={{ fontSize:"11px", color:tokens.color.text.muted, fontWeight:600 }}>🍎 Snack Duty</span>
                             <select
                               value={sa.playerName || ""}
                               onChange={function(gid) { return function(e) {
                                 updateSnackField(gid, "playerName", e.target.value);
                               }; }(game.id)}
-                              style={{ flex:"1 1 110px", minWidth:"100px", padding:"3px 6px", borderRadius:"5px", border:"1px solid rgba(15,31,61,0.15)", fontSize:"12px", fontFamily:"inherit", background:tokens.color.surface.card, color: hasSa ? tokens.color.text.ink : tokens.color.text.muted }}>
+                              style={{ width:"100%", minWidth:0, padding:"7px 9px", borderRadius:"7px", border:"1px solid rgba(15,31,61,0.15)", fontSize:"12px", fontFamily:"inherit", background:tokens.color.surface.card, color: hasSa ? tokens.color.text.ink : tokens.color.text.muted }}>
                               <option value="">— Assign —</option>
                               {roster.slice().sort(function(a,b){ return (a.firstName||a.name||'').toLowerCase().localeCompare((b.firstName||b.name||'').toLowerCase()); }).map(function(p) {
                                 return <option key={p.name} value={p.firstName || p.name}>{p.firstName || p.name}</option>;
                               })}
                             </select>
-                            {hasSa && (
-                              <button onClick={function(gid) { return function() { clearSnackAssignment(gid); }; }(game.id)}
-                                style={{ background:"none", border:"none", cursor:"pointer", fontSize:"12px", color:tokens.color.text.muted, padding:"1px 3px", lineHeight:1 }} title="Clear">✕</button>
-                            )}
-                            <div style={{marginTop:'6px'}}>
-                              <span style={{fontSize:'12px',color:'#666',fontWeight:500}}>🏆 Game Ball: </span>
-                              <span style={{fontSize:'13px',color:'#1B2A4A',fontWeight: Array.isArray(game.gameBall) && game.gameBall.length > 0 ? 600 : 400}}>
+                            <span style={{ fontSize:"11px", color:tokens.color.text.muted, fontWeight:600 }}>🏆 Game Ball</span>
+                            <div style={{ display:"flex", alignItems:"center", minWidth:0 }}>
+                              <span style={{fontSize:'13px',color:tokens.color.text.ink,fontWeight: Array.isArray(game.gameBall) && game.gameBall.length > 0 ? 600 : 400, overflowWrap:"anywhere"}}>
                                 {Array.isArray(game.gameBall) && game.gameBall.length > 0
                                   ? game.gameBall.join(', ')
                                   : <span style={{color:'#aaa'}}>—</span>}
                               </span>
                             </div>
+                            {hasSa ? (
+                              <button onClick={function(gid) { return function() { clearSnackAssignment(gid); }; }(game.id)}
+                                style={{ gridColumn:"2", justifySelf:"start", background:"none", border:"none", cursor:"pointer", fontSize:"11px", color:tokens.color.text.muted, padding:0, fontFamily:"inherit", textDecoration:"underline" }} title="Clear snack assignment">Clear assignment</button>
+                            ) : null}
                           </div>
                         </div>
                       );
                     })()}
                   </div>
-                  <div style={{ display:"flex", gap:"6px", flexWrap:"wrap" }}>
+                </div>
+                <div aria-label={"Actions for " + game.opponent} style={{ display:"grid", gridTemplateColumns:"repeat(3, minmax(0, 1fr))", gap:"8px", padding:"12px 16px", background:tokens.color.overlay.neutralWash, borderTop:"1px solid " + tokens.color.border.neutral }}>
                     {(function() {
                       var todayStr = new Date().toLocaleDateString('en-CA');
                       var isPast = game.date && game.date <= todayStr;
                       if (isCanceled) {
                         return (
-                          <button style={{ ...S.btn("ghost"), color:cancelColor, fontSize:"11px" }}
+                          <button style={{ ...S.btn("ghost"), color:cancelColor, fontSize:"11px", gridColumn:"1 / -1", minWidth:0 }}
                             onClick={function() {
                               var g2 = {}; for (var k in game) { g2[k] = game[k]; }
                               g2.result = "";
@@ -6142,7 +6184,7 @@ export default function App() {
                         );
                       }
                       if (isPast && !game.scoreReported) {
-                        return <button style={S.btn("primary")} onClick={function(g) { return function() {
+                        return <button style={{ ...S.btn("primary"), gridColumn:"1 / -1", minWidth:0 }} onClick={function(g) { return function() {
                           var gCopy = {}; for (var k in g) { gCopy[k] = g[k]; }
                           if (!gCopy.battingPerf) { gCopy.battingPerf = {}; }
                           setNewGame(gCopy);
@@ -6153,10 +6195,9 @@ export default function App() {
                       }
                       return null;
                     })()}
-                    <button style={S.btn("ghost")} onClick={function() { handleShareGame(game); }}>Share</button>
-                    <button style={S.btn("ghost")} onClick={function(g) { return function() { startEdit(g); }; }(game)}>Edit</button>
-                    <button style={{ ...S.btn("ghost"), color:tokens.color.brand.red }} onClick={function(id) { return function() { if (confirm("Delete game?")) { deleteGame(id); } }; }(game.id)}>Del</button>
-                  </div>
+                    <button style={{ ...S.btn("ghost"), minWidth:0, width:"100%", padding:"9px 4px" }} onClick={function() { handleShareGame(game); }}>Share</button>
+                    <button style={{ ...S.btn("ghost"), minWidth:0, width:"100%", padding:"9px 4px" }} onClick={function(g) { return function() { startEdit(g); }; }(game)}>Edit</button>
+                    <button style={{ ...S.btn("ghost"), minWidth:0, width:"100%", padding:"9px 4px", color:tokens.color.brand.red }} onClick={function(id) { return function() { if (confirm("Delete game?")) { deleteGame(id); } }; }(game.id)}>Delete</button>
                 </div>
               </Card>
             );
@@ -7395,36 +7436,18 @@ export default function App() {
   }
 
   function renderPrimaryScheduleTab() {
-    var today = new Date(); today.setHours(0,0,0,0);
-    var wins = 0; var losses = 0; var ties = 0;
-    for (var resultIndex = 0; resultIndex < schedule.length; resultIndex++) {
-      if (schedule[resultIndex].result === "W") { wins++; }
-      else if (schedule[resultIndex].result === "L") { losses++; }
-      else if (schedule[resultIndex].result === "T") { ties++; }
-    }
-    var upcoming = schedule.filter(function(game) {
-      return game.result !== "X" && game.date && new Date(game.date + "T12:00:00") >= today;
-    }).sort(function(a, b) {
-      return new Date(a.date + "T12:00:00") - new Date(b.date + "T12:00:00");
-    });
-    var nextGame = upcoming[0] || null;
+    var overview = getScheduleOverview(schedule);
+    var nextGame = overview.nextGame;
     var nextDate = nextGame ? new Date(nextGame.date + "T12:00:00") : null;
 
     return (
       <div style={{ paddingBottom:"80px" }}>
-        <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:"12px", margin:"14px 14px 10px" }}>
-          <div>
-            <div style={{ fontFamily:"Georgia,serif", fontWeight:"bold", fontSize:"20px", color:tokens.color.brand.navy }}>Schedule</div>
-            <div style={{ fontSize:"12px", color:tokens.color.text.muted, marginTop:"3px" }}>{activeTeam ? activeTeam.name : ""}</div>
-          </div>
-          <div aria-label="Season record" style={{ textAlign:"right" }}>
-            <div style={{ fontSize:"16px", fontWeight:"bold", color:tokens.color.brand.navy }}>{wins}–{losses}{ties > 0 ? "–" + ties : ""}</div>
-            <div style={{ fontSize:"10px", color:tokens.color.text.muted, textTransform:"uppercase", letterSpacing:"0.06em" }}>Record</div>
-          </div>
+        <div style={{ margin:"14px 14px 12px" }}>
+          <div style={{ fontFamily:"Georgia,serif", fontWeight:"bold", fontSize:"20px", color:tokens.color.brand.navy }}>Schedule</div>
         </div>
 
         {nextGame ? (
-          <div style={{ background:tokens.color.brand.navy, color:tokens.color.text.onDark, borderRadius:"14px", padding:"16px", margin:"0 12px 12px", boxShadow:"0 4px 14px rgba(15,31,61,0.16)" }}>
+          <div aria-label="Next game summary" style={{ background:tokens.color.brand.navy, color:tokens.color.text.onDark, borderRadius:"14px", padding:"16px", margin:"0 12px 12px", boxShadow:"0 4px 14px rgba(15,31,61,0.16)" }}>
             <div style={{ color:tokens.color.brand.gold, fontSize:"10px", fontWeight:"bold", textTransform:"uppercase", letterSpacing:"0.08em" }}>Next game</div>
             <div style={{ fontFamily:"Georgia,serif", fontWeight:"bold", fontSize:"21px", marginTop:"7px" }}>{nextGame.opponent ? "vs. " + nextGame.opponent : "Upcoming game"}</div>
             <div style={{ fontSize:"12px", color:"rgba(255,255,255,0.78)", marginTop:"5px" }}>
@@ -7446,6 +7469,32 @@ export default function App() {
 
         <div style={{ margin:"0 12px" }}>
           {renderSchedule()}
+          <Card padding="14px" radius="md" style={{ marginTop:"16px", border:"1px solid " + tokens.color.border.neutral }}>
+            <div aria-label="Practices" style={{ fontFamily:"Georgia,serif" }}>
+              <div style={{ fontSize:"16px", fontWeight:"bold", color:tokens.color.brand.navy }}>Practices</div>
+              <div style={{ fontSize:"11px", color:tokens.color.text.muted, marginTop:"2px" }}>
+                {practices.length} scheduled
+              </div>
+              {practices.length === 0 ? (
+                <div style={{ fontSize:"12px", color:tokens.color.text.muted, marginTop:"10px" }}>No practices scheduled.</div>
+              ) : practices.map(function(practice, practiceIndex) {
+                var practiceDate = practice.date ? new Date(practice.date + "T12:00:00") : null;
+                return (
+                  <div key={practice.id || practice.date || practiceIndex}
+                    style={{ marginTop:"10px", paddingTop:"10px", borderTop:"1px solid " + tokens.color.border.neutral }}>
+                    <div style={{ fontSize:"13px", fontWeight:"bold", color:tokens.color.text.ink }}>
+                      {practice.title || practice.name || "Team Practice"}
+                    </div>
+                    <div style={{ fontSize:"11px", color:tokens.color.text.muted, marginTop:"3px" }}>
+                      {practiceDate ? practiceDate.toLocaleDateString("en-US", { month:"short", day:"numeric" }) : "Date TBD"}
+                      {practice.time ? " · " + practice.time : ""}
+                      {practice.location ? " · " + practice.location : ""}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
           <div style={{ marginTop:"16px" }}>{renderSnackDuty()}</div>
         </div>
       </div>
@@ -7499,7 +7548,7 @@ export default function App() {
 
   function renderBottomNav() {
     return (
-      <div style={{ position:"fixed", bottom:0, left:0, right:0, zIndex:200, background:tokens.color.brand.navy, borderTop:"2px solid " + tokens.color.brand.red, display:"flex", paddingBottom: isStandalone ? "env(safe-area-inset-bottom, 0px)" : "env(safe-area-inset-bottom, 12px)" }}>
+      <div role="navigation" aria-label="Primary" style={{ position:"fixed", bottom:0, left:0, right:0, zIndex:200, background:tokens.color.brand.navy, borderTop:"2px solid " + tokens.color.brand.red, display:"flex", paddingBottom: isStandalone ? "env(safe-area-inset-bottom, 0px)" : "env(safe-area-inset-bottom, 12px)" }}>
         {PRIMARY_TABS.map(function(t) {
           var active = primaryTab === t.key;
           var disabled = (t.key !== "more" && t.key !== "home" && screen !== "app");
@@ -7511,6 +7560,7 @@ export default function App() {
                   setScreen("home"); setPrimaryTab("home"); setHomeMode("welcome"); return;
                 }
                 if (d) return;
+                if (k !== "team" && rosterDetailMode !== null) { navigateRosterDetail(null, true); }
                 setPrimaryTab(k);
                 if (k !== "more") setScreen("app");
               }; }(t.key, disabled)}
@@ -7590,7 +7640,7 @@ export default function App() {
         ) : null}
       </ErrorBoundary>
       {showInstallBanner && !gameModeActive && !dugoutViewActive ? (
-        <div style={{ position:"fixed", bottom:"calc(56px + env(safe-area-inset-bottom, 0px))", left:0, right:0, zIndex:199,
+        <div aria-label="Install app" style={{ position:"fixed", bottom:"calc(56px + env(safe-area-inset-bottom, 0px))", left:0, right:0, zIndex:199,
           background:"#1a2f5e", borderTop:"1px solid rgba(245,200,66,0.4)",
           padding:"10px 16px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:12 }}>
           <div style={{ flex:1, minWidth:0 }}>

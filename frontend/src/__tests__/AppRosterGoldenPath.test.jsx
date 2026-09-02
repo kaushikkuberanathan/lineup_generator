@@ -79,8 +79,7 @@ describe("App Roster tab golden path (#943)", function () {
     render(<App />);
 
     // A single team with a matching membership auto-loads via the #376
-    // reconciliation effect and lands on the Team > Roster screen directly —
-    // "My Team" is the tab, "roster" is teamSubTab's default value.
+    // reconciliation effect and enables the roster-focused My Team screen.
     var myTeamNav = await screen.findByRole("button", { name: /My Team/ });
     fireEvent.click(myTeamNav);
 

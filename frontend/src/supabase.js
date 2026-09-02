@@ -6,8 +6,13 @@ import { createClient } from '@supabase/supabase-js';
 var supabaseUrl  = import.meta.env.VITE_SUPABASE_URL  || '';
 var supabaseKey  = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 var BACKEND_URL  = import.meta.env.VITE_BACKEND_URL || 'https://lineup-generator-backend.onrender.com';
-export var isLocalReviewMode = import.meta.env.DEV
-  && new URLSearchParams(window.location.search).get('dev_bypass') === '1';
+export function shouldUseLocalReviewMode(isDev, search) {
+  return isDev === true
+    && new URLSearchParams(search || '').get('dev_bypass') === '1';
+}
+
+var locationSearch = typeof window === 'undefined' ? '' : window.location.search;
+export var isLocalReviewMode = shouldUseLocalReviewMode(import.meta.env.DEV, locationSearch);
 
 export var supabase = !isLocalReviewMode && supabaseUrl && supabaseKey
   ? createClient(supabaseUrl, supabaseKey)
