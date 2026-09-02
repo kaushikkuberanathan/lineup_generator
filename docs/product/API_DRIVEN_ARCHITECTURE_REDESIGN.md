@@ -1150,3 +1150,75 @@ Each rollout boundary records commit SHA, flag values/cohort, environment,
 deployment SHA, test/preview evidence, telemetry window and query, observed
 thresholds, decision, rollback owner/action, and soak start/end. Legacy retirement
 additionally requires caller-usage evidence and live database grant/policy checks.
+
+## 30. Live migration inventory
+
+Inventory snapshot: repository commit `76523b7`, reconciled 2026-09-02. This is a
+caller map, not authorization to remove any path. Re-run the searches for
+`loadJSON|saveJSON|localStorage`, `supabase|dbLoad|dbSave`, and render/tab owners
+before each migration because parallel work can change it.
+
+### 30.1 Screen and state-owner inventory
+
+| Surface | Current render owner | Reads and writes | Local keys | Authorization assumption and current proof | Migration wave / prerequisite |
+|---|---|---|---|---|---|
+| Home / multi-team cards | `App.jsx::renderHome` plus `components/Home/*` | `dbLoadTeams`, per-team `dbLoadTeamData`; team create/edit/delete; derives next game/readiness/actions in React | `app:teams`, `ui:activeTeam`, team roster/schedule/grid/locked keys, `lg_name_nudge_dismissed` | Membership filtering from `useAuth`; local data still influences visible teams/actions. App Home golden-path and membership tests exist. | **1 Home**: `/api/v1/home`, capability/action assembly, private cache, routes. Highest navigation/authority risk. |
+| Account/auth/team discovery | `renderAccount`, `components/Auth/*`, `components/Home/TeamSearch` | Supabase Auth session/OAuth; backend auth `/me`, access request/profile/logout; membership refresh | `lg_team_id`, `lg_pending_email`, auth callback URL state | Backend verifies token for `/me`; public share remains outside gate. Auth/session/request-access tests exist. | **2 account/team shell**: identity/membership API and pending-destination contract after Home. |
+| Team > People / Roster | `App.jsx::renderTeamPeopleTab` → `renderRoster` | `teams`, broad `team_data.roster` load/upsert, `roster_snapshots`; local-first edits | `team:<id>:roster`, `attendanceOverrides` | UI role/membership checks plus RLS; player name remains legacy identity. Roster golden-path, persistence, snapshot, RLS tests exist. | **3 roster**: player identity decision, granular roster commands, offline conflict/revision protocol. |
+| Team > Schedule (games) | `App.jsx::renderPrimaryScheduleTab` → `renderSchedule` | broad `team_data.schedule` load/upsert; finalization helper/pending sync also writes `team_data` | `team:<id>:schedule`, `pending_sync:<id>:finalize`, `ignoredWarnings_<date>` | Team context comes from active local team; RLS protects direct writes. Schedule/finalization/hydration tests exist. | **4 schedule/practices**: event IDs, read API, granular commands, offline queue. |
+| Team > Practices | `renderPrimaryScheduleTab` / practice controls in `App.jsx` | broad `team_data.practices` upsert | `team:<id>:practices` | Same active-team/RLS boundary as schedule. Practice/isolation tests exist. | **4 schedule/practices**: shared event contract and offline writes. |
+| Team > Snack duty | `App.jsx::renderSnackDuty` | snack assignments embedded in schedule and broad `team_data.schedule` upsert | `team:<id>:schedule` | Active-team state and RLS; bidirectional schedule/snack handlers. Schedule tests are partial proof. | **4 schedule/practices**: event-scoped command and conflict behavior. |
+| Game Day > Lineups > Defense | `renderLineups` → `renderGrid` | broad `team_data.grid`, innings, locked and PIN fields; lineup generation derives from roster | `team:<id>:grid`, `:innings`, `:locked`, `:pin`, `:roster` | App/PIN checks and RLS; local state is offline authority for work-in-progress. Engine, grid, PIN and App golden-path tests exist. | **5 lineups**: versioned lineup resource, lock/revision commands, offline reconciliation. |
+| Game Day > Lineups > Batting | `renderLineups` → `renderBatting` | broad `team_data.batting_order` upsert | `team:<id>:batting`, `:batterIndex`, `:roster` | Active-team state and RLS; lineup lock gates UI. Engine/batting/attendance tests exist. | **5 lineups**: shares lineup resource/revision and offline protocol. |
+| Game Day > Songs | `App.jsx::renderSongs` | roster walk-up-song fields through broad roster/team-data update | `team:<id>:roster` | Active-team state and roster permissions inferred in legacy UI. Songs golden-path exists. | **7 remaining tabs**, unless roster migration absorbs song-field commands. |
+| Game Mode | `components/game-mode/DugoutView` and children | local lineup/game state plus scoring hooks; direct realtime scoring reads | `team:<id>:gameModeInning`, lineup keys | Must remain offline-capable; game-mode directory is locked. DugoutView/GameMode component tests exist. | **6 Game Mode/scoring**: game route/resource, offline event protocol; literal edit approval. |
+| Live scoring | `useLiveScoring`, `useLiveScore`, `components/ScoringMode/*` | direct `live_game_state`, `game_scoring_sessions`, `scoring_audit_log` reads/writes/realtime | component/hook state plus team game context | Membership/RLS and per-game scorer lock; ScoringMode directory is locked. Scoring, hook, RLS tests exist. | **6 Game Mode/scoring**: idempotent event API, lock, replay, audit; literal edit approval. |
+| Public share viewer | `App.jsx` share branch plus shared/game-mode viewer components | direct `share_links` read; share creation writes `share_links` | payload/session presentation only; `?s=<id>` is URL identity | Intentionally unauthenticated and evaluated above auth gate. Share-link tests and health smoke exist. | Preserve throughout; migrate only with an explicit public contract and regression proof. |
+| More > Feedback | `App.jsx::renderFeedback` | backend feedback routes; local fallback queues | `feedback:submissions`, `feedback:bugs` | Backend auth/validation varies by submission type. Backend feedback tests exist. | **7 remaining tabs**: reconcile queue/retry semantics; no API merely for static UI. |
+| More > Account/Help/About/Legal | `renderAccount`, `renderAbout`, Support/Legal components | auth/profile API for Account; bundled content/external links for static views | PWA/first-launch/consent and harmless preference keys | Account uses authenticated identity; static/legal/help need no domain API. Auth and component tests provide partial proof. | **2 Account** for identity actions; **7** or no migration for static content. |
+
+### 30.2 Direct frontend Supabase caller inventory
+
+| Caller | Tables/service | Classification and retirement condition |
+|---|---|---|
+| `frontend/src/supabase.js` consumed heavily by `App.jsx` | `teams`, `team_data`, `roster_snapshots`, `share_links` | High-risk broad screen orchestration. Retire per owning screen only after API, offline, shadow/production, and caller-usage proof. Preserve public share semantics. |
+| `hooks/useAuth.js`, `Auth/LoginScreen.jsx`, direct session reads in `App.jsx` | Supabase Auth | Supported authentication SDK boundary, not a data-authorization shortcut. May remain while backend APIs verify bearer tokens. |
+| `hooks/useFeatureFlag.js`, `hooks/useFeatureFlags.js` | `feature_flags` | Configuration read/write path. New migration flags must fail Off; admin mutation stays backend-authorized. Revisit with rollout service design. |
+| `utils/finalizeSchedule.js`, `utils/pendingFinalizationSync.js` | `team_data` | High-risk schedule write/retry path. Replace in Schedule wave with idempotent event command and explicit offline reconciliation. |
+| `hooks/useLiveScoring.js`, `hooks/useLiveScore.js` | scoring state/session/audit plus Realtime | Game-critical and offline/realtime-sensitive. Do not remove before dedicated Game Mode/scoring protocol, soak, and locked-path approval. |
+| `components/ScoringMode/RestoreScoreModal.jsx` | scoring state | Game recovery read. Migrate only with the same scoring-state read/replay contract. |
+
+### 30.3 Local persistence key registry
+
+| Key/pattern | Current owner | Authority classification / retirement rule |
+|---|---|---|
+| `app:teams` | App bootstrap/Home | Legacy cached team list; never membership authority. Replace Home usage with user-private versioned snapshot. |
+| `ui:activeTeam` | App navigation/loadTeam | Legacy convenience only; canonical route wins. Retire after all destination adapters stop reading it. |
+| `team:<id>:roster|schedule|practices|batting|grid|innings|locked|pin` | Team, Schedule, Lineups | Offline/domain cache and drafts. Migrate field-by-field with owning screen; do not bulk-delete. PIN treatment requires separate security review. |
+| `team:<id>:batterIndex|gameModeInning` | Game Day/Game Mode | Transient game progress needed offline; retain until game protocol proves replacement. |
+| `attendanceOverrides`, `ignoredWarnings_<date>` | Game Day readiness | Local game-day behavior; use local calendar dates and reconcile during Schedule/Game Mode waves. |
+| `pending_sync:<id>:finalize` | schedule finalization sync | Unsynced command marker; replace only with idempotency/status-query proof. |
+| `lg_team_id`, `lg_pending_email`, pending destination | auth/access flow | Discovery/auth-resume hints only; never grant access. Partition/clear on identity change as applicable. |
+| `flag:*`, `flag_*`, `bypass:maintenance`, dev `auth_bypass` | rollout/dev bootstrap | Configuration only. Migration flags default Off; dev bypass remains DEV-only. `flagBootstrap.js` is locked. |
+| `feedback:submissions`, `feedback:bugs` | feedback fallback | Retry queue; document expiry/dedup before migration. |
+| `app:first_launched`, `pwa_installed`, `lg_name_nudge_dismissed` | onboarding/PWA/Home UI | Harmless preferences/telemetry, not authorization. |
+
+### 30.4 Locked paths, worktree risks, and waves
+
+Locked integration paths include `frontend/src/App.jsx`,
+`frontend/src/components/game-mode/*`, `frontend/src/components/ScoringMode/*`,
+`frontend/src/utils/migrations.js`, `frontend/src/utils/formatters.js`,
+`frontend/src/utils/flagBootstrap.js`, both package files, and `CLAUDE.md` files;
+each retains its literal approval phrase. `App.jsx` and the frontend package can
+also carry `skip-worktree`, so verify index flags before trusting a missing diff.
+
+Registered worktrees at this snapshot include the initiative owner, develop UX,
+release, scoring-security, two detached read/reconciliation trees, and this
+isolated Codex tree. Fresh status/branch/worktree inspection is required before
+every mutation; no other worktree may be switched, cleaned, rebased, or edited.
+
+The evidence-backed order remains: Home; Account/team shell; Roster;
+Schedule/practices/snacks; Lineups; Game Mode/scoring; remaining dynamic tabs;
+then legacy retirement. Static content stays bundled unless a real server-owned
+requirement appears. Every wave requires its read API/capability/route contract
+first and its named offline behavior before replacing a direct path.
