@@ -1,7 +1,23 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: 2026-08-31 (v3.1.1 release preparation; scope frozen at `34ff2b2`, release tracker #989).
+> Last updated: 2026-09-01 (v3.2.0 release preparation; scope frozen at `e79487d`, release tracker #1004).
 > MVP launched: March 24, 2026
+
+---
+
+## v3.2.0 RELEASE CANDIDATE — My Team, Schedule navigation, and scoring security
+
+Release tracker: [#1004](https://github.com/kaushikkuberanathan/lineup_generator/issues/1004). Candidate scope is frozen at `develop` commit `e79487d` against production v3.1.1 merge `a6a7c5a`. Later commits are excluded unless the release boundary is explicitly reopened. Open PR #892, the empty/unmerged `feature/1002-my-team-schedule-test-hardening` branch, and the remaining #355 work are not part of this release.
+
+**Minor-version rationale:** this release materially changes the coach-facing information architecture: My Team becomes a roster and player-profile hub, while Schedule becomes a primary destination. Security and reliability work ships alongside that workflow change.
+
+**Included scope:**
+- My Team and Schedule redesign through PR #1001 (#993, #996-#1000): roster-focused dashboard, dedicated individual/all-player profile screens, incomplete-profile prompts, primary Schedule navigation, simplified Add Game entry, and aligned primary actions.
+- Scoring security through PR #994: migration 033 removes permissive scoring policies and migration 031 revokes the underlying `anon` grants. Both migrations are already ledgered and directly verified on DEV and PROD. #355 remains open for the deliberately excluded UUID/FK, `isAdminTestMode`, and public-read-policy decisions.
+- Maintenance through PR #995 (#107/#266): Mixpanel team identity waits for SDK initialization and the already-correct stale-pitch empty state now has regression coverage.
+- Release-truth correction through PR #1003: root guidance now records v3.1.1 as promoted rather than pending.
+
+**Ship Gate status at release-branch cut:** automated CI is green on frozen commit `e79487d`; live DEV/PROD scoring policy and grant state match; and `debt-p0` returns 0. Golden-path tests exist for My Team, Roster, Schedule, Bottom Nav, live scoring, share links, and Game Mode. Remaining gates are the coordinated v3.2.0 version bump, final full-suite/lint/build run, release-branch CI, real-device preview validation, completion of the 24-hour `develop` soak (earliest normal promotion 2026-09-02 17:01 ET), and explicit `confirmed — push to main` authorization.
 
 ---
 

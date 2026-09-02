@@ -1,8 +1,8 @@
 # Dugout Lineup — Feature Map
 
-> **Production reconciliation — 2026-08-30:** v3.1.0 promoted through PR #959.
-> The Terms of Service/consent row is production, not develop-only. Test-file
-> additions after `02abfc0` remain develop-only until a later promotion.
+> **Release reconciliation — 2026-09-01:** production is v3.1.1 through PR #991.
+> The v3.2.0 candidate is frozen at `e79487d` under release tracker #1004;
+> candidate-only rows and coverage remain unpromoted until that release completes.
 
 > Authoritative mapping of every shipped feature to its documentation and test coverage.
 > Update this file whenever a feature ships, changes behavior, or gains new tests.
@@ -29,14 +29,14 @@
 
 ---
 
-## Feature Registry (40 features)
+## Feature Registry (42 features)
 
 | # | Feature | Status | Primary Doc | Doc Status | Test File(s) | Test Status | Debt |
 |---|---------|--------|-------------|------------|--------------|-------------|------|
 | 1 | **Auto-assign lineup engine (V2)** | MVP | `SOLUTION_DESIGN.md` § Scoring Engine | ✅ Current | `engine.v2.test.js`, `lineupEngineV2-unit.test.js`, `bench-equity.test.js`, `scoring.test.js` | ✅ Yes | — |
 | 2 | **Manual grid overrides + cell lock** | MVP | `SOLUTION_DESIGN.md` § Field Layout | ✅ Current | `engine.v2.test.js` (partial — lock not unit tested) | ⚠ Partial | — |
 | 3 | **Batting order (drag, stats, season AVG)** | MVP | `PERSONAS.md` § Head Coach features | ✅ Current | `AppBattingOrderGoldenPath.test.jsx` (3 — App-level golden path: initial order render, ▲▼ reorder + Save Order persistence, Finalize disabled while dirty) | ⚠ Partial | Golden path only — drag-to-reorder (HTML5 DnD / touch) and Suggest Order/Undo are still untested |
-| 4 | **Schedule management + AI import** | MVP | `ROADMAP.md` § v2.1.x entries | ⚠ Stale | `AppScheduleGoldenPath.test.jsx` (4 — App-level golden path: empty state, add-game persistence, Add Game button gating, Cancel discards) | ⚠ Partial | Golden path only — AI/photo/text import flows, edit-game, and delete-game remain untested |
+| 4 | **Schedule management + AI import** | MVP | `ROADMAP.md` § v3.2.0 and historical release entries | ✅ Current | `AppScheduleGoldenPath.test.jsx` (4 — App-level golden path: simplified empty state, add-game persistence, Add Game button gating, Cancel discards); `AppMyTeamDashboard.test.jsx` (Schedule separation + Open Game Day); `AppBottomNavGoldenPath.test.jsx` (primary-nav routing) | ⚠ Partial | Core manual-entry and navigation paths are covered; AI/photo/text import, edit-game, and delete-game remain untested. v3.2.0 promotes Schedule to primary navigation and removes the separate import action from the empty state. |
 | 5 | **Game result logging + batting stats** | MVP | `ROADMAP.md` § v2.1.x entries | ⚠ Stale | None | ❌ None | — |
 | 6 | **Walk-up songs per player** | MVP | `SOLUTION_DESIGN.md` § Walk-up Songs Architecture; `CHARTER.md` § Scope | ✅ Current | None | ❌ None | — |
 | 7 | **Out Tonight attendance tracking** | MVP | `CLAUDE.md` (as "Out Tonight"); `ROADMAP.md` § v2.2.30 | ✅ Current | `engine.v2.test.js` Group 6, `lineupEngineV2-unit.test.js` Group X, `bench-equity.test.js` absent-player | ⚠ Partial | — |
@@ -58,7 +58,7 @@
 | 23 | **Roster backup/restore** | MVP | `SOLUTION_DESIGN.md` § Data Protection | ✅ Current | `backend/src/__tests__/teamData.guard.test.js` (12), `teamData.routes.test.js` (6), `teamData.delete.test.js` (6), `teamData.logInjection.test.js` (5) | ⚠ Partial | Test Status corrected 2026-08-04 (None → Partial): the wipe-guard and recovery/history endpoint are covered on the backend (PR #282, Story 99 tranche 1). Frontend "Restore Previous Roster" UI itself remains untested. **Corrected 2026-08-08**: added `teamData.delete.test.js` (pre-existing, undocumented) and `teamData.logInjection.test.js` (v2.9.0 security hardening — log-injection fix on the same routes' error logging). |
 | 24 | **Multi-team support** | MVP | `CLAUDE.md` § Architecture | ✅ Current | `migrations.test.js` (partial — migration only) | ⚠ Partial | — |
 | 25 | **Fairness Check + violation warnings** | MVP | `SOLUTION_DESIGN.md` § Scoring Engine | ✅ Current | `engine.v2.test.js` (violations surfaced) | ⚠ Partial | — |
-| 26 | **Player profiles (V2 attributes)** | MVP | `SOLUTION_DESIGN.md` § Player Attributes; `PERSONAS.md` § Head Coach | ✅ Current | `scoring.test.js`, `lineupEngineV2-unit.test.js` | ✅ Yes | — |
+| 26 | **Player profiles (V2 attributes)** | MVP | `SOLUTION_DESIGN.md` § Player Attributes; `PERSONAS.md` § Head Coach; `ROADMAP.md` § v3.2.0 | ✅ Current | `scoring.test.js`, `lineupEngineV2-unit.test.js`, `AppRosterGoldenPath.test.jsx` (profile-link and add-player paths), `AppMyTeamDashboard.test.jsx` (individual/all-player detail screens + incomplete-profile state) | ✅ Yes | v3.2.0 adds dedicated profile screens and highlights players missing position preferences. |
 | 27 | **Governance** | MVP | `CHARTER.md`, `ONE_PAGER.md`, `ROADMAP.md`, `PERSONAS.md`, `faqs.js`, `FEATURE_MAP.md`, `MASTER_DEV_REFERENCE.md`, `CLAUDE.md` | ✅ Current | — | ❌ None | — |
 | 28 | **Toast UI primitive** | MVP | `CLAUDE.md` § UI Primitives | ✅ Current | `src/components/ui/Toast.test.jsx` | ✅ Yes | — |
 | 29 | **BottomSheet UI primitive** | MVP | `CLAUDE.md` § UI Primitives | ✅ Current | `src/components/ui/BottomSheet.test.jsx` (7 tests, BS1–BS7); `theme.tokens.test.js` (+6 tests for `radius.sheet` + `shadow.sheetTop`) | ✅ Yes | LockFlow is the sole consumer today (v2.5.21); future modals/pickers expected to migrate. Pill + ListRow (v2.5.14) and the Phase 2 primitives row (#28) cover other shipped primitives — pre-existing gaps where this map lags shipped primitives. |
@@ -74,6 +74,7 @@
 | 39 | **Request Access / Team Discovery** | MVP | `docs/product/AUTH_SECURITY_AUDIT_ROADMAP.md` § The label layer | ✅ Current | `RequestAccessScreen.test.jsx` (16 — +3 2026-08-26, #664 closure: `preserveSession:true` confirmation-card success/failure + `preserveSession:false` contrast), `TeamSearch.test.jsx` (12), `AppHomeMembershipTeams.test.jsx` (2), `AppTeamSearchRequestAccessFlow.test.jsx` (1, new 2026-08-26 — the full wired flow: Home → TeamSearch → RequestAccessScreen with `preselectedTeam`/`preserveSession` threaded from the real App.jsx call site), `useAuth.requestAccess.test.js` (5), backend `teamsSearch.route.test.js` (9), `teamsSearchLimiter.test.js` (1, new 2026-08-26 — `searchLimiter` 20 req/15min actually fires) | ✅ Yes | Story 124/#655 established discovery. Story 134/#740 aligns Home with Account by showing only membership-backed teams and makes the always-visible Find bar the single discovery entry. Story 135/#742 fixed a `refreshMemberships()` gap Story 134 exposed. **#664 closed 2026-08-26** (PR #849): the Story 126/#665 `submitted`-state confirmation card now has dedicated coverage (previously verified by eye only), the App-level wired-flow integration test landed, and `searchLimiter`'s 429 behavior is now asserted — closing out this row's last three known gaps. Test Status upgraded Partial → Yes. |
 | 40 | **Help (Support → FAQ redesign, task-oriented + Game-Day quick access)** | MVP | `ROADMAP.md` § Story 333; `CLAUDE.md` § Support tab convention | ✅ Current | `FAQSection.test.jsx` (15 tests, H1–H15: Game-Day Help quick-access, search incl. keyword matching + privacy-safe analytics, category switching, stable article ids/categories) | ✅ Yes | Story 333/#865 replaced the 7-persona `FAQ_CATEGORIES` taxonomy with a flat `HELP_ARTICLES` list (`id`/`category`/`title`/`answer`/`gameDayCritical`/`keywords`) plus `HELP_CATEGORY_META` for the 6 task-oriented categories and Browse Help picker (content and file/export names in `content/faqs.js` / `FAQSection.jsx` kept for locked-file reasons — rendered heading is "Help"). Flat-with-keywords shape (revised 2026-08-27 from an initial nested-by-category draft) chosen for stable analytics ids, keyword-assisted search, `gameDayCritical`-driven quick access with no separate id list to keep in sync, and easier future contextual deep-linking. Content-accuracy pass against `QuickSwap.jsx`/`toggleAbsentTonight` found and fixed a real drift: the prior FAQ text implied a late/injured player could be added to or pulled from an active game in one step; there is no such action, only a per-inning manual Quick Swap. Hosted external Help Center evaluated and explicitly rejected (no usage evidence, would trade away the app's offline guarantee). Support sub-tab nav label (`MORE_SUBTABS` in App.jsx) updated "FAQ" → "Help" 2026-08-28 after gate-phrase approval — a one-line change, verified against Known Open Bugs #11 (`skip-worktree` was not set on this clone). Story 107/#285 (tab reorder + default-to-About) is unrelated and remains open. |
 | 41 | **Terms of Service experience (versioned legal docs + registration consent gate)** | MVP | `ROADMAP.md` § v3.1.0; `content/legal.js` header comment; `AUTH_SECURITY_AUDIT_ROADMAP.md` § Registration consent gate | ✅ Current | Backend `legalConsent.test.js` (7); frontend `content/legal.test.js` (12), `utils/legalConsent.test.js` (3), plus growth in `RequestAccessScreen.test.jsx` and `LegalSection.test.jsx` | ✅ Yes | PRs #907/#910/#913; release tracker #939. `content/legal.js`'s 6 `LEGAL_DOCS` gained a `versions[]` array each (oldest first); `getLegalDoc()` always resolves the latest, while `getLegalDocVersion()` retrieves a prior version for audit. `terms` was rewritten v1.0→v2.0 into a Dugout-Lineup-specific ToS. New `LegalDocBody`/`LegalDocSheet` components share rendering with the pre-existing `LegalSection`, so Account and registration render identical text. Registration is gated on accepting Terms and Privacy; consent is logged through service-role-only `legal_consents` records that store document/version metadata, never document text. Migration 028 was applied to DEV and PROD on 2026-08-29 and verified with a real insert + cleanup on both. Analytics events `tos_consented` and `tos_link_opened` are documented in `docs/analytics/ANALYTICS.md`. |
+| 42 | **My Team dashboard + player-profile hub** | MVP | `ROADMAP.md` § v3.2.0 | ✅ Current | `AppMyTeamDashboard.test.jsx` (3 end-to-end dashboard/profile flows), `AppRosterGoldenPath.test.jsx` (3), `AppBottomNavGoldenPath.test.jsx` (4) | ✅ Yes | PR #1001 / #993/#996-#1000. My Team is roster-only; schedule/record/snack content lives under the primary Schedule destination. Individual and all-player screens reuse the existing profile editor, and missing position preferences are highlighted. |
 
 ---
 
@@ -81,13 +82,15 @@
 
 | Status | Count |
 |--------|-------|
-| ✅ Doc Current | 37 / 41 |
-| ⚠ Doc Stale | 4 / 41 |
-| ❌ Doc Missing | 0 / 41 |
-| ✅ Tests Exist | 17 / 41 |
-| ⚠ Tests Partial | 16 / 41 |
-| ❌ No Tests | 8 / 41 |
+| ✅ Doc Current | 39 / 42 |
+| ⚠ Doc Stale | 3 / 42 |
+| ❌ Doc Missing | 0 / 42 |
+| ✅ Tests Exist | 18 / 42 |
+| ⚠ Tests Partial | 16 / 42 |
+| ❌ No Tests | 8 / 42 |
 
+> **Recounted 2026-09-01** (v3.2.0 release prep, #1004): direct tally of all 41 pre-edit rows matched the prior 37/4/0 Doc and 17/16/8 Test summary. Row 4 moved Doc Stale → Current after the v3.2.0 ROADMAP reconciliation; row 42 was added as Doc Current + Tests Exist. Final denominator 42: Doc 39/3/0; Test 18/16/8.
+>
 > **Recounted 2026-08-29** (row 41 added, Terms of Service experience — #907/#910/#913; promoted in v3.1.0 through PR #959 on 2026-08-30). Direct recount of every row's Doc/Test Status columns immediately before this edit matched the prior table exactly (36/4/0 Doc; 16/16/8 Test, the second axis's row-11 typo already fixed earlier the same day — see that row's own history). Net change: denominator 40→41, Doc Current 36→37, Tests Exist 16→17; all other categories unchanged.
 >
 > **Recounted 2026-08-27** (row 19 closure, #112/#120): row 19's Test Status moved `⚠ Partial` → `✅ Yes` (D-S30 actually closed — see that row's Debt column). A full column-scoped direct tally of all 40 rows, done before this edit per this file's own standing practice, found the *prior* table (35/5/0 Doc; 14/15/11 Test) itself didn't match the table's actual contents even before today's row 19 change — real counts were 36 Doc Current/4 Doc Stale (not 35/5) and, pre-row-19-edit, 15 Tests Exist/17 Tests Partial/8 No Tests (not 14/15/11). Root cause not chased further (same recurring "summary silently diverges from content" failure class this file has hit before, e.g. the 2026-08-19 denominator-drift entry below). Corrected to the real, current, post-edit values: Doc axis unchanged by row 19 (its Doc Status was already `✅ Current`) at 36/4/0; Test axis 15→16 Tests Exist (row 19's flip) plus the pre-existing 17→16 Partial correction, No Tests corrected 11→8.
