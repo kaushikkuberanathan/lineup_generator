@@ -20,6 +20,10 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { createApiClient, createGenerationGuard } from '../../api/client.js';
 import { fetchHome } from '../../api/home.js';
 import { getHomeCache, setHomeCache } from '../../api/homeCache.js';
+import {
+  trackHomeApiLoaded, trackHomeApiCacheRendered, trackHomeApiFailed,
+  trackHomeTeamExpanded, trackHomeTeamFilterChanged, trackHomeOfflineRendered,
+} from './homeAnalytics.js';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://lineup-generator-backend.onrender.com';
 
@@ -86,6 +90,7 @@ export function useHomeScreen({ userId, getAccessToken, isOnline = true, fetchIm
     }
 
     const cached = getHomeCache(userId, { storage: cacheStorage, expectedVersion: HOME_CONTRACT_VERSION });
+    const cacheState = cached ? 'hit' : 'miss';
     if (cached) {
       homeRef.current = cached.response;
       setHome(cached.response);
@@ -98,6 +103,7 @@ export function useHomeScreen({ userId, getAccessToken, isOnline = true, fetchIm
         expandedInitializedRef.current = true;
         return cached.response.defaultTeamId;
       });
+      trackHomeApiCacheRendered({ teamCount: (cached.response.teams || []).length, cacheState: cacheState });
     }
 
     if (!online) {
@@ -105,6 +111,7 @@ export function useHomeScreen({ userId, getAccessToken, isOnline = true, fetchIm
       // (however stale, up to homeCache's own 24h unavailability cutoff)
       // is still "ready"; with nothing cached there is nothing useful to
       // show, which is its own distinct state, not a server error.
+      trackHomeOfflineRendered({ cacheState: cacheState });
       if (!cached) setStatus('offline');
       return;
     }
@@ -131,6 +138,7 @@ export function useHomeScreen({ userId, getAccessToken, isOnline = true, fetchIm
       setStatus('ready');
       setError(null);
       setHomeCache(userId, result.data, { storage: cacheStorage });
+      trackHomeApiLoaded({ teamCount: (result.data.teams || []).length, cacheState: cacheState, networkState: 'online' });
 
       setExpandedTeamId(function (prev) {
         if (!expandedInitializedRef.current) {
@@ -153,6 +161,11 @@ export function useHomeScreen({ userId, getAccessToken, isOnline = true, fetchIm
       });
     } catch (err) {
       if (err && err.name === 'AbortError') return;
+      trackHomeApiFailed({
+        errorCode: (err && err.code) || 'UNKNOWN_ERROR',
+        retryable: typeof (err && err.retryable) === 'boolean' ? err.retryable : false,
+        cacheState: cacheState,
+      });
       // A cached snapshot already rendered above — a slow/warming/failing
       // backend must not blank it out from under the user.
       if (!cached) setStatus('error');
@@ -180,7 +193,18 @@ export function useHomeScreen({ userId, getAccessToken, isOnline = true, fetchIm
 
   const expandTeam = useCallback(function expandTeam(teamId) {
     setExpandedTeamId(teamId);
+    // The internal state setter, not changeViewFilter below — collapsing
+    // back to a single expanded team is a side effect of expansion, not a
+    // user-initiated filter change, so it doesn't fire its own analytics
+    // event on top of trackHomeTeamExpanded.
     setViewFilter('single');
+    const team = homeRef.current && (homeRef.current.teams || []).find(function (t) { return t.id === teamId; });
+    trackHomeTeamExpanded({ teamId: teamId, role: team && team.role && team.role.code });
+  }, []);
+
+  const changeViewFilter = useCallback(function changeViewFilter(nextFilter) {
+    setViewFilter(nextFilter);
+    trackHomeTeamFilterChanged({ viewFilter: nextFilter });
   }, []);
 
   const dismissAccessLostNotice = useCallback(function dismissAccessLostNotice() {
@@ -198,7 +222,7 @@ export function useHomeScreen({ userId, getAccessToken, isOnline = true, fetchIm
     expandedTeamId,
     setExpandedTeamId,
     viewFilter,
-    setViewFilter,
+    setViewFilter: changeViewFilter,
     expandTeam,
     justLostAccessTeamId,
     dismissAccessLostNotice,

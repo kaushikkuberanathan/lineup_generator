@@ -10,6 +10,8 @@ import { TeamHub } from './TeamHub.jsx';
 import { HomeSkeleton } from './HomeSkeleton.jsx';
 import { HomeErrorState } from './HomeErrorState.jsx';
 import { applyOfflineActionGating } from './offlineActionGating.js';
+import { trackHomeActionSelected } from './homeAnalytics.js';
+import { parseAppRoute } from '../../api/routes.js';
 import { Stack } from '../../components/ui/Stack';
 import { Text } from '../../components/ui/Text';
 import { Button } from '../../components/ui/Button';
@@ -72,6 +74,17 @@ export function HomeScreen({ userId, getAccessToken, isOnline = true, onFindTeam
 
   const gatedTeams = applyOfflineActionGating(teams, isOnline);
 
+  function handleSelectAction(action) {
+    const route = parseAppRoute(action.href);
+    const team = route && route.teamId ? teams.find(function (t) { return t.id === route.teamId; }) : null;
+    trackHomeActionSelected({
+      teamId: route ? route.teamId : null,
+      actionId: action.id,
+      role: team && team.role && team.role.code,
+    });
+    if (onSelectAction) onSelectAction(action);
+  }
+
   return (
     <Stack direction="col" gap="sm">
       <OfflineIndicator isOnline={isOnline} hasCache={homeScreen.fromCache || !!homeScreen.home} />
@@ -93,7 +106,7 @@ export function HomeScreen({ userId, getAccessToken, isOnline = true, onFindTeam
         viewFilter={homeScreen.viewFilter}
         onExpand={homeScreen.expandTeam}
         onViewFilterChange={homeScreen.setViewFilter}
-        onSelectAction={onSelectAction}
+        onSelectAction={handleSelectAction}
       />
     </Stack>
   );

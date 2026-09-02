@@ -1,8 +1,21 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest';
 import { act } from 'react';
 import { renderHook, renderHookWithProps } from '../../tests/helpers/renderHook.js';
-import { useHomeScreen } from './useHomeScreen.js';
 import { setHomeCache } from '../../api/homeCache.js';
+
+vi.mock('./homeAnalytics.js', function () {
+  return {
+    trackHomeApiLoaded: vi.fn(),
+    trackHomeApiCacheRendered: vi.fn(),
+    trackHomeApiFailed: vi.fn(),
+    trackHomeTeamExpanded: vi.fn(),
+    trackHomeTeamFilterChanged: vi.fn(),
+    trackHomeOfflineRendered: vi.fn(),
+  };
+});
+
+import { useHomeScreen } from './useHomeScreen.js';
+import * as homeAnalytics from './homeAnalytics.js';
 
 function memoryStorage() {
   var store = new Map();
@@ -37,6 +50,7 @@ var storage;
 
 beforeEach(function () {
   storage = memoryStorage();
+  vi.clearAllMocks();
 });
 
 describe('useHomeScreen', function () {
@@ -230,5 +244,58 @@ describe('useHomeScreen — access-loss notice (#1031)', function () {
 
     await act(async function () { result.current.dismissAccessLostNotice(); });
     expect(result.current.justLostAccessTeamId).toBeNull();
+  });
+});
+
+describe('useHomeScreen — analytics (#1032)', function () {
+  test('a fresh (non-cached) successful load fires trackHomeApiLoaded with team count and cache/network state', async function () {
+    var fetchImpl = vi.fn(() => jsonResponse(200, HOME_ONE_TEAM, {}));
+    await renderHook(function () {
+      return useHomeScreen({ userId: 'user-1', getAccessToken: async () => 't', fetchImpl: fetchImpl, cacheStorage: storage });
+    });
+    expect(homeAnalytics.trackHomeApiLoaded).toHaveBeenCalledWith({ teamCount: 1, cacheState: 'miss', networkState: 'online' });
+    expect(homeAnalytics.trackHomeApiCacheRendered).not.toHaveBeenCalled();
+  });
+
+  test('a cache-then-network load fires trackHomeApiCacheRendered first', async function () {
+    setHomeCache('user-1', HOME_ONE_TEAM, { storage: storage });
+    var fetchImpl = vi.fn(() => new Promise(function () {}));
+    await renderHook(function () {
+      return useHomeScreen({ userId: 'user-1', getAccessToken: async () => 't', fetchImpl: fetchImpl, cacheStorage: storage });
+    });
+    expect(homeAnalytics.trackHomeApiCacheRendered).toHaveBeenCalledWith({ teamCount: 1, cacheState: 'hit' });
+  });
+
+  test('a failure with no cache fires trackHomeApiFailed with the error code and retryable flag', async function () {
+    var fetchImpl = vi.fn(() => jsonResponse(503, { error: { code: 'SERVICE_UNAVAILABLE', message: 'x', requestId: 'r', retryable: true } }, {}));
+    await renderHook(function () {
+      return useHomeScreen({ userId: 'user-1', getAccessToken: async () => 't', fetchImpl: fetchImpl, waitImpl: async function () {}, cacheStorage: storage });
+    });
+    expect(homeAnalytics.trackHomeApiFailed).toHaveBeenCalledWith({ errorCode: 'SERVICE_UNAVAILABLE', retryable: true, cacheState: 'miss' });
+  });
+
+  test('offline with no cache fires trackHomeOfflineRendered', async function () {
+    await renderHook(function () {
+      return useHomeScreen({ userId: 'user-1', getAccessToken: async () => 't', isOnline: false, fetchImpl: vi.fn(), cacheStorage: storage });
+    });
+    expect(homeAnalytics.trackHomeOfflineRendered).toHaveBeenCalledWith({ cacheState: 'miss' });
+  });
+
+  test('expandTeam fires trackHomeTeamExpanded with the team\'s id and role', async function () {
+    var fetchImpl = vi.fn(() => jsonResponse(200, HOME_TWO_TEAMS, {}));
+    var { result } = await renderHook(function () {
+      return useHomeScreen({ userId: 'user-1', getAccessToken: async () => 't', fetchImpl: fetchImpl, cacheStorage: storage });
+    });
+    await act(async function () { result.current.expandTeam('t1'); });
+    expect(homeAnalytics.trackHomeTeamExpanded).toHaveBeenCalledWith({ teamId: 't1', role: 'admin' });
+  });
+
+  test('setViewFilter fires trackHomeTeamFilterChanged', async function () {
+    var fetchImpl = vi.fn(() => jsonResponse(200, HOME_ONE_TEAM, {}));
+    var { result } = await renderHook(function () {
+      return useHomeScreen({ userId: 'user-1', getAccessToken: async () => 't', fetchImpl: fetchImpl, cacheStorage: storage });
+    });
+    await act(async function () { result.current.setViewFilter('all'); });
+    expect(homeAnalytics.trackHomeTeamFilterChanged).toHaveBeenCalledWith({ viewFilter: 'all' });
   });
 });

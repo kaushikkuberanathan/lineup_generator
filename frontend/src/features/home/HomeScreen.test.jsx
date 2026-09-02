@@ -1,8 +1,22 @@
 import React from 'react';
 import { describe, test, expect, vi } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+
+vi.mock('./homeAnalytics.js', function () {
+  return {
+    trackHomeApiLoaded: vi.fn(),
+    trackHomeApiCacheRendered: vi.fn(),
+    trackHomeApiFailed: vi.fn(),
+    trackHomeTeamExpanded: vi.fn(),
+    trackHomeTeamFilterChanged: vi.fn(),
+    trackHomeActionSelected: vi.fn(),
+    trackHomeOfflineRendered: vi.fn(),
+  };
+});
+
 import { HomeScreen } from './HomeScreen.jsx';
 import { setHomeCache } from '../../api/homeCache.js';
+import * as homeAnalytics from './homeAnalytics.js';
 
 function jsonResponse(status, body, headers) {
   var h = new Headers(headers || {});
@@ -118,5 +132,17 @@ describe('HomeScreen — access-loss notice (#1031)', function () {
     expect(screen.queryByText(/no longer have access/i)).toBeNull();
     // The Hub itself is untouched by dismissal — still showing t1 correctly.
     expect(screen.getByRole('region', { name: /Mud Hens/ })).toBeInTheDocument();
+  });
+});
+
+describe('HomeScreen — analytics wiring (#1032)', function () {
+  test('selecting an action fires trackHomeActionSelected with the team id (parsed from the href) and role', async function () {
+    var fetchImpl = vi.fn(() => jsonResponse(200, HOME_ONE_TEAM, {}));
+    render(<HomeScreen userId="user-1" getAccessToken={async () => 't'} fetchImpl={fetchImpl} cacheStorage={memoryStorage()} />);
+    await waitFor(() => expect(screen.getByRole('region', { name: /Mud Hens/ })).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Start Mud Hens Game Mode' }));
+
+    expect(homeAnalytics.trackHomeActionSelected).toHaveBeenCalledWith({ teamId: 't1', actionId: 'start_game_mode', role: 'admin' });
   });
 });
