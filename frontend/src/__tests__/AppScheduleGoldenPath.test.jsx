@@ -1,11 +1,14 @@
 // Coverage-analysis follow-up (session 2026-08-23): Schedule management
 // (App.jsx renderSchedule, ~line 5664) is a shipped MVP feature with zero
-// prior test coverage per FEATURE_MAP.md row 4. This is a golden-path
+// prior test coverage per FEATURE_MAP.md row 4. Schedule is now a primary
+// destination; this golden path protects its game-entry workflow while
+// AppMyTeamDashboard covers ownership, record, and next-game behavior.
+// This is a golden-path
 // integration test mounting <App/> the same way AppHomeMembershipTeams.test.jsx
 // does, since the add/edit-game logic lives inline in the locked App.jsx and
 // isn't separately extracted or unit-testable.
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 
 vi.mock("virtual:pwa-register/react", () => ({
   useRegisterSW: () => ({ needRefresh: [false], updateServiceWorker: () => {} }),
@@ -48,6 +51,13 @@ import App from "../App";
 const TEAM = { id: "team-schedule-1", name: "Schedule Test Sluggers", ageGroup: "8U", sport: "baseball", year: 2026 };
 const ROSTER = [{ name: "Jordan Lee" }, { name: "Casey Kim" }];
 
+function dateFromToday(days) {
+  var date = new Date();
+  date.setHours(12, 0, 0, 0);
+  date.setDate(date.getDate() + days);
+  return date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, "0") + "-" + String(date.getDate()).padStart(2, "0");
+}
+
 describe("App Schedule golden path (FEATURE_MAP.md row 4)", function () {
 
   beforeEach(function () {
@@ -76,8 +86,7 @@ describe("App Schedule golden path (FEATURE_MAP.md row 4)", function () {
     render(<App />);
 
     // A single team with a matching membership auto-loads via the #376
-    // reconciliation effect — the app lands directly on Team > Roster with
-    // the bottom nav already enabled.
+    // reconciliation effect — the app enables the primary bottom nav.
     var scheduleTab = await screen.findByRole("button", { name: /Schedule/ });
     fireEvent.click(scheduleTab);
 
@@ -87,8 +96,12 @@ describe("App Schedule golden path (FEATURE_MAP.md row 4)", function () {
   it("shows the empty-schedule state before any game is added", async function () {
     await goToScheduleTab();
     expect(screen.getAllByText(/No games/i).length).toBeGreaterThan(0);
-    expect(screen.getByRole("button", { name: "+ Add Game" })).toBeInTheDocument();
+    var addGame = screen.getByRole("button", { name: "+ Add Game" });
+    expect(addGame).toBeInTheDocument();
+    expect(addGame.style.background).toContain("linear-gradient");
+    expect(addGame).toHaveStyle({ color:"rgb(255, 255, 255)" });
     expect(screen.queryByRole("button", { name: /Import Schedule|Cancel Import/ })).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Practices")).toHaveTextContent("No practices scheduled.");
   });
 
   it("adding a game with opponent and date persists it and shows it in the list", async function () {
@@ -141,5 +154,23 @@ describe("App Schedule golden path (FEATURE_MAP.md row 4)", function () {
     expect(screen.queryByText("Add New Game")).not.toBeInTheDocument();
     var persisted = JSON.parse(localStorage.getItem("team:" + TEAM.id + ":schedule"));
     expect(persisted).toEqual([]);
+  });
+
+  it("shows the complete record and chooses the earliest playable upcoming game", async function () {
+    localStorage.setItem("team:" + TEAM.id + ":schedule", JSON.stringify([
+      { id:"later", date:dateFromToday(5), opponent:"Later" },
+      { id:"win", date:dateFromToday(-5), opponent:"Win", result:"W", scoreReported:true },
+      { id:"loss", date:dateFromToday(-4), opponent:"Loss", result:"L", scoreReported:true },
+      { id:"tie", date:dateFromToday(-3), opponent:"Tie", result:"T", scoreReported:true },
+      { id:"cancelled", date:dateFromToday(1), opponent:"Cancelled", result:"X" },
+      { id:"reported", date:dateFromToday(2), opponent:"Already Played", scoreReported:true },
+      { id:"next", date:dateFromToday(3), opponent:"Earliest" },
+    ]));
+
+    await goToScheduleTab();
+    expect(screen.getByLabelText("Season record")).toHaveTextContent("1–1–1");
+    var summary = within(screen.getByLabelText("Next game summary"));
+    expect(summary.getByText("vs. Earliest")).toBeInTheDocument();
+    expect(summary.queryByText(/Cancelled|Already Played|Later/)).not.toBeInTheDocument();
   });
 });

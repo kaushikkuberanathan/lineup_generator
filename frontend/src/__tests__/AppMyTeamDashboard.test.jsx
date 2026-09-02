@@ -80,10 +80,14 @@ function setSchedule(daysUntilGame) {
 
 describe("My Team game-ready dashboard (#993)", function () {
   beforeEach(function () {
+    window.history.replaceState(null, "", "/");
     localStorage.clear();
     localStorage.setItem("app:teams", JSON.stringify([TEAM]));
     localStorage.setItem("team:" + TEAM.id + ":roster", JSON.stringify(ROSTER));
     localStorage.setItem("team:" + TEAM.id + ":batting", JSON.stringify(ROSTER.map(function (player) { return player.name; })));
+    localStorage.setItem("team:" + TEAM.id + ":practices", JSON.stringify([
+      { id:"practice-1", title:"Fielding Practice", date:dateFromToday(2), time:"6:00 PM", location:"Field 3" },
+    ]));
 
     mockUseAuth.mockReturnValue({
       session: { user: { email: "coach@example.com" }, access_token: "tok" },
@@ -125,9 +129,11 @@ describe("My Team game-ready dashboard (#993)", function () {
     expect(screen.getByText(/1 profile needs attention/)).toBeInTheDocument();
     expect(screen.queryByText("vs. River Cats")).not.toBeInTheDocument();
     expect(screen.queryByText("🍎 Snack Duty")).not.toBeInTheDocument();
+    expect(screen.queryByText("Fielding Practice")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /Schedule/ }));
     await waitFor(function () { expect(screen.getAllByText("🍎 Snack Duty").length).toBeGreaterThan(0); });
+    expect(screen.getByText("Fielding Practice")).toBeInTheDocument();
     expect(screen.getByLabelText("Season record")).toHaveTextContent("0–0");
   });
 
@@ -144,14 +150,97 @@ describe("My Team game-ready dashboard (#993)", function () {
 
     fireEvent.click(screen.getByRole("button", { name: "Open Alex Rivera player profile" }));
     expect(await screen.findByText("Review and edit this player's complete roster profile.")).toBeInTheDocument();
+    expect(window.location.search).toBe("?player=Alex+Rivera");
     expect(screen.getAllByText("Alex Rivera").length).toBeGreaterThan(0);
     expect(screen.queryByText("Team at a glance")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Back to roster summary" }));
+    expect(window.location.search).toBe("");
     fireEvent.click(screen.getByRole("button", { name: "View All Players" }));
     expect(await screen.findByText("Review and edit every player profile in one place.")).toBeInTheDocument();
     expect(screen.getByText("Alex Rivera")).toBeInTheDocument();
     expect(screen.getByText("Blair Chen")).toBeInTheDocument();
     expect(screen.queryByText("Team at a glance")).not.toBeInTheDocument();
+  });
+
+  it("opens a directly-addressed player profile and responds to browser history", async function () {
+    window.history.replaceState(null, "", "/?dev_bypass=1&player=Alex+Rivera");
+    render(<App />);
+
+    expect(await screen.findByText("Review and edit this player's complete roster profile.")).toBeInTheDocument();
+    expect(screen.getAllByText("Alex Rivera").length).toBeGreaterThan(0);
+
+    window.history.replaceState(null, "", "/?dev_bypass=1");
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    await waitFor(function() { expect(screen.getByText("All Players — Quick Summary")).toBeInTheDocument(); });
+    expect(window.location.search).toBe("?dev_bypass=1");
+  });
+
+  it("persists profile edits and safely returns after removing an individual player", async function () {
+    window.confirm = vi.fn(function() { return true; });
+    await openMyTeam();
+    fireEvent.click(screen.getByRole("button", { name: "Open Alex Rivera player profile" }));
+    expect(await screen.findByText("Review and edit this player's complete roster profile.")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText("Skip Bench"));
+    await waitFor(function() {
+      var saved = JSON.parse(localStorage.getItem("team:" + TEAM.id + ":roster"));
+      expect(saved.find(function(player) { return player.name === "Alex Rivera"; }).skipBench).toBe(true);
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Remove Alex Rivera" }));
+    await waitFor(function() { expect(screen.getByText("All Players — Quick Summary")).toBeInTheDocument(); });
+    expect(screen.queryByRole("button", { name: "Open Alex Rivera player profile" })).not.toBeInTheDocument();
+    expect(window.location.search).toBe("");
+  });
+
+  it("keeps the all-player screen open while edits and removals update it", async function () {
+    window.confirm = vi.fn(function() { return true; });
+    await openMyTeam();
+    fireEvent.click(screen.getByRole("button", { name: "View All Players" }));
+    expect(await screen.findByText("Review and edit every player profile in one place.")).toBeInTheDocument();
+
+    fireEvent.click(screen.getAllByText("Skip Bench")[0]);
+    await waitFor(function() {
+      var saved = JSON.parse(localStorage.getItem("team:" + TEAM.id + ":roster"));
+      expect(saved.find(function(player) { return player.name === "Alex Rivera"; }).skipBench).toBe(true);
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Remove Alex Rivera" }));
+    await waitFor(function() { expect(screen.queryByText("Alex Rivera")).not.toBeInTheDocument(); });
+    expect(screen.getByText("Blair Chen")).toBeInTheDocument();
+    expect(window.location.search).toBe("?players=all");
+  });
+
+  it("clears player-detail routing when switching to another primary destination", async function () {
+    await openMyTeam();
+    fireEvent.click(screen.getByRole("button", { name: "Open Alex Rivera player profile" }));
+    expect(await screen.findByText("Review and edit this player's complete roster profile.")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /Schedule/ }));
+    await waitFor(function() { expect(screen.getByLabelText("Season record")).toBeInTheDocument(); });
+    expect(window.location.search).toBe("");
+
+    fireEvent.click(screen.getByRole("button", { name: /My Team/ }));
+    expect(await screen.findByText("All Players — Quick Summary")).toBeInTheDocument();
+  });
+
+  it("handles an empty roster summary state", async function () {
+    localStorage.setItem("team:" + TEAM.id + ":roster", JSON.stringify([]));
+    localStorage.setItem("team:" + TEAM.id + ":batting", JSON.stringify([]));
+    await openMyTeam();
+    expect(screen.getByText("No players yet.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "View All Players" })).not.toBeInTheDocument();
+  });
+
+  it("opens the all-player view for a one-player roster", async function () {
+    localStorage.setItem("team:" + TEAM.id + ":roster", JSON.stringify([ROSTER[0]]));
+    localStorage.setItem("team:" + TEAM.id + ":batting", JSON.stringify([ROSTER[0].name]));
+    await openMyTeam();
+
+    expect(screen.getAllByRole("row", { name:/Alex Rivera/ })).toHaveLength(1);
+    fireEvent.click(screen.getByRole("button", { name:"View All Players" }));
+    expect(await screen.findByText("Review and edit every player profile in one place.")).toBeInTheDocument();
+    expect(screen.getByText("Alex Rivera")).toBeInTheDocument();
   });
 });
