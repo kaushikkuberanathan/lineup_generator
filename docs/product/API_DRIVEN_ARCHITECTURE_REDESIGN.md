@@ -1016,3 +1016,46 @@ membership states, every matrix role, global-admin-without-membership, mixed
 roles across multiple teams, revoked access, cross-team nested resources, and
 resource states that disable otherwise permitted actions. Tests assert both the
 capability list and the independently reauthorized destination/command result.
+
+## 27. Canonical route and deep-link contract
+
+The paths in section 6.2 are the canonical application vocabulary. IDs are
+opaque path segments, decoded once, length/character validated, and never used
+as display text. Query parameters may hold presentation filters but may not
+replace required `teamId`, `gameId`, or `lineupId` identity.
+
+### 27.1 Resolution rules
+
+1. Parse and validate the URL before reading cached active-team state.
+2. Preserve the full internal destination as `pendingDestination` when an auth
+   session is required. Accept only same-origin `/app...` paths; reject external
+   URLs and encoded redirects.
+3. Restore or obtain authentication, then replace the login callback URL with
+   the preserved canonical path without adding a duplicate history entry.
+4. Verify active membership for `teamId`; then verify every nested resource
+   belongs to that same team; then load destination data.
+5. Cache/UI state may hydrate the verified route team but may never replace it.
+6. A legacy adapter explicitly calls the existing team-load boundary for the
+   verified route team before selecting the legacy tab/subtab. Timers and the
+   previously active team are not route authority.
+
+### 27.2 Navigation and failure behavior
+
+- Direct open, refresh, and PWA restart resolve the same canonical resource.
+- Home-to-destination navigation pushes one history entry. Browser Back returns
+  to `/app` and restores the team encoded in Home navigation state as the
+  expanded card; Forward re-resolves the destination authoritatively.
+- Team-card expansion and `All teams` filtering are replace-state UI choices,
+  not new resource destinations and not active-team mutations.
+- Malformed IDs return a safe invalid-link state. Missing resources return `404`.
+  Inactive/revoked membership returns `403` and removes that team from current
+  private caches. Cross-team nested IDs fail without revealing which ID exists.
+- Concurrent navigations cancel prior fetches; only the latest route generation
+  may commit server state. A late Team A response cannot overwrite Team B.
+- Logout clears the pending authenticated destination unless logout was caused
+  by an explicit auth-refresh flow that is permitted to resume it.
+
+Existing public share entry (`?s=<share-id>`) remains a separate, unauthenticated
+route evaluated before the application auth gate. It is not rewritten under
+`/app`, does not consume `ui:activeTeam`, and receives regression coverage in
+every routing release.
