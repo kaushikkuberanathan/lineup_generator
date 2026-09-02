@@ -61,7 +61,8 @@ import { SharedView } from './screens/Share/SharedView';
 import { readRosterProfileRoute, buildRosterProfileSearch } from './utils/rosterProfileRoute';
 import { getScheduleOverview } from './utils/scheduleOverview';
 import { HomeScreen as ApiHomeScreen } from './features/home/HomeScreen.jsx';
-import { parseAppRoute, buildAppRoute } from './api/routes.js';
+import { parseAppRoute, buildAppRoute, resolveDestination } from './api/routes.js';
+import { getHomeCache } from './api/homeCache.js';
 
 // ============================================================
 // HELPERS
@@ -2146,6 +2147,36 @@ export default function App() {
   function enterLegacyScreenForApiRoute(route, trustGameLaunch) {
     var team = teams.find(function(t) { return t.id === route.teamId; });
     if (!team) return false;
+
+    // Nested resource ownership check (section 6.2/26.2 of the API-driven
+    // architecture doc — #1032 gap fix). `teams.find()` above only proves
+    // this app knows about the team; it carries no per-game or per-lineup
+    // identity, so a gameId/lineupId in the URL was previously never
+    // verified at all. resolveDestination() (api/routes.js) is the
+    // authoritative check, but it needs a real Home response to check
+    // against — the last-cached one (api/homeCache.js), written by
+    // useHomeScreen.js on every successful fetch, is the only copy
+    // available at this layer (no live Home component is necessarily
+    // mounted here — this runs on cold restore/Back/Forward too).
+    if (route.gameId || route.lineupId) {
+      var cachedHome = user ? getHomeCache(user.id) : null;
+      var resolution = resolveDestination({
+        pathname: buildAppRoute(route),
+        isAuthenticated: authState === 'authenticated',
+        home: cachedHome ? cachedHome.response : null,
+      });
+      // 'loading' means there is no cached Home response yet to verify
+      // against (e.g. a cold deep-link open before Home has ever been
+      // fetched this session) — that is "unverifiable," not "denied," but
+      // a nested ID is never trusted on unverifiable input either. Only
+      // 'resolved' proceeds; every other status (cross_team_denied,
+      // not_found — lineupId always resolves not_found, since no
+      // addressable per-game lineup resource exists in the live schema —
+      // team_access_denied, loading) falls back to doing nothing here,
+      // same as the pre-existing "unknown team" behavior above.
+      if (resolution.status !== 'resolved') return false;
+    }
+
     loadTeam(team);
     switch (route.type) {
       case 'roster':

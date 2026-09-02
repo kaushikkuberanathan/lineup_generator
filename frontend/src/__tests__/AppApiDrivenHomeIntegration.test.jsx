@@ -43,6 +43,7 @@ vi.mock("../utils/analytics", () => ({
 }));
 
 import App from "../App";
+import { setHomeCache } from "../api/homeCache.js";
 
 const TEAM = { id: "team-api-1", name: "API Home Rockets", ageGroup: "8U", sport: "baseball", season: "Fall", year: 2026, role: "admin" };
 // A second membership-backed team, purely so App.jsx's single-membership
@@ -236,42 +237,75 @@ describe("API-driven Home deep links (#1032)", function () {
     expect(screen.queryByText(/By Position|By Player/)).not.toBeInTheDocument();
   });
 
-  // KNOWN GAP (#1032, found while writing this suite — not yet fixed):
-  // section 6.2/26.2 of docs/product/API_DRIVEN_ARCHITECTURE_REDESIGN.md
-  // requires nested gameId/lineupId values to be verified as belonging to
-  // the route's team before the destination is entered.
-  // frontend/src/api/routes.js's resolveDestination() implements exactly
-  // this check (cross_team_denied), but App.jsx's real compatibility
-  // adapter (enterLegacyScreenForApiRoute, ~line 2146) never calls it —
-  // it only checks `teams.find(t => t.id === route.teamId)` and then
-  // switches tab by route.type alone, ignoring route.gameId entirely for
-  // 'gameMode'/'gameScore'. A forged or stale gameId for a real team
-  // currently launches Game Day exactly as a valid one would.
-  // RED confirmed 2026-09-02: this test fails against the current
-  // App.jsx, proving the gap is real, not theoretical. Fixing it needs an
-  // App.jsx edit (locked file — requires the literal "all clear —
-  // App.jsx editing approved" phrase) to thread api/homeCache.js's
-  // getHomeCache(user.id) + resolveDestination() into
-  // enterLegacyScreenForApiRoute instead of the bare teams.find() check.
-  // Un-skip once that fix lands.
-  it.skip("a gameId that does not belong to the route's team is rejected, not silently entered", async function () {
+  // Fixed same session (was a documented gap, RED-confirmed before the
+  // fix landed): App.jsx's enterLegacyScreenForApiRoute now verifies
+  // route.gameId/route.lineupId against the last-cached Home response
+  // (api/homeCache.js) via api/routes.js's resolveDestination(), instead
+  // of only checking team-level membership via teams.find(). Section
+  // 6.2/26.2 of the baseline doc requires nested-resource ownership to be
+  // verified, not assumed from team membership alone.
+
+  it("a cold restore with no cached Home response yet does not enter an unverifiable game route (fail-safe, not a guess)", async function () {
     localStorage.setItem("flag_API_DRIVEN_HOME", "true");
     localStorage.setItem("flag_API_DRIVEN_ROUTES", "true");
-    global.fetch = vi.fn(function (url) {
-      if (String(url).includes("/api/v1/home")) {
-        var res = homeApiResponse();
-        res.teams[0].nextEvent = { id: "game-real-1", type: "game", opponent: "Knights", startsAt: "2026-09-05T18:00:00Z" };
-        return jsonResponse(res);
-      }
-      return jsonResponse({});
-    });
+    window.history.replaceState(null, "", "/?route=" + encodeURIComponent("/app/teams/" + TEAM.id + "/games/game-real-1/mode"));
+
+    render(<App />);
+
+    await waitFor(function () { expect(screen.getAllByText(TEAM.name).length).toBeGreaterThan(0); });
+    // No prior setHomeCache() call in this test — genuinely no cache to
+    // verify against, distinct from the mismatch case below.
+    expect(screen.queryByText(/By Position|By Player/)).not.toBeInTheDocument();
+  });
+
+  it("a cached Home response proves a URL gameId is real for that team's actual next event — restored route is allowed through", async function () {
+    localStorage.setItem("flag_API_DRIVEN_HOME", "true");
+    localStorage.setItem("flag_API_DRIVEN_ROUTES", "true");
+    var res = homeApiResponse();
+    res.teams[0].nextEvent = { id: "game-real-1", type: "game", opponent: "Knights", startsAt: "2026-09-05T18:00:00Z" };
+    setHomeCache("user-api-1", res);
+    window.history.replaceState(null, "", "/?route=" + encodeURIComponent("/app/teams/" + TEAM.id + "/games/game-real-1/mode"));
+
+    render(<App />);
+
+    await waitFor(function () { expect(screen.getByText(/By Position|By Player/)).toBeInTheDocument(); });
+  });
+
+  it("a cached Home response proves a URL gameId is fake (real nextEvent has a different id) — restored route is rejected, not silently entered", async function () {
+    localStorage.setItem("flag_API_DRIVEN_HOME", "true");
+    localStorage.setItem("flag_API_DRIVEN_ROUTES", "true");
+    var res = homeApiResponse();
+    res.teams[0].nextEvent = { id: "game-real-1", type: "game", opponent: "Knights", startsAt: "2026-09-05T18:00:00Z" };
+    setHomeCache("user-api-1", res);
     window.history.replaceState(null, "", "/?route=" + encodeURIComponent("/app/teams/" + TEAM.id + "/games/game-FORGED/mode"));
 
     render(<App />);
 
     await waitFor(function () { expect(screen.getAllByText(TEAM.name).length).toBeGreaterThan(0); });
-    // Desired behavior per the baseline doc: a mismatched gameId must not
-    // reach the live Game Day surface at all.
+    // This is the genuine cross_team_denied path — a real cache proving a
+    // real mismatch, not just an absent cache. Desired behavior per the
+    // baseline doc: a mismatched gameId must not reach Game Day.
     expect(screen.queryByText(/By Position|By Player/)).not.toBeInTheDocument();
+  });
+
+  it("a lineup route with an ID never enters — no addressable per-game lineup resource exists in the live schema yet", async function () {
+    localStorage.setItem("flag_API_DRIVEN_HOME", "true");
+    localStorage.setItem("flag_API_DRIVEN_ROUTES", "true");
+    window.history.replaceState(null, "", "/?route=" + encodeURIComponent("/app/teams/" + TEAM.id + "/lineups/some-lineup-id"));
+
+    render(<App />);
+
+    await waitFor(function () { expect(screen.getAllByText(TEAM.name).length).toBeGreaterThan(0); });
+    expect(screen.queryByText("Print / Share View")).not.toBeInTheDocument();
+  });
+
+  it("a lineups LIST route (no ID) is unaffected by the lineupId check and still resolves normally", async function () {
+    localStorage.setItem("flag_API_DRIVEN_HOME", "true");
+    localStorage.setItem("flag_API_DRIVEN_ROUTES", "true");
+    window.history.replaceState(null, "", "/?route=" + encodeURIComponent("/app/teams/" + TEAM.id + "/lineups"));
+
+    render(<App />);
+
+    await waitFor(function () { expect(screen.getByText("Print / Share View")).toBeInTheDocument(); });
   });
 });
