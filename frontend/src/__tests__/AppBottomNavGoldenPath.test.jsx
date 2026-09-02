@@ -84,7 +84,7 @@ describe("App Bottom Nav golden path (#943)", function () {
     await waitFor(function () { expect(screen.getByText("Roster and Player Profiles")).toBeInTheDocument(); });
 
     fireEvent.click(screen.getByRole("button", { name: /Schedule/ }));
-    await waitFor(function () { expect(screen.getByLabelText("Season record")).toBeInTheDocument(); });
+    await waitFor(function () { expect(screen.getByText("No upcoming game. Add one below when the schedule is ready.")).toBeInTheDocument(); });
 
     fireEvent.click(screen.getByRole("button", { name: /Game Day/ }));
     await waitFor(function () { expect(screen.getByRole("button", { name: /^Songs$/ })).toBeInTheDocument(); });
@@ -125,7 +125,7 @@ describe("App Bottom Nav golden path (#943)", function () {
   it("tapping Home while inside Schedule opens the Exit Sheet", async function () {
     render(<App />);
     fireEvent.click(await screen.findByRole("button", { name: /Schedule/ }));
-    await waitFor(function () { expect(screen.getByLabelText("Season record")).toBeInTheDocument(); });
+    await waitFor(function () { expect(screen.getByText("No upcoming game. Add one below when the schedule is ready.")).toBeInTheDocument(); });
 
     fireEvent.click(screen.getByRole("button", { name: /Home/ }));
     await waitFor(function () { expect(screen.getByText("Leave team?")).toBeInTheDocument(); });

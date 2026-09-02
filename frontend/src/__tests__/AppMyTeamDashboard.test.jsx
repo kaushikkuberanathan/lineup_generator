@@ -134,7 +134,7 @@ describe("My Team game-ready dashboard (#993)", function () {
     fireEvent.click(screen.getByRole("button", { name: /Schedule/ }));
     await waitFor(function () { expect(screen.getAllByText("🍎 Snack Duty").length).toBeGreaterThan(0); });
     expect(screen.getByText("Fielding Practice")).toBeInTheDocument();
-    expect(screen.getByLabelText("Season record")).toHaveTextContent("0–0");
+    expect(screen.queryByLabelText("Season record")).not.toBeInTheDocument();
   });
 
   it("keeps the roster summary compact and opens individual or all-player detail screens", async function () {
@@ -218,7 +218,7 @@ describe("My Team game-ready dashboard (#993)", function () {
     expect(await screen.findByText("Review and edit this player's complete roster profile.")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /Schedule/ }));
-    await waitFor(function() { expect(screen.getByLabelText("Season record")).toBeInTheDocument(); });
+    await waitFor(function() { expect(screen.getByText("No upcoming game. Add one below when the schedule is ready.")).toBeInTheDocument(); });
     expect(window.location.search).toBe("");
 
     fireEvent.click(screen.getByRole("button", { name: /My Team/ }));
