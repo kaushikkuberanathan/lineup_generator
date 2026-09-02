@@ -142,7 +142,7 @@ var DISLIKE_PENALTY = -50;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "3.1.1";
+var APP_VERSION = "3.2.0";
 
 // loadJSON / saveJSON — localStorage with in-memory (_mem) fallback — moved to
 // ./utils/storage (#416). Imported above; call sites unchanged.
@@ -1119,8 +1119,6 @@ export default function App() {
   var _lineupsSubTab = useState("defense");
   var lineupsSubTab = _lineupsSubTab[0];
   var setLineupsSubTab = _lineupsSubTab[1];
-  var _teamSubTab = useState("roster");
-  var teamSubTab = _teamSubTab[0]; var setTeamSubTab = _teamSubTab[1];
   var _statsSortCol = useState("name");
   var statsSortCol = _statsSortCol[0]; var setStatsSortCol = _statsSortCol[1];
   var _statsSortDir = useState("asc");
@@ -1359,7 +1357,7 @@ export default function App() {
   var rosterDetailMode = _rosterDetailMode[0]; var setRosterDetailMode = _rosterDetailMode[1];
   useEffect(function() {
     setRosterDetailMode(null);
-  }, [activeTeamId]);
+  }, [activeTeamId, setRosterDetailMode]);
   var _drag = useState(null);
   var dragPlayer = _drag[0]; var setDragPlayer = _drag[1];
   // Touch drag uses a mutable ref (window object) instead of useState to avoid
@@ -1984,7 +1982,6 @@ export default function App() {
     setCurrentBatterIndex(savedBatterIndex);
     setGameModeInning(savedGameModeInning);
     setPrimaryTab("team");
-    setTeamSubTab("roster");
     setScreen("app");
     track("load_team", { team_id: team.id, team_name: team.name });
     var coachName = user && user.profile && user.profile.first_name ? user.profile.first_name : null;
@@ -7455,193 +7452,6 @@ export default function App() {
     );
   }
 
-  function renderTeamTab() {
-    var today = new Date(); today.setHours(0,0,0,0);
-
-    // Record from schedule (result strings set by score reporting)
-    var wins = 0; var losses = 0; var ties = 0;
-    for (var ri = 0; ri < schedule.length; ri++) {
-      if (schedule[ri].result === "W") { wins++; }
-      else if (schedule[ri].result === "L") { losses++; }
-      else if (schedule[ri].result === "T") { ties++; }
-    }
-
-    // Next upcoming game
-    var sortedUpcoming = schedule.slice()
-      .filter(function(g) { return g.result !== "X" && !g.scoreReported && g.date && new Date(g.date + "T12:00:00") >= today; })
-      .sort(function(a, b) { return new Date(a.date + "T12:00:00") - new Date(b.date + "T12:00:00"); });
-    var nextGame = sortedUpcoming[0] || null;
-
-    // Status warnings
-    var missingPrefs = roster.filter(function(p) { return !p.prefs || p.prefs.length === 0; }).length;
-    var noSnacks = schedule.filter(function(g) {
-      return g.result !== "X" && !g.snackDuty && g.date && new Date(g.date + "T12:00:00") >= today;
-    }).length;
-
-    var TEAM_SUBTABS = [
-      { key:"roster",   label:"Roster",   icon:"👥", value:roster.length + " players" },
-      { key:"schedule", label:"Schedule", icon:"📅", value:schedule.length + " games" },
-      { key:"snacks",   label:"Snacks",   icon:"🍎", value:(schedule.length - noSnacks) + " assigned" },
-    ];
-
-    var nextGameDate = nextGame ? new Date(nextGame.date + "T12:00:00") : null;
-    var daysUntilNextGame = nextGameDate ? Math.round((nextGameDate - today) / 86400000) : null;
-    var gameDayReady = daysUntilNextGame !== null && daysUntilNextGame <= 2;
-    var nextGameLabel = daysUntilNextGame === 0 ? "Today"
-      : daysUntilNextGame === 1 ? "Tomorrow"
-      : nextGameDate ? nextGameDate.toLocaleDateString("en-US", { weekday:"long" })
-      : "";
-
-    function openTeamSection(section) {
-      setTeamSubTab(section);
-    }
-
-    function openNextGame() {
-      if (gameDayReady) {
-        setGameDayTab("lineups");
-        setPrimaryTab("gameday");
-      } else {
-        openTeamSection("schedule");
-      }
-    }
-
-    // Player profile modes are full My Team screens. Keeping them outside the
-    // dashboard shell prevents the team overview from appearing above a
-    // supposedly dedicated player page.
-    if (teamSubTab === "roster" && rosterDetailMode !== null) {
-      return (
-        <div style={{ padding:"14px 12px 80px" }}>
-          {renderRoster()}
-        </div>
-      );
-    }
-
-    return (
-      <div style={{ paddingBottom:"80px" }}>
-
-        {/* ── Team identity ──────────────────────────────────────── */}
-        <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:"12px", margin:"14px 14px 10px" }}>
-          <div style={{ minWidth:0 }}>
-            <div style={{ fontFamily:"Georgia,serif", fontWeight:"bold", fontSize:"20px", color:tokens.color.brand.navy,
-              whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
-              {activeTeam ? activeTeam.name : ""}
-            </div>
-            <div style={{ fontSize:"12px", color:tokens.color.text.muted, marginTop:"3px" }}>
-              {activeTeam ? ((activeTeam.ageGroup || "") + (activeTeam.sport ? " \u00b7 " + (activeTeam.sport.charAt(0).toUpperCase() + activeTeam.sport.slice(1)) : "") + (activeTeam.season ? " \u00b7 " + formatSeason(activeTeam.season, activeTeam.year) : "")) : ""}
-            </div>
-          </div>
-          <div aria-label="Season record" style={{ flexShrink:0, textAlign:"right" }}>
-            <div style={{ fontSize:"16px", fontWeight:"bold", color:tokens.color.brand.navy }}>{wins}–{losses}{ties > 0 ? "–" + ties : ""}</div>
-            <div style={{ fontSize:"10px", color:tokens.color.text.muted, textTransform:"uppercase", letterSpacing:"0.06em" }}>Record</div>
-          </div>
-        </div>
-
-        {/* ── Next game ──────────────────────────────────────────── */}
-        {nextGame ? (
-          <div style={{ background:tokens.color.brand.navy, color:tokens.color.text.onDark, borderRadius:"14px", padding:"16px",
-            margin:"0 12px", boxShadow:"0 4px 14px rgba(15,31,61,0.16)" }}>
-            <div style={{ color:tokens.color.brand.gold, fontSize:"10px", fontWeight:"bold", textTransform:"uppercase", letterSpacing:"0.08em" }}>
-              Next game · {nextGameLabel}
-            </div>
-            <div style={{ fontFamily:"Georgia,serif", fontWeight:"bold", fontSize:"21px", marginTop:"7px" }}>
-              {nextGame.opponent ? "vs. " + nextGame.opponent : "Upcoming game"}
-            </div>
-            <div style={{ fontSize:"12px", color:"rgba(255,255,255,0.78)", marginTop:"5px" }}>
-              {nextGameDate.toLocaleDateString("en-US", { month:"short", day:"numeric" })}
-              {nextGame.time ? " · " + nextGame.time : ""}
-              {nextGame.location ? " · " + nextGame.location : ""}
-              {typeof nextGame.home === "boolean" ? " · " + (nextGame.home ? "Home" : "Away") : ""}
-            </div>
-            <div style={{ display:"flex", gap:"8px", marginTop:"14px", flexWrap:"wrap" }}>
-              <button onClick={openNextGame} style={{ ...S.btn("primary"), background:tokens.color.brand.gold, color:tokens.color.brand.navy,
-                border:"none", minHeight:"42px", flex:"1 1 150px" }}>
-                {gameDayReady ? "Open Game Day" : "View game"}
-              </button>
-              <button onClick={function() { openTeamSection("schedule"); }} style={{ ...S.btn("ghost"), color:tokens.color.text.onDark,
-                border:"1px solid rgba(255,255,255,0.4)", minHeight:"42px", flex:"0 1 auto" }}>
-                Schedule
-              </button>
-            </div>
-          </div>
-        ) : (
-          <button aria-label="Add upcoming game" onClick={function() { openTeamSection("schedule"); }} style={{ display:"block", width:"calc(100% - 24px)", margin:"0 12px",
-            padding:"15px", borderRadius:"12px", border:"1px dashed " + tokens.color.border.neutral, background:tokens.color.surface.card,
-            color:tokens.color.brand.navy, textAlign:"left", cursor:"pointer", fontFamily:"inherit" }}>
-            <span style={{ display:"block", fontWeight:"bold", fontSize:"14px" }}>No upcoming game</span>
-            <span style={{ display:"block", fontSize:"12px", color:tokens.color.text.muted, marginTop:"3px" }}>Open Schedule to add the next game →</span>
-          </button>
-        )}
-
-        {/* ── Status warnings ────────────────────────────────────── */}
-        {(missingPrefs > 0 || noSnacks > 0) ? (
-          <div style={{ margin:"10px 12px 0", padding:"14px", borderRadius:"12px", background:tokens.color.surface.card,
-            border:"1px solid " + tokens.color.border.neutral, boxShadow:"0 1px 4px rgba(15,31,61,0.05)" }}>
-            <div style={{ fontWeight:"bold", marginBottom:"4px", color:tokens.color.brand.navy, fontSize:"14px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:"6px" }}>
-              <span>Needs attention</span>
-              <span style={{ fontSize:"11px", fontWeight:"normal", color:tokens.color.text.muted }}>{(missingPrefs > 0 ? 1 : 0) + (noSnacks > 0 ? 1 : 0)} items</span>
-            </div>
-            {missingPrefs > 0 ? (
-              <button onClick={function() { openTeamSection("roster"); }} style={{ display:"flex", width:"100%", alignItems:"center", gap:"10px",
-                border:"none", borderBottom:noSnacks > 0 ? "1px solid " + tokens.color.border.neutral : "none", background:"transparent",
-                padding:"12px 2px", textAlign:"left", cursor:"pointer", fontFamily:"inherit", color:"inherit" }}>
-                <span style={{ fontSize:"18px", flexShrink:0 }}>{(activeTeam && (activeTeam.sport || "baseball").toLowerCase() === "softball") ? "🥎" : "⚾"}</span>
-                <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ fontSize:"13px", fontWeight:"600", color:tokens.color.brand.navy }}>{missingPrefs} player preference{missingPrefs !== 1 ? "s" : ""} missing</div>
-                  <div style={{ fontSize:"11px", color:tokens.color.text.muted, marginTop:"2px" }}>Improve automatic lineup assignments</div>
-                </div>
-                <span aria-hidden="true" style={{ color:tokens.color.text.muted, fontSize:"18px" }}>›</span>
-              </button>
-            ) : null}
-            {noSnacks > 0 ? (
-              <button onClick={function() { openTeamSection("snacks"); }} style={{ display:"flex", width:"100%", alignItems:"center", gap:"10px",
-                border:"none", background:"transparent", padding:"12px 2px", textAlign:"left", cursor:"pointer", fontFamily:"inherit", color:"inherit" }}>
-                <span style={{ fontSize:"18px", flexShrink:0 }}>🍎</span>
-                <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ fontSize:"13px", fontWeight:"600", color:tokens.color.brand.navy }}>Snacks needed for {noSnacks} game{noSnacks !== 1 ? "s" : ""}</div>
-                  <div style={{ fontSize:"11px", color:tokens.color.text.muted, marginTop:"2px" }}>Assign families before game day</div>
-                </div>
-                <span aria-hidden="true" style={{ color:tokens.color.text.muted, fontSize:"18px" }}>›</span>
-              </button>
-            ) : null}
-          </div>
-        ) : null}
-
-        {/* ── Team at a glance / section navigation ─────────────── */}
-        <div style={{ background:tokens.color.surface.card, borderRadius:"12px", padding:"14px", margin:"10px 12px 0",
-          border:"1px solid " + tokens.color.border.neutral, boxShadow:"0 1px 4px rgba(15,31,61,0.05)" }}>
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:"8px", marginBottom:"10px" }}>
-            <div style={{ fontSize:"14px", fontWeight:"bold", color:tokens.color.brand.navy }}>Team at a glance</div>
-            <div style={{ fontSize:"11px", color:tokens.color.text.muted }}>{wins}–{losses}{ties > 0 ? "–" + ties : ""} record</div>
-          </div>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(3,minmax(0,1fr))", gap:"7px" }}>
-          {TEAM_SUBTABS.map(function(st) {
-            var selected = teamSubTab === st.key;
-            return (
-              <button key={st.key}
-                onClick={function(k) { return function() { setTeamSubTab(k); }; }(st.key)}
-                aria-pressed={selected}
-                style={{ minHeight:"78px", borderRadius:"9px", border:"1px solid " + (selected ? tokens.color.brand.navy : tokens.color.border.neutral),
-                  background:selected ? "rgba(15,31,61,0.06)" : tokens.color.surface.card, color:tokens.color.brand.navy,
-                  padding:"9px 4px", cursor:"pointer", fontFamily:"inherit", minWidth:0 }}>
-                <span aria-hidden="true" style={{ display:"block", fontSize:"18px" }}>{st.icon}</span>
-                <span style={{ display:"block", fontWeight:"bold", fontSize:"11px", marginTop:"5px" }}>{st.label}</span>
-                <span style={{ display:"block", fontSize:"10px", color:tokens.color.text.muted, marginTop:"2px", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{st.value}</span>
-              </button>
-            );
-          })}
-          </div>
-        </div>
-
-        {/* ── Subtab content ─────────────────────────────────────── */}
-        <div style={{ margin:"12px 12px 0" }}>
-          {teamSubTab === "roster"   ? renderRoster()    : null}
-          {teamSubTab === "schedule" ? renderSchedule()  : null}
-          {teamSubTab === "snacks"   ? renderSnackDuty() : null}
-        </div>
-
-      </div>
-    );
-  }
 
   function renderExitSheet() {
     if (!showExitSheet) return null;
