@@ -309,3 +309,69 @@ describe("API-driven Home deep links (#1032)", function () {
     await waitFor(function () { expect(screen.getByText("Print / Share View")).toBeInTheDocument(); });
   });
 });
+
+describe("API-driven Home pending-destination resume (#1032)", function () {
+  function mockUnauthenticated() {
+    mockUseAuth.mockReturnValue({
+      session: null,
+      user: null,
+      authState: "unauthenticated",
+      setAuthState: vi.fn(),
+      sendMagicLink: vi.fn(),
+      requestAccess: vi.fn(),
+      logout: vi.fn(),
+      memberships: [],
+      updateProfileName: vi.fn(),
+      refreshMemberships: vi.fn(() => Promise.resolve()),
+    });
+  }
+
+  // Fixed same session, second gap found while writing #1032's deep-link
+  // suite: savePendingDestination/consumePendingDestination (built in
+  // #1027) were never called anywhere in App.jsx. A coach who opens a
+  // deep link while logged out, then completes auth on a landing URL
+  // that no longer carries `route=` (a real possibility for an OAuth
+  // callback), previously had no way to resume — the restore effect only
+  // ever re-read the live URL. RED confirmed before the fix (this test
+  // failed, landing on Home instead of the roster screen) by reverting
+  // just the App.jsx effect change and rerunning.
+  it("a deep link opened while logged out resumes after auth completes on a URL that lost its route param", async function () {
+    localStorage.setItem("flag_API_DRIVEN_HOME", "true");
+    localStorage.setItem("flag_API_DRIVEN_ROUTES", "true");
+    mockUnauthenticated();
+    window.history.replaceState(null, "", "/?route=" + encodeURIComponent("/app/teams/" + TEAM.id + "/roster"));
+
+    var view = render(<App />);
+    // Sessionstorage save happens in the effect keyed on authState —
+    // give it a tick before simulating the auth round trip.
+    await waitFor(function () {
+      expect(window.sessionStorage.getItem("api:pendingDestination")).not.toBeNull();
+    });
+
+    // Simulate the actual auth redirect: the landing URL is bare, exactly
+    // like an OAuth callback that doesn't echo the original query string.
+    window.history.replaceState(null, "", "/");
+    mockAuth();
+    view.rerender(<App />);
+
+    await waitFor(function () {
+      expect(screen.queryByRole("region", { name: new RegExp(TEAM.name) })).not.toBeInTheDocument();
+    });
+    await waitFor(function () {
+      expect(screen.getAllByText(TEAM.name).length).toBeGreaterThan(0);
+    });
+    // The resumed destination is written back to the URL so a later
+    // refresh/Back/Forward sees the same canonical route.
+    expect(window.location.search).toContain("route=" + encodeURIComponent("/app/teams/" + TEAM.id + "/roster"));
+  });
+
+  it("with no pending destination stashed, authenticating with a route-less URL just shows Home (no false resume)", async function () {
+    localStorage.setItem("flag_API_DRIVEN_HOME", "true");
+    localStorage.setItem("flag_API_DRIVEN_ROUTES", "true");
+    window.history.replaceState(null, "", "/");
+
+    render(<App />);
+
+    await waitFor(function () { expect(screen.getByRole("region", { name: new RegExp(TEAM.name) })).toBeInTheDocument(); });
+  });
+});

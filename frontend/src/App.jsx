@@ -61,7 +61,7 @@ import { SharedView } from './screens/Share/SharedView';
 import { readRosterProfileRoute, buildRosterProfileSearch } from './utils/rosterProfileRoute';
 import { getScheduleOverview } from './utils/scheduleOverview';
 import { HomeScreen as ApiHomeScreen } from './features/home/HomeScreen.jsx';
-import { parseAppRoute, buildAppRoute, resolveDestination } from './api/routes.js';
+import { parseAppRoute, buildAppRoute, resolveDestination, savePendingDestination, consumePendingDestination } from './api/routes.js';
 import { getHomeCache } from './api/homeCache.js';
 
 // ============================================================
@@ -2225,14 +2225,44 @@ export default function App() {
   // destination the URL's `route` param encodes. Share-link routing
   // (?s=, ?share=) is a completely separate query param handled elsewhere
   // and is untouched by this effect.
+  //
+  // Pending-destination resume (#1032, section 27.1 rule 2): while
+  // unauthenticated, stash the current deep link to sessionStorage before
+  // the coach navigates away to authenticate (magic link / Google OAuth).
+  // On the authenticated transition, prefer the stashed destination over
+  // re-reading the live URL — the auth round trip's landing URL may not
+  // carry `route=` at all (e.g. an OAuth callback that lands on the bare
+  // app root). This is session-scoped by design (api/routes.js's own
+  // doc comment): a magic link opened in a DIFFERENT browser tab than the
+  // one that requested it has no shared sessionStorage to resume from —
+  // a real product/email-client constraint, not something more code here
+  // can fix. Google OAuth's same-tab redirect is the case this reliably
+  // covers.
   useEffect(function() {
-    if (authState !== 'authenticated') return;
     if (!isFlagEnabled('API_DRIVEN_ROUTES')) return;
-    var path = readApiHomeRoute(window.location.search);
+    if (authState === 'unauthenticated') {
+      var currentPath = readApiHomeRoute(window.location.search);
+      var currentRoute = currentPath ? parseAppRoute(currentPath) : null;
+      if (currentRoute && currentRoute.type !== 'home') {
+        savePendingDestination(currentPath);
+      }
+      return;
+    }
+    if (authState !== 'authenticated') return;
+    var pending = consumePendingDestination();
+    var path = pending || readApiHomeRoute(window.location.search);
     if (!path) return;
     var route = parseAppRoute(path);
     if (!route || route.type === 'home') return;
-    enterLegacyScreenForApiRoute(route, false);
+    var entered = enterLegacyScreenForApiRoute(route, false);
+    if (entered && pending) {
+      // The live URL may not already carry `route=` when the resume came
+      // from sessionStorage rather than the current address bar — sync
+      // it so a later refresh/Back/Forward sees the same destination.
+      var searchStr = buildApiHomeRouteSearch(window.location.search, path);
+      var url = window.location.pathname + searchStr + window.location.hash;
+      window.history.replaceState({ apiHomeRoute: path, apiHomeReturnTeamId: route.teamId }, '', url);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authState]);
 
