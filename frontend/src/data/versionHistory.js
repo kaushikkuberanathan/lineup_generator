@@ -1,5 +1,22 @@
 export var VERSION_HISTORY = [
   {
+    version: '3.3.0',
+    date: 'September 2026',
+    headline: 'Clearer Schedule cards and a smoother player-profile experience',
+    techNote: 'Bug fixes and performance improvements',
+    userChanges: [
+      'Schedule cards now show a plain-language final score and result instead of compact codes, with game, assignment, and action details organized into clear sections.',
+      'Opening a player from a shared link or refreshing the page now returns you to the right screen instead of losing your place.',
+    ],
+    internalChanges: [
+      'PR #1009 (closes #1002) reorganized Schedule cards into distinct game/assignment/score/action regions, replaced compact result codes with a plain-language final status and two-team score summary, removed duplicated team/season-record info, and extracted a reusable schedule-overview helper with its own tests.',
+      'PR #1011 (closes #1010) fixed a real bug where loading a player-profile URL directly, or restoring one through browser history, left stale navigation state; My Team now stays active while still allowing Schedule/Game Day navigation after a deep-link reload, and unrelated query params are preserved while only the player-detail routing is cleared.',
+      'Initiative #1012 (API-Driven Architecture Redesign) Phase 0 (foundation and governance, 7 stories) and Phase 1 (the Home vertical slice, 12 stories, including a docs-reconciliation pass under #1033) landed on develop via PRs #1034, #1035, #1036. This is a substantial new subsystem — an authenticated Home read-model API, a frontend API client with a private cache, canonical route parsing and destination resolution, and a redesigned Team Hub component — but it ships entirely behind two default-off flags (API_DRIVEN_HOME, API_DRIVEN_ROUTES) with zero live behavior change for any coach in this release. Two real gaps were found and fixed while closing out #1032 with RED-to-GREEN evidence: unverified cross-team gameId/lineupId ownership on route restore, and an unwired pending-destination auth-resume flow. Full detail: docs/product/API_DRIVEN_ARCHITECTURE_REDESIGN.md and the matching ROADMAP.md entry. Staged rollout, telemetry review, and eventual legacy Home retirement remain in #1033, deliberately not part of this release.',
+      'Version rationale: minor release. The Schedule card redesign is a real, if modest, coach-facing change, and the API-driven architecture work — though entirely dark behind flags — is a substantial new subsystem large enough to warrant sizing the bump to the release’s actual scope rather than defaulting to patch, matching this repo’s established convention (see the v3.0.0/v2.9.0 entries below).',
+      'Verification: frontend 1745/1745 across 168 files, backend unit 361/361, lint clean, production build clean, debt-p0 gate clear (0 open P0 items).',
+    ],
+  },
+  {
     version: '3.2.0',
     date: 'September 2026',
     headline: 'A clearer My Team hub and faster access to your schedule',
