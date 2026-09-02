@@ -1,12 +1,23 @@
 /**
  * utils/analytics.js
  * Mixpanel wrapper — single source of truth for event tracking.
- * Import { track } (and mixpanel for identify/people.set) wherever needed.
+ * Import { track, identifyTeam } for events and team identity. The raw
+ * mixpanel export remains only for SDK operations without a wrapper yet.
  */
 
 import mixpanel from 'mixpanel-browser';
 
 var MIXPANEL_TOKEN = import.meta.env.VITE_MIXPANEL_TOKEN || "";
+var mixpanelReady = false;
+var pendingIdentity = null;
+
+function applyIdentity(identity) {
+  try {
+    mixpanel.identify(identity.teamId);
+    if (identity.alias) { mixpanel.alias(identity.alias); }
+    mixpanel.people.set(identity.peopleProps || {});
+  } catch (_) { /* analytics failure must not crash the app */ }
+}
 
 // Device context — computed once at module load, shared as super properties
 function getDeviceContext() {
@@ -41,7 +52,15 @@ if (MIXPANEL_TOKEN !== "") {
     track_pageview: true,
     persistence: "localStorage",
     ignore_dnt: false,
-    opt_out_tracking_by_default: false
+    opt_out_tracking_by_default: false,
+    loaded: function() {
+      mixpanelReady = true;
+      if (pendingIdentity) {
+        var identity = pendingIdentity;
+        pendingIdentity = null;
+        applyIdentity(identity);
+      }
+    }
   });
   var APP_VERSION = __APP_VERSION__ || "unknown";
   // Register device context as super properties on every event
@@ -66,6 +85,18 @@ export function track(event, props) {
       console.log("[analytics]", event, props || {});
     }
   } catch (_) { /* analytics failure must not crash the app */ }
+}
+
+export function identifyTeam(teamId, alias, peopleProps) {
+  if (MIXPANEL_TOKEN === "") return;
+
+  var identity = { teamId: teamId, alias: alias, peopleProps: peopleProps };
+  if (!mixpanelReady) {
+    // Keep only the newest team selection while the SDK finishes loading.
+    pendingIdentity = identity;
+    return;
+  }
+  applyIdentity(identity);
 }
 
 export { mixpanel };

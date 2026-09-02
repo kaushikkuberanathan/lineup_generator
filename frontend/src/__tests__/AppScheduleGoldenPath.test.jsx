@@ -33,6 +33,7 @@ vi.mock("../hooks/useAuth", () => ({
 
 vi.mock("../utils/analytics", () => ({
   track: vi.fn(),
+  identifyTeam: vi.fn(),
   mixpanel: {
     identify: vi.fn(),
     alias: vi.fn(),
@@ -85,7 +86,9 @@ describe("App Schedule golden path (FEATURE_MAP.md row 4)", function () {
 
   it("shows the empty-schedule state before any game is added", async function () {
     await goToScheduleTab();
-    expect(screen.getByText(/No games/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/No games/i).length).toBeGreaterThan(0);
+    expect(screen.getByRole("button", { name: "+ Add Game" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Import Schedule|Cancel Import/ })).not.toBeInTheDocument();
   });
 
   it("adding a game with opponent and date persists it and shows it in the list", async function () {

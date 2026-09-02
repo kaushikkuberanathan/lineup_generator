@@ -1,5 +1,24 @@
 export var VERSION_HISTORY = [
   {
+    version: '3.2.0',
+    date: 'September 2026',
+    headline: 'A clearer My Team hub and faster access to your schedule',
+    techNote: 'Performance and reliability improvements',
+    userChanges: [
+      'My Team is now a focused roster hub with quick player summaries and clear prompts when a profile still needs position preferences.',
+      'Open one player or review every player on dedicated profile screens, with roster details kept easy to scan and update.',
+      'Schedule now has its own primary navigation button, making upcoming games, season record, snacks, and Game Day access easier to find.',
+      'Adding a game is simpler, with one clear Add Game action and a cleaner schedule workflow.',
+    ],
+    internalChanges: [
+      'Release tracker #1004. Scope frozen at develop commit e79487d against production v3.1.1 merge a6a7c5a; open PR #892, the empty/unmerged feature/1002-my-team-schedule-test-hardening branch, and the remaining #355 cleanup are explicitly excluded.',
+      'PR #1001 delivered the My Team dashboard, dedicated player-profile screens, incomplete-profile highlighting, primary Schedule navigation, simplified Add Game flow, and updated golden-path coverage for My Team, Roster, Schedule, Bottom Nav, and related App surfaces.',
+      'PR #994 landed the repository side of the scoring RLS lockdown. Migrations 033 and 031 were already applied and directly verified on DEV and PROD: the permissive scoring write policies are absent and anon holds zero table privileges across live_game_state, game_scoring_sessions, scoring_audit_log, and at_bats. Issue #355 remains open for UUID/FK restoration, isAdminTestMode removal, and the public-read policy decision.',
+      'PR #995 hardened Mixpanel team identity initialization and added regression coverage for the resolved stale-pitch copy. PR #1003 corrected the repository guidance to reflect the completed v3.1.1 production promotion.',
+      'Version rationale: minor release. The primary-navigation and My Team information architecture change is a meaningful coach-facing workflow improvement, accompanied by security and reliability hardening.',
+    ],
+  },
+  {
     version: '3.1.1',
     date: 'August 2026',
     headline: 'Security hardening and stronger regression coverage',

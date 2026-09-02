@@ -43,7 +43,7 @@ describe('analytics', function () {
     expect(typeof deviceContext.is_pwa).toBe('boolean');
   });
 
-  test('mixpanel is re-exported for identify/people.set call sites', function () {
+  test('mixpanel is re-exported for remaining direct SDK call sites', function () {
     expect(mixpanel).toBeDefined();
   });
 });

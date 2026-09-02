@@ -34,6 +34,7 @@ vi.mock("../hooks/useAuth", () => ({
 
 vi.mock("../utils/analytics", () => ({
   track: vi.fn(),
+  identifyTeam: vi.fn(),
   mixpanel: {
     identify: vi.fn(),
     alias: vi.fn(),
@@ -86,17 +87,19 @@ describe("App Roster tab golden path (#943)", function () {
     await waitFor(function () { expect(screen.getByText("Roster and Player Profiles")).toBeInTheDocument(); });
   }
 
-  it("renders the existing roster, sorted alphabetically by first name", async function () {
+  it("renders the existing roster as alphabetized player profile links", async function () {
     await openRosterTab();
 
-    expect(screen.getByText("Alex Rivera")).toBeInTheDocument();
-    expect(screen.getByText("Blair Chen")).toBeInTheDocument();
+    var links = screen.getAllByRole("button", { name: /Open .* player profile/ });
+    expect(links.map(function(link) { return link.textContent; })).toEqual(["Alex", "Blair"]);
   });
 
   it("adds a new player via the Add Player form and shows them in the roster", async function () {
     await openRosterTab();
 
     var addButton = screen.getByRole("button", { name: /Add a New Player to Your Roster/ });
+    expect(addButton.style.background).toContain("linear-gradient");
+    expect(addButton).toHaveStyle({ color:"rgb(255, 255, 255)" });
     fireEvent.click(addButton);
 
     var firstNameInput = screen.getByPlaceholderText("First name*");
@@ -107,8 +110,10 @@ describe("App Roster tab golden path (#943)", function () {
     var confirmAdd = screen.getByRole("button", { name: "Add" });
     fireEvent.click(confirmAdd);
 
-    // addPlayer() title-cases both names into a single "First Last" entry.
-    await waitFor(function () { expect(screen.getByText("Jamie Fox")).toBeInTheDocument(); });
+    // addPlayer() title-cases both names and adds a profile link to the summary.
+    await waitFor(function () {
+      expect(screen.getByRole("button", { name: "Open Jamie Fox player profile" })).toHaveTextContent("Jamie");
+    });
 
     // The add form closes back to the "+ Add a New Player" button after a
     // successful add — confirms the form doesn't stay open silently broken.

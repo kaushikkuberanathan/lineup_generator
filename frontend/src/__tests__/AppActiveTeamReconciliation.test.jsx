@@ -55,6 +55,7 @@ vi.mock("../hooks/useAuth", () => ({
 // change - out of scope for #376's fix itself.
 vi.mock("../utils/analytics", () => ({
   track: vi.fn(),
+  identifyTeam: vi.fn(),
   mixpanel: {
     identify: vi.fn(),
     alias: vi.fn(),

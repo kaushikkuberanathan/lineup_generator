@@ -76,14 +76,14 @@ Both shims have now been removed, per `docs/product/PHASE4C_SCORING_RLS_PROPOSAL
 - `track()` helper + `deviceContext`: `src/utils/analytics.js`
 - Super properties (auto on every event): os, device_type, platform, is_pwa, screen_width, screen_height, app_version
 - `app_version` auto-injected from `package.json` at build time via `vite.config.js` — no manual env var sync needed
-- Mixpanel identity: established in `loadTeam()` via `mixpanel.identify()`
+- Mixpanel identity: requested from `loadTeam()` through `identifyTeam()` in `src/utils/analytics.js`; the helper defers identity until Mixpanel's `loaded` callback, keeps only the latest pending team, and contains SDK failures (#266)
 
 ---
 
 ## Test Suite
 
 - **Framework**: Vitest
-- **CI target**: **1543 frontend passed / 0 failed across 144 test files** (backend unit 299/299 — see `backend/CLAUDE.md` § Test Suite), directly re-measured after adding `AppRosterGoldenPath.test.jsx`, `AppPinModalGoldenPath.test.jsx`, and `AppBottomNavGoldenPath.test.jsx` (#943 — QA & Reliability Audit finding: Roster tab, PIN modal, and Bottom Nav were 3 of the 6 named untested App.jsx render paths; 10 new tests). Prior baseline was 1533/141, directly re-measured against `develop` HEAD `6caf0dc` (2026-08-30) after `playerMapper.test.js` closed #945 (34 new tests), `useAuth.logout.test.js` closed #944 (5 new tests), `AppSongsGoldenPath.test.jsx` closed #967 (2 new tests), `AppPwaInstallPrompt.test.jsx` closed #968 (3 new tests), and `AppDemoTeamGoldenPath.test.jsx` closed #969 (3 new tests) — all QA Coverage Scope #965. Prior to that, baseline was 1486/136 on final v3.1.0 candidate `1da474e`. **#943 itself stays open by design** — it's a standing structural-decomposition tracker (Snack Duty and Team tab render paths remain untested; see the issue's own "not fixable in one PR" framing).
+- **CI target**: **1550 frontend passed / 0 failed across 146 test files** (backend unit 299/299 — see `backend/CLAUDE.md` § Test Suite), directly re-measured on the local v3.2.0 release-prep branch after PR #1001 added `AppMyTeamDashboard.test.jsx` (3 tests) and updated the Roster, Schedule, Bottom Nav, and adjacent App mocks. Prior baseline was 1547/145 on Wave 2 after adding one `LiveScoringPanel.test.jsx` regression for the resolved stale pitch-history copy (#107) and three `analyticsIdentity.test.js` cases for deferred Mixpanel identity (#266). Before that, the baseline was 1543/144 after adding `AppRosterGoldenPath.test.jsx`, `AppPinModalGoldenPath.test.jsx`, and `AppBottomNavGoldenPath.test.jsx` (#943 — QA & Reliability Audit finding: Roster tab, PIN modal, and Bottom Nav were 3 of the 6 named untested App.jsx render paths; 10 new tests). **#943 itself stays open by design** — it's a standing structural-decomposition tracker.
 - **Known skip**: bench-equity.test.js test 2.1 (bench rotation fairness — BUG CONFIRMED; identical players, sit-count drift > 1 inning; fix deferred)
 
 #### Test files
@@ -94,6 +94,8 @@ Both shims have now been removed, per `docs/product/PHASE4C_SCORING_RLS_PROPOSAL
 | `lineupEngineV2-unit.test.js` | 35 tests — shape, assignment, bench, batting order, edge cases; Group X — absent player exclusion (tags pathway) |
 | `bench-equity.test.js` | Bench count correctness, exclusivity, rotation fairness; absent-player equity (reduced roster) |
 | `scoring.test.js` | 28 parameterized scoring function tests |
+| `LiveScoringPanel.test.jsx` | Live scoring render states and interactions, including pitch-history copy regression coverage (#107) |
+| `analyticsIdentity.test.js` | Mixpanel identity deferral, latest-pending-team replacement, and SDK failure containment (#266) |
 | `accessibility.v1.test.js` | POSITION_LABELS, FEATURE_FLAGS registry, isFlagEnabled defaults + overrides |
 | `migration.test.js` | Schedule migration, roster normalization, field backfill (filename corrected 2026-08-26 — this table previously said `migrations.test.js`, plural; the real file is singular, matching root `CLAUDE.md`'s Known Open Bugs table) |
 | `formatters.test.js` | fmtAvg, fmtStat, time formatting helpers |

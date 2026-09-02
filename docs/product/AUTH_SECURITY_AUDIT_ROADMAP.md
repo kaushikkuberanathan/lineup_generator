@@ -1,11 +1,25 @@
 # Auth / Security / Audit Roadmap
 
-> **Production reconciliation — 2026-08-30:** production is v3.1.0 through
-> PR #959 (`02abfc0`). Phase 4C Section A is live and the frontend auth shims
-> are removed, but the permissive scoring policies tracked by #355 remain a
-> production risk pending the coordinated Section B/grant cutover. Migration
-> 032 and its post-v3.1 permission hardening exist on `develop` only and must
-> not be described as production until a later promotion.
+> **Production reconciliation — 2026-08-31 (supersedes the 2026-08-30 note
+> below):** the coordinated Section B/grant cutover this note was waiting on
+> has now happened — `033_scoring_rls_lockdown_section_b.sql` and
+> `031_scoring_grant_revocation.sql` are both applied to PROD (and DEV),
+> 2026-08-31, after a confirmed real production game-day soak. `anon` now
+> holds zero privileges on all four live-scoring tables; the core #355
+> vulnerability is fixed in production. #355 stays open only for the
+> `public_read_*` policy cleanup decision and steps 6-7 (column type
+> restore, `isAdminTestMode` removal) — see that issue and root `CLAUDE.md`'s
+> Known Open Bugs row 4 for full detail. This code change is landing on
+> `develop` via branch `fix/355-scoring-rls-lockdown`'s PR; the DB-level fix
+> above is already live in PROD independent of that PR merging.
+>
+> **Superseded — 2026-08-30 note (kept for history):** production is v3.1.0
+> through PR #959 (`02abfc0`). Phase 4C Section A is live and the frontend
+> auth shims are removed, but the permissive scoring policies tracked by
+> #355 remain a production risk pending the coordinated Section B/grant
+> cutover. Migration 032 and its post-v3.1 permission hardening exist on
+> `develop` only and must not be described as production until a later
+> promotion.
 
 **Status:** v1.2
 **Owner:** Kaushik
@@ -156,8 +170,8 @@ weaken the contract.
 |----|-------|---------|------|----------|--------|
 | WS-1 | Role vocabulary normalization | *(new)* | A | T1 | **DONE** (#336) |
 | WS-2 | Approve-link HMAC + `reviewed_by` | SF-1.11 | A | T1 | Open (#337) — PR [#822](https://github.com/kaushikkuberanathan/lineup_generator/pull/822) draft, not yet merged |
-| WS-3 | `requireAuth` cutover + RLS 004 | Charter P2 | B (spine) | T1 | **SPLIT STATUS - re-verified live 2026-08-04.** #342 (team-data/teams/roster_snapshots RLS) is **DONE** - shipped v2.6.0 (2026-07-20), confirmed live: all three tables now show `relrowsecurity = true` with real `auth.uid()`-scoped policies (see `docs/db/schema.sql` §8). #355 (the scoring tables) is **STILL OPEN** - confirmed live, unchanged: `live_game_state`/`game_scoring_sessions`/`scoring_audit_log` each carry an `allow_scorer_writes` policy (`roles: public, cmd: ALL, qual: true`) that permits unrestricted read/write/delete on every team's scoring data, platform-wide - broader than the "four backdoors, Mud Hens-only" framing this row previously carried; the team-scoped `*_anon_test` policies are redundant given `allow_scorer_writes` already grants everything to everyone. #355 is not fixable without WS-4 (below). |
-| WS-4 | FK restore + WHO/WHEN columns | SF-2.1-adj | rides B | T1 | Not started |
+| WS-3 | `requireAuth` cutover + RLS 004 | Charter P2 | B (spine) | T1 | **Updated 2026-08-31 — the scoring-table half is now DONE too.** #342 (team-data/teams/roster_snapshots RLS) shipped v2.6.0 (2026-07-20). #355 (the scoring tables): `allow_scorer_writes` (all 3 occurrences) and the four `*_anon_test` backdoors were dropped 2026-08-31 (migration `033`) on both DEV and PROD, with the underlying table GRANTs revoked too (migration `031`) — `anon` now holds zero privileges on `live_game_state`/`game_scoring_sessions`/`scoring_audit_log`/`at_bats`. Confirmed live via `pg_policies`/`role_table_grants` and a real end-to-end game scored on PROD post-apply. #355 stays open for the `public_read_*` policy cleanup decision and WS-4 below, not for this core exposure. |
+| WS-4 | FK restore + WHO/WHEN columns | SF-2.1-adj | rides B | T1 | Not started — this is proposal-doc steps 6-7 (`scorer_user_id`/`actor_user_id`/`recorded_by_id` TEXT→uuid+FK, `isAdminTestMode` removal), tracked in #355 |
 | WS-5 | Agreement gate (backend + UI) | *(new)* | C | T1 + T2 | Not started |
 | WS-6 | Ownership-check middleware | SF-1.2 | rides B | T1 | Not started |
 | WS-7 | Phase 0 hygiene | SF-0.1-0.5 | none | T1 | Not started |
@@ -254,7 +268,7 @@ but the request stays `pending` - a silent inconsistency, unlogged.
 | #350 | Docs are stale or false; admin panel undocumented | P1 |
 | **#351** | **The repo and the production database have never been in sync** | **P1** |
 | #353 | Pitcher rest eligibility (future feature, design preserved) | P3 |
-| **#355** | **Four hardcoded anon backdoors are live on the Mud Hens' scoring tables** | **P1** |
+| **#355** | ~~Four hardcoded anon backdoors are live on the Mud Hens' scoring tables~~ — **core fix live in PROD 2026-08-31**, stays open for `public_read_*` cleanup + WS-4 | **P1** |
 | #358 | docs/db/ has four overlapping artifacts that will drift | P2 |
 
 **Migrations applied to prod 2026-07-13 (005-012):** RLS lock on `auth_events` and

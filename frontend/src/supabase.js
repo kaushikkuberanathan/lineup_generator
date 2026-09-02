@@ -6,12 +6,14 @@ import { createClient } from '@supabase/supabase-js';
 var supabaseUrl  = import.meta.env.VITE_SUPABASE_URL  || '';
 var supabaseKey  = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 var BACKEND_URL  = import.meta.env.VITE_BACKEND_URL || 'https://lineup-generator-backend.onrender.com';
+export var isLocalReviewMode = import.meta.env.DEV
+  && new URLSearchParams(window.location.search).get('dev_bypass') === '1';
 
-export var supabase = supabaseUrl && supabaseKey
+export var supabase = !isLocalReviewMode && supabaseUrl && supabaseKey
   ? createClient(supabaseUrl, supabaseKey)
   : null;
 
-export var isSupabaseEnabled = !!(supabaseUrl && supabaseKey);
+export var isSupabaseEnabled = !isLocalReviewMode && !!(supabaseUrl && supabaseKey);
 
 // ── Team operations ────────────────────────────────────────────────────────
 

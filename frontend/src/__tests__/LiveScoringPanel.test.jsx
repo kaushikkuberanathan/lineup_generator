@@ -185,6 +185,21 @@ describe('LiveScoringPanel — STATE 2: I am scorer — batter area', function (
 });
 
 describe('LiveScoringPanel — STATE 2: pitch recording', function () {
+  test('hides the empty pitch-log copy once pitches have been recorded', function () {
+    var currentAtBat = {
+      batter: { id: 'p1', name: 'Casey Jones' },
+      pitches: [{ type: PITCH.BALL }],
+    };
+    render(<LiveScoringPanel {...baseProps({
+      isScorer: true,
+      scorerName: 'Me',
+      currentAtBat: currentAtBat,
+    })} />);
+
+    expect(screen.queryByText('No pitches yet')).not.toBeInTheDocument();
+    expect(screen.getByTestId('pitch-map')).toHaveTextContent('B');
+  });
+
   test('clicking a pitch button records that pitch when a batter is up', function () {
     var recordPitch = vi.fn();
     var currentAtBat = { batter: { id: 'p1', name: 'Casey Jones' }, pitches: [] };
