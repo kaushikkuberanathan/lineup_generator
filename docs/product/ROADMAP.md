@@ -5,6 +5,26 @@
 
 ---
 
+## API-Driven Architecture Redesign — Phase 0 + Phase 1 (Home vertical slice)
+
+Initiative: [#1012](https://github.com/kaushikkuberanathan/lineup_generator/issues/1012). Baseline doc: [`docs/product/API_DRIVEN_ARCHITECTURE_REDESIGN.md`](API_DRIVEN_ARCHITECTURE_REDESIGN.md). Milestone: "API-Driven Architecture Redesign — Phases 0-1."
+
+**Not part of v3.2.0** — this work landed on `develop` (PR [#1035](https://github.com/kaushikkuberanathan/lineup_generator/pull/1035), merge commit `6f4d4f8`, genuine two-parent merge) after v3.2.0's candidate scope was frozen at `e79487d`. It will get its own version number at a future promote, once the flags below start turning on for real users.
+
+**Status: on `develop`, not yet promoted to `main`. Zero live behavior change today** — both feature flags default off in `frontend/src/config/featureFlags.js`.
+
+**Phase 0 — foundation and governance** ([#1013](https://github.com/kaushikkuberanathan/lineup_generator/issues/1013), all 7 stories complete): ownership ADR (#1015), API contract/versioning/idempotency standards (#1016), canonical role/capability policy (#1017), canonical team-scoped route contract (#1018), React/server/URL/offline state boundaries (#1019), cross-cutting test/a11y/observability gates (#1020), full screen/Supabase/local-storage migration inventory (#1021).
+
+**Phase 1 — API-driven Home and Team Hub** ([#1014](https://github.com/kaushikkuberanathan/lineup_generator/issues/1014), all 12 stories complete): versioned Home read-model contract (#1022), authenticated aggregation service with no N+1 (#1023), server-owned capabilities and action assembly (#1024), contract/auth/isolation/cache/perf coverage with hand-rolled ETag/304 (#1025), reusable authenticated frontend API client + private Home cache (#1026), canonical route parser + pure destination resolver (#1027), Home feature shell + single-expanded-team Team Hub (#1028), mixed-role multi-team states (#1029), first App.jsx activation point — CTAs wired behind `API_DRIVEN_HOME`/`API_DRIVEN_ROUTES` (#1030), loading/cached/offline/slow-backend/empty/access-loss states (#1031), analytics + a11y + full browser-level deep-link test suite (#1032).
+
+**Two real gaps found and fixed while closing out #1032**, both with RED-to-GREEN evidence (fix reverted via `git stash`, test rerun to confirm genuine failure, fix restored): (1) the route-restore adapter never verified a URL's `gameId`/`lineupId` against the resolved team, so a forged ID reached live Game Day unchecked — fixed by wiring `resolveDestination()` + the cached Home response into the check; (2) `savePendingDestination`/`consumePendingDestination` (built in #1027) were never called, so a deep link opened while logged out had no way to resume if the post-auth landing URL lost its `route=` param — fixed by wiring stash/consume into the auth-state effect, plus clearing both on logout.
+
+**PR chain:** `feature/1022-home-read-model-contract` → `feature/1012-api-driven-architecture-redesign` (PR [#1034](https://github.com/kaushikkuberanathan/lineup_generator/pull/1034), merged) → `develop` (PR #1035, merged). Verification at merge: frontend 1745/1745 across 168 files, backend unit 361/361, lint clean, real-browser check with both flags off showed zero console errors and no regression to the legacy login/Home flow.
+
+**[#1033](https://github.com/kaushikkuberanathan/lineup_generator/issues/1033) — in progress**: feature-flag rollout stages, telemetry review per stage, docs reconciliation, and (last, separately) legacy Home retirement. The local-dev and PR-preview rollout stages (per baseline §17) are already satisfied by the work above; the internal-cohort/limited-cohort/default-on stages require this code to actually reach production first — that's a separate `develop` soak + Ship Gate + explicit `confirmed — push to main`, not yet requested. Docs reconciliation (this entry, `FEATURE_MAP.md`, `DOC_TEST_DEBT.md`) is being done now as the safe, immediate part of #1033's scope.
+
+---
+
 ## v3.2.0 RELEASE CANDIDATE — My Team, Schedule navigation, and scoring security
 
 Release tracker: [#1004](https://github.com/kaushikkuberanathan/lineup_generator/issues/1004). Candidate scope is frozen at `develop` commit `e79487d` against production v3.1.1 merge `a6a7c5a`. Later commits are excluded unless the release boundary is explicitly reopened. Open PR #892, the empty/unmerged `feature/1002-my-team-schedule-test-hardening` branch, and the remaining #355 work are not part of this release.

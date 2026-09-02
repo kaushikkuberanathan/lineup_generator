@@ -26,6 +26,7 @@
 11. [Deployment & Infrastructure](#deployment--infrastructure)
 12. [Version Management](#version-management)
 13. [Known Tradeoffs & Future Considerations](#known-tradeoffs--future-considerations)
+14. [API-Driven Architecture (Home vertical slice)](#api-driven-architecture-home-vertical-slice)
 
 ---
 
@@ -276,6 +277,10 @@ Proxies requests to the Anthropic Claude API. Used for:
 ```
 
 **Response:** Structured JSON array — game objects or batting stat objects — ready to merge into team state.
+
+### `GET /api/v1/home`
+
+Authenticated Home read-model endpoint (#1012 Phase 1, `backend/src/routes/home.js`). Full detail in [API-Driven Architecture (Home vertical slice)](#api-driven-architecture-home-vertical-slice) below — summarized here since it's a real backend route: resolves the caller's active memberships, batch-fetches teams and schedules, computes next-event/readiness/capabilities/actions server-side, and returns one versioned response with 3 flat queries regardless of team count (no N+1). Supports `If-None-Match` → `304 Not Modified`. Not yet wired to any real user — `frontend/src/config/featureFlags.js`'s `API_DRIVEN_HOME` flag is default-off.
 
 ### `GET /ping`
 
@@ -1153,3 +1158,39 @@ See `docs/analytics/ANALYTICS.md` for the complete list of 32+ Mixpanel events a
 | No TypeScript | Moved fast in MVP phase | Increasing tech debt — migration is a Phase 4 quality item |
 | GitHub Actions CI on develop + Husky pre-push | Full Vitest suite runs before every push; health check cron daily | Add branch protection requiring CI green before main merge |
 | Roster snapshots (last 10 per team) | Recovery net for migration wipes and accidental deletes | Scale snapshot retention if teams request longer history |
+
+---
+
+## API-Driven Architecture (Home vertical slice)
+
+Initiative [#1012](https://github.com/kaushikkuberanathan/lineup_generator/issues/1012). Full baseline, principles, state model, API conventions, and rollout plan live in [`docs/product/API_DRIVEN_ARCHITECTURE_REDESIGN.md`](product/API_DRIVEN_ARCHITECTURE_REDESIGN.md) — this section is the living-architecture summary, not a duplicate of that doc's rationale.
+
+**Status (2026-09-02):** Phase 0 (foundation/governance, 7 stories) and Phase 1 (the Home vertical slice, 12 stories) are on `develop` (PR #1035), not yet promoted to `main`. Both feature flags — `API_DRIVEN_HOME`, `API_DRIVEN_ROUTES` (`frontend/src/config/featureFlags.js`) — default off. Zero live behavior change for any current user.
+
+**Target model:** backend owns truth/permissions/summaries/actions/idempotency; URLs own navigation context; React owns responsive presentation and transient state; local persistence owns resilience, never authority.
+
+### Home read model — `GET /api/v1/home`
+
+`backend/src/routes/home.js` resolves the caller's active `team_memberships`, batch-fetches the associated teams and schedules (3 flat queries regardless of team count — no N+1), and hands off to `backend/src/lib/homeSummary.js` (next-event/readiness computation) and `backend/src/lib/homeCapabilities.js` (role → capability → contextual-action mapping, the server-side source of truth for what a coach/parent/scorekeeper can do). The response shape is versioned and schema-validated (`backend/src/contracts/homeReadModel.v1.schema.json`, `validateHomeResponse.js`), with `If-None-Match` → `304` support (hand-rolled — Express's default `etag` middleware doesn't cover this response shape). `lineupId` is always `null` in the live schema: `team_data` carries one `grid`/`batting_order` row per team, not one per game, so there is no addressable per-game lineup resource yet.
+
+### Frontend API client and cache
+
+`frontend/src/api/client.js` is the shared authenticated fetch wrapper (bearer token, standard error envelope, retry semantics per the baseline doc §8). `frontend/src/api/home.js` is the one-line Home-specific caller. `frontend/src/api/homeCache.js` is a private, per-authenticated-user-id `localStorage` cache of the last successful response — a 60s fresh window, a 24h stale-but-displayable window, then unavailable rather than silently stale. This is resilience, never authority: it is never treated as proof of current membership or capability, only as something to render instantly while a live fetch is in flight.
+
+### Route parsing and destination resolution
+
+`frontend/src/api/routes.js` defines the canonical path shape (`/app/teams/:teamId/...` — roster, schedule, lineups, a game's mode/score view) and two pure functions: `parseAppRoute()`/`buildAppRoute()` (shape validation, safe-ID pattern, same-origin-only) and `resolveDestination()` (authorization: team membership and nested `gameId`/`lineupId` ownership, checked against a Home response — `not_found` for any `lineupId` since none is addressable yet, `cross_team_denied` for a `gameId` that doesn't match the team's actual `nextEvent.id`). `savePendingDestination()`/`consumePendingDestination()` stash a deep link to `sessionStorage` across an auth round trip.
+
+**This app has no path-based router.** `window.location.pathname` is always `/` — there's no server-side routing to build on. App.jsx's compatibility adapter carries the canonical path as a `route` query-string parameter on the existing URL scheme (the same pattern the pre-existing `?player=` roster-detail and `?s=`/`?share=` share-link routes already use), not a literal path segment. Serving real paths is a separate, not-yet-made infrastructure decision. No router library was added — confirmed via a clean `package.json` diff across the whole initiative.
+
+### App.jsx activation point
+
+`enterLegacyScreenForApiRoute()` (App.jsx, `#1030`'s wiring) is the one place a resolved canonical route currently re-enters the legacy tab-dispatch app shell: it looks up the team, calls the existing `loadTeam()` boundary (so a URL's team can never be silently overridden by whatever was previously active), and switches `primaryTab`/`gameDayTab` to match. It verifies `gameId`/`lineupId` ownership via `resolveDestination()` against the last-cached Home response (`getHomeCache(user.id)`) before proceeding — a real gap found and fixed while closing out #1032 (a forged `gameId` previously reached live Game Day unchecked). Restored routes (refresh, Back/Forward, or an auth-resume via the pending-destination stash) never auto-launch the live Game Mode/Scoring overlay — there's no fresh, already-authorized Home response to re-verify against at that point, so they fall back to the safe defense-tab view. A live CTA tap doesn't have that limitation, since its action came from the just-rendered, already-authorized Home response.
+
+### Known gaps (tracked in `DOC_TEST_DEBT.md`)
+
+Home's actions are navigation-only — no granular command API exists yet, so `team_data` document upserts remain the only write path. Roster identity is still name-based, blocking real per-player resource URLs. No general offline mutation queue exists (Home is read/cache-only in Phase 1). `App.jsx` grew rather than shrank in this phase (a first activation point necessarily adds a call site before any screen is fully extracted) — coordinate future reduction with #943. Full detail: `docs/product/DOC_TEST_DEBT.md`'s API-driven-architecture entry.
+
+### What's next
+
+[#1033](https://github.com/kaushikkuberanathan/lineup_generator/issues/1033): staged flag rollout (internal cohort → limited cohort → default-on, each stage reviewed against the error/latency/cache/denial/route-resolution telemetry `homeAnalytics.js` already emits), the remaining docs reconciliation, and — last, and only after a defined production soak — legacy Home retirement. Actual stage progression requires this code to reach production first (a `develop` soak, Ship Gate, and an explicit `main` promote), which hasn't been requested yet.
