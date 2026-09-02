@@ -101,21 +101,25 @@ export function useHomeScreen({ userId, getAccessToken, isOnline = true, initial
 
   // Same staleness hazard as isOnline above — load() is memoized on
   // [userId] only, so this must be read through a ref, not the prop
-  // directly, or a caller passing a fresh initialExpandedTeamId on a
-  // later render (e.g. resolving it asynchronously) would never see it.
+  // directly. Captured into a local at the TOP of load() (below), before
+  // any await, rather than read lazily at the point resolveInitialExpandedTeamId
+  // is actually called deep in the async continuation — a caller (App.jsx)
+  // that clears this prop right after a network round-trip starts (a
+  // reasonable one-shot-consumption pattern) must not race the fetch
+  // itself and see the value already gone by the time the response lands.
   const initialExpandedTeamIdRef = useRef(initialExpandedTeamId);
   initialExpandedTeamIdRef.current = initialExpandedTeamId;
 
-  function resolveInitialExpandedTeamId(responseTeams, defaultTeamId) {
-    const override = initialExpandedTeamIdRef.current;
-    if (override && (responseTeams || []).some(function (t) { return t.id === override; })) {
-      return override;
+  function resolveInitialExpandedTeamId(capturedOverride, responseTeams, defaultTeamId) {
+    if (capturedOverride && (responseTeams || []).some(function (t) { return t.id === capturedOverride; })) {
+      return capturedOverride;
     }
     return defaultTeamId;
   }
 
   const load = useCallback(async function load() {
     const online = isOnlineRef.current;
+    const capturedInitialOverride = initialExpandedTeamIdRef.current;
 
     if (!userId) {
       setStatus('ready');
@@ -136,7 +140,7 @@ export function useHomeScreen({ userId, getAccessToken, isOnline = true, initial
       setExpandedTeamId(function (prev) {
         if (expandedInitializedRef.current) return prev;
         expandedInitializedRef.current = true;
-        return resolveInitialExpandedTeamId(cached.response.teams, cached.response.defaultTeamId);
+        return resolveInitialExpandedTeamId(capturedInitialOverride, cached.response.teams, cached.response.defaultTeamId);
       });
       trackHomeApiCacheRendered({ teamCount: (cached.response.teams || []).length, cacheState: cacheState });
     }
@@ -178,7 +182,7 @@ export function useHomeScreen({ userId, getAccessToken, isOnline = true, initial
       setExpandedTeamId(function (prev) {
         if (!expandedInitializedRef.current) {
           expandedInitializedRef.current = true;
-          return resolveInitialExpandedTeamId(result.data.teams, result.data.defaultTeamId);
+          return resolveInitialExpandedTeamId(capturedInitialOverride, result.data.teams, result.data.defaultTeamId);
         }
         const stillPresent = prev && newTeamIds.has(prev);
         if (!stillPresent && prev && previousTeamIds.has(prev)) {
