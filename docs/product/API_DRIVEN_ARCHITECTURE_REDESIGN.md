@@ -872,3 +872,75 @@ Changes to this baseline should record:
 3. Impacted stories, contracts, tests, and documentation.
 4. Migration and rollback consequences.
 5. Approval required for affected locked paths, database changes, or releases.
+
+## 25. Phase 0 HTTP and compatibility standard
+
+This section is normative for every `/api/v1` screen migration.
+
+### 25.1 Success, errors, and request identity
+
+- Successful reads return the resource/read model directly, with `version` and
+  `generatedAt` in the representation. Successful commands return the new
+  authoritative representation plus its revision.
+- Every request accepts a caller-generated `X-Request-ID` that matches
+  `^[A-Za-z0-9._:-]{1,128}$`; the backend generates one when absent or invalid.
+  `X-Request-ID` is returned on successes, `304` responses, and errors.
+- Errors use the section 8.4 envelope. `code` is stable and machine-readable;
+  `message` is safe for a user or support log; `retryable` is authoritative for
+  automated retry decisions. Validation errors may add field-level `details`
+  but must not echo secrets or sensitive payloads.
+
+| Status | Meaning | Example stable code | Client behavior |
+|---:|---|---|---|
+| 400 | Malformed input or unsupported API version | `VALIDATION_FAILED`, `API_VERSION_UNSUPPORTED` | Correct the request; do not retry unchanged. |
+| 401 | Missing, expired, or malformed authentication | `AUTH_REQUIRED`, `TOKEN_INVALID` | Restore/refresh auth once, then stop or resume the pending route. |
+| 403 | Authenticated but not authorized for the team/resource/action | `TEAM_ACCESS_DENIED`, `CAPABILITY_DENIED` | Fail closed; never substitute another team. |
+| 404 | Resource absent or deliberately concealed across a trust boundary | `RESOURCE_NOT_FOUND` | Show the safe destination error; do not infer ownership. |
+| 409 | Current state conflicts with the command | `STATE_CONFLICT`, `IDEMPOTENCY_CONFLICT` | Refresh authoritative state before a user-led retry. |
+| 412 | `If-Match` revision is stale | `REVISION_STALE` | Fetch the latest representation and reconcile explicitly. |
+| 422 | Shape is valid but a domain rule rejects it | `DOMAIN_RULE_FAILED` | Show the safe reason; do not retry unchanged. |
+| 429 | Rate limit exhausted | `RATE_LIMITED` | Honor `Retry-After`; bounded retry only for safe reads. |
+| 500 | Unexpected server failure | `INTERNAL_ERROR` | Preserve cached UI; retry only under the policy below. |
+| 503 | Dependency unavailable or warming | `SERVICE_UNAVAILABLE` | Preserve cached UI and use bounded backoff. |
+| 504 | Server/dependency deadline exceeded | `UPSTREAM_TIMEOUT` | Treat outcome as unknown for commands; never blindly replay. |
+
+### 25.2 Deadlines and retries
+
+- Home/read requests use a 5-second client deadline in foreground navigation and
+  a 3-second deadline for shadow reads. Abort superseded requests immediately.
+- Retry GET/HEAD at most twice for network failure, `429`, `503`, or `504`, using
+  jittered backoff and `Retry-After` when present. Do not retry `400`, `401`,
+  `403`, `404`, `409`, `412`, or `422` unchanged.
+- Mutating requests are never automatically retried unless the endpoint requires
+  and has received an `Idempotency-Key`. A timeout after a command is an unknown
+  outcome: query by idempotency key or refetch the resource before retrying.
+- Offline detection short-circuits network retries and selects the documented
+  cache/offline state. Reconnection triggers revalidation, not queued command
+  replay unless that command has a separately specified offline protocol.
+
+### 25.3 Idempotency and optimistic concurrency
+
+- Duplicate-sensitive POST/PATCH commands require an opaque, unpredictable
+  `Idempotency-Key` scoped to authenticated user, endpoint, and canonical team.
+- Reuse with the same normalized request returns the original status/body;
+  reuse with a different request returns `409 IDEMPOTENCY_CONFLICT`.
+- Records persist long enough to cover client retry and offline-reconnect windows;
+  the endpoint contract states the exact retention period before implementation.
+- Mutable resources expose a strong revision through `ETag` and the response
+  body. Unsafe overwrites require `If-Match`; missing preconditions return `428
+  PRECONDITION_REQUIRED`, stale revisions return `412 REVISION_STALE`.
+
+### 25.4 Private caching and version compatibility
+
+- Authenticated responses use `Cache-Control: private, no-cache` and `Vary:
+  Authorization`. Browser/shared-CDN storage is not an authorization boundary.
+- Reads may return `ETag`; matching `If-None-Match` returns `304` with request ID
+  and cache headers but no body.
+- Persistent frontend snapshots are partitioned by authenticated user ID and
+  contract version. Logout removes or makes prior-user snapshots unreachable.
+- Additive fields are backward compatible within `/api/v1`; clients ignore
+  unknown fields. Removing/renaming fields or changing meaning requires a new API
+  version or a measured compatibility window. The server rejects versions it
+  cannot safely serve with `400 API_VERSION_UNSUPPORTED`.
+- Deprecation requires caller telemetry, a published sunset boundary, and proof
+  that supported clients no longer depend on the old contract.
