@@ -120,6 +120,12 @@ describe("App Schedule golden path (FEATURE_MAP.md row 4)", function () {
     await waitFor(function () { expect(screen.getAllByText(/River Cats/).length).toBeGreaterThan(0); });
     expect(screen.queryByText("Add New Game")).not.toBeInTheDocument();
 
+    var actions = screen.getByLabelText("Actions for River Cats");
+    expect(within(actions).getByRole("button", { name:"Share" })).toBeInTheDocument();
+    expect(within(actions).getByRole("button", { name:"Edit" })).toBeInTheDocument();
+    expect(within(actions).getByRole("button", { name:"Delete" })).toBeInTheDocument();
+    expect(actions).toHaveStyle({ display:"grid" });
+
     var persisted = JSON.parse(localStorage.getItem("team:" + TEAM.id + ":schedule"));
     expect(persisted).toHaveLength(1);
     expect(persisted[0].opponent).toBe("River Cats");
@@ -159,7 +165,7 @@ describe("App Schedule golden path (FEATURE_MAP.md row 4)", function () {
   it("shows the complete record and chooses the earliest playable upcoming game", async function () {
     localStorage.setItem("team:" + TEAM.id + ":schedule", JSON.stringify([
       { id:"later", date:dateFromToday(5), opponent:"Later" },
-      { id:"win", date:dateFromToday(-5), opponent:"Win", result:"W", scoreReported:true },
+      { id:"win", date:dateFromToday(-5), opponent:"Win", result:"W", ourScore:14, theirScore:11, scoreReported:true },
       { id:"loss", date:dateFromToday(-4), opponent:"Loss", result:"L", scoreReported:true },
       { id:"tie", date:dateFromToday(-3), opponent:"Tie", result:"T", scoreReported:true },
       { id:"cancelled", date:dateFromToday(1), opponent:"Cancelled", result:"X" },
@@ -168,9 +174,11 @@ describe("App Schedule golden path (FEATURE_MAP.md row 4)", function () {
     ]));
 
     await goToScheduleTab();
-    expect(screen.getByLabelText("Season record")).toHaveTextContent("1–1–1");
+    expect(screen.getByLabelText("Season record")).toHaveTextContent("Season record1Wins1Losses1Ties");
     var summary = within(screen.getByLabelText("Next game summary"));
     expect(summary.getByText("vs. Earliest")).toBeInTheDocument();
     expect(summary.queryByText(/Cancelled|Already Played|Later/)).not.toBeInTheDocument();
+    expect(screen.getByText("Final · Win")).toBeInTheDocument();
+    expect(screen.getByLabelText("Final score against Win")).toHaveTextContent("Schedule Test Sluggers14Win11");
   });
 });
