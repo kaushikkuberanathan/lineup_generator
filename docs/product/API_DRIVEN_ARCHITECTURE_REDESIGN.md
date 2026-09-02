@@ -1095,3 +1095,58 @@ and typed endpoint modules. It does not own React rendering, navigation policy,
 role inference, global state, toast copy, or a new data-framework dependency.
 Adopt a broader library only through a separate evidence-backed package decision
 and the package-file approval gate.
+
+## 29. Cross-cutting graduation gate
+
+Every migrated surface must attach an evidence record to its story/PR. A checked
+box without the named artifact does not satisfy this gate.
+
+| Gate | Required evidence |
+|---|---|
+| Contract | Schema validation for success/error/`304`, supported-version compatibility, and payload fixture snapshots. |
+| Authentication | No token, malformed/expired token, refresh/resume, logout, and identity-private cache separation. |
+| Authorization | Canonical/legacy role matrix, inactive/revoked membership, global admin without membership, and destination/command reauthorization. |
+| Isolation | Wrong-team cache plus cross-team game/lineup IDs prove no existence or data leakage. |
+| Routing | Direct open, refresh, auth resume, Back/Forward, restart, invalid IDs, and unchanged public share link. |
+| Offline/resilience | Cold offline, cached offline, slow backend, retry exhaustion, reconnect/revalidate, cache-version mismatch, and unknown command outcome. |
+| Concurrency | Aborted/superseded navigation, stale response suppression, `If-Match`, and idempotency replay/conflict. |
+| Accessibility | Keyboard/focus order, semantic names/status announcements, contrast, reduced motion where applicable, and 44px targets at representative mobile widths. |
+| Observability | Structured request/result telemetry verified without token, child, roster, schedule-detail, or free-text PII. |
+| Regression | Existing surface golden paths, offline Game Day, and unauthenticated share links remain green. |
+
+Behavioral tests record the failing RED output before implementation and GREEN
+output after it. When pre-existing correct behavior prevents normal RED, mutate
+one relevant boundary, capture the failure, restore it, and capture GREEN.
+
+### 29.1 Telemetry and analytics convention
+
+Backend logs include timestamp, environment, API/contract version, request ID,
+route template, status, stable error code, retryability, total/query latency,
+query count, team count, payload bytes, cache/ETag result, and rollout cohort.
+Raw IDs may be one-way hashed for comparison; child names, roster contents,
+tokens, email, schedule details, and arbitrary request bodies are prohibited.
+
+Analytics distinguish `source=cache|network`, `cache_state=fresh|stale|miss`,
+`network_state=online|offline|timeout|error`, route-resolution outcome, denial
+reason code, fallback reason, and flag/cohort state. Shadow telemetry records
+field-level mismatch categories and counts, not full compared payloads.
+
+### 29.2 Budgets and evidence thresholds
+
+- Home server processing: p95 below 300 ms under representative ten-team data.
+- Home payload: below 50 KB uncompressed for ten teams; no roster/grid/history or
+  scoring-state payloads.
+- Query count is bounded and constant by query class as team count grows; tests
+  fail on per-team amplification.
+- Cached returning Home paints useful content within 300 ms on a representative
+  mobile device; route changes promptly abort obsolete work.
+- Accessibility has zero serious/critical automated findings plus manual focus,
+  screen-reader label, and touch-target verification.
+- Rollout advances only when the cohort has no confirmed cross-team exposure or
+  auth bypass, error/latency/fallback trends meet the story's recorded threshold,
+  and shadow mismatches are understood or accepted explicitly.
+
+Each rollout boundary records commit SHA, flag values/cohort, environment,
+deployment SHA, test/preview evidence, telemetry window and query, observed
+thresholds, decision, rollback owner/action, and soak start/end. Legacy retirement
+additionally requires caller-usage evidence and live database grant/policy checks.
