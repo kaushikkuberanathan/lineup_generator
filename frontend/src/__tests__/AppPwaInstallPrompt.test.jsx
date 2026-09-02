@@ -121,6 +121,7 @@ describe("App PWA install banner platform branches (#968)", function () {
     expect(promptEvent.preventDefault).toHaveBeenCalled();
     expect(screen.getByText("One-tap access on game day — no browser needed")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Install" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Install app").style.bottom).toBe("calc(56px + env(safe-area-inset-bottom, 0px))");
     // iOS-specific copy must not leak into the Android branch.
     expect(screen.queryByText(/Add to Home Screen/)).not.toBeInTheDocument();
   });

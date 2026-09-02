@@ -1,7 +1,27 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: 2026-09-01 (v3.2.0 release preparation; scope frozen at `e79487d`, release tracker #1004).
+> Last updated: 2026-09-02 (v3.3.0 release preparation; scope is full develop tip `b9215dd` against production v3.2.0 `aa519bf`, no dedicated tracker issue). Previously updated 2026-09-01 (v3.2.0 release preparation; scope frozen at `e79487d`, release tracker #1004).
 > MVP launched: March 24, 2026
+
+---
+
+## v3.3.0 RELEASE CANDIDATE — Schedule card redesign, deep-link fix, and API-driven architecture foundation
+
+No dedicated release tracker issue yet (unlike v3.2.0's #1004) — this candidate was assembled directly from everything merged to `develop` since the v3.2.0 promote (`aa519bf`), at KK's request to "line up scope and documents" comprehensively. Candidate scope is the full `develop` tip as of PR #1036 (merge commit `b9215dd`) against production v3.2.0 (`aa519bf`).
+
+**Minor-version rationale:** the Schedule card redesign (PR #1009) is a real, if modest, coach-facing change. The API-driven architecture work (#1012) is entirely dark behind two default-off flags with zero live behavior change, but it's a substantial new subsystem — large enough on its own to warrant sizing the bump to the release's actual scope rather than defaulting to patch, matching this repo's established v3.0.0/v2.9.0 convention.
+
+**Included scope:**
+- Post-v3.2.0-promote sync and doc correction through PRs #1007/#1008 (routine — no new coach-facing scope).
+- Schedule and My Team hardening through PR #1009 (closes #1002): reorganized Schedule cards into distinct game/assignment/score/action regions, replaced compact result codes with a plain-language final status and two-team score summary, removed duplicated team/season-record info, extracted a reusable `scheduleOverview.js` helper, and hardened My Team/Roster/Bottom Nav/PWA/Supabase regression coverage. `FEATURE_MAP.md` rows 4 and 42 updated to match.
+- Player deep-link reload fix through PR #1011 (closes #1010): a real bug where opening a player-profile URL directly, or restoring one through browser history, left stale navigation state — My Team now stays active while still allowing Schedule/Game Day navigation, and unrelated query params are preserved while only the player-detail routing clears.
+- API-Driven Architecture Redesign, Phase 0 + Phase 1 (initiative [#1012](https://github.com/kaushikkuberanathan/lineup_generator/issues/1012), baseline doc [`docs/product/API_DRIVEN_ARCHITECTURE_REDESIGN.md`](API_DRIVEN_ARCHITECTURE_REDESIGN.md)) through PRs #1034/#1035/#1036 — **entirely behind `API_DRIVEN_HOME`/`API_DRIVEN_ROUTES`, both default off, zero live behavior change:**
+  - **Phase 0 — foundation and governance** ([#1013](https://github.com/kaushikkuberanathan/lineup_generator/issues/1013), all 7 stories): ownership ADR (#1015), API contract/versioning/idempotency standards (#1016), canonical role/capability policy (#1017), canonical team-scoped route contract (#1018), React/server/URL/offline state boundaries (#1019), cross-cutting test/a11y/observability gates (#1020), full screen/Supabase/local-storage migration inventory (#1021).
+  - **Phase 1 — API-driven Home and Team Hub** ([#1014](https://github.com/kaushikkuberanathan/lineup_generator/issues/1014), all 12 stories): versioned Home read-model contract (#1022), authenticated aggregation service with no N+1 (#1023), server-owned capabilities and action assembly (#1024), contract/auth/isolation/cache/perf coverage with hand-rolled ETag/304 (#1025), reusable authenticated frontend API client + private Home cache (#1026), canonical route parser + pure destination resolver (#1027), Home feature shell + single-expanded-team Team Hub (#1028), mixed-role multi-team states (#1029), first App.jsx activation point — CTAs wired behind both flags (#1030), loading/cached/offline/slow-backend/empty/access-loss states (#1031), analytics + a11y + full browser-level deep-link test suite (#1032).
+  - **Two real gaps found and fixed while closing out #1032**, both with RED-to-GREEN evidence (fix reverted via `git stash`, test rerun to confirm genuine failure, fix restored): unverified cross-team `gameId`/`lineupId` ownership on route restore, and an unwired pending-destination auth-resume flow.
+  - [#1033](https://github.com/kaushikkuberanathan/lineup_generator/issues/1033) stays open past this release: the docs-reconciliation portion shipped in PR #1036, but the actual staged flag rollout (internal → limited cohort → default-on) and legacy Home retirement both require this code to be live in production first — deliberately not part of this promote.
+
+**Ship Gate status:** frontend 1745/1745 across 168 files, backend unit 361/361, lint clean, production build clean, `debt-p0` gate clear (0 open P0 items) — all directly re-verified on a fresh `develop` checkout during release prep, not carried forward. Golden-path coverage exists for every touched feature (Schedule, My Team/Roster player-profile routing, and the entire API-driven Home surface). `FEATURE_MAP.md`, `DOC_TEST_DEBT.md`, and `SOLUTION_DESIGN.md` are current as of this entry. Remaining gates: the coordinated v3.3.0 version bump, real-device preview validation, the 24-hour `develop` soak, and explicit `confirmed — push to main` authorization — none completed yet.
 
 ---
 

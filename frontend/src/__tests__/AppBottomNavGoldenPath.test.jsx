@@ -6,10 +6,10 @@
 // <App/> the same way AppSongsGoldenPath.test.jsx does, since the nav lives
 // inline in the locked App.jsx and isn't separately extracted or
 // unit-testable. Covers ordinary tab switching plus the one non-obvious
-// behavior: tapping Home while inside Team/Game Day opens the Exit Sheet
+// behavior: tapping Home while inside My Team, Schedule, or Game Day opens the Exit Sheet
 // confirmation instead of navigating straight home (renderExitSheet, ~7413).
 import { beforeEach, describe, expect, it } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { vi } from "vitest";
 
 vi.mock("virtual:pwa-register/react", () => ({
@@ -84,7 +84,7 @@ describe("App Bottom Nav golden path (#943)", function () {
     await waitFor(function () { expect(screen.getByText("Roster and Player Profiles")).toBeInTheDocument(); });
 
     fireEvent.click(screen.getByRole("button", { name: /Schedule/ }));
-    await waitFor(function () { expect(screen.getByLabelText("Season record")).toBeInTheDocument(); });
+    await waitFor(function () { expect(screen.getByText("No upcoming game. Add one below when the schedule is ready.")).toBeInTheDocument(); });
 
     fireEvent.click(screen.getByRole("button", { name: /Game Day/ }));
     await waitFor(function () { expect(screen.getByRole("button", { name: /^Songs$/ })).toBeInTheDocument(); });
@@ -105,6 +105,30 @@ describe("App Bottom Nav golden path (#943)", function () {
     // The underlying Team screen is still mounted behind the sheet — Home
     // did not navigate away on its own.
     expect(screen.getByText("Roster and Player Profiles")).toBeInTheDocument();
+  });
+
+  it.each([375, 393])("keeps all five primary destinations available at %ipx", async function(width) {
+    Object.defineProperty(window, "innerWidth", { configurable:true, writable:true, value:width });
+    window.dispatchEvent(new Event("resize"));
+    render(<App />);
+
+    var nav = await screen.findByRole("navigation", { name:"Primary" });
+    var buttons = within(nav).getAllByRole("button");
+    expect(buttons).toHaveLength(5);
+    ["Home", "My Team", "Schedule", "Game Day", "Support"].forEach(function(label) {
+      expect(within(nav).getByRole("button", { name:new RegExp(label, "i") })).toBeInTheDocument();
+    });
+    buttons.forEach(function(button) { expect(button.style.flex).toBe("1 1 0%"); });
+    expect(nav).toHaveStyle({ position:"fixed", bottom:"0px" });
+  });
+
+  it("tapping Home while inside Schedule opens the Exit Sheet", async function () {
+    render(<App />);
+    fireEvent.click(await screen.findByRole("button", { name: /Schedule/ }));
+    await waitFor(function () { expect(screen.getByText("No upcoming game. Add one below when the schedule is ready.")).toBeInTheDocument(); });
+
+    fireEvent.click(screen.getByRole("button", { name: /Home/ }));
+    await waitFor(function () { expect(screen.getByText("Leave team?")).toBeInTheDocument(); });
   });
 
   it("Exit Sheet's Keep Working dismisses the sheet without leaving the team", async function () {
