@@ -200,3 +200,78 @@ describe("API-driven Home integration (#1030)", function () {
     await waitFor(function () { expect(screen.getByRole("heading", { name: /find a team/i })).toBeInTheDocument(); });
   });
 });
+
+describe("API-driven Home deep links (#1032)", function () {
+  it("direct deep-link open: a route already in the URL at first mount (no CTA click) lands on the team's screen, not Home", async function () {
+    localStorage.setItem("flag_API_DRIVEN_HOME", "true");
+    localStorage.setItem("flag_API_DRIVEN_ROUTES", "true");
+    window.history.replaceState(null, "", "/?route=" + encodeURIComponent("/app/teams/" + TEAM.id + "/roster"));
+
+    render(<App />);
+
+    await waitFor(function () {
+      expect(screen.queryByRole("region", { name: new RegExp(TEAM.name) })).not.toBeInTheDocument();
+    });
+    // Header logoTitle only shows the team name once activeTeam is set and
+    // the app has left the "more" tab family — direct proof loadTeam() ran
+    // for the URL's team on a cold open, not just that Home unmounted.
+    await waitFor(function () {
+      expect(screen.getAllByText(TEAM.name).length).toBeGreaterThan(0);
+    });
+  });
+
+  it("a foreign team ID in the URL (not a real membership) does not enter any team's screen", async function () {
+    localStorage.setItem("flag_API_DRIVEN_HOME", "true");
+    localStorage.setItem("flag_API_DRIVEN_ROUTES", "true");
+    window.history.replaceState(null, "", "/?route=" + encodeURIComponent("/app/teams/not-a-real-team/roster"));
+
+    render(<App />);
+
+    // enterLegacyScreenForApiRoute's teams.find() returns undefined for an
+    // unknown id and bails out (returns false) before calling loadTeam() —
+    // this must never fall through to entering ANY team's screen.
+    await waitFor(function () {
+      expect(screen.getAllByText(TEAM.name).length).toBeGreaterThan(0); // Home still lists real teams
+    });
+    expect(screen.queryByText(/By Position|By Player/)).not.toBeInTheDocument();
+  });
+
+  // KNOWN GAP (#1032, found while writing this suite — not yet fixed):
+  // section 6.2/26.2 of docs/product/API_DRIVEN_ARCHITECTURE_REDESIGN.md
+  // requires nested gameId/lineupId values to be verified as belonging to
+  // the route's team before the destination is entered.
+  // frontend/src/api/routes.js's resolveDestination() implements exactly
+  // this check (cross_team_denied), but App.jsx's real compatibility
+  // adapter (enterLegacyScreenForApiRoute, ~line 2146) never calls it —
+  // it only checks `teams.find(t => t.id === route.teamId)` and then
+  // switches tab by route.type alone, ignoring route.gameId entirely for
+  // 'gameMode'/'gameScore'. A forged or stale gameId for a real team
+  // currently launches Game Day exactly as a valid one would.
+  // RED confirmed 2026-09-02: this test fails against the current
+  // App.jsx, proving the gap is real, not theoretical. Fixing it needs an
+  // App.jsx edit (locked file — requires the literal "all clear —
+  // App.jsx editing approved" phrase) to thread api/homeCache.js's
+  // getHomeCache(user.id) + resolveDestination() into
+  // enterLegacyScreenForApiRoute instead of the bare teams.find() check.
+  // Un-skip once that fix lands.
+  it.skip("a gameId that does not belong to the route's team is rejected, not silently entered", async function () {
+    localStorage.setItem("flag_API_DRIVEN_HOME", "true");
+    localStorage.setItem("flag_API_DRIVEN_ROUTES", "true");
+    global.fetch = vi.fn(function (url) {
+      if (String(url).includes("/api/v1/home")) {
+        var res = homeApiResponse();
+        res.teams[0].nextEvent = { id: "game-real-1", type: "game", opponent: "Knights", startsAt: "2026-09-05T18:00:00Z" };
+        return jsonResponse(res);
+      }
+      return jsonResponse({});
+    });
+    window.history.replaceState(null, "", "/?route=" + encodeURIComponent("/app/teams/" + TEAM.id + "/games/game-FORGED/mode"));
+
+    render(<App />);
+
+    await waitFor(function () { expect(screen.getAllByText(TEAM.name).length).toBeGreaterThan(0); });
+    // Desired behavior per the baseline doc: a mismatched gameId must not
+    // reach the live Game Day surface at all.
+    expect(screen.queryByText(/By Position|By Player/)).not.toBeInTheDocument();
+  });
+});
