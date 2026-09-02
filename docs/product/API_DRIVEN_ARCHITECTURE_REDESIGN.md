@@ -1059,3 +1059,39 @@ Existing public share entry (`?s=<share-id>`) remains a separate, unauthenticate
 route evaluated before the application auth gate. It is not rewritten under
 `/app`, does not consume `ui:activeTeam`, and receives regression coverage in
 every routing release.
+
+## 28. Frontend state and cache boundary
+
+| Category | Examples | Authority | Persistence |
+|---|---|---|---|
+| URL state | team, destination, game, lineup | Current canonical URL after validation | Browser history |
+| Server state | identity, memberships, summaries, roles, capabilities, resources | Latest authorized API response | Memory plus identity-private versioned snapshot where specified |
+| UI state | expanded team, filter, dialog, focus, draft input | Current React feature shell | Memory; selected harmless preferences only |
+| Offline/sync state | cachedAt, fetchedAt, pending command, conflict, last error | Sync protocol metadata, never permission | Versioned local storage/IndexedDB boundary |
+
+Home uses stale-while-revalidate. A matching private snapshot may render
+immediately with `generatedAt`, `fetchedAt`, contract version, user ID, and stale
+status. Network success atomically replaces it. Membership/auth changes,
+contract-version mismatch, explicit access denial, or logout invalidate it.
+Focus/reconnect triggers revalidation; it does not turn stale capabilities into
+current authorization. The initial target is a 60-second fresh window and a
+24-hour stale display window, subject to measured tuning; older snapshots are
+unavailable, not silently accepted.
+
+Optimistic UI is allowed for reversible presentation choices and commands whose
+contract defines rollback plus reconciliation. Team expansion is local and
+immediate. Permission, membership, route ownership, lineup finalization, and
+scoring-session ownership are never optimistically invented. Unknown command
+outcomes refetch before allowing replay.
+
+Each request owns an `AbortController` and monotonically increasing generation.
+Route change, team change, logout, or component disposal aborts obsolete work;
+response application also checks identity, route key, and generation so a late
+response cannot cross users or teams.
+
+The reusable client is deliberately narrow: base URL, bearer token, request ID,
+JSON/error-envelope parsing, deadline/abort, retry classification, ETag support,
+and typed endpoint modules. It does not own React rendering, navigation policy,
+role inference, global state, toast copy, or a new data-framework dependency.
+Adopt a broader library only through a separate evidence-backed package decision
+and the package-file approval gate.
