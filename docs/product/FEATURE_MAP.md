@@ -6,7 +6,9 @@
 
 > Authoritative mapping of every shipped feature to its documentation and test coverage.
 > Update this file whenever a feature ships, changes behavior, or gains new tests.
-> Owner: KK | Last updated: 2026-08-27 (#114 — full row-numbering audit: the `#`
+> Owner: KK | Last updated: 2026-09-02 (row 43 added — API-driven Home, #1012 Phase 1,
+> PR #1035 on `develop`, not yet promoted to `main`; Coverage Summary recounted);
+> previously updated 2026-08-27 (#114 — full row-numbering audit: the `#`
 > column was renumbered sequentially 1-40 to match display order, fixing the
 > out-of-order artifact where row 23 sat between rows 15 and 16. **Every dated
 > "previously updated" note below this one, and every dated recount note under
@@ -75,6 +77,7 @@
 | 40 | **Help (Support → FAQ redesign, task-oriented + Game-Day quick access)** | MVP | `ROADMAP.md` § Story 333; `CLAUDE.md` § Support tab convention | ✅ Current | `FAQSection.test.jsx` (15 tests, H1–H15: Game-Day Help quick-access, search incl. keyword matching + privacy-safe analytics, category switching, stable article ids/categories) | ✅ Yes | Story 333/#865 replaced the 7-persona `FAQ_CATEGORIES` taxonomy with a flat `HELP_ARTICLES` list (`id`/`category`/`title`/`answer`/`gameDayCritical`/`keywords`) plus `HELP_CATEGORY_META` for the 6 task-oriented categories and Browse Help picker (content and file/export names in `content/faqs.js` / `FAQSection.jsx` kept for locked-file reasons — rendered heading is "Help"). Flat-with-keywords shape (revised 2026-08-27 from an initial nested-by-category draft) chosen for stable analytics ids, keyword-assisted search, `gameDayCritical`-driven quick access with no separate id list to keep in sync, and easier future contextual deep-linking. Content-accuracy pass against `QuickSwap.jsx`/`toggleAbsentTonight` found and fixed a real drift: the prior FAQ text implied a late/injured player could be added to or pulled from an active game in one step; there is no such action, only a per-inning manual Quick Swap. Hosted external Help Center evaluated and explicitly rejected (no usage evidence, would trade away the app's offline guarantee). Support sub-tab nav label (`MORE_SUBTABS` in App.jsx) updated "FAQ" → "Help" 2026-08-28 after gate-phrase approval — a one-line change, verified against Known Open Bugs #11 (`skip-worktree` was not set on this clone). Story 107/#285 (tab reorder + default-to-About) is unrelated and remains open. |
 | 41 | **Terms of Service experience (versioned legal docs + registration consent gate)** | MVP | `ROADMAP.md` § v3.1.0; `content/legal.js` header comment; `AUTH_SECURITY_AUDIT_ROADMAP.md` § Registration consent gate | ✅ Current | Backend `legalConsent.test.js` (7); frontend `content/legal.test.js` (12), `utils/legalConsent.test.js` (3), plus growth in `RequestAccessScreen.test.jsx` and `LegalSection.test.jsx` | ✅ Yes | PRs #907/#910/#913; release tracker #939. `content/legal.js`'s 6 `LEGAL_DOCS` gained a `versions[]` array each (oldest first); `getLegalDoc()` always resolves the latest, while `getLegalDocVersion()` retrieves a prior version for audit. `terms` was rewritten v1.0→v2.0 into a Dugout-Lineup-specific ToS. New `LegalDocBody`/`LegalDocSheet` components share rendering with the pre-existing `LegalSection`, so Account and registration render identical text. Registration is gated on accepting Terms and Privacy; consent is logged through service-role-only `legal_consents` records that store document/version metadata, never document text. Migration 028 was applied to DEV and PROD on 2026-08-29 and verified with a real insert + cleanup on both. Analytics events `tos_consented` and `tos_link_opened` are documented in `docs/analytics/ANALYTICS.md`. |
 | 42 | **My Team dashboard + player-profile hub** | MVP | `ROADMAP.md` § v3.2.0 | ✅ Current | `AppMyTeamDashboard.test.jsx` (3 end-to-end dashboard/profile flows), `AppRosterGoldenPath.test.jsx` (3), `AppBottomNavGoldenPath.test.jsx` (4) | ✅ Yes | PR #1001 / #993/#996-#1000. My Team is roster-only; schedule/record/snack content lives under the primary Schedule destination. Individual and all-player screens reuse the existing profile editor, and missing position preferences are highlighted. |
+| 43 | **API-driven Home (Team Hub) — dark, behind flags** | MVP | `docs/product/API_DRIVEN_ARCHITECTURE_REDESIGN.md`; `ROADMAP.md` § API-Driven Architecture Redesign | ✅ Current | `AppApiDrivenHomeIntegration.test.jsx` (18 tests: flag-off/on, action navigation, Back, deep-link open, foreign teamId, cross-team gameId, lineupId, pending-destination resume), plus the full `features/home/*` + `api/*` unit suites (`HomeScreen`, `TeamHub`, `ExpandedTeamCard`, `CompactTeamCard`, `TeamAction`, `useHomeScreen`, `homeAnalytics`, `a11y`, `client`, `home`, `homeCache`, `routes`), backend `home.route.test.js`/`homeCapabilities.test.js`/`homeSummary.test.js`/`homeSchema.contract.test.js` | ✅ Yes | Initiative #1012, Phase 1 (#1014, stories #1022-#1032). **Behind `API_DRIVEN_HOME`/`API_DRIVEN_ROUTES`, both default off** — zero live behavior change for any current user. `GET /api/v1/home` drives a redesigned single-expanded-team Team Hub with canonical `/app/teams/:teamId/...` deep links (carried as a `route` query param — this app has no path-based routing). Legacy Home is unaffected and remains the only surface real users see until #1033's staged rollout begins. On `develop` via PR #1035, not yet promoted to `main`. |
 
 ---
 
@@ -82,13 +85,15 @@
 
 | Status | Count |
 |--------|-------|
-| ✅ Doc Current | 39 / 42 |
-| ⚠ Doc Stale | 3 / 42 |
-| ❌ Doc Missing | 0 / 42 |
-| ✅ Tests Exist | 18 / 42 |
-| ⚠ Tests Partial | 16 / 42 |
-| ❌ No Tests | 8 / 42 |
+| ✅ Doc Current | 40 / 43 |
+| ⚠ Doc Stale | 3 / 43 |
+| ❌ Doc Missing | 0 / 43 |
+| ✅ Tests Exist | 19 / 43 |
+| ⚠ Tests Partial | 16 / 43 |
+| ❌ No Tests | 8 / 43 |
 
+> **Recounted 2026-09-02** (row 43 added, API-driven Home — #1012 Phase 1, PR #1035): direct tally of all 42 pre-edit rows matched the prior 39/3/0 Doc and 18/16/8 Test summary exactly. Row 43 added as Doc Current (new baseline doc + this file) + Tests Exist (extensive coverage across frontend and backend, listed in the row itself). Net change: denominator 42→43, Doc Current 39→40, Tests Exist 18→19; all other categories unchanged.
+>
 > **Recounted 2026-09-01** (v3.2.0 release prep, #1004): direct tally of all 41 pre-edit rows matched the prior 37/4/0 Doc and 17/16/8 Test summary. Row 4 moved Doc Stale → Current after the v3.2.0 ROADMAP reconciliation; row 42 was added as Doc Current + Tests Exist. Final denominator 42: Doc 39/3/0; Test 18/16/8.
 >
 > **Recounted 2026-08-29** (row 41 added, Terms of Service experience — #907/#910/#913; promoted in v3.1.0 through PR #959 on 2026-08-30). Direct recount of every row's Doc/Test Status columns immediately before this edit matched the prior table exactly (36/4/0 Doc; 16/16/8 Test, the second axis's row-11 typo already fixed earlier the same day — see that row's own history). Net change: denominator 40→41, Doc Current 36→37, Tests Exist 16→17; all other categories unchanged.

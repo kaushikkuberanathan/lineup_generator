@@ -289,6 +289,20 @@ files; 295 backend unit tests passed.
 | **Target** | Opportunistic — no hard deadline, cosmetic only |
 | **Issue** | [#794](https://github.com/kaushikkuberanathan/lineup_generator/issues/794) |
 
+### 🟠 P1 — API-driven architecture: App.jsx growth, uncommanded Home actions, unmigrated screens (#1012)
+
+- **What:** Reconciling the baseline doc's own technical-debt ledger (`docs/product/API_DRIVEN_ARCHITECTURE_REDESIGN.md` §19) after Phase 0 + Phase 1 shipped to `develop` (PR #1035). Most §19 items (ADR-01, API-01, INV-01, HOME-01/02/03, PERF-01, TEST-01/02, A11Y-01, DOC-01, PACKAGE-01 — no router library was added, confirmed via a clean `package.json` diff) are resolved by the shipped work. The items below are genuinely still open, carried forward rather than closed prematurely:
+  - **DATA-01** — Home's actions are navigation-only in Phase 1; no granular command API exists yet, so broad `team_data` document upserts remain the only write path everywhere, including screens Home links to. Resolve per-screen as each one's own command migration lands (Roster is next per baseline §18).
+  - **DATA-02** — Roster identity is still name-based (see root `CLAUDE.md` § Roster identity), which blocks any real per-player resource URL. Must resolve before Roster gets granular command APIs.
+  - **OFFLINE-01** — No general versioned offline mutation queue/conflict model exists. Home in Phase 1 is read/cache-only (stale-while-revalidate via `api/homeCache.js`), so this was never exercised; first real need is whichever screen ships offline-capable writes.
+  - **MONO-01** — App.jsx grew by ~215 lines in #1030 (the compatibility-adapter wiring), the opposite direction of the standing decomposition goal. Expected and accepted for a *first* activation point behind a default-off flag; coordinate with #943 rather than block on it.
+  - **LEGACY-01** — Compatibility adapters and legacy Home must keep coexisting through the production soak; retirement is explicitly the last step of #1033, not started.
+  - **AUTH-01 / ROUTE-01 / STATE-01 (partial)** — the ownership model, route contract, and state boundaries are *defined* (#1017/#1018/#1019) and *implemented for Home* (#1024/#1027/#1026), but adoption elsewhere in the app hasn't started — every other screen still infers behavior from raw roles, uses React state instead of canonical routes, and mixes server/URL/UI/offline state. Tracked here rather than under a separate id, since it's the same underlying gap the baseline doc's ledger already named.
+- **Target:** Resolve DATA-01/DATA-02/OFFLINE-01 per the baseline doc's §18 migration order (Roster next); MONO-01 opportunistically alongside #943; LEGACY-01 explicitly deferred to #1033's retirement step; AUTH-01/ROUTE-01/STATE-01 close out screen-by-screen as later phases migrate.
+- **Source:** `docs/product/API_DRIVEN_ARCHITECTURE_REDESIGN.md` §19, reconciled 2026-09-02 during #1033.
+
+---
+
 ### 🟡 P2 — `snack_duty` column drop blocked on codebase audit
 
 - **What:** Column verified present in Supabase as jsonb on April 27, 2026 (logged in MASTER_DEV_REFERENCE.md as outstanding manual action). **Not the same thing as** the live `renderSnackDuty()` UI feature in App.jsx — that feature reads/writes a plain string field (`game.snackDuty`) on each game object in the schedule array, a completely different storage location from this `team_data.snack_duty` jsonb column. Confirmed distinct during the Phase 4b slice 10 scoping spike (`docs/product/PHASE4B_SLICE10_SCOPING.md` § 3) so this item is not accidentally read as "the snack duty feature is being removed."
@@ -302,6 +316,10 @@ files; 295 backend unit tests passed.
 ## Resolved
 
 *(Items move here once shipped. Format: date, version, original description summary, resolution commit.)*
+
+### September 2, 2026 — API-driven architecture Phase 0 + Phase 1 debt closure (#1012, #1015-#1032)
+
+- ✅ **P1 — ADR-01, API-01, INV-01, HOME-01, HOME-02, HOME-03, PERF-01, TEST-01, TEST-02, A11Y-01, DOC-01, PACKAGE-01 (baseline doc §19)** — Resolved by Phase 0 (#1013, 7 stories) + Phase 1 (#1014, 12 stories) shipping to `develop` via PR #1035 (merge commit `6f4d4f8`, genuine two-parent merge). Ownership ADR, API contract standards, and the full migration inventory landed as docs in Phase 0 (#1015/#1016/#1021). Home's read model, no-N+1 aggregation, private cache, and canonical route resolver landed in Phase 1 (#1022/#1023/#1026/#1027), with a full contract/auth/isolation/cache/perf/deep-link/a11y test matrix (#1025/#1032 — includes two real gaps found and fixed with RED-to-GREEN evidence: unverified cross-team `gameId`/`lineupId` on route restore, and an unwired pending-destination auth-resume flow). **PACKAGE-01 resolved as "no new dependency"** — confirmed via a clean `frontend/package.json`/`backend/package.json` diff across the full initiative; routing is a hand-rolled query-param parser (`api/routes.js`), not a router library, matching this app's existing single-root-path architecture. Verification at merge: frontend 1745/1745 across 168 files, backend unit 361/361, lint clean, real-browser check with both flags off showed zero regression. **Not resolved by this closure — carried forward as a new P1 entry above** ("API-driven architecture: App.jsx growth, uncommanded Home actions, unmigrated screens"): DATA-01, DATA-02, OFFLINE-01, MONO-01, LEGACY-01, and the partial/screen-by-screen completion of AUTH-01/ROUTE-01/STATE-01. Issues: #1012, #1013, #1014, #1015-#1032. PR: #1034 (into `feature/1012`), #1035 (into `develop`).
 
 ### August 30, 2026 — D-S332: Demo team seeding + seed-version upgrade (loadDemoTeam) (#969)
 
