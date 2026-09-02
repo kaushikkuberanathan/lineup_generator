@@ -647,47 +647,96 @@ app_version
 
 ## 17. Rollout plan
 
-Use an `API_DRIVEN_HOME` feature flag with a tested legacy fallback.
+The production migration is gradual. It is not a big-bang replacement and it is
+not controlled by one global `API_DRIVEN_APP` switch. Three independently
+reversible flags separate backend comparison, route/client adoption, and visible
+Home adoption:
 
-### Stage 1 — Local development
+| Flag | Safe default | Responsibility | Failure/offline behavior |
+|---|---|---|---|
+| `API_HOME_SHADOW_READ` | Off | Authenticated legacy Home sessions request the new Home read model in the background and compare it with the legacy result without rendering it. | Skip the comparison when offline; timeout, abort, or service failure must not delay or alter legacy Home. |
+| `API_DRIVEN_ROUTES` | Off | Enables the authenticated API client, canonical route parser, destination resolver, and legacy-screen compatibility adapters. | Invalid, denied, timed-out, or unavailable resolutions fail closed to a safe route error or the known legacy entry point; cached team identity never authorizes a destination. |
+| `API_DRIVEN_HOME` | Off | Selects the visible API-driven Team Hub for an eligible cohort. | Render the identity-private last successful snapshot when safe, label it stale/offline, disable server-required actions, and retain the tested legacy Home kill-switch path. |
 
-- Contract and service implementation
-- Component implementation
-- Focused unit and contract tests
-- Browser-route verification
+Unknown, missing, malformed, or unreachable flag configuration resolves to the
+safe Off state. A flag service or network outage must not enable a migration
+stage, block unauthenticated share links, or make offline Game Day depend on the
+Home API. Rollback disables only the affected boundary; it does not require a
+database rollback.
 
-### Stage 2 — Preview
+### Release 0 — Foundation only
 
-- Authenticated preview deployment
-- Multi-team and mixed-role fixtures
-- Mobile browser validation
-- Existing share-link regression validation
+- Land the ownership ADR, API standards, capability policy, route contract,
+  client-state boundaries, cross-cutting gates, and migration inventory.
+- Add only backward-compatible database structures needed by later releases.
+- For schema work, use expand-and-contract sequencing: add nullable/additive
+  columns, tables, indexes, functions, policies, or grants first; deploy readers
+  and dual-compatible writers second; backfill and verify third; enforce tighter
+  constraints fourth; contract old schema and privileges only in a later release.
+- No visible behavior changes and all three flags remain Off.
 
-### Stage 3 — Internal cohort
+### Release 1 — Dark Home backend
 
-- Internal/admin account
-- Mud Hens and representative multi-team accounts
-- Review latency, errors, denials, cache usage, and navigation outcomes
+- Deploy the versioned Home contract, aggregation service, capabilities, and
+  observability with no frontend dependency on the response.
+- Enable `API_HOME_SHADOW_READ` only for internal accounts, then a bounded cohort.
+- Compare legacy and API outcomes for membership/team sets, normalized roles,
+  default team, next event, lineup readiness, available actions, latency, errors,
+  payload size, and request IDs. Emit counts/hashes and reason codes without
+  child, roster, or other user PII.
+- Shadow mismatches and failures are telemetry, never user-visible authority;
+  the legacy result continues to drive Home.
 
-### Stage 4 — Limited authenticated cohort
+### Release 2 — Dark API client and routes
 
-- Small opted-in/default-enabled cohort
-- Legacy fallback remains available
-- Monitor access loss, stale cache, and route-resolution failures
+- Ship the authenticated client, private cache boundary, canonical parser,
+  destination resolver, and legacy adapters behind `API_DRIVEN_ROUTES`.
+- Exercise direct open, refresh, auth resume, Back/Forward, cancellation, wrong
+  cached team, revoked membership, and cross-team nested-resource denial in
+  local and preview environments while legacy Home remains visible.
+- Keep unauthenticated share-link routing above the auth gate and unchanged.
 
-### Stage 5 — Default on
+### Release 3 — Internal Team Hub
 
-- Enable for all authenticated users after acceptance thresholds are met
-- Preserve kill switch and legacy Home through a defined soak
+- Enable `API_DRIVEN_HOME` only for internal/admin accounts, the Mud Hens, and
+  representative one-team, multi-team, duplicate-name, and mixed-role fixtures.
+- Validate mobile interaction, exactly-one-expanded-team behavior, contextual
+  actions, cache/offline states, accessibility, and legacy fallback.
+- Review shadow comparison, API latency/error, denial, fallback, route-resolution,
+  cache, and navigation telemetry before expanding exposure.
 
-### Stage 6 — Legacy retirement
+### Release 4 — Limited cohort
 
-- Separate later change after production evidence
-- Remove replaced Home orchestration and direct Home-specific paths
-- Reconcile local-storage keys and compatibility adapters
-- Tighten database grants only after deployed callers no longer depend on them
+- Enable API-driven routes and Home for a small authenticated cohort after the
+  internal evidence gates pass.
+- Preserve all kill switches and the legacy Home implementation.
+- Monitor access loss, stale-cache use, fallback rate, route-resolution failure,
+  authorization denial, payload budget, and backend latency/error thresholds.
 
-Normal Ship Gate, preview, soak, explicit push authorization, production smoke, and reverse-sync rituals remain required.
+### Release 5 — Default-on cutover
+
+- Make `API_DRIVEN_HOME` default-on for authenticated users only after the
+  agreed acceptance thresholds and normal release gates are satisfied.
+- Preserve independently controllable flags, the legacy Home, compatibility
+  adapters, additive schema, and existing grants through a defined production
+  soak. Default-on is not authorization to delete fallback code.
+
+### Release 6 — Separate legacy retirement
+
+- Begin only in a later tracked change after production evidence demonstrates
+  the default-on path is stable and no deployed caller depends on legacy paths.
+- Remove replaced Home orchestration, direct Home-specific Supabase access,
+  obsolete local-storage keys, compatibility adapters, and shadow comparison
+  code in explicit, reviewable steps.
+- Contract database schema and revoke legacy grants only after caller inventory,
+  live telemetry, migration/backfill verification, and rollback planning prove
+  they are unused.
+
+The first backend deployment, default-on UI cutover, legacy-code deletion, and
+database grant revocation are four separate release boundaries. They must never
+be combined into one PR, deployment, or authorization decision. Normal Ship
+Gate, preview, soak, explicit branch-specific push authorization, production
+smoke, and reverse-sync rituals remain required for every applicable boundary.
 
 ## 18. Later screen migration plan
 
