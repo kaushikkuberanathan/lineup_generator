@@ -1,5 +1,23 @@
 export var VERSION_HISTORY = [
   {
+    version: '3.3.1',
+    date: 'September 2026',
+    headline: 'Analytics accuracy fix and rollout observability',
+    techNote: 'Minor fixes and internal improvements',
+    userChanges: [
+      'Behind-the-scenes fix so usage analytics work correctly for anyone browsing with a "Do Not Track" privacy setting turned on — previously invisible to us, no coach-facing change. Privacy Policy updated to disclose it.',
+      'Internal test-coverage and documentation improvements. No changes to the way coaches build or use a lineup.',
+    ],
+    internalChanges: [
+      'Fixed #1041 (PR #1042): frontend/src/utils/analytics.js initialized Mixpanel with ignore_dnt: false, so any browser sending a Do Not Track signal silently dropped every analytics event with no error or log anywhere — found while reviewing #1033 Stage 3 rollout telemetry, where a real prod session generated confirmed-successful backend calls but zero Mixpanel events. Overridden deliberately: the app has no ad network and does not sell or share data, so DNT’s advertising opt-out does not map onto first-party product analytics. Privacy Policy bumped to a new version (1.1) per legal.js’s append-only versioning convention, disclosing the override. New regression test locks in ignore_dnt: true on the real mixpanel.init() call shape (RED→GREEN mutation-verified), closing a real Ship Gate gap found while preparing this release.',
+      'PR #1043 wired trackHomeDeepLinkResolved/trackHomeDeepLinkDenied (#1012 Phase 1’s homeAnalytics.js) into App.jsx’s enterLegacyScreenForApiRoute() — defined and unit-tested since Phase 1 but never called anywhere real. Without this, #1033’s Stage 4 (limited authenticated cohort) had no way to observe access loss or route-resolution failures. Purely additive analytics alongside existing, already-tested logic; RED→GREEN verified via a mutation test on the wiring itself.',
+      'PR #1044 recovered a real, previously-orphaned session retrospective (2026-08-28-A) into docs/process/SESSION_RETROSPECTIVES.md — found on a stale, still-real branch during routine branch-cleanup review; the underlying GitHub issue states it described were independently confirmed already correct, only the write-up itself had never merged.',
+      '#1033 Stage 3 (internal cohort) performed against real production 2026-09-03: a genuine second team membership granted to exercise the multi-team Team Hub, confirmed via backend logs (real GET /api/v1/home calls, 200, correct teamCount, including a direct deep-link open). Stage 4 real-device testing found dugoutlineup.com still serving the pre-#1041 bundle (main had not yet promoted) — backend traffic succeeded but zero Mixpanel events reached the account, which is exactly the bug this release fixes. Both flags remain default-off; zero live behavior change for any coach in this release.',
+      'Version rationale: patch release. Entirely internal — an analytics-accuracy bug fix, observability wiring, and a docs recovery. No new coach-facing capability.',
+      'Verification: frontend 1747/1747 across 168 files, backend unit 361/361, lint clean, production build clean, debt-p0 gate clear (0 open P0 items).',
+    ],
+  },
+  {
     version: '3.3.0',
     date: 'September 2026',
     headline: 'Clearer Schedule cards and a smoother player-profile experience',

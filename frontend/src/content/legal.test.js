@@ -43,8 +43,14 @@ describe('getLegalDoc', function () {
   });
 
   test('a doc with only one version returns that version as current', function () {
-    var doc = getLegalDoc('privacy');
+    var doc = getLegalDoc('safety');
     expect(doc.version).toBe('1.0');
+  });
+
+  test('privacy resolves to its latest version after the #1041 DNT-disclosure bump', function () {
+    var doc = getLegalDoc('privacy');
+    expect(doc.version).toBe('1.1');
+    expect(doc.effectiveDate).toBe('September 2026');
   });
 
   test('unknown id returns null', function () {

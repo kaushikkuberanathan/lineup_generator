@@ -47,3 +47,37 @@ describe('analytics', function () {
     expect(mixpanel).toBeDefined();
   });
 });
+
+describe('analytics — mixpanel.init() call shape (#1041)', function () {
+  afterEach(function () {
+    vi.unstubAllEnvs();
+    vi.doUnmock('mixpanel-browser');
+    vi.resetModules();
+  });
+
+  test('initializes with ignore_dnt: true — Do Not Track must not silently drop events (#1041)', async function () {
+    vi.stubEnv('VITE_MIXPANEL_TOKEN', 'test-token-123');
+    var initSpy = vi.fn(function (token, opts) {
+      if (opts && typeof opts.loaded === 'function') opts.loaded();
+    });
+    vi.doMock('mixpanel-browser', function () {
+      return {
+        default: {
+          init: initSpy,
+          register: vi.fn(),
+          track: vi.fn(),
+          identify: vi.fn(),
+          alias: vi.fn(),
+          people: { set: vi.fn() },
+        },
+      };
+    });
+
+    vi.resetModules();
+    await import('./analytics');
+
+    expect(initSpy).toHaveBeenCalledTimes(1);
+    var optsArg = initSpy.mock.calls[0][1];
+    expect(optsArg.ignore_dnt).toBe(true);
+  });
+});

@@ -44,6 +44,7 @@ vi.mock("../utils/analytics", () => ({
 
 import App from "../App";
 import { setHomeCache } from "../api/homeCache.js";
+import { track } from "../utils/analytics";
 
 const TEAM = { id: "team-api-1", name: "API Home Rockets", ageGroup: "8U", sport: "baseball", season: "Fall", year: 2026, role: "admin" };
 // A second membership-backed team, purely so App.jsx's single-membership
@@ -106,6 +107,7 @@ beforeEach(function () {
   localStorage.clear();
   localStorage.setItem("app:teams", JSON.stringify([TEAM, OTHER_TEAM]));
   mockAuth();
+  track.mockClear();
   global.fetch = vi.fn(function (url) {
     if (String(url).includes("/api/v1/home")) return jsonResponse(homeApiResponse());
     return jsonResponse({});
@@ -219,6 +221,7 @@ describe("API-driven Home deep links (#1032)", function () {
     await waitFor(function () {
       expect(screen.getAllByText(TEAM.name).length).toBeGreaterThan(0);
     });
+    expect(track).toHaveBeenCalledWith("home_deep_link_resolved", { destination_type: "roster", team_id: TEAM.id });
   });
 
   it("a foreign team ID in the URL (not a real membership) does not enter any team's screen", async function () {
@@ -235,6 +238,7 @@ describe("API-driven Home deep links (#1032)", function () {
       expect(screen.getAllByText(TEAM.name).length).toBeGreaterThan(0); // Home still lists real teams
     });
     expect(screen.queryByText(/By Position|By Player/)).not.toBeInTheDocument();
+    expect(track).toHaveBeenCalledWith("home_deep_link_denied", { destination_type: "roster", reason: "team_access_denied" });
   });
 
   // Fixed same session (was a documented gap, RED-confirmed before the
@@ -286,6 +290,7 @@ describe("API-driven Home deep links (#1032)", function () {
     // real mismatch, not just an absent cache. Desired behavior per the
     // baseline doc: a mismatched gameId must not reach Game Day.
     expect(screen.queryByText(/By Position|By Player/)).not.toBeInTheDocument();
+    expect(track).toHaveBeenCalledWith("home_deep_link_denied", { destination_type: "gameMode", reason: "cross_team_denied" });
   });
 
   it("a lineup route with an ID never enters — no addressable per-game lineup resource exists in the live schema yet", async function () {

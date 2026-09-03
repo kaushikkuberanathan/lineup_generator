@@ -20,6 +20,63 @@ PR #953's body used the negated phrase "does not fix #355". GitHub still recogni
 
 **Standing takeaway:** never use a closing keyword next to an issue number in negated prose. Use `Refs #N` when a PR intentionally does not complete the tracker, and verify the issue state after every default-branch merge.
 
+## 2026-08-28-A — Share-Link Bugs batch: 2 issues fixed and merged, 2 closed as already-resolved, 1 left open with verified progress
+
+**Date:** August 28, 2026
+**Session ID:** 2026-08-28-A (`lineup_generator` worktree, work done in a dedicated `lineup-generator-sharelink` worktree — see Key Events)
+**Duration:** Single continuous session, no gaps
+**Versions shipped to production:** None — both merged PRs targeted `develop` only; no promote to `main` was requested or attempted
+**PRs opened/merged to develop:** #888 (#502), #889 (#127) — both confirmed genuine 2-parent merges via direct `git show -s --format=%P`, both labeled `priority:p2`/`type:bug`/`area:share-link` (added after the fact, on request, before merge)
+**Issues closed:** #502, #127 (via PR `Closes #N`, auto-closed on merge), plus #88 and #340 closed directly with evidence comments after investigation showed both were already resolved by old, unrelated work
+**Issues investigated and deliberately left open:** #318 — automatable verification done (raw meta-tag fetch, opengraph.xyz inspector, `og-image.png` dimension check), real-device iMessage/Slack paste explicitly out of reach from this session; progress comment posted
+**Production DB changes:** None
+**Tests added/changed:** `buildSharePayload.test.js` (2 tests rewritten for the new song-parity behavior, 19/19 total), `shareLink.test.js` (rewritten for the new `{payload, status}` contract, 6 tests), `AppShareLinkRouting.test.jsx` (existing mocks updated to the new contract + 4 new tests asserting per-status error copy). Frontend suite 1390 → 1401 passed / 1 skipped by the end of the batch (121 files).
+**Locked-file gates exercised:** `App.jsx` — explicitly requested via `AskUserQuestion` and obtained from KK ("all clear — App.jsx editing approved") before editing, scoped to the #127 error-message wiring only.
+**Post-merge worktree hygiene:** Both remote branches were auto-deleted by GitHub on merge (repo setting); the dedicated `lineup-generator-sharelink` worktree used for this session's work is left in place, clean, on `develop`'s current HEAD.
+
+### Overview
+
+Opened with KK handing over a raw 5-issue GitHub list ("Share-Link Bugs") and asking to fix them end to end. Rather than start editing immediately, pulled every issue's full body first — which surfaced that the batch wasn't uniform: two issues (#88, #340) turned out, on investigation, to already be resolved by earlier unrelated work and just never closed; one (#502) explicitly asked for a product decision rather than a unilateral fix; one (#127) was a real, scoped code change; and one (#318) was a manual-verification task only partly automatable from an agent session. Two `AskUserQuestion` rounds got KK's product decisions (#502's song-parity questions) and the `App.jsx` gate phrase before any code was touched, then a third got explicit sign-off on the GitHub-facing actions (push, PR, close, comment) before any of those ran. Mid-session, the shared worktree was found to already have another session's real uncommitted work sitting in it (#651, backend rate limiting) — this was recognized before being disturbed, moved back to its own branch intact, and this session's own work was relocated to a freshly created, isolated worktree rather than risking a shared-directory collision. Both code fixes were RED→GREEN (or mutation-verified) tested, full-suite/lint/build clean, then pushed, PR'd, labeled, and merged as real merge commits — with the labeling and merge step specifically requested as a separate follow-up after the initial batch, at which point the branches had already been externally kept in sync with `develop` twice by other concurrent activity on the same repo, each requiring a fresh CI wait before merging.
+
+### What Shipped
+
+| Item | Scope | Issue/PR | Status |
+|---|---|---|---|
+| Investigation across all 5 issues | Pulled full GitHub bodies + ROADMAP.md/CLAUDE.md cross-references before proposing any plan | — | Presented, confirmed via `AskUserQuestion` |
+| #502 — share payload song parity | `buildSharePayload()`'s songs map now filters by `absentTonight` (matching the roster filter) and is always included (removing `shareViewerLink()`'s `includeSongs:false` divergence) — both per KK's explicit decision | PR #888 | Merged |
+| #127 (Story 62) — typed share-link failure modes | `dbLoadShareLink` now resolves `{payload, status}` (`ok`/`not_found`/`rls_blocked`/`timeout`/`malformed_slug`) instead of a single collapsing `null`; the `?s=` error screen shows a distinct message per status | PR #889 | Merged |
+| #88 — share-link routing broken | Investigated, found it lines up with Story 61/#555 (root-caused and shipped in v2.5.16, two days after this issue was filed) and was never cross-linked; current code + 9 passing regression tests confirm the fix is intact | Closed directly | Closed, stale tracking issue |
+| #340 — duplicate OG/Twitter meta tags | Investigated via `git log -p --follow` and a live `curl` against prod; the duplicate-tag scenario described in the issue never actually shipped — one clean block has been live since the original PR #310 | Closed directly | Closed, stale tracking issue |
+| #318 — OG unfurl validation | Verified everything automatable: raw meta-tag fetch against prod, opengraph.xyz's inspector, `og-image.png` returns 200 and is a real 1200×630 PNG. Real iMessage/Slack paste tests need a device this session doesn't have | Progress comment posted | Left open, by design |
+| Labels + merge | `priority:p2`/`type:bug`/`area:share-link` added to both PRs on request; merged via GitHub's merge-commit method (the only one this repo's settings allow — rebase/squash are disabled per root `CLAUDE.md`'s Merge-type policy) after two rounds of externally-triggered develop-sync + fresh CI wait per PR | PR #888, #889 | Merged, 2-parent verified |
+
+### What Didn't Happen
+
+- **#318's real-device verification** — iMessage and Slack paste tests are explicitly out of reach from an agent session; left open for KK.
+- **A literal GitHub "rebase and merge"** — requested by name, but this repo's branch settings disable rebase merging entirely (only merge commits are allowed); substituted the compliant equivalent and said so rather than attempting an API call that would have failed anyway.
+- **Any promote to `main`** — both merged PRs targeted `develop` only; no version bump, no VERSION_HISTORY entry, no Ship Gate walkthrough was attempted.
+- **Touching `#651`'s in-flight work** — recognized as another session's real uncommitted change and deliberately left untouched beyond restoring it to its own branch.
+
+### Key Events (Chronological)
+
+**1. A batch of 5 issues was read in full before any plan was proposed.** Pulling each issue's actual GitHub body (not just its title) surfaced that #88/#340 were plausibly already fixed, #502 explicitly said "not fixing unilaterally," and #318 was a manual-verification task — none of which was visible from the issue titles alone.
+
+**2. A stale bug report was cross-referenced against ROADMAP.md history rather than treated as a fresh repro target.** #88 ("share-link routing broken," filed May 17, 2026, no useful repro detail) was checked against ROADMAP.md's Story 61/#555 entry, which described and dated the same symptom class, root-caused and shipped two days after #88 was filed. Current code plus a live test run confirmed the fix is still intact today, rather than assuming a two-day-old duplicate report needed independent re-investigation.
+
+**3. A shared worktree was found mid-session to already hold another session's real, uncommitted work.** Before making any git changes, `git status` on the shared `lineup_generator` worktree showed a modified `backend/src/routes/auth.js` and an untracked test file — real, in-progress work for issue #651 (confirmed later, and correctly credited to the other session, not this one). Rather than stash-and-forget or silently carry it along, the change was moved back to its own `fix/651-auth-rate-limiting` branch (verified byte-identical to the original before being touched), and this session's own work moved into a freshly created, dedicated worktree instead of continuing in the shared directory.
+
+**4. A GitHub MCP integration's 403 was treated as a tool-permission gap, not a stopping point.** Both `create_pull_request` and `add_issue_comment` via the GitHub MCP connector returned `403 Resource not accessible by integration`. `gh auth status` was checked, found to be authenticated separately with broader scope, and used instead for both PR creation and all issue comments/closes — the same pattern the prior session's retro (2026-08-27-A) recorded for a different permission gap.
+
+**5. A literal instruction ("rebase and merge") was checked against actual repo settings before being carried out.** Rather than attempt a GitHub "Rebase and merge" API call, `gh api repos/.../lineup_generator --jq '{allow_merge_commit, allow_squash_merge, allow_rebase_merge}'` confirmed rebase merging is disabled at the platform level (matching root `CLAUDE.md`'s documented Merge-type policy) — substituted the merge-commit method and said so explicitly rather than silently reinterpreting the request or attempting a call that would have failed.
+
+**6. Two PRs got externally updated with new `develop` commits mid-session, from concurrent activity on the same repo.** Both branches showed unexpected new `Merge branch 'develop' into fix/...` commits and re-triggered CI runs shortly after another session's PRs (#885 #651, #887 #348) merged to `develop`. Rather than treat the resulting CI re-run or the temporarily `BLOCKED` merge state as a problem to diagnose, `git log`/`gh pr view --json commits` confirmed the cause (a real, external `develop` sync, not a local mistake), and each PR's fresh CI run was watched to completion before merging.
+
+**7. A GitHub close-reason was corrected after the fact rather than left slightly wrong.** #88 was first closed with reason `not_planned` (the wrong semantic — the bug was real and fixed, not abandoned); caught immediately, the issue was reopened and re-closed with the accurate `completed` reason rather than leaving a technically-successful but misleading close reason in place.
+
+### Standing takeaway
+
+A batch framed as "fix these end to end" still got a full-body read of every issue before any code was touched, which is what caught that 2 of the 5 didn't need code at all and 1 needed a product decision before it needed a fix — the same discipline the 2026-08-27-A retro established for a differently-shaped batch. The mid-session discovery of another session's live uncommitted work in a shared worktree was the most consequential moment: recognizing it before running any git command that could have discarded or mixed it in, verifying it was safe before moving it, and relocating this session's own work to an isolated worktree rather than proceeding in a shared directory, avoided a real risk of corrupting a concurrent session's in-progress commit. Two tool/process gaps (a GitHub MCP 403, a literal "rebase and merge" request that the repo's own settings don't allow) were each verified against real system state and worked around with the reasoning stated, not guessed at or silently reinterpreted.
+
 ## 2026-08-27-A — Feature Flags, Docs & Governance batch: 7 of 9 issues closed, 2 correctly left open with evidence
 
 **Date:** August 27-28, 2026 (continuous session, spans the midnight date rollover)

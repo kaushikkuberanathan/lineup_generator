@@ -62,6 +62,7 @@ import { readRosterProfileRoute, buildRosterProfileSearch } from './utils/roster
 import { getScheduleOverview } from './utils/scheduleOverview';
 import { HomeScreen as ApiHomeScreen } from './features/home/HomeScreen.jsx';
 import { parseAppRoute, buildAppRoute, resolveDestination, savePendingDestination, consumePendingDestination } from './api/routes.js';
+import { trackHomeDeepLinkResolved, trackHomeDeepLinkDenied } from './features/home/homeAnalytics.js';
 import { getHomeCache } from './api/homeCache.js';
 
 // ============================================================
@@ -147,7 +148,7 @@ var DISLIKE_PENALTY = -50;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "3.3.0";
+var APP_VERSION = "3.3.1";
 
 // loadJSON / saveJSON — localStorage with in-memory (_mem) fallback — moved to
 // ./utils/storage (#416). Imported above; call sites unchanged.
@@ -2146,7 +2147,10 @@ export default function App() {
   // already-authorized Home response.
   function enterLegacyScreenForApiRoute(route, trustGameLaunch) {
     var team = teams.find(function(t) { return t.id === route.teamId; });
-    if (!team) return false;
+    if (!team) {
+      trackHomeDeepLinkDenied({ destinationType: route.type, reason: 'team_access_denied' });
+      return false;
+    }
 
     // Nested resource ownership check (section 6.2/26.2 of the API-driven
     // architecture doc — #1032 gap fix). `teams.find()` above only proves
@@ -2174,7 +2178,10 @@ export default function App() {
       // addressable per-game lineup resource exists in the live schema —
       // team_access_denied, loading) falls back to doing nothing here,
       // same as the pre-existing "unknown team" behavior above.
-      if (resolution.status !== 'resolved') return false;
+      if (resolution.status !== 'resolved') {
+        trackHomeDeepLinkDenied({ destinationType: route.type, reason: resolution.status });
+        return false;
+      }
     }
 
     loadTeam(team);
@@ -2202,6 +2209,7 @@ export default function App() {
         setPrimaryTab('home'); setHomeMode('welcome');
         break;
     }
+    trackHomeDeepLinkResolved({ destinationType: route.type, teamId: route.teamId });
     return true;
   }
 
