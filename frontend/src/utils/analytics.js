@@ -51,7 +51,13 @@ if (MIXPANEL_TOKEN !== "") {
   mixpanel.init(MIXPANEL_TOKEN, {
     track_pageview: true,
     persistence: "localStorage",
-    ignore_dnt: false,
+    // #1041: Dugout Lineup has no ad network and doesn't sell or share
+    // data (see Privacy Policy > Analytics) — Do Not Track's advertising
+    // opt-out doesn't map onto first-party product analytics, and
+    // honoring it was silently zeroing out real coach usage data with no
+    // error or log anywhere. Overriding deliberately, disclosed in the
+    // Privacy Policy.
+    ignore_dnt: true,
     opt_out_tracking_by_default: false,
     loaded: function() {
       mixpanelReady = true;
