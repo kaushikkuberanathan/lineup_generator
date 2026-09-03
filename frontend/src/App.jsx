@@ -15,6 +15,7 @@ import { migrateRoster, migrateSchedule, migrateBattingPerf, mergeLocalScheduleF
 import { MERGE_FIELDS } from '@/utils/scheduleHydrationFields';
 import { fmtAvg, fmtStat } from '@/utils/formatters';
 import { applyFlagParams, buildCleanSearch } from './utils/flagBootstrap';
+import { getEffectiveOnline, subscribeNetworkHealth } from './utils/networkHealth.js';
 import { loadJSON, saveJSON } from './utils/storage';
 import { DEMO_ROSTER, DEMO_SCHEDULE, DEMO_GRID, DEMO_INNINGS, DEMO_AGE_GROUP, DEMO_SEED_VERSION } from "./data/demoSeed";
 import { useBackendHealth } from '@/hooks/useBackendHealth';
@@ -1139,7 +1140,7 @@ export default function App() {
   var battingOrderSaved = _batSaved[0]; var setBattingOrderSaved = _batSaved[1];
   var _preSuggest = useState(null);
   var preSuggestOrder = _preSuggest[0]; var setPreSuggestOrder = _preSuggest[1];
-  var _isOnline = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
+  var _isOnline = useState(getEffectiveOnline());
   var isOnline = _isOnline[0]; var setIsOnline = _isOnline[1];
   var _parentViewActive = useState(false);
   var parentViewActive = _parentViewActive[0]; var setParentViewActive = _parentViewActive[1];
@@ -1206,16 +1207,11 @@ export default function App() {
   // eslint-disable-next-line react-hooks/exhaustive-deps -- deliberately gated on [authState, memberships] only; loadTeam/teams are re-created every render, activeTeamId is read-only for the stale-check
   }, [authState, memberships]);
 
-  // Online/offline detection
+  // Online/offline detection — #1062: mirrors networkHealth.js's
+  // self-correcting signal (real browser events plus observed request
+  // outcomes) instead of owning raw event listeners directly.
   useEffect(function() {
-    var goOnline  = function() { setIsOnline(true);  };
-    var goOffline = function() { setIsOnline(false); };
-    window.addEventListener("online",  goOnline);
-    window.addEventListener("offline", goOffline);
-    return function() {
-      window.removeEventListener("online",  goOnline);
-      window.removeEventListener("offline", goOffline);
-    };
+    return subscribeNetworkHealth(setIsOnline);
   }, [setIsOnline]);
 
   // Feature flag URL bootstrap — ?enable_flag=<name> sets localStorage and reloads
