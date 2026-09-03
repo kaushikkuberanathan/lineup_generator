@@ -156,6 +156,28 @@ describe('useAuth (#DOC_TEST_DEBT Auth Flow End-to-End)', function() {
       await h.unmount();
     });
 
+    it('A4b: existing session + /me network failure (offline) → keeps session, stays authenticated, no sign-out (#1060)', async function() {
+      // Real bug found during #1033 offline-evidence testing: a thrown fetch
+      // (network unreachable) was being caught by the same catch-all as a
+      // genuine backend rejection, logging out a user with a perfectly
+      // valid local session just because the network was down.
+      mocks.auth.getSession.mockResolvedValue({ data: { session: MOCK_SESSION } });
+      global.fetch.mockRejectedValue(new TypeError('Failed to fetch'));
+
+      var h = await renderHook(function() { return useAuth(); });
+      await settle();
+
+      expect(mocks.auth.signOut).not.toHaveBeenCalled();
+      expect(h.result.current.authState).toBe('authenticated');
+      expect(h.result.current.session).toEqual(MOCK_SESSION);
+      // Synthesized from the already-confirmed local session, not /me —
+      // downstream consumers (e.g. the Home API cache) key off user.id, so
+      // this must match what was used while online.
+      expect(h.result.current.user).toEqual({ id: 'u1', email: 'coach@example.com' });
+
+      await h.unmount();
+    });
+
     it('A5: magic-link hash present + getSession() errors → unauthenticated, hash cleared, no second getSession() call', async function() {
       window.location.hash = '#access_token=abc123&type=magiclink';
       mocks.auth.getSession.mockResolvedValueOnce({ data: { session: null }, error: { message: 'invalid token' } });
@@ -188,14 +210,21 @@ describe('useAuth (#DOC_TEST_DEBT Auth Flow End-to-End)', function() {
       await h.unmount();
     });
 
-    it('A7: exception during hydration (network throw) → unauthenticated, not stuck on loading', async function() {
-      mocks.auth.getSession.mockResolvedValue({ data: { session: MOCK_SESSION } });
-      global.fetch.mockRejectedValue(new Error('network down'));
+    it('A7: exception during hydration from getSession() itself (not the /me fetch) → unauthenticated, not stuck on loading', async function() {
+      // Superseded 2026-09-03 (#1060): this test previously used a /me fetch
+      // throw as its "exception during hydration" case and asserted
+      // unauthenticated — that was the bug itself (see A4b, which now
+      // covers the /me-network-failure case correctly). Re-pointed at a
+      // genuinely different, still-unhandled exception source
+      // (getSession() itself throwing) so the "never stuck on loading"
+      // guarantee this test exists for is still covered by something real.
+      mocks.auth.getSession.mockRejectedValue(new Error('getSession exploded'));
 
       var h = await renderHook(function() { return useAuth(); });
       await settle();
 
       expect(h.result.current.authState).toBe('unauthenticated');
+      expect(global.fetch).not.toHaveBeenCalled();
 
       await h.unmount();
     });
@@ -294,6 +323,29 @@ describe('useAuth (#DOC_TEST_DEBT Auth Flow End-to-End)', function() {
       expect(h.result.current.authState).toBe('unauthenticated');
       expect(h.result.current.session).toBeNull();
       expect(h.result.current.error).toMatch(/try again|sign(ing)? in/i);
+
+      await h.unmount();
+    });
+    it('B5: SIGNED_IN + /me network failure (offline) → keeps session, stays authenticated, no error surfaced (#1060)', async function() {
+      // Mirrors A4b — this handler's /me call was deliberately kept in sync
+      // with checkSession's (#579 commit message), including the same bug.
+      mocks.auth.getSession.mockResolvedValue({ data: { session: null } });
+
+      var h = await renderHook(function() { return useAuth(); });
+      await settle();
+      expect(h.result.current.authState).toBe('unauthenticated');
+
+      global.fetch.mockRejectedValue(new TypeError('Failed to fetch'));
+      var callback = mocks.auth.onAuthStateChange.mock.calls[0][0];
+
+      await act(async function() {
+        await callback('SIGNED_IN', MOCK_SESSION);
+      });
+
+      expect(h.result.current.authState).toBe('authenticated');
+      expect(h.result.current.session).toEqual(MOCK_SESSION);
+      expect(h.result.current.user).toEqual({ id: 'u1', email: 'coach@example.com' });
+      expect(h.result.current.error).toBeFalsy();
 
       await h.unmount();
     });
