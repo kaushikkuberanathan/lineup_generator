@@ -81,10 +81,30 @@ export function useAuth() {
           return;
         }
 
-        // Validate session against backend + get membership
-        const res = await fetch(`${BACKEND_URL}/api/v1/auth/me`, {
-          headers: { Authorization: `Bearer ${existingSession.access_token}` },
-        });
+        // Validate session against backend + get membership. A network-level
+        // failure here (offline, DNS, etc.) is NOT the same as the backend
+        // rejecting the session (#1060) — both used to fall into the catch
+        // block below and log a real, still-valid session out just because
+        // the network was unreachable, breaking this app's documented
+        // "fully functional offline" guarantee on a plain reload. Isolate
+        // the fetch so only a genuine !res.ok rejection clears the session;
+        // a thrown network error keeps it and trusts the local session
+        // already confirmed above instead.
+        let res;
+        try {
+          res = await fetch(`${BACKEND_URL}/api/v1/auth/me`, {
+            headers: { Authorization: `Bearer ${existingSession.access_token}` },
+          });
+        } catch (networkErr) {
+          console.error('[useAuth] /me network failure, keeping existing session:', networkErr?.name, networkErr?.message);
+          setSession(existingSession);
+          // Synthesized from the local session, not /me — downstream
+          // consumers (e.g. the API-driven Home cache) key off user.id, so
+          // this must resolve to the same id used while online.
+          setUser({ id: existingSession.user.id, email: existingSession.user.email });
+          setAuthState('authenticated');
+          return;
+        }
 
         if (!res.ok) {
           // Session expired or invalid — clear it
@@ -128,9 +148,24 @@ export function useAuth() {
         if (event === 'SIGNED_IN' && newSession) {
           // Fetch membership from backend
           try {
-            const res = await fetch(`${BACKEND_URL}/api/v1/auth/me`, {
-              headers: { Authorization: `Bearer ${newSession.access_token}` },
-            });
+            let res;
+            try {
+              res = await fetch(`${BACKEND_URL}/api/v1/auth/me`, {
+                headers: { Authorization: `Bearer ${newSession.access_token}` },
+              });
+            } catch (networkErr) {
+              // Mirrors checkSession's network-failure handling (#1060) — a
+              // thrown fetch means the network is unreachable, not that the
+              // session is invalid. Keep it rather than signing out.
+              console.error('[useAuth] onAuthStateChange: /me network failure, keeping session:', networkErr?.name, networkErr?.message);
+              setSession(newSession);
+              setUser({ id: newSession.user.id, email: newSession.user.email });
+              setAuthState('authenticated');
+              if (window.location.hash) {
+                window.history.replaceState(null, '', window.location.pathname);
+              }
+              return;
+            }
             if (res.ok) {
               const data = await res.json();
               setSession(newSession);
