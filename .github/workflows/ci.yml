@@ -194,7 +194,10 @@ jobs:
           node-version: '22'
 
       - name: Run repository-script tests
-        run: node --test scripts/__tests__/sync-patch.test.js scripts/verify-vitest-file-inventory.test.mjs
+        run: node --test scripts/__tests__/sync-patch.test.js scripts/verify-vitest-file-inventory.test.mjs scripts/__tests__/check-version-currency.test.js
+
+      - name: Check version currency across docs
+        run: node scripts/check-version-currency.js
 
   # ── Job 3b: RLS Policy Suite (ephemeral local stack) ────────────────────────
   # #415 — the executable spec for the WS-3 auth-gate cutover
