@@ -1165,7 +1165,7 @@ See `docs/analytics/ANALYTICS.md` for the complete list of 32+ Mixpanel events a
 
 Initiative [#1012](https://github.com/kaushikkuberanathan/lineup_generator/issues/1012). Full baseline, principles, state model, API conventions, and rollout plan live in [`docs/product/API_DRIVEN_ARCHITECTURE_REDESIGN.md`](product/API_DRIVEN_ARCHITECTURE_REDESIGN.md) — this section is the living-architecture summary, not a duplicate of that doc's rationale.
 
-**Status (2026-09-02):** Phase 0 (foundation/governance, 7 stories) and Phase 1 (the Home vertical slice, 12 stories) are on `develop` (PR #1035), not yet promoted to `main`. Both feature flags — `API_DRIVEN_HOME`, `API_DRIVEN_ROUTES` (`frontend/src/config/featureFlags.js`) — default off. Zero live behavior change for any current user.
+**Status (updated 2026-09-03; supersedes the 2026-09-02 "not yet promoted" note below):** Phase 0 (foundation/governance, 7 stories) and Phase 1 (the Home vertical slice, 12 stories), landed via PR #1035, **promoted to `main` as of v3.3.0 (2026-09-02, PR #1039)** and live in production since. The #1049 cross-team route-authorization fix (PR #1050) then promoted on top of it via v3.3.2 (2026-09-03, PR #1054). Both feature flags — `API_DRIVEN_HOME`, `API_DRIVEN_ROUTES` (`frontend/src/config/featureFlags.js`) — remain default off. Zero live behavior change for any general user; #1033's staged rollout (internal → limited cohort → default-on) is the tracked next step, not yet complete.
 
 **Target model:** backend owns truth/permissions/summaries/actions/idempotency; URLs own navigation context; React owns responsive presentation and transient state; local persistence owns resilience, never authority.
 

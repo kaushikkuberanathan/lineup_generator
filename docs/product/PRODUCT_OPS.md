@@ -1,6 +1,6 @@
 # Product Operations Playbook
 
-> **Reconciled 2026-08-30:** production is v3.1.0. The current workflow uses
+> **Reconciled 2026-09-03 (updated; supersedes the 2026-08-30 v3.1.0 note):** production is v3.3.2 (PR #1054, merge `162061c`). The current workflow uses
 > feature/fix branches from `develop`, required GitHub issues, merge commits,
 > the shared Git soak marker, branch-specific push approval, production smoke
 > evidence, and immediate `main`→`develop` ancestry sync. Current root
