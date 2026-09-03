@@ -238,7 +238,7 @@ Target: resolved within 10 min of detection.
 
 ## Release Ritual — Develop to Main Promotion
 
-> Full 7-phase ordered sequence: see `docs/product/MASTER_DEV_REFERENCE.md` → **## Release Ritual — Develop to Main Promotion**
+> Full 7-phase ordered sequence: see `docs/product/MASTER_DEV_REFERENCE.md` → **## Release Ritual — Develop to Main Promotion** — including its **### Fallbacks — known environment/tooling failure modes** subsection (added 2026-09-03: GitHub-tool 403s, classifier-blocked merges/deletes, the `develop` branch-lock, ROADMAP.md's CRLF splicing, and more — every agent hits these, read it before improvising a workaround). Run `node scripts/check-version-currency.js` before any `develop → main` PR — it fails loudly if any doc still claims a stale "current production version" (the exact bug class found in v3.3.2's release, PR #1056).
 >
 > Summary: feature branch (from develop) → PR to develop (draft, CI green, Vercel preview on real device) → 24h soak → PR to main (Ship Gate + docs checklist) → prod smoke test within 10 min → branch cleanup. Never push directly to main. Never cut from main. Never skip the soak (hotfix exemption only).
 
