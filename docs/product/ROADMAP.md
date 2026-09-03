@@ -3,6 +3,20 @@
 > Last updated: 2026-09-02 (v3.3.0 release preparation; scope is full develop tip `b9215dd` against production v3.2.0 `aa519bf`, no dedicated tracker issue). Previously updated 2026-09-01 (v3.2.0 release preparation; scope frozen at `e79487d`, release tracker #1004).
 > MVP launched: March 24, 2026
 
+## v3.3.1 RELEASE CANDIDATE — Analytics accuracy fix and rollout observability
+
+Entirely internal: an analytics-accuracy bug fix, deep-link telemetry wiring, and a docs recovery. No new coach-facing capability, no dedicated release tracker issue.
+
+**Patch-version rationale:** unlike v3.3.0 (a substantial new subsystem plus a real coach-facing change), this release fixes an existing bug, wires already-designed telemetry into its intended call site, and recovers an orphaned doc. Nothing here is new user-facing surface.
+
+**Included scope:**
+- [#1041](https://github.com/kaushikkuberanathan/lineup_generator/issues/1041) fixed via PR #1042: `frontend/src/utils/analytics.js` initialized Mixpanel with `ignore_dnt: false`, so any browser sending Do Not Track silently dropped every analytics event — not just the new `home_*` ones — with no error or log anywhere. Found while reviewing #1033 Stage 3 telemetry: a real prod session generated confirmed-successful backend calls but zero Mixpanel events. Overridden deliberately (the app has no ad network and does not sell or share data, so DNT's advertising opt-out does not apply to first-party product analytics); Privacy Policy bumped to version 1.1 disclosing the change. A real Ship Gate gap — zero test coverage on the actual `ignore_dnt` value passed to `mixpanel.init()` — was found and closed while preparing this release, RED→GREEN mutation-verified.
+- PR #1043: wired `trackHomeDeepLinkResolved`/`trackHomeDeepLinkDenied` (defined since #1012 Phase 1, never called anywhere real) into `App.jsx`'s `enterLegacyScreenForApiRoute()` — the intended call site per that module's own header comment. Closes the observability gap blocking #1033 Stage 4 (limited authenticated cohort), whose entire purpose is monitoring access loss and route-resolution failures. Purely additive; RED→GREEN mutation-verified.
+- PR #1044: recovered a real, previously-orphaned session retrospective (2026-08-28-A) into `docs/process/SESSION_RETROSPECTIVES.md`, found on a stale-but-real branch during routine branch-cleanup review. The GitHub issue states it described (#502, #127, #88, #340, #969 closed; #318, #943 correctly still open) were independently verified already correct — only the write-up itself had never merged.
+- #1033 Stage 3 (internal cohort) performed against real production 2026-09-03, and Stage 4 real-device testing that same day surfaced the #1041 bug in the first place — see the v3.3.0 entry below for the detailed timeline, since that work happened against `develop` before this promote existed as its own candidate.
+
+**Ship Gate status:** frontend 1747/1747 across 168 files (+1 vs. v3.3.0 — the new `ignore_dnt` regression test), backend unit 361/361, lint clean, production build clean, `debt-p0` gate clear (0 open P0 items) — all directly re-verified on a fresh `develop` checkout during release prep. No `FEATURE_MAP.md` row change (internal telemetry/config, not a coach-facing feature). **Soak explicitly overridden 2026-09-03 by KK, citing fall season launch readiness** — the 24h `develop` soak clock had only just started when KK explicitly chose to override it and proceed straight to the `main` promote, same pattern as v2.9.0 through v3.3.0's overrides. Remaining gates: real-device preview validation and explicit `confirmed — push to main` authorization — not yet completed as of this entry.
+
 ---
 
 ## v3.3.0 RELEASE CANDIDATE — Schedule card redesign, deep-link fix, and API-driven architecture foundation
