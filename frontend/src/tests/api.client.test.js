@@ -7,6 +7,16 @@
 import { describe, it, expect, vi } from 'vitest';
 import { createApiClient, createGenerationGuard, generateRequestId } from '../api/client.js';
 
+var networkHealthMocks = vi.hoisted(function () {
+  return { reportNetworkFailure: vi.fn(), reportNetworkSuccess: vi.fn() };
+});
+vi.mock('../utils/networkHealth.js', function () {
+  return {
+    reportNetworkFailure: networkHealthMocks.reportNetworkFailure,
+    reportNetworkSuccess: networkHealthMocks.reportNetworkSuccess,
+  };
+});
+
 function jsonResponse(status, body, headers) {
   var h = new Headers(headers || {});
   return Promise.resolve({
@@ -146,6 +156,43 @@ describe('createApiClient — cancellation', function () {
     controller.abort();
     await expect(pending).rejects.toMatchObject({ name: 'AbortError' });
     expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('createApiClient — connectivity signal (#1062)', function () {
+  it('a successful response (any status) reports network success, not failure', async function () {
+    networkHealthMocks.reportNetworkFailure.mockClear();
+    networkHealthMocks.reportNetworkSuccess.mockClear();
+    var fetchImpl = vi.fn(function () { return jsonResponse(403, { error: { code: 'X', retryable: false } }, {}); });
+    var client = createApiClient({ baseUrl: 'https://api.example.com', getAccessToken: async function () { return 't'; }, fetchImpl: fetchImpl });
+    await expect(client.request('/api/v1/home')).rejects.toThrow();
+    expect(networkHealthMocks.reportNetworkSuccess).toHaveBeenCalledTimes(1);
+    expect(networkHealthMocks.reportNetworkFailure).not.toHaveBeenCalled();
+  });
+
+  it('every network-level failure attempt reports a failure, including ones that still retry', async function () {
+    networkHealthMocks.reportNetworkFailure.mockClear();
+    networkHealthMocks.reportNetworkSuccess.mockClear();
+    var fetchImpl = vi.fn(function () { return Promise.reject(new TypeError('Failed to fetch')); });
+    var client = createApiClient({ baseUrl: 'https://api.example.com', getAccessToken: async function () { return 't'; }, fetchImpl: fetchImpl, waitImpl: async function () {} });
+    await expect(client.request('/api/v1/home')).rejects.toThrow();
+    expect(networkHealthMocks.reportNetworkFailure).toHaveBeenCalledTimes(3); // MAX_RETRIES=2 → 3 total attempts
+    expect(networkHealthMocks.reportNetworkSuccess).not.toHaveBeenCalled();
+  });
+
+  it('a network failure that recovers on retry reports one failure then one success', async function () {
+    networkHealthMocks.reportNetworkFailure.mockClear();
+    networkHealthMocks.reportNetworkSuccess.mockClear();
+    var call = 0;
+    var fetchImpl = vi.fn(function () {
+      call += 1;
+      if (call < 2) return Promise.reject(new TypeError('Failed to fetch'));
+      return jsonResponse(200, { ok: true }, {});
+    });
+    var client = createApiClient({ baseUrl: 'https://api.example.com', getAccessToken: async function () { return 't'; }, fetchImpl: fetchImpl, waitImpl: async function () {} });
+    await client.request('/api/v1/home');
+    expect(networkHealthMocks.reportNetworkFailure).toHaveBeenCalledTimes(1);
+    expect(networkHealthMocks.reportNetworkSuccess).toHaveBeenCalledTimes(1);
   });
 });
 

@@ -15,6 +15,7 @@ import { supabase } from '../supabase';
 import { getDeviceContext } from '../utils/deviceContext';
 import { clearPendingDestination } from '../api/routes.js';
 import { clearAllHomeCaches } from '../api/homeCache.js';
+import { reportNetworkFailure, reportNetworkSuccess } from '../utils/networkHealth.js';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://lineup-generator-backend.onrender.com';
 const APP_VERSION = import.meta.env.VITE_APP_VERSION || '2.1.0';
@@ -97,6 +98,7 @@ export function useAuth() {
           });
         } catch (networkErr) {
           console.error('[useAuth] /me network failure, keeping existing session:', networkErr?.name, networkErr?.message);
+          reportNetworkFailure(); // #1062: feed the shared connectivity signal
           setSession(existingSession);
           // Synthesized from the local session, not /me — downstream
           // consumers (e.g. the API-driven Home cache) key off user.id, so
@@ -105,6 +107,8 @@ export function useAuth() {
           setAuthState('authenticated');
           return;
         }
+
+        reportNetworkSuccess(); // #1062: reaching the server at all proves the network is up
 
         if (!res.ok) {
           // Session expired or invalid — clear it
@@ -158,6 +162,7 @@ export function useAuth() {
               // thrown fetch means the network is unreachable, not that the
               // session is invalid. Keep it rather than signing out.
               console.error('[useAuth] onAuthStateChange: /me network failure, keeping session:', networkErr?.name, networkErr?.message);
+              reportNetworkFailure(); // #1062: feed the shared connectivity signal
               setSession(newSession);
               setUser({ id: newSession.user.id, email: newSession.user.email });
               setAuthState('authenticated');
@@ -166,6 +171,8 @@ export function useAuth() {
               }
               return;
             }
+            reportNetworkSuccess(); // #1062: reaching the server at all proves the network is up
+
             if (res.ok) {
               const data = await res.json();
               setSession(newSession);
