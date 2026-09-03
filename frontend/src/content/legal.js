@@ -84,6 +84,47 @@ export var LEGAL_DOCS = [
             text: "Questions about privacy? Use the Feedback tab to reach us."
           }
         ]
+      },
+      {
+        // #1041: added the Do Not Track disclosure sentence to Analytics.
+        // No other section changed from 1.0.
+        version: "1.1",
+        effectiveDate: "September 2026",
+        sections: [
+          {
+            type: "p",
+            text: "Dugout Lineup is a free tool for youth baseball and softball coaches. This policy explains how your data is handled."
+          },
+          { type: "h3", text: "What We Collect" },
+          {
+            type: "ul",
+            items: [
+              "Team and roster data you enter (names, positions, batting stats)",
+              "Schedule and game result data you enter",
+              "App usage analytics (Mixpanel) — includes your coach name, team name, and team ID, used to identify your activity across sessions. Does not include player names, roster contents, or schedule details."
+            ]
+          },
+          { type: "h3", text: "Where It's Stored" },
+          {
+            type: "p",
+            text: "Data is stored locally on your device first. If you're signed in, it syncs to Supabase (a US-based cloud database). Your roster and schedule data are never sold, shared with advertisers, or used for any purpose other than running the app."
+          },
+          { type: "h3", text: "Children's Privacy (COPPA)" },
+          {
+            type: "p",
+            text: "Dugout Lineup is used by coaches — adult volunteers who manage youth teams. The app does not collect data directly from children. Player first names entered by a coach are stored as roster data; no other child information is collected. We do not knowingly collect personal information from anyone under 13."
+          },
+          { type: "h3", text: "Analytics" },
+          {
+            type: "p",
+            text: "We use Mixpanel to track feature usage (e.g., how many times Auto-Assign is tapped) and to identify your account so we can see usage trends per coach and team. Analytics events and your Mixpanel profile include your coach name, team name, team ID, age group, roster size (a count, not names), and your role. They do not include player names, roster contents, schedule details, or game results. We also record basic device and app context (device type, operating system, screen size, whether the app is installed as a PWA, and app version) on every event. This helps us improve the app — it is not shared with advertisers. These analytics run regardless of a browser's Do Not Track setting — Dugout Lineup has no ad network and doesn't sell or share data, so Do Not Track's advertising opt-out doesn't apply here."
+          },
+          { type: "h3", text: "Contact" },
+          {
+            type: "p",
+            text: "Questions about privacy? Use the Feedback tab to reach us."
+          }
+        ]
       }
     ]
   },
