@@ -241,6 +241,36 @@ describe("API-driven Home deep links (#1032)", function () {
     expect(track).toHaveBeenCalledWith("home_deep_link_denied", { destination_type: "roster", reason: "team_access_denied" });
   });
 
+  // Found on a real device (2026-09-03): a team present in this device's
+  // local `app:teams` cache (e.g. loaded under a different identity in an
+  // earlier session on the same browser) but ABSENT from the current
+  // user's authoritative Home API response must never be entered.
+  // enterLegacyScreenForApiRoute() previously authorized team-level routes
+  // (roster/schedule/team/lineups — anything without a gameId/lineupId)
+  // using only `teams.find()` against this local cache, never checking the
+  // real Home response at all for that case — a direct violation of
+  // section 17's "cached team identity never authorizes a destination."
+  // Confirmed live: an admin-only-on-Mud-Hens identity reached the
+  // Bananas roster screen (full write surface, not just a read) by
+  // pasting a route= URL, because Bananas was still in the device's local
+  // team cache from a different identity's prior session.
+  it("a team present in the device's local team cache but absent from the authoritative Home response is denied, not silently entered", async function () {
+    localStorage.setItem("flag_API_DRIVEN_HOME", "true");
+    localStorage.setItem("flag_API_DRIVEN_ROUTES", "true");
+    // OTHER_TEAM is in the device's local `app:teams` cache (see
+    // beforeEach) but deliberately NOT in the Home API response below —
+    // reproducing a stale/cross-identity local cache on a real device.
+    setHomeCache("user-api-1", homeApiResponse());
+    window.history.replaceState(null, "", "/?route=" + encodeURIComponent("/app/teams/" + OTHER_TEAM.id + "/roster"));
+
+    render(<App />);
+
+    await waitFor(function () { expect(screen.getAllByText(TEAM.name).length).toBeGreaterThan(0); });
+    expect(screen.queryByText(OTHER_TEAM.name)).not.toBeInTheDocument();
+    expect(screen.queryByText(/By Position|By Player/)).not.toBeInTheDocument();
+    expect(track).toHaveBeenCalledWith("home_deep_link_denied", { destination_type: "roster", reason: "team_access_denied" });
+  });
+
   // Fixed same session (was a documented gap, RED-confirmed before the
   // fix landed): App.jsx's enterLegacyScreenForApiRoute now verifies
   // route.gameId/route.lineupId against the last-cached Home response

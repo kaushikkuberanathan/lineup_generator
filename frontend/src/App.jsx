@@ -2146,42 +2146,58 @@ export default function App() {
   // have this limitation — its action came from the just-rendered,
   // already-authorized Home response.
   function enterLegacyScreenForApiRoute(route, trustGameLaunch) {
+    // Authoritative membership/ownership check (section 6.2/17/26.2 of the
+    // API-driven architecture doc). Runs for EVERY route carrying a
+    // teamId, not just nested game/lineup ones — a real device bug
+    // (2026-09-03) showed a plain team-level route (roster/schedule/etc.)
+    // was previously authorized via `teams.find()` alone below, which only
+    // proves this device's local team cache knows about the id, NOT that
+    // the current authenticated user actually has that membership. That
+    // local cache can hold teams from a different identity's earlier
+    // session on the same browser — using it to authorize is exactly the
+    // "cached team identity ... authorizes a destination" section 17
+    // forbids. resolveDestination() (api/routes.js) checks the last-cached
+    // real Home response (api/homeCache.js, identity-scoped) instead.
+    var cachedHome = user ? getHomeCache(user.id) : null;
+    var resolution = resolveDestination({
+      pathname: buildAppRoute(route),
+      isAuthenticated: authState === 'authenticated',
+      home: cachedHome ? cachedHome.response : null,
+    });
+    // A cached Home response, when present, is authoritative and always
+    // wins over the device's local team-list cache below — this is what
+    // closes the real gap (a team present locally from a different
+    // identity's earlier session on this device, but genuinely absent
+    // from this user's real Home response, must never be entered).
+    // resolveDestination() only returns these three statuses when `home`
+    // was actually available to check against (see api/routes.js), so
+    // none of them can be a false deny from a merely-not-yet-loaded cache.
+    if (resolution.status === 'team_access_denied' || resolution.status === 'cross_team_denied' || resolution.status === 'not_found') {
+      trackHomeDeepLinkDenied({ destinationType: route.type, reason: resolution.status });
+      return false;
+    }
+    // 'loading' (no cached Home response yet at all — e.g. a cold
+    // deep-link open before Home has ever been fetched this session) is
+    // "unverifiable," not "denied." For a nested game/lineup id there is
+    // nothing else to check it against, so it is never trusted on
+    // unverifiable input (pre-existing #1032 behavior, unchanged). A
+    // plain team-level route falls through to the local-list check below,
+    // same as before this fix — preserves cold-restore/auth-resume UX
+    // while the real Home fetch is still in flight.
+    if ((route.gameId || route.lineupId) && resolution.status !== 'resolved') {
+      trackHomeDeepLinkDenied({ destinationType: route.type, reason: resolution.status });
+      return false;
+    }
+
+    // teams.find() here only fetches the local object shape loadTeam()
+    // needs (full legacy fields) — it is no longer what authorizes entry;
+    // resolveDestination() above already proved real membership. Absence
+    // here (Home says the team is real but this device never cached it
+    // locally) is itself a safe deny, not a crash.
     var team = teams.find(function(t) { return t.id === route.teamId; });
     if (!team) {
       trackHomeDeepLinkDenied({ destinationType: route.type, reason: 'team_access_denied' });
       return false;
-    }
-
-    // Nested resource ownership check (section 6.2/26.2 of the API-driven
-    // architecture doc — #1032 gap fix). `teams.find()` above only proves
-    // this app knows about the team; it carries no per-game or per-lineup
-    // identity, so a gameId/lineupId in the URL was previously never
-    // verified at all. resolveDestination() (api/routes.js) is the
-    // authoritative check, but it needs a real Home response to check
-    // against — the last-cached one (api/homeCache.js), written by
-    // useHomeScreen.js on every successful fetch, is the only copy
-    // available at this layer (no live Home component is necessarily
-    // mounted here — this runs on cold restore/Back/Forward too).
-    if (route.gameId || route.lineupId) {
-      var cachedHome = user ? getHomeCache(user.id) : null;
-      var resolution = resolveDestination({
-        pathname: buildAppRoute(route),
-        isAuthenticated: authState === 'authenticated',
-        home: cachedHome ? cachedHome.response : null,
-      });
-      // 'loading' means there is no cached Home response yet to verify
-      // against (e.g. a cold deep-link open before Home has ever been
-      // fetched this session) — that is "unverifiable," not "denied," but
-      // a nested ID is never trusted on unverifiable input either. Only
-      // 'resolved' proceeds; every other status (cross_team_denied,
-      // not_found — lineupId always resolves not_found, since no
-      // addressable per-game lineup resource exists in the live schema —
-      // team_access_denied, loading) falls back to doing nothing here,
-      // same as the pre-existing "unknown team" behavior above.
-      if (resolution.status !== 'resolved') {
-        trackHomeDeepLinkDenied({ destinationType: route.type, reason: resolution.status });
-        return false;
-      }
     }
 
     loadTeam(team);
