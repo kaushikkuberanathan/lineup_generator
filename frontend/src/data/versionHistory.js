@@ -1,5 +1,21 @@
 export var VERSION_HISTORY = [
   {
+    version: '3.3.2',
+    date: 'September 2026',
+    headline: 'Security fix: cross-team route access',
+    techNote: 'Bug fixes and performance improvements',
+    userChanges: [
+      'Fixed a security issue in an internal-only, not-yet-released feature that could have let a signed-in coach reach another team’s roster screen under specific conditions. No general user was ever exposed — the affected feature is not yet turned on for anyone outside internal testing.',
+    ],
+    internalChanges: [
+      'Fixed #1049 (P0) via PR #1050: App.jsx’s enterLegacyScreenForApiRoute() authorized plain team-level routes (roster/schedule/team/lineups) against the device’s local, identity-agnostic team cache (teams.find()) instead of resolveDestination()’s real, identity-scoped Home membership check, which only ran for nested game/lineup routes. Found live during deepened #1033 self-testing: an identity with zero membership on a team reached that team’s roster management screen — a real write surface — via a crafted route= URL, because the team was still in the device’s local cache from a different identity’s earlier session on the same browser.',
+      'Fix: resolveDestination() now runs for every route carrying a teamId. A present, real Home response’s verdict (team_access_denied/cross_team_denied/not_found) always overrides the local team list; the pre-existing "no cache yet, fall through to local check" behavior for cold restores/auth-resume is preserved, since it was not the actual gap. New regression test reproduces the exact live scenario, RED-confirmed before the fix.',
+      'Both API_DRIVEN_HOME/API_DRIVEN_ROUTES remain default-off in production — no general user was exposed. Any internal tester with the flags manually enabled was exposed on prod until this release promotes.',
+      'Version rationale: patch release, single-issue security fix. develop was exactly v3.3.1 plus a no-op sync merge plus this fix — nothing else rides along.',
+      'Verification: frontend 1748/1748 across 168 files, backend unit 361/361, lint clean, production build clean, debt-p0 gate clear (0 open P0 items).',
+    ],
+  },
+  {
     version: '3.3.1',
     date: 'September 2026',
     headline: 'Analytics accuracy fix and rollout observability',
