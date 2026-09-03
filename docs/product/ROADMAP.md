@@ -3,6 +3,21 @@
 > Last updated: 2026-09-02 (v3.3.0 release preparation; scope is full develop tip `b9215dd` against production v3.2.0 `aa519bf`, no dedicated tracker issue). Previously updated 2026-09-01 (v3.2.0 release preparation; scope frozen at `e79487d`, release tracker #1004).
 > MVP launched: March 24, 2026
 
+## v3.3.2 RELEASE CANDIDATE — Cross-team deep-link route authorization fix
+
+Single-issue patch: closes [#1049](https://github.com/kaushikkuberanathan/lineup_generator/issues/1049), a confirmed P0 cross-team authorization bug found during #1033 Stage 3/4 self-testing. No dedicated release tracker issue — scope is the single fix commit on top of v3.3.1.
+
+**Patch-version rationale:** `develop` is exactly v3.3.1 (`81745cd7`) plus PR #1048 (a no-op sync merge) plus this fix (PR #1050) — nothing else has landed since the last promote. A security bug fix with zero new capability and zero other scope riding along.
+
+**Included scope:**
+- [#1049](https://github.com/kaushikkuberanathan/lineup_generator/issues/1049) fixed via PR [#1050](https://github.com/kaushikkuberanathan/lineup_generator/pull/1050): `App.jsx`'s `enterLegacyScreenForApiRoute()` authorized plain team-level routes (roster/schedule/team/lineups) against the device's local, identity-agnostic team cache (`teams.find()`) instead of `resolveDestination()`'s real, identity-scoped Home membership check — which only ran for nested game/lineup routes. Found live during deepened #1033 self-testing (KK's explicit call, taken instead of jumping straight to a real second user): an identity with zero Bananas membership reached Bananas' roster management screen — a real write surface — via a crafted `route=` URL, because Bananas was still in the device's local cache from a different identity's earlier session on the same browser.
+- Fix: `resolveDestination()` now runs for every route carrying a `teamId`. A present, real Home response's verdict (including `team_access_denied`/`cross_team_denied`/`not_found`) always overrides the local team list; the pre-existing "no cache yet → fall through to local check" behavior for cold restores/auth-resume is preserved, since it was not the actual gap and changing it broke legitimate existing tests.
+- Both `API_DRIVEN_HOME`/`API_DRIVEN_ROUTES` remain default-off in production — no general user was exposed. Any internal tester with the flags manually enabled (KK) was exposed on prod until this promotes; that exposure is the reason the 24h `develop` soak is overridden below rather than waited out.
+
+**Ship Gate status:** frontend 1748/1748 across 168 files (+1 vs. v3.3.1 — the new cross-team regression test reproducing the live scenario, RED-confirmed before the fix), backend unit 361/361, lint clean, production build clean, `debt-p0` gate clear (0 open P0 items) — all directly re-verified on a fresh `develop` checkout during release prep. `FEATURE_MAP.md` row 43 already covers this integration surface (`AppApiDrivenHomeIntegration.test.jsx`); no new row needed. **Soak explicitly overridden 2026-09-03 by KK** — the fix had merged to `develop` only minutes to hours earlier when KK chose to override the remaining soak window rather than wait, on the grounds that he is the party currently exposed to this exact P0 auth bypass on production (flags manually enabled for #1033 testing), a stronger justification than this repo's usual "fall season readiness" override rationale. Remaining gates: real-device preview validation and explicit `confirmed — push to main` authorization — not yet completed as of this entry.
+
+---
+
 ## v3.3.1 RELEASE CANDIDATE — Analytics accuracy fix and rollout observability
 
 Entirely internal: an analytics-accuracy bug fix, deep-link telemetry wiring, and a docs recovery. No new coach-facing capability, no dedicated release tracker issue.
