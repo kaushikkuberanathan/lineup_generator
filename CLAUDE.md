@@ -183,7 +183,7 @@ Viewing lineup and share links must **never** require login. Auth must never blo
 
 - **Frontend**: Vercel auto-deploys from `main` (config: `frontend/vercel.json`)
 - **Backend**: Render auto-deploys from `main` (root dir: `backend/`)
-- **DEV**: `dev.dugoutlineup.com` (Vercel preview branches per PR — backend dev deleted April 27, 2026; local backend via `npm run dev` for testing)
+- **DEV**: `dev.dugoutlineup.com`, auto-deploys from `develop` — frontend on Vercel, backend on Render (`lineup-generator-dev-backend`, service `srv-da2c7fqjnfac73aefmv0`), against its own separate DEV Supabase project (`psqvzppphdedqkpmarwx`), distinct from PROD (`hzaajccyurlyeweekvma`). **Corrected 2026-09-03 (#1033 evidence session):** this line previously said "backend dev deleted April 27, 2026; local backend via `npm run dev` for testing" — stale by the time it was written; the dev backend was confirmed live and actively redeploying via a direct Render check. A prod-only Supabase write made against this stale assumption didn't show up on `dev.dugoutlineup.com` until repeated against the DEV project — see PROD vs DEV project IDs above before writing test data meant to be visible there.
 
 ### Pre-deploy Checklist (all required)
 
