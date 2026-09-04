@@ -262,6 +262,41 @@ changed merely to create diff volume.
 
 ---
 
+## Support / More tab regroup — UX discovery
+
+### Story 341 (P2) — Regroup the flat 7-tab More menu into 3 labeled card-groups <!-- #1099 -->
+Status: Open — not started. Tracked as GitHub Issue #1099. Findings and full
+implementation notes recorded in `docs/product/SUPPORT_TAB_REGROUP_PROPOSAL.md`
+(branch `claude/support-tab-design-n8y8lg`).
+Discovered: 2026-09-04, UX discovery session — KK reviewed Citi's mobile "More"
+screen (three labeled card-groups: Account management / Documents &
+Communications / Support, each a card of chevron rows) and asked how to apply
+the same simplification to Dugout Lineup's own More tab.
+Symptom: `MORE_SUBTABS` (`frontend/src/App.jsx:7484-7492`) renders 7
+peer-level pill tabs — Account, Help, Feedback, Links, About, Updates, Legal —
+on one horizontal scroll strip. Labels already clip at 375px ("Feedback" →
+"Feedb…", "Updates" → "Updat…"), and Help's own category-pill row stacks a
+second horizontal scroller directly beneath the first.
+Impact: No visual grouping signals which of the 7 destinations are related;
+the pill bar competes for space equally with Help, the destination coaches
+actually use most.
+Proposed fix: Replace the flat pill bar with a single scrollable landing view
+holding 3 labeled `Card` groups of `ListRow` chevron rows — Account (Your
+teams, Profile name, Sign out), Get Help (Help — Search & FAQs), and About &
+Legal (About, What's New, Terms & Privacy, Links, Feedback). Tapping a row
+pushes the existing destination component unchanged — validated on an
+interactive prototype with KK before filing, including the placement of
+Feedback under About & Legal rather than Get Help. A Phase 2 idea (a
+highlighted "Game-Day Help" quick-access strip above the groups) was shown
+but is explicitly out of this story's scope.
+Recommendation: Build behind the standard branch/gate-phrase workflow —
+`frontend/src/App.jsx` is a locked file, gate phrase required before editing.
+See the proposal doc for the full file:line inventory, primitives to reuse,
+and open items (confirm `renderAbout()` vs `AboutTab.jsx` as the live About
+destination) before starting.
+
+---
+
 ## ✅ v3.1.0 PROMOTED AND LIVE IN PROD — consent, Game Day, and sync reliability
 
 Release tracker: [#939](https://github.com/kaushikkuberanathan/lineup_generator/issues/939). Promoted to `main` on 2026-08-30 through PR [#959](https://github.com/kaushikkuberanathan/lineup_generator/pull/959), merge commit `02abfc0`. Production verification: `dugoutlineup.com` returned HTTP 200 and the Render `/health` endpoint reported `version: 3.1.0`, `status: ok`, and `db: ok` during the 2026-08-30 documentation reconciliation. The Terms of Service experience landed as 3 PRs (#907, #910, #913) on top of v3.0.0; the release also includes the Game Day and reliability work merged afterward.
