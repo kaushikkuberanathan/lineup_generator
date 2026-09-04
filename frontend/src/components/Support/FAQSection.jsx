@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { HELP_CATEGORY_META, HELP_ARTICLES } from "../../content/faqs";
+import { HELP_CATEGORY_META, HELP_ARTICLES, getGameDayCriticalArticles } from "../../content/faqs";
 import { Pill } from "../ui/Pill";
 import { ListRow } from "../ui/ListRow";
 import { Text } from "../ui/Text";
@@ -12,7 +12,7 @@ var CATEGORY_BY_ID = HELP_CATEGORY_META.reduce(function(acc, cat) {
   return acc;
 }, {});
 
-var GAME_DAY_ARTICLES = HELP_ARTICLES.filter(function(a) { return a.gameDayCritical; });
+var GAME_DAY_ARTICLES = getGameDayCriticalArticles();
 
 function matchesQuery(article, query) {
   var q = query.toLowerCase();
