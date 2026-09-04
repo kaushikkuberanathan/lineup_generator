@@ -103,6 +103,8 @@ describe("App Bottom Nav golden path (#943)", function () {
     expect(await screen.findByRole("heading", { name:"Game Day" })).toBeInTheDocument();
     expect(screen.getByText("vs. Tigers")).toBeInTheDocument();
     expect(screen.getByRole("button", { name:/Finish lineup setup/i })).toBeDisabled();
+    expect(screen.getByRole("heading", { name:"Defense plan" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name:"Auto-Assign" })).toBeDisabled();
   });
 
   it("tapping Home while inside My Team opens the Exit Sheet instead of navigating away", async function () {

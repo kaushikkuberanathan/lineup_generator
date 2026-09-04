@@ -5378,6 +5378,17 @@ single gated Game Mode action without changing lineup, lock, persistence, or
 live-scoring behavior. Component and App integration tests cover ready, draft,
 locked, and no-game states; browser checks cover 375px, 393px, and landscape.
 
+**Game Day Wave C2 (2026-09-04):** #1095 adds a reusable
+`DefenseWorkspaceHeader` behind the existing default-off
+`UX_GAMEDAY_SETUP` boundary. The composition gives Defense one gold primary
+Auto-Assign action, restrained secondary commands, a status summary, and
+44px diamond/table-view controls while retaining the existing position-color
+grid, lineup engine, persistence, warning, lock, and drag/touch behavior.
+Component coverage exercises editable, finalized, issue, unavailable-player,
+diamond, and view-switch states. The full frontend suite passes 1,810 tests
+across 179 files; lint and production build are clean. Automated Chrome checks
+at 375px, 393px, and 844x390 report no horizontal overflow or Vite overlay.
+
 ---
 ### Story 133 (P2) - Live game-day surface token migration (game-mode/ + ScoringMode/) <!-- #698 -->
 Status: **All 13 slices merged to `develop` (2026-08-23, PR #764)** - the
