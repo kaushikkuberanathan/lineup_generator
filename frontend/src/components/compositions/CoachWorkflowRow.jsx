@@ -1,5 +1,5 @@
 import { ActionRow } from '../ui/ActionRow';
 
-export function CoachWorkflowRow({ icon, title, subtitle, onClick, disabled }) {
-  return <ActionRow icon={icon} label={title} subtitle={subtitle} onClick={onClick} disabled={disabled} aria-label={subtitle ? `${title}: ${subtitle}` : title} />;
+export function CoachWorkflowRow({ icon, title, subtitle, status, onClick, disabled, ariaLabel }) {
+  return <ActionRow icon={icon} label={title} subtitle={subtitle} trailingContent={status} onClick={onClick} disabled={disabled} aria-label={ariaLabel || (subtitle ? `${title}: ${subtitle}` : title)} />;
 }

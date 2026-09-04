@@ -1,6 +1,8 @@
 # Dugout Lineup — Doc & Test Debt Ledger
 
 > **Branch boundary — 2026-09-03 (updated; superseded the 2026-08-30 v3.1.0 note kept below for history):** production is v3.3.2 at `162061c` (PR #1054) — **v3.3.3 release candidate** prepared 2026-09-04, not yet promoted to `main`. Counts and coverage additions after that commit describe current `develop`, not production. Every new entry must identify the SHA it was measured against.
+
+> **Contemporary My Team reconciliation — 2026-09-04 (#1086/#1087):** no new P0 test or documentation debt was introduced. The default-off `UX_MY_TEAM` slice adds colocated roster/profile component coverage and extends `AppMyTeamDashboard.test.jsx` for flag selection, individual deep links, return navigation, and the all-player route. On feature tip `6b87d88`, the full frontend suite passed 1,798/1,798 across 176 files; focused My Team/profile coverage passed 26/26, with clean lint and production build.
 > **Superseded — 2026-08-30 (kept for history):** production is v3.1.0 at `02abfc0`.
 
 > **Purpose:** Running ledger of known documentation and test coverage gaps. The debt backlog — not the backlog of features, but the backlog of things that *should* be documented or tested and aren't.
