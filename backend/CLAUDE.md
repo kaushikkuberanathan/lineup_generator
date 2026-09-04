@@ -374,6 +374,57 @@ Per-file counts below verified individually via `node --test <file>` on 2026-08-
   `recorded_by_id` from `TEXT` to `uuid`+FK, and removing the now-dead
   `isAdminTestMode` variable.
 
+- **`034_home_read_model_rpc.sql` — APPLIED TO DEV (psqvzppphdedqkpmarwx)
+  2026-09-04, KK confirmed go-ahead ("confirmed — apply migration 034 to
+  DEV") before the apply. APPLIED TO PROD (hzaajccyurlyeweekvma) same day,
+  as part of v3.4.0 release prep (PR #1122) — the release commit message
+  records this ("Applied to DEV and PROD and verified identical on both
+  during this release's prep, ahead of this promote"), but the migration
+  file's own header still said "NOT YET APPLIED ANYWHERE" until this entry
+  — same doc-vs-reality drift class this section has caught before, found
+  and fixed same day it was introduced.** Fixes #1072: `GET /api/v1/home`'s
+  §29.2 server-latency budget (p95 < 300ms) failed against real production
+  data — 41 real requests measured 2026-09-03/04 gave p95 816ms, median
+  386ms, at only 1-2 teams. Root cause, confirmed against live infra (not
+  hypothesized): the Render backend (both `lineup-generator-backend` and
+  `-dev-backend`) runs in Render's `oregon` region; both Supabase projects
+  run in `us-east-1` — a cross-country hop on every Supabase call, doubled
+  by the route's two *sequential* round trips (`team_memberships`, then
+  `teams`+`team_data`, which needed the first round trip's team IDs before
+  it could start). Adds `public.home_read_model(p_user_id, p_email)` —
+  `SECURITY INVOKER`, `search_path` pinned, `EXECUTE` granted to
+  `service_role` only (not `anon`/`authenticated`) — collapsing the two
+  round trips into one Postgres statement, one RPC call. `backend/src/routes/home.js`
+  now calls it via `supabaseAdmin.rpc('home_read_model', ...)` with no
+  `.from()` fallback path, so the migration and the code deploy are coupled:
+  promoting the code without applying the migration first would 500 every
+  request (the release-prep session caught and avoided this ordering risk).
+  **Verification, both databases:** `has_function_privilege()` confirmed
+  `service_role_execute: true`, `anon_execute: false`, `auth_execute: false`
+  on both DEV and PROD; a direct call with a non-existent identity returned
+  `{"memberships": [], "teams": [], "team_data": []}`, not an error, on
+  both; Supabase security advisors re-run clean on both — only the same
+  pre-existing INFO/WARN findings (`auth_events`/`legal_consents`/
+  `team_data_history` RLS-with-no-policy, leaked-password-protection WARN),
+  nothing new from this function. `home.route.test.js` and
+  `homeSchema.contract.test.js` rewritten to stub `.rpc()` instead of
+  `.from()` (both now throw on any unexpected `.from()` call as a
+  regression guard); 361/361 backend unit tests passing. **Real production
+  re-measurement, 2026-09-04 (post-promote):** one real `GET /api/v1/home`
+  request from KK's own account (`teamCount: 2`, matching the known R4
+  cohort) logged `latencyMs: 164` — well under the 300ms budget and a large
+  improvement over the 386ms/816ms pre-fix baseline. **This is one real
+  data point, not a re-run of the original 41-request sample** — KK
+  explicitly judged it sufficient evidence to close #1072 rather than
+  waiting for a larger sample; treat the 164ms figure as directional
+  confirmation the fix works, not a statistically robust p95. **Region
+  colocation (Render ↔ Supabase) was not done and is not currently judged
+  necessary** — the RPC-only fix already cleared the budget on the one
+  measured sample. If a future real p95/median re-run (a larger sample,
+  matching the original methodology) shows the budget failing again,
+  revisit colocation as the next lever — don't assume this closes the
+  question permanently off one sample.
+
 ### !! FIVE NUMERIC COLLISIONS ACROSS THE TWO TREES !!
 
 The same number means different migrations depending on the tree. "Run migration 007"

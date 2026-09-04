@@ -1190,7 +1190,7 @@ deployment SHA, test/preview evidence, telemetry window and query, observed
 thresholds, decision, rollback owner/action, and soak start/end. Legacy retirement
 additionally requires caller-usage evidence and live database grant/policy checks.
 
-**Status update, 2026-09-04 ([#1072](https://github.com/kaushikkuberanathan/lineup_generator/issues/1072), open):**
+**Status update, 2026-09-04 ([#1072](https://github.com/kaushikkuberanathan/lineup_generator/issues/1072), resolved/closed):**
 the Home server-processing budget above was measured against real production
 data for the first time (41 real `GET /api/v1/home` requests, Render logs,
 2026-09-03 to 2026-09-04) and **failed**: median 386ms, p95 816ms, both over
@@ -1203,20 +1203,24 @@ run in `us-east-1` — a cross-country hop on every Supabase call, doubled by
 the route's two *sequential* round trips (`team_memberships`, then
 `teams`+`team_data`, which could not start until the first round trip
 returned team IDs). A same-region mismatch on both prod and dev pairs, not a
-one-off — rules out a prod-only anomaly. **Partial mitigation shipped in
-code, not yet deployed:** migration `034_home_read_model_rpc.sql` adds
-`public.home_read_model()`, collapsing the two sequential round trips into
-one RPC call; `backend/src/routes/home.js` updated to call it;
-`home.route.test.js`/`homeSchema.contract.test.js` updated and passing
-(361/361 backend unit). **This removes one of the two round trips, not the
-underlying region mismatch** — real budget compliance likely also needs
-Render/Supabase colocation, a separate infra decision (cost/downtime
-implications) requiring an explicit choice, not made here. Migration 034 has
-not been applied to DEV or PROD — per this repo's own migration-apply
-convention (`backend/CLAUDE.md` → Migration Notes), that needs its own
-explicit go-ahead before either apply, then a live re-measurement using
-#1072's exact methodology to see how much of the gap it closes. See #1072
-for full detail and next steps.
+one-off — rules out a prod-only anomaly. **Fix: migration
+`034_home_read_model_rpc.sql`** adds `public.home_read_model()`, collapsing
+the two sequential round trips into one RPC call; `backend/src/routes/home.js`
+calls it with no `.from()` fallback. Applied to DEV 2026-09-04 (KK confirmed
+go-ahead) and to PROD the same day as part of the v3.4.0 release — both
+verified via `has_function_privilege()` grants and a live functional call;
+Supabase security advisors clean on both. **Real production re-measurement
+post-promote:** one real `GET /api/v1/home` request from KK's own account
+(`teamCount: 2`) logged **164ms** — comfortably under the 300ms budget, a
+large improvement over the 386ms/816ms pre-fix baseline. **KK explicitly
+judged this one real data point sufficient to close #1072**, rather than
+re-running the original 41-request sample — treat 164ms as directional
+confirmation, not a statistically robust p95. **Render/Supabase colocation
+was not pursued and is not currently judged necessary** — the RPC-only fix
+already cleared the budget on the one measured sample; revisit colocation
+only if a future larger-sample re-measurement shows the budget failing
+again. Full evidence trail: `backend/CLAUDE.md` → Migration Notes (034
+entry) and #1072's closing comment.
 
 ## 30. Live migration inventory
 
