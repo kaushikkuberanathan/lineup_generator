@@ -89,7 +89,7 @@ describe("App Batting Order golden path (FEATURE_MAP.md row 3)", function () {
     var battingSubtab = await screen.findByRole("button", { name: /Batting/ });
     fireEvent.click(battingSubtab);
 
-    await waitFor(function () { expect(screen.getByText("Batting Order")).toBeInTheDocument(); });
+    await waitFor(function () { expect(screen.getByText(/^Batting order$/i)).toBeInTheDocument(); });
   }
 
   it("shows the roster in the saved batting order", async function () {
@@ -102,6 +102,15 @@ describe("App Batting Order golden path (FEATURE_MAP.md row 3)", function () {
       // rather than a single match.
       expect(screen.getAllByText(names[i]).length).toBeGreaterThan(0);
     }
+  });
+
+  it("selects the contemporary Batting controls behind UX_GAMEDAY_SETUP", async function () {
+    localStorage.setItem("flag_UX_GAMEDAY_SETUP", "true");
+    await openTeamAndGoToBattingTab();
+
+    expect(screen.getByRole("heading", { name:"Batting order" })).toBeInTheDocument();
+    expect(screen.getByText("3/3 available tonight")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name:"Suggest Order" })).toBeEnabled();
   });
 
   it("reordering with the down arrow marks the order dirty, and Save Order persists the new order", async function () {

@@ -37,16 +37,18 @@ import { tokens }          from './theme/tokens';
 import { LegalSection }       from './components/Support/LegalSection';
 import { FAQSection }         from './components/Support/FAQSection';
 import { AboutTab }           from './components/Support/AboutTab';
+import { MoreLanding }         from './components/Support/MoreLanding';
+import { AccountTeamsSection } from './components/Support/AccountTeamsSection';
+import { AccountProfileSection } from './components/Support/AccountProfileSection';
+import { SupportWorkspace }    from './components/Support/SupportWorkspace';
 import { HomeNameNudge }      from './components/Home/HomeNameNudge';
 import { TeamSearch }         from './components/Home/TeamSearch';
-import { AccountNameField }   from './components/Account/AccountNameField';
 import { BattingHandSelector } from './components/BattingHandSelector';
 import { PlayerHandBadge }     from './components/PlayerHandBadge';
 import { LoginScreen }           from './components/Auth/LoginScreen';
 import { RequestAccessScreen }   from './components/Auth/RequestAccessScreen';
 import { PendingApprovalScreen } from './components/Auth/PendingApprovalScreen';
 import { NoMembershipScreen }    from './components/Auth/NoMembershipScreen';
-import { roleLabel } from './utils/roleLabels';
 import { buildSharePayload } from './utils/buildSharePayload';
 import { buildBoxScorePrompt } from './utils/buildBoxScorePrompt';
 import Toast from './components/ui/Toast';
@@ -65,6 +67,15 @@ import { HomeScreen as ApiHomeScreen } from './features/home/HomeScreen.jsx';
 import { parseAppRoute, buildAppRoute, resolveDestination, savePendingDestination, consumePendingDestination } from './api/routes.js';
 import { trackHomeDeepLinkResolved, trackHomeDeepLinkDenied } from './features/home/homeAnalytics.js';
 import { getHomeCache } from './api/homeCache.js';
+import { MyTeamRosterScreen } from './features/my-team/MyTeamRosterScreen.jsx';
+import { PlayerProfileScreen } from './features/my-team/PlayerProfileScreen.jsx';
+import { ScheduleScreen } from './features/schedule/ScheduleScreen.jsx';
+import { GameDayEntryScreen } from './features/game-day/GameDayEntryScreen.jsx';
+import { DefenseWorkspaceHeader } from './features/game-day/DefenseWorkspaceHeader.jsx';
+import { BattingWorkspaceHeader } from './features/game-day/BattingWorkspaceHeader.jsx';
+import { WalkUpSongsWorkspace } from './features/game-day/WalkUpSongsWorkspace.jsx';
+import { Button } from './components/ui/Button';
+import { StatusPill } from './components/ui/StatusPill';
 
 // ============================================================
 // HELPERS
@@ -149,7 +160,7 @@ var DISLIKE_PENALTY = -50;
 
 // DEPLOY: set MAINTENANCE_MODE=true in Supabase flags before pushing,
 // set back to false after verifying prod.
-var APP_VERSION = "3.3.3";
+var APP_VERSION = "3.4.0";
 
 // loadJSON / saveJSON — localStorage with in-memory (_mem) fallback — moved to
 // ./utils/storage (#416). Imported above; call sites unchanged.
@@ -1146,7 +1157,7 @@ export default function App() {
   var parentViewActive = _parentViewActive[0]; var setParentViewActive = _parentViewActive[1];
   var _selectedParentPlayer = useState(null);
   var selectedParentPlayer = _selectedParentPlayer[0]; var setSelectedParentPlayer = _selectedParentPlayer[1];
-  var _moreTab = useState("faq");
+  var _moreTab = useState("landing");
   var moreTab = _moreTab[0]; var setMoreTab = _moreTab[1];
   // Deep-link target for LegalSection (e.g. "terms") — set by the Account
   // tab's Terms of Service row so Legal opens straight to that doc instead
@@ -3056,7 +3067,7 @@ export default function App() {
                   gate; the component owns its own dismissal. Never gates viewing. */}
               <HomeNameNudge
                 show={authState === 'authenticated' && user && user.profile && user.profile.first_name === ''}
-                onOpenAccount={function() { setPrimaryTab("more"); setMoreTab("account"); }}
+                onOpenAccount={function() { setPrimaryTab("more"); setMoreTab("account-profile"); }}
               />
               {(function() {
                 var nextGameGlobal = null;
@@ -3358,6 +3369,49 @@ export default function App() {
       return { ab:ab, h:h, r:r, rbi:rbi, games:games };
     }
 
+    if (rosterDetailMode === null && isFlagEnabled('UX_MY_TEAM')) {
+      var contemporaryAddPlayerForm = showAddForm ? (
+        <Card border padding="lg">
+          <div style={{ display:"flex", flexWrap:"wrap", gap:tokens.space.sm, alignItems:"center", marginBottom:tokens.space.sm }}>
+            <input value={newFirstName} onChange={function(e) { setNewFirstName(e.target.value); }}
+              onKeyDown={function(e) { if (e.key === "Enter") { addPlayer(); } }}
+              aria-label="First name" placeholder="First name*" maxLength={20} style={{ ...S.input, flex:"1 1 120px" }} autoFocus />
+            <input value={newLastName} onChange={function(e) { setNewLastName(e.target.value); }}
+              onKeyDown={function(e) { if (e.key === "Enter") { addPlayer(); } }}
+              aria-label="Last name" placeholder="Last name*" maxLength={20} style={{ ...S.input, flex:"1 1 120px" }} />
+          </div>
+          <div style={{ marginBottom:tokens.space.md }}>
+            <div style={{ fontFamily:tokens.font.family.sans, fontSize:tokens.font.size.body, fontWeight:tokens.font.weight.semibold, color:tokens.color.text.primary, marginBottom:tokens.space.xs }}>Batting hand</div>
+            <div style={{ fontFamily:tokens.font.family.sans, fontSize:tokens.font.size.sm, color:tokens.color.text.secondary, marginBottom:tokens.space.sm }}>Optional — helps the dugout prepare batters.</div>
+            <BattingHandSelector value={newBattingHand} onChange={setNewBattingHand} teamId={activeTeamId} />
+          </div>
+          <div style={{ display:"flex", gap:tokens.space.sm, justifyContent:"flex-end", flexWrap:"wrap" }}>
+            <Button variant="secondaryOutline" typography="contemporary" onClick={function() { setShowAddForm(false); setNewFirstName(""); setNewLastName(""); setNewBattingHand("U"); }}>Cancel</Button>
+            <Button typography="contemporary" leadingIcon="add" onClick={addPlayer}>Add player</Button>
+          </div>
+        </Card>
+      ) : null;
+
+      return (
+        <MyTeamRosterScreen
+          team={activeTeam ? {
+            name: activeTeam.name,
+            ageGroup: activeTeam.ageGroup,
+            sport: activeTeam.sport,
+            seasonLabel: activeTeam.season ? formatSeason(activeTeam.season, activeTeam.year) : '',
+          } : null}
+          players={sortedRoster}
+          locked={lineupLocked}
+          loading={isHydrating}
+          offline={!isOnline}
+          addPlayerForm={contemporaryAddPlayerForm}
+          onAddPlayer={function() { setShowAddForm(true); }}
+          onOpenPlayer={function(playerName) { navigateRosterDetail(playerName); }}
+          onViewAll={function() { navigateRosterDetail("all"); }}
+        />
+      );
+    }
+
     return (
       <div>
         {restoreBanner ? (
@@ -3366,7 +3420,7 @@ export default function App() {
             <button onClick={function(){setRestoreBanner('');}} style={{ background:'none', border:'none', cursor:'pointer', fontSize:'16px', color:'#065f46' }}>&#xd7;</button>
           </div>
         ) : null}
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"14px", flexWrap:"wrap", gap:"8px" }}>
+        {!isFlagEnabled('UX_MY_TEAM') ? <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"14px", flexWrap:"wrap", gap:"8px" }}>
           <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
             {rosterDetailMode !== null ? (
               <button
@@ -3406,9 +3460,9 @@ export default function App() {
             </button>
           </div>
           ) : null}
-        </div>
+        </div> : null}
 
-        {rosterDetailMode !== null ? (
+        {rosterDetailMode !== null && !isFlagEnabled('UX_MY_TEAM') ? (
           <div style={{ fontSize:"12px", color:tokens.color.text.muted, marginBottom:"14px" }}>
             {rosterDetailMode === "all"
               ? "Review and edit every player profile in one place."
@@ -3690,6 +3744,14 @@ export default function App() {
         )}
 
         {rosterDetailMode !== null ? (
+        <PlayerProfileScreen
+          enabled={isFlagEnabled('UX_MY_TEAM')}
+          playerName={rosterDetailMode === "all" ? null : rosterDetailMode}
+          allPlayers={rosterDetailMode === "all"}
+          playerCount={rosterDetailPlayers.length}
+          incomplete={rosterDetailMode !== "all" && rosterDetailPlayers.length > 0 && (!rosterDetailPlayers[0].prefs || rosterDetailPlayers[0].prefs.length === 0)}
+          locked={lineupLocked}
+          onBack={function() { navigateRosterDetail(null); }}>
         <div style={{ display:"grid", gridTemplateColumns: rosterDetailMode === "all" ? "repeat(auto-fill,minmax(300px,1fr))" : "minmax(0, 680px)", justifyContent:"center", gap:"12px" }}>
           {rosterDetailPlayers.map(function(info) {
             var isCol = lineupLocked || !!collapsed[info.name];
@@ -4136,6 +4198,7 @@ export default function App() {
             );
           })}
         </div>
+        </PlayerProfileScreen>
         ) : null}
       </div>
     );
@@ -4276,6 +4339,15 @@ export default function App() {
 
     return (
       <div>
+        {isFlagEnabled('UX_GAMEDAY_SETUP') ? (
+          <GameDayEntryScreen
+            nextGame={getScheduleOverview(schedule).nextGame}
+            rosterCount={roster.length}
+            availableCount={_availableCount}
+            lineupStatus={lineupLocked ? 'locked' : activeBattingOrder.length > 0 ? 'ready' : 'draft'}
+            onStartGameMode={function() { setDugoutViewActive(true); }}
+          />
+        ) : null}
         {/* ── Tonight's Attendance Panel ─── */}
         {roster.length > 0 && !lineupLocked ? (
           <div style={{ marginBottom:"14px", borderRadius:"10px", border:"1px solid rgba(15,31,61,0.12)", overflow:"hidden" }}>
@@ -4576,6 +4648,38 @@ export default function App() {
 
         {/* ── Finalized badge ───────────────────────────────── */}
 
+        {isFlagEnabled('UX_GAMEDAY_SETUP') ? (
+          <div style={{ marginBottom:tokens.space.md }}>
+            <DefenseWorkspaceHeader
+              lineupLocked={lineupLocked}
+              loading={isHydrating}
+              availableCount={_availableCount}
+              rosterCount={roster.length}
+              absentCount={absentTonight.length}
+              issueCount={errorCount}
+              hasLastAutoGrid={Boolean(lastAutoGrid)}
+              showDiamond={showDiamond}
+              gridView={gridView}
+              onAutoAssign={generateLineup}
+              onCheck={function() {
+                if (errorCount === 0) { alert("Lineup looks good! No issues found."); }
+                else { setIssuesPanelOpen(true); }
+              }}
+              onAutoFix={autoFix}
+              onRevert={function() {
+                if (confirm("Revert to last auto-assigned lineup?")) {
+                  persistGrid(lastAutoGrid); setLineupDirty(false);
+                }
+              }}
+              onClear={function() {
+                if (confirm("Clear all assignments?")) { persistGrid(initGrid(roster, innings)); setLineupDirty(true); }
+              }}
+              onFinalize={function() { setLockFlowOpen(true); }}
+              onToggleDiamond={function() { setShowDiamond(!showDiamond); if (showDiamond) { setDiamondInning(null); } }}
+              onGridViewChange={setGridView}
+            />
+          </div>
+        ) : (
         <div style={{ display:"flex", gap:"8px", marginBottom:"14px", flexWrap:"wrap", alignItems:"center" }}>
           {!lineupLocked ? (
             <button style={S.btn("gold")} onClick={generateLineup}
@@ -4639,6 +4743,7 @@ export default function App() {
             </div>
           </div>
         </div>
+        )}
 
         {lineupDirty && !lineupLocked && (
           <div style={{ background:"rgba(245,200,66,0.12)", border:"1px solid rgba(245,200,66,0.4)", borderRadius:"8px", padding:"10px 14px", marginBottom:"10px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:"10px", flexWrap:"wrap" }}>
@@ -4999,6 +5104,33 @@ export default function App() {
 
     return (
       <div>
+        {isFlagEnabled('UX_GAMEDAY_SETUP') ? (
+          <div style={{ marginBottom:tokens.space.md }}>
+            <BattingWorkspaceHeader
+              lineupLocked={lineupLocked}
+              dirty={battingOrderDirty}
+              saved={battingOrderSaved}
+              orderCount={battingOrder.length}
+              activeCount={activeBattingOrder.length}
+              canUndo={Boolean(preSuggestOrder)}
+              onSave={function() {
+                persistBatting(battingOrder);
+                setBattingOrderDirty(false);
+                setBattingOrderSaved(true);
+                setPreSuggestOrder(null);
+                setTimeout(function() { setBattingOrderSaved(false); }, 2000);
+              }}
+              onSuggest={suggestOrder}
+              onUndo={function() {
+                persistBatting(preSuggestOrder);
+                setPreSuggestOrder(null);
+                setBattingOrderDirty(false);
+                setBattingOrderSaved(false);
+              }}
+              onFinalize={function() { setLockFlowOpen(true); }}
+            />
+          </div>
+        ) : (
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"14px", gap:"8px", flexWrap:"wrap" }}>
           <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
             <div style={S.sectionTitle}>Batting Order</div>
@@ -5059,6 +5191,7 @@ export default function App() {
             </div>
           ) : null}
         </div>
+        )}
 
         {hasAnyStats ? (
           <Card padding="12px 14px" radius="md" style={{ background:"rgba(15,31,61,0.03)", border:"1px solid rgba(15,31,61,0.1)", boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
@@ -5440,6 +5573,43 @@ export default function App() {
   // SONGS TAB
   // ============================================================
   function renderSongs() {
+    if (isFlagEnabled('UX_GAMEDAY_SETUP')) {
+      var contemporarySongPlayers = battingOrder.map(function(name, idx) {
+        var player = roster.find(function(candidate) { return candidate.name === name; });
+        if (!player) return null;
+        return {
+          name: player.name,
+          order: idx + 1,
+          absent: absentTonight.indexOf(name) >= 0,
+          song: player.walkUpSong || null,
+          artist: player.walkUpArtist || null,
+          start: player.walkUpStart || null,
+          end: player.walkUpEnd || null,
+          notes: player.walkUpNotes || null,
+          link: player.walkUpLink || null,
+          walkUpSong: player.walkUpSong || null,
+          walkUpArtist: player.walkUpArtist || null,
+          walkUpStart: player.walkUpStart || null,
+          walkUpEnd: player.walkUpEnd || null,
+          walkUpNotes: player.walkUpNotes || null,
+          walkUpLink: player.walkUpLink || null,
+        };
+      }).filter(Boolean);
+
+      return (
+        <WalkUpSongsWorkspace
+          players={contemporarySongPlayers}
+          mode={songsView}
+          locked={lineupLocked}
+          offline={!isOnline}
+          onModeChange={setSongsView}
+          onUpdate={function(name, patch) { updatePlayer(name, patch); }}
+          onShare={shareSongsList}
+          onPrint={printSongsList}
+        />
+      );
+    }
+
     return (
       <div>
         {/* ── Header row ───────────────────────────────────── */}
@@ -5699,6 +5869,7 @@ export default function App() {
   // SCHEDULE TAB
   // ============================================================
   function renderSchedule() {
+    var contemporarySchedule = isFlagEnabled('UX_SCHEDULE');
     var wins = 0; var losses = 0; var ties = 0;
     for (var si = 0; si < schedule.length; si++) {
       if (schedule[si].result === "W") { wins++; }
@@ -5780,12 +5951,12 @@ export default function App() {
         ) : null}
 
         <div style={{ marginBottom:"14px" }}>
-          <button style={{ ...S.btn("primary"), width:"100%" }} onClick={function() {
+          <Button typography={contemporarySchedule ? "contemporary" : "legacy"} fullWidth style={contemporarySchedule ? undefined : { ...S.btn("primary"), width:"100%" }} onClick={function() {
             setNewGame({ date:"", time:"", location:"", opponent:"", result:"", ourScore:"", theirScore:"", battingPerf:{}, snackDuty:"", gameBall:[], gameBallSearch:"", scoreReported:false, usScore:null, oppScore:null, gameStatus:'scheduled', finalizedAt:null });
             setEditingGame(null);
             setShowGameForm(true);
             setImportMode(null);
-          }}>+ Add Game</button>
+          }}>+ Add Game</Button>
         </div>
 
         {importMode === "choose" ? (
@@ -5971,10 +6142,11 @@ export default function App() {
         ) : null}
 
         {showGameForm ? (
-          <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px", borderLeft:"3px solid " + tokens.color.brand.red }}>
-            <div style={{ fontWeight:"bold", fontSize:"14px", marginBottom:"14px" }}>
+          <Card padding="16px 18px" radius={contemporarySchedule ? "lg" : "md"} style={{ border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px", borderTop:contemporarySchedule ? "4px solid " + tokens.color.brand.gold : undefined, borderLeft:contemporarySchedule ? undefined : "3px solid " + tokens.color.brand.red }}>
+            <div style={{ fontWeight:"bold", fontSize:contemporarySchedule ? "18px" : "14px", marginBottom:"4px" }}>
               {editingGame ? "Edit Game" : "Add New Game"}
             </div>
+            {contemporarySchedule ? <div style={{ color:tokens.color.text.muted, fontSize:"13px", marginBottom:"16px" }}>Game details and team assignments stay together.</div> : null}
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px", marginBottom:"10px" }}>
               {[
                 ["Opponent *", "opponent", "text"],
@@ -6233,10 +6405,10 @@ export default function App() {
               </div>
             ) : null}
             <div style={{ display:"flex", gap:"8px" }}>
-              <button style={S.btn("primary")} onClick={saveGameForm} disabled={!newGame.date || !newGame.opponent}>
+              <Button typography="contemporary" onClick={saveGameForm} disabled={!newGame.date || !newGame.opponent}>
                 {editingGame ? "Save Changes" : "Add Game"}
-              </button>
-              <button style={S.btn("ghost")} onClick={function() { setShowGameForm(false); setEditingGame(null); }}>Cancel</button>
+              </Button>
+              <Button typography="contemporary" variant="secondaryOutline" onClick={function() { setShowGameForm(false); setEditingGame(null); }}>Cancel</Button>
             </div>
           </Card>
         ) : null}
@@ -6253,7 +6425,7 @@ export default function App() {
             var resultColor = game.result === "W" ? tokens.color.status.success : game.result === "L" ? tokens.color.brand.red : game.result === "T" ? "#d4a017" : "#888";
             var cancelColor = tokens.color.status.neutral;
             return (
-              <Card key={game.id} padding="0" radius="md" style={{ overflow:"hidden", border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px", borderLeft:"4px solid " + (isCanceled ? cancelColor : isPlayed ? resultColor : tokens.color.brand.red), opacity: isCanceled ? 0.78 : 1 }}>
+              <Card key={game.id} padding="0" radius={contemporarySchedule ? "lg" : "md"} style={{ overflow:"hidden", border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px", borderLeft:contemporarySchedule ? undefined : "4px solid " + (isCanceled ? cancelColor : isPlayed ? resultColor : tokens.color.brand.red), borderTop:contemporarySchedule ? "4px solid " + (isCanceled ? cancelColor : isPlayed ? resultColor : tokens.color.brand.gold) : undefined, opacity: isCanceled ? 0.78 : 1 }}>
                 <div style={{ padding:"16px 16px 14px" }}>
                   <div>
                     <div style={{ display:"flex", alignItems:"center", gap:"8px", marginBottom:"4px", flexWrap:"wrap" }}>
@@ -6294,7 +6466,7 @@ export default function App() {
                             </span>
                           );
                         }
-                        return <span style={{ fontSize:"10px", padding:"2px 8px", borderRadius:"10px", background:"rgba(200,16,46,0.08)", color:tokens.color.brand.red, letterSpacing:"0.08em", textTransform:"uppercase" }}>Upcoming</span>;
+                        return <StatusPill status="upcoming">Upcoming</StatusPill>;
                       })()}
                     </div>
                     {inlineScoreGame === game.id && !isCanceled ? (
@@ -6417,9 +6589,9 @@ export default function App() {
                       }
                       return null;
                     })()}
-                    <button style={{ ...S.btn("ghost"), minWidth:0, width:"100%", padding:"9px 4px" }} onClick={function() { handleShareGame(game); }}>Share</button>
-                    <button style={{ ...S.btn("ghost"), minWidth:0, width:"100%", padding:"9px 4px" }} onClick={function(g) { return function() { startEdit(g); }; }(game)}>Edit</button>
-                    <button style={{ ...S.btn("ghost"), minWidth:0, width:"100%", padding:"9px 4px", color:tokens.color.brand.red }} onClick={function(id) { return function() { if (confirm("Delete game?")) { deleteGame(id); } }; }(game.id)}>Delete</button>
+                    <Button typography="contemporary" variant="secondaryOutline" size="sm" style={{ minWidth:0, width:"100%", padding:"9px 4px" }} onClick={function() { handleShareGame(game); }}>Share</Button>
+                    <Button typography="contemporary" variant="secondaryOutline" size="sm" style={{ minWidth:0, width:"100%", padding:"9px 4px" }} onClick={function(g) { return function() { startEdit(g); }; }(game)}>Edit</Button>
+                    <Button typography="contemporary" variant="ghost" size="sm" style={{ minWidth:0, width:"100%", padding:"9px 4px", color:tokens.color.status.error }} onClick={function(id) { return function() { if (confirm("Delete game?")) { deleteGame(id); } }; }(game.id)}>Delete</Button>
                 </div>
               </Card>
             );
@@ -6516,7 +6688,9 @@ export default function App() {
             })}
           </div>
 
-          <button style={S.btn("primary")} onClick={submitFeedback}>Send Feedback</button>
+          {isFlagEnabled('UX_SUPPORT') ? (
+            <Button typography="contemporary" leadingIcon="edit" onClick={submitFeedback}>Send feedback</Button>
+          ) : <button style={S.btn("primary")} onClick={submitFeedback}>Send Feedback</button>}
           {fbConfirm ? (
             <div style={{ marginTop:"10px", color:"#27ae60", fontSize:"12px", fontWeight:"bold" }}>{fbConfirm}</div>
           ) : null}
@@ -6564,7 +6738,9 @@ export default function App() {
             })}
           </div>
 
-          <button style={S.btn("primary")} onClick={submitBug}>Report Issue</button>
+          {isFlagEnabled('UX_SUPPORT') ? (
+            <Button typography="contemporary" leadingIcon="attention" onClick={submitBug}>Report issue</Button>
+          ) : <button style={S.btn("primary")} onClick={submitBug}>Report Issue</button>}
           {bugConfirm ? (
             <div style={{ marginTop:"10px", color:"#27ae60", fontSize:"12px", fontWeight:"bold" }}>{bugConfirm}</div>
           ) : null}
@@ -7102,99 +7278,12 @@ export default function App() {
       APP_VERSION={APP_VERSION} />;
   }
 
-  function renderAccount() {
-    var _email = session && session.user && session.user.email ? session.user.email : "—";
-    var _memberships = memberships || [];
-    var _rolePill = {
-      fontSize:"10px", fontWeight:"700", letterSpacing:"0.05em", textTransform:"uppercase",
-      padding:"3px 9px", borderRadius:"10px", background:tokens.color.brand.navy + "12", color:tokens.color.brand.navy,
-      border:"1px solid " + tokens.color.brand.navy + "22", whiteSpace:"nowrap", flexShrink:0
-    };
-    return (
-      <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
-        <div style={S.sectionTitle}>Your Account</div>
-
-        {/* #405 — editable name, extracted #407 (component owns its state). */}
-        <AccountNameField
-          updateProfileName={updateProfileName}
-          initialFirstName={user && user.profile ? user.profile.first_name : ''}
-          initialLastName={user && user.profile ? user.profile.last_name : ''}
-          S={S}
-        />
-
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline", gap:"12px", padding:"9px 0", borderBottom:"1px solid " + tokens.color.border.neutral, marginBottom:"14px" }}>
-          <span style={{ fontSize:"11px", letterSpacing:"0.08em", textTransform:"uppercase", color:tokens.color.text.muted, whiteSpace:"nowrap" }}>Signed in as</span>
-          <span style={{ fontSize:"13px", color:tokens.color.text.ink, fontWeight:"600", textAlign:"right", wordBreak:"break-word" }}>{_email}</span>
-        </div>
-
-        <div style={{ fontSize:"11px", letterSpacing:"0.08em", textTransform:"uppercase", color:tokens.color.text.muted, marginBottom:"8px" }}>Your teams</div>
-
-        {_memberships.length === 0 ? (
-          <div style={{ fontSize:"13px", color:tokens.color.text.muted, fontStyle:"italic", padding:"4px 0 8px" }}>Not on any team yet</div>
-        ) : _memberships.slice().sort(function(ma, mb) {
-          // Newest season/year first — switching teams surfaces the current
-          // team first while previous ones stay reachable below.
-          var ta = teams.find(function(t) { return t.id === ma.team_id; });
-          var tb = teams.find(function(t) { return t.id === mb.team_id; });
-          return compareTeamsNewestFirst(ta, tb);
-        }).map(function(m) {
-          var _t = teams.find(function(t) { return t.id === m.team_id; });
-          var _role = roleLabel(m.role);
-          if (_t) {
-            var _meta = [_t.ageGroup, _t.season ? formatSeason(_t.season, _t.year) : _t.year].filter(Boolean).join(" ");
-            return (
-              <div key={m.id} onClick={function() { loadTeam(_t); }}
-                style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:"12px",
-                  padding:"12px 14px", marginBottom:"8px", borderRadius:"10px",
-                  border:"1px solid " + tokens.color.border.neutral, background:tokens.color.surface.card, cursor:"pointer",
-                  boxShadow:"0 1px 3px rgba(15,31,61,0.05)" }}>
-                <div style={{ minWidth:0 }}>
-                  <div style={{ fontSize:"14px", fontWeight:"700", color:tokens.color.brand.navy, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{_t.name}</div>
-                  {_meta ? <div style={{ fontSize:"11px", color:tokens.color.text.muted, marginTop:"2px" }}>{_meta}</div> : null}
-                </div>
-                <div style={{ display:"flex", alignItems:"center", gap:"10px", flexShrink:0 }}>
-                  <span style={_rolePill}>{_role}</span>
-                  <span aria-hidden="true" style={{ fontSize:"20px", color:tokens.color.text.muted, lineHeight:1 }}>›</span>
-                </div>
-              </div>
-            );
-          }
-          return (
-            <div key={m.id}
-              style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:"12px",
-                padding:"12px 14px", marginBottom:"8px", borderRadius:"10px",
-                border:"1px dashed " + tokens.color.border.neutral, background:"rgba(15,31,61,0.03)" }}>
-              <div style={{ minWidth:0 }}>
-                <div style={{ fontSize:"14px", fontWeight:"600", color:tokens.color.text.muted, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{"Team " + m.team_id}</div>
-                <div style={{ fontSize:"11px", color:tokens.color.text.muted, marginTop:"2px", fontStyle:"italic" }}>Not loaded</div>
-              </div>
-              <span style={Object.assign({}, _rolePill, { background:"rgba(15,31,61,0.06)", color:tokens.color.text.muted, border:"1px solid " + tokens.color.border.neutral })}>{_role}</span>
-            </div>
-          );
-        })}
-
-        <div style={{ fontSize:"11px", letterSpacing:"0.08em", textTransform:"uppercase", color:tokens.color.text.muted, marginTop:"16px", marginBottom:"8px" }}>Legal</div>
-        <div
-          onClick={function() { setPrimaryTab("more"); setMoreTab("legal"); setLegalInitialDoc("terms"); }}
-          style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:"12px",
-            padding:"12px 14px", marginBottom:"8px", borderRadius:"10px",
-            border:"1px solid " + tokens.color.border.neutral, background:tokens.color.surface.card, cursor:"pointer" }}>
-          <div style={{ display:"flex", alignItems:"center", gap:"10px", minWidth:0 }}>
-            <span aria-hidden="true" style={{ fontSize:"18px", flexShrink:0 }}>📋</span>
-            <span style={{ fontSize:"14px", fontWeight:"600", color:tokens.color.brand.navy }}>Terms of Service</span>
-          </div>
-          <span aria-hidden="true" style={{ fontSize:"20px", color:tokens.color.text.muted, lineHeight:1 }}>›</span>
-        </div>
-
-        <button style={Object.assign({}, S.btn("danger"), { marginTop:"8px", width:"100%" })} onClick={logout}>
-          Sign out
-        </button>
-        <div style={{ fontSize:"11px", color:tokens.color.text.muted, marginTop:"12px", lineHeight:"1.5", textAlign:"center" }}>
-          Your teams and lineups stay saved on this device. You&apos;ll need to sign in again to make changes.
-        </div>
-      </Card>
-    );
-  }
+  // renderAccount() retired — Issue #1099 / Story 341 split its content into
+  // AccountTeamsSection ("Your teams" destination) and AccountProfileSection
+  // ("Profile name" destination), each reached from MoreLanding's Account
+  // group instead of one shared Card with the team list, name field, and
+  // Sign out button all together. Sign out is now a direct-action row on
+  // MoreLanding itself (still single-tap, no confirm step, same as before).
 
   // ============================================================
   // PIN MODAL
@@ -7422,15 +7511,9 @@ export default function App() {
     { key:"songs",    label:"Songs"               },
     { key:"dugout", label:"DUGOUT VIEW", launcher:true },
   ].filter(Boolean);
-  var MORE_SUBTABS = [
-    { key:"account",  label:"Account"  },
-    { key:"faq",      label:"Help"     },
-    { key:"feedback", label:"Feedback" },
-    { key:"links",    label:"Links"    },
-    { key:"about",    label:"About"    },
-    { key:"updates",  label:"Updates"  },
-    { key:"legal",    label:"Legal"    },
-  ];
+  // MORE_SUBTABS retired — Issue #1099 / Story 341 replaced the flat
+  // 7-tab pill bar with MoreLanding's 3 grouped cards (see the "more"
+  // subTabBar branch below for the single back-header that replaces it).
 
   // Sub-tab bar — rendered inside tabContent when Game Day or Season is active
   var subTabBar = null;
@@ -7529,24 +7612,18 @@ export default function App() {
         </div>
       </div>
     );
-  } else if (primaryTab === "more") {
+  } else if (primaryTab === "more" && moreTab !== "landing") {
+    // Issue #1099 / Story 341 — the landing view (MoreLanding, 3 grouped
+    // cards) replaces the flat pill bar as the entry point; every other
+    // moreTab value is now a pushed-in detail screen with one consistent
+    // back affordance instead of a peer tab switch.
     subTabBar = (
-      <div style={{ display:"flex", gap:"4px", padding:"8px 12px 4px", background:tokens.color.surface.cream, borderBottom:"1px solid " + tokens.color.border.neutral }}>
-        {MORE_SUBTABS.map(function(st) {
-          return (
-            <button key={st.key}
-              onClick={function(k) { return function() {
-                // Direct tab-bar navigation always shows Legal's list view —
-                // legalInitialDoc is a one-shot deep-link set only by the
-                // Account tab's Terms of Service row (see renderAccount()).
-                if (k === "legal") { setLegalInitialDoc(null); }
-                setMoreTab(k);
-              }; }(st.key)}
-              style={subTabStyle(moreTab === st.key)}>
-              {st.label}
-            </button>
-          );
-        })}
+      <div style={{ display:"flex", alignItems:"center", gap:"8px", padding:"8px 12px 4px", background:tokens.color.surface.cream, borderBottom:"1px solid " + tokens.color.border.neutral }}>
+        <button
+          onClick={function() { setMoreTab("landing"); }}
+          style={subTabStyle(false)}>
+          ‹ More
+        </button>
       </div>
     );
   }
@@ -7560,6 +7637,16 @@ export default function App() {
     contextLabel = "Print / Share View";
   } else if (primaryTab === "schedule") {
     contextLabel = "Schedule";
+  }
+
+  var contemporarySupport = isFlagEnabled('UX_SUPPORT');
+  var contemporaryAccount = isFlagEnabled('UX_ACCOUNT');
+
+  function supportDestination(title, subtitle, icon, content, tone) {
+    var enabled = tone === 'account' ? contemporaryAccount : contemporarySupport;
+    return enabled ? (
+      <SupportWorkspace title={title} subtitle={subtitle} icon={icon} tone={tone}>{content}</SupportWorkspace>
+    ) : content;
   }
 
   var tabContent = (
@@ -7604,13 +7691,39 @@ export default function App() {
         {primaryTab === "gameday" && !parentViewActive && gameDayTab === "lineups" ? renderLineups() : null}
         {primaryTab === "gameday" && !parentViewActive && gameDayTab === "songs"   ? renderSongs()   : null}
       </ErrorBoundary>
-      {primaryTab === "more" && moreTab === "account"  ? renderAccount()  : null}
-      {primaryTab === "more" && moreTab === "feedback" ? renderFeedback() : null}
-      {primaryTab === "more" && moreTab === "links"    ? <LinksTab sectionTitleStyle={S.sectionTitle} /> : null}
-      {primaryTab === "more" && moreTab === "about"    ? renderAbout()    : null}
-      {primaryTab === "more" && moreTab === "updates"  ? <UpdatesTab versionHistory={VERSION_HISTORY} appVersion={APP_VERSION} expandedVersion={expandedVersion} onExpandedVersionChange={setExpandedVersion} sectionTitleStyle={S.sectionTitle} /> : null}
-      {primaryTab === "more" && moreTab === "legal"    ? <LegalSection initialDocId={legalInitialDoc} /> : null}
-      {primaryTab === "more" && moreTab === "faq"      ? <FAQSection />   : null}
+      {primaryTab === "more" && moreTab === "landing" ? (
+        <MoreLanding
+          onNavigate={function(k) {
+            if (k === "legal") { setLegalInitialDoc(null); }
+            setMoreTab(k);
+          }}
+          onSignOut={logout}
+          memberships={memberships}
+          teams={teams}
+          user={user}
+          appVersion={APP_VERSION}
+          supportEnabled={contemporarySupport}
+          accountEnabled={contemporaryAccount}
+        />
+      ) : null}
+      {primaryTab === "more" && moreTab === "account-teams" ? (
+        supportDestination('Your teams', 'Choose a team or review your season access.', 'team', <AccountTeamsSection session={session} memberships={memberships} teams={teams} loadTeam={loadTeam} />, 'account')
+      ) : null}
+      {primaryTab === "more" && moreTab === "account-profile" ? (
+        supportDestination('Profile', 'Keep the name your coaching community sees up to date.', 'player', <AccountProfileSection
+          updateProfileName={updateProfileName}
+          initialFirstName={user && user.profile ? user.profile.first_name : ''}
+          initialLastName={user && user.profile ? user.profile.last_name : ''}
+          S={S}
+          contemporary={contemporaryAccount}
+        />, 'account')
+      ) : null}
+      {primaryTab === "more" && moreTab === "feedback" ? supportDestination('Feedback', 'Share an idea or tell us what got in your way.', 'edit', renderFeedback()) : null}
+      {primaryTab === "more" && moreTab === "links"    ? supportDestination('Coach links', 'Useful league, field, weather, and reporting destinations.', 'externalLink', <LinksTab sectionTitleStyle={S.sectionTitle} />) : null}
+      {primaryTab === "more" && moreTab === "about"    ? supportDestination('About Dugout Lineup', 'Built by a coach for the moments that matter at the field.', 'baseball', renderAbout()) : null}
+      {primaryTab === "more" && moreTab === "updates"  ? supportDestination("What's new", 'A running look at improvements across the app.', 'success', <UpdatesTab versionHistory={VERSION_HISTORY} appVersion={APP_VERSION} expandedVersion={expandedVersion} onExpandedVersionChange={setExpandedVersion} sectionTitleStyle={S.sectionTitle} />) : null}
+      {primaryTab === "more" && moreTab === "legal"    ? supportDestination('Terms & privacy', 'Plain-language policies with effective dates kept intact.', 'lock', <LegalSection initialDocId={legalInitialDoc} />) : null}
+      {primaryTab === "more" && moreTab === "faq"      ? supportDestination('Help center', 'Quick answers that stay available at the field—even offline.', 'support', <FAQSection />) : null}
     </div>
   );
 
@@ -7623,6 +7736,10 @@ export default function App() {
 
     if (rosterDetailMode !== null) {
       return <div style={{ padding:"14px 12px 80px" }}>{renderRoster()}</div>;
+    }
+
+    if (isFlagEnabled('UX_MY_TEAM')) {
+      return renderRoster();
     }
 
     return (
@@ -7661,6 +7778,18 @@ export default function App() {
     var overview = getScheduleOverview(schedule);
     var nextGame = overview.nextGame;
     var nextDate = nextGame ? new Date(nextGame.date + "T12:00:00") : null;
+
+    if (isFlagEnabled('UX_SCHEDULE')) {
+      return (
+        <ScheduleScreen
+          nextGame={nextGame}
+          onOpenGameDay={function() { setPrimaryTab("gameday"); setGameDayTab("lineups"); }}
+          scheduleContent={renderSchedule()}
+          practices={practices}
+          snackContent={renderSnackDuty()}
+        />
+      );
+    }
 
     return (
       <div style={{ paddingBottom:"80px" }}>

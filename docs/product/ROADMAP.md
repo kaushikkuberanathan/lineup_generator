@@ -1,9 +1,38 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: 2026-09-04 (v3.3.3 release preparation; batches #1060/#1061 offline-auth fix, #1062/#1064 network-health signal fix, #1059 version-currency tooling, and #1063 docs fix onto v3.3.2). Previously updated 2026-09-03 (v3.3.2 promoted to `main`, live in production — PR #1054, merge commit `162061c`, confirmed genuine 2-parent; post-promote sync PR #1055 merged as `354e707`, `main`/`develop` confirmed content-identical). Previously updated 2026-09-02 (v3.3.0 release preparation; scope is full develop tip `b9215dd` against production v3.2.0 `aa519bf`, no dedicated tracker issue); 2026-09-01 (v3.2.0 release preparation; scope frozen at `e79487d`, release tracker #1004).
+> Last updated: 2026-09-04 (v3.4.0 release preparation; scope frozen at `develop` tip `8384f24` against production v3.3.3 `a1b916a`, release tracker [#1121](https://github.com/kaushikkuberanathan/lineup_generator/issues/1121)). Previously updated 2026-09-04 (v3.3.3 promoted to `main`, live in production — PR #1065 merged `release/v3.3.3` → `main` as `d2f88bb`, then PR #1066 merged `develop` → `main` directly as `a1b916a` to absorb the remaining drift; this line previously described v3.3.3 as an unpromoted release candidate, which was stale by the time it was written — corrected here). Previously updated 2026-09-03 (v3.3.2 promoted to `main`, live in production — PR #1054, merge commit `162061c`, confirmed genuine 2-parent; post-promote sync PR #1055 merged as `354e707`, `main`/`develop` confirmed content-identical). Previously updated 2026-09-02 (v3.3.0 release preparation; scope is full develop tip `b9215dd` against production v3.2.0 `aa519bf`, no dedicated tracker issue); 2026-09-01 (v3.2.0 release preparation; scope frozen at `e79487d`, release tracker #1004).
 > MVP launched: March 24, 2026
 
-## v3.3.3 RELEASE CANDIDATE — Offline-auth logout fix, network-health signal fix, version-currency tooling, docs correction
+## v3.4.0 RELEASE CANDIDATE — Contemporary UX wave, More-tab regroup, and Home read-model performance fix
+
+Release tracker: [#1121](https://github.com/kaushikkuberanathan/lineup_generator/issues/1121). Candidate scope is frozen at `develop` tip `8384f24` (74 commits ahead of `main`'s v3.3.3 promote, `a1b916a`) — cut as `release/v3.4.0`. No open PRs against `develop` at the time of the cut.
+
+**Minor-version rationale:** the More-tab regroup (Story 341/#1099) is a real, default-on coach-facing change. The Contemporary UX Redesign wave (initiative #1052), though entirely dark behind independent default-off flags, adds substantial new surface area across seven components (My Team/Roster, Schedule, Game Day entry/readiness, Defense, Batting, Walk-up Songs, Support/Account) — large enough on its own to size the bump above patch, matching this repo's established v3.0.0/v3.3.0 convention rather than defaulting to patch because most of it is currently invisible.
+
+**Included scope:**
+- **More tab regroup (Story 341/#1099, PR #1103, `cf63d93`):** real, default-on. Replaces the flat 7-tab `MORE_SUBTABS` pill bar with a `MoreLanding` landing view (3 `Card` groups: Account / Get Help / About & Legal). Manual signed-in browser QA completed 2026-09-04 by KK on `dev.dugoutlineup.com` — nothing outstanding before promote. See the Story 341 entry above for full detail.
+- **Contemporary UX Redesign wave (initiative #1052)** — all behind independent default-off flags, zero live behavior change:
+  - My Team/Roster reconciliation (#1086/#1087, `UX_MY_TEAM`)
+  - Schedule (#1093, `UX_SCHEDULE`)
+  - Game Day entry/readiness shell — Wave C1 (#1094, `UX_GAMEDAY_SETUP`)
+  - Defense — Wave C2 (#1095, `UX_GAMEDAY_SETUP`)
+  - Batting — Wave C3 (#1096, `UX_GAMEDAY_SETUP`)
+  - Walk-up Songs — Wave C4 (#1097, `UX_GAMEDAY_SETUP`)
+  - Support/Account — Wave D (#1091, `UX_SUPPORT`/`UX_ACCOUNT`)
+- **[#1072](https://github.com/kaushikkuberanathan/lineup_generator/issues/1072) (P1, performance):** migration `034_home_read_model_rpc.sql` collapses `GET /api/v1/home`'s two sequential Supabase round trips (`team_memberships`, then `teams`+`team_data`) into one `SECURITY INVOKER`, service-role-only Postgres RPC. Root-caused to Render (Oregon) and Supabase (us-east-1) sitting in different AWS regions — this is the code-level mitigation, not the full fix; region colocation is a separate, larger infra decision tracked on #1072 itself, deliberately out of scope here. **Applied to DEV (`psqvzppphdedqkpmarwx`) and PROD (`hzaajccyurlyeweekvma`), verified identical on both during this release's prep** — grant shape (`service_role` execute-only, `anon`/`authenticated` denied), empty-identity behavior (returns empty arrays, not an error), and clean security advisors on both, before the `develop → main` promote. This ordering mattered: `develop`'s `home.js` calls the RPC unconditionally with no `.from()` fallback, so promoting without the migration live on PROD first would have made `GET /api/v1/home` 500 the moment Render redeployed — including for KK's own #1033 R4 self-testing cohort, which already has both `API_DRIVEN_HOME`/`API_DRIVEN_ROUTES` flags on via localStorage.
+- **Story 342 (#1112) scope frozen:** only child Story 343/#1113 (shared `getGameDayCriticalArticles()` helper) is done. Stories 345-347 (the quick-access strip component, its wiring into `MoreLanding`, and its analytics entry point) are deferred to the next release batch — nothing half-built ships in this one. Story 344 stays explicitly deferred pending usage data, per Story 342's own 2026-09-04 design decision.
+- Routine dependency bumps: vite, vitest/@vitest/ui, @vitejs/plugin-react, @testing-library/react (frontend); express-rate-limit, libphonenumber-js (backend).
+- Doc corrections: this file's and root `CLAUDE.md`'s stale "v3.3.3 not yet promoted" claims corrected to reflect the actual promote (`a1b916a`, PRs #1065/#1066).
+
+**Ship Gate status:** frontend 1852/1852 across 186 files (+93/+17 vs. v3.3.3's 1759/169 — the Contemporary UX Redesign wave plus the More-tab regroup), backend unit 361/361 (unchanged — no backend code touched by this batch beyond the migration itself), lint clean, production build clean, `check-version-currency.js` clean, `debt-p0` gate clear (0 open P0 items) — all directly re-run fresh on `release/v3.4.0`. `FEATURE_MAP.md` rows updated for every touched surface (row 4 Schedule gained the `UX_SCHEDULE` reference; rows 12/42/44/45/46 already covered the rest from prior same-day passes).
+
+**Merged to `develop` 2026-09-04** (PR [#1122](https://github.com/kaushikkuberanathan/lineup_generator/pull/1122), regular merge, `5a9d494`) — confirmed a genuine 2-parent merge (parents `8384f24` prior `develop` + `fd12bb1` release branch tip). All CI checks green before merge (Frontend Tests, Backend Unit + Integration, RLS Policy Suite, CodeQL, sync-script, PR-title-direction guard), Vercel preview deployed clean, `mergeable_state: clean`. **Soak explicitly overridden 2026-09-04 by KK, citing fall practices having started** — same "fall season readiness" pattern as v2.9.0 through v3.3.0's overrides; `develop`'s soak-lock branch protection is already off (honor-system only, per the cross-track note in `CLAUDE.md`), so this override doesn't require unchecking anything, just proceeding straight to the `main` promote.
+
+---
+
+## ✅ v3.3.3 PROMOTED AND LIVE IN PROD — Offline-auth logout fix, network-health signal fix, version-currency tooling, docs correction
+
+**Corrected 2026-09-04 (during v3.4.0 release prep) — this section previously read "RELEASE CANDIDATE, not yet promoted," which was stale by the time it was written.** PR [#1065](https://github.com/kaushikkuberanathan/lineup_generator/pull/1065) merged `release/v3.3.3` → `main` (`d2f88bb`, parents `37c33bb` prior `main` + `7445ee7` release branch tip). PR [#1066](https://github.com/kaushikkuberanathan/lineup_generator/pull/1066) then merged `develop` → `main` directly (`a1b916a`, `origin/main`'s current HEAD, parents `987e356` + `d2f88bb`) to absorb the small amount of `develop` drift that had landed ahead of the release branch. Confirmed 2026-09-04: `origin/main` HEAD `a1b916a` is a real ancestor of `origin/develop`'s post-promote sync (PR #1067, merge `58e5d58`).
 
 Batched patch release (unlike v3.3.2's single-issue framing) — scope is everything accumulated on `develop` since v3.3.2 promoted: PR #1059 (deliberately held back at the time, per KK's explicit call that session), PR #1061, PR #1063, PR #1064. No dedicated release tracker issue.
 
@@ -259,6 +288,185 @@ already accurate or intentionally archived.
 **Acceptance criteria:** Every `docs/product/*.md` file appears exactly once in the
 master disposition inventory; Markdown links resolve; no verification-only document is
 changed merely to create diff volume.
+
+---
+
+## Support / More tab regroup — UX discovery
+
+### Story 341 (P2) — Regroup the flat 7-tab More menu into 3 labeled card-groups <!-- #1099 -->
+Status: Resolved — merged to `develop` via PR #1103 (regular merge,
+`cf63d93`, confirmed genuine 2-parent: `c1006877` + `09c80a5`). Not yet
+promoted to `main`. Tracked as GitHub Issue #1099, closed 2026-09-04.
+Findings and original implementation notes recorded in
+`docs/product/SUPPORT_TAB_REGROUP_PROPOSAL.md` (written on the earlier
+`claude/support-tab-design-n8y8lg` discovery branch, merged to `develop`
+via PR #1101).
+
+**Built 2026-09-04:** new `MoreLanding.jsx` (3 `Card` groups of `ListRow`
+chevron rows — Account / Get Help / About & Legal) replaces `MORE_SUBTABS`
+as the "more" tab's entry point; `renderAccount()` split into
+`AccountTeamsSection.jsx` ("Your teams" — signed-in-as + membership list,
+migrated off legacy inline styles) and `AccountProfileSection.jsx` (wraps
+the pre-existing `AccountNameField` unchanged). Sign out is a direct-action
+row on the landing view, no navigation, matching the old single-tap button.
+FAQSection/LegalSection/LinksTab/UpdatesTab/feedback are unchanged — each
+detail screen is still the exact same component, just reached via a
+push/back pattern instead of a flat tab switch. 17 new tests across the 3
+new components; full frontend suite re-run clean (1824/1824 across 181
+files, zero regressions), lint clean, production build clean. Verified via
+automated tests only — a live signed-in browser click-through was not
+possible in this session's sandboxed environment (no Supabase network
+egress, no magic-link/Google auth access), so the new landing/detail flow
+has not yet been eyeballed in a real browser; recommend a manual pass on
+`dev.dugoutlineup.com` before promoting past `develop`.
+
+**One deliberate behavior change, not just a refactor:** the old Account
+tab's "Terms of Service" quick-link (`legalInitialDoc="terms"` one-shot
+deep link) was dropped — Terms & Privacy is now its own top-level landing
+row, equally fast (2 taps either way) but no longer a shortcut specifically
+from Account. `moreTab` now defaults to `"landing"` (was `"faq"`);
+`HomeNameNudge`'s "set your name" nudge now targets the new
+`"account-profile"` screen directly (was the old combined `"account"`
+screen it only ever wanted the name field from).
+
+**Open items carried over from the proposal, now resolved:** confirmed
+`renderAbout()` is a thin wrapper around the existing `AboutTab.jsx` — not
+a second, competing implementation, so no decision was needed there.
+
+**Manual QA complete 2026-09-04** — KK ran the full landing →
+detail → back flow against `dev.dugoutlineup.com` on a real signed-in
+session (2 real team memberships, Head Coach + Scorekeeper roles) and
+confirmed it "everything else seems great." Two deliberate behavior
+changes flagged for review (Terms & Privacy no longer auto-jumps to the
+Terms document; the "set your name" nudge now opens Profile name
+directly) passed with no objection — tracked and closed as a record in
+[#1109](https://github.com/kaushikkuberanathan/lineup_generator/issues/1109).
+Nothing outstanding before this can promote past `develop` on the QA
+front.
+
+---
+
+## Phase 2 — Game-Day quick-access strip on the More landing view
+
+### Story 342 (P2) — Master: decompose the Phase 2 quick-access strip for implementation <!-- #1112 -->
+Status: Open — not started. Scoping/decomposition only, no code written yet.
+Discovered: 2026-09-04, revisiting the deferred Phase 2 idea from
+`docs/product/SUPPORT_TAB_REGROUP_PROPOSAL.md` § 3 (shown in the original
+interactive prototype as a gold-accent "Game-Day Help" row above
+`MoreLanding`'s 3 groups, tagged Phase 2 to keep it out of #1099's MVP scope).
+
+Symptom: N/A — forward scoping. The idea existed only as a mockup and a
+paragraph; nothing was broken down into buildable, independently-testable
+pieces.
+
+Scope: Coordinate child Stories 343-347 below. Ships behind the
+**already-live `UX_SUPPORT` flag** — this is squarely part of the same
+Contemporary Support wave (#1052) that shipped `MoreLanding`'s icon tiles
+and `SupportWorkspace` headers, not a separate initiative, so no new flag
+is proposed. This master closes once all five children are merged to
+`develop` and the strip is visible (flag-on) on a real device.
+
+**Design decision — 2026-09-04, KK:** option (a). The strip's job for v1
+is pre-tap visibility — "N quick answers" surfaced before any tap, for a
+coach who doesn't know Help exists — not a zero-extra-tap jump to one
+specific article. Tapping the strip fires a bare navigate-to-Help call
+(`onNavigate('faq')`, no article id); `FAQSection` already renders its 5
+`gameDayCritical` articles first, unconditionally, above "Browse Help,"
+so that one tap already lands the coach on the Game-Day quick list —
+satisfying the "reaches real content in one tap" acceptance criterion
+without any new deep-link plumbing. Story 344 (`initialArticleId`) is
+therefore **deferred, not part of the v1 critical path** — build it later
+only if usage data shows coaches want one-tap-to-a-specific-article
+(e.g. from Mixpanel's `more_landing_quick_access` entry point once Story
+347 ships). Story 345 is unblocked by this decision.
+
+**Acceptance criteria:**
+- Real coaches see "N quick answers for right now" (a real, computed
+  count, not hardcoded) surfaced on the More landing view once `UX_SUPPORT`
+  is on for them.
+- Tapping the strip reaches real game-day help content in one tap from
+  the strip itself.
+- No new feature flag introduced — reuses `UX_SUPPORT`.
+- Zero behavior change for anyone with `UX_SUPPORT` off (matches every
+  other Contemporary-wave surface's flag-off guarantee).
+
+### Story 343 (P3) — Extract a shared `getGameDayCriticalArticles()` helper <!-- #1113 -->
+Status: Open — not started. Depends on nothing; ships first.
+Scope: `frontend/src/content/faqs.js` currently has the `gameDayCritical`
+filter duplicated inline as `FAQSection.jsx`'s own `GAME_DAY_ARTICLES`
+module-level constant. Extract a small exported helper (e.g.
+`getGameDayCriticalArticles()`) so `FAQSection` and the new quick-access
+strip (Story 345) both source the same 5-article list from one place
+instead of two copies that could drift. Pure refactor — `FAQSection`'s
+own rendered output must not change at all.
+Acceptance criteria: `FAQSection.test.jsx`'s existing Game-Day Help
+assertions still pass unmodified; a new small unit test on the extracted
+helper itself (correct filter, correct count, stable order).
+
+### Story 344 (P3) — `FAQSection`: optional `initialArticleId` deep-link prop <!-- #1114 -->
+Status: Deferred — not part of the v1 critical path. Story 342's design
+decision (2026-09-04) went with pre-tap visibility only (option a), not
+a one-tap-to-specific-article jump, so this has no consumer today.
+Revisit only if usage data (Story 347's Mixpanel entry-point split)
+shows coaches want it. Depends on nothing technically; can ship
+independently whenever it's picked back up.
+Scope: Mirror `LegalSection`'s existing `initialDocId` prop pattern — an
+optional `initialArticleId` that, present on mount, pre-selects that
+article's category and opens its accordion row immediately, no extra tap
+or search needed. Unlike the Account-tab Terms shortcut #1103 deliberately
+removed, this one has a real destination-doesn't-exist-elsewhere reason to
+exist: one-tap-to-answer from anywhere (the quick-access strip today,
+conceivably a push notification or support-search result later).
+Acceptance criteria: new `FAQSection.test.jsx` cases — prop present opens
+the right article/category on mount; prop absent behaves exactly as
+today (regression guard); manually triggering search or switching
+category after mount still works normally.
+
+### Story 345 (P2) — Build `GameDayQuickAccessStrip` (presentational, isolated) <!-- #1115 -->
+Status: Open — not started, unblocked. Depends on Story 343 (shared
+article list) only; Story 342's design decision (2026-09-04, option a)
+resolved the prior open question.
+Scope: New `frontend/src/components/Support/GameDayQuickAccessStrip.jsx`
+— a single `Card` row, gold-left-border accent, `gameDay` icon (already
+in `components/ui/Icon.jsx`'s catalog), title "Game-Day Help," subtitle
+"`{n}` quick answers for right now" using Story 343's real count (never a
+hardcoded number). Renders only when a `visible` prop is true — the
+consumer (Story 346) is responsible for gating that on `UX_SUPPORT`,
+matching how `MoreLanding`'s existing icon tiles are gated today. Built
+and unit-tested in isolation, not yet wired into `MoreLanding`.
+Acceptance criteria: own test file — renders when visible, renders
+nothing when not, shows the real article count, fires its `onSelect`/
+`onNavigate` callback on tap with a bare navigate-to-Help call (no
+article id — Story 344 stays deferred).
+
+### Story 346 (P3) — Wire the strip into `MoreLanding` <!-- #1116 -->
+Status: Open — not started. Depends on Story 345.
+Scope: Add `GameDayQuickAccessStrip` above the Account group in
+`MoreLanding.jsx`, gated by the existing `supportEnabled` prop (same flag
+`MoreLanding` already threads through for its icon tiles — no new prop
+name, no new flag). Wire its tap handler into the existing `onNavigate`
+callback App.jsx already passes down.
+Acceptance criteria: `MoreLanding.test.jsx` — new case(s) alongside the
+existing "adds semantic icon tiles only when the contemporary flags are
+enabled" test, asserting the strip renders only when `supportEnabled` is
+true and its tap reaches `onNavigate` with the right argument; full
+existing `MoreLanding.test.jsx` suite still green (regression guard for
+the flag-off path).
+
+### Story 347 (P3) — Analytics: distinguish the landing-strip entry point <!-- #1117 -->
+Status: Open — not started. Depends on Story 346 (needs the real tap
+event to instrument).
+Scope: `FAQSection.jsx` already tags its own in-page Game-Day Help quick
+list with `entry_point: "game_day_quick_access"` on the `help_article_open`
+Mixpanel event. Add a distinct entry-point value (e.g.
+`"more_landing_quick_access"`) for taps that originate from the new
+landing-view strip, so the two surfaces are distinguishable in Mixpanel
+once both exist side by side.
+Acceptance criteria: a passed-through `entryPoint` prop (or equivalent)
+threading from `MoreLanding` → `FAQSection`'s open-article call for this
+specific path; existing `help_article_open`/`help_category_view` tests
+unaffected; one new assertion confirming the distinct entry-point value
+fires for a strip-originated tap.
 
 ---
 
@@ -4281,7 +4489,7 @@ Estimated effort: 1-2 hours. No app code touched; pure governance + tooling.
 
 ---
 
-### Story 95 (P2) — Add techNote approved-strings convention to Pre-release Docs Checklist <!-- #225 -->
+### Story 95 (P2) — Add techNote approved-strings convention to Pre-release Docs Checklist <!-- #225 -->
 
 Status: Open
 Discovered: 2026-05-27 — CI failure during v2.5.21 release prep
@@ -5328,8 +5536,9 @@ here.
 
 ---
 ### Story 132 (P3) - UX Phase 6 - Design System Docs (scoping only) <!-- #697 -->
-Status: Open - scoped, not started. Blocked on Phase 5 fully landing (KK
-visual sign-off + promote to main), per this phase's own stated dependency.
+Status: Reconciled into the approved Contemporary Dugout UX initiative
+(#1052). Its documentation scope is now owned by foundation issue #1069;
+typography and icon contracts are independently tracked by #1070 and #1071.
 Discovered: 2026-08-17, full-review audit of all UX migration phases across
 dev and prod.
 Symptom: N/A - forward scoping, not a bug. `UX_REFACTOR_ROADMAP.md`'s Phase
@@ -5346,8 +5555,93 @@ initiative, `APPJSX_DECOMPOSITION_PLAN.md`). Tooling recommendation:
 Vite 6 + React 18 compatibility assumption must be re-validated; no
 `.storybook/` exists yet - from-scratch add), with a 1-day timeboxed spike
 against Ladle as a lighter alternative before committing repo-wide.
-Recommendation: Do not start implementation until Phase 5 promotes to
-main and this scoping has KK's go-ahead on the tooling choice.
+Recommendation: Preserve #697 as historical scoping evidence while #1052
+owns the contemporary visual direction and incremental screen migration.
+Storybook/Ladle remains a separate tooling choice; the foundation starts
+with source-owned contracts, tests, and a lightweight specimen component.
+
+**Contemporary foundation execution (2026-09-04):** initiative #1052 now
+tracks content (#1074), action/status primitives (#1075), reusable
+compositions (#1076), and the first incremental screen migration (#1077).
+The pilot is limited to API-driven Home behind its existing default-off flag;
+legacy Home and application chrome remain unchanged.
+
+**Icon foundation completion (2026-09-04):** #1071 completes the app-owned
+semantic icon catalog used by the migration waves. The `Icon` wrapper owns
+small/medium/large sizing, inherited color, decorative and labeled
+accessibility modes, and safe unknown-name handling. Lucide remains the
+primary family with deliberate Game Icons baseball/bat exceptions; the
+full-color `BrandMark` remains separate and unchanged. The specimen now
+exercises the catalog on light and dark surfaces, while the documented
+migration map keeps legacy emoji and direct imports incremental rather than
+forcing a wholesale screen rewrite.
+
+**My Team Wave A implementation (2026-09-04):** #1086 and #1087 add a
+default-off `UX_MY_TEAM` boundary for the roster landing, individual player
+profile, and all-player editor. The landing uses the shared PageHeader,
+SearchField, PlayerRow, StatusPill, Button, Text, Card, and Icon contracts;
+the profile screens wrap the existing editor so player identity, persistence,
+dirty-state behavior, and URL-backed navigation remain unchanged. RED-to-GREEN
+component tests, App-level flag/routing coverage, 375px/393px browser checks,
+lint, and production build are recorded on the feature branch. Legacy My Team
+remains the default-off fallback.
+
+**Schedule Wave B and Game Day Wave C1 (2026-09-04):** #1089 merged to
+`develop` through PR #1093 as a genuine merge commit, adding the default-off
+`UX_SCHEDULE` shell and contemporary event/form treatment. #1094 begins Wave C
+behind independent default-off `UX_GAMEDAY_SETUP`: the new Game Day entry card
+assembles shared header, card, icon, status, text, stack, and button contracts;
+summarizes the next game, availability, and lineup readiness; and exposes a
+single gated Game Mode action without changing lineup, lock, persistence, or
+live-scoring behavior. Component and App integration tests cover ready, draft,
+locked, and no-game states; browser checks cover 375px, 393px, and landscape.
+
+**Game Day Wave C2 (2026-09-04):** #1095 adds a reusable
+`DefenseWorkspaceHeader` behind the existing default-off
+`UX_GAMEDAY_SETUP` boundary. The composition gives Defense one gold primary
+Auto-Assign action, restrained secondary commands, a status summary, and
+44px diamond/table-view controls while retaining the existing position-color
+grid, lineup engine, persistence, warning, lock, and drag/touch behavior.
+Component coverage exercises editable, finalized, issue, unavailable-player,
+diamond, and view-switch states. The full frontend suite passes 1,810 tests
+across 179 files; lint and production build are clean. Automated Chrome checks
+at 375px, 393px, and 844x390 report no horizontal overflow or Vite overlay.
+
+**Game Day Wave C3 (2026-09-04):** #1096 adds a reusable
+`BattingWorkspaceHeader` behind `UX_GAMEDAY_SETUP`. Save becomes the single
+gold primary action while an order is dirty; Suggest is primary when clean;
+Undo and Finalize retain their existing behavior with clearer disabled and
+status states. Player-name identity, first-name display, absence filtering,
+reorder gestures, season stats, persistence, and the legacy flag-off surface
+remain unchanged.
+
+**Game Day Wave C4 (2026-09-04):** #1097 extracts Walk-up Songs into a
+reusable `WalkUpSongsWorkspace` behind `UX_GAMEDAY_SETUP`. The contemporary
+surface uses the shared music/link/action/status contracts for configured,
+empty, editing, absent, finalized/read-only, and offline states. Existing
+player metadata, `updatePlayer` persistence, batting-order sequencing,
+absence filtering, share/print callbacks, external-link behavior, and the
+legacy flag-off surface remain unchanged. Focused coverage passes 8/8; the
+full frontend suite passes 1,841 tests across 184 files with clean lint and
+production build. Browser checks at 375px, 393px, and 844x390 confirm exact
+viewport-width containment in display and edit modes with no Vite overlay.
+
+**Support and Account Wave D (2026-09-04):** #1091 adds two independently
+reversible, default-off boundaries: `UX_SUPPORT` for Help, Feedback, Links,
+About, Updates, and Legal; and `UX_ACCOUNT` for team access and profile. A
+reusable `SupportWorkspace` supplies a quiet cream canvas, soft sage/sand
+identity card, semantic icon tile, page title, and supporting copy without
+changing the navy application header or bottom navigation. `MoreLanding`
+uses the shared icon library for contemporary discovery, and Account profile
+uses the shared gold primary Button instead of a red CTA. Existing Help
+content/search/privacy-safe analytics/offline behavior, legal text and
+effective dates, external-link tracking, feedback persistence/submission,
+auth/session behavior, membership sorting, team switching, and profile update
+ownership remain unchanged. RED mutation proof failed both App flag-selection
+tests as intended; focused coverage passes 74/74, full frontend coverage passes
+1,849/1,849 across 185 files, lint/build are clean, and 375px/393px browser
+checks cover landing, Help zero-results, Account validation, and exact-width
+containment.
 
 ---
 ### Story 133 (P2) - Live game-day surface token migration (game-mode/ + ScoringMode/) <!-- #698 -->

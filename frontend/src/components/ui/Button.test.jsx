@@ -226,4 +226,26 @@ describe('Button — Phase 2 primitive', function () {
     expect(btn.style.minHeight).toBe('44px');
   });
 
+  test('B10.1: secondaryOutline is a quiet outlined surface', function () {
+    var { container } = render(<Button variant="secondaryOutline">Manage roster</Button>);
+    var button = container.querySelector('button');
+    expect(button.style.background).toBe('rgb(255, 255, 255)');
+    expect(button.style.borderColor).toBe('rgb(226, 232, 240)');
+  });
+
+  test('B10.2: leading and trailing semantic icons render', function () {
+    var { container } = render(<Button leadingIcon="roster" trailingIcon="chevronRight">Roster</Button>);
+    expect(container.querySelectorAll('svg')).toHaveLength(2);
+  });
+
+  test('B10.3: loading disables interaction and announces busy state', function () {
+    var spy = vi.fn();
+    var { getByRole } = render(<Button loading onClick={spy}>Save</Button>);
+    var button = getByRole('button', { name: 'Loading…' });
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute('aria-busy', 'true');
+    fireEvent.click(button);
+    expect(spy).not.toHaveBeenCalled();
+  });
+
 });

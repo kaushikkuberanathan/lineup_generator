@@ -16,6 +16,7 @@ import { Stack } from '../../components/ui/Stack';
 import { Text } from '../../components/ui/Text';
 import { Button } from '../../components/ui/Button';
 import { OfflineIndicator } from '../../components/Shared/OfflineIndicator';
+import { UI_CONTENT } from '../../content/uiContent';
 
 /**
  * @param {object} props
@@ -68,7 +69,7 @@ export function HomeScreen({ userId, getAccessToken, isOnline = true, onFindTeam
         </Text>
         {onFindTeam && (
           <Button variant="secondary" size="sm" onClick={onFindTeam}>
-            Find your team
+            {UI_CONTENT.home.findTeam}
           </Button>
         )}
       </Stack>

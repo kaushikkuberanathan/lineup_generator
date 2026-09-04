@@ -181,4 +181,17 @@ describe("App Schedule golden path (FEATURE_MAP.md row 4)", function () {
     expect(screen.getByText("Final · Win")).toBeInTheDocument();
     expect(screen.getByLabelText("Final score against Win")).toHaveTextContent("Schedule Test Sluggers14Win11");
   });
+
+  it("renders the contemporary Schedule shell behind UX_SCHEDULE", async function () {
+    localStorage.setItem("flag_UX_SCHEDULE", "true");
+    localStorage.setItem("team:" + TEAM.id + ":schedule", JSON.stringify([
+      { id:"next", date:dateFromToday(3), opponent:"River Cats", location:"Field 2", home:false },
+    ]));
+    await goToScheduleTab();
+
+    expect(screen.getByRole("heading", { name:"Schedule" })).toBeInTheDocument();
+    expect(screen.getByText("Games, practices, and team assignments")).toBeInTheDocument();
+    expect(screen.getByText("Away")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name:"Open Game Day" })).toBeInTheDocument();
+  });
 });

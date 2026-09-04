@@ -1461,6 +1461,44 @@ export const tokens = {
       loose:       1.75,
     },
 
+    // Semantic typography roles for the contemporary UX foundation.
+    // Georgia remains intentional brand/display character; dense interface
+    // copy and controls use the system sans stack for quick sideline scanning.
+    role: {
+      display: {
+        fontFamily: "Georgia,'Times New Roman',serif",
+        fontSize: '36px', fontWeight: 700, lineHeight: 1.2, letterSpacing: '-0.01em',
+      },
+      pageTitle: {
+        fontFamily: "Georgia,'Times New Roman',serif",
+        fontSize: '22px', fontWeight: 700, lineHeight: 1.2, letterSpacing: '-0.01em',
+      },
+      sectionTitle: {
+        fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif",
+        fontSize: '12px', fontWeight: 700, lineHeight: 1.4, letterSpacing: '0.06em',
+      },
+      cardTitle: {
+        fontFamily: "Georgia,'Times New Roman',serif",
+        fontSize: '18px', fontWeight: 700, lineHeight: 1.2, letterSpacing: '-0.01em',
+      },
+      body: {
+        fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif",
+        fontSize: '14px', fontWeight: 400, lineHeight: 1.6, letterSpacing: '0',
+      },
+      label: {
+        fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif",
+        fontSize: '13px', fontWeight: 600, lineHeight: 1.4, letterSpacing: '0',
+      },
+      caption: {
+        fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif",
+        fontSize: '12px', fontWeight: 400, lineHeight: 1.4, letterSpacing: '0',
+      },
+      button: {
+        fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif",
+        fontSize: '14px', fontWeight: 700, lineHeight: 1.4, letterSpacing: '0',
+      },
+    },
+
   },
 
   // ─── Z-INDEX ────────────────────────────────────────────────────────────────
