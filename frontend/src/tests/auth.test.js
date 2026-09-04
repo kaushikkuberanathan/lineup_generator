@@ -34,11 +34,22 @@ var mocks = vi.hoisted(function() {
       onAuthStateChange:  vi.fn(),
       signOut:            vi.fn(),
     },
+    networkHealth: {
+      reportNetworkFailure: vi.fn(),
+      reportNetworkSuccess: vi.fn(),
+    },
   };
 });
 
 vi.mock('../supabase', function() {
   return { supabase: { auth: mocks.auth } };
+});
+
+vi.mock('../utils/networkHealth.js', function() {
+  return {
+    reportNetworkFailure: mocks.networkHealth.reportNetworkFailure,
+    reportNetworkSuccess: mocks.networkHealth.reportNetworkSuccess,
+  };
 });
 
 import { useAuth } from '../hooks/useAuth.js';
@@ -126,6 +137,8 @@ describe('useAuth (#DOC_TEST_DEBT Auth Flow End-to-End)', function() {
       var call = global.fetch.mock.calls[0];
       expect(call[0]).toContain(ME_PATH);
       expect(call[1].headers.Authorization).toBe('Bearer test-token-abc');
+      expect(mocks.networkHealth.reportNetworkSuccess).toHaveBeenCalledTimes(1);
+      expect(mocks.networkHealth.reportNetworkFailure).not.toHaveBeenCalled();
 
       await h.unmount();
     });
@@ -174,6 +187,8 @@ describe('useAuth (#DOC_TEST_DEBT Auth Flow End-to-End)', function() {
       // downstream consumers (e.g. the Home API cache) key off user.id, so
       // this must match what was used while online.
       expect(h.result.current.user).toEqual({ id: 'u1', email: 'coach@example.com' });
+      expect(mocks.networkHealth.reportNetworkFailure).toHaveBeenCalledTimes(1);
+      expect(mocks.networkHealth.reportNetworkSuccess).not.toHaveBeenCalled();
 
       await h.unmount();
     });
@@ -251,6 +266,8 @@ describe('useAuth (#DOC_TEST_DEBT Auth Flow End-to-End)', function() {
       expect(h.result.current.authState).toBe('authenticated');
       expect(h.result.current.session).toEqual(MOCK_SESSION);
       expect(h.result.current.membership).toEqual(ONE_MEMBERSHIP_USER.memberships[0]);
+      expect(mocks.networkHealth.reportNetworkSuccess).toHaveBeenCalledTimes(1);
+      expect(mocks.networkHealth.reportNetworkFailure).not.toHaveBeenCalled();
 
       await h.unmount();
     });
@@ -346,6 +363,8 @@ describe('useAuth (#DOC_TEST_DEBT Auth Flow End-to-End)', function() {
       expect(h.result.current.session).toEqual(MOCK_SESSION);
       expect(h.result.current.user).toEqual({ id: 'u1', email: 'coach@example.com' });
       expect(h.result.current.error).toBeFalsy();
+      expect(mocks.networkHealth.reportNetworkFailure).toHaveBeenCalledTimes(1);
+      expect(mocks.networkHealth.reportNetworkSuccess).not.toHaveBeenCalled();
 
       await h.unmount();
     });

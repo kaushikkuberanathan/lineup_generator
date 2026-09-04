@@ -9,6 +9,7 @@
  * hook/component (a later Phase 1 wave).
  */
 import { ApiError, buildApiErrorFromResponse, isRetryableStatus, isNetworkError } from './errors.js';
+import { reportNetworkFailure, reportNetworkSuccess } from '../utils/networkHealth.js';
 
 const DEFAULT_DEADLINE_MS = 5000; // foreground navigation, section 25.2
 const SHADOW_DEADLINE_MS = 3000; // shadow reads (API_HOME_SHADOW_READ), section 25.2
@@ -131,14 +132,23 @@ export function createApiClient({ baseUrl, getAccessToken, fetchImpl, waitImpl }
           }
           throw new ApiError({ status: 0, code: 'UPSTREAM_TIMEOUT', message: 'Request timed out.', requestId, retryable: true });
         }
-        if (isNetworkError(err) && attempt < MAX_RETRIES) {
-          attempt += 1;
-          await wait(jitteredBackoff(attempt));
-          continue;
+        if (isNetworkError(err)) {
+          // #1062: a real network-level failure (not an HTTP error status)
+          // — feed it to the shared connectivity signal regardless of
+          // whether this attempt still has retry budget left.
+          reportNetworkFailure();
+          if (attempt < MAX_RETRIES) {
+            attempt += 1;
+            await wait(jitteredBackoff(attempt));
+            continue;
+          }
         }
         throw err;
       }
       clearTimeout(timer);
+
+      // Reaching the server at all — any status — proves the network is up.
+      reportNetworkSuccess();
 
       if (response.status === 304) {
         return { notModified: true, requestId, status: 304 };
