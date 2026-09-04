@@ -70,6 +70,7 @@ import { MyTeamRosterScreen } from './features/my-team/MyTeamRosterScreen.jsx';
 import { PlayerProfileScreen } from './features/my-team/PlayerProfileScreen.jsx';
 import { ScheduleScreen } from './features/schedule/ScheduleScreen.jsx';
 import { GameDayEntryScreen } from './features/game-day/GameDayEntryScreen.jsx';
+import { DefenseWorkspaceHeader } from './features/game-day/DefenseWorkspaceHeader.jsx';
 import { Button } from './components/ui/Button';
 import { StatusPill } from './components/ui/StatusPill';
 
@@ -4644,6 +4645,38 @@ export default function App() {
 
         {/* ── Finalized badge ───────────────────────────────── */}
 
+        {isFlagEnabled('UX_GAMEDAY_SETUP') ? (
+          <div style={{ marginBottom:tokens.space.md }}>
+            <DefenseWorkspaceHeader
+              lineupLocked={lineupLocked}
+              loading={isHydrating}
+              availableCount={_availableCount}
+              rosterCount={roster.length}
+              absentCount={absentTonight.length}
+              issueCount={errorCount}
+              hasLastAutoGrid={Boolean(lastAutoGrid)}
+              showDiamond={showDiamond}
+              gridView={gridView}
+              onAutoAssign={generateLineup}
+              onCheck={function() {
+                if (errorCount === 0) { alert("Lineup looks good! No issues found."); }
+                else { setIssuesPanelOpen(true); }
+              }}
+              onAutoFix={autoFix}
+              onRevert={function() {
+                if (confirm("Revert to last auto-assigned lineup?")) {
+                  persistGrid(lastAutoGrid); setLineupDirty(false);
+                }
+              }}
+              onClear={function() {
+                if (confirm("Clear all assignments?")) { persistGrid(initGrid(roster, innings)); setLineupDirty(true); }
+              }}
+              onFinalize={function() { setLockFlowOpen(true); }}
+              onToggleDiamond={function() { setShowDiamond(!showDiamond); if (showDiamond) { setDiamondInning(null); } }}
+              onGridViewChange={setGridView}
+            />
+          </div>
+        ) : (
         <div style={{ display:"flex", gap:"8px", marginBottom:"14px", flexWrap:"wrap", alignItems:"center" }}>
           {!lineupLocked ? (
             <button style={S.btn("gold")} onClick={generateLineup}
@@ -4707,6 +4740,7 @@ export default function App() {
             </div>
           </div>
         </div>
+        )}
 
         {lineupDirty && !lineupLocked && (
           <div style={{ background:"rgba(245,200,66,0.12)", border:"1px solid rgba(245,200,66,0.4)", borderRadius:"8px", padding:"10px 14px", marginBottom:"10px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:"10px", flexWrap:"wrap" }}>
