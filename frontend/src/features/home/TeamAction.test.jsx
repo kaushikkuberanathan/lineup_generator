@@ -33,4 +33,11 @@ describe('TeamAction', function () {
     render(<TeamAction action={action} />);
     expect(screen.queryByText(/./, { selector: 'p' })).toBeNull();
   });
+
+  test('primary marks one emphasized action while supporting actions stay outlined', function () {
+    var { rerender } = render(<TeamAction primary action={{ id: 'start_game_mode', label: 'Start Game Mode', enabled: true, href: '#' }} />);
+    expect(screen.getByRole('button').style.background).toBe('rgb(245, 200, 66)');
+    rerender(<TeamAction action={{ id: 'manage_roster', label: 'Manage roster', enabled: true, href: '#' }} />);
+    expect(screen.getByRole('button').style.background).toBe('rgb(255, 255, 255)');
+  });
 });
