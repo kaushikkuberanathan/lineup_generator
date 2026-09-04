@@ -1,6 +1,6 @@
 # Support / More Tab Regroup — Findings & Proposal
 
-**Status:** Proposal, UX-approved by KK on the interactive prototype (see below). Not yet built. No GitHub Issue/Story filed yet — file one before starting implementation, per `CLAUDE.md` → Issue & Backlog Hygiene.
+**Status:** Proposal, UX-approved by KK on the interactive prototype (see below). Not yet built. Tracked as [#1099](https://github.com/kaushikkuberanathan/lineup_generator/issues/1099) — still needs a matching Story entry in `ROADMAP.md` before implementation starts, per `CLAUDE.md` → Issue & Backlog Hygiene.
 
 **Origin:** UX discovery session, 2026-09-04. KK asked for inspiration from Citi's mobile "More" screen (three labeled card-groups: Account management / Documents & Communications / Support, each a white rounded card of chevron rows) and asked how to simplify Dugout Lineup's own Support/More tab the same way.
 
@@ -106,6 +106,6 @@ A highlighted "Game-Day Help" quick-access strip above the 3 groups (gold left-b
 
 ## 5. Open items before implementation starts
 
-1. File a Story in `docs/product/ROADMAP.md` + matching GitHub Issue (Issue & Backlog Hygiene rule — no story ships without one).
+1. File a Story in `docs/product/ROADMAP.md` linked to [#1099](https://github.com/kaushikkuberanathan/lineup_generator/issues/1099) (Issue & Backlog Hygiene rule — the GitHub Issue exists, the ROADMAP.md Story entry doesn't yet).
 2. Confirm with KK which of `renderAbout()` (inline, App.jsx) vs `AboutTab.jsx` (component file) is actually the live "About" destination — the discovery pass flagged this as unconfirmed.
 3. Decide whether the Phase 2 Game-Day quick-strip rides along or ships as a separate follow-up release.
