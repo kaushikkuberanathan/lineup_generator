@@ -57,6 +57,7 @@ export const FEATURE_FLAGS = {
   // Contemporary Dugout UX (#1052), Wave A. Keeps the My Team roster and
   // player-profile migration independently reversible from Home and routes.
   UX_MY_TEAM: false,
+  UX_SCHEDULE: false,
 };
 
 // Story 30 / #112 — DB-driven runtime flag cache. Populated once per app
