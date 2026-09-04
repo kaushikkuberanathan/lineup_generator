@@ -50,6 +50,7 @@ export function FoundationSpecimen() {
 
       <section aria-labelledby="icon-specimen-title">
         <Text as="h2" id="icon-specimen-title" variant="pageTitle">Icons</Text>
+        <Text variant="label">Light surface</Text>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: tokens.space.md }}>
           {ICON_NAMES.map(function (name) {
             return (
@@ -59,6 +60,19 @@ export function FoundationSpecimen() {
               </div>
             );
           })}
+        </div>
+        <div style={{ marginTop: tokens.space.md, padding: tokens.space.md, background: tokens.color.surface.dark, borderRadius: tokens.radius.md, color: tokens.color.text.onDark }}>
+          <Text variant="label" color="white">Dark surface</Text>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: tokens.space.md, marginTop: tokens.space.sm }}>
+            {['gameDay', 'lineup', 'baseball', 'glove', 'success', 'attention', 'lock', 'music'].map(function (name) {
+              return (
+                <div key={name} style={{ display: 'inline-flex', alignItems: 'center', gap: tokens.space.xs }}>
+                  <Icon name={name} />
+                  <Text variant="caption" color="white">{name}</Text>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </section>
 

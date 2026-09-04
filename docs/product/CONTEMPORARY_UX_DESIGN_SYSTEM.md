@@ -54,6 +54,23 @@ Consumers request semantic names through the shared `Icon` component rather than
 - Decorative icons omit an accessible role and are hidden from assistive technology.
 - Meaningful standalone icons require a label.
 - Icons inside labeled buttons remain decorative unless they add meaning not present in the label.
+
+### Semantic catalog and migration map
+
+The catalog is app-owned in `components/ui/Icon.jsx`. Consumer code requests
+intent (`gameDay`, `lineup`, `success`, `music`) rather than a package glyph.
+The Dugout Lineup `BrandMark` remains a separate full-color asset and must not
+enter this registry.
+
+| Migration wave | Semantic names | Replace incrementally |
+|---|---|---|
+| Navigation and team | `home`, `team`, `player`, `roster`, `settings`, `support` | Bottom navigation and team-management emoji as each screen migrates |
+| Schedule and Game Day | `calendar`, `gameDay`, `lineup`, `baseball`, `glove`, `music` | Schedule, lineup, batting, fielding, and songs controls |
+| Actions | `add`, `edit`, `delete`, `close`, `share`, `download`, `upload`, `search`, `overflow`, `back`, `chevronRight`, `externalLink` | Ad-hoc emoji and direct icon imports when their owning component migrates |
+| Status and visibility | `success`, `attention`, `info`, `view`, `lock`, `unlock` | Status marks, read-only cues, and lock-flow controls |
+
+Direct imports and legacy emoji outside migrated contemporary components are
+tracked replacement candidates, not violations requiring a wholesale rewrite.
 - Color inherits from the parent by default.
 - Supported sizes are small (16), medium (20), and large (24).
 - The full-color Dugout Lineup brand icon is not part of this registry.
