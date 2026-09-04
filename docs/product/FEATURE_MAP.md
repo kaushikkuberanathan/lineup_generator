@@ -1,6 +1,6 @@
 # Dugout Lineup — Feature Map
 
-> **Current production version: v3.3.2** (promoted 2026-09-03, PR #1054, merge `162061c`). See root `CLAUDE.md` § Current Version for the full promotion record and `docs/product/ROADMAP.md` for the release-by-release breakdown. The 2026-09-01 "production is v3.1.1" reconciliation banner formerly here is obsolete — v3.2.0, v3.3.0, v3.3.1, and v3.3.2 have all since promoted; removed 2026-09-03 rather than left to keep going stale.
+> **Current production version: v3.3.2** (promoted 2026-09-03, PR #1054, merge `162061c`) — **v3.3.3 release candidate** prepared 2026-09-04, not yet promoted to `main`; see root `CLAUDE.md` § Current Version for the pending scope and update this line with the real merge commit immediately after it promotes. See root `CLAUDE.md` § Current Version for the full promotion record and `docs/product/ROADMAP.md` for the release-by-release breakdown. The 2026-09-01 "production is v3.1.1" reconciliation banner formerly here is obsolete — v3.2.0, v3.3.0, v3.3.1, and v3.3.2 have all since promoted; removed 2026-09-03 rather than left to keep going stale.
 
 > Authoritative mapping of every shipped feature to its documentation and test coverage.
 > Update this file whenever a feature ships, changes behavior, or gains new tests.

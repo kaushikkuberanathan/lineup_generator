@@ -1,7 +1,7 @@
 # Lineup Generator — Master Development & Deployment Reference
 
-> **Production reconciliation — 2026-09-03 (updated; supersedes the 2026-08-30 v3.1.0 note):** production is v3.3.2 through
-> PR #1054 (`162061c`), using React 19.2.8, Vite 8.2.1, Express 5.2.1,
+> **Production reconciliation — 2026-09-03 (updated; supersedes the 2026-08-30 v3.1.0 note):** production is v3.3.2 through PR #1054 (`162061c`) — **v3.3.3 release candidate** prepared 2026-09-04, not yet promoted to `main`.
+> Using React 19.2.8, Vite 8.2.1, Express 5.2.1,
 > Vercel, Render Starter, and Supabase. The DEV Render service is
 > `lineup-generator-dev-backend.onrender.com`.
 
