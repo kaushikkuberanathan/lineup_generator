@@ -48,19 +48,49 @@ function readFile(relPath) {
   return fs.readFileSync(path.join(REPO_ROOT, relPath), 'utf8');
 }
 
+function escapeRegExp(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * A live "production is vX.Y.Z" line legitimately lags the canonical
+ * (frontend/package.json) version during release prep, between bumping the
+ * package version on a release branch and the actual develop→main promote —
+ * found doing exactly that for v3.3.3. That's not staleness (the doc hasn't
+ * failed to keep up with a promote that already happened); it's an
+ * explicitly acknowledged pending one. A line naming the canonical version
+ * alongside "release candidate" is accepted as current rather than flagged,
+ * the same way HISTORICAL_LEAD_IN accepts a line explicitly marked
+ * superseded — both are "the doc already says the honest, current thing,"
+ * just for the two different sides of a promote.
+ */
+function isAcknowledgedReleaseCandidate(line, canonical) {
+  if (!canonical) return false;
+  const versionMentioned = new RegExp(`v${escapeRegExp(canonical)}\\b`).test(line);
+  return versionMentioned && /release candidate/i.test(line);
+}
+
 // Generic helper: scan `content` line by line, skip lines whose own lead-in
 // marks them historical, return the version captured by `versionRegex`'s
 // single capture group in the first surviving matching line. `versionRegex`
 // must anchor to the specific phrase carrying the live claim (e.g.
 // "production is v(...)") — matching "any version-shaped string in the
 // line" is not enough when a line legitimately mentions two versions (the
-// live one and the old one it superseded).
-function findLiveLine(content, versionRegex) {
+// live one and the old one it superseded). `canonical`, when given, lets a
+// line that names it alongside "release candidate" count as current even
+// though the regex's own capture is the still-live older version (see
+// isAcknowledgedReleaseCandidate above).
+function findLiveLine(content, versionRegex, canonical) {
   const lines = content.split('\n');
   for (const line of lines) {
     if (HISTORICAL_LEAD_IN.test(line)) continue;
     const m = line.match(versionRegex);
-    if (m) return { version: m[1], line: line.trim().slice(0, 160) };
+    if (m) {
+      if (m[1] !== canonical && isAcknowledgedReleaseCandidate(line, canonical)) {
+        return { version: canonical, line: line.trim().slice(0, 160) };
+      }
+      return { version: m[1], line: line.trim().slice(0, 160) };
+    }
   }
   return null;
 }
@@ -128,19 +158,19 @@ const CHECKS = [
   },
   {
     file: 'docs/product/FEATURE_MAP.md',
-    find: (c) => findLiveLine(c, /Current production version:\s*v(\d+\.\d+\.\d+)/i),
+    find: (c, canonical) => findLiveLine(c, /Current production version:\s*v(\d+\.\d+\.\d+)/i, canonical),
   },
   {
     file: 'docs/product/DOC_TEST_DEBT.md',
-    find: (c) => findLiveLine(c, /production is v(\d+\.\d+\.\d+)/i),
+    find: (c, canonical) => findLiveLine(c, /production is v(\d+\.\d+\.\d+)/i, canonical),
   },
   {
     file: 'docs/product/PRODUCT_OPS.md',
-    find: (c) => findLiveLine(c, /production is v(\d+\.\d+\.\d+)/i),
+    find: (c, canonical) => findLiveLine(c, /production is v(\d+\.\d+\.\d+)/i, canonical),
   },
   {
     file: 'docs/product/MASTER_DEV_REFERENCE.md',
-    find: (c) => findLiveLine(c, /production is v(\d+\.\d+\.\d+)/i),
+    find: (c, canonical) => findLiveLine(c, /production is v(\d+\.\d+\.\d+)/i, canonical),
   },
 ];
 
@@ -167,7 +197,7 @@ function runChecks(readFileFn) {
 
     let found;
     try {
-      found = check.find(content);
+      found = check.find(content, canonical);
     } catch (err) {
       failures.push(`${check.file}: extractor threw (${err.message}) — fix check-version-currency.js`);
       continue;
@@ -217,7 +247,7 @@ function main() {
   process.exit(0);
 }
 
-module.exports = { runChecks, findLiveLine, HISTORICAL_LEAD_IN, CHECKS };
+module.exports = { runChecks, findLiveLine, HISTORICAL_LEAD_IN, isAcknowledgedReleaseCandidate, CHECKS };
 
 if (require.main === module) {
   main();

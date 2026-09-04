@@ -1,6 +1,6 @@
 # Dugout Lineup — Doc & Test Debt Ledger
 
-> **Branch boundary — 2026-09-03 (updated; superseded the 2026-08-30 v3.1.0 note kept below for history):** production is v3.3.2 at `162061c` (PR #1054). Counts and coverage additions after that commit describe current `develop`, not production. Every new entry must identify the SHA it was measured against.
+> **Branch boundary — 2026-09-03 (updated; superseded the 2026-08-30 v3.1.0 note kept below for history):** production is v3.3.2 at `162061c` (PR #1054) — **v3.3.3 release candidate** prepared 2026-09-04, not yet promoted to `main`. Counts and coverage additions after that commit describe current `develop`, not production. Every new entry must identify the SHA it was measured against.
 > **Superseded — 2026-08-30 (kept for history):** production is v3.1.0 at `02abfc0`.
 
 > **Purpose:** Running ledger of known documentation and test coverage gaps. The debt backlog — not the backlog of features, but the backlog of things that *should* be documented or tested and aren't.

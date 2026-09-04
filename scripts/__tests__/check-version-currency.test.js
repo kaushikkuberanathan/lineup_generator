@@ -10,7 +10,7 @@
 
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { runChecks, findLiveLine, HISTORICAL_LEAD_IN } = require('../check-version-currency.js');
+const { runChecks, findLiveLine, HISTORICAL_LEAD_IN, isAcknowledgedReleaseCandidate } = require('../check-version-currency.js');
 
 // ── findLiveLine / HISTORICAL_LEAD_IN ───────────────────────────────────────
 
@@ -43,6 +43,28 @@ test('HISTORICAL_LEAD_IN: matches only when "**" is immediately followed by the 
   assert.equal(HISTORICAL_LEAD_IN.test('**Superseded — old note'), true);
   assert.equal(HISTORICAL_LEAD_IN.test('**Historical note only**'), true);
   assert.equal(HISTORICAL_LEAD_IN.test('**Branch boundary — superseded the old note'), false);
+});
+
+// ── release-candidate exception (found doing v3.3.3's own release prep) ────
+
+test('isAcknowledgedReleaseCandidate: true only when the canonical version and "release candidate" both appear', () => {
+  assert.equal(isAcknowledgedReleaseCandidate('v3.3.3 release candidate prepared, not yet promoted', '3.3.3'), true);
+  assert.equal(isAcknowledgedReleaseCandidate('v3.3.3 release candidate', '3.3.3'), true);
+  assert.equal(isAcknowledgedReleaseCandidate('production is v3.3.2', '3.3.3'), false); // no candidate mention at all
+  assert.equal(isAcknowledgedReleaseCandidate('v3.3.3 promoted to main', '3.3.3'), false); // has the version, not "release candidate"
+  assert.equal(isAcknowledgedReleaseCandidate('v3.3.30 release candidate', '3.3.3'), false); // must not match a longer version as a substring
+});
+
+test('findLiveLine: a line naming the canonical version as a release candidate counts as current, not stale', () => {
+  const line = '> **Reconciled 2026-09-03:** production is v3.3.2 (PR #1054) — v3.3.3 release candidate prepared 2026-09-04, not yet promoted.';
+  const found = findLiveLine(line, /production is v(\d+\.\d+\.\d+)/i, '3.3.3');
+  assert.equal(found.version, '3.3.3');
+});
+
+test('findLiveLine: canonical param has no effect when the line is already current', () => {
+  const line = '> production is v3.3.3 (PR #1064).';
+  const found = findLiveLine(line, /production is v(\d+\.\d+\.\d+)/i, '3.3.3');
+  assert.equal(found.version, '3.3.3');
 });
 
 // ── runChecks ────────────────────────────────────────────────────────────────
@@ -78,6 +100,24 @@ function readFileFromFixture(files) {
 test('runChecks: all-consistent fixture set produces zero failures', () => {
   const { failures, canonical } = runChecks(readFileFromFixture(fixtureFiles({})));
   assert.equal(canonical, '3.3.2');
+  assert.deepEqual(failures, []);
+});
+
+test('runChecks: a doc acknowledging the canonical version as a release candidate is not a failure', () => {
+  const files = fixtureFiles({
+    'frontend/package.json': '{\n  "name": "lineup-generator",\n  "version": "3.3.3",\n',
+    'backend/package.json': '{\n  "name": "backend",\n  "version": "3.3.3",\n',
+    'frontend/package-lock.json': '{\n  "name": "lineup-generator",\n  "version": "3.3.3",\n  "lockfileVersion": 3,\n',
+    'backend/package-lock.json': '{\n  "name": "backend",\n  "version": "3.3.3",\n  "lockfileVersion": 3,\n',
+    'frontend/src/App.jsx': 'var APP_VERSION = "3.3.3";\n',
+    'CLAUDE.md': '## Current Version\n**v3.3.3** — release candidate, not yet promoted.\n',
+    'docs/product/ROADMAP.md': '> Last updated: 2026-09-04 (v3.3.3 release preparation).\n',
+    'docs/product/FEATURE_MAP.md': '> **Current production version: v3.3.2** (promoted 2026-09-03) — v3.3.3 release candidate prepared 2026-09-04, not yet promoted.\n',
+    'docs/product/DOC_TEST_DEBT.md': '> **Branch boundary — 2026-09-03:** production is v3.3.2 at `abc123` — v3.3.3 release candidate prepared, not yet promoted.\n',
+    'docs/product/PRODUCT_OPS.md': '> **Reconciled 2026-09-03:** production is v3.3.2 — v3.3.3 release candidate prepared, not yet promoted.\n',
+    'docs/product/MASTER_DEV_REFERENCE.md': '> **Production reconciliation — 2026-09-03:** production is v3.3.2 through PR #1 — v3.3.3 release candidate prepared, not yet promoted.\n',
+  });
+  const { failures } = runChecks(readFileFromFixture(files));
   assert.deepEqual(failures, []);
 });
 
