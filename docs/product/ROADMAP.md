@@ -1,9 +1,36 @@
 # Lineup Generator — Product Roadmap
 
-> Last updated: 2026-09-04 (v3.3.3 release preparation; batches #1060/#1061 offline-auth fix, #1062/#1064 network-health signal fix, #1059 version-currency tooling, and #1063 docs fix onto v3.3.2). Previously updated 2026-09-03 (v3.3.2 promoted to `main`, live in production — PR #1054, merge commit `162061c`, confirmed genuine 2-parent; post-promote sync PR #1055 merged as `354e707`, `main`/`develop` confirmed content-identical). Previously updated 2026-09-02 (v3.3.0 release preparation; scope is full develop tip `b9215dd` against production v3.2.0 `aa519bf`, no dedicated tracker issue); 2026-09-01 (v3.2.0 release preparation; scope frozen at `e79487d`, release tracker #1004).
+> Last updated: 2026-09-04 (v3.4.0 release preparation; scope frozen at `develop` tip `8384f24` against production v3.3.3 `a1b916a`, release tracker [#1121](https://github.com/kaushikkuberanathan/lineup_generator/issues/1121)). Previously updated 2026-09-04 (v3.3.3 promoted to `main`, live in production — PR #1065 merged `release/v3.3.3` → `main` as `d2f88bb`, then PR #1066 merged `develop` → `main` directly as `a1b916a` to absorb the remaining drift; this line previously described v3.3.3 as an unpromoted release candidate, which was stale by the time it was written — corrected here). Previously updated 2026-09-03 (v3.3.2 promoted to `main`, live in production — PR #1054, merge commit `162061c`, confirmed genuine 2-parent; post-promote sync PR #1055 merged as `354e707`, `main`/`develop` confirmed content-identical). Previously updated 2026-09-02 (v3.3.0 release preparation; scope is full develop tip `b9215dd` against production v3.2.0 `aa519bf`, no dedicated tracker issue); 2026-09-01 (v3.2.0 release preparation; scope frozen at `e79487d`, release tracker #1004).
 > MVP launched: March 24, 2026
 
-## v3.3.3 RELEASE CANDIDATE — Offline-auth logout fix, network-health signal fix, version-currency tooling, docs correction
+## v3.4.0 RELEASE CANDIDATE — Contemporary UX wave, More-tab regroup, and Home read-model performance fix
+
+Release tracker: [#1121](https://github.com/kaushikkuberanathan/lineup_generator/issues/1121). Candidate scope is frozen at `develop` tip `8384f24` (74 commits ahead of `main`'s v3.3.3 promote, `a1b916a`) — cut as `release/v3.4.0`. No open PRs against `develop` at the time of the cut.
+
+**Minor-version rationale:** the More-tab regroup (Story 341/#1099) is a real, default-on coach-facing change. The Contemporary UX Redesign wave (initiative #1052), though entirely dark behind independent default-off flags, adds substantial new surface area across seven components (My Team/Roster, Schedule, Game Day entry/readiness, Defense, Batting, Walk-up Songs, Support/Account) — large enough on its own to size the bump above patch, matching this repo's established v3.0.0/v3.3.0 convention rather than defaulting to patch because most of it is currently invisible.
+
+**Included scope:**
+- **More tab regroup (Story 341/#1099, PR #1103, `cf63d93`):** real, default-on. Replaces the flat 7-tab `MORE_SUBTABS` pill bar with a `MoreLanding` landing view (3 `Card` groups: Account / Get Help / About & Legal). Manual signed-in browser QA completed 2026-09-04 by KK on `dev.dugoutlineup.com` — nothing outstanding before promote. See the Story 341 entry above for full detail.
+- **Contemporary UX Redesign wave (initiative #1052)** — all behind independent default-off flags, zero live behavior change:
+  - My Team/Roster reconciliation (#1086/#1087, `UX_MY_TEAM`)
+  - Schedule (#1093, `UX_SCHEDULE`)
+  - Game Day entry/readiness shell — Wave C1 (#1094, `UX_GAMEDAY_SETUP`)
+  - Defense — Wave C2 (#1095, `UX_GAMEDAY_SETUP`)
+  - Batting — Wave C3 (#1096, `UX_GAMEDAY_SETUP`)
+  - Walk-up Songs — Wave C4 (#1097, `UX_GAMEDAY_SETUP`)
+  - Support/Account — Wave D (#1091, `UX_SUPPORT`/`UX_ACCOUNT`)
+- **[#1072](https://github.com/kaushikkuberanathan/lineup_generator/issues/1072) (P1, performance):** migration `034_home_read_model_rpc.sql` collapses `GET /api/v1/home`'s two sequential Supabase round trips (`team_memberships`, then `teams`+`team_data`) into one `SECURITY INVOKER`, service-role-only Postgres RPC. Root-caused to Render (Oregon) and Supabase (us-east-1) sitting in different AWS regions — this is the code-level mitigation, not the full fix; region colocation is a separate, larger infra decision tracked on #1072 itself, deliberately out of scope here. **Applied to DEV (`psqvzppphdedqkpmarwx`) and PROD (`hzaajccyurlyeweekvma`), verified identical on both during this release's prep** — grant shape (`service_role` execute-only, `anon`/`authenticated` denied), empty-identity behavior (returns empty arrays, not an error), and clean security advisors on both, before the `develop → main` promote. This ordering mattered: `develop`'s `home.js` calls the RPC unconditionally with no `.from()` fallback, so promoting without the migration live on PROD first would have made `GET /api/v1/home` 500 the moment Render redeployed — including for KK's own #1033 R4 self-testing cohort, which already has both `API_DRIVEN_HOME`/`API_DRIVEN_ROUTES` flags on via localStorage.
+- **Story 342 (#1112) scope frozen:** only child Story 343/#1113 (shared `getGameDayCriticalArticles()` helper) is done. Stories 345-347 (the quick-access strip component, its wiring into `MoreLanding`, and its analytics entry point) are deferred to the next release batch — nothing half-built ships in this one. Story 344 stays explicitly deferred pending usage data, per Story 342's own 2026-09-04 design decision.
+- Routine dependency bumps: vite, vitest/@vitest/ui, @vitejs/plugin-react, @testing-library/react (frontend); express-rate-limit, libphonenumber-js (backend).
+- Doc corrections: this file's and root `CLAUDE.md`'s stale "v3.3.3 not yet promoted" claims corrected to reflect the actual promote (`a1b916a`, PRs #1065/#1066).
+
+**Ship Gate status:** frontend 1852/1852 across 186 files (+93/+17 vs. v3.3.3's 1759/169 — the Contemporary UX Redesign wave plus the More-tab regroup), backend unit 361/361 (unchanged — no backend code touched by this batch beyond the migration itself), lint clean, production build clean, `check-version-currency.js` clean, `debt-p0` gate clear (0 open P0 items) — all directly re-run fresh on `release/v3.4.0`. `FEATURE_MAP.md` rows updated for every touched surface (row 4 Schedule gained the `UX_SCHEDULE` reference; rows 12/42/44/45/46 already covered the rest from prior same-day passes).
+
+---
+
+## ✅ v3.3.3 PROMOTED AND LIVE IN PROD — Offline-auth logout fix, network-health signal fix, version-currency tooling, docs correction
+
+**Corrected 2026-09-04 (during v3.4.0 release prep) — this section previously read "RELEASE CANDIDATE, not yet promoted," which was stale by the time it was written.** PR [#1065](https://github.com/kaushikkuberanathan/lineup_generator/pull/1065) merged `release/v3.3.3` → `main` (`d2f88bb`, parents `37c33bb` prior `main` + `7445ee7` release branch tip). PR [#1066](https://github.com/kaushikkuberanathan/lineup_generator/pull/1066) then merged `develop` → `main` directly (`a1b916a`, `origin/main`'s current HEAD, parents `987e356` + `d2f88bb`) to absorb the small amount of `develop` drift that had landed ahead of the release branch. Confirmed 2026-09-04: `origin/main` HEAD `a1b916a` is a real ancestor of `origin/develop`'s post-promote sync (PR #1067, merge `58e5d58`).
 
 Batched patch release (unlike v3.3.2's single-issue framing) — scope is everything accumulated on `develop` since v3.3.2 promoted: PR #1059 (deliberately held back at the time, per KK's explicit call that session), PR #1061, PR #1063, PR #1064. No dedicated release tracker issue.
 

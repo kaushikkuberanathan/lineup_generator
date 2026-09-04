@@ -1,5 +1,24 @@
 export var VERSION_HISTORY = [
   {
+    version: '3.4.0',
+    date: 'September 2026',
+    headline: 'A simpler More tab, plus behind-the-scenes groundwork',
+    techNote: 'Performance and reliability improvements',
+    userChanges: [
+      'The More tab is now a simple landing screen with three clear groups — Account, Get Help, and About & Legal — instead of a flat row of seven tabs. Terms & Privacy is now its own tap from that landing screen.',
+    ],
+    internalChanges: [
+      'PR #1103 (closes #1099, Story 341) replaced the flat MORE_SUBTABS pill bar with a MoreLanding landing view (3 Card groups of ListRow chevron rows); the old renderAccount() was split into AccountTeamsSection ("Your teams") and AccountProfileSection (name field). Sign out remains a direct-action row, no navigation. One deliberate behavior change: the old Account tab\'s "Terms of Service" quick-link was dropped in favor of Terms & Privacy being its own top-level row. Manual signed-in browser QA completed on dev.dugoutlineup.com before this release; see #1109 for the two flagged-and-confirmed behavior changes.',
+      'Fixed #1072 (P1, performance) via migration 034: GET /api/v1/home\'s two sequential Supabase round trips (team_memberships, then teams+team_data) collapsed into one SECURITY INVOKER, service-role-only Postgres RPC (home_read_model). Root-caused to Render (Oregon) and Supabase (us-east-1) sitting in different AWS regions; this is the code-level mitigation, not the full fix — region colocation is a separate, larger infra decision tracked on #1072 itself, deliberately not part of this release. Applied to DEV and PROD and verified identical on both during this release\'s prep (grant shape, empty-identity behavior, clean security advisors).',
+      'Contemporary UX Redesign wave (initiative #1052): reusable presentational shells and composition contracts for My Team/Roster (#1086/#1087), Schedule (#1093), Game Day entry/readiness (#1094), Defense (#1095), Batting (#1096), Walk-up Songs (#1097), and Support/Account (#1091) — each behind its own independent default-off flag (UX_MY_TEAM, UX_SCHEDULE, UX_GAMEDAY_SETUP, UX_SUPPORT, UX_ACCOUNT). Zero live behavior change for any current user; every legacy flag-off surface is preserved exactly as-is.',
+      'Phase 2 quick-access strip (Story 342/#1112) scope frozen at child Story 343/#1113 only (shared getGameDayCriticalArticles() helper, extracted for FAQSection and a future landing-view strip to share). Stories 345-347 (the strip component, its wiring into MoreLanding, and its analytics entry point) deferred to the next release batch — nothing half-built ships in this one.',
+      'Routine dependency bumps: vite, vitest/@vitest/ui, @vitejs/plugin-react, @testing-library/react (frontend); express-rate-limit, libphonenumber-js (backend).',
+      'Doc correction: CLAUDE.md and ROADMAP.md both still described v3.3.3 as an unpromoted release candidate — it had already promoted to main (a1b916a, PRs #1065/#1066). Corrected as part of this release\'s prep.',
+      'Version rationale: minor release. The More tab regroup is a real, default-on coach-facing change; the #1052 UX wave, though entirely dark behind independent flags, is substantial new surface area across seven components — large enough to size the bump above patch, matching this repo\'s established v3.0.0/v3.3.0 convention rather than defaulting to patch because most of it is currently invisible.',
+      'Verification: frontend 1852/1852 across 186 files, backend unit 361/361 (unchanged, no backend code touched), lint clean, production build clean, check-version-currency clean, debt-p0 gate clear (0 open P0 items).',
+    ],
+  },
+  {
     version: '3.3.3',
     date: 'September 2026',
     headline: 'Offline reliability fixes',
