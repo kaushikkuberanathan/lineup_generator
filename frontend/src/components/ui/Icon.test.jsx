@@ -9,7 +9,22 @@ describe('Icon semantic registry', function () {
       'home', 'team', 'calendar', 'gameDay', 'support', 'add', 'player',
       'lineup', 'roster', 'settings', 'share', 'chevronRight', 'overflow',
       'success', 'attention', 'baseball',
+      'edit', 'delete', 'close', 'download', 'upload', 'music', 'lock',
+      'unlock', 'view', 'info', 'externalLink',
     ]));
+  });
+
+  test('every registered semantic icon renders as an SVG', function () {
+    ICON_NAMES.forEach(function (name) {
+      var { container, unmount } = render(<Icon name={name} />);
+      expect(container.querySelector('svg'), name).not.toBeNull();
+      unmount();
+    });
+  });
+
+  test.each([['sm', '16'], ['md', '20'], ['lg', '24']])('maps %s to the shared pixel size', function (size, pixels) {
+    var { container } = render(<Icon name="lineup" size={size} />);
+    expect(container.querySelector('svg')).toHaveAttribute('width', pixels);
   });
 
   test('decorative icons are hidden from assistive technology by default', function () {

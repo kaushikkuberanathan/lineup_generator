@@ -5400,6 +5400,16 @@ compositions (#1076), and the first incremental screen migration (#1077).
 The pilot is limited to API-driven Home behind its existing default-off flag;
 legacy Home and application chrome remain unchanged.
 
+**Icon foundation completion (2026-09-04):** #1071 completes the app-owned
+semantic icon catalog used by the migration waves. The `Icon` wrapper owns
+small/medium/large sizing, inherited color, decorative and labeled
+accessibility modes, and safe unknown-name handling. Lucide remains the
+primary family with deliberate Game Icons baseball/bat exceptions; the
+full-color `BrandMark` remains separate and unchanged. The specimen now
+exercises the catalog on light and dark surfaces, while the documented
+migration map keeps legacy emoji and direct imports incremental rather than
+forcing a wholesale screen rewrite.
+
 **My Team Wave A implementation (2026-09-04):** #1086 and #1087 add a
 default-off `UX_MY_TEAM` boundary for the roster landing, individual player
 profile, and all-player editor. The landing uses the shared PageHeader,
