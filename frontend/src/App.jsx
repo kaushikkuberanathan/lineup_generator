@@ -65,6 +65,8 @@ import { HomeScreen as ApiHomeScreen } from './features/home/HomeScreen.jsx';
 import { parseAppRoute, buildAppRoute, resolveDestination, savePendingDestination, consumePendingDestination } from './api/routes.js';
 import { trackHomeDeepLinkResolved, trackHomeDeepLinkDenied } from './features/home/homeAnalytics.js';
 import { getHomeCache } from './api/homeCache.js';
+import { MyTeamRosterScreen } from './features/my-team/MyTeamRosterScreen.jsx';
+import { Button } from './components/ui/Button';
 
 // ============================================================
 // HELPERS
@@ -3356,6 +3358,49 @@ export default function App() {
         }
       }
       return { ab:ab, h:h, r:r, rbi:rbi, games:games };
+    }
+
+    if (rosterDetailMode === null && isFlagEnabled('UX_MY_TEAM')) {
+      var contemporaryAddPlayerForm = showAddForm ? (
+        <Card border padding="lg">
+          <div style={{ display:"flex", flexWrap:"wrap", gap:tokens.space.sm, alignItems:"center", marginBottom:tokens.space.sm }}>
+            <input value={newFirstName} onChange={function(e) { setNewFirstName(e.target.value); }}
+              onKeyDown={function(e) { if (e.key === "Enter") { addPlayer(); } }}
+              aria-label="First name" placeholder="First name*" maxLength={20} style={{ ...S.input, flex:"1 1 120px" }} autoFocus />
+            <input value={newLastName} onChange={function(e) { setNewLastName(e.target.value); }}
+              onKeyDown={function(e) { if (e.key === "Enter") { addPlayer(); } }}
+              aria-label="Last name" placeholder="Last name*" maxLength={20} style={{ ...S.input, flex:"1 1 120px" }} />
+          </div>
+          <div style={{ marginBottom:tokens.space.md }}>
+            <div style={{ fontFamily:tokens.font.family.sans, fontSize:tokens.font.size.body, fontWeight:tokens.font.weight.semibold, color:tokens.color.text.primary, marginBottom:tokens.space.xs }}>Batting hand</div>
+            <div style={{ fontFamily:tokens.font.family.sans, fontSize:tokens.font.size.sm, color:tokens.color.text.secondary, marginBottom:tokens.space.sm }}>Optional — helps the dugout prepare batters.</div>
+            <BattingHandSelector value={newBattingHand} onChange={setNewBattingHand} teamId={activeTeamId} />
+          </div>
+          <div style={{ display:"flex", gap:tokens.space.sm, justifyContent:"flex-end", flexWrap:"wrap" }}>
+            <Button variant="secondaryOutline" typography="contemporary" onClick={function() { setShowAddForm(false); setNewFirstName(""); setNewLastName(""); setNewBattingHand("U"); }}>Cancel</Button>
+            <Button typography="contemporary" leadingIcon="add" onClick={addPlayer}>Add player</Button>
+          </div>
+        </Card>
+      ) : null;
+
+      return (
+        <MyTeamRosterScreen
+          team={activeTeam ? {
+            name: activeTeam.name,
+            ageGroup: activeTeam.ageGroup,
+            sport: activeTeam.sport,
+            seasonLabel: activeTeam.season ? formatSeason(activeTeam.season, activeTeam.year) : '',
+          } : null}
+          players={sortedRoster}
+          locked={lineupLocked}
+          loading={isHydrating}
+          offline={!isOnline}
+          addPlayerForm={contemporaryAddPlayerForm}
+          onAddPlayer={function() { setShowAddForm(true); }}
+          onOpenPlayer={function(playerName) { navigateRosterDetail(playerName); }}
+          onViewAll={function() { navigateRosterDetail("all"); }}
+        />
+      );
     }
 
     return (
@@ -7623,6 +7668,10 @@ export default function App() {
 
     if (rosterDetailMode !== null) {
       return <div style={{ padding:"14px 12px 80px" }}>{renderRoster()}</div>;
+    }
+
+    if (isFlagEnabled('UX_MY_TEAM')) {
+      return renderRoster();
     }
 
     return (

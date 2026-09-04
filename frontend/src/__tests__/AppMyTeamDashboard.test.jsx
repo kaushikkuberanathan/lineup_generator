@@ -259,4 +259,19 @@ describe("My Team game-ready dashboard (#993)", function () {
     expect(await screen.findByText("Review and edit every player profile in one place.")).toBeInTheDocument();
     expect(screen.getByText("Alex Rivera")).toBeInTheDocument();
   });
+
+  it("renders the contemporary roster landing behind UX_MY_TEAM without changing profile routing", async function () {
+    localStorage.setItem("flag_UX_MY_TEAM", "true");
+    render(<App />);
+    fireEvent.click(await screen.findByRole("button", { name:/My Team/ }));
+
+    expect(await screen.findByRole("heading", { name:"My Team" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name:"Add player" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name:/Open Alex player profile/ })).toBeInTheDocument();
+    expect(screen.queryByText("All Players — Quick Summary")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name:/Open Alex player profile/ }));
+    expect(await screen.findByText("Review and edit this player's complete roster profile.")).toBeInTheDocument();
+    expect(window.location.search).toBe("?player=Alex+Rivera");
+  });
 });
