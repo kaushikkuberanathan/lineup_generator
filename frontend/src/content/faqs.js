@@ -308,3 +308,12 @@ export var HELP_ARTICLES = [
     keywords: ["no signal", "airplane mode", "works offline"]
   }
 ];
+
+/**
+ * The gameDayCritical subset, in HELP_ARTICLES's own order. Single source
+ * for every consumer that needs this list (FAQSection's in-page quick
+ * access, the More-landing quick-access strip) so they can't drift apart.
+ */
+export function getGameDayCriticalArticles() {
+  return HELP_ARTICLES.filter(function(a) { return a.gameDayCritical; });
+}
