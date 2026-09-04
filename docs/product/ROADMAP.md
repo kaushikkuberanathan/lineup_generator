@@ -26,6 +26,8 @@ Release tracker: [#1121](https://github.com/kaushikkuberanathan/lineup_generator
 
 **Ship Gate status:** frontend 1852/1852 across 186 files (+93/+17 vs. v3.3.3's 1759/169 — the Contemporary UX Redesign wave plus the More-tab regroup), backend unit 361/361 (unchanged — no backend code touched by this batch beyond the migration itself), lint clean, production build clean, `check-version-currency.js` clean, `debt-p0` gate clear (0 open P0 items) — all directly re-run fresh on `release/v3.4.0`. `FEATURE_MAP.md` rows updated for every touched surface (row 4 Schedule gained the `UX_SCHEDULE` reference; rows 12/42/44/45/46 already covered the rest from prior same-day passes).
 
+**Merged to `develop` 2026-09-04** (PR [#1122](https://github.com/kaushikkuberanathan/lineup_generator/pull/1122), regular merge, `5a9d494`) — confirmed a genuine 2-parent merge (parents `8384f24` prior `develop` + `fd12bb1` release branch tip). All CI checks green before merge (Frontend Tests, Backend Unit + Integration, RLS Policy Suite, CodeQL, sync-script, PR-title-direction guard), Vercel preview deployed clean, `mergeable_state: clean`. **Soak explicitly overridden 2026-09-04 by KK, citing fall practices having started** — same "fall season readiness" pattern as v2.9.0 through v3.3.0's overrides; `develop`'s soak-lock branch protection is already off (honor-system only, per the cross-track note in `CLAUDE.md`), so this override doesn't require unchecking anything, just proceeding straight to the `main` promote.
+
 ---
 
 ## ✅ v3.3.3 PROMOTED AND LIVE IN PROD — Offline-auth logout fix, network-health signal fix, version-currency tooling, docs correction
