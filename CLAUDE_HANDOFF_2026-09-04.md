@@ -11,6 +11,34 @@ and in `docs/product/ROADMAP.md`/`CLAUDE.md`'s Current Version section).
 
 ---
 
+## Immediate next task: pick up #1072
+
+**This is the top priority for the next session**, added after this doc's
+initial merge (PR #1068) — the rest of the doc below still reflects where
+things stood before this finding, except where noted.
+
+While continuing #1033 this same session, the §29.2 performance budgets
+(server latency, payload size, cached-paint timing) were measured against
+real production data for the first time — previously assumed, never checked.
+Payload passed comfortably. **Server latency failed:** p95 = 816ms against
+`GET /api/v1/home` (41 real production requests, Render logs, 2026-09-03 to
+2026-09-04) vs. the documented 300ms budget — median alone (386ms) already
+exceeds it. Filed as **[#1072](https://github.com/kaushikkuberanathan/lineup_generator/issues/1072)**
+with full measured evidence, a not-yet-verified hypothesis (two sequential
+Supabase round-trips — a `team_memberships` query, then `teams`+`team_data`
+in parallel — likely baseline network/connection overhead, not per-team
+scaling, since this was measured at only 1-2 teams), and acceptance criteria
+(root-cause, fix or explicitly accept a revised budget, re-measure the same
+way, update §29.2 and #1033's rollout-boundary record).
+
+**Not blocking** the current R4 monitoring window (that gate is exposure/
+correctness, which is on track) — **but required before R5 planning starts.**
+Full detail, including the raw latency/payload numbers and the exact Render
+log query used, is in #1072 itself and in the two #1033 comments it
+references (rollout-boundary records, then the measurement comment).
+
+---
+
 ## Where things actually stand
 
 - **v3.3.3 is live in production**, promoted via PR #1066 (merge `a1b916a`).
@@ -143,18 +171,22 @@ DEV — don't assume a write to one shows up in the other).
 
 ## Suggested next steps (in priority order)
 
-1. **Nothing urgent — this is a watch-and-wait phase.** Keep using the app
-   under the API-driven flags as real day-to-day usage, not synthetic test
-   scenarios, and periodically re-check the five Mixpanel events against the
+0. **Pick up #1072 first** — root-cause the `GET /api/v1/home` latency budget
+   miss (see the section at the top of this doc). This is the one item with
+   a concrete, actionable next step; everything below is watch-and-wait or
+   conditional on a future decision.
+1. Otherwise, this is a watch-and-wait phase. Keep using the app under the
+   API-driven flags as real day-to-day usage, not synthetic test scenarios,
+   and periodically re-check the five Mixpanel events against the
    39/33/9/11/1 baseline above.
 2. When there's enough monitoring-window signal (or a deliberate decision to
    stop waiting), decide: does R4 need a real second user? If yes, `
    fetchTeamFlags` needs to be built first — scope that as its own piece of
    work, not a quick DB insert.
-3. If/when R4's evidence bar is met, that's the point to plan R5 (default-on
-   cutover) — acceptance thresholds should be defined explicitly before
-   flipping `API_DRIVEN_HOME` on for everyone, not inferred from R4 in
-   hindsight.
+3. If/when R4's evidence bar is met AND #1072 is resolved or explicitly
+   accepted, that's the point to plan R5 (default-on cutover) — acceptance
+   thresholds should be defined explicitly before flipping `API_DRIVEN_HOME`
+   on for everyone, not inferred from R4 in hindsight.
 4. Re-enable `develop`'s soak-lock branch protection before the *next*
    release cycle's promote-and-sync dance needs it — only if/when KK asks;
    it's deliberately left off for now.
