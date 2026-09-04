@@ -15,8 +15,8 @@ import { loadJSON, saveJSON } from '../../utils/storage';
  *
  * Props:
  *   show           bool — parent-computed auth+empty-name gate
- *   onOpenAccount  fn   — navigates to the Account tab (parent wires
- *                         setPrimaryTab('more') + setMoreTab('account'))
+ *   onOpenAccount  fn   — navigates to the Profile name screen (parent wires
+ *                         setPrimaryTab('more') + setMoreTab('account-profile'))
  */
 export function HomeNameNudge({ show, onOpenAccount }) {
   const [dismissed, setDismissed] = useState(function() {
