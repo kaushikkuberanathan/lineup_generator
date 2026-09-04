@@ -317,6 +317,125 @@ front.
 
 ---
 
+## Phase 2 — Game-Day quick-access strip on the More landing view
+
+### Story 342 (P2) — Master: decompose the Phase 2 quick-access strip for implementation <!-- #1112 -->
+Status: Open — not started. Scoping/decomposition only, no code written yet.
+Discovered: 2026-09-04, revisiting the deferred Phase 2 idea from
+`docs/product/SUPPORT_TAB_REGROUP_PROPOSAL.md` § 3 (shown in the original
+interactive prototype as a gold-accent "Game-Day Help" row above
+`MoreLanding`'s 3 groups, tagged Phase 2 to keep it out of #1099's MVP scope).
+
+Symptom: N/A — forward scoping. The idea existed only as a mockup and a
+paragraph; nothing was broken down into buildable, independently-testable
+pieces.
+
+Scope: Coordinate child Stories 343-347 below. Ships behind the
+**already-live `UX_SUPPORT` flag** — this is squarely part of the same
+Contemporary Support wave (#1052) that shipped `MoreLanding`'s icon tiles
+and `SupportWorkspace` headers, not a separate initiative, so no new flag
+is proposed. This master closes once all five children are merged to
+`develop` and the strip is visible (flag-on) on a real device.
+
+**Open design question, not yet decided — flag for KK before Story 345
+starts:** `FAQSection` already renders its 5 `gameDayCritical` articles
+first, unconditionally, above "Browse Help," whenever the screen isn't
+mid-search — so tapping "Help" from the landing view *already* lands a
+coach on the Game-Day quick list one tap later. The strip's real
+incremental value is (a) surfacing "5 quick answers" as visible proof
+*before* any tap, for a coach who doesn't know Help exists, and/or (b) a
+true zero-extra-tap jump straight to one specific article. Story 344
+(the `initialArticleId` deep-link) only matters if KK wants (b). Decide
+this before building Story 345, not after.
+
+**Acceptance criteria:**
+- Real coaches see "N quick answers for right now" (a real, computed
+  count, not hardcoded) surfaced on the More landing view once `UX_SUPPORT`
+  is on for them.
+- Tapping the strip reaches real game-day help content in one tap from
+  the strip itself.
+- No new feature flag introduced — reuses `UX_SUPPORT`.
+- Zero behavior change for anyone with `UX_SUPPORT` off (matches every
+  other Contemporary-wave surface's flag-off guarantee).
+
+### Story 343 (P3) — Extract a shared `getGameDayCriticalArticles()` helper <!-- #1113 -->
+Status: Open — not started. Depends on nothing; ships first.
+Scope: `frontend/src/content/faqs.js` currently has the `gameDayCritical`
+filter duplicated inline as `FAQSection.jsx`'s own `GAME_DAY_ARTICLES`
+module-level constant. Extract a small exported helper (e.g.
+`getGameDayCriticalArticles()`) so `FAQSection` and the new quick-access
+strip (Story 345) both source the same 5-article list from one place
+instead of two copies that could drift. Pure refactor — `FAQSection`'s
+own rendered output must not change at all.
+Acceptance criteria: `FAQSection.test.jsx`'s existing Game-Day Help
+assertions still pass unmodified; a new small unit test on the extracted
+helper itself (correct filter, correct count, stable order).
+
+### Story 344 (P3) — `FAQSection`: optional `initialArticleId` deep-link prop <!-- #1114 -->
+Status: Open — not started, and only needed if Story 342's open design
+question resolves toward "jump straight to one article." Depends on
+nothing technically; can ship independently of Story 342's decision and
+just go unused until/unless it's wired up.
+Scope: Mirror `LegalSection`'s existing `initialDocId` prop pattern — an
+optional `initialArticleId` that, present on mount, pre-selects that
+article's category and opens its accordion row immediately, no extra tap
+or search needed. Unlike the Account-tab Terms shortcut #1103 deliberately
+removed, this one has a real destination-doesn't-exist-elsewhere reason to
+exist: one-tap-to-answer from anywhere (the quick-access strip today,
+conceivably a push notification or support-search result later).
+Acceptance criteria: new `FAQSection.test.jsx` cases — prop present opens
+the right article/category on mount; prop absent behaves exactly as
+today (regression guard); manually triggering search or switching
+category after mount still works normally.
+
+### Story 345 (P2) — Build `GameDayQuickAccessStrip` (presentational, isolated) <!-- #1115 -->
+Status: Open — not started. Depends on Story 343 (shared article list) and
+on Story 342's open design question being answered first.
+Scope: New `frontend/src/components/Support/GameDayQuickAccessStrip.jsx`
+— a single `Card` row, gold-left-border accent, `gameDay` icon (already
+in `components/ui/Icon.jsx`'s catalog), title "Game-Day Help," subtitle
+"`{n}` quick answers for right now" using Story 343's real count (never a
+hardcoded number). Renders only when a `visible` prop is true — the
+consumer (Story 346) is responsible for gating that on `UX_SUPPORT`,
+matching how `MoreLanding`'s existing icon tiles are gated today. Built
+and unit-tested in isolation, not yet wired into `MoreLanding`.
+Acceptance criteria: own test file — renders when visible, renders
+nothing when not, shows the real article count, fires its `onSelect`/
+`onNavigate` callback on tap with whatever payload Story 342's design
+decision requires (a bare navigate-to-Help call, or an article id for
+Story 344's prop).
+
+### Story 346 (P3) — Wire the strip into `MoreLanding` <!-- #1116 -->
+Status: Open — not started. Depends on Story 345.
+Scope: Add `GameDayQuickAccessStrip` above the Account group in
+`MoreLanding.jsx`, gated by the existing `supportEnabled` prop (same flag
+`MoreLanding` already threads through for its icon tiles — no new prop
+name, no new flag). Wire its tap handler into the existing `onNavigate`
+callback App.jsx already passes down.
+Acceptance criteria: `MoreLanding.test.jsx` — new case(s) alongside the
+existing "adds semantic icon tiles only when the contemporary flags are
+enabled" test, asserting the strip renders only when `supportEnabled` is
+true and its tap reaches `onNavigate` with the right argument; full
+existing `MoreLanding.test.jsx` suite still green (regression guard for
+the flag-off path).
+
+### Story 347 (P3) — Analytics: distinguish the landing-strip entry point <!-- #1117 -->
+Status: Open — not started. Depends on Story 346 (needs the real tap
+event to instrument).
+Scope: `FAQSection.jsx` already tags its own in-page Game-Day Help quick
+list with `entry_point: "game_day_quick_access"` on the `help_article_open`
+Mixpanel event. Add a distinct entry-point value (e.g.
+`"more_landing_quick_access"`) for taps that originate from the new
+landing-view strip, so the two surfaces are distinguishable in Mixpanel
+once both exist side by side.
+Acceptance criteria: a passed-through `entryPoint` prop (or equivalent)
+threading from `MoreLanding` → `FAQSection`'s open-article call for this
+specific path; existing `help_article_open`/`help_category_view` tests
+unaffected; one new assertion confirming the distinct entry-point value
+fires for a strip-originated tap.
+
+---
+
 ## ✅ v3.1.0 PROMOTED AND LIVE IN PROD — consent, Game Day, and sync reliability
 
 Release tracker: [#939](https://github.com/kaushikkuberanathan/lineup_generator/issues/939). Promoted to `main` on 2026-08-30 through PR [#959](https://github.com/kaushikkuberanathan/lineup_generator/pull/959), merge commit `02abfc0`. Production verification: `dugoutlineup.com` returned HTTP 200 and the Render `/health` endpoint reported `version: 3.1.0`, `status: ok`, and `db: ok` during the 2026-08-30 documentation reconciliation. The Terms of Service experience landed as 3 PRs (#907, #910, #913) on top of v3.0.0; the release also includes the Game Day and reliability work merged afterward.
