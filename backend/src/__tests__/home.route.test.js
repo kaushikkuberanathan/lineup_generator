@@ -2,7 +2,15 @@
  * home.route.test.js
  * Route-level coverage for GET /api/v1/home (Story #1023) — the versioned
  * Home read-model contract's real implementation. Hermetic: supabaseAdmin
- * is monkey-patched per table, no network, no live DB.
+ * is monkey-patched at the RPC boundary, no network, no live DB.
+ *
+ * #1072 (RED->GREEN, migration 034): the route used to issue two sequential
+ * .from() calls (team_memberships, then teams+team_data). It now issues one
+ * supabaseAdmin.rpc('home_read_model', ...) call — public.home_read_model
+ * does the same membership/teams/team_data resolution inside a single
+ * Postgres statement. This file's stub was rewritten to match: .rpc() is
+ * stubbed instead of .from(), and .from() is left throwing so a regression
+ * back to the old per-table query shape fails loudly instead of silently.
  */
 const { test, describe, afterEach } = require('node:test');
 const assert = require('node:assert/strict');
@@ -14,6 +22,7 @@ const { supabaseAdmin } = require('../lib/supabase');
 const app = require('../../app');
 
 const originalAdminFrom = supabaseAdmin.from;
+const originalAdminRpc = supabaseAdmin.rpc;
 const originalGetUser = supabaseAdmin.auth.getUser;
 
 const USER_ID = '44444444-4444-4444-8444-444444444444';
@@ -22,13 +31,14 @@ const TOKEN = 'fake-bearer-token';
 
 /**
  * @param {object} opts
- * @param {Array}  [opts.memberships] - team_memberships rows the .or().eq('status','active') query returns
- * @param {Array}  [opts.teams]       - teams rows the .in('id', ...) query returns
- * @param {Array}  [opts.teamData]    - team_data rows the .in('team_id', ...) query returns
+ * @param {Array}  [opts.memberships] - memberships the home_read_model() RPC returns
+ * @param {Array}  [opts.teams]       - teams the home_read_model() RPC returns
+ * @param {Array}  [opts.teamData]    - team_data rows the home_read_model() RPC returns
  * @param {boolean}[opts.rejectAuth]
+ * @param {object} [opts.rpcError]    - if set, the RPC call resolves with this error instead of data
  */
-function installStubs({ memberships = [], teams = [], teamData = [], rejectAuth = false } = {}) {
-  const calls = { fromTables: [], membershipFilter: null };
+function installStubs({ memberships = [], teams = [], teamData = [], rejectAuth = false, rpcError = null } = {}) {
+  const calls = { rpcCalls: [], rpcArgs: null };
 
   supabaseAdmin.auth.getUser = async () => {
     if (rejectAuth) return { data: null, error: { message: 'invalid token' } };
@@ -36,37 +46,14 @@ function installStubs({ memberships = [], teams = [], teamData = [], rejectAuth 
   };
 
   supabaseAdmin.from = (table) => {
-    calls.fromTables.push(table);
+    throw new Error(`Unexpected .from('${table}') call — GET /api/v1/home should resolve everything through the home_read_model RPC (see #1072).`);
+  };
 
-    if (table === 'team_memberships') {
-      const chain = {
-        select: () => chain,
-        or: () => chain,
-        eq: async (field, value) => {
-          calls.membershipFilter = [field, value];
-          return { data: memberships, error: null };
-        },
-      };
-      return chain;
-    }
-
-    if (table === 'teams') {
-      const chain = {
-        select: () => chain,
-        in: async () => ({ data: teams, error: null }),
-      };
-      return chain;
-    }
-
-    if (table === 'team_data') {
-      const chain = {
-        select: () => chain,
-        in: async () => ({ data: teamData, error: null }),
-      };
-      return chain;
-    }
-
-    throw new Error(`Unexpected table in home.route.test.js: ${table}`);
+  supabaseAdmin.rpc = async (fnName, args) => {
+    calls.rpcCalls.push(fnName);
+    calls.rpcArgs = args;
+    if (rpcError) return { data: null, error: rpcError };
+    return { data: { memberships, teams, team_data: teamData }, error: null };
   };
 
   return calls;
@@ -74,6 +61,7 @@ function installStubs({ memberships = [], teams = [], teamData = [], rejectAuth 
 
 afterEach(() => {
   supabaseAdmin.from = originalAdminFrom;
+  supabaseAdmin.rpc = originalAdminRpc;
   supabaseAdmin.auth.getUser = originalGetUser;
 });
 
@@ -82,7 +70,7 @@ describe('GET /api/v1/home', () => {
     const calls = installStubs({ rejectAuth: true });
     const res = await request(app).get('/api/v1/home');
     assert.equal(res.status, 401);
-    assert.equal(calls.fromTables.length, 0);
+    assert.equal(calls.rpcCalls.length, 0);
   });
 
   test('H2: zero active memberships -> 200 with defaultTeamId null and an empty teams array', async () => {
@@ -94,10 +82,11 @@ describe('GET /api/v1/home', () => {
     assert.deepEqual(res.body.teams, []);
   });
 
-  test('H3: the membership query filters on status=active', async () => {
+  test('H3: the RPC is called once with the resolved user id and email (status=active filtering now lives inside home_read_model, migration 034)', async () => {
     const calls = installStubs({ memberships: [] });
     await request(app).get('/api/v1/home').set('Authorization', `Bearer ${TOKEN}`);
-    assert.deepEqual(calls.membershipFilter, ['status', 'active']);
+    assert.deepEqual(calls.rpcCalls, ['home_read_model']);
+    assert.deepEqual(calls.rpcArgs, { p_user_id: USER_ID, p_email: USER_EMAIL });
   });
 
   test('H4: one admin-role team with an upcoming game -> full response shape', async () => {
@@ -197,7 +186,7 @@ describe('GET /api/v1/home', () => {
     assert.equal(res.body.teams[0].id, 't2');
   });
 
-  test('H9: exactly three supabaseAdmin.from() calls regardless of team count (no per-team amplification)', async () => {
+  test('H9: exactly one supabaseAdmin.rpc() call regardless of team count (no per-team amplification, #1072)', async () => {
     const memberships = Array.from({ length: 6 }, (_, i) => ({ team_id: `t${i}`, role: 'coach', status: 'active' }));
     const teams = memberships.map((m, i) => ({ id: m.team_id, name: `Team ${i}`, age_group: '8U', season: 'Fall', year: 2026, sport: 'baseball' }));
     const teamData = memberships.map((m) => ({ team_id: m.team_id, roster: [], schedule: [], grid: {}, batting_order: [], locked: false, attendance_overrides: {} }));
@@ -205,8 +194,8 @@ describe('GET /api/v1/home', () => {
     const res = await request(app).get('/api/v1/home').set('Authorization', `Bearer ${TOKEN}`);
     assert.equal(res.status, 200);
     assert.equal(res.body.teams.length, 6);
-    assert.equal(calls.fromTables.length, 3);
-    assert.deepEqual(calls.fromTables.sort(), ['team_data', 'team_memberships', 'teams']);
+    assert.equal(calls.rpcCalls.length, 1);
+    assert.deepEqual(calls.rpcCalls, ['home_read_model']);
   });
 
   test('H10: caller-supplied X-Request-ID is echoed back on the response', async () => {
@@ -252,13 +241,8 @@ describe('GET /api/v1/home', () => {
     assert.equal(team.nextEvent, null);
   });
 
-  test('H14: a DB error on the memberships query returns the standard 500 error envelope', async () => {
-    supabaseAdmin.auth.getUser = async () => ({ data: { user: { id: USER_ID, email: USER_EMAIL } }, error: null });
-    supabaseAdmin.from = () => ({
-      select: function () { return this; },
-      or: function () { return this; },
-      eq: async () => ({ data: null, error: { message: 'boom' } }),
-    });
+  test('H14: a DB error from the home_read_model RPC returns the standard 500 error envelope', async () => {
+    installStubs({ rpcError: { message: 'boom' } });
     const res = await request(app).get('/api/v1/home').set('Authorization', `Bearer ${TOKEN}`);
     assert.equal(res.status, 500);
     assert.equal(res.body.error.code, 'INTERNAL_ERROR');
@@ -314,10 +298,14 @@ describe('GET /api/v1/home', () => {
     const calls = installStubs({ rejectAuth: true });
     const res = await request(app).get('/api/v1/home').set('Authorization', 'Bearer garbage-token');
     assert.equal(res.status, 401);
-    assert.equal(calls.fromTables.length, 0);
+    assert.equal(calls.rpcCalls.length, 0);
   });
 
   test('H17: the profiles table is never queried — a missing profile row cannot hide a valid membership (#1025)', async () => {
+    // Post-#1072, everything resolves through the home_read_model RPC;
+    // installStubs() makes supabaseAdmin.from() throw on any call at all
+    // (see its definition above), so a route that reached for 'profiles' -
+    // or any other table - directly would fail this test loudly.
     const calls = installStubs({
       memberships: [{ team_id: 't1', role: 'coach', status: 'active' }],
       teams: [{ id: 't1', name: 'No Profile Yet', age_group: '8U', season: 'Fall', year: 2026, sport: 'baseball' }],
@@ -326,7 +314,7 @@ describe('GET /api/v1/home', () => {
     const res = await request(app).get('/api/v1/home').set('Authorization', `Bearer ${TOKEN}`);
     assert.equal(res.status, 200);
     assert.equal(res.body.teams.length, 1);
-    assert.ok(!calls.fromTables.includes('profiles'));
+    assert.deepEqual(calls.rpcCalls, ['home_read_model']);
   });
 
   test('H18: mixed roles across teams in one response — each team carries only its own role\'s actions', async () => {
@@ -365,7 +353,7 @@ describe('GET /api/v1/home', () => {
     assert.ok(!team.actions.some((a) => a.id === 'start_game_mode' || a.id === 'claim_scoring'));
   });
 
-  test('H20: ten teams — payload stays under the 50KB budget and query count stays at 3 (section 4.3)', async () => {
+  test('H20: ten teams — payload stays under the 50KB budget and query count stays at 1 (section 4.3, #1072)', async () => {
     const memberships = Array.from({ length: 10 }, (_, i) => ({ team_id: `team_${i}`, role: 'coach', status: 'active' }));
     const teams = memberships.map((m, i) => ({ id: m.team_id, name: `Team ${i}`, age_group: '8U', season: 'Fall', year: 2026, sport: 'baseball' }));
     const teamData = memberships.map((m) => ({
@@ -377,7 +365,7 @@ describe('GET /api/v1/home', () => {
     const res = await request(app).get('/api/v1/home').set('Authorization', `Bearer ${TOKEN}`);
     assert.equal(res.status, 200);
     assert.equal(res.body.teams.length, 10);
-    assert.equal(calls.fromTables.length, 3);
+    assert.equal(calls.rpcCalls.length, 1);
     const payloadBytes = Buffer.byteLength(JSON.stringify(res.body), 'utf8');
     assert.ok(payloadBytes < 50 * 1024, `payload was ${payloadBytes} bytes, budget is 50KB`);
   });

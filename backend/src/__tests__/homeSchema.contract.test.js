@@ -36,34 +36,28 @@ describe('Home read-model fixtures conform to homeReadModel.v1.schema.json', () 
 
 describe('Live GET /api/v1/home responses conform to the schema', () => {
   const originalAdminFrom = supabaseAdmin.from;
+  const originalAdminRpc = supabaseAdmin.rpc;
   const originalGetUser = supabaseAdmin.auth.getUser;
   const TOKEN = 'fake-bearer-token';
 
   afterEach(() => {
     supabaseAdmin.from = originalAdminFrom;
+    supabaseAdmin.rpc = originalAdminRpc;
     supabaseAdmin.auth.getUser = originalGetUser;
   });
 
+  // #1072/migration 034: the route now resolves memberships/teams/team_data
+  // through a single home_read_model RPC call instead of three separate
+  // .from() queries — see home.route.test.js's header for the full context.
   function installStubs({ memberships, teams, teamData }) {
     supabaseAdmin.auth.getUser = async () => ({
       data: { user: { id: '55555555-5555-4555-8555-555555555555', email: 'coach@example.com' } },
       error: null,
     });
     supabaseAdmin.from = (table) => {
-      if (table === 'team_memberships') {
-        const chain = { select: () => chain, or: () => chain, eq: async () => ({ data: memberships, error: null }) };
-        return chain;
-      }
-      if (table === 'teams') {
-        const chain = { select: () => chain, in: async () => ({ data: teams, error: null }) };
-        return chain;
-      }
-      if (table === 'team_data') {
-        const chain = { select: () => chain, in: async () => ({ data: teamData, error: null }) };
-        return chain;
-      }
-      throw new Error(`Unexpected table: ${table}`);
+      throw new Error(`Unexpected .from('${table}') call — GET /api/v1/home should resolve everything through the home_read_model RPC (see #1072).`);
     };
+    supabaseAdmin.rpc = async () => ({ data: { memberships, teams, team_data: teamData }, error: null });
   }
 
   test('empty-memberships response is schema-valid', async () => {
