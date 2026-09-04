@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { tokens } from '../../theme/tokens';
+import { Button } from '../ui/Button';
 
 /**
  * AccountNameField
@@ -28,7 +29,7 @@ import { tokens } from '../../theme/tokens';
  *   initialLastName    string — prefill + re-sync source (user.profile.last_name)
  *   S                  object — legacy style objects (App.jsx) — uses S.input, S.btn
  */
-export function AccountNameField({ updateProfileName, initialFirstName, initialLastName, S }) {
+export function AccountNameField({ updateProfileName, initialFirstName, initialLastName, S, contemporary = false }) {
   const [accountFirstName, setAccountFirstName] = useState(initialFirstName || '');
   const [accountLastName, setAccountLastName] = useState(initialLastName || '');
   const [accountNameSaving, setAccountNameSaving] = useState(false);
@@ -67,21 +68,28 @@ export function AccountNameField({ updateProfileName, initialFirstName, initialL
           value={accountFirstName}
           onChange={function(e) { setAccountFirstName(e.target.value); if (accountNameFeedback) { setAccountNameFeedback(null); } }}
           placeholder="First name*" maxLength={100}
-          style={{ ...S.input, flex:"1 1 120px" }} />
+          style={{ ...S.input, flex:"1 1 120px", ...(contemporary ? { minHeight: '44px', borderRadius: tokens.radius.md, borderColor: tokens.color.border.default } : {}) }} />
         <input
           value={accountLastName}
           onChange={function(e) { setAccountLastName(e.target.value); if (accountNameFeedback) { setAccountNameFeedback(null); } }}
           placeholder="Last name" maxLength={100}
-          style={{ ...S.input, flex:"1 1 120px" }} />
+          style={{ ...S.input, flex:"1 1 120px", ...(contemporary ? { minHeight: '44px', borderRadius: tokens.radius.md, borderColor: tokens.color.border.default } : {}) }} />
       </div>
-      <button
+      {contemporary ? <Button
+        variant="primary"
+        typography="contemporary"
+        fullWidth
+        loading={accountNameSaving}
+        disabled={!accountFirstName.trim()}
+        onClick={handleSaveAccountName}
+      >Save profile</Button> : <button
         onClick={handleSaveAccountName}
         disabled={accountNameSaving || !accountFirstName.trim()}
         style={{ ...S.btn("primary"), width:"100%",
           opacity: (accountNameSaving || !accountFirstName.trim()) ? 0.5 : 1,
           cursor:  (accountNameSaving || !accountFirstName.trim()) ? "default" : "pointer" }}>
         {accountNameSaving ? "Saving…" : "Save"}
-      </button>
+      </button>}
       {accountNameFeedback ? (
         <div style={{ marginTop:"8px", fontSize:"12px", fontWeight:"600",
           color: accountNameFeedback.kind === 'success' ? "#065f46"

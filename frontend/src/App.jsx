@@ -40,6 +40,7 @@ import { AboutTab }           from './components/Support/AboutTab';
 import { MoreLanding }         from './components/Support/MoreLanding';
 import { AccountTeamsSection } from './components/Support/AccountTeamsSection';
 import { AccountProfileSection } from './components/Support/AccountProfileSection';
+import { SupportWorkspace }    from './components/Support/SupportWorkspace';
 import { HomeNameNudge }      from './components/Home/HomeNameNudge';
 import { TeamSearch }         from './components/Home/TeamSearch';
 import { BattingHandSelector } from './components/BattingHandSelector';
@@ -6687,7 +6688,9 @@ export default function App() {
             })}
           </div>
 
-          <button style={S.btn("primary")} onClick={submitFeedback}>Send Feedback</button>
+          {isFlagEnabled('UX_SUPPORT') ? (
+            <Button typography="contemporary" leadingIcon="edit" onClick={submitFeedback}>Send feedback</Button>
+          ) : <button style={S.btn("primary")} onClick={submitFeedback}>Send Feedback</button>}
           {fbConfirm ? (
             <div style={{ marginTop:"10px", color:"#27ae60", fontSize:"12px", fontWeight:"bold" }}>{fbConfirm}</div>
           ) : null}
@@ -6735,7 +6738,9 @@ export default function App() {
             })}
           </div>
 
-          <button style={S.btn("primary")} onClick={submitBug}>Report Issue</button>
+          {isFlagEnabled('UX_SUPPORT') ? (
+            <Button typography="contemporary" leadingIcon="attention" onClick={submitBug}>Report issue</Button>
+          ) : <button style={S.btn("primary")} onClick={submitBug}>Report Issue</button>}
           {bugConfirm ? (
             <div style={{ marginTop:"10px", color:"#27ae60", fontSize:"12px", fontWeight:"bold" }}>{bugConfirm}</div>
           ) : null}
@@ -7634,6 +7639,16 @@ export default function App() {
     contextLabel = "Schedule";
   }
 
+  var contemporarySupport = isFlagEnabled('UX_SUPPORT');
+  var contemporaryAccount = isFlagEnabled('UX_ACCOUNT');
+
+  function supportDestination(title, subtitle, icon, content, tone) {
+    var enabled = tone === 'account' ? contemporaryAccount : contemporarySupport;
+    return enabled ? (
+      <SupportWorkspace title={title} subtitle={subtitle} icon={icon} tone={tone}>{content}</SupportWorkspace>
+    ) : content;
+  }
+
   var tabContent = (
     <div>
       {contextLabel ? (
@@ -7687,25 +7702,28 @@ export default function App() {
           teams={teams}
           user={user}
           appVersion={APP_VERSION}
+          supportEnabled={contemporarySupport}
+          accountEnabled={contemporaryAccount}
         />
       ) : null}
       {primaryTab === "more" && moreTab === "account-teams" ? (
-        <AccountTeamsSection session={session} memberships={memberships} teams={teams} loadTeam={loadTeam} />
+        supportDestination('Your teams', 'Choose a team or review your season access.', 'team', <AccountTeamsSection session={session} memberships={memberships} teams={teams} loadTeam={loadTeam} />, 'account')
       ) : null}
       {primaryTab === "more" && moreTab === "account-profile" ? (
-        <AccountProfileSection
+        supportDestination('Profile', 'Keep the name your coaching community sees up to date.', 'player', <AccountProfileSection
           updateProfileName={updateProfileName}
           initialFirstName={user && user.profile ? user.profile.first_name : ''}
           initialLastName={user && user.profile ? user.profile.last_name : ''}
           S={S}
-        />
+          contemporary={contemporaryAccount}
+        />, 'account')
       ) : null}
-      {primaryTab === "more" && moreTab === "feedback" ? renderFeedback() : null}
-      {primaryTab === "more" && moreTab === "links"    ? <LinksTab sectionTitleStyle={S.sectionTitle} /> : null}
-      {primaryTab === "more" && moreTab === "about"    ? renderAbout()    : null}
-      {primaryTab === "more" && moreTab === "updates"  ? <UpdatesTab versionHistory={VERSION_HISTORY} appVersion={APP_VERSION} expandedVersion={expandedVersion} onExpandedVersionChange={setExpandedVersion} sectionTitleStyle={S.sectionTitle} /> : null}
-      {primaryTab === "more" && moreTab === "legal"    ? <LegalSection initialDocId={legalInitialDoc} /> : null}
-      {primaryTab === "more" && moreTab === "faq"      ? <FAQSection />   : null}
+      {primaryTab === "more" && moreTab === "feedback" ? supportDestination('Feedback', 'Share an idea or tell us what got in your way.', 'edit', renderFeedback()) : null}
+      {primaryTab === "more" && moreTab === "links"    ? supportDestination('Coach links', 'Useful league, field, weather, and reporting destinations.', 'externalLink', <LinksTab sectionTitleStyle={S.sectionTitle} />) : null}
+      {primaryTab === "more" && moreTab === "about"    ? supportDestination('About Dugout Lineup', 'Built by a coach for the moments that matter at the field.', 'baseball', renderAbout()) : null}
+      {primaryTab === "more" && moreTab === "updates"  ? supportDestination("What's new", 'A running look at improvements across the app.', 'success', <UpdatesTab versionHistory={VERSION_HISTORY} appVersion={APP_VERSION} expandedVersion={expandedVersion} onExpandedVersionChange={setExpandedVersion} sectionTitleStyle={S.sectionTitle} />) : null}
+      {primaryTab === "more" && moreTab === "legal"    ? supportDestination('Terms & privacy', 'Plain-language policies with effective dates kept intact.', 'lock', <LegalSection initialDocId={legalInitialDoc} />) : null}
+      {primaryTab === "more" && moreTab === "faq"      ? supportDestination('Help center', 'Quick answers that stay available at the field—even offline.', 'support', <FAQSection />) : null}
     </div>
   );
 

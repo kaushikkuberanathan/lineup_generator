@@ -5467,6 +5467,23 @@ full frontend suite passes 1,841 tests across 184 files with clean lint and
 production build. Browser checks at 375px, 393px, and 844x390 confirm exact
 viewport-width containment in display and edit modes with no Vite overlay.
 
+**Support and Account Wave D (2026-09-04):** #1091 adds two independently
+reversible, default-off boundaries: `UX_SUPPORT` for Help, Feedback, Links,
+About, Updates, and Legal; and `UX_ACCOUNT` for team access and profile. A
+reusable `SupportWorkspace` supplies a quiet cream canvas, soft sage/sand
+identity card, semantic icon tile, page title, and supporting copy without
+changing the navy application header or bottom navigation. `MoreLanding`
+uses the shared icon library for contemporary discovery, and Account profile
+uses the shared gold primary Button instead of a red CTA. Existing Help
+content/search/privacy-safe analytics/offline behavior, legal text and
+effective dates, external-link tracking, feedback persistence/submission,
+auth/session behavior, membership sorting, team switching, and profile update
+ownership remain unchanged. RED mutation proof failed both App flag-selection
+tests as intended; focused coverage passes 74/74, full frontend coverage passes
+1,849/1,849 across 185 files, lint/build are clean, and 375px/393px browser
+checks cover landing, Help zero-results, Account validation, and exact-width
+containment.
+
 ---
 ### Story 133 (P2) - Live game-day surface token migration (game-mode/ + ScoringMode/) <!-- #698 -->
 Status: **All 13 slices merged to `develop` (2026-08-23, PR #764)** - the

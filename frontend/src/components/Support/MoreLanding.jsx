@@ -2,6 +2,7 @@ import { Card } from '../ui/Card';
 import { ListRow } from '../ui/ListRow';
 import { Stack } from '../ui/Stack';
 import { Text } from '../ui/Text';
+import { Icon } from '../ui/Icon';
 import { tokens } from '../../theme/tokens';
 import { HELP_ARTICLES, HELP_CATEGORY_META } from '../../content/faqs';
 import { compareTeamsNewestFirst } from '../../utils/season.js';
@@ -24,7 +25,7 @@ import { compareTeamsNewestFirst } from '../../utils/season.js';
  *   user            object — session user, for user.profile.first_name/last_name
  *   appVersion      string — APP_VERSION, shown as a badge on "What's New"
  */
-export function MoreLanding({ onNavigate, onSignOut, memberships, teams, user, appVersion }) {
+export function MoreLanding({ onNavigate, onSignOut, memberships, teams, user, appVersion, supportEnabled = false, accountEnabled = false }) {
   var _memberships = memberships || [];
   var sortedMemberships = _memberships.slice().sort(function(ma, mb) {
     var ta = teams.find(function(t) { return t.id === ma.team_id; });
@@ -69,6 +70,14 @@ export function MoreLanding({ onNavigate, onSignOut, memberships, teams, user, a
     return (
       <ListRow key={opts.key} onClick={opts.onClick} showDivider={!opts.last}>
         <Stack direction="row" justify="between" align="center" gap="md" style={{ flex: 1 }}>
+          {opts.icon ? (
+            <span style={{
+              width: '36px', height: '36px', borderRadius: tokens.radius.md,
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              background: opts.iconTone === 'account' ? '#F5F1E8' : '#EEF5F3',
+              color: tokens.color.brand.navy, flexShrink: 0,
+            }}><Icon name={opts.icon} size="sm" /></span>
+          ) : null}
           <Stack direction="col" gap="xs" style={{ minWidth: 0 }}>
             <Text
               size="md"
@@ -109,26 +118,40 @@ export function MoreLanding({ onNavigate, onSignOut, memberships, teams, user, a
     );
   }
 
+  var contemporary = supportEnabled || accountEnabled;
+
   return (
-    <div style={{ paddingBottom: "24px" }}>
+    <div style={{
+      paddingBottom: "84px",
+      background: contemporary ? tokens.color.surface.cream : undefined,
+      borderRadius: contemporary ? tokens.radius.lg + ' ' + tokens.radius.lg + ' 0 0' : undefined,
+      minHeight: contemporary ? 'calc(100svh - 128px)' : undefined,
+    }}>
+      {accountEnabled ? (
+        <div style={{ padding: '16px 16px 4px' }}>
+          <Text as="h1" variant="pageTitle" style={{ margin: 0 }}>Your dugout</Text>
+          <Text as="p" size="sm" color="secondary" style={{ margin: '4px 0 0' }}>Teams, profile, and the essentials behind your season.</Text>
+        </div>
+      ) : null}
       {groupLabel("Account")}
       {group([
-        row({ key: "teams", title: "Your teams", subtitle: teamsSubtitle, onClick: function() { onNavigate("account-teams"); } }),
-        row({ key: "profile", title: "Profile name", subtitle: profileSubtitle, onClick: function() { onNavigate("account-profile"); } }),
+        row({ key: "teams", title: "Your teams", subtitle: teamsSubtitle, icon: accountEnabled ? 'team' : null, iconTone: 'account', onClick: function() { onNavigate("account-teams"); } }),
+        row({ key: "profile", title: "Profile name", subtitle: profileSubtitle, icon: accountEnabled ? 'player' : null, iconTone: 'account', onClick: function() { onNavigate("account-profile"); } }),
         row({ key: "signout", title: "Sign out", danger: true, last: true, onClick: onSignOut }),
       ])}
 
       {groupLabel("Get Help")}
       {group([
-        row({ key: "help", title: "Help — Search & FAQs", subtitle: helpSubtitle, last: true, onClick: function() { onNavigate("faq"); } }),
+        row({ key: "help", title: "Help — Search & FAQs", subtitle: helpSubtitle, icon: supportEnabled ? 'support' : null, last: true, onClick: function() { onNavigate("faq"); } }),
       ])}
 
       {groupLabel("About & Legal")}
       {group([
-        row({ key: "about", title: "About", onClick: function() { onNavigate("about"); } }),
+        row({ key: "about", title: "About", icon: supportEnabled ? 'info' : null, onClick: function() { onNavigate("about"); } }),
         row({
           key: "updates",
           title: "What's New",
+          icon: supportEnabled ? 'success' : null,
           onClick: function() { onNavigate("updates"); },
           trailing: appVersion ? (
             <span style={{
@@ -142,9 +165,9 @@ export function MoreLanding({ onNavigate, onSignOut, memberships, teams, user, a
             }}>{"v" + appVersion}</span>
           ) : null,
         }),
-        row({ key: "legal", title: "Terms & Privacy", onClick: function() { onNavigate("legal"); } }),
-        row({ key: "links", title: "Links", onClick: function() { onNavigate("links"); } }),
-        row({ key: "feedback", title: "Feedback", last: true, onClick: function() { onNavigate("feedback"); } }),
+        row({ key: "legal", title: "Terms & Privacy", icon: supportEnabled ? 'lock' : null, onClick: function() { onNavigate("legal"); } }),
+        row({ key: "links", title: "Links", icon: supportEnabled ? 'externalLink' : null, onClick: function() { onNavigate("links"); } }),
+        row({ key: "feedback", title: "Feedback", icon: supportEnabled ? 'edit' : null, last: true, onClick: function() { onNavigate("feedback"); } }),
       ])}
     </div>
   );

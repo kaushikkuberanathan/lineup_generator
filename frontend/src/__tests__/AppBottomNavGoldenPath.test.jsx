@@ -107,6 +107,40 @@ describe("App Bottom Nav golden path (#943)", function () {
     expect(screen.getByRole("button", { name:"Auto-Assign" })).toBeDisabled();
   });
 
+  it("selects the contemporary Support shell behind UX_SUPPORT", async function () {
+    localStorage.setItem("flag_UX_SUPPORT", "true");
+    render(<App />);
+
+    fireEvent.click(await screen.findByRole("button", { name: /Support/ }));
+    fireEvent.click(await screen.findByText("Help — Search & FAQs"));
+
+    expect(await screen.findByRole("heading", { name: "Help center" })).toBeInTheDocument();
+    expect(screen.getByRole("searchbox", { name: "Search help" })).toBeInTheDocument();
+  });
+
+  it("selects the independent contemporary Account shell behind UX_ACCOUNT", async function () {
+    localStorage.setItem("flag_UX_ACCOUNT", "true");
+    render(<App />);
+
+    fireEvent.click(await screen.findByRole("button", { name: /Support/ }));
+    expect(await screen.findByRole("heading", { name: "Your dugout" })).toBeInTheDocument();
+    fireEvent.click(screen.getByText("Profile name"));
+
+    expect(await screen.findByRole("heading", { name: "Profile" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Save profile" })).toBeInTheDocument();
+  });
+
+  it("keeps Account legacy when only UX_SUPPORT is enabled", async function () {
+    localStorage.setItem("flag_UX_SUPPORT", "true");
+    render(<App />);
+
+    fireEvent.click(await screen.findByRole("button", { name: /Support/ }));
+    fireEvent.click(await screen.findByText("Profile name"));
+
+    expect(screen.queryByRole("heading", { name: "Profile" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Save" })).toBeInTheDocument();
+  });
+
   it("tapping Home while inside My Team opens the Exit Sheet instead of navigating away", async function () {
     render(<App />);
 

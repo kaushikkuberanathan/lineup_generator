@@ -35,11 +35,11 @@
 
 ---
 
-## Feature Registry (44 features)
+## Feature Registry (46 features)
 
-> Row-count corrected 2026-09-04 (feature branch) — this header said "42
-> features" while 43 rows already existed pre-row-44 (stale since row 43
-> was added without bumping this count); now 44 with this branch's row 44.
+> Row-count corrected 2026-09-04: this header said "42 features" while 43
+> rows already existed pre-row-44. Rows 44-46 now bring the directly counted
+> registry to 46 features.
 
 | # | Feature | Status | Primary Doc | Doc Status | Test File(s) | Test Status | Debt |
 |---|---------|--------|-------------|------------|--------------|-------------|------|
@@ -91,6 +91,7 @@
 
 | 44 | **More tab regroup (3 grouped card-sections, Account / Get Help / About & Legal)** | MVP | `docs/product/SUPPORT_TAB_REGROUP_PROPOSAL.md`; `ROADMAP.md` § Story 341 | ✅ Current | `MoreLanding.test.jsx` (9), `AccountTeamsSection.test.jsx` (6), `AccountProfileSection.test.jsx` (2) | ✅ Yes | Issue #1099, closed. Merged to `develop` via PR #1103 (regular merge, `cf63d93`), not yet promoted to `main` — manual signed-in browser QA (flagged in the PR, not possible in the building session's sandboxed environment) still recommended before that promote. Replaces the flat 7-tab `MORE_SUBTABS` pill bar with a `MoreLanding` landing view holding 3 `Card` groups of `ListRow` chevron rows; tapping a row pushes the exact same detail component App.jsx already rendered (`FAQSection`, `LegalSection`, `LinksTab`, `UpdatesTab`, feedback) — none of those five components changed internally. The old `renderAccount()` (App.jsx) was split into two new destinations: `AccountTeamsSection` ("Your teams" — signed-in-as + membership list, migrated off legacy inline styles onto `Card`/`ListRow`/`Stack`/`Text`) and `AccountProfileSection` (wraps the pre-existing `AccountNameField` unchanged). "Sign out" is a direct-action row on the landing view itself, no navigation, matching the prior single-tap button (no confirm step added). One deliberate behavior change: the old Account tab's quick "Terms of Service" shortcut (`legalInitialDoc="terms"` deep link) was dropped — Terms & Privacy is now its own top-level landing row, equally fast to reach. `moreTab` now defaults to `"landing"` (was `"faq"`); `HomeNameNudge`'s "set your name" CTA now targets `"account-profile"` directly (was the old combined `"account"` screen) since that's what it was always trying to reach. |
 | 45 | **Walk-up Songs workspace** | MVP | `ROADMAP.md` § Game Day Wave C4; `CONTEMPORARY_UX_DESIGN_SYSTEM.md` | ✅ Current | `AppSongsGoldenPath.test.jsx` (4 — active-order filtering, link wiring, flag-on workspace, metadata editing); `features/game-day/WalkUpSongsWorkspace.test.jsx` (4 — configured/empty, editing, absent, finalized/offline) | ✅ Yes | Wave C4/#1097 adds the reusable contemporary display/edit workspace behind default-off `UX_GAMEDAY_SETUP`. Player metadata, first-name display, batting-order sequencing, absence filtering, local/cloud persistence, share/print callbacks, link targets, locked read-only behavior, and the legacy flag-off surface are preserved. |
+| 46 | **Support and Account contemporary workspace** | MVP | `ROADMAP.md` § Support and Account Wave D; `CONTEMPORARY_UX_DESIGN_SYSTEM.md` | ✅ Current | `SupportWorkspace.test.jsx` (2), `MoreLanding.test.jsx` (10), `AccountNameField.test.jsx` (7), `AppBottomNavGoldenPath.test.jsx` (Support/Account flag integration), plus existing Help/Legal/Links/Account suites | ✅ Yes | Wave D/#1091 adds reusable framing and semantic icon discovery behind independent default-off `UX_SUPPORT`/`UX_ACCOUNT` flags. Content ownership, offline Help, legal versions, links, feedback persistence, auth/session behavior, memberships, and legacy fallbacks remain unchanged. |
 
 ---
 
@@ -98,12 +99,14 @@
 
 | Status | Count |
 |--------|-------|
-| ✅ Doc Current | 42 / 45 |
-| ⚠ Doc Stale | 3 / 45 |
-| ❌ Doc Missing | 0 / 45 |
-| ✅ Tests Exist | 21 / 45 |
-| ⚠ Tests Partial | 16 / 45 |
-| ❌ No Tests | 8 / 45 |
+| ✅ Doc Current | 43 / 46 |
+| ⚠ Doc Stale | 3 / 46 |
+| ❌ Doc Missing | 0 / 46 |
+| ✅ Tests Exist | 22 / 46 |
+| ⚠ Tests Partial | 16 / 46 |
+| ❌ No Tests | 8 / 46 |
+
+> **Recounted 2026-09-04** (#1091): row 46 adds the contemporary Support and Account workspace as Doc Current + Tests Exist. Final counts: Doc 43/3/0 and Tests 22/16/8 across 46 rows.
 
 > **Recounted 2026-09-04** (#1097): the summary had not absorbed row 44, so the pre-edit table contained 44 rows while its denominator still read 43. Direct reconciliation adds row 44 as Doc Current + Tests Exist, then row 45 (Walk-up Songs) as Doc Current + Tests Exist. Final counts: Doc 42/3/0 and Tests 21/16/8 across 45 rows.
 

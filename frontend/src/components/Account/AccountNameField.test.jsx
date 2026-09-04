@@ -106,4 +106,9 @@ describe('AccountNameField — golden path', function () {
     expect(updateProfileName).toHaveBeenCalledWith('Casey', 'Jones');
   });
 
+  test('AF7: contemporary mode uses the shared primary action without changing validation', function () {
+    renderField({ contemporary: true, initialFirstName: 'Casey' });
+    expect(screen.getByRole('button', { name: 'Save profile' })).toBeEnabled();
+  });
+
 });

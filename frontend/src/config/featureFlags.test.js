@@ -19,6 +19,7 @@ describe('featureFlags', function () {
     var expectedFlags = [
       'USE_NEW_LINEUP_ENGINE', 'MAINTENANCE_MODE', 'VIEWER_MODE', 'GAME_MODE',
       'ACCESSIBILITY_V1', 'SCORING_SHEET_V2', 'COMBINED_GAMEMODE_AND_SCORING',
+      'UX_SUPPORT', 'UX_ACCOUNT',
     ];
     expectedFlags.forEach(function (flag) {
       expect(typeof FEATURE_FLAGS[flag]).toBe('boolean');
