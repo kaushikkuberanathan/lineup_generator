@@ -1,0 +1,7 @@
+# docs/product/ROADMAP.md was predominantly CRLF with a growing pollution
+# of stray LF lines and embedded corruption bytes from repeated tool-driven
+# edits (see issues #154, #232, #234, #317, #1100 for the incident history).
+# Normalized to pure LF 2026-09-04 (#1100) and pinned here so future edits
+# through any tool - not just this repo's own sync script - can no longer
+# silently flip the file's line endings or reintroduce the drift.
+docs/product/ROADMAP.md text eol=lf
