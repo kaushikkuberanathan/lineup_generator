@@ -2,8 +2,34 @@ import { tokens } from '../../theme/tokens';
 import { Icon, ICON_NAMES } from './Icon';
 import { Stack } from './Stack';
 import { Text } from './Text';
+import { Button } from './Button';
+import { ActionRow } from './ActionRow';
+import { IconAction } from './IconAction';
+import { SearchField } from './SearchField';
+import { SegmentedControl } from './SegmentedControl';
+import { StatusPill } from './StatusPill';
+import { PageHeader, SectionHeader } from '../compositions/Headers';
+import { ReadinessStrip } from '../compositions/ReadinessStrip';
+import { TeamHub } from '../../features/home/TeamHub';
 
 const TYPOGRAPHY_ROLES = Object.freeze(Object.keys(tokens.font.role));
+const TEAM_FIXTURES = Object.freeze([
+  {
+    id: 'mud-hens', displayName: 'Mud Hens', season: 'Fall', year: 2026, ageGroup: '8U',
+    role: { code: 'admin', label: 'Head Coach' },
+    nextEvent: { id: 'game-1', type: 'game', opponent: 'Braves', startsAt: '2026-09-05T18:00:00', homeAway: 'home' },
+    readiness: { confirmedCount: 9, rosterCount: 11, lineupStatus: 'ready' },
+    actions: [
+      { id: 'start_game_mode', label: 'Start Mud Hens Game Mode', enabled: true, href: '#' },
+      { id: 'manage_roster', label: 'Manage Mud Hens roster', enabled: true, href: '#' },
+    ],
+  },
+  {
+    id: 'eagles', displayName: 'Eagles', season: 'Fall', year: 2026, ageGroup: '10U',
+    role: { code: 'viewer', label: 'Parent' }, nextEvent: null,
+    readiness: { confirmedCount: 8, rosterCount: 12, lineupStatus: 'draft' }, actions: [],
+  },
+]);
 
 export function FoundationSpecimen() {
   return (
@@ -34,6 +60,27 @@ export function FoundationSpecimen() {
             );
           })}
         </div>
+      </section>
+
+      <section>
+        <PageHeader title="Shared actions" subtitle="One clear primary action, calm supporting choices." />
+        <Stack direction="col" gap="sm">
+          <Button leadingIcon="gameDay" typography="contemporary">Start Game Mode</Button>
+          <ActionRow icon="roster" label="Manage roster" subtitle="11 players" />
+          <Stack direction="row" gap="sm" align="center">
+            <StatusPill status="ready">Ready</StatusPill>
+            <StatusPill status="attention">Needs attention</StatusPill>
+            <IconAction icon="overflow" label="More actions" />
+          </Stack>
+          <SegmentedControl value="focused" options={[{ value: 'focused', label: 'Focused' }, { value: 'all', label: 'All teams' }]} />
+          <SearchField label="Search teams" value="" onChange={function () {}} />
+          <ReadinessStrip confirmedCount={9} rosterCount={11} lineupStatus="ready" />
+        </Stack>
+      </section>
+
+      <section>
+        <SectionHeader title="API-driven Home pilot" />
+        <TeamHub teams={TEAM_FIXTURES} expandedTeamId="mud-hens" viewFilter="single" />
       </section>
     </Stack>
   );

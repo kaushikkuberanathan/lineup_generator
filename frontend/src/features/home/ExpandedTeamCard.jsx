@@ -8,6 +8,8 @@
 import { Card } from '../../components/ui/Card';
 import { Stack } from '../../components/ui/Stack';
 import { Text } from '../../components/ui/Text';
+import { StatusPill } from '../../components/ui/StatusPill';
+import { ReadinessStrip } from '../../components/compositions/ReadinessStrip';
 import { truncateTeamName } from '../../utils/formatters';
 import { TeamAction } from './TeamAction';
 import { describeRole } from './roleDescriptions';
@@ -24,28 +26,18 @@ function formatNextEventLine(nextEvent) {
   return when2 ? `${kind}${homeAway} — ${when2}` : `${kind}${homeAway}`;
 }
 
-function formatReadinessLine(readiness) {
-  if (!readiness) return null;
-  var lineupNote = readiness.lineupStatus === 'ready'
-    ? ' · Lineup ready'
-    : readiness.lineupStatus === 'draft'
-      ? ' · Lineup in progress'
-      : '';
-  return `Roster ${readiness.confirmedCount}/${readiness.rosterCount} confirmed${lineupNote}`;
-}
-
 export function ExpandedTeamCard({ team, onSelectAction }) {
-  var readinessLine = formatReadinessLine(team.readiness);
   var roleExplanation = describeRole(team.role && team.role.code);
+  var primaryAction = team.actions && team.actions.find(function (action) { return action.enabled; });
 
   return (
     <Card padding="md" shadow role="region" aria-label={`${team.displayName} details`}>
       <Stack direction="col" gap="sm">
         <Stack direction="row" justify="between" align="center">
-          <Text as="h3" size="lg" weight="bold" family="serif" style={{ margin: 0 }}>
+          <Text as="h3" variant="cardTitle" style={{ margin: 0 }}>
             {truncateTeamName(team.displayName, 24)}
           </Text>
-          <Text size="xs" color="secondary">{team.role.label}</Text>
+          <StatusPill status="neutral">{team.role.label}</StatusPill>
         </Stack>
 
         <Text size="sm" color="secondary">
@@ -58,14 +50,12 @@ export function ExpandedTeamCard({ team, onSelectAction }) {
           <Text size="xs" color="tertiary">{roleExplanation}</Text>
         )}
 
-        {readinessLine && (
-          <Text size="xs" color="tertiary">{readinessLine}</Text>
-        )}
+        {team.readiness ? <ReadinessStrip confirmedCount={team.readiness.confirmedCount} rosterCount={team.readiness.rosterCount} lineupStatus={team.readiness.lineupStatus} /> : null}
 
         {team.actions && team.actions.length > 0 && (
           <Stack direction="col" gap="xs">
             {team.actions.map(function (action) {
-              return <TeamAction key={action.id} action={action} onSelect={onSelectAction} />;
+              return <TeamAction key={action.id} action={action} primary={primaryAction && action.id === primaryAction.id} onSelect={onSelectAction} />;
             })}
           </Stack>
         )}

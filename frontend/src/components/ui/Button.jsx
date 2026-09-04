@@ -1,9 +1,10 @@
 // Variants: primary | secondary | ghost | danger
 // Sizes:    sm | md (default) | lg  —  all enforce 44px touch-target floor
-// Deferred: loading state, icon slots, asChild — Phase 2.5+
+// Icon slots and loading state are additive contemporary-foundation contracts.
 
 import { tokens } from '../../theme/tokens';
 import { Text } from './Text';
+import { Icon } from './Icon';
 
 var VARIANT_STYLES = {
   primary: {
@@ -15,6 +16,13 @@ var VARIANT_STYLES = {
     background: tokens.color.brand.navy,
     color:      tokens.color.text.onDark,
     border:     'none',
+  },
+  secondaryOutline: {
+    background: tokens.color.surface.card,
+    color: tokens.color.brand.navy,
+    borderWidth: '1px',
+    borderStyle: 'solid',
+    borderColor: tokens.color.border.default,
   },
   ghost: {
     background:  'transparent',
@@ -58,6 +66,10 @@ export function Button({
   variant   = 'primary',
   size      = 'md',
   disabled  = false,
+  loading   = false,
+  leadingIcon,
+  trailingIcon,
+  typography = 'legacy',
   fullWidth = false,
   onClick,
   type      = 'button',
@@ -70,7 +82,7 @@ export function Button({
     BASE_STYLE,
     VARIANT_STYLES[variant] || VARIANT_STYLES.primary,
     SIZE_STYLES[size]       || SIZE_STYLES.md,
-    disabled  ? DISABLED_STYLE    : {},
+    disabled || loading ? DISABLED_STYLE : {},
     fullWidth ? { width: '100%' } : {},
     style,
   );
@@ -78,14 +90,22 @@ export function Button({
   return (
     <button
       type={type}
-      disabled={disabled}
-      onClick={disabled ? undefined : onClick}
+      disabled={disabled || loading}
+      aria-busy={loading || undefined}
+      onClick={disabled || loading ? undefined : onClick}
       style={computed}
       {...rest}
     >
-      <Text size={SIZE_TEXT_MAP[size] || 'md'} weight="semibold" family="serif">
-        {children}
+      {leadingIcon ? <Icon name={leadingIcon} size="sm" style={{ marginRight: tokens.space.sm }} /> : null}
+      <Text
+        variant={typography === 'contemporary' ? 'button' : undefined}
+        size={SIZE_TEXT_MAP[size] || 'md'}
+        weight="semibold"
+        family={typography === 'contemporary' ? undefined : 'serif'}
+      >
+        {loading ? 'Loading…' : children}
       </Text>
+      {trailingIcon ? <Icon name={trailingIcon} size="sm" style={{ marginLeft: tokens.space.sm }} /> : null}
     </button>
   );
 }

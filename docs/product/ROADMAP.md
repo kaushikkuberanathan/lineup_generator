@@ -5352,6 +5352,12 @@ owns the contemporary visual direction and incremental screen migration.
 Storybook/Ladle remains a separate tooling choice; the foundation starts
 with source-owned contracts, tests, and a lightweight specimen component.
 
+**Contemporary foundation execution (2026-09-04):** initiative #1052 now
+tracks content (#1074), action/status primitives (#1075), reusable
+compositions (#1076), and the first incremental screen migration (#1077).
+The pilot is limited to API-driven Home behind its existing default-off flag;
+legacy Home and application chrome remain unchanged.
+
 ---
 ### Story 133 (P2) - Live game-day surface token migration (game-mode/ + ScoringMode/) <!-- #698 -->
 Status: **All 13 slices merged to `develop` (2026-08-23, PR #764)** - the

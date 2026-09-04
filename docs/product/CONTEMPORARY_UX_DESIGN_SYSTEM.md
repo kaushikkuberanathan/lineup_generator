@@ -60,6 +60,15 @@ Consumers request semantic names through the shared `Icon` component rather than
 
 Initial semantic catalog: home, team, calendar, Game Day, support, add, player, lineup, roster, settings, share, chevron-right, overflow, success, attention, baseball, and glove.
 
+## Implemented foundation contracts
+
+- Content (#1074): immutable navigation, Home, action, and status vocabulary plus permission-aware action verbs.
+- Actions/status (#1075): additive Button icon/loading support, outlined secondary actions, ActionRow, IconAction, StatusPill, SegmentedControl, and SearchField.
+- Compositions (#1076): PageHeader, SectionHeader, readiness strip, and callback-driven event, player, help, and general workflow rows.
+- Home pilot (#1077): API-driven Team Hub consumes the shared filter, team-row, status, readiness, typography, icon, and action contracts behind the existing default-off `API_DRIVEN_HOME` flag.
+
+The legacy Home and all non-Home screens retain their current rendering until their own migration slices are reviewed and approved.
+
 ## Reusable component hierarchy
 
 1. Tokens: color, typography, space, radius, border, shadow, motion
@@ -102,7 +111,7 @@ The generated baseline report owns the detailed screen/state matrix.
 ## Coordination
 
 - Initiative #1052 owns the visual direction and migration sequence.
-- Phase 0 owns baseline/governance; Phase 1 owns typography; Phase 2 owns icons.
+- Phase 0 owns baseline/governance; Phase 1 owns typography; Phase 2 owns icons; #1074-#1077 own content through the first screen pilot.
 - Story 132/#697 is reconciled during Phase 0 rather than creating a parallel design-system documentation track.
 - API-driven screen work supplies reversible flag boundaries; this initiative does not alter API ownership or routing contracts.
 - App.jsx decomposition should absorb legacy call-site migrations instead of duplicating extraction work.

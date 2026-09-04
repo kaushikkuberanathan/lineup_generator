@@ -57,6 +57,17 @@ describe('ExpandedTeamCard', function () {
     render(<ExpandedTeamCard team={Object.assign({}, TEAM, { actions: [] })} onSelectAction={vi.fn()} />);
     expect(screen.getByRole('region', { name: /Mud Hens/ })).toBeInTheDocument();
   });
+
+  test('promotes exactly the first enabled action when an earlier action is disabled', function () {
+    var actions = [
+      { id: 'start_game_mode', label: 'Start game', href: '#', enabled: false, disabledReason: 'Not ready.' },
+      { id: 'manage_roster', label: 'Manage roster', href: '#', enabled: true, disabledReason: null },
+      { id: 'manage_schedule', label: 'Manage schedule', href: '#', enabled: true, disabledReason: null },
+    ];
+    render(<ExpandedTeamCard team={Object.assign({}, TEAM, { actions })} onSelectAction={vi.fn()} />);
+    expect(screen.getByRole('button', { name: 'Manage roster' }).style.background).toBe('rgb(245, 200, 66)');
+    expect(screen.getByRole('button', { name: 'Manage schedule' }).style.background).toBe('rgb(255, 255, 255)');
+  });
 });
 
 describe('ExpandedTeamCard — role explanation (#1029)', function () {
