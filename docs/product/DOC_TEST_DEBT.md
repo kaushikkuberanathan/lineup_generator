@@ -6,6 +6,8 @@
 >
 > **Contemporary Game Day Wave C2 — 2026-09-04 (#1095):** no new P0 test or documentation debt was introduced. The flag-on Defense control composition has colocated editable/finalized/unavailable-state coverage while the legacy flag-off surface remains intact. Full validation passed 1,810/1,810 across 179 files with clean lint/build and 375px, 393px, and 844x390 browser checks showing no horizontal overflow or Vite overlay.
 >
+> **Contemporary Game Day Wave C3 — 2026-09-04 (#1096):** no new P0 test or documentation debt was introduced. Colocated tests cover dirty/save, clean/suggest/undo/finalize, finalized, empty, and App-level flag integration states. Existing reorder and persistence behavior remains on the characterized App path; dedicated browser evidence and the final full-suite count are recorded on the delivery PR.
+>
 > **Contemporary My Team reconciliation — 2026-09-04 (#1086/#1087):** no new P0 test or documentation debt was introduced. The default-off `UX_MY_TEAM` slice adds colocated roster/profile component coverage and extends `AppMyTeamDashboard.test.jsx` for flag selection, individual deep links, return navigation, and the all-player route. On feature tip `6b87d88`, the full frontend suite passed 1,798/1,798 across 176 files; focused My Team/profile coverage passed 26/26, with clean lint and production build.
 > **Superseded — 2026-08-30 (kept for history):** production is v3.1.0 at `02abfc0`.
 
