@@ -2,6 +2,8 @@
 
 > **Branch boundary — 2026-09-03 (updated; superseded the 2026-08-30 v3.1.0 note kept below for history):** production is v3.3.2 at `162061c` (PR #1054) — **v3.3.3 release candidate** prepared 2026-09-04, not yet promoted to `main`. Counts and coverage additions after that commit describe current `develop`, not production. Every new entry must identify the SHA it was measured against.
 
+> **Contemporary Game Day Wave C1 — 2026-09-04 (#1094):** no new P0 test or documentation debt was introduced. The default-off `UX_GAMEDAY_SETUP` entry/readiness shell adds colocated ready/draft/locked/no-game component coverage, App-level flag integration, and 375px/393px/landscape browser evidence. The full frontend suite passed 1,807/1,807 across 178 files; focused coverage passed 44/44 with clean lint and production build.
+>
 > **Contemporary My Team reconciliation — 2026-09-04 (#1086/#1087):** no new P0 test or documentation debt was introduced. The default-off `UX_MY_TEAM` slice adds colocated roster/profile component coverage and extends `AppMyTeamDashboard.test.jsx` for flag selection, individual deep links, return navigation, and the all-player route. On feature tip `6b87d88`, the full frontend suite passed 1,798/1,798 across 176 files; focused My Team/profile coverage passed 26/26, with clean lint and production build.
 > **Superseded — 2026-08-30 (kept for history):** production is v3.1.0 at `02abfc0`.
 
