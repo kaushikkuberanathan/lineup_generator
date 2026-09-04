@@ -68,6 +68,7 @@ import { getHomeCache } from './api/homeCache.js';
 import { MyTeamRosterScreen } from './features/my-team/MyTeamRosterScreen.jsx';
 import { PlayerProfileScreen } from './features/my-team/PlayerProfileScreen.jsx';
 import { ScheduleScreen } from './features/schedule/ScheduleScreen.jsx';
+import { GameDayEntryScreen } from './features/game-day/GameDayEntryScreen.jsx';
 import { Button } from './components/ui/Button';
 import { StatusPill } from './components/ui/StatusPill';
 
@@ -4333,6 +4334,15 @@ export default function App() {
 
     return (
       <div>
+        {isFlagEnabled('UX_GAMEDAY_SETUP') ? (
+          <GameDayEntryScreen
+            nextGame={getScheduleOverview(schedule).nextGame}
+            rosterCount={roster.length}
+            availableCount={_availableCount}
+            lineupStatus={lineupLocked ? 'locked' : activeBattingOrder.length > 0 ? 'ready' : 'draft'}
+            onStartGameMode={function() { setDugoutViewActive(true); }}
+          />
+        ) : null}
         {/* ── Tonight's Attendance Panel ─── */}
         {roster.length > 0 && !lineupLocked ? (
           <div style={{ marginBottom:"14px", borderRadius:"10px", border:"1px solid rgba(15,31,61,0.12)", overflow:"hidden" }}>
