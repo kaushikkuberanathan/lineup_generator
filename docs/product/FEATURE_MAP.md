@@ -35,7 +35,11 @@
 
 ---
 
-## Feature Registry (42 features)
+## Feature Registry (44 features)
+
+> Row-count corrected 2026-09-04 (feature branch) — this header said "42
+> features" while 43 rows already existed pre-row-44 (stale since row 43
+> was added without bumping this count); now 44 with this branch's row 44.
 
 | # | Feature | Status | Primary Doc | Doc Status | Test File(s) | Test Status | Debt |
 |---|---------|--------|-------------|------------|--------------|-------------|------|
