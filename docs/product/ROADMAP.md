@@ -4330,7 +4330,7 @@ Estimated effort: 1-2 hours. No app code touched; pure governance + tooling.
 
 ---
 
-### Story 95 (P2) — Add techNote approved-strings convention to Pre-release Docs Checklist <!-- #225 -->
+### Story 95 (P2) — Add techNote approved-strings convention to Pre-release Docs Checklist <!-- #225 -->
 
 Status: Open
 Discovered: 2026-05-27 — CI failure during v2.5.21 release prep
