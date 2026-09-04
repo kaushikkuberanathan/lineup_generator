@@ -7,11 +7,13 @@
 -- migration) — this migration is the code-level mitigation available today:
 -- collapse the two sequential round trips into one.
 --
--- NOT YET APPLIED ANYWHERE. Build/verify on DEV (psqvzppphdedqkpmarwx) first,
--- per this repo's own established migration-apply convention (see
--- backend/CLAUDE.md's Migration Notes for prior examples) — PROD apply needs
--- its own explicit go-ahead, same as every other migration in this file's
--- history.
+-- APPLIED TO DEV (psqvzppphdedqkpmarwx) 2026-09-04, KK confirmed go-ahead
+-- ("confirmed — apply migration 034 to DEV") before the apply. APPLIED TO
+-- PROD (hzaajccyurlyeweekvma) same day as part of v3.4.0 release prep (PR
+-- #1122's release commit) — this file's own header was not updated at the
+-- time, corrected here retroactively; see backend/CLAUDE.md's Migration
+-- Notes for full verification detail on both applies, including the real
+-- production latency re-measurement.
 --
 -- home_read_model() runs the membership lookup and the teams/team_data joins
 -- inside one Postgres statement, so PostgREST executes it as a single HTTP
