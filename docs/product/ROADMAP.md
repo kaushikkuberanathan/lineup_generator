@@ -5431,6 +5431,14 @@ diamond, and view-switch states. The full frontend suite passes 1,810 tests
 across 179 files; lint and production build are clean. Automated Chrome checks
 at 375px, 393px, and 844x390 report no horizontal overflow or Vite overlay.
 
+**Game Day Wave C3 (2026-09-04):** #1096 adds a reusable
+`BattingWorkspaceHeader` behind `UX_GAMEDAY_SETUP`. Save becomes the single
+gold primary action while an order is dirty; Suggest is primary when clean;
+Undo and Finalize retain their existing behavior with clearer disabled and
+status states. Player-name identity, first-name display, absence filtering,
+reorder gestures, season stats, persistence, and the legacy flag-off surface
+remain unchanged.
+
 ---
 ### Story 133 (P2) - Live game-day surface token migration (game-mode/ + ScoringMode/) <!-- #698 -->
 Status: **All 13 slices merged to `develop` (2026-08-23, PR #764)** - the

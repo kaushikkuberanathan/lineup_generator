@@ -71,6 +71,7 @@ import { PlayerProfileScreen } from './features/my-team/PlayerProfileScreen.jsx'
 import { ScheduleScreen } from './features/schedule/ScheduleScreen.jsx';
 import { GameDayEntryScreen } from './features/game-day/GameDayEntryScreen.jsx';
 import { DefenseWorkspaceHeader } from './features/game-day/DefenseWorkspaceHeader.jsx';
+import { BattingWorkspaceHeader } from './features/game-day/BattingWorkspaceHeader.jsx';
 import { Button } from './components/ui/Button';
 import { StatusPill } from './components/ui/StatusPill';
 
@@ -5101,6 +5102,33 @@ export default function App() {
 
     return (
       <div>
+        {isFlagEnabled('UX_GAMEDAY_SETUP') ? (
+          <div style={{ marginBottom:tokens.space.md }}>
+            <BattingWorkspaceHeader
+              lineupLocked={lineupLocked}
+              dirty={battingOrderDirty}
+              saved={battingOrderSaved}
+              orderCount={battingOrder.length}
+              activeCount={activeBattingOrder.length}
+              canUndo={Boolean(preSuggestOrder)}
+              onSave={function() {
+                persistBatting(battingOrder);
+                setBattingOrderDirty(false);
+                setBattingOrderSaved(true);
+                setPreSuggestOrder(null);
+                setTimeout(function() { setBattingOrderSaved(false); }, 2000);
+              }}
+              onSuggest={suggestOrder}
+              onUndo={function() {
+                persistBatting(preSuggestOrder);
+                setPreSuggestOrder(null);
+                setBattingOrderDirty(false);
+                setBattingOrderSaved(false);
+              }}
+              onFinalize={function() { setLockFlowOpen(true); }}
+            />
+          </div>
+        ) : (
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"14px", gap:"8px", flexWrap:"wrap" }}>
           <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
             <div style={S.sectionTitle}>Batting Order</div>
@@ -5161,6 +5189,7 @@ export default function App() {
             </div>
           ) : null}
         </div>
+        )}
 
         {hasAnyStats ? (
           <Card padding="12px 14px" radius="md" style={{ background:"rgba(15,31,61,0.03)", border:"1px solid rgba(15,31,61,0.1)", boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
