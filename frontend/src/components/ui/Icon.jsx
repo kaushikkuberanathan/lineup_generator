@@ -1,4 +1,5 @@
 import {
+  LuArrowLeft,
   LuCalendarDays,
   LuChevronRight,
   LuCircleCheck,
@@ -35,6 +36,7 @@ var ICON_MAP = {
   overflow: LuEllipsis,
   success: LuCircleCheck,
   attention: LuTriangleAlert,
+  back: LuArrowLeft,
   baseball: GiBaseballBat,
   glove: GiBaseballGlove,
 };

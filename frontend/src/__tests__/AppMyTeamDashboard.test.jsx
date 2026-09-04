@@ -271,7 +271,16 @@ describe("My Team game-ready dashboard (#993)", function () {
     expect(screen.queryByText("All Players — Quick Summary")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name:/Open Alex player profile/ }));
-    expect(await screen.findByText("Review and edit this player's complete roster profile.")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name:"Alex" })).toBeInTheDocument();
+    expect(screen.getByText("Player profile and lineup preferences")).toBeInTheDocument();
     expect(window.location.search).toBe("?player=Alex+Rivera");
+
+    fireEvent.click(screen.getByRole("button", { name:"Back to roster" }));
+    expect(await screen.findByRole("heading", { name:"My Team" })).toBeInTheDocument();
+    expect(window.location.search).toBe("");
+
+    fireEvent.click(screen.getByRole("button", { name:"Manage all player profiles" }));
+    expect(await screen.findByRole("heading", { name:"All player profiles" })).toBeInTheDocument();
+    expect(window.location.search).toBe("?players=all");
   });
 });

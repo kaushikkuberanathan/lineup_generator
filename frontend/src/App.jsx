@@ -66,6 +66,7 @@ import { parseAppRoute, buildAppRoute, resolveDestination, savePendingDestinatio
 import { trackHomeDeepLinkResolved, trackHomeDeepLinkDenied } from './features/home/homeAnalytics.js';
 import { getHomeCache } from './api/homeCache.js';
 import { MyTeamRosterScreen } from './features/my-team/MyTeamRosterScreen.jsx';
+import { PlayerProfileScreen } from './features/my-team/PlayerProfileScreen.jsx';
 import { Button } from './components/ui/Button';
 
 // ============================================================
@@ -3411,7 +3412,7 @@ export default function App() {
             <button onClick={function(){setRestoreBanner('');}} style={{ background:'none', border:'none', cursor:'pointer', fontSize:'16px', color:'#065f46' }}>&#xd7;</button>
           </div>
         ) : null}
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"14px", flexWrap:"wrap", gap:"8px" }}>
+        {!isFlagEnabled('UX_MY_TEAM') ? <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"14px", flexWrap:"wrap", gap:"8px" }}>
           <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
             {rosterDetailMode !== null ? (
               <button
@@ -3451,9 +3452,9 @@ export default function App() {
             </button>
           </div>
           ) : null}
-        </div>
+        </div> : null}
 
-        {rosterDetailMode !== null ? (
+        {rosterDetailMode !== null && !isFlagEnabled('UX_MY_TEAM') ? (
           <div style={{ fontSize:"12px", color:tokens.color.text.muted, marginBottom:"14px" }}>
             {rosterDetailMode === "all"
               ? "Review and edit every player profile in one place."
@@ -3735,6 +3736,14 @@ export default function App() {
         )}
 
         {rosterDetailMode !== null ? (
+        <PlayerProfileScreen
+          enabled={isFlagEnabled('UX_MY_TEAM')}
+          playerName={rosterDetailMode === "all" ? null : rosterDetailMode}
+          allPlayers={rosterDetailMode === "all"}
+          playerCount={rosterDetailPlayers.length}
+          incomplete={rosterDetailMode !== "all" && rosterDetailPlayers.length > 0 && (!rosterDetailPlayers[0].prefs || rosterDetailPlayers[0].prefs.length === 0)}
+          locked={lineupLocked}
+          onBack={function() { navigateRosterDetail(null); }}>
         <div style={{ display:"grid", gridTemplateColumns: rosterDetailMode === "all" ? "repeat(auto-fill,minmax(300px,1fr))" : "minmax(0, 680px)", justifyContent:"center", gap:"12px" }}>
           {rosterDetailPlayers.map(function(info) {
             var isCol = lineupLocked || !!collapsed[info.name];
@@ -4181,6 +4190,7 @@ export default function App() {
             );
           })}
         </div>
+        </PlayerProfileScreen>
         ) : null}
       </div>
     );
