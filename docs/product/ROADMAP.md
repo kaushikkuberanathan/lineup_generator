@@ -337,16 +337,19 @@ and `SupportWorkspace` headers, not a separate initiative, so no new flag
 is proposed. This master closes once all five children are merged to
 `develop` and the strip is visible (flag-on) on a real device.
 
-**Open design question, not yet decided — flag for KK before Story 345
-starts:** `FAQSection` already renders its 5 `gameDayCritical` articles
-first, unconditionally, above "Browse Help," whenever the screen isn't
-mid-search — so tapping "Help" from the landing view *already* lands a
-coach on the Game-Day quick list one tap later. The strip's real
-incremental value is (a) surfacing "5 quick answers" as visible proof
-*before* any tap, for a coach who doesn't know Help exists, and/or (b) a
-true zero-extra-tap jump straight to one specific article. Story 344
-(the `initialArticleId` deep-link) only matters if KK wants (b). Decide
-this before building Story 345, not after.
+**Design decision — 2026-09-04, KK:** option (a). The strip's job for v1
+is pre-tap visibility — "N quick answers" surfaced before any tap, for a
+coach who doesn't know Help exists — not a zero-extra-tap jump to one
+specific article. Tapping the strip fires a bare navigate-to-Help call
+(`onNavigate('faq')`, no article id); `FAQSection` already renders its 5
+`gameDayCritical` articles first, unconditionally, above "Browse Help,"
+so that one tap already lands the coach on the Game-Day quick list —
+satisfying the "reaches real content in one tap" acceptance criterion
+without any new deep-link plumbing. Story 344 (`initialArticleId`) is
+therefore **deferred, not part of the v1 critical path** — build it later
+only if usage data shows coaches want one-tap-to-a-specific-article
+(e.g. from Mixpanel's `more_landing_quick_access` entry point once Story
+347 ships). Story 345 is unblocked by this decision.
 
 **Acceptance criteria:**
 - Real coaches see "N quick answers for right now" (a real, computed
@@ -372,10 +375,12 @@ assertions still pass unmodified; a new small unit test on the extracted
 helper itself (correct filter, correct count, stable order).
 
 ### Story 344 (P3) — `FAQSection`: optional `initialArticleId` deep-link prop <!-- #1114 -->
-Status: Open — not started, and only needed if Story 342's open design
-question resolves toward "jump straight to one article." Depends on
-nothing technically; can ship independently of Story 342's decision and
-just go unused until/unless it's wired up.
+Status: Deferred — not part of the v1 critical path. Story 342's design
+decision (2026-09-04) went with pre-tap visibility only (option a), not
+a one-tap-to-specific-article jump, so this has no consumer today.
+Revisit only if usage data (Story 347's Mixpanel entry-point split)
+shows coaches want it. Depends on nothing technically; can ship
+independently whenever it's picked back up.
 Scope: Mirror `LegalSection`'s existing `initialDocId` prop pattern — an
 optional `initialArticleId` that, present on mount, pre-selects that
 article's category and opens its accordion row immediately, no extra tap
@@ -389,8 +394,9 @@ today (regression guard); manually triggering search or switching
 category after mount still works normally.
 
 ### Story 345 (P2) — Build `GameDayQuickAccessStrip` (presentational, isolated) <!-- #1115 -->
-Status: Open — not started. Depends on Story 343 (shared article list) and
-on Story 342's open design question being answered first.
+Status: Open — not started, unblocked. Depends on Story 343 (shared
+article list) only; Story 342's design decision (2026-09-04, option a)
+resolved the prior open question.
 Scope: New `frontend/src/components/Support/GameDayQuickAccessStrip.jsx`
 — a single `Card` row, gold-left-border accent, `gameDay` icon (already
 in `components/ui/Icon.jsx`'s catalog), title "Game-Day Help," subtitle
@@ -401,9 +407,8 @@ matching how `MoreLanding`'s existing icon tiles are gated today. Built
 and unit-tested in isolation, not yet wired into `MoreLanding`.
 Acceptance criteria: own test file — renders when visible, renders
 nothing when not, shows the real article count, fires its `onSelect`/
-`onNavigate` callback on tap with whatever payload Story 342's design
-decision requires (a bare navigate-to-Help call, or an article id for
-Story 344's prop).
+`onNavigate` callback on tap with a bare navigate-to-Help call (no
+article id — Story 344 stays deferred).
 
 ### Story 346 (P3) — Wire the strip into `MoreLanding` <!-- #1116 -->
 Status: Open — not started. Depends on Story 345.
