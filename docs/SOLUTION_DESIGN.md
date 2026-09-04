@@ -373,6 +373,23 @@ Once signed in, `GET /api/v1/auth/me` returns the profile + memberships shape;
 `PATCH /api/v1/auth/me` (v2.8.0) lets a coach set their display name; `POST
 /api/v1/auth/logout` ends the session.
 
+**Offline reliability (v3.3.3, #1060/#1062):** `useAuth.js` re-validates an
+already-confirmed local Supabase session against `GET /me` on mount and on
+`onAuthStateChange`'s `SIGNED_IN` event. A *network-level* failure of that
+call (offline, DNS, etc.) is isolated from a genuine `!res.ok` rejection —
+only the latter signs the user out; the former keeps the existing session,
+synthesizing `user` from the local session so downstream consumers (the
+Home API cache) key off the same `user.id` used while online. Connectivity
+itself is tracked by `frontend/src/utils/networkHealth.js`, not
+`navigator.onLine` alone — that API can report "online" while every request
+is actually failing (confirmed live: a DevTools Network throttle blocks
+requests without ever flipping it). The module accepts observed fetch
+outcomes from any caller (`client.js`, `useAuth.js`) and flips to offline
+after two consecutive reported network-level failures, back online
+immediately on a success or a real browser `online`/`offline` event.
+`App.jsx`'s `isOnline` state subscribes to it rather than owning raw event
+listeners itself.
+
 ### Database Tables (Auth)
 
 ```sql

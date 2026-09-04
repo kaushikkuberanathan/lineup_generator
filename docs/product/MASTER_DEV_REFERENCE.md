@@ -1,7 +1,7 @@
 # Lineup Generator — Master Development & Deployment Reference
 
-> **Production reconciliation — 2026-09-03 (updated; supersedes the 2026-08-30 v3.1.0 note):** production is v3.3.2 through
-> PR #1054 (`162061c`), using React 19.2.8, Vite 8.2.1, Express 5.2.1,
+> **Production reconciliation — 2026-09-03 (updated; supersedes the 2026-08-30 v3.1.0 note):** production is v3.3.2 through PR #1054 (`162061c`) — **v3.3.3 release candidate** prepared 2026-09-04, not yet promoted to `main`.
+> Using React 19.2.8, Vite 8.2.1, Express 5.2.1,
 > Vercel, Render Starter, and Supabase. The DEV Render service is
 > `lineup-generator-dev-backend.onrender.com`.
 
@@ -639,7 +639,7 @@ End-to-end ordered sequence for promoting work from develop to production. Follo
 6. **Make changes, run all local gates** — Tests pass, build clean, manual UI verification per surface area changed.
 7. **Stage with explicit paths** — Never `git add -A` or `git add .`. List specific files. See ## Git Staging Discipline.
 8. **Commit with descriptive message** — Multi-line message describing user impact + technical detail. See VERSION_HISTORY schema for guidance on userChanges vs internalChanges framing.
-9. **Push feature branch** — the pre-push hook validates the branch guard (rejects direct pushes to `develop`/`main`) only; it no longer runs the Vitest suite (removed Story 75, PR #155) — CI (GitHub Actions) is the sole authoritative test gate. The "Known issue: Windows Vitest cold-start OOM" heading this step used to point to was never written in this file (or was removed without updating this cross-reference) — the actual workaround for that flake (Bug #7, `fileParallelism:false`) is documented in root `CLAUDE.md` § Infrastructure notes; go there instead.
+9. **Push feature branch** — the pre-push hook validates the branch guard (rejects direct pushes to `develop`/`main`) only; it no longer runs the Vitest suite (removed Story 75, PR #155) — CI (GitHub Actions) is the sole authoritative test gate. The "Known issue: Windows Vitest cold-start OOM" heading this step used to point to was never written in this file (or was removed without updating this cross-reference) — the actual workaround for that flake (Bug #7, `fileParallelism:false`) is documented in root `CLAUDE.md` § Infrastructure notes; go there instead. Pushing a feature/fix/docs branch itself needs no gate phrase (only the merges into `develop`/`main` do — see step 14/24); editing any file in root `CLAUDE.md` § Locked Files does, before the edit, not before the push.
 
 ### Phase 3: PR to develop
 
@@ -647,7 +647,7 @@ End-to-end ordered sequence for promoting work from develop to production. Follo
 11. **Verify CI checks pass** — All required checks must be green. NEVER bypass via admin override (branch protection enforces this on `main`; same discipline applies to `develop`).
 12. **Validate on Vercel preview** — Real device testing on iPhone SE / iPad / desktop. Run ### Game-Day Validation if deploy touches lineup/game mode/share.
 13. **Mark ready for review** — Only after preview validation passes.
-14. **Squash-merge to develop** — Keeps develop history clean (1 commit per feature). Delete branch when GitHub prompts.
+14. **Merge to develop with "confirmed — push to develop"** — **Corrected 2026-09-03 (was stale): "squash-merge" is no longer available at all.** Repo Settings → General → Pull Requests has both "Allow squash merging" and "Allow rebase merging" disabled platform-wide (root `CLAUDE.md` § Merge-type policy) — the merge dropdown only offers "Create a merge commit," for feature→develop exactly as for develop→main. Requires the literal gate phrase from KK first (root `CLAUDE.md` § Locked Files' "Push gate phrase" row) — never merge on a general "go ahead," even a broad one; ask again if this specific phrase for this specific branch wasn't said in this exchange. Delete branch when GitHub prompts (or see the version-currency fallback section below if a branch survives past its merge).
 
 ### Phase 4: Develop soak
 
@@ -658,12 +658,13 @@ End-to-end ordered sequence for promoting work from develop to production. Follo
 ### Phase 5: PR to main
 
 18. **Repeat pre-flight audit** — `git fetch --prune`, confirm both develop and main in sync with remotes.
-19. **Run ### Pre-deploy Checklist** — Version bumps, VERSION_HISTORY, ROADMAP, CLAUDE.md updates. Test suite passes.
+19. **Run ### Pre-deploy Checklist** — Version bumps, VERSION_HISTORY, ROADMAP, CLAUDE.md updates. Test suite passes. Bumping `APP_VERSION`/both `package.json` files/`CLAUDE.md` each need their own literal locked-file gate phrase (root `CLAUDE.md` § Locked Files) before editing — four separate phrases, not one blanket approval.
+19a. **Run `node scripts/check-version-currency.js`** (added 2026-09-03, #1049/v3.3.2's release — see the Fallbacks section below for the incident this closes). Must exit 0 before opening the PR to `main`. Paste its output into the PR body the same way `debt-p0`'s output is pasted — this is now a named, verifiable Pre-release Docs Checklist item, not a "remember to update N files" prose reminder. A failure names exactly which file still claims a stale version and the live line it found; fix that file, not the script, unless the script's own extractor is wrong for a new file shape.
 20. **Run ## Pre-release Docs Checklist** — All doc artifacts current.
 21. **Confirm ## Ship Gate** — All four questions answered.
 22. **Open PR develop → main as DRAFT** — Same draft-first discipline.
-23. **Verify CI green on develop's preview** — Vercel auto-deploys per branch.
-24. **Mark ready, merge** — **Create a merge commit — never squash** for this develop → main promote (Story 79, 2026-05-21: squashing collapses develop's PR-level history into one commit on main). Render auto-deploy fires for backend; Vercel auto-deploy fires for frontend.
+23. **Verify CI green on develop's preview** — Vercel auto-deploys per branch. `version-currency` now runs as part of the `sync-script` CI job on every PR — treat a red result there exactly like a red test, not a warning to note and move past.
+24. **Mark ready, merge with "confirmed — push to main"** — **Create a merge commit — never squash** for this develop → main promote (Story 79, 2026-05-21: squashing collapses develop's PR-level history into one commit on main; also now platform-enforced, squash is disabled entirely). Requires the literal `confirmed — push to main` phrase — said fresh for this specific promote, not inherited from an earlier "take over from here" or similar general delegation earlier in the session (2026-09-03, v3.3.2's release: the gate held even under an explicit "you can take over from here," and that was the right call — restate it here as policy, not just as something that happened to work out once). Render auto-deploy fires for backend; Vercel auto-deploy fires for frontend.
 
 ### Phase 6: Production verification (within 10 min of merge)
 
@@ -688,6 +689,21 @@ End-to-end ordered sequence for promoting work from develop to production. Follo
 - ❌ Use `git add -A` for staging — explicit paths only
 - ❌ Promote multiple unrelated versions in one PR without explicit awareness — discovered April 27, 2026 that develop was 12 commits ahead of main, bundling v2.4.0 + v2.5.0 + v2.5.1 in one promotion. This is acceptable in retrospect but should be a deliberate decision, not a discovery.
 - ❌ **Skip the post-promote sync PR** — develop never absorbs the promote merge commit, causing 8-file conflict on the next develop → main PR. Always open sync/main-into-develop within the same session as the promote. (Story 86)
+
+### Fallbacks — known environment/tooling failure modes (added 2026-09-03)
+
+Every item below is a real failure hit while executing this exact ritual for v3.3.2's release (#1049, PRs #1050/#1053/#1054/#1055/#1056/#1057), not a hypothetical. Written down so the next agent session recognizes the symptom immediately instead of re-diagnosing it from scratch — the whole reason this file exists per its own opening line.
+
+1. **GitHub MCP write actions (`create_pull_request`, `merge_pull_request`, branch deletion) return `403 Resource not accessible by integration`.** This is the GitHub App installation's own permission scope — unrelated to whether the underlying token could do it. **Fallback:** call the GitHub REST API directly via `curl` using the `GITHUB_TOKEN` env var (already present in-session; see root `CLAUDE.md` § GitHub Operating System-style guidance). Worked reliably for PR creation, labeling, and merging throughout this release. Do not keep retrying the MCP tool once it's 403'd — switch immediately.
+2. **Even the `GITHUB_TOKEN` + `curl` fallback can itself get blocked** — not by GitHub, but by Claude Code's own auto-mode safety classifier, which treats certain actions (merging a PR, deleting a branch) as sensitive regardless of which tool or method reaches them. Symptom: *"Permission for this action was denied by the Claude Code auto mode classifier."* **This is not retryable** — the same action will hit the same block again. Stop, explain exactly what you were trying to do and why, and let the human either do it themselves (often faster — one click) or add a permission rule. Never try a different technical route to route around it (e.g. GraphQL instead of REST) — that defeats the block's intent, not just its mechanism.
+3. **`develop`'s branch-protection "Lock branch" toggle (the soak-freeze mechanism)** makes any sync/promote PR into `develop` show `mergeable_state: blocked` even with every CI check green — this is not a code or CI problem, and re-running tests will never fix it. It requires a human with repo admin access to manually uncheck it at **Settings → Branches → develop**. An agent's `GITHUB_TOKEN` typically cannot even read branch-protection settings (`GET .../branches/develop/protection` → 403) — don't burn cycles probing it. Ask directly, and remind the human (per this file's own Current Version note) that nothing re-locks it afterward — that's a manual step at the start of the next soak.
+4. **`docs/product/ROADMAP.md` has intentionally mixed CRLF/LF line endings** (legacy artifact, Story 96/97). Any tool that rewrites whole lines risks silently normalizing endings across the entire file. **Never use the `Edit` tool on this file.** Instead: read raw bytes (`open(path, 'rb').read()`), decode to a string, do the string operation, re-encode to UTF-8, and write back in a mode that doesn't translate newlines (Python: `open(path, 'w', encoding='utf-8', newline='')`, or binary-mode splice at the exact byte offset). Verify the CRLF line-count is unchanged before/after except for lines you intentionally added.
+5. **Inside that same splice, `\xNN` escapes in a plain Python `str` literal do NOT produce UTF-8 bytes** — `"\xe2\x80\x94"` creates three garbage Unicode codepoints (U+00E2, U+0080, U+0094), not an em dash, and `.encode('utf-8')` on that mangles into visibly broken text (`â€"`-style). This happened for real this session and was caught before it shipped. **Fix:** type the actual character directly in the (UTF-8) Python source, or use `—`/`→` — never `\xNN` for anything above ASCII in a `str` literal.
+6. **The shell's working directory does not reliably persist a `cd` across tool calls** — `pwd` can silently reset to a default directory between calls even though it appears to persist within one call. Never assume a previous `cd` still applies. Use an absolute path or re-issue `cd <path> &&` at the start of every command that depends on a specific directory; check `pwd` first if there's any doubt.
+7. **`npm install` can introduce incidental `package-lock.json` churn unrelated to the actual change** — e.g. a local npm client version stripping `libc` platform-metadata fields from optional native packages on every run. Always diff a lockfile before committing; if the diff shows anything beyond the intended version bump, revert and hand-patch only the specific field(s) that should change.
+8. **Two independent local clones of the same repo can coexist in one session** — an anonymous read-only one, and a separately-pathed, push-authenticated one created after attaching push access. Work committed in the read-only clone cannot be pushed from there (no credentials), and a stray branch left behind there after switching clones is a dead-end duplicate, not real uncommitted work. Confirm which clone's `origin` actually has push access (`git remote -v`) before reacting to any "uncommitted"/"unpushed" warning.
+9. **The `stop-hook-git-check.sh` hook can fire stale or simply wrong warnings** — e.g. flagging a branch that's already pushed and merged, or one that only exists in the other (dead) clone from point 8. Always independently verify actual git/GitHub state (`git status`, `git log origin/<branch> -1`, or the GitHub API) before acting on a hook warning; a hook prompts a check, it is not itself ground truth.
+10. **A GitHub REST call returning `429` about "too many concurrent git operations"** is this session's own proxy concurrency cap, not a real GitHub rate limit. Wait ~5-10s and retry exactly once — don't loop retries or fan out parallel workers to route around it.
 
 ---
 

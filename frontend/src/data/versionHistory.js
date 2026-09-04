@@ -1,5 +1,24 @@
 export var VERSION_HISTORY = [
   {
+    version: '3.3.3',
+    date: 'September 2026',
+    headline: 'Offline reliability fixes',
+    techNote: 'Bug fixes and performance improvements',
+    userChanges: [
+      'Fixed a bug where reloading the app while offline with a valid session could unexpectedly sign you out — offline reload now correctly keeps you signed in and shows your last-saved data.',
+      'Improved how the app detects being back online after a spotty connection, so it stops retrying failed requests and shows cached data sooner instead.',
+    ],
+    internalChanges: [
+      'Fixed #1060 (P1) via PR #1061: useAuth.js’s checkSession() and onAuthStateChange’s SIGNED_IN handler both validated an already-confirmed local Supabase session against the backend via a fetch to /api/v1/auth/me. A thrown fetch (network unreachable, e.g. offline) fell into the same catch-all as a genuine backend rejection, logging a user out purely because the network was down. Found during #1033 offline-evidence testing. RED→GREEN verified.',
+      'Fixed #1062 (P2) via PR #1064: navigator.onLine/the browser’s online/offline events only reflect adapter-level state changes, not "requests are actually succeeding" — confirmed live during #1033 evidence-gathering (DevTools Network throttled to Offline blocked every request but never flipped navigator.onLine). New frontend/src/utils/networkHealth.js: a self-correcting signal — two consecutive reported network-level failures flip it to offline, any successful response or real browser event flips it back immediately. Wired into client.js, useAuth.js, and App.jsx’s isOnline state. RED→GREEN verified via mutation for every call site.',
+      'Added scripts/check-version-currency.js + CI wiring (PR #1059): automated check against the exact version-staleness recurrence documented in this repo’s own release history — deliberately held back on develop at the time it merged, rides along with this batch.',
+      'PR #1063: corrected root CLAUDE.md’s stale "backend dev deleted" claim, found when a Supabase write meant for the dev environment silently went to the wrong project because the doc\'s claim that no dev backend existed was itself wrong.',
+      'Both API_DRIVEN_HOME/API_DRIVEN_ROUTES remain default-off in production — the two real bug fixes here are not gated by either flag and affect every user.',
+      'Version rationale: batched patch release — two real bug fixes, one CI tooling addition, one docs fix, no new user-facing capability.',
+      'Verification: frontend 1759/1759 across 169 files, backend unit 361/361, lint clean, production build clean.',
+    ],
+  },
+  {
     version: '3.3.2',
     date: 'September 2026',
     headline: 'Security fix: cross-team route access',
