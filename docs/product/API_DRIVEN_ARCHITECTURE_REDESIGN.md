@@ -1190,6 +1190,34 @@ deployment SHA, test/preview evidence, telemetry window and query, observed
 thresholds, decision, rollback owner/action, and soak start/end. Legacy retirement
 additionally requires caller-usage evidence and live database grant/policy checks.
 
+**Status update, 2026-09-04 ([#1072](https://github.com/kaushikkuberanathan/lineup_generator/issues/1072), open):**
+the Home server-processing budget above was measured against real production
+data for the first time (41 real `GET /api/v1/home` requests, Render logs,
+2026-09-03 to 2026-09-04) and **failed**: median 386ms, p95 816ms, both over
+the 300ms target — at only 1-2 teams, well under the ten-team scenario the
+budget is framed around. Root cause, confirmed directly against live infra
+(not just hypothesized): the Render backend (both `lineup-generator-backend`
+and `lineup-generator-dev-backend`) runs in Render's `oregon` region; both
+Supabase projects (`hzaajccyurlyeweekvma` prod, `psqvzppphdedqkpmarwx` dev)
+run in `us-east-1` — a cross-country hop on every Supabase call, doubled by
+the route's two *sequential* round trips (`team_memberships`, then
+`teams`+`team_data`, which could not start until the first round trip
+returned team IDs). A same-region mismatch on both prod and dev pairs, not a
+one-off — rules out a prod-only anomaly. **Partial mitigation shipped in
+code, not yet deployed:** migration `034_home_read_model_rpc.sql` adds
+`public.home_read_model()`, collapsing the two sequential round trips into
+one RPC call; `backend/src/routes/home.js` updated to call it;
+`home.route.test.js`/`homeSchema.contract.test.js` updated and passing
+(361/361 backend unit). **This removes one of the two round trips, not the
+underlying region mismatch** — real budget compliance likely also needs
+Render/Supabase colocation, a separate infra decision (cost/downtime
+implications) requiring an explicit choice, not made here. Migration 034 has
+not been applied to DEV or PROD — per this repo's own migration-apply
+convention (`backend/CLAUDE.md` → Migration Notes), that needs its own
+explicit go-ahead before either apply, then a live re-measurement using
+#1072's exact methodology to see how much of the gap it closes. See #1072
+for full detail and next steps.
+
 ## 30. Live migration inventory
 
 Inventory snapshot: repository commit `76523b7`, reconciled 2026-09-02. This is a

@@ -5358,6 +5358,16 @@ compositions (#1076), and the first incremental screen migration (#1077).
 The pilot is limited to API-driven Home behind its existing default-off flag;
 legacy Home and application chrome remain unchanged.
 
+**My Team Wave A implementation (2026-09-04):** #1086 and #1087 add a
+default-off `UX_MY_TEAM` boundary for the roster landing, individual player
+profile, and all-player editor. The landing uses the shared PageHeader,
+SearchField, PlayerRow, StatusPill, Button, Text, Card, and Icon contracts;
+the profile screens wrap the existing editor so player identity, persistence,
+dirty-state behavior, and URL-backed navigation remain unchanged. RED-to-GREEN
+component tests, App-level flag/routing coverage, 375px/393px browser checks,
+lint, and production build are recorded on the feature branch. Legacy My Team
+remains the default-off fallback.
+
 ---
 ### Story 133 (P2) - Live game-day surface token migration (game-mode/ + ScoringMode/) <!-- #698 -->
 Status: **All 13 slices merged to `develop` (2026-08-23, PR #764)** - the
