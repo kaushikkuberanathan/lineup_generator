@@ -1,6 +1,6 @@
 # Product Operations Playbook
 
-> **Reconciled 2026-09-03 (updated; supersedes the 2026-08-30 v3.1.0 note):** production is v3.3.2 (PR #1054, merge `162061c`) — **v3.3.3 release candidate** prepared 2026-09-04, not yet promoted to `main`. The current workflow uses
+> **Reconciled 2026-09-04 (updated; supersedes the 2026-09-03 v3.3.2 note, which was stale — it described v3.3.3 as unpromoted when the promote had already landed):** production is v3.3.3 (PR #1065 → `main` as `d2f88bb`, then PR #1066 merged `develop` → `main` directly as `a1b916a`, `origin/main`'s current HEAD) — **v3.4.0 release candidate** in prep on `release/v3.4.0`, not yet promoted to `main`. The current workflow uses
 > feature/fix branches from `develop`, required GitHub issues, merge commits,
 > the shared Git soak marker, branch-specific push approval, production smoke
 > evidence, and immediate `main`→`develop` ancestry sync. Current root
