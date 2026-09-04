@@ -67,7 +67,9 @@ import { trackHomeDeepLinkResolved, trackHomeDeepLinkDenied } from './features/h
 import { getHomeCache } from './api/homeCache.js';
 import { MyTeamRosterScreen } from './features/my-team/MyTeamRosterScreen.jsx';
 import { PlayerProfileScreen } from './features/my-team/PlayerProfileScreen.jsx';
+import { ScheduleScreen } from './features/schedule/ScheduleScreen.jsx';
 import { Button } from './components/ui/Button';
+import { StatusPill } from './components/ui/StatusPill';
 
 // ============================================================
 // HELPERS
@@ -5754,6 +5756,7 @@ export default function App() {
   // SCHEDULE TAB
   // ============================================================
   function renderSchedule() {
+    var contemporarySchedule = isFlagEnabled('UX_SCHEDULE');
     var wins = 0; var losses = 0; var ties = 0;
     for (var si = 0; si < schedule.length; si++) {
       if (schedule[si].result === "W") { wins++; }
@@ -5835,12 +5838,12 @@ export default function App() {
         ) : null}
 
         <div style={{ marginBottom:"14px" }}>
-          <button style={{ ...S.btn("primary"), width:"100%" }} onClick={function() {
+          <Button typography={contemporarySchedule ? "contemporary" : "legacy"} fullWidth style={contemporarySchedule ? undefined : { ...S.btn("primary"), width:"100%" }} onClick={function() {
             setNewGame({ date:"", time:"", location:"", opponent:"", result:"", ourScore:"", theirScore:"", battingPerf:{}, snackDuty:"", gameBall:[], gameBallSearch:"", scoreReported:false, usScore:null, oppScore:null, gameStatus:'scheduled', finalizedAt:null });
             setEditingGame(null);
             setShowGameForm(true);
             setImportMode(null);
-          }}>+ Add Game</button>
+          }}>+ Add Game</Button>
         </div>
 
         {importMode === "choose" ? (
@@ -6026,10 +6029,11 @@ export default function App() {
         ) : null}
 
         {showGameForm ? (
-          <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px", borderLeft:"3px solid " + tokens.color.brand.red }}>
-            <div style={{ fontWeight:"bold", fontSize:"14px", marginBottom:"14px" }}>
+          <Card padding="16px 18px" radius={contemporarySchedule ? "lg" : "md"} style={{ border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px", borderTop:contemporarySchedule ? "4px solid " + tokens.color.brand.gold : undefined, borderLeft:contemporarySchedule ? undefined : "3px solid " + tokens.color.brand.red }}>
+            <div style={{ fontWeight:"bold", fontSize:contemporarySchedule ? "18px" : "14px", marginBottom:"4px" }}>
               {editingGame ? "Edit Game" : "Add New Game"}
             </div>
+            {contemporarySchedule ? <div style={{ color:tokens.color.text.muted, fontSize:"13px", marginBottom:"16px" }}>Game details and team assignments stay together.</div> : null}
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px", marginBottom:"10px" }}>
               {[
                 ["Opponent *", "opponent", "text"],
@@ -6288,10 +6292,10 @@ export default function App() {
               </div>
             ) : null}
             <div style={{ display:"flex", gap:"8px" }}>
-              <button style={S.btn("primary")} onClick={saveGameForm} disabled={!newGame.date || !newGame.opponent}>
+              <Button typography="contemporary" onClick={saveGameForm} disabled={!newGame.date || !newGame.opponent}>
                 {editingGame ? "Save Changes" : "Add Game"}
-              </button>
-              <button style={S.btn("ghost")} onClick={function() { setShowGameForm(false); setEditingGame(null); }}>Cancel</button>
+              </Button>
+              <Button typography="contemporary" variant="secondaryOutline" onClick={function() { setShowGameForm(false); setEditingGame(null); }}>Cancel</Button>
             </div>
           </Card>
         ) : null}
@@ -6308,7 +6312,7 @@ export default function App() {
             var resultColor = game.result === "W" ? tokens.color.status.success : game.result === "L" ? tokens.color.brand.red : game.result === "T" ? "#d4a017" : "#888";
             var cancelColor = tokens.color.status.neutral;
             return (
-              <Card key={game.id} padding="0" radius="md" style={{ overflow:"hidden", border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px", borderLeft:"4px solid " + (isCanceled ? cancelColor : isPlayed ? resultColor : tokens.color.brand.red), opacity: isCanceled ? 0.78 : 1 }}>
+              <Card key={game.id} padding="0" radius={contemporarySchedule ? "lg" : "md"} style={{ overflow:"hidden", border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px", borderLeft:contemporarySchedule ? undefined : "4px solid " + (isCanceled ? cancelColor : isPlayed ? resultColor : tokens.color.brand.red), borderTop:contemporarySchedule ? "4px solid " + (isCanceled ? cancelColor : isPlayed ? resultColor : tokens.color.brand.gold) : undefined, opacity: isCanceled ? 0.78 : 1 }}>
                 <div style={{ padding:"16px 16px 14px" }}>
                   <div>
                     <div style={{ display:"flex", alignItems:"center", gap:"8px", marginBottom:"4px", flexWrap:"wrap" }}>
@@ -6349,7 +6353,7 @@ export default function App() {
                             </span>
                           );
                         }
-                        return <span style={{ fontSize:"10px", padding:"2px 8px", borderRadius:"10px", background:"rgba(200,16,46,0.08)", color:tokens.color.brand.red, letterSpacing:"0.08em", textTransform:"uppercase" }}>Upcoming</span>;
+                        return <StatusPill status="upcoming">Upcoming</StatusPill>;
                       })()}
                     </div>
                     {inlineScoreGame === game.id && !isCanceled ? (
@@ -6472,9 +6476,9 @@ export default function App() {
                       }
                       return null;
                     })()}
-                    <button style={{ ...S.btn("ghost"), minWidth:0, width:"100%", padding:"9px 4px" }} onClick={function() { handleShareGame(game); }}>Share</button>
-                    <button style={{ ...S.btn("ghost"), minWidth:0, width:"100%", padding:"9px 4px" }} onClick={function(g) { return function() { startEdit(g); }; }(game)}>Edit</button>
-                    <button style={{ ...S.btn("ghost"), minWidth:0, width:"100%", padding:"9px 4px", color:tokens.color.brand.red }} onClick={function(id) { return function() { if (confirm("Delete game?")) { deleteGame(id); } }; }(game.id)}>Delete</button>
+                    <Button typography="contemporary" variant="secondaryOutline" size="sm" style={{ minWidth:0, width:"100%", padding:"9px 4px" }} onClick={function() { handleShareGame(game); }}>Share</Button>
+                    <Button typography="contemporary" variant="secondaryOutline" size="sm" style={{ minWidth:0, width:"100%", padding:"9px 4px" }} onClick={function(g) { return function() { startEdit(g); }; }(game)}>Edit</Button>
+                    <Button typography="contemporary" variant="ghost" size="sm" style={{ minWidth:0, width:"100%", padding:"9px 4px", color:tokens.color.status.error }} onClick={function(id) { return function() { if (confirm("Delete game?")) { deleteGame(id); } }; }(game.id)}>Delete</Button>
                 </div>
               </Card>
             );
@@ -7720,6 +7724,18 @@ export default function App() {
     var overview = getScheduleOverview(schedule);
     var nextGame = overview.nextGame;
     var nextDate = nextGame ? new Date(nextGame.date + "T12:00:00") : null;
+
+    if (isFlagEnabled('UX_SCHEDULE')) {
+      return (
+        <ScheduleScreen
+          nextGame={nextGame}
+          onOpenGameDay={function() { setPrimaryTab("gameday"); setGameDayTab("lineups"); }}
+          scheduleContent={renderSchedule()}
+          practices={practices}
+          snackContent={renderSnackDuty()}
+        />
+      );
+    }
 
     return (
       <div style={{ paddingBottom:"80px" }}>

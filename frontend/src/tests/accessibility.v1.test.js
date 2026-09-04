@@ -106,6 +106,7 @@ describe('2 — FEATURE_FLAGS registry', function() {
     expect(FEATURE_FLAGS).toHaveProperty('VIEWER_MODE');
     expect(FEATURE_FLAGS).toHaveProperty('GAME_MODE');
     expect(FEATURE_FLAGS).toHaveProperty('UX_MY_TEAM');
+    expect(FEATURE_FLAGS).toHaveProperty('UX_SCHEDULE');
   });
 
   test('2.4 USE_NEW_LINEUP_ENGINE remains true', function() {
@@ -118,6 +119,10 @@ describe('2 — FEATURE_FLAGS registry', function() {
 
   test('2.6 UX_MY_TEAM remains independently default-off during Wave A', function() {
     expect(FEATURE_FLAGS['UX_MY_TEAM']).toBe(false);
+  });
+
+  test('2.7 UX_SCHEDULE remains independently default-off during Wave B', function() {
+    expect(FEATURE_FLAGS['UX_SCHEDULE']).toBe(false);
   });
 
 });
