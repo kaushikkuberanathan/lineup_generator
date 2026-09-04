@@ -5456,6 +5456,17 @@ status states. Player-name identity, first-name display, absence filtering,
 reorder gestures, season stats, persistence, and the legacy flag-off surface
 remain unchanged.
 
+**Game Day Wave C4 (2026-09-04):** #1097 extracts Walk-up Songs into a
+reusable `WalkUpSongsWorkspace` behind `UX_GAMEDAY_SETUP`. The contemporary
+surface uses the shared music/link/action/status contracts for configured,
+empty, editing, absent, finalized/read-only, and offline states. Existing
+player metadata, `updatePlayer` persistence, batting-order sequencing,
+absence filtering, share/print callbacks, external-link behavior, and the
+legacy flag-off surface remain unchanged. Focused coverage passes 8/8; the
+full frontend suite passes 1,841 tests across 184 files with clean lint and
+production build. Browser checks at 375px, 393px, and 844x390 confirm exact
+viewport-width containment in display and edit modes with no Vite overlay.
+
 ---
 ### Story 133 (P2) - Live game-day surface token migration (game-mode/ + ScoringMode/) <!-- #698 -->
 Status: **All 13 slices merged to `develop` (2026-08-23, PR #764)** - the

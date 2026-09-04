@@ -108,7 +108,7 @@ Legacy Home and My Team remain available whenever their independent flags are of
 1. API-driven Home pilot behind the existing flag
 2. My Team and player profiles — merged to `develop` behind `UX_MY_TEAM`
 3. Schedule and event details — merged to `develop` behind `UX_SCHEDULE`
-4. Game Day entry and lineup management — Wave C1 entry/readiness, Wave C2 Defense, and Wave C3 Batting controls implemented behind `UX_GAMEDAY_SETUP`; Songs remains independently sequenced
+4. Game Day entry and lineup management — Wave C1 entry/readiness, Wave C2 Defense, Wave C3 Batting, and Wave C4 Walk-up Songs implemented behind `UX_GAMEDAY_SETUP`
 5. Support and remaining utility tabs
 6. Auth/access and system states
 7. Live Game Mode and scoring after the lighter surfaces prove the system
