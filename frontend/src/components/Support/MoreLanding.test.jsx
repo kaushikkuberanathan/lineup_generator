@@ -99,4 +99,14 @@ describe('MoreLanding', function() {
     renderLanding({ appVersion: '9.9.9' });
     expect(screen.getByText('v9.9.9')).toBeTruthy();
   });
+
+  it('adds semantic icon tiles only when the contemporary flags are enabled', function() {
+    var legacy = renderLanding();
+    expect(legacy.container.querySelectorAll('svg')).toHaveLength(0);
+    legacy.unmount();
+
+    var contemporary = renderLanding({ supportEnabled: true, accountEnabled: true });
+    expect(screen.getByRole('heading', { name: 'Your dugout' })).toBeInTheDocument();
+    expect(contemporary.container.querySelectorAll('svg').length).toBeGreaterThanOrEqual(8);
+  });
 });

@@ -84,6 +84,7 @@ Initial semantic catalog: home, team, calendar, Game Day, support, add, player, 
 - Compositions (#1076): PageHeader, SectionHeader, readiness strip, and callback-driven event, player, help, and general workflow rows.
 - Home pilot (#1077): API-driven Team Hub consumes the shared filter, team-row, status, readiness, typography, icon, and action contracts behind the existing default-off `API_DRIVEN_HOME` flag.
 - My Team Wave A (#1086/#1087): roster search/status rows plus individual and all-player profile shells consume the shared contracts behind the independently default-off `UX_MY_TEAM` flag. Existing editor state and persistence remain owned by App while the new screen components own presentation.
+- Support and Account Wave D (#1091): a shared `SupportWorkspace` frames every detail destination with calm, semantic hierarchy while `MoreLanding` uses the same icon catalog for discovery. `UX_SUPPORT` and `UX_ACCOUNT` are independently default-off; Help content/search/offline behavior, legal versions, external links, feedback persistence, session actions, memberships, and profile updates retain their existing owners.
 
 Legacy Home and My Team remain available whenever their independent flags are off. All later screens retain their current rendering until their own migration slices are reviewed and approved.
 
@@ -109,7 +110,7 @@ Legacy Home and My Team remain available whenever their independent flags are of
 2. My Team and player profiles — merged to `develop` behind `UX_MY_TEAM`
 3. Schedule and event details — merged to `develop` behind `UX_SCHEDULE`
 4. Game Day entry and lineup management — Wave C1 entry/readiness, Wave C2 Defense, Wave C3 Batting, and Wave C4 Walk-up Songs implemented behind `UX_GAMEDAY_SETUP`
-5. Support and remaining utility tabs
+5. Support and remaining utility tabs — implemented behind `UX_SUPPORT` and `UX_ACCOUNT`
 6. Auth/access and system states
 7. Live Game Mode and scoring after the lighter surfaces prove the system
 

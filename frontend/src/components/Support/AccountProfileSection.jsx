@@ -17,7 +17,7 @@ import { AccountNameField } from '../Account/AccountNameField';
  *   initialLastName    string — prefill (user.profile.last_name)
  *   S                  object — legacy style helpers AccountNameField needs (S.input, S.btn)
  */
-export function AccountProfileSection({ updateProfileName, initialFirstName, initialLastName, S }) {
+export function AccountProfileSection({ updateProfileName, initialFirstName, initialLastName, S, contemporary = false }) {
   return (
     <div style={{ padding: "14px 16px 24px" }}>
       <Card padding="16px 18px" radius="md" style={{ border: "1px solid " + tokens.color.border.default }}>
@@ -34,6 +34,7 @@ export function AccountProfileSection({ updateProfileName, initialFirstName, ini
           initialFirstName={initialFirstName}
           initialLastName={initialLastName}
           S={S}
+          contemporary={contemporary}
         />
       </Card>
     </div>
