@@ -13,9 +13,61 @@ and in `docs/product/ROADMAP.md`/`CLAUDE.md`'s Current Version section).
 
 ## Immediate next task: pick up #1072
 
-**This is the top priority for the next session**, added after this doc's
-initial merge (PR #1068) — the rest of the doc below still reflects where
-things stood before this finding, except where noted.
+**Update 2026-09-04 (second session, this branch):** root cause is now
+**confirmed**, not just hypothesized, and a partial code fix exists but is
+**not deployed anywhere yet** — this needs a human decision before it goes
+further. Read this update before the "as filed" section right below it.
+
+**Root cause, confirmed against live infra:** queried Render (`get_service`)
+and Supabase (`get_project`) directly. Both Render services
+(`lineup-generator-backend` AND `lineup-generator-dev-backend`) run in
+Render's `oregon` region. Both Supabase projects (`hzaajccyurlyeweekvma`
+prod AND `psqvzppphdedqkpmarwx` dev) run in `us-east-1`. Cross-country hop on
+every Supabase call, on both prod and dev — not a prod-only anomaly, which
+rules out a lot of alternative explanations. The route's two *sequential*
+round trips (membership query, then teams+team_data, which needs the first
+round trip's team IDs before it can start) double that hop's cost.
+
+**Code fix shipped on this branch, NOT applied to any live database:**
+`backend/migrations/034_home_read_model_rpc.sql` adds
+`public.home_read_model(p_user_id, p_email)` — a single Postgres statement
+doing the same membership/teams/team_data resolution the route used to do in
+two round trips. `backend/src/routes/home.js` now calls it via
+`supabaseAdmin.rpc(...)` instead of the old two-step `.from()` sequence.
+`home.route.test.js` and `homeSchema.contract.test.js` rewritten to stub
+`.rpc()` instead of `.from()` (both now throw on any unexpected `.from()`
+call, so a regression back to the old shape fails loudly). Full backend unit
+suite re-run: **361/361 passing.** `docs/product/API_DRIVEN_ARCHITECTURE_REDESIGN.md`
+§29.2 has a new status paragraph with the full finding.
+
+**This is a partial fix, not full budget compliance.** It removes one of the
+two round trips; it does not fix the underlying region mismatch. Getting all
+the way under the 300ms p95 budget most likely also needs Render/Supabase
+colocation — a real infra decision (cost, and either service needs
+migrating/recreating in a new region, which is not a trivial in-place
+change) that this session deliberately did **not** make unilaterally.
+
+**What's genuinely left, in order:**
+1. Someone with authority needs to decide: apply migration 034 to DEV (low
+   risk, per this repo's own established pattern of building/verifying on
+   DEV before PROD), then re-measure `GET /api/v1/home` latency there before
+   touching PROD at all.
+2. Apply to PROD only with explicit go-ahead (same pattern every other
+   migration in `backend/CLAUDE.md`'s Migration Notes follows) — this
+   session did not do this and should not be assumed done.
+3. Re-measure against real PROD data, same methodology as #1072's original
+   evidence (Render logs, `[home]` structured log line's `latencyMs`).
+4. Decide on Render/Supabase colocation — a separate, bigger, costlier
+   change — or explicitly accept the revised (RPC-only) latency as the new
+   budget. Either way, record the decision on #1072 and update §29.2 to
+   match reality, not aspiration.
+5. Close out #1072's acceptance criteria only once 3-4 are actually done —
+   do not mark it resolved off the code fix alone; the fix is unverified
+   against a live database.
+
+---
+
+## #1072 as originally filed (for context — see the update above for current state)
 
 While continuing #1033 this same session, the §29.2 performance budgets
 (server latency, payload size, cached-paint timing) were measured against
@@ -171,10 +223,14 @@ DEV — don't assume a write to one shows up in the other).
 
 ## Suggested next steps (in priority order)
 
-0. **Pick up #1072 first** — root-cause the `GET /api/v1/home` latency budget
-   miss (see the section at the top of this doc). This is the one item with
-   a concrete, actionable next step; everything below is watch-and-wait or
-   conditional on a future decision.
+0. **#1072 root cause is done; what's left needs a human decision.** Region
+   mismatch (Render `oregon` vs. Supabase `us-east-1`, confirmed on both
+   prod and dev) is the confirmed cause; migration 034 (a partial code fix,
+   RPC-based round-trip collapse) is written and unit-tested but not applied
+   to DEV or PROD. Next: get go-ahead to apply to DEV, re-measure, then PROD,
+   then decide whether Render/Supabase colocation is worth doing or the
+   revised budget gets accepted instead. See the section at the top of this
+   doc for the full state.
 1. Otherwise, this is a watch-and-wait phase. Keep using the app under the
    API-driven flags as real day-to-day usage, not synthetic test scenarios,
    and periodically re-check the five Mixpanel events against the

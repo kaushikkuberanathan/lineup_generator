@@ -65,6 +65,12 @@ import { HomeScreen as ApiHomeScreen } from './features/home/HomeScreen.jsx';
 import { parseAppRoute, buildAppRoute, resolveDestination, savePendingDestination, consumePendingDestination } from './api/routes.js';
 import { trackHomeDeepLinkResolved, trackHomeDeepLinkDenied } from './features/home/homeAnalytics.js';
 import { getHomeCache } from './api/homeCache.js';
+import { MyTeamRosterScreen } from './features/my-team/MyTeamRosterScreen.jsx';
+import { PlayerProfileScreen } from './features/my-team/PlayerProfileScreen.jsx';
+import { ScheduleScreen } from './features/schedule/ScheduleScreen.jsx';
+import { GameDayEntryScreen } from './features/game-day/GameDayEntryScreen.jsx';
+import { Button } from './components/ui/Button';
+import { StatusPill } from './components/ui/StatusPill';
 
 // ============================================================
 // HELPERS
@@ -3358,6 +3364,49 @@ export default function App() {
       return { ab:ab, h:h, r:r, rbi:rbi, games:games };
     }
 
+    if (rosterDetailMode === null && isFlagEnabled('UX_MY_TEAM')) {
+      var contemporaryAddPlayerForm = showAddForm ? (
+        <Card border padding="lg">
+          <div style={{ display:"flex", flexWrap:"wrap", gap:tokens.space.sm, alignItems:"center", marginBottom:tokens.space.sm }}>
+            <input value={newFirstName} onChange={function(e) { setNewFirstName(e.target.value); }}
+              onKeyDown={function(e) { if (e.key === "Enter") { addPlayer(); } }}
+              aria-label="First name" placeholder="First name*" maxLength={20} style={{ ...S.input, flex:"1 1 120px" }} autoFocus />
+            <input value={newLastName} onChange={function(e) { setNewLastName(e.target.value); }}
+              onKeyDown={function(e) { if (e.key === "Enter") { addPlayer(); } }}
+              aria-label="Last name" placeholder="Last name*" maxLength={20} style={{ ...S.input, flex:"1 1 120px" }} />
+          </div>
+          <div style={{ marginBottom:tokens.space.md }}>
+            <div style={{ fontFamily:tokens.font.family.sans, fontSize:tokens.font.size.body, fontWeight:tokens.font.weight.semibold, color:tokens.color.text.primary, marginBottom:tokens.space.xs }}>Batting hand</div>
+            <div style={{ fontFamily:tokens.font.family.sans, fontSize:tokens.font.size.sm, color:tokens.color.text.secondary, marginBottom:tokens.space.sm }}>Optional — helps the dugout prepare batters.</div>
+            <BattingHandSelector value={newBattingHand} onChange={setNewBattingHand} teamId={activeTeamId} />
+          </div>
+          <div style={{ display:"flex", gap:tokens.space.sm, justifyContent:"flex-end", flexWrap:"wrap" }}>
+            <Button variant="secondaryOutline" typography="contemporary" onClick={function() { setShowAddForm(false); setNewFirstName(""); setNewLastName(""); setNewBattingHand("U"); }}>Cancel</Button>
+            <Button typography="contemporary" leadingIcon="add" onClick={addPlayer}>Add player</Button>
+          </div>
+        </Card>
+      ) : null;
+
+      return (
+        <MyTeamRosterScreen
+          team={activeTeam ? {
+            name: activeTeam.name,
+            ageGroup: activeTeam.ageGroup,
+            sport: activeTeam.sport,
+            seasonLabel: activeTeam.season ? formatSeason(activeTeam.season, activeTeam.year) : '',
+          } : null}
+          players={sortedRoster}
+          locked={lineupLocked}
+          loading={isHydrating}
+          offline={!isOnline}
+          addPlayerForm={contemporaryAddPlayerForm}
+          onAddPlayer={function() { setShowAddForm(true); }}
+          onOpenPlayer={function(playerName) { navigateRosterDetail(playerName); }}
+          onViewAll={function() { navigateRosterDetail("all"); }}
+        />
+      );
+    }
+
     return (
       <div>
         {restoreBanner ? (
@@ -3366,7 +3415,7 @@ export default function App() {
             <button onClick={function(){setRestoreBanner('');}} style={{ background:'none', border:'none', cursor:'pointer', fontSize:'16px', color:'#065f46' }}>&#xd7;</button>
           </div>
         ) : null}
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"14px", flexWrap:"wrap", gap:"8px" }}>
+        {!isFlagEnabled('UX_MY_TEAM') ? <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"14px", flexWrap:"wrap", gap:"8px" }}>
           <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
             {rosterDetailMode !== null ? (
               <button
@@ -3406,9 +3455,9 @@ export default function App() {
             </button>
           </div>
           ) : null}
-        </div>
+        </div> : null}
 
-        {rosterDetailMode !== null ? (
+        {rosterDetailMode !== null && !isFlagEnabled('UX_MY_TEAM') ? (
           <div style={{ fontSize:"12px", color:tokens.color.text.muted, marginBottom:"14px" }}>
             {rosterDetailMode === "all"
               ? "Review and edit every player profile in one place."
@@ -3690,6 +3739,14 @@ export default function App() {
         )}
 
         {rosterDetailMode !== null ? (
+        <PlayerProfileScreen
+          enabled={isFlagEnabled('UX_MY_TEAM')}
+          playerName={rosterDetailMode === "all" ? null : rosterDetailMode}
+          allPlayers={rosterDetailMode === "all"}
+          playerCount={rosterDetailPlayers.length}
+          incomplete={rosterDetailMode !== "all" && rosterDetailPlayers.length > 0 && (!rosterDetailPlayers[0].prefs || rosterDetailPlayers[0].prefs.length === 0)}
+          locked={lineupLocked}
+          onBack={function() { navigateRosterDetail(null); }}>
         <div style={{ display:"grid", gridTemplateColumns: rosterDetailMode === "all" ? "repeat(auto-fill,minmax(300px,1fr))" : "minmax(0, 680px)", justifyContent:"center", gap:"12px" }}>
           {rosterDetailPlayers.map(function(info) {
             var isCol = lineupLocked || !!collapsed[info.name];
@@ -4136,6 +4193,7 @@ export default function App() {
             );
           })}
         </div>
+        </PlayerProfileScreen>
         ) : null}
       </div>
     );
@@ -4276,6 +4334,15 @@ export default function App() {
 
     return (
       <div>
+        {isFlagEnabled('UX_GAMEDAY_SETUP') ? (
+          <GameDayEntryScreen
+            nextGame={getScheduleOverview(schedule).nextGame}
+            rosterCount={roster.length}
+            availableCount={_availableCount}
+            lineupStatus={lineupLocked ? 'locked' : activeBattingOrder.length > 0 ? 'ready' : 'draft'}
+            onStartGameMode={function() { setDugoutViewActive(true); }}
+          />
+        ) : null}
         {/* ── Tonight's Attendance Panel ─── */}
         {roster.length > 0 && !lineupLocked ? (
           <div style={{ marginBottom:"14px", borderRadius:"10px", border:"1px solid rgba(15,31,61,0.12)", overflow:"hidden" }}>
@@ -5699,6 +5766,7 @@ export default function App() {
   // SCHEDULE TAB
   // ============================================================
   function renderSchedule() {
+    var contemporarySchedule = isFlagEnabled('UX_SCHEDULE');
     var wins = 0; var losses = 0; var ties = 0;
     for (var si = 0; si < schedule.length; si++) {
       if (schedule[si].result === "W") { wins++; }
@@ -5780,12 +5848,12 @@ export default function App() {
         ) : null}
 
         <div style={{ marginBottom:"14px" }}>
-          <button style={{ ...S.btn("primary"), width:"100%" }} onClick={function() {
+          <Button typography={contemporarySchedule ? "contemporary" : "legacy"} fullWidth style={contemporarySchedule ? undefined : { ...S.btn("primary"), width:"100%" }} onClick={function() {
             setNewGame({ date:"", time:"", location:"", opponent:"", result:"", ourScore:"", theirScore:"", battingPerf:{}, snackDuty:"", gameBall:[], gameBallSearch:"", scoreReported:false, usScore:null, oppScore:null, gameStatus:'scheduled', finalizedAt:null });
             setEditingGame(null);
             setShowGameForm(true);
             setImportMode(null);
-          }}>+ Add Game</button>
+          }}>+ Add Game</Button>
         </div>
 
         {importMode === "choose" ? (
@@ -5971,10 +6039,11 @@ export default function App() {
         ) : null}
 
         {showGameForm ? (
-          <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px", borderLeft:"3px solid " + tokens.color.brand.red }}>
-            <div style={{ fontWeight:"bold", fontSize:"14px", marginBottom:"14px" }}>
+          <Card padding="16px 18px" radius={contemporarySchedule ? "lg" : "md"} style={{ border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px", borderTop:contemporarySchedule ? "4px solid " + tokens.color.brand.gold : undefined, borderLeft:contemporarySchedule ? undefined : "3px solid " + tokens.color.brand.red }}>
+            <div style={{ fontWeight:"bold", fontSize:contemporarySchedule ? "18px" : "14px", marginBottom:"4px" }}>
               {editingGame ? "Edit Game" : "Add New Game"}
             </div>
+            {contemporarySchedule ? <div style={{ color:tokens.color.text.muted, fontSize:"13px", marginBottom:"16px" }}>Game details and team assignments stay together.</div> : null}
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px", marginBottom:"10px" }}>
               {[
                 ["Opponent *", "opponent", "text"],
@@ -6233,10 +6302,10 @@ export default function App() {
               </div>
             ) : null}
             <div style={{ display:"flex", gap:"8px" }}>
-              <button style={S.btn("primary")} onClick={saveGameForm} disabled={!newGame.date || !newGame.opponent}>
+              <Button typography="contemporary" onClick={saveGameForm} disabled={!newGame.date || !newGame.opponent}>
                 {editingGame ? "Save Changes" : "Add Game"}
-              </button>
-              <button style={S.btn("ghost")} onClick={function() { setShowGameForm(false); setEditingGame(null); }}>Cancel</button>
+              </Button>
+              <Button typography="contemporary" variant="secondaryOutline" onClick={function() { setShowGameForm(false); setEditingGame(null); }}>Cancel</Button>
             </div>
           </Card>
         ) : null}
@@ -6253,7 +6322,7 @@ export default function App() {
             var resultColor = game.result === "W" ? tokens.color.status.success : game.result === "L" ? tokens.color.brand.red : game.result === "T" ? "#d4a017" : "#888";
             var cancelColor = tokens.color.status.neutral;
             return (
-              <Card key={game.id} padding="0" radius="md" style={{ overflow:"hidden", border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px", borderLeft:"4px solid " + (isCanceled ? cancelColor : isPlayed ? resultColor : tokens.color.brand.red), opacity: isCanceled ? 0.78 : 1 }}>
+              <Card key={game.id} padding="0" radius={contemporarySchedule ? "lg" : "md"} style={{ overflow:"hidden", border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px", borderLeft:contemporarySchedule ? undefined : "4px solid " + (isCanceled ? cancelColor : isPlayed ? resultColor : tokens.color.brand.red), borderTop:contemporarySchedule ? "4px solid " + (isCanceled ? cancelColor : isPlayed ? resultColor : tokens.color.brand.gold) : undefined, opacity: isCanceled ? 0.78 : 1 }}>
                 <div style={{ padding:"16px 16px 14px" }}>
                   <div>
                     <div style={{ display:"flex", alignItems:"center", gap:"8px", marginBottom:"4px", flexWrap:"wrap" }}>
@@ -6294,7 +6363,7 @@ export default function App() {
                             </span>
                           );
                         }
-                        return <span style={{ fontSize:"10px", padding:"2px 8px", borderRadius:"10px", background:"rgba(200,16,46,0.08)", color:tokens.color.brand.red, letterSpacing:"0.08em", textTransform:"uppercase" }}>Upcoming</span>;
+                        return <StatusPill status="upcoming">Upcoming</StatusPill>;
                       })()}
                     </div>
                     {inlineScoreGame === game.id && !isCanceled ? (
@@ -6417,9 +6486,9 @@ export default function App() {
                       }
                       return null;
                     })()}
-                    <button style={{ ...S.btn("ghost"), minWidth:0, width:"100%", padding:"9px 4px" }} onClick={function() { handleShareGame(game); }}>Share</button>
-                    <button style={{ ...S.btn("ghost"), minWidth:0, width:"100%", padding:"9px 4px" }} onClick={function(g) { return function() { startEdit(g); }; }(game)}>Edit</button>
-                    <button style={{ ...S.btn("ghost"), minWidth:0, width:"100%", padding:"9px 4px", color:tokens.color.brand.red }} onClick={function(id) { return function() { if (confirm("Delete game?")) { deleteGame(id); } }; }(game.id)}>Delete</button>
+                    <Button typography="contemporary" variant="secondaryOutline" size="sm" style={{ minWidth:0, width:"100%", padding:"9px 4px" }} onClick={function() { handleShareGame(game); }}>Share</Button>
+                    <Button typography="contemporary" variant="secondaryOutline" size="sm" style={{ minWidth:0, width:"100%", padding:"9px 4px" }} onClick={function(g) { return function() { startEdit(g); }; }(game)}>Edit</Button>
+                    <Button typography="contemporary" variant="ghost" size="sm" style={{ minWidth:0, width:"100%", padding:"9px 4px", color:tokens.color.status.error }} onClick={function(id) { return function() { if (confirm("Delete game?")) { deleteGame(id); } }; }(game.id)}>Delete</Button>
                 </div>
               </Card>
             );
@@ -7625,6 +7694,10 @@ export default function App() {
       return <div style={{ padding:"14px 12px 80px" }}>{renderRoster()}</div>;
     }
 
+    if (isFlagEnabled('UX_MY_TEAM')) {
+      return renderRoster();
+    }
+
     return (
       <div style={{ paddingBottom:"80px" }}>
         <div style={{ margin:"14px 14px 10px" }}>
@@ -7661,6 +7734,18 @@ export default function App() {
     var overview = getScheduleOverview(schedule);
     var nextGame = overview.nextGame;
     var nextDate = nextGame ? new Date(nextGame.date + "T12:00:00") : null;
+
+    if (isFlagEnabled('UX_SCHEDULE')) {
+      return (
+        <ScheduleScreen
+          nextGame={nextGame}
+          onOpenGameDay={function() { setPrimaryTab("gameday"); setGameDayTab("lineups"); }}
+          scheduleContent={renderSchedule()}
+          practices={practices}
+          snackContent={renderSnackDuty()}
+        />
+      );
+    }
 
     return (
       <div style={{ paddingBottom:"80px" }}>

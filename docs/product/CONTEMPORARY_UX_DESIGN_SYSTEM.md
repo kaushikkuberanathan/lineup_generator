@@ -58,7 +58,7 @@ Consumers request semantic names through the shared `Icon` component rather than
 - Supported sizes are small (16), medium (20), and large (24).
 - The full-color Dugout Lineup brand icon is not part of this registry.
 
-Initial semantic catalog: home, team, calendar, Game Day, support, add, player, lineup, roster, settings, share, chevron-right, overflow, success, attention, baseball, and glove.
+Initial semantic catalog: home, team, calendar, Game Day, support, add, player, lineup, roster, settings, share, back, chevron-right, overflow, success, attention, baseball, and glove.
 
 ## Implemented foundation contracts
 
@@ -66,8 +66,9 @@ Initial semantic catalog: home, team, calendar, Game Day, support, add, player, 
 - Actions/status (#1075): additive Button icon/loading support, outlined secondary actions, ActionRow, IconAction, StatusPill, SegmentedControl, and SearchField.
 - Compositions (#1076): PageHeader, SectionHeader, readiness strip, and callback-driven event, player, help, and general workflow rows.
 - Home pilot (#1077): API-driven Team Hub consumes the shared filter, team-row, status, readiness, typography, icon, and action contracts behind the existing default-off `API_DRIVEN_HOME` flag.
+- My Team Wave A (#1086/#1087): roster search/status rows plus individual and all-player profile shells consume the shared contracts behind the independently default-off `UX_MY_TEAM` flag. Existing editor state and persistence remain owned by App while the new screen components own presentation.
 
-The legacy Home and all non-Home screens retain their current rendering until their own migration slices are reviewed and approved.
+Legacy Home and My Team remain available whenever their independent flags are off. All later screens retain their current rendering until their own migration slices are reviewed and approved.
 
 ## Reusable component hierarchy
 
@@ -88,9 +89,9 @@ The legacy Home and all non-Home screens retain their current rendering until th
 ## Migration waves
 
 1. API-driven Home pilot behind the existing flag
-2. My Team and player profiles
-3. Schedule and event details
-4. Game Day entry and lineup management
+2. My Team and player profiles — merged to `develop` behind `UX_MY_TEAM`
+3. Schedule and event details — merged to `develop` behind `UX_SCHEDULE`
+4. Game Day entry and lineup management — Wave C1 entry/readiness shell implemented behind `UX_GAMEDAY_SETUP`; Defense, Batting, and Songs remain independently sequenced
 5. Support and remaining utility tabs
 6. Auth/access and system states
 7. Live Game Mode and scoring after the lighter surfaces prove the system
