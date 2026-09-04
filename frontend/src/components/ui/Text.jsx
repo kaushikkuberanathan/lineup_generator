@@ -37,8 +37,10 @@ var FAMILY_MAP = {
   inherit: 'inherit',
 };
 
-export function Text({ as: Tag = 'span', size, weight, color, family, uppercase = false, children, style, ...rest }) {
-  var computed = {};
+export function Text({ as: Tag = 'span', variant, size, weight, color, family, uppercase = false, children, style, ...rest }) {
+  var computed = variant && tokens.font.role[variant]
+    ? Object.assign({}, tokens.font.role[variant])
+    : {};
   if (size) computed.fontSize = SIZE_MAP[size] || size;
   if (weight) computed.fontWeight = WEIGHT_MAP[weight] || weight;
   if (color) computed.color = COLOR_MAP[color] || color;
