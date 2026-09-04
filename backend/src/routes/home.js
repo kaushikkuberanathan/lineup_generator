@@ -76,14 +76,26 @@ function sendHomeResponse(req, res, { requestId, startedAt, defaultTeamId, teams
  * GET /api/v1/home — Story #1023.
  *
  * Query shape (batched, no per-team amplification):
- *   1. team_memberships: one query, filtered by (user_id OR email) AND
- *      status=active — same resolution pattern as GET /me (auth.js), which
- *      also satisfies "missing profile does not hide valid memberships"
- *      (this route never touches the profiles table — Home doesn't need a
- *      display name from it).
- *   2. teams: one query, .in('id', teamIds).
- *   3. team_data: one query, .in('team_id', teamIds).
- * Three queries regardless of how many teams the caller belongs to.
+ *   One RPC (public.home_read_model, migration 034), which resolves
+ *   memberships (filtered by (user_id OR email) AND status=active — same
+ *   resolution pattern as GET /me in auth.js, and satisfies "missing profile
+ *   does not hide valid memberships": this route never touches the profiles
+ *   table, Home doesn't need a display name from it) plus the matching
+ *   teams and team_data rows inside a single Postgres statement.
+ *
+ *   Before #1072's fix this was two SEQUENTIAL round trips — a
+ *   team_memberships query, then teams+team_data in parallel, which still
+ *   needed the first round trip's team IDs before it could start. Measured
+ *   against real production data, that pattern's p95 latency (816ms) blew
+ *   through the 300ms §29.2 budget; root cause was the Render (Oregon) <->
+ *   Supabase (us-east-1) cross-region hop, doubled by the two round trips.
+ *   Collapsing to one RPC call removes one of those two hops from the
+ *   critical path. It does not fix the underlying region mismatch (a
+ *   separate infra decision, tracked on #1072) — re-measure against real
+ *   production data after this ships to see how much of the budget gap it
+ *   closes.
+ *
+ *   One query regardless of how many teams the caller belongs to.
  */
 router.get('/', requireAuth, async (req, res) => {
   const requestId = resolveRequestId(req);
@@ -93,37 +105,25 @@ router.get('/', requireAuth, async (req, res) => {
     const userId = req.user.id;
     const userEmail = req.user.email;
 
-    const { data: memberships, error: membershipError } = await supabaseAdmin
-      .from('team_memberships')
-      .select('team_id, role, status')
-      .or(`user_id.eq.${userId},email.eq.${userEmail}`)
-      .eq('status', 'active');
+    const { data: homeData, error: homeError } = await supabaseAdmin.rpc('home_read_model', {
+      p_user_id: userId,
+      p_email: userEmail,
+    });
 
-    if (membershipError) throw membershipError;
+    if (homeError) throw homeError;
 
-    const activeMemberships = memberships ?? [];
+    const activeMemberships = homeData?.memberships ?? [];
     const teamIds = [...new Set(activeMemberships.map((m) => m.team_id))];
 
     if (teamIds.length === 0) {
       return sendHomeResponse(req, res, { requestId, startedAt, defaultTeamId: null, teams: [] });
     }
 
-    const [{ data: teamRows, error: teamError }, { data: teamDataRows, error: teamDataError }] = await Promise.all([
-      supabaseAdmin
-        .from('teams')
-        .select('id, name, age_group, season, year, sport')
-        .in('id', teamIds),
-      supabaseAdmin
-        .from('team_data')
-        .select('team_id, roster, schedule, grid, batting_order, locked, attendance_overrides')
-        .in('team_id', teamIds),
-    ]);
+    const teamRows = homeData?.teams ?? [];
+    const teamDataRows = homeData?.team_data ?? [];
 
-    if (teamError) throw teamError;
-    if (teamDataError) throw teamDataError;
-
-    const teamById = new Map((teamRows ?? []).map((t) => [t.id, t]));
-    const teamDataById = new Map((teamDataRows ?? []).map((d) => [d.team_id, d]));
+    const teamById = new Map(teamRows.map((t) => [t.id, t]));
+    const teamDataById = new Map(teamDataRows.map((d) => [d.team_id, d]));
     const roleByTeamId = new Map(activeMemberships.map((m) => [m.team_id, m.role]));
 
     // A membership can reference a team row that no longer exists (deleted
