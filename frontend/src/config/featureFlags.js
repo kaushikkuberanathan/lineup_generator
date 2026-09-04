@@ -58,6 +58,7 @@ export const FEATURE_FLAGS = {
   // player-profile migration independently reversible from Home and routes.
   UX_MY_TEAM: false,
   UX_SCHEDULE: false,
+  UX_GAMEDAY_SETUP: false,
 };
 
 // Story 30 / #112 — DB-driven runtime flag cache. Populated once per app

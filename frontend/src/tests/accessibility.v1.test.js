@@ -107,6 +107,7 @@ describe('2 — FEATURE_FLAGS registry', function() {
     expect(FEATURE_FLAGS).toHaveProperty('GAME_MODE');
     expect(FEATURE_FLAGS).toHaveProperty('UX_MY_TEAM');
     expect(FEATURE_FLAGS).toHaveProperty('UX_SCHEDULE');
+    expect(FEATURE_FLAGS).toHaveProperty('UX_GAMEDAY_SETUP');
   });
 
   test('2.4 USE_NEW_LINEUP_ENGINE remains true', function() {
@@ -123,6 +124,10 @@ describe('2 — FEATURE_FLAGS registry', function() {
 
   test('2.7 UX_SCHEDULE remains independently default-off during Wave B', function() {
     expect(FEATURE_FLAGS['UX_SCHEDULE']).toBe(false);
+  });
+
+  test('2.8 UX_GAMEDAY_SETUP remains independently default-off during Wave C', function() {
+    expect(FEATURE_FLAGS['UX_GAMEDAY_SETUP']).toBe(false);
   });
 
 });
