@@ -90,6 +90,7 @@
 > **Contemporary UX pilot (2026-09-04, #1077):** row 43 now consumes the shared content, typography, icon, action/status, and composition contracts from #1070-#1076. The visual change remains isolated behind the existing default-off `API_DRIVEN_HOME` flag; legacy Home, application chrome, routing, analytics, authorization, and the Home API contract are unchanged.
 
 | 44 | **More tab regroup (3 grouped card-sections, Account / Get Help / About & Legal)** | MVP | `docs/product/SUPPORT_TAB_REGROUP_PROPOSAL.md`; `ROADMAP.md` § Story 341 | ✅ Current | `MoreLanding.test.jsx` (9), `AccountTeamsSection.test.jsx` (6), `AccountProfileSection.test.jsx` (2) | ✅ Yes | Issue #1099, closed. Merged to `develop` via PR #1103 (regular merge, `cf63d93`), not yet promoted to `main` — manual signed-in browser QA (flagged in the PR, not possible in the building session's sandboxed environment) still recommended before that promote. Replaces the flat 7-tab `MORE_SUBTABS` pill bar with a `MoreLanding` landing view holding 3 `Card` groups of `ListRow` chevron rows; tapping a row pushes the exact same detail component App.jsx already rendered (`FAQSection`, `LegalSection`, `LinksTab`, `UpdatesTab`, feedback) — none of those five components changed internally. The old `renderAccount()` (App.jsx) was split into two new destinations: `AccountTeamsSection` ("Your teams" — signed-in-as + membership list, migrated off legacy inline styles onto `Card`/`ListRow`/`Stack`/`Text`) and `AccountProfileSection` (wraps the pre-existing `AccountNameField` unchanged). "Sign out" is a direct-action row on the landing view itself, no navigation, matching the prior single-tap button (no confirm step added). One deliberate behavior change: the old Account tab's quick "Terms of Service" shortcut (`legalInitialDoc="terms"` deep link) was dropped — Terms & Privacy is now its own top-level landing row, equally fast to reach. `moreTab` now defaults to `"landing"` (was `"faq"`); `HomeNameNudge`'s "set your name" CTA now targets `"account-profile"` directly (was the old combined `"account"` screen) since that's what it was always trying to reach. |
+| 45 | **Walk-up Songs workspace** | MVP | `ROADMAP.md` § Game Day Wave C4; `CONTEMPORARY_UX_DESIGN_SYSTEM.md` | ✅ Current | `AppSongsGoldenPath.test.jsx` (4 — active-order filtering, link wiring, flag-on workspace, metadata editing); `features/game-day/WalkUpSongsWorkspace.test.jsx` (4 — configured/empty, editing, absent, finalized/offline) | ✅ Yes | Wave C4/#1097 adds the reusable contemporary display/edit workspace behind default-off `UX_GAMEDAY_SETUP`. Player metadata, first-name display, batting-order sequencing, absence filtering, local/cloud persistence, share/print callbacks, link targets, locked read-only behavior, and the legacy flag-off surface are preserved. |
 
 ---
 
@@ -97,12 +98,14 @@
 
 | Status | Count |
 |--------|-------|
-| ✅ Doc Current | 40 / 43 |
-| ⚠ Doc Stale | 3 / 43 |
-| ❌ Doc Missing | 0 / 43 |
-| ✅ Tests Exist | 19 / 43 |
-| ⚠ Tests Partial | 16 / 43 |
-| ❌ No Tests | 8 / 43 |
+| ✅ Doc Current | 42 / 45 |
+| ⚠ Doc Stale | 3 / 45 |
+| ❌ Doc Missing | 0 / 45 |
+| ✅ Tests Exist | 21 / 45 |
+| ⚠ Tests Partial | 16 / 45 |
+| ❌ No Tests | 8 / 45 |
+
+> **Recounted 2026-09-04** (#1097): the summary had not absorbed row 44, so the pre-edit table contained 44 rows while its denominator still read 43. Direct reconciliation adds row 44 as Doc Current + Tests Exist, then row 45 (Walk-up Songs) as Doc Current + Tests Exist. Final counts: Doc 42/3/0 and Tests 21/16/8 across 45 rows.
 
 > **Recounted 2026-09-02** (row 43 added, API-driven Home — #1012 Phase 1, PR #1035): direct tally of all 42 pre-edit rows matched the prior 39/3/0 Doc and 18/16/8 Test summary exactly. Row 43 added as Doc Current (new baseline doc + this file) + Tests Exist (extensive coverage across frontend and backend, listed in the row itself). Net change: denominator 42→43, Doc Current 39→40, Tests Exist 18→19; all other categories unchanged.
 >

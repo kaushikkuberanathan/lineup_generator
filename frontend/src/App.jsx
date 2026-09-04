@@ -72,6 +72,7 @@ import { ScheduleScreen } from './features/schedule/ScheduleScreen.jsx';
 import { GameDayEntryScreen } from './features/game-day/GameDayEntryScreen.jsx';
 import { DefenseWorkspaceHeader } from './features/game-day/DefenseWorkspaceHeader.jsx';
 import { BattingWorkspaceHeader } from './features/game-day/BattingWorkspaceHeader.jsx';
+import { WalkUpSongsWorkspace } from './features/game-day/WalkUpSongsWorkspace.jsx';
 import { Button } from './components/ui/Button';
 import { StatusPill } from './components/ui/StatusPill';
 
@@ -5571,6 +5572,43 @@ export default function App() {
   // SONGS TAB
   // ============================================================
   function renderSongs() {
+    if (isFlagEnabled('UX_GAMEDAY_SETUP')) {
+      var contemporarySongPlayers = battingOrder.map(function(name, idx) {
+        var player = roster.find(function(candidate) { return candidate.name === name; });
+        if (!player) return null;
+        return {
+          name: player.name,
+          order: idx + 1,
+          absent: absentTonight.indexOf(name) >= 0,
+          song: player.walkUpSong || null,
+          artist: player.walkUpArtist || null,
+          start: player.walkUpStart || null,
+          end: player.walkUpEnd || null,
+          notes: player.walkUpNotes || null,
+          link: player.walkUpLink || null,
+          walkUpSong: player.walkUpSong || null,
+          walkUpArtist: player.walkUpArtist || null,
+          walkUpStart: player.walkUpStart || null,
+          walkUpEnd: player.walkUpEnd || null,
+          walkUpNotes: player.walkUpNotes || null,
+          walkUpLink: player.walkUpLink || null,
+        };
+      }).filter(Boolean);
+
+      return (
+        <WalkUpSongsWorkspace
+          players={contemporarySongPlayers}
+          mode={songsView}
+          locked={lineupLocked}
+          offline={!isOnline}
+          onModeChange={setSongsView}
+          onUpdate={function(name, patch) { updatePlayer(name, patch); }}
+          onShare={shareSongsList}
+          onPrint={printSongsList}
+        />
+      );
+    }
+
     return (
       <div>
         {/* ── Header row ───────────────────────────────────── */}

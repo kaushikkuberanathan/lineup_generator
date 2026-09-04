@@ -124,7 +124,7 @@ describe("App Songs golden path (#967)", function () {
     var songsSubtab = await screen.findByRole("button", { name: /^Songs$/ });
     fireEvent.click(songsSubtab);
 
-    await waitFor(function () { expect(screen.getByText("Walk-Up Songs")).toBeInTheDocument(); });
+    await waitFor(function () { expect(screen.getByText(/Walk-up songs/i)).toBeInTheDocument(); });
   }
 
   it("filters the Game Day View to activeBattingOrder — absent players' songs are excluded", async function () {
@@ -157,5 +157,25 @@ describe("App Songs golden path (#967)", function () {
     // Only one Open Song link should exist — Casey Kim (absent) and Sam Diaz
     // (no link) must not contribute one.
     expect(screen.getAllByRole("link", { name: /Open Song/ })).toHaveLength(1);
+  });
+
+  it("selects the reusable contemporary Songs workspace behind UX_GAMEDAY_SETUP", async function () {
+    localStorage.setItem("flag_UX_GAMEDAY_SETUP", "true");
+    await openTeamAndGoToSongsTab();
+
+    expect(screen.getByRole("heading", { name:"Walk-up songs" })).toBeInTheDocument();
+    expect(screen.getByText("2 of 3 configured")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name:"Share list" })).toBeEnabled();
+    expect(screen.getByRole("link", { name:"Open Jordan song" })).toHaveAttribute("href", ROSTER[0].walkUpLink);
+  });
+
+  it("preserves player metadata editing through the contemporary workspace", async function () {
+    localStorage.setItem("flag_UX_GAMEDAY_SETUP", "true");
+    await openTeamAndGoToSongsTab();
+
+    fireEvent.click(screen.getByRole("button", { name:"Edit" }));
+    var titleInput = screen.getByLabelText("Jordan song title");
+    fireEvent.change(titleInput, { target:{ value:"Back in Black" } });
+    expect(titleInput).toHaveValue("Back in Black");
   });
 });
