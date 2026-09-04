@@ -265,11 +265,13 @@ changed merely to create diff volume.
 ## Support / More tab regroup — UX discovery
 
 ### Story 341 (P2) — Regroup the flat 7-tab More menu into 3 labeled card-groups <!-- #1099 -->
-Status: In progress — code complete on `feature/1099-more-tab-regroup`, not
-yet merged to `develop`. Tracked as GitHub Issue #1099. Findings and original
-implementation notes recorded in `docs/product/SUPPORT_TAB_REGROUP_PROPOSAL.md`
-(written on the earlier `claude/support-tab-design-n8y8lg` discovery branch,
-merged to `develop` via PR #1101).
+Status: Resolved — merged to `develop` via PR #1103 (regular merge,
+`cf63d93`, confirmed genuine 2-parent: `c1006877` + `09c80a5`). Not yet
+promoted to `main`. Tracked as GitHub Issue #1099, closed 2026-09-04.
+Findings and original implementation notes recorded in
+`docs/product/SUPPORT_TAB_REGROUP_PROPOSAL.md` (written on the earlier
+`claude/support-tab-design-n8y8lg` discovery branch, merged to `develop`
+via PR #1101).
 
 **Built 2026-09-04:** new `MoreLanding.jsx` (3 `Card` groups of `ListRow`
 chevron rows — Account / Get Help / About & Legal) replaces `MORE_SUBTABS`
@@ -301,6 +303,11 @@ screen it only ever wanted the name field from).
 **Open items carried over from the proposal, now resolved:** confirmed
 `renderAbout()` is a thin wrapper around the existing `AboutTab.jsx` — not
 a second, competing implementation, so no decision was needed there.
+
+**Still open before this goes past `develop`:** the manual
+signed-in browser QA pass flagged in PR #1103 (landing → detail → back
+flow, on the Vercel preview or `dev.dugoutlineup.com`) has not been done
+by a human yet — automated coverage only.
 
 ---
 
