@@ -265,35 +265,42 @@ changed merely to create diff volume.
 ## Support / More tab regroup — UX discovery
 
 ### Story 341 (P2) — Regroup the flat 7-tab More menu into 3 labeled card-groups <!-- #1099 -->
-Status: Open — not started. Tracked as GitHub Issue #1099. Findings and full
+Status: In progress — code complete on `feature/1099-more-tab-regroup`, not
+yet merged to `develop`. Tracked as GitHub Issue #1099. Findings and original
 implementation notes recorded in `docs/product/SUPPORT_TAB_REGROUP_PROPOSAL.md`
-(branch `claude/support-tab-design-n8y8lg`).
-Discovered: 2026-09-04, UX discovery session — KK reviewed Citi's mobile "More"
-screen (three labeled card-groups: Account management / Documents &
-Communications / Support, each a card of chevron rows) and asked how to apply
-the same simplification to Dugout Lineup's own More tab.
-Symptom: `MORE_SUBTABS` (`frontend/src/App.jsx:7484-7492`) renders 7
-peer-level pill tabs — Account, Help, Feedback, Links, About, Updates, Legal —
-on one horizontal scroll strip. Labels already clip at 375px ("Feedback" →
-"Feedb…", "Updates" → "Updat…"), and Help's own category-pill row stacks a
-second horizontal scroller directly beneath the first.
-Impact: No visual grouping signals which of the 7 destinations are related;
-the pill bar competes for space equally with Help, the destination coaches
-actually use most.
-Proposed fix: Replace the flat pill bar with a single scrollable landing view
-holding 3 labeled `Card` groups of `ListRow` chevron rows — Account (Your
-teams, Profile name, Sign out), Get Help (Help — Search & FAQs), and About &
-Legal (About, What's New, Terms & Privacy, Links, Feedback). Tapping a row
-pushes the existing destination component unchanged — validated on an
-interactive prototype with KK before filing, including the placement of
-Feedback under About & Legal rather than Get Help. A Phase 2 idea (a
-highlighted "Game-Day Help" quick-access strip above the groups) was shown
-but is explicitly out of this story's scope.
-Recommendation: Build behind the standard branch/gate-phrase workflow —
-`frontend/src/App.jsx` is a locked file, gate phrase required before editing.
-See the proposal doc for the full file:line inventory, primitives to reuse,
-and open items (confirm `renderAbout()` vs `AboutTab.jsx` as the live About
-destination) before starting.
+(written on the earlier `claude/support-tab-design-n8y8lg` discovery branch,
+merged to `develop` via PR #1101).
+
+**Built 2026-09-04:** new `MoreLanding.jsx` (3 `Card` groups of `ListRow`
+chevron rows — Account / Get Help / About & Legal) replaces `MORE_SUBTABS`
+as the "more" tab's entry point; `renderAccount()` split into
+`AccountTeamsSection.jsx` ("Your teams" — signed-in-as + membership list,
+migrated off legacy inline styles) and `AccountProfileSection.jsx` (wraps
+the pre-existing `AccountNameField` unchanged). Sign out is a direct-action
+row on the landing view, no navigation, matching the old single-tap button.
+FAQSection/LegalSection/LinksTab/UpdatesTab/feedback are unchanged — each
+detail screen is still the exact same component, just reached via a
+push/back pattern instead of a flat tab switch. 17 new tests across the 3
+new components; full frontend suite re-run clean (1824/1824 across 181
+files, zero regressions), lint clean, production build clean. Verified via
+automated tests only — a live signed-in browser click-through was not
+possible in this session's sandboxed environment (no Supabase network
+egress, no magic-link/Google auth access), so the new landing/detail flow
+has not yet been eyeballed in a real browser; recommend a manual pass on
+`dev.dugoutlineup.com` before promoting past `develop`.
+
+**One deliberate behavior change, not just a refactor:** the old Account
+tab's "Terms of Service" quick-link (`legalInitialDoc="terms"` one-shot
+deep link) was dropped — Terms & Privacy is now its own top-level landing
+row, equally fast (2 taps either way) but no longer a shortcut specifically
+from Account. `moreTab` now defaults to `"landing"` (was `"faq"`);
+`HomeNameNudge`'s "set your name" nudge now targets the new
+`"account-profile"` screen directly (was the old combined `"account"`
+screen it only ever wanted the name field from).
+
+**Open items carried over from the proposal, now resolved:** confirmed
+`renderAbout()` is a thin wrapper around the existing `AboutTab.jsx` — not
+a second, competing implementation, so no decision was needed there.
 
 ---
 

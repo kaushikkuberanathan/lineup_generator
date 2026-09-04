@@ -37,16 +37,17 @@ import { tokens }          from './theme/tokens';
 import { LegalSection }       from './components/Support/LegalSection';
 import { FAQSection }         from './components/Support/FAQSection';
 import { AboutTab }           from './components/Support/AboutTab';
+import { MoreLanding }         from './components/Support/MoreLanding';
+import { AccountTeamsSection } from './components/Support/AccountTeamsSection';
+import { AccountProfileSection } from './components/Support/AccountProfileSection';
 import { HomeNameNudge }      from './components/Home/HomeNameNudge';
 import { TeamSearch }         from './components/Home/TeamSearch';
-import { AccountNameField }   from './components/Account/AccountNameField';
 import { BattingHandSelector } from './components/BattingHandSelector';
 import { PlayerHandBadge }     from './components/PlayerHandBadge';
 import { LoginScreen }           from './components/Auth/LoginScreen';
 import { RequestAccessScreen }   from './components/Auth/RequestAccessScreen';
 import { PendingApprovalScreen } from './components/Auth/PendingApprovalScreen';
 import { NoMembershipScreen }    from './components/Auth/NoMembershipScreen';
-import { roleLabel } from './utils/roleLabels';
 import { buildSharePayload } from './utils/buildSharePayload';
 import { buildBoxScorePrompt } from './utils/buildBoxScorePrompt';
 import Toast from './components/ui/Toast';
@@ -1152,7 +1153,7 @@ export default function App() {
   var parentViewActive = _parentViewActive[0]; var setParentViewActive = _parentViewActive[1];
   var _selectedParentPlayer = useState(null);
   var selectedParentPlayer = _selectedParentPlayer[0]; var setSelectedParentPlayer = _selectedParentPlayer[1];
-  var _moreTab = useState("faq");
+  var _moreTab = useState("landing");
   var moreTab = _moreTab[0]; var setMoreTab = _moreTab[1];
   // Deep-link target for LegalSection (e.g. "terms") — set by the Account
   // tab's Terms of Service row so Legal opens straight to that doc instead
@@ -3062,7 +3063,7 @@ export default function App() {
                   gate; the component owns its own dismissal. Never gates viewing. */}
               <HomeNameNudge
                 show={authState === 'authenticated' && user && user.profile && user.profile.first_name === ''}
-                onOpenAccount={function() { setPrimaryTab("more"); setMoreTab("account"); }}
+                onOpenAccount={function() { setPrimaryTab("more"); setMoreTab("account-profile"); }}
               />
               {(function() {
                 var nextGameGlobal = null;
@@ -7171,99 +7172,12 @@ export default function App() {
       APP_VERSION={APP_VERSION} />;
   }
 
-  function renderAccount() {
-    var _email = session && session.user && session.user.email ? session.user.email : "—";
-    var _memberships = memberships || [];
-    var _rolePill = {
-      fontSize:"10px", fontWeight:"700", letterSpacing:"0.05em", textTransform:"uppercase",
-      padding:"3px 9px", borderRadius:"10px", background:tokens.color.brand.navy + "12", color:tokens.color.brand.navy,
-      border:"1px solid " + tokens.color.brand.navy + "22", whiteSpace:"nowrap", flexShrink:0
-    };
-    return (
-      <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px" }}>
-        <div style={S.sectionTitle}>Your Account</div>
-
-        {/* #405 — editable name, extracted #407 (component owns its state). */}
-        <AccountNameField
-          updateProfileName={updateProfileName}
-          initialFirstName={user && user.profile ? user.profile.first_name : ''}
-          initialLastName={user && user.profile ? user.profile.last_name : ''}
-          S={S}
-        />
-
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline", gap:"12px", padding:"9px 0", borderBottom:"1px solid " + tokens.color.border.neutral, marginBottom:"14px" }}>
-          <span style={{ fontSize:"11px", letterSpacing:"0.08em", textTransform:"uppercase", color:tokens.color.text.muted, whiteSpace:"nowrap" }}>Signed in as</span>
-          <span style={{ fontSize:"13px", color:tokens.color.text.ink, fontWeight:"600", textAlign:"right", wordBreak:"break-word" }}>{_email}</span>
-        </div>
-
-        <div style={{ fontSize:"11px", letterSpacing:"0.08em", textTransform:"uppercase", color:tokens.color.text.muted, marginBottom:"8px" }}>Your teams</div>
-
-        {_memberships.length === 0 ? (
-          <div style={{ fontSize:"13px", color:tokens.color.text.muted, fontStyle:"italic", padding:"4px 0 8px" }}>Not on any team yet</div>
-        ) : _memberships.slice().sort(function(ma, mb) {
-          // Newest season/year first — switching teams surfaces the current
-          // team first while previous ones stay reachable below.
-          var ta = teams.find(function(t) { return t.id === ma.team_id; });
-          var tb = teams.find(function(t) { return t.id === mb.team_id; });
-          return compareTeamsNewestFirst(ta, tb);
-        }).map(function(m) {
-          var _t = teams.find(function(t) { return t.id === m.team_id; });
-          var _role = roleLabel(m.role);
-          if (_t) {
-            var _meta = [_t.ageGroup, _t.season ? formatSeason(_t.season, _t.year) : _t.year].filter(Boolean).join(" ");
-            return (
-              <div key={m.id} onClick={function() { loadTeam(_t); }}
-                style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:"12px",
-                  padding:"12px 14px", marginBottom:"8px", borderRadius:"10px",
-                  border:"1px solid " + tokens.color.border.neutral, background:tokens.color.surface.card, cursor:"pointer",
-                  boxShadow:"0 1px 3px rgba(15,31,61,0.05)" }}>
-                <div style={{ minWidth:0 }}>
-                  <div style={{ fontSize:"14px", fontWeight:"700", color:tokens.color.brand.navy, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{_t.name}</div>
-                  {_meta ? <div style={{ fontSize:"11px", color:tokens.color.text.muted, marginTop:"2px" }}>{_meta}</div> : null}
-                </div>
-                <div style={{ display:"flex", alignItems:"center", gap:"10px", flexShrink:0 }}>
-                  <span style={_rolePill}>{_role}</span>
-                  <span aria-hidden="true" style={{ fontSize:"20px", color:tokens.color.text.muted, lineHeight:1 }}>›</span>
-                </div>
-              </div>
-            );
-          }
-          return (
-            <div key={m.id}
-              style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:"12px",
-                padding:"12px 14px", marginBottom:"8px", borderRadius:"10px",
-                border:"1px dashed " + tokens.color.border.neutral, background:"rgba(15,31,61,0.03)" }}>
-              <div style={{ minWidth:0 }}>
-                <div style={{ fontSize:"14px", fontWeight:"600", color:tokens.color.text.muted, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{"Team " + m.team_id}</div>
-                <div style={{ fontSize:"11px", color:tokens.color.text.muted, marginTop:"2px", fontStyle:"italic" }}>Not loaded</div>
-              </div>
-              <span style={Object.assign({}, _rolePill, { background:"rgba(15,31,61,0.06)", color:tokens.color.text.muted, border:"1px solid " + tokens.color.border.neutral })}>{_role}</span>
-            </div>
-          );
-        })}
-
-        <div style={{ fontSize:"11px", letterSpacing:"0.08em", textTransform:"uppercase", color:tokens.color.text.muted, marginTop:"16px", marginBottom:"8px" }}>Legal</div>
-        <div
-          onClick={function() { setPrimaryTab("more"); setMoreTab("legal"); setLegalInitialDoc("terms"); }}
-          style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:"12px",
-            padding:"12px 14px", marginBottom:"8px", borderRadius:"10px",
-            border:"1px solid " + tokens.color.border.neutral, background:tokens.color.surface.card, cursor:"pointer" }}>
-          <div style={{ display:"flex", alignItems:"center", gap:"10px", minWidth:0 }}>
-            <span aria-hidden="true" style={{ fontSize:"18px", flexShrink:0 }}>📋</span>
-            <span style={{ fontSize:"14px", fontWeight:"600", color:tokens.color.brand.navy }}>Terms of Service</span>
-          </div>
-          <span aria-hidden="true" style={{ fontSize:"20px", color:tokens.color.text.muted, lineHeight:1 }}>›</span>
-        </div>
-
-        <button style={Object.assign({}, S.btn("danger"), { marginTop:"8px", width:"100%" })} onClick={logout}>
-          Sign out
-        </button>
-        <div style={{ fontSize:"11px", color:tokens.color.text.muted, marginTop:"12px", lineHeight:"1.5", textAlign:"center" }}>
-          Your teams and lineups stay saved on this device. You&apos;ll need to sign in again to make changes.
-        </div>
-      </Card>
-    );
-  }
+  // renderAccount() retired — Issue #1099 / Story 341 split its content into
+  // AccountTeamsSection ("Your teams" destination) and AccountProfileSection
+  // ("Profile name" destination), each reached from MoreLanding's Account
+  // group instead of one shared Card with the team list, name field, and
+  // Sign out button all together. Sign out is now a direct-action row on
+  // MoreLanding itself (still single-tap, no confirm step, same as before).
 
   // ============================================================
   // PIN MODAL
@@ -7491,15 +7405,9 @@ export default function App() {
     { key:"songs",    label:"Songs"               },
     { key:"dugout", label:"DUGOUT VIEW", launcher:true },
   ].filter(Boolean);
-  var MORE_SUBTABS = [
-    { key:"account",  label:"Account"  },
-    { key:"faq",      label:"Help"     },
-    { key:"feedback", label:"Feedback" },
-    { key:"links",    label:"Links"    },
-    { key:"about",    label:"About"    },
-    { key:"updates",  label:"Updates"  },
-    { key:"legal",    label:"Legal"    },
-  ];
+  // MORE_SUBTABS retired — Issue #1099 / Story 341 replaced the flat
+  // 7-tab pill bar with MoreLanding's 3 grouped cards (see the "more"
+  // subTabBar branch below for the single back-header that replaces it).
 
   // Sub-tab bar — rendered inside tabContent when Game Day or Season is active
   var subTabBar = null;
@@ -7598,24 +7506,18 @@ export default function App() {
         </div>
       </div>
     );
-  } else if (primaryTab === "more") {
+  } else if (primaryTab === "more" && moreTab !== "landing") {
+    // Issue #1099 / Story 341 — the landing view (MoreLanding, 3 grouped
+    // cards) replaces the flat pill bar as the entry point; every other
+    // moreTab value is now a pushed-in detail screen with one consistent
+    // back affordance instead of a peer tab switch.
     subTabBar = (
-      <div style={{ display:"flex", gap:"4px", padding:"8px 12px 4px", background:tokens.color.surface.cream, borderBottom:"1px solid " + tokens.color.border.neutral }}>
-        {MORE_SUBTABS.map(function(st) {
-          return (
-            <button key={st.key}
-              onClick={function(k) { return function() {
-                // Direct tab-bar navigation always shows Legal's list view —
-                // legalInitialDoc is a one-shot deep-link set only by the
-                // Account tab's Terms of Service row (see renderAccount()).
-                if (k === "legal") { setLegalInitialDoc(null); }
-                setMoreTab(k);
-              }; }(st.key)}
-              style={subTabStyle(moreTab === st.key)}>
-              {st.label}
-            </button>
-          );
-        })}
+      <div style={{ display:"flex", alignItems:"center", gap:"8px", padding:"8px 12px 4px", background:tokens.color.surface.cream, borderBottom:"1px solid " + tokens.color.border.neutral }}>
+        <button
+          onClick={function() { setMoreTab("landing"); }}
+          style={subTabStyle(false)}>
+          ‹ More
+        </button>
       </div>
     );
   }
@@ -7673,7 +7575,30 @@ export default function App() {
         {primaryTab === "gameday" && !parentViewActive && gameDayTab === "lineups" ? renderLineups() : null}
         {primaryTab === "gameday" && !parentViewActive && gameDayTab === "songs"   ? renderSongs()   : null}
       </ErrorBoundary>
-      {primaryTab === "more" && moreTab === "account"  ? renderAccount()  : null}
+      {primaryTab === "more" && moreTab === "landing" ? (
+        <MoreLanding
+          onNavigate={function(k) {
+            if (k === "legal") { setLegalInitialDoc(null); }
+            setMoreTab(k);
+          }}
+          onSignOut={logout}
+          memberships={memberships}
+          teams={teams}
+          user={user}
+          appVersion={APP_VERSION}
+        />
+      ) : null}
+      {primaryTab === "more" && moreTab === "account-teams" ? (
+        <AccountTeamsSection session={session} memberships={memberships} teams={teams} loadTeam={loadTeam} />
+      ) : null}
+      {primaryTab === "more" && moreTab === "account-profile" ? (
+        <AccountProfileSection
+          updateProfileName={updateProfileName}
+          initialFirstName={user && user.profile ? user.profile.first_name : ''}
+          initialLastName={user && user.profile ? user.profile.last_name : ''}
+          S={S}
+        />
+      ) : null}
       {primaryTab === "more" && moreTab === "feedback" ? renderFeedback() : null}
       {primaryTab === "more" && moreTab === "links"    ? <LinksTab sectionTitleStyle={S.sectionTitle} /> : null}
       {primaryTab === "more" && moreTab === "about"    ? renderAbout()    : null}
