@@ -11,7 +11,15 @@ import { Button } from '../../components/ui/Button';
 import { Text } from '../../components/ui/Text';
 import { tokens } from '../../theme/tokens';
 
-export function TeamAction({ action, onSelect }) {
+function getActionIcon(actionId) {
+  if (actionId.includes('roster')) return 'roster';
+  if (actionId.includes('lineup')) return 'lineup';
+  if (actionId.includes('schedule')) return 'calendar';
+  if (actionId.includes('game')) return 'gameDay';
+  return 'chevronRight';
+}
+
+export function TeamAction({ action, onSelect, primary = false }) {
   if (!action) return null;
 
   var reasonId = action.disabledReason ? `${action.id}-reason` : undefined;
@@ -19,7 +27,9 @@ export function TeamAction({ action, onSelect }) {
   return (
     <div>
       <Button
-        variant="secondary"
+        variant={primary ? 'primary' : 'secondaryOutline'}
+        leadingIcon={getActionIcon(action.id)}
+        typography="contemporary"
         size="sm"
         fullWidth
         disabled={!action.enabled}

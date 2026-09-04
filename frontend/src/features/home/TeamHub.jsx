@@ -12,7 +12,8 @@
  * the first team rather than rendering nothing.
  */
 import { Stack } from '../../components/ui/Stack';
-import { Pill } from '../../components/ui/Pill';
+import { SegmentedControl } from '../../components/ui/SegmentedControl';
+import { UI_CONTENT } from '../../content/uiContent';
 import { CompactTeamCard } from './CompactTeamCard';
 import { ExpandedTeamCard } from './ExpandedTeamCard';
 
@@ -28,22 +29,12 @@ export function TeamHub({ teams, expandedTeamId, viewFilter = 'single', onExpand
   return (
     <Stack direction="col" gap="md">
       {teams.length > 1 && (
-        <Stack direction="row" gap="xs">
-          <Pill
-            active={viewFilter !== 'all'}
-            aria-pressed={viewFilter !== 'all'}
-            onClick={function () { if (onViewFilterChange) onViewFilterChange('single'); }}
-          >
-            Focused
-          </Pill>
-          <Pill
-            active={viewFilter === 'all'}
-            aria-pressed={viewFilter === 'all'}
-            onClick={function () { if (onViewFilterChange) onViewFilterChange('all'); }}
-          >
-            All teams
-          </Pill>
-        </Stack>
+        <SegmentedControl
+          value={viewFilter === 'all' ? 'all' : 'single'}
+          onChange={onViewFilterChange}
+          options={[{ value: 'single', label: UI_CONTENT.home.viewFocused }, { value: 'all', label: UI_CONTENT.home.viewAllTeams }]}
+          label="Team view"
+        />
       )}
 
       <Stack direction="col" gap="sm">

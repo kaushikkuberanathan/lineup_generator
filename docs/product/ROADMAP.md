@@ -5328,8 +5328,9 @@ here.
 
 ---
 ### Story 132 (P3) - UX Phase 6 - Design System Docs (scoping only) <!-- #697 -->
-Status: Open - scoped, not started. Blocked on Phase 5 fully landing (KK
-visual sign-off + promote to main), per this phase's own stated dependency.
+Status: Reconciled into the approved Contemporary Dugout UX initiative
+(#1052). Its documentation scope is now owned by foundation issue #1069;
+typography and icon contracts are independently tracked by #1070 and #1071.
 Discovered: 2026-08-17, full-review audit of all UX migration phases across
 dev and prod.
 Symptom: N/A - forward scoping, not a bug. `UX_REFACTOR_ROADMAP.md`'s Phase
@@ -5346,8 +5347,16 @@ initiative, `APPJSX_DECOMPOSITION_PLAN.md`). Tooling recommendation:
 Vite 6 + React 18 compatibility assumption must be re-validated; no
 `.storybook/` exists yet - from-scratch add), with a 1-day timeboxed spike
 against Ladle as a lighter alternative before committing repo-wide.
-Recommendation: Do not start implementation until Phase 5 promotes to
-main and this scoping has KK's go-ahead on the tooling choice.
+Recommendation: Preserve #697 as historical scoping evidence while #1052
+owns the contemporary visual direction and incremental screen migration.
+Storybook/Ladle remains a separate tooling choice; the foundation starts
+with source-owned contracts, tests, and a lightweight specimen component.
+
+**Contemporary foundation execution (2026-09-04):** initiative #1052 now
+tracks content (#1074), action/status primitives (#1075), reusable
+compositions (#1076), and the first incremental screen migration (#1077).
+The pilot is limited to API-driven Home behind its existing default-off flag;
+legacy Home and application chrome remain unchanged.
 
 ---
 ### Story 133 (P2) - Live game-day surface token migration (game-mode/ + ScoringMode/) <!-- #698 -->
