@@ -304,10 +304,16 @@ screen it only ever wanted the name field from).
 `renderAbout()` is a thin wrapper around the existing `AboutTab.jsx` — not
 a second, competing implementation, so no decision was needed there.
 
-**Still open before this goes past `develop`:** the manual
-signed-in browser QA pass flagged in PR #1103 (landing → detail → back
-flow, on the Vercel preview or `dev.dugoutlineup.com`) has not been done
-by a human yet — automated coverage only.
+**Manual QA complete 2026-09-04** — KK ran the full landing →
+detail → back flow against `dev.dugoutlineup.com` on a real signed-in
+session (2 real team memberships, Head Coach + Scorekeeper roles) and
+confirmed it "everything else seems great." Two deliberate behavior
+changes flagged for review (Terms & Privacy no longer auto-jumps to the
+Terms document; the "set your name" nudge now opens Profile name
+directly) passed with no objection — tracked and closed as a record in
+[#1109](https://github.com/kaushikkuberanathan/lineup_generator/issues/1109).
+Nothing outstanding before this can promote past `develop` on the QA
+front.
 
 ---
 
