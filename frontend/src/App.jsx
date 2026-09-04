@@ -65,6 +65,9 @@ import { HomeScreen as ApiHomeScreen } from './features/home/HomeScreen.jsx';
 import { parseAppRoute, buildAppRoute, resolveDestination, savePendingDestination, consumePendingDestination } from './api/routes.js';
 import { trackHomeDeepLinkResolved, trackHomeDeepLinkDenied } from './features/home/homeAnalytics.js';
 import { getHomeCache } from './api/homeCache.js';
+import { MyTeamRosterScreen } from './features/my-team/MyTeamRosterScreen.jsx';
+import { PlayerProfileScreen } from './features/my-team/PlayerProfileScreen.jsx';
+import { Button } from './components/ui/Button';
 
 // ============================================================
 // HELPERS
@@ -3358,6 +3361,49 @@ export default function App() {
       return { ab:ab, h:h, r:r, rbi:rbi, games:games };
     }
 
+    if (rosterDetailMode === null && isFlagEnabled('UX_MY_TEAM')) {
+      var contemporaryAddPlayerForm = showAddForm ? (
+        <Card border padding="lg">
+          <div style={{ display:"flex", flexWrap:"wrap", gap:tokens.space.sm, alignItems:"center", marginBottom:tokens.space.sm }}>
+            <input value={newFirstName} onChange={function(e) { setNewFirstName(e.target.value); }}
+              onKeyDown={function(e) { if (e.key === "Enter") { addPlayer(); } }}
+              aria-label="First name" placeholder="First name*" maxLength={20} style={{ ...S.input, flex:"1 1 120px" }} autoFocus />
+            <input value={newLastName} onChange={function(e) { setNewLastName(e.target.value); }}
+              onKeyDown={function(e) { if (e.key === "Enter") { addPlayer(); } }}
+              aria-label="Last name" placeholder="Last name*" maxLength={20} style={{ ...S.input, flex:"1 1 120px" }} />
+          </div>
+          <div style={{ marginBottom:tokens.space.md }}>
+            <div style={{ fontFamily:tokens.font.family.sans, fontSize:tokens.font.size.body, fontWeight:tokens.font.weight.semibold, color:tokens.color.text.primary, marginBottom:tokens.space.xs }}>Batting hand</div>
+            <div style={{ fontFamily:tokens.font.family.sans, fontSize:tokens.font.size.sm, color:tokens.color.text.secondary, marginBottom:tokens.space.sm }}>Optional — helps the dugout prepare batters.</div>
+            <BattingHandSelector value={newBattingHand} onChange={setNewBattingHand} teamId={activeTeamId} />
+          </div>
+          <div style={{ display:"flex", gap:tokens.space.sm, justifyContent:"flex-end", flexWrap:"wrap" }}>
+            <Button variant="secondaryOutline" typography="contemporary" onClick={function() { setShowAddForm(false); setNewFirstName(""); setNewLastName(""); setNewBattingHand("U"); }}>Cancel</Button>
+            <Button typography="contemporary" leadingIcon="add" onClick={addPlayer}>Add player</Button>
+          </div>
+        </Card>
+      ) : null;
+
+      return (
+        <MyTeamRosterScreen
+          team={activeTeam ? {
+            name: activeTeam.name,
+            ageGroup: activeTeam.ageGroup,
+            sport: activeTeam.sport,
+            seasonLabel: activeTeam.season ? formatSeason(activeTeam.season, activeTeam.year) : '',
+          } : null}
+          players={sortedRoster}
+          locked={lineupLocked}
+          loading={isHydrating}
+          offline={!isOnline}
+          addPlayerForm={contemporaryAddPlayerForm}
+          onAddPlayer={function() { setShowAddForm(true); }}
+          onOpenPlayer={function(playerName) { navigateRosterDetail(playerName); }}
+          onViewAll={function() { navigateRosterDetail("all"); }}
+        />
+      );
+    }
+
     return (
       <div>
         {restoreBanner ? (
@@ -3366,7 +3412,7 @@ export default function App() {
             <button onClick={function(){setRestoreBanner('');}} style={{ background:'none', border:'none', cursor:'pointer', fontSize:'16px', color:'#065f46' }}>&#xd7;</button>
           </div>
         ) : null}
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"14px", flexWrap:"wrap", gap:"8px" }}>
+        {!isFlagEnabled('UX_MY_TEAM') ? <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"14px", flexWrap:"wrap", gap:"8px" }}>
           <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
             {rosterDetailMode !== null ? (
               <button
@@ -3406,9 +3452,9 @@ export default function App() {
             </button>
           </div>
           ) : null}
-        </div>
+        </div> : null}
 
-        {rosterDetailMode !== null ? (
+        {rosterDetailMode !== null && !isFlagEnabled('UX_MY_TEAM') ? (
           <div style={{ fontSize:"12px", color:tokens.color.text.muted, marginBottom:"14px" }}>
             {rosterDetailMode === "all"
               ? "Review and edit every player profile in one place."
@@ -3690,6 +3736,14 @@ export default function App() {
         )}
 
         {rosterDetailMode !== null ? (
+        <PlayerProfileScreen
+          enabled={isFlagEnabled('UX_MY_TEAM')}
+          playerName={rosterDetailMode === "all" ? null : rosterDetailMode}
+          allPlayers={rosterDetailMode === "all"}
+          playerCount={rosterDetailPlayers.length}
+          incomplete={rosterDetailMode !== "all" && rosterDetailPlayers.length > 0 && (!rosterDetailPlayers[0].prefs || rosterDetailPlayers[0].prefs.length === 0)}
+          locked={lineupLocked}
+          onBack={function() { navigateRosterDetail(null); }}>
         <div style={{ display:"grid", gridTemplateColumns: rosterDetailMode === "all" ? "repeat(auto-fill,minmax(300px,1fr))" : "minmax(0, 680px)", justifyContent:"center", gap:"12px" }}>
           {rosterDetailPlayers.map(function(info) {
             var isCol = lineupLocked || !!collapsed[info.name];
@@ -4136,6 +4190,7 @@ export default function App() {
             );
           })}
         </div>
+        </PlayerProfileScreen>
         ) : null}
       </div>
     );
@@ -7623,6 +7678,10 @@ export default function App() {
 
     if (rosterDetailMode !== null) {
       return <div style={{ padding:"14px 12px 80px" }}>{renderRoster()}</div>;
+    }
+
+    if (isFlagEnabled('UX_MY_TEAM')) {
+      return renderRoster();
     }
 
     return (

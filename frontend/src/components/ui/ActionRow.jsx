@@ -2,7 +2,7 @@ import { tokens } from '../../theme/tokens';
 import { Icon } from './Icon';
 import { Text } from './Text';
 
-export function ActionRow({ icon, label, subtitle, trailing = true, disabled = false, onClick, style, ...rest }) {
+export function ActionRow({ icon, label, subtitle, trailing = true, trailingContent, disabled = false, onClick, style, ...rest }) {
   return (
     <button
       type="button"
@@ -22,6 +22,7 @@ export function ActionRow({ icon, label, subtitle, trailing = true, disabled = f
         <Text variant="button">{label}</Text>
         {subtitle ? <Text variant="caption" color="secondary">{subtitle}</Text> : null}
       </span>
+      {trailingContent || null}
       {trailing ? <Icon name="chevronRight" size="sm" /> : null}
     </button>
   );
