@@ -2,7 +2,7 @@ const express = require('express');
 const crypto = require('crypto');
 const requireAuth = require('../middleware/requireAuth');
 const { supabaseAdmin } = require('../lib/supabase');
-const { resolveRole, capabilitiesForRole } = require('../lib/homeCapabilities');
+const { resolveRole, capabilitiesForRole } = require('../lib/roleCapabilities');
 const { computeDisplayNames } = require('../lib/homeSummary');
 
 const router = express.Router();
