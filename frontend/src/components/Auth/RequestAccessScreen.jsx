@@ -37,6 +37,7 @@ import { tokens } from "../../theme/tokens";
 import { getLegalDoc } from "../../content/legal";
 import { LegalDocSheet } from "../Legal/LegalDocSheet";
 import { logLegalConsent } from "../../utils/legalConsent";
+import { AuthWorkspace } from './AuthWorkspace';
 
 const TEAM_ID = import.meta.env.VITE_DEFAULT_TEAM_ID || '1774297491626';
 const TERMS_DOC = getLegalDoc('terms');
@@ -60,12 +61,17 @@ const ROLE_OPTIONS = [
   { id: 'parent',          value: 'viewer',       label: 'Parent / Family' },
 ];
 
+function LegacyAccessWorkspace({ children }) {
+  return <div style={styles.container}><div style={styles.card}>{children}</div></div>;
+}
+
 export function RequestAccessScreen({
   onBack,
   requestAccess,
   preselectedTeam = null,
   preserveSession = false,
   backLabel = '← Back to login',
+  contemporary = false,
 }) {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName]   = useState('');
@@ -144,44 +150,51 @@ export function RequestAccessScreen({
     // renders as PendingApprovalScreen.
   }
 
+  const AccessWorkspace = contemporary ? AuthWorkspace : LegacyAccessWorkspace;
+  const workspaceTitle = preserveSession && submitted ? 'Request sent' : 'Request access';
+  const workspaceSubtitle = preserveSession && submitted
+    ? `${preselectedTeam ? preselectedTeam.name : 'Your request'} · Pending approval`
+    : 'Join your Dugout Lineup team';
+
   return (
-    <div style={styles.container}>
-      <div style={styles.card}>
+    <>
+      <AccessWorkspace title={workspaceTitle} subtitle={workspaceSubtitle} icon={preserveSession && submitted ? 'success' : undefined} compact>
 
         {preserveSession && submitted ? (
         <div style={styles.header}>
-          <div style={styles.logoMark}>
+          {!contemporary ? <><div style={styles.logoMark}>
             <img src="/pwa-192x192.png" alt="Dugout Lineup" width="56" height="56" />
           </div>
           <h1 style={styles.title}>Request Sent</h1>
           <p style={styles.subtitle}>
             {preselectedTeam ? preselectedTeam.name : 'Your request'} · Pending approval
-          </p>
+          </p></> : null}
           <p style={{ ...styles.note, marginTop: '16px' }}>
             You&apos;ll get an email once your request to join{' '}
             {preselectedTeam ? preselectedTeam.name : 'this team'} as{' '}
             {selectedRoleOption.label} is approved — usually within a few hours.
           </p>
-          <button type="button" style={{ ...styles.primaryBtn, marginTop: '20px' }} onClick={onBack}>
+          <button type="button" style={{ ...(contemporary ? styles.primaryBtnContemporary : styles.primaryBtn), marginTop: '20px' }} onClick={onBack}>
             Done
           </button>
         </div>
         ) : (
         <>
-        <div style={styles.header}>
+        {!contemporary ? <div style={styles.header}>
           <div style={styles.logoMark}>
             <img src="/pwa-192x192.png" alt="Dugout Lineup" width="56" height="56" />
           </div>
           <h1 style={styles.title}>Request Access</h1>
           <p style={styles.subtitle}>Mud Hens · Dugout Lineup</p>
-        </div>
+        </div> : null}
 
         <form onSubmit={handleSubmit} style={styles.form}>
 
           <div style={styles.row}>
             <div style={styles.col}>
-              <label style={styles.label}>First name</label>
+              <label style={styles.label} htmlFor="request-access-first-name">First name</label>
               <input
+                id="request-access-first-name"
                 type="text"
                 value={firstName}
                 onChange={e => { setFirstName(e.target.value); setError(''); }}
@@ -192,8 +205,9 @@ export function RequestAccessScreen({
               />
             </div>
             <div style={styles.col}>
-              <label style={styles.label}>Last name</label>
+              <label style={styles.label} htmlFor="request-access-last-name">Last name</label>
               <input
+                id="request-access-last-name"
                 type="text"
                 value={lastName}
                 onChange={e => { setLastName(e.target.value); setError(''); }}
@@ -206,8 +220,9 @@ export function RequestAccessScreen({
           </div>
 
           <div>
-            <label style={styles.label}>Email address</label>
+            <label style={styles.label} htmlFor="request-access-email">Email address</label>
             <input
+              id="request-access-email"
               type="email"
               value={email}
               onChange={e => { setEmail(e.target.value); setError(''); }}
@@ -228,8 +243,9 @@ export function RequestAccessScreen({
             </div>
           ) : (
             <div>
-              <label style={styles.label}>Team ID <span style={{ color: tokens.color.text.tertiary, fontWeight: 400 }}>(optional — leave blank for Mud Hens)</span></label>
+              <label style={styles.label} htmlFor="request-access-team-id">Team ID <span style={{ color: tokens.color.text.tertiary, fontWeight: 400 }}>(optional — leave blank for Mud Hens)</span></label>
               <input
+                id="request-access-team-id"
                 type="text"
                 value={teamId}
                 onChange={e => { setTeamId(e.target.value); setError(''); }}
@@ -292,14 +308,14 @@ export function RequestAccessScreen({
 
           <button
             type="submit"
-            style={agreedToTerms ? styles.primaryBtn : styles.primaryBtnDisabled}
+            style={agreedToTerms ? (contemporary ? styles.primaryBtnContemporary : styles.primaryBtn) : styles.primaryBtnDisabled}
             disabled={loading || !agreedToTerms}
             aria-disabled={loading || !agreedToTerms}
           >
             {loading ? 'Submitting…' : 'Request access'}
           </button>
 
-          <button type="button" style={styles.linkBtn} onClick={onBack}>
+          <button type="button" style={contemporary ? styles.secondaryBtnContemporary : styles.linkBtn} onClick={onBack}>
             {backLabel}
           </button>
 
@@ -313,14 +329,14 @@ export function RequestAccessScreen({
         </>
         )}
 
-      </div>
+      </AccessWorkspace>
 
       <LegalDocSheet
         open={!!openLegalDoc}
         docId={openLegalDoc}
         onClose={() => setOpenLegalDoc(null)}
       />
-    </div>
+    </>
   );
 }
 
@@ -465,6 +481,11 @@ const styles = {
     cursor: 'pointer',
     marginTop: '4px',
   },
+  primaryBtnContemporary: {
+    width: '100%', minHeight: '44px', padding: '13px', fontSize: '16px', fontWeight: '600',
+    backgroundColor: tokens.color.brand.gold, color: tokens.color.brand.navy,
+    border: 'none', borderRadius: tokens.radius.md, cursor: 'pointer',
+  },
   // Visually distinct from primaryBtn — without this, a `disabled` button
   // whose background/color are set inline (as primaryBtn's are) shows no
   // visual difference from enabled: browsers don't override an explicit
@@ -490,6 +511,19 @@ const styles = {
     fontSize: '14px',
     cursor: 'pointer',
     padding: '4px 0',
+    textAlign: 'center',
+  },
+  secondaryBtnContemporary: {
+    width: '100%',
+    minHeight: '44px',
+    padding: '11px 13px',
+    backgroundColor: tokens.color.surface.card,
+    border: `1px solid ${tokens.color.border.default}`,
+    borderRadius: tokens.radius.md,
+    color: tokens.color.brand.navy,
+    fontSize: '14px',
+    fontWeight: '600',
+    cursor: 'pointer',
     textAlign: 'center',
   },
   error: {

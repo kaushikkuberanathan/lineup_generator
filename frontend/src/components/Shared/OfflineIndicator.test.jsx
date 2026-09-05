@@ -148,4 +148,11 @@ describe('OfflineIndicator — Phase 3 primitive migration contract', function (
     expect(container.firstChild.style.alignItems).toBe('center');
   });
 
+  test('Wave F marks the already-tokenized contemporary system treatment without changing semantics', function () {
+    var { container } = render(<OfflineIndicator isOnline={false} hasCache={true} isLandscape={false} contemporary />);
+    expect(container.firstChild).toHaveAttribute('data-system-indicator', 'contemporary');
+    expect(screen.getByText('Offline Mode')).toBeInTheDocument();
+    expect(container.querySelector('button')).toBeNull();
+  });
+
 });

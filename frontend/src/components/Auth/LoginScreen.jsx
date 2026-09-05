@@ -2,10 +2,14 @@ import { useState, useEffect } from 'react';
 import { track } from '@/utils/analytics';
 import { tokens } from "../../theme/tokens";
 import { supabase } from '../../supabase';
+import { AuthWorkspace } from './AuthWorkspace';
+import { Button } from '../ui/Button';
+import { Stack } from '../ui/Stack';
+import { Text } from '../ui/Text';
 
 const TEAM_ID = import.meta.env.VITE_DEFAULT_TEAM_ID || '1774297491626';
 
-export function LoginScreen({ onRequestAccess, sendMagicLink, authError }) {
+export function LoginScreen({ onRequestAccess, sendMagicLink, authError, contemporary = false }) {
   const [email, setEmail]         = useState('');
   const [sent, setSent]           = useState(false);
   const [loading, setLoading]     = useState(false);
@@ -67,6 +71,34 @@ export function LoginScreen({ onRequestAccess, sendMagicLink, authError }) {
       console.error('[LoginScreen] Google sign-in threw:', e?.name, e?.message);
       setError('Google sign-in failed. Try the email link instead.');
     }
+  }
+
+  if (contemporary) {
+    if (sent) {
+      return (
+        <AuthWorkspace title="Check your email" subtitle="Your secure sign-in link is on the way" icon="success">
+          <Stack direction="col" gap="md">
+            <Text as="p" variant="body" color="secondary" style={{ margin: 0, textAlign: 'center', lineHeight: tokens.font.lineHeight.relaxed }}>
+              We sent a login link to <strong>{email}</strong>. The link expires in 1 hour.
+            </Text>
+            <Button typography="contemporary" variant="secondaryOutline" fullWidth leadingIcon="back" onClick={() => setSent(false)}>Use a different email</Button>
+          </Stack>
+        </AuthWorkspace>
+      );
+    }
+    return (
+      <AuthWorkspace title="Welcome back" subtitle="Sign in to manage your Dugout Lineup teams">
+        <form onSubmit={handleSend} style={styles.form}>
+          <label style={styles.label} htmlFor="login-email">Email address</label>
+          <input id="login-email" type="email" value={email} onChange={e => { setEmail(e.target.value); setError(''); }} placeholder="you@example.com" style={{ ...styles.input, minHeight: '44px' }} autoComplete="email" autoFocus disabled={loading} />
+          {error ? <Text as="p" size="sm" style={styles.error}>{error}</Text> : null}
+          <Button type="submit" typography="contemporary" fullWidth disabled={loading}>{loading ? 'Sending…' : 'Send me a login link'}</Button>
+          <div style={styles.divider} aria-hidden="true"><span style={styles.dividerLine} /><span style={styles.dividerText}>or</span><span style={styles.dividerLine} /></div>
+          <Button typography="contemporary" variant="secondaryOutline" fullWidth onClick={handleGoogleSignIn} disabled={loading}>Continue with Google</Button>
+          <Button typography="contemporary" variant="ghost" fullWidth onClick={onRequestAccess}>Request access</Button>
+        </form>
+      </AuthWorkspace>
+    );
   }
 
   if (sent) {

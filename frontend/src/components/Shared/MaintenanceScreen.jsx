@@ -1,8 +1,12 @@
 import { tokens } from "../../theme/tokens";
 import { Stack } from "../ui/Stack";
 import { Text } from "../ui/Text";
+import { SystemStateScreen } from './SystemStateScreen';
 
-export function MaintenanceScreen({ version }) {
+export function MaintenanceScreen({ version, contemporary = false }) {
+  if (contemporary) {
+    return <SystemStateScreen state="maintenance" title="We’ll be right back" message="Dugout Lineup is getting an update. Check back in a few minutes." version={version} />;
+  }
   return (
     <Stack direction="col" align="center" justify="center" style={{
       gap: 0,

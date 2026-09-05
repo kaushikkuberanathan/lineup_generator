@@ -58,3 +58,11 @@ describe('PendingApprovalScreen — component (#696)', function () {
     expect(screen.getAllByRole('button')).toHaveLength(1);
   });
 });
+
+describe('PendingApprovalScreen — Wave F contemporary treatment', function () {
+  test('uses the reusable auth workspace when enabled', function () {
+    render(<PendingApprovalScreen onTryLogin={vi.fn()} contemporary />);
+    expect(document.querySelector('[data-auth-workspace="true"]')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Try logging in' })).toHaveStyle({ minHeight: '44px' });
+  });
+});

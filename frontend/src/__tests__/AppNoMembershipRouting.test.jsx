@@ -34,7 +34,7 @@
 // self-contained mock below, no `importOriginal` spread — no code path in
 // this file can reach a real client.
 
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 
 // App.jsx imports `virtual:pwa-register/react` — a Vite-plugin-generated
@@ -80,6 +80,10 @@ function baseAuth(overrides) {
   }, overrides);
 }
 
+beforeEach(function () {
+  localStorage.clear();
+});
+
 describe("App — gate-first NoMembershipScreen routing (#481)", function () {
 
   it("renders NoMembershipScreen and no team-data surface when memberships is empty (authState 'no_membership')", async function () {
@@ -115,5 +119,41 @@ describe("App — gate-first NoMembershipScreen routing (#481)", function () {
       expect(screen.getByText("Home")).toBeInTheDocument();
     });
     expect(screen.queryByText(/signed in, but not on a team/i)).not.toBeInTheDocument();
+  });
+
+  it("uses the contemporary auth composition only when UX_AUTH is enabled", async function () {
+    localStorage.setItem('flag_UX_AUTH', 'true');
+    mockUseAuth.mockReturnValue(baseAuth({ authState: 'no_membership', memberships: [] }));
+
+    render(<App />);
+
+    await waitFor(function () {
+      expect(document.querySelector('[data-auth-workspace="true"]')).toBeTruthy();
+    });
+    expect(screen.getByRole('button', { name: 'Request access' })).toHaveStyle({ minHeight: '44px' });
+  });
+
+  it("uses the reusable system screen for auth loading when UX_AUTH is enabled", async function () {
+    localStorage.setItem('flag_UX_AUTH', 'true');
+    mockUseAuth.mockReturnValue(baseAuth({ authState: 'loading', memberships: [] }));
+
+    render(<App />);
+
+    await waitFor(function () {
+      expect(document.querySelector('[data-system-state="loading"]')).toBeTruthy();
+    });
+    expect(screen.getByRole('heading', { name: 'Loading Dugout Lineup' })).toBeInTheDocument();
+  });
+
+  it("uses the reusable maintenance screen only when UX_SYSTEM_STATES is enabled", async function () {
+    localStorage.setItem('flag_MAINTENANCE_MODE', 'true');
+    localStorage.setItem('flag_UX_SYSTEM_STATES', 'true');
+    mockUseAuth.mockReturnValue(baseAuth());
+
+    render(<App />);
+
+    await waitFor(function () {
+      expect(document.querySelector('[data-system-state="maintenance"]')).toBeTruthy();
+    });
   });
 });
