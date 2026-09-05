@@ -126,4 +126,28 @@ describe("SharedView — renders all sections without errors given the payload",
     render(<SharedView payload={basePayload} renderFieldSVG={makeRenderFieldSVG()} />);
     expect(screen.getByText(/View-only lineup/)).toBeInTheDocument();
   });
+
+  it("keeps the contemporary treatment off by default", () => {
+    const { container } = render(<SharedView payload={basePayload} renderFieldSVG={makeRenderFieldSVG()} />);
+    expect(container.firstChild).toHaveAttribute("data-contemporary", "false");
+    expect(screen.queryByText("Tonight's game plan")).not.toBeInTheDocument();
+  });
+
+  it("adds the contemporary game-plan hierarchy and semantic controls when enabled", () => {
+    const { container } = render(<SharedView payload={basePayload} renderFieldSVG={makeRenderFieldSVG()} contemporary />);
+    expect(container.firstChild).toHaveAttribute("data-contemporary", "true");
+    expect(screen.getByText("Tonight's game plan")).toBeInTheDocument();
+    expect(screen.getByText("View only")).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Lineup view" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Defense" })).toBeInTheDocument();
+  });
+
+  it("keeps the contemporary primary interactions gold and invokes print", () => {
+    const printSpy = vi.spyOn(window, "print").mockImplementation(() => {});
+    render(<SharedView payload={basePayload} renderFieldSVG={makeRenderFieldSVG()} contemporary />);
+    expect(screen.getByRole("button", { name: "All" }).style.background).toBe("rgb(245, 200, 66)");
+    fireEvent.click(screen.getByRole("button", { name: /Print/i }));
+    expect(printSpy).toHaveBeenCalledTimes(1);
+    printSpy.mockRestore();
+  });
 });

@@ -1,0 +1,9 @@
+.shared-view-contemporary .shared-view-print-only { display: none; }
+
+@media print {
+  .shared-view-contemporary { min-height: auto !important; }
+  .shared-view-contemporary .shared-view-screen-only { display: none !important; }
+  .shared-view-contemporary .shared-view-print-only { display: block !important; }
+  .shared-view-contemporary .shared-view-content { max-width: none !important; padding: 8px 0 !important; }
+  .shared-view-contemporary .shared-view-section { break-inside: avoid; box-shadow: none !important; }
+}

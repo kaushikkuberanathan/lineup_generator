@@ -130,6 +130,7 @@ function setUrl(search) {
 }
 
 beforeEach(function () {
+  localStorage.clear();
   mockUseAuth.mockReturnValue(baseAuth());
   mockDbLoadShareLink.mockReset();
 });
@@ -261,6 +262,53 @@ describe("App — share-link routing render path (Story 61 follow-up, DOC_TEST_D
         expect(screen.getByTestId("mock-dugout-view")).toBeInTheDocument();
       });
       expect(screen.queryByText("Print")).not.toBeInTheDocument();
+    });
+  });
+
+  describe("UX_SHARE contemporary treatment", function () {
+    it("renders an anonymous short link with the contemporary hierarchy", async function () {
+      localStorage.setItem("flag_UX_SHARE", "true");
+      mockDbLoadShareLink.mockResolvedValue({ payload: sharePayload, status: "ok" });
+      setUrl("s=abc");
+
+      render(<App />);
+
+      expect(await screen.findByText("Tonight's game plan")).toBeInTheDocument();
+      expect(screen.getByText("View only")).toBeInTheDocument();
+      expect(screen.queryByText(/sign in/i)).not.toBeInTheDocument();
+    });
+
+    it("renders an anonymous legacy link with the same contemporary hierarchy", async function () {
+      localStorage.setItem("flag_UX_SHARE", "true");
+      setUrl("share=" + encodeSharePayload(sharePayload));
+
+      render(<App />);
+
+      expect(await screen.findByText("Tonight's game plan")).toBeInTheDocument();
+      expect(screen.queryByText(/sign in/i)).not.toBeInTheDocument();
+    });
+
+    it("uses the branded no-sign-in status surface while a short link loads", async function () {
+      localStorage.setItem("flag_UX_SHARE", "true");
+      mockDbLoadShareLink.mockReturnValue(new Promise(function () {}));
+      setUrl("s=abc");
+
+      render(<App />);
+
+      expect(await screen.findByRole("heading", { name: "Opening lineup" })).toBeInTheDocument();
+      expect(screen.getByText(/No sign-in required/i)).toBeInTheDocument();
+    });
+
+    it("uses the branded unavailable state and preserves detailed failure copy", async function () {
+      localStorage.setItem("flag_UX_SHARE", "true");
+      mockDbLoadShareLink.mockResolvedValue({ payload: null, status: "timeout" });
+      setUrl("s=abc");
+
+      render(<App />);
+
+      expect(await screen.findByRole("heading", { name: "Lineup unavailable" })).toBeInTheDocument();
+      expect(screen.getByText(/check your connection/i)).toBeInTheDocument();
+      expect(screen.getByText(/No sign-in required/i)).toBeInTheDocument();
     });
   });
 });

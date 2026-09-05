@@ -61,6 +61,7 @@ import { UpdatesTab } from './components/Support/UpdatesTab';
 import { currentSeasonGuess, formatSeason, compareTeamsNewestFirst } from './utils/season.js';
 import { firstName } from './utils/playerName';
 import { SharedView } from './screens/Share/SharedView';
+import { ShareStatusScreen } from './screens/Share/ShareStatusScreen';
 import { readRosterProfileRoute, buildRosterProfileSearch } from './utils/rosterProfileRoute';
 import { getScheduleOverview } from './utils/scheduleOverview';
 import { HomeScreen as ApiHomeScreen } from './features/home/HomeScreen.jsx';
@@ -7393,9 +7394,14 @@ export default function App() {
     return <MaintenanceScreen version={APP_VERSION} />;
   }
 
+  var contemporaryShare = isFlagEnabled('UX_SHARE');
+
   // Check for shared lineup in URL — short ?s= link (async) or legacy ?share= (base64)
   if (new URLSearchParams(window.location.search).get("s")) {
     if (shareLoading) {
+      if (contemporaryShare) {
+        return <ShareStatusScreen state="loading" message="Loading lineup…" />;
+      }
       return (
         <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", minHeight:"100vh", background:"#fdf8f0", gap:"16px" }}>
           <div style={{ fontSize:"32px" }}>⚾</div>
@@ -7406,7 +7412,7 @@ export default function App() {
     if (sharePayload) {
       var _vp = new URLSearchParams(window.location.search);
       var isViewer = _vp.get("view") === "true" || _vp.get("role") === "viewer";
-      return <ErrorBoundary fallback="Viewer Mode">{isViewer ? <DugoutView payload={sharePayload} isViewer={true} onExit={function() {}} /> : <SharedView payload={sharePayload} renderFieldSVG={renderFieldSVG} sectionTitleStyle={S.sectionTitle} />}</ErrorBoundary>;
+      return <ErrorBoundary fallback="Viewer Mode">{isViewer ? <DugoutView payload={sharePayload} isViewer={true} onExit={function() {}} /> : <SharedView payload={sharePayload} renderFieldSVG={renderFieldSVG} sectionTitleStyle={S.sectionTitle} contemporary={contemporaryShare} />}</ErrorBoundary>;
     }
     // Story 62/#127 - user-meaningful message per dbLoadShareLink failure
     // mode, instead of one generic "couldn't be found" for every case.
@@ -7416,6 +7422,9 @@ export default function App() {
       timeout: "This is taking a while to load. Check your connection and try again.",
       not_found: "This share link couldn't be found.",
     };
+    if (contemporaryShare) {
+      return <ShareStatusScreen state="error" message={_shareErrorCopy[shareError] || _shareErrorCopy.not_found} />;
+    }
     return (
       <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", minHeight:"100vh", background:"#fdf8f0", gap:"12px" }}>
         <div style={{ fontSize:"32px" }}>😕</div>
@@ -7432,7 +7441,7 @@ export default function App() {
     if (shareParam) {
       var payload = JSON.parse(decodeURIComponent(escape(atob(shareParam))));
       var isViewer64 = urlParams.get("view") === "true" || urlParams.get("role") === "viewer";
-      return <ErrorBoundary fallback="Viewer Mode">{isViewer64 ? <DugoutView payload={payload} isViewer={true} onExit={function() {}} /> : <SharedView payload={payload} renderFieldSVG={renderFieldSVG} sectionTitleStyle={S.sectionTitle} />}</ErrorBoundary>;
+      return <ErrorBoundary fallback="Viewer Mode">{isViewer64 ? <DugoutView payload={payload} isViewer={true} onExit={function() {}} /> : <SharedView payload={payload} renderFieldSVG={renderFieldSVG} sectionTitleStyle={S.sectionTitle} contemporary={contemporaryShare} />}</ErrorBoundary>;
     }
   } catch (e) { /* ignored */ }
 
