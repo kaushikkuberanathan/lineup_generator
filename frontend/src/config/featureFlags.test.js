@@ -19,6 +19,7 @@ describe('featureFlags', function () {
     var expectedFlags = [
       'USE_NEW_LINEUP_ENGINE', 'MAINTENANCE_MODE', 'VIEWER_MODE', 'GAME_MODE',
       'ACCESSIBILITY_V1', 'SCORING_SHEET_V2', 'COMBINED_GAMEMODE_AND_SCORING',
+      'API_DRIVEN_ACCOUNT',
       'UX_SUPPORT', 'UX_ACCOUNT', 'UX_SHARE', 'UX_AUTH', 'UX_SYSTEM_STATES',
     ];
     expectedFlags.forEach(function (flag) {

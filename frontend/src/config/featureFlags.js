@@ -52,6 +52,7 @@ export const FEATURE_FLAGS = {
   //     into legacy tabs, in place of the legacy renderHome().
   API_HOME_SHADOW_READ: false,
   API_DRIVEN_ROUTES: false,
+  API_DRIVEN_ACCOUNT: false,
   API_DRIVEN_HOME: false,
 
   // Contemporary Dugout UX (#1052), Wave A. Keeps the My Team roster and

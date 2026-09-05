@@ -69,6 +69,7 @@ import { HomeScreen as ApiHomeScreen } from './features/home/HomeScreen.jsx';
 import { parseAppRoute, buildAppRoute, resolveDestination, savePendingDestination, consumePendingDestination, identityCanAccessDestination } from './api/routes.js';
 import { trackHomeDeepLinkResolved, trackHomeDeepLinkDenied } from './features/home/homeAnalytics.js';
 import { getHomeCache } from './api/homeCache.js';
+import { AccountScreen as ApiAccountScreen } from './features/account/AccountScreen.jsx';
 import { MyTeamRosterScreen } from './features/my-team/MyTeamRosterScreen.jsx';
 import { PlayerProfileScreen } from './features/my-team/PlayerProfileScreen.jsx';
 import { ScheduleScreen } from './features/schedule/ScheduleScreen.jsx';
@@ -2262,6 +2263,10 @@ export default function App() {
     var searchStr = buildApiHomeRouteSearch(window.location.search, path);
     var url = window.location.pathname + searchStr + window.location.hash;
     window.history.pushState({ apiHomeRoute: path, apiHomeReturnTeamId: route.teamId }, '', url);
+  }
+
+  function handleApiAccountTeamSelected(team) {
+    handleApiHomeActionSelected({ href: buildAppRoute({ type: 'team', teamId: team.id }) });
   }
 
   // Refresh / app-restart: once auth resolves, restore whatever
@@ -7736,7 +7741,14 @@ export default function App() {
         />
       ) : null}
       {primaryTab === "more" && moreTab === "account-teams" ? (
-        supportDestination('Your teams', 'Choose a team or review your season access.', 'team', <AccountTeamsSection session={session} memberships={memberships} teams={teams} loadTeam={loadTeam} />, 'account')
+        supportDestination('Your teams', 'Choose a team or review your season access.', 'team', isFlagEnabled('API_DRIVEN_ACCOUNT') ? (
+          <ApiAccountScreen
+            userId={user && user.id}
+            getAccessToken={getAccessTokenForApiHome}
+            isOnline={isOnline}
+            onSelectTeam={handleApiAccountTeamSelected}
+          />
+        ) : <AccountTeamsSection session={session} memberships={memberships} teams={teams} loadTeam={loadTeam} />, 'account')
       ) : null}
       {primaryTab === "more" && moreTab === "account-profile" ? (
         supportDestination('Profile', 'Keep the name your coaching community sees up to date.', 'player', <AccountProfileSection
