@@ -92,8 +92,9 @@ export function setRuntimeFlagCache(flags) {
  *   localStorage.setItem("flag_ACCESSIBILITY_V1", "false") → force off
  *   localStorage.removeItem("flag_ACCESSIBILITY_V1")       → use default
  *
- * Precedence: per-user localStorage override > DB-driven runtime cache
- * (Story 30/#112) > static FEATURE_FLAGS default.
+ * Precedence: per-device localStorage override > per-team DB row > global
+ * DB row > static FEATURE_FLAGS default. The runtime cache already contains
+ * the DB layers merged in that order by useFeatureFlags (#1137).
  */
 export function isFlagEnabled(flagName) {
   var lsKey = 'flag_' + flagName;

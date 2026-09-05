@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase, isSupabaseEnabled } from '../supabase.js';
 import { FEATURE_FLAGS as staticFlags } from '@/config/featureFlags';
 
-export async function fetchRuntimeFlags() {
+export async function fetchRuntimeFlags(teamId) {
   if (!isSupabaseEnabled) { return staticFlags; }
   try {
     var result = await supabase
@@ -14,7 +14,8 @@ export async function fetchRuntimeFlags() {
     (result.data || []).forEach(function(row) {
       dbFlags[row.flag_name.toUpperCase()] = row.enabled;
     });
-    return Object.assign({}, staticFlags, dbFlags);
+    var teamFlags = teamId ? await fetchTeamFlags(teamId) : {};
+    return Object.assign({}, staticFlags, dbFlags, teamFlags);
   } catch (e) {
     return staticFlags;
   }
@@ -22,9 +23,8 @@ export async function fetchRuntimeFlags() {
 
 // Fetch team-scoped flag overrides for a specific team.
 // Returns object keyed by uppercase flag name.
-// Not yet called anywhere — stub for future per-team flag support.
 export async function fetchTeamFlags(teamId) {
-  if (!isSupabaseEnabled) { return {}; }
+  if (!isSupabaseEnabled || !teamId) { return {}; }
   try {
     var result = await supabase
       .from('feature_flags')
@@ -41,19 +41,19 @@ export async function fetchTeamFlags(teamId) {
   }
 }
 
-export function useFeatureFlags() {
+export function useFeatureFlags(teamId) {
   var _flags = useState(staticFlags);
   var flags = _flags[0]; var setFlags = _flags[1];
   var _loading = useState(true);
   var loading = _loading[0]; var setLoading = _loading[1];
 
   useEffect(function() {
-    fetchRuntimeFlags().then(function(merged) {
+    fetchRuntimeFlags(teamId).then(function(merged) {
       setFlags(merged);
       setLoading(false);
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only no-varying-deps: useFeatureFlags takes no args; setFlags/setLoading are stable setters, not re-fetch triggers.
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- React state setters are stable; teamId is the only refetch input.
+  }, [teamId]);
 
   return { flags: flags, loading: loading };
 }

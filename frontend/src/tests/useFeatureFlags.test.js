@@ -30,6 +30,7 @@ var mocks = vi.hoisted(function() {
   return {
     isSupabaseEnabled: true,
     queryResult: { data: [], error: null },
+    teamQueryResult: { data: [], error: null },
     queryThrows: false,
   };
 });
@@ -48,6 +49,10 @@ vi.mock('../supabase.js', function() {
                 }
                 return Promise.resolve(mocks.queryResult);
               },
+              eq: function(column, value) {
+                mocks.lastTeamQuery = { column: column, value: value };
+                return Promise.resolve(mocks.teamQueryResult);
+              },
             };
           },
         };
@@ -63,6 +68,8 @@ beforeEach(function() {
   mocks.isSupabaseEnabled = true;
   mocks.queryResult = { data: [], error: null };
   mocks.queryThrows = false;
+  mocks.teamQueryResult = { data: [], error: null };
+  mocks.lastTeamQuery = null;
 });
 
 describe('fetchRuntimeFlags', function() {
@@ -104,6 +111,22 @@ describe('fetchRuntimeFlags', function() {
     mocks.queryResult = { data: [], error: null };
     var result = await fetchRuntimeFlags();
     expect(result).toEqual(staticFlags);
+  });
+
+  it('merges team rows over global rows and scopes the query to the requested team', async function() {
+    mocks.queryResult = { data: [{ flag_name: 'api_driven_account', enabled: false }], error: null };
+    mocks.teamQueryResult = { data: [{ flag_name: 'api_driven_account', enabled: true }], error: null };
+    var result = await fetchRuntimeFlags('team-a');
+    expect(result.API_DRIVEN_ACCOUNT).toBe(true);
+    expect(mocks.lastTeamQuery).toEqual({ column: 'team_id', value: 'team-a' });
+  });
+
+  it('does not leak a team-scoped row into another team evaluation', async function() {
+    mocks.queryResult = { data: [{ flag_name: 'api_driven_account', enabled: false }], error: null };
+    mocks.teamQueryResult = { data: [], error: null };
+    var result = await fetchRuntimeFlags('team-b');
+    expect(result.API_DRIVEN_ACCOUNT).toBe(false);
+    expect(mocks.lastTeamQuery.value).toBe('team-b');
   });
 });
 

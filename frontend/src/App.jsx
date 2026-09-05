@@ -777,18 +777,6 @@ var S = {
 export default function App() {
 
   var backendHealth = useBackendHealth();
-  var _featureFlags = useFeatureFlags();
-  var runtimeFlags = _featureFlags.flags; var flagsLoading = _featureFlags.loading;
-
-  // Story 30 / #112 — feed the same DB-merged flags this hook already fetches
-  // into isFlagEnabled()'s runtime cache, so every isFlagEnabled()-gated flag
-  // (ACCESSIBILITY_V1, SCORING_SHEET_V2, COMBINED_GAMEMODE_AND_SCORING, etc.)
-  // also becomes DB-driven — previously only VIEWER_MODE/MAINTENANCE_MODE got
-  // that via the runtimeFlags.X reads below. No extra fetch: reuses this
-  // hook's existing result.
-  useEffect(function() {
-    if (!flagsLoading) setRuntimeFlagCache(runtimeFlags);
-  }, [runtimeFlags, flagsLoading]);
 
   var _hydratedTeamIds = useState({});
   var hydratedTeamIds = _hydratedTeamIds[0]; var setHydratedTeamIds = _hydratedTeamIds[1];
@@ -1129,6 +1117,14 @@ export default function App() {
   var teams = _teams[0]; var setTeams = _teams[1];
   var _atid = useState(initActiveId);
   var activeTeamId = _atid[0]; var setActiveTeamId = _atid[1];
+  var _featureFlags = useFeatureFlags(activeTeamId || null);
+  var runtimeFlags = _featureFlags.flags; var flagsLoading = _featureFlags.loading;
+
+  // Feed the global + active-team DB merge into the synchronous flag
+  // evaluator. Team changes trigger useFeatureFlags to rebuild this cache.
+  useEffect(function() {
+    if (!flagsLoading) setRuntimeFlagCache(runtimeFlags);
+  }, [runtimeFlags, flagsLoading]);
   var _liveScoring = useFeatureFlag('live_scoring', activeTeamId);
   var _isAlwaysScoringTeam = (activeTeam && (activeTeam.name === 'Mud Hens' || activeTeam.name === 'Demo All-Stars'));
   // eslint-disable-next-line no-unused-vars -- hook side-effects must run; value orphaned post-COMBINED_GAMEMODE GA

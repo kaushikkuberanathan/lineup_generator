@@ -546,7 +546,8 @@
     <div id="tab-flags" class="tab-panel">
       <div class="card">
         <div class="card-header"><span class="card-title">Feature Flags</span></div>
-        <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Global flags (team_id IS NULL). Changes take effect on next page load. Add/remove flags via SQL only.</p>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">Leave Team ID blank for a global change, or enter one canonical team ID to create/update an override for only that team.</p>
+        <input id="flags-team-id" placeholder="Team ID (optional)" style="margin-bottom:16px;" />
         <div id="flags-msg"></div>
         <div id="flags-loading" style="text-align:center;padding:20px;"><div class="spinner"></div></div>
         <div id="flags-list" style="display:none;"></div>
@@ -1475,7 +1476,7 @@
         var res = await fetch(BACKEND_URL + '/api/v1/feature-flags/' + encodeURIComponent(flagName), {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token },
-          body: JSON.stringify({ enabled: enabled })
+          body: JSON.stringify({ enabled: enabled, teamId: document.getElementById('flags-team-id').value.trim() || null })
         });
         var body = await res.json().catch(function() { return {}; });
         chk.disabled = false;

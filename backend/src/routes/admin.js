@@ -886,34 +886,47 @@ router.delete(
 // ─── PATCH /feature-flags/:flagName ────────────────────────────────────────────
 // Routes admin.html's global feature-flag toggle through the backend instead of
 // a direct Supabase client write (#787, remaining scope after #338/PR #780).
-// Global flags only (team_id IS NULL) — matches admin.html's Flags tab scope;
-// per-team overrides, if any, are out of scope here since the current UI
-// doesn't manage them either.
+// An optional teamId creates or updates a team-scoped override; omission
+// preserves the existing global-row update contract.
 
 router.patch(
   '/feature-flags/:flagName',
   [
     param('flagName').notEmpty().trim(),
     body('enabled').isBoolean(),
+    body('teamId').optional({ nullable: true }).isString().trim().isLength({ min: 1, max: 128 }),
   ],
   async (req, res) => {
     if (validationGuard(req, res)) return;
 
     const { flagName } = req.params;
-    const { enabled } = req.body;
+    const { enabled, teamId = null } = req.body;
 
-    const { error } = await supabaseAdmin
-      .from('feature_flags')
-      .update({ enabled, updated_at: new Date().toISOString() })
-      .eq('flag_name', flagName)
-      .is('team_id', null);
+    const now = new Date().toISOString();
+    let result;
+    if (teamId) {
+      result = await supabaseAdmin
+        .from('feature_flags')
+        .upsert({ flag_name: flagName, enabled, team_id: teamId, updated_at: now }, { onConflict: 'flag_name,team_id' });
+    } else {
+      result = await supabaseAdmin
+        .from('feature_flags')
+        .update({ enabled, updated_at: now })
+        .eq('flag_name', flagName)
+        .is('team_id', null);
+    }
+    const { error } = result;
 
     if (error) {
       console.error('[admin/feature-flags] DB error:', error.message);
       return res.status(500).json({ error: 'DB_ERROR' });
     }
 
-    return res.status(200).json({ message: `${flagName} set to ${enabled ? 'ON' : 'OFF'}.` });
+    return res.status(200).json({
+      message: `${flagName} set to ${enabled ? 'ON' : 'OFF'}${teamId ? ` for team ${teamId}` : ''}.`,
+      scope: teamId ? 'team' : 'global',
+      teamId,
+    });
   }
 );
 
