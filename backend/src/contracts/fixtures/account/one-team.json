@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "generatedAt": "2026-09-04T12:00:00.000Z",
+  "requestId": "req-account-one",
+  "identity": { "id": "user-admin", "email": "admin@example.com", "displayName": "Alex Coach", "firstName": "Alex", "lastName": "Coach" },
+  "memberships": [{
+    "team": { "id": "mud-hens-8u", "name": "Mud Hens", "displayName": "Mud Hens", "ageGroup": "8U", "season": "Fall", "year": 2026, "sport": "baseball" },
+    "role": { "code": "admin", "label": "Team Admin / Head Coach" },
+    "capabilities": ["team.view", "team.manage", "membership.manage", "roster.view", "roster.manage", "schedule.view", "schedule.manage", "lineup.view", "lineup.create", "lineup.manage", "lineup.lock", "game.view_mode", "game.start_mode", "scoring.view", "scoring.claim", "scoring.record", "scoring.finalize"]
+  }],
+  "pendingDestination": null
+}

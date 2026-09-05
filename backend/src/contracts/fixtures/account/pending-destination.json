@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "generatedAt": "2026-09-04T12:00:00.000Z",
+  "requestId": "req-account-pending",
+  "identity": { "id": "user-pending", "email": "scorekeeper@example.com", "displayName": "Casey Scorekeeper", "firstName": "Casey", "lastName": "Scorekeeper" },
+  "memberships": [{
+    "team": { "id": "bananas-8u", "name": "Bananas", "displayName": "Bananas", "ageGroup": "8U", "season": "Fall", "year": 2026, "sport": "baseball" },
+    "role": { "code": "scorekeeper", "label": "Scorekeeper" },
+    "capabilities": ["team.view", "roster.view", "schedule.view", "lineup.view", "game.view_mode", "scoring.view", "scoring.claim", "scoring.record", "scoring.finalize"]
+  }],
+  "pendingDestination": { "path": "/app/teams/bananas-8u/games/game-42/score", "savedAt": "2026-09-04T11:59:00.000Z" }
+}
