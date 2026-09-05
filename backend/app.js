@@ -8,6 +8,7 @@ const feedbackRouter = require('./src/routes/feedback');
 const teamDataRouter = require('./src/routes/teamData');
 const opsRouter = require('./src/routes/ops');
 const homeRouter = require('./src/routes/home');
+const accountRouter = require('./src/routes/account');
 const { supabaseAdmin } = require('./src/lib/supabase');
 
 const app = express();
@@ -176,6 +177,7 @@ app.get('/ping', function(req, res) {
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/ops', opsRouter);
 app.use('/api/v1/teams', teamDataRouter);
+app.use('/api/v1/account', accountRouter);
 // homeRouter MUST mount before adminRouter, same reasoning as feedbackRouter
 // directly below: adminRouter's router.use(requireAuth, requireAdmin) gate
 // (admin.js:172) is unconditional for ANY path under its bare /api/v1
