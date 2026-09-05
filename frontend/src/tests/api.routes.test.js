@@ -12,6 +12,7 @@ import {
   savePendingDestination,
   consumePendingDestination,
   clearPendingDestination,
+  identityCanAccessDestination,
   resolveDestination,
 } from '../api/routes.js';
 
@@ -54,6 +55,20 @@ describe('isSafeInternalDestination', function () {
   it('existing unauthenticated share-link routes (?s=, ?share=) are untouched — they never match /app at all', function () {
     expect(isSafeInternalDestination('/?s=abc123')).toBe(false);
     expect(parseAppRoute('/?s=abc123')).toBeNull();
+  });
+});
+
+describe('identityCanAccessDestination — auth-resume reauthorization (#1135)', function () {
+  it('accepts both legacy /auth/me and Account v1 membership shapes', function () {
+    var route = parseAppRoute('/app/teams/t1/roster');
+    expect(identityCanAccessDestination(route, [{ team_id: 't1' }])).toBe(true);
+    expect(identityCanAccessDestination(route, [{ team: { id: 't1' } }])).toBe(true);
+  });
+
+  it('rejects a pending destination when a different identity lacks that membership', function () {
+    var route = parseAppRoute('/app/teams/t1/roster');
+    expect(identityCanAccessDestination(route, [{ team_id: 't2' }])).toBe(false);
+    expect(identityCanAccessDestination(route, [])).toBe(false);
   });
 });
 

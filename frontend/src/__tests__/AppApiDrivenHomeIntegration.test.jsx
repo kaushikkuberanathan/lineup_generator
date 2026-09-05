@@ -400,6 +400,42 @@ describe("API-driven Home pending-destination resume (#1032)", function () {
     expect(window.location.search).toContain("route=" + encodeURIComponent("/app/teams/" + TEAM.id + "/roster"));
   });
 
+  it("does not honor a pending team destination when a different user completes authentication", async function () {
+    localStorage.setItem("flag_API_DRIVEN_HOME", "true");
+    localStorage.setItem("flag_API_DRIVEN_ROUTES", "true");
+    mockUnauthenticated();
+    window.history.replaceState(null, "", "/?route=" + encodeURIComponent("/app/teams/" + TEAM.id + "/roster"));
+
+    var view = render(<App />);
+    await waitFor(function () {
+      expect(window.sessionStorage.getItem("api:pendingDestination")).not.toBeNull();
+    });
+
+    window.history.replaceState(null, "", "/");
+    mockUseAuth.mockReturnValue({
+      session: { user: { email: "other@example.com" }, access_token: "other-tok" },
+      user: { id: "user-api-2", email: "other@example.com", profile: { first_name: "Other" } },
+      authState: "authenticated",
+      setAuthState: vi.fn(),
+      sendMagicLink: vi.fn(),
+      requestAccess: vi.fn(),
+      logout: vi.fn(),
+      memberships: [{ id: "membership-other", role: "admin", team_id: OTHER_TEAM.id }],
+      updateProfileName: vi.fn(),
+      refreshMemberships: vi.fn(() => Promise.resolve()),
+    });
+    view.rerender(<App />);
+
+    await waitFor(function () {
+      expect(window.sessionStorage.getItem("api:pendingDestination")).toBeNull();
+    });
+    expect(window.location.search).not.toContain("route=");
+    expect(track).toHaveBeenCalledWith("home_deep_link_denied", {
+      destination_type: "roster",
+      reason: "team_access_denied",
+    });
+  });
+
   it("with no pending destination stashed, authenticating with a route-less URL just shows Home (no false resume)", async function () {
     localStorage.setItem("flag_API_DRIVEN_HOME", "true");
     localStorage.setItem("flag_API_DRIVEN_ROUTES", "true");

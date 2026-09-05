@@ -66,7 +66,7 @@ import { SystemStateScreen } from './components/Shared/SystemStateScreen';
 import { readRosterProfileRoute, buildRosterProfileSearch } from './utils/rosterProfileRoute';
 import { getScheduleOverview } from './utils/scheduleOverview';
 import { HomeScreen as ApiHomeScreen } from './features/home/HomeScreen.jsx';
-import { parseAppRoute, buildAppRoute, resolveDestination, savePendingDestination, consumePendingDestination } from './api/routes.js';
+import { parseAppRoute, buildAppRoute, resolveDestination, savePendingDestination, consumePendingDestination, identityCanAccessDestination } from './api/routes.js';
 import { trackHomeDeepLinkResolved, trackHomeDeepLinkDenied } from './features/home/homeAnalytics.js';
 import { getHomeCache } from './api/homeCache.js';
 import { MyTeamRosterScreen } from './features/my-team/MyTeamRosterScreen.jsx';
@@ -2155,6 +2155,16 @@ export default function App() {
   // have this limitation — its action came from the just-rendered,
   // already-authorized Home response.
   function enterLegacyScreenForApiRoute(route, trustGameLaunch) {
+    // #1135: the device-local team list is presentation/hydration data, never
+    // authorization. Re-check every authenticated destination against the
+    // memberships returned for the identity that actually signed in. This is
+    // especially important after an auth round trip: a pending Team A route
+    // may have been saved before a different user completed authentication.
+    if (!identityCanAccessDestination(route, memberships)) {
+      trackHomeDeepLinkDenied({ destinationType: route.type, reason: 'team_access_denied' });
+      return false;
+    }
+
     // Authoritative membership/ownership check (section 6.2/17/26.2 of the
     // API-driven architecture doc). Runs for EVERY route carrying a
     // teamId, not just nested game/lineup ones — a real device bug
