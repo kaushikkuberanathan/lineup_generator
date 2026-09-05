@@ -12,30 +12,15 @@
  * a snapshot across identities.
  */
 
-const CACHE_KEY_PREFIX = 'api:home:';
+import { createPrivateReadModelCache } from './privateReadModelCache.js';
+
 const FRESH_WINDOW_MS = 60 * 1000;
 const STALE_WINDOW_MS = 24 * 60 * 60 * 1000;
-
-function cacheKey(userId) {
-  return `${CACHE_KEY_PREFIX}${userId}`;
-}
-
-function defaultStorage() {
-  try {
-    if (typeof window !== 'undefined' && window.localStorage) return window.localStorage;
-  } catch { /* private-browsing storage access can throw */ }
-  // Non-browser or storage-denied environment: an in-memory stand-in so
-  // this module never throws at call time. Not shared across calls in
-  // that case — resilience degrades to "no cache," which is safe.
-  const mem = new Map();
-  return {
-    getItem: (k) => (mem.has(k) ? mem.get(k) : null),
-    setItem: (k, v) => mem.set(k, String(v)),
-    removeItem: (k) => mem.delete(k),
-    get length() { return mem.size; },
-    key: (i) => Array.from(mem.keys())[i] ?? null,
-  };
-}
+const cache = createPrivateReadModelCache({
+  keyPrefix: 'api:home:',
+  freshWindowMs: FRESH_WINDOW_MS,
+  staleWindowMs: STALE_WINDOW_MS,
+});
 
 /**
  * @param {string} userId
@@ -44,22 +29,7 @@ function defaultStorage() {
  * @param {Storage} [opts.storage]
  */
 export function setHomeCache(userId, response, opts = {}) {
-  if (!userId || !response) return;
-  const storage = opts.storage || defaultStorage();
-  const now = opts.now || (() => new Date());
-  const entry = {
-    userId,
-    response,
-    generatedAt: response.generatedAt ?? null,
-    fetchedAt: now().toISOString(),
-    version: response.version,
-  };
-  try {
-    storage.setItem(cacheKey(userId), JSON.stringify(entry));
-  } catch {
-    // Storage full/unavailable — cache is resilience, not authority; a
-    // failed write just means the next load falls back to a live fetch.
-  }
+  cache.set(userId, response, opts);
 }
 
 /**
@@ -73,39 +43,7 @@ export function setHomeCache(userId, response, opts = {}) {
  * @returns {null | (object & {isFresh: boolean, isStale: boolean, ageMs: number})}
  */
 export function getHomeCache(userId, opts = {}) {
-  if (!userId) return null;
-  const storage = opts.storage || defaultStorage();
-  const now = opts.now || (() => new Date());
-
-  let raw;
-  try {
-    raw = storage.getItem(cacheKey(userId));
-  } catch {
-    return null;
-  }
-  if (!raw) return null;
-
-  let entry;
-  try {
-    entry = JSON.parse(raw);
-  } catch {
-    return null;
-  }
-  if (!entry || entry.userId !== userId) return null;
-  if (opts.expectedVersion !== undefined && entry.version !== opts.expectedVersion) return null;
-
-  const fetchedAtMs = Date.parse(entry.fetchedAt);
-  if (!Number.isFinite(fetchedAtMs)) return null;
-
-  const ageMs = now().getTime() - fetchedAtMs;
-  if (ageMs > STALE_WINDOW_MS) return null; // unavailable, not silently accepted
-
-  return {
-    ...entry,
-    isFresh: ageMs <= FRESH_WINDOW_MS,
-    isStale: ageMs > FRESH_WINDOW_MS,
-    ageMs,
-  };
+  return cache.get(userId, opts);
 }
 
 /**
@@ -113,11 +51,7 @@ export function getHomeCache(userId, opts = {}) {
  * @param {object} [opts]
  */
 export function clearHomeCache(userId, opts = {}) {
-  if (!userId) return;
-  const storage = opts.storage || defaultStorage();
-  try {
-    storage.removeItem(cacheKey(userId));
-  } catch { /* nothing to clear if storage is already unavailable */ }
+  cache.clear(userId, opts);
 }
 
 /**
@@ -127,13 +61,5 @@ export function clearHomeCache(userId, opts = {}) {
  * @param {object} [opts]
  */
 export function clearAllHomeCaches(opts = {}) {
-  const storage = opts.storage || defaultStorage();
-  try {
-    const keys = [];
-    for (let i = 0; i < storage.length; i += 1) {
-      const key = storage.key(i);
-      if (key && key.startsWith(CACHE_KEY_PREFIX)) keys.push(key);
-    }
-    keys.forEach((key) => storage.removeItem(key));
-  } catch { /* best-effort */ }
+  cache.clearAll(opts);
 }

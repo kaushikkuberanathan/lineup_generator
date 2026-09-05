@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "generatedAt": "2026-09-04T12:00:00.000Z",
+  "requestId": "req-account-invalid-role",
+  "identity": { "id": "user-invalid", "email": "invalid@example.com", "displayName": "Invalid Role", "firstName": "Invalid", "lastName": "Role" },
+  "memberships": [{
+    "team": { "id": "team-invalid", "name": "Invalid", "displayName": "Invalid", "ageGroup": "8U", "season": "Fall", "year": 2026, "sport": "baseball" },
+    "role": { "code": "team_admin", "label": "Legacy role leaked" },
+    "capabilities": ["team.view"]
+  }],
+  "pendingDestination": null
+}

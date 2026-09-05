@@ -47,6 +47,15 @@ describe('GET /api/v1/account (#1131)', () => {
     assert.equal(calls.rpcCalls.length, 0);
   });
 
+  test('rejects a malformed or expired bearer token before querying', async () => {
+    const calls = installStubs({ rejectAuth: true });
+    const response = await request(app)
+      .get('/api/v1/account')
+      .set('Authorization', 'Bearer malformed-or-expired-token');
+    assert.equal(response.status, 401);
+    assert.equal(calls.rpcCalls.length, 0);
+  });
+
   test('uses exactly one RPC and returns a schema-valid zero-membership response', async () => {
     const calls = installStubs();
     const response = await request(app).get('/api/v1/account').set('Authorization', `Bearer ${TOKEN}`);
@@ -126,5 +135,35 @@ describe('GET /api/v1/account (#1131)', () => {
     assert.equal(response.body.error.code, 'INTERNAL_ERROR');
     assert.equal(response.body.error.retryable, true);
     assert.equal(typeof response.body.error.requestId, 'string');
+  });
+
+  test('ten-team response stays within contract query, payload, and local processing budgets', async () => {
+    const schema = require('../contracts/accountIdentity.v1.schema.json');
+    const memberships = Array.from({ length: 10 }, (_, index) => ({
+      team_id: `team-${index}`,
+      role: index % 2 === 0 ? 'coach' : 'parent',
+      status: 'active',
+    }));
+    const teams = memberships.map((membership, index) => ({
+      id: membership.team_id,
+      name: `Representative Team ${index}`,
+      age_group: '8U',
+      season: index % 2 === 0 ? 'Fall' : 'Spring',
+      year: 2026,
+      sport: 'baseball',
+    }));
+    const calls = installStubs({ memberships, teams });
+    const startedAt = performance.now();
+    const response = await request(app).get('/api/v1/account').set('Authorization', `Bearer ${TOKEN}`);
+    const elapsedMs = performance.now() - startedAt;
+    const payloadBytes = Buffer.byteLength(JSON.stringify(response.body), 'utf8');
+
+    assert.equal(response.status, 200);
+    assert.equal(response.body.memberships.length, 10);
+    assert.equal(calls.rpcCalls.length, schema['x-budgets'].maxDatabaseRoundTrips);
+    assert.ok(payloadBytes < schema['x-budgets'].maxPayloadBytesForTenTeams,
+      `payload ${payloadBytes} exceeded ${schema['x-budgets'].maxPayloadBytesForTenTeams} bytes`);
+    assert.ok(elapsedMs < schema['x-budgets'].maxServerLatencyMs,
+      `local route processing ${elapsedMs.toFixed(1)}ms exceeded ${schema['x-budgets'].maxServerLatencyMs}ms`);
   });
 });
