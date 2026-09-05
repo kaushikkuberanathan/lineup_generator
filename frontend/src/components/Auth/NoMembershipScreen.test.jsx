@@ -66,3 +66,11 @@ describe('NoMembershipScreen — component (#481)', function () {
     expect(screen.queryByText(/game day/i)).not.toBeInTheDocument();
   });
 });
+
+describe('NoMembershipScreen — Wave F contemporary treatment', function () {
+  test('uses the reusable auth workspace and gold primary action when enabled', function () {
+    render(<NoMembershipScreen {...baseProps} contemporary />);
+    expect(document.querySelector('[data-auth-workspace="true"]')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Request access' })).toHaveStyle({ minHeight: '44px' });
+  });
+});

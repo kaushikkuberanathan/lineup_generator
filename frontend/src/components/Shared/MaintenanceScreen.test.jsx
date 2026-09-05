@@ -39,3 +39,11 @@ describe('MaintenanceScreen - smoke', function () {
   });
 
 });
+
+describe('MaintenanceScreen - Wave F contemporary treatment', function () {
+  test('uses the shared system-state composition when enabled', function () {
+    render(<MaintenanceScreen version="3.4.0" contemporary />);
+    expect(document.querySelector('[data-system-state="maintenance"]')).toBeTruthy();
+    expect(screen.getByText('v3.4.0')).toBeInTheDocument();
+  });
+});

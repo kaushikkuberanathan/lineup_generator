@@ -62,6 +62,7 @@ import { currentSeasonGuess, formatSeason, compareTeamsNewestFirst } from './uti
 import { firstName } from './utils/playerName';
 import { SharedView } from './screens/Share/SharedView';
 import { ShareStatusScreen } from './screens/Share/ShareStatusScreen';
+import { SystemStateScreen } from './components/Shared/SystemStateScreen';
 import { readRosterProfileRoute, buildRosterProfileSearch } from './utils/rosterProfileRoute';
 import { getScheduleOverview } from './utils/scheduleOverview';
 import { HomeScreen as ApiHomeScreen } from './features/home/HomeScreen.jsx';
@@ -7391,10 +7392,11 @@ export default function App() {
     );
   }
   if (_maintenanceOn && !_bypassMaintenance) {
-    return <MaintenanceScreen version={APP_VERSION} />;
+    return <MaintenanceScreen version={APP_VERSION} contemporary={isFlagEnabled('UX_SYSTEM_STATES')} />;
   }
 
   var contemporaryShare = isFlagEnabled('UX_SHARE');
+  var contemporaryAuth = isFlagEnabled('UX_AUTH');
 
   // Check for shared lineup in URL — short ?s= link (async) or legacy ?share= (base64)
   if (new URLSearchParams(window.location.search).get("s")) {
@@ -7455,6 +7457,9 @@ export default function App() {
   var _authBypassed = import.meta.env.DEV && (_devParams.get('dev_bypass') === '1' || localStorage.getItem('auth_bypass') === '1');
   if (!_authBypassed) {
     if (authState === 'loading') {
+      if (contemporaryAuth) {
+        return <SystemStateScreen state="loading" title="Loading Dugout Lineup" message="Getting your teams ready…" />;
+      }
       return (
         <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center',
                       justifyContent: 'center', backgroundColor: tokens.color.surface.page }}>
@@ -7471,6 +7476,7 @@ export default function App() {
           <RequestAccessScreen
             onBack={() => setAuthScreen('login')}
             requestAccess={requestAccess}
+            contemporary={contemporaryAuth}
           />
         );
       }
@@ -7479,6 +7485,7 @@ export default function App() {
           onRequestAccess={() => setAuthScreen('request')}
           sendMagicLink={sendMagicLink}
           authError={authError}
+          contemporary={contemporaryAuth}
         />
       );
     }
@@ -7486,6 +7493,7 @@ export default function App() {
       return (
         <PendingApprovalScreen
           onTryLogin={() => setAuthState('unauthenticated')}
+          contemporary={contemporaryAuth}
         />
       );
     }
@@ -7495,6 +7503,7 @@ export default function App() {
           <RequestAccessScreen
             onBack={() => setAuthScreen(null)}
             requestAccess={requestAccess}
+            contemporary={contemporaryAuth}
           />
         );
       }
@@ -7503,6 +7512,7 @@ export default function App() {
           email={session?.user?.email}
           onRequestAccess={() => setAuthScreen('request')}
           onSignOut={logout}
+          contemporary={contemporaryAuth}
         />
       );
     }
@@ -7974,6 +7984,7 @@ export default function App() {
             isOnline={isOnline}
             hasCache={!!(activeTeamId && loadJSON("team:" + activeTeamId + ":roster", null))}
             isLandscape={isLandscape}
+            contemporary={isFlagEnabled('UX_SYSTEM_STATES')}
           />
         </ErrorBoundary>
       </div>

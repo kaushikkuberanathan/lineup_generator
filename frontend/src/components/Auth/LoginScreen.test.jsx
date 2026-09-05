@@ -126,3 +126,13 @@ describe('LoginScreen — authError prop (#579)', function () {
     expect(screen.queryByText('We could not finish signing you in. Please try again.')).not.toBeInTheDocument();
   });
 });
+
+describe('LoginScreen — Wave F contemporary treatment', function () {
+  test('uses the reusable auth workspace and preserves both sign-in methods', function () {
+    render(<LoginScreen {...baseProps()} contemporary />);
+    expect(document.querySelector('[data-auth-workspace="true"]')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Send me a login link' })).toHaveStyle({ minHeight: '44px' });
+    expect(screen.getByRole('button', { name: 'Continue with Google' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Request access' })).toBeInTheDocument();
+  });
+});

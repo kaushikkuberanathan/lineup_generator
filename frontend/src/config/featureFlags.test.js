@@ -19,7 +19,7 @@ describe('featureFlags', function () {
     var expectedFlags = [
       'USE_NEW_LINEUP_ENGINE', 'MAINTENANCE_MODE', 'VIEWER_MODE', 'GAME_MODE',
       'ACCESSIBILITY_V1', 'SCORING_SHEET_V2', 'COMBINED_GAMEMODE_AND_SCORING',
-      'UX_SUPPORT', 'UX_ACCOUNT', 'UX_SHARE',
+      'UX_SUPPORT', 'UX_ACCOUNT', 'UX_SHARE', 'UX_AUTH', 'UX_SYSTEM_STATES',
     ];
     expectedFlags.forEach(function (flag) {
       expect(typeof FEATURE_FLAGS[flag]).toBe('boolean');
@@ -30,6 +30,8 @@ describe('featureFlags', function () {
     expect(isFlagEnabled('MAINTENANCE_MODE')).toBe(false);
     expect(isFlagEnabled('ACCESSIBILITY_V1')).toBe(true);
     expect(isFlagEnabled('UX_SHARE')).toBe(false);
+    expect(isFlagEnabled('UX_AUTH')).toBe(false);
+    expect(isFlagEnabled('UX_SYSTEM_STATES')).toBe(false);
   });
 
   test('an unrecognized flag name is treated as disabled', function () {

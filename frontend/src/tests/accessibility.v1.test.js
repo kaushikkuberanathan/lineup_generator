@@ -111,6 +111,8 @@ describe('2 — FEATURE_FLAGS registry', function() {
     expect(FEATURE_FLAGS).toHaveProperty('UX_SUPPORT');
     expect(FEATURE_FLAGS).toHaveProperty('UX_ACCOUNT');
     expect(FEATURE_FLAGS).toHaveProperty('UX_SHARE');
+    expect(FEATURE_FLAGS).toHaveProperty('UX_AUTH');
+    expect(FEATURE_FLAGS).toHaveProperty('UX_SYSTEM_STATES');
   });
 
   test('2.4 USE_NEW_LINEUP_ENGINE remains true', function() {
@@ -137,6 +139,8 @@ describe('2 — FEATURE_FLAGS registry', function() {
     expect(FEATURE_FLAGS['UX_SUPPORT']).toBe(false);
     expect(FEATURE_FLAGS['UX_ACCOUNT']).toBe(false);
     expect(FEATURE_FLAGS['UX_SHARE']).toBe(false);
+    expect(FEATURE_FLAGS['UX_AUTH']).toBe(false);
+    expect(FEATURE_FLAGS['UX_SYSTEM_STATES']).toBe(false);
   });
 
 });

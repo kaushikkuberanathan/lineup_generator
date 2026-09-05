@@ -21,7 +21,7 @@ import { Stack } from '../ui/Stack';
 import { Text } from '../ui/Text';
 import { tokens } from '../../theme/tokens';
 
-export function OfflineIndicator({ isOnline, hasCache, isLandscape }) {
+export function OfflineIndicator({ isOnline, hasCache, isLandscape, contemporary = false }) {
   if (isOnline && !hasCache) return null;
 
   var dot, label, bg, border;
@@ -42,6 +42,7 @@ export function OfflineIndicator({ isOnline, hasCache, isLandscape }) {
       align="center"
       gap="xs"
       title={label}
+      data-system-indicator={contemporary ? 'contemporary' : 'legacy'}
       style={{
         padding: "3px 8px",
         borderRadius: tokens.radius.pill,

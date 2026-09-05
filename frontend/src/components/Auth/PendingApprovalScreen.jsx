@@ -11,9 +11,34 @@
  */
 
 import { tokens } from "../../theme/tokens";
+import { AuthWorkspace } from './AuthWorkspace';
+import { Button } from '../ui/Button';
+import { Stack } from '../ui/Stack';
+import { Text } from '../ui/Text';
 
-export function PendingApprovalScreen({ onTryLogin }) {
+export function PendingApprovalScreen({ onTryLogin, contemporary = false }) {
   const pendingEmail = localStorage.getItem('lg_pending_email') || '';
+
+  if (contemporary) {
+    return (
+      <AuthWorkspace title="Request submitted" subtitle="Your request is pending review" icon="success">
+        <Stack direction="col" gap="md">
+          <Text as="p" variant="body" color="secondary" style={{ margin: 0, textAlign: 'center', lineHeight: tokens.font.lineHeight.relaxed }}>
+            Your access request has been sent for review.
+            {pendingEmail ? <> You&apos;ll receive an email at <strong>{pendingEmail}</strong> once approved.</> : null}
+          </Text>
+          <Stack direction="col" gap="sm" style={{ padding: tokens.space.md, background: tokens.color.surface.page, borderRadius: tokens.radius.lg }}>
+            <Text size="body" weight="semibold">✓ Request submitted</Text>
+            <Text size="body" color="secondary">2 · Admin reviews and approves</Text>
+            <Text size="body" color="secondary">3 · You receive an approval email</Text>
+            <Text size="body" color="secondary">4 · Tap the link and log in</Text>
+          </Stack>
+          <Text size="sm" color="tertiary" style={{ textAlign: 'center' }}>This usually takes a few hours.</Text>
+          <Button typography="contemporary" variant="secondaryOutline" fullWidth onClick={onTryLogin}>Try logging in</Button>
+        </Stack>
+      </AuthWorkspace>
+    );
+  }
 
   return (
     <div style={styles.container}>

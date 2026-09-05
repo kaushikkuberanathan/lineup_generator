@@ -316,3 +316,14 @@ describe('RequestAccessScreen — Terms of Service consent', function () {
     window.history.pushState(null, '', '/');
   });
 });
+
+describe('RequestAccessScreen — Wave F contemporary treatment', function () {
+  test('uses the shared auth frame while preserving the complete form', function () {
+    render(<RequestAccessScreen {...baseProps()} contemporary />);
+    expect(document.querySelector('[data-auth-workspace="true"]')).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Request access' })).toBeInTheDocument();
+    expect(screen.getByLabelText('First name')).toBeInTheDocument();
+    expect(screen.getByLabelText('Your role')).toBeInTheDocument();
+    expect(screen.getByRole('checkbox')).toBeInTheDocument();
+  });
+});

@@ -16,8 +16,26 @@
  */
 
 import { tokens } from "../../theme/tokens";
+import { AuthWorkspace } from './AuthWorkspace';
+import { Button } from '../ui/Button';
+import { Stack } from '../ui/Stack';
+import { Text } from '../ui/Text';
 
-export function NoMembershipScreen({ email, onRequestAccess, onSignOut }) {
+export function NoMembershipScreen({ email, onRequestAccess, onSignOut, contemporary = false }) {
+  if (contemporary) {
+    return (
+      <AuthWorkspace title="You’re signed in" subtitle="One more step before you can manage a team" icon="team">
+        <Stack direction="col" gap="md">
+          <Text as="p" variant="body" color="secondary" style={{ margin: 0, textAlign: 'center', lineHeight: tokens.font.lineHeight.relaxed }}>
+            {email ? <>You&apos;re signed in as <strong>{email}</strong>, but this account isn&apos;t on a team yet.</> : <>This account isn&apos;t on a team yet.</>}
+          </Text>
+          <Button typography="contemporary" fullWidth leadingIcon="add" onClick={onRequestAccess}>Request access</Button>
+          <Button typography="contemporary" variant="secondaryOutline" fullWidth onClick={onSignOut}>Use a different account</Button>
+          <Text size="sm" color="tertiary" style={{ textAlign: 'center' }}>Once approved, sign in again to open your team.</Text>
+        </Stack>
+      </AuthWorkspace>
+    );
+  }
   return (
     <div style={styles.container}>
       <div style={styles.card}>
