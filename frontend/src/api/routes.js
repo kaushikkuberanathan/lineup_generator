@@ -189,6 +189,21 @@ export function clearPendingDestination(opts = {}) {
 }
 
 /**
+ * Re-authorizes a team-scoped destination against the memberships returned
+ * for the identity that actually completed authentication (#1135). Supports
+ * the legacy /auth/me membership shape and the Account v1 read-model shape
+ * while that frontend migration is staged.
+ */
+export function identityCanAccessDestination(route, memberships) {
+  if (!route || route.type === 'home') return true;
+  if (!route.teamId || !Array.isArray(memberships)) return false;
+  return memberships.some((membership) => {
+    const membershipTeamId = membership && (membership.team_id || (membership.team && membership.team.id));
+    return membershipTeamId === route.teamId;
+  });
+}
+
+/**
  * The pure destination resolver (section 27.1). Deliberately takes no
  * "activeTeamId"/cached-team input at all — the URL's teamId is the only
  * team-identity input, structurally guaranteeing "route identity

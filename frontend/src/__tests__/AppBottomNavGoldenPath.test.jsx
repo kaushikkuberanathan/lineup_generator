@@ -8,7 +8,7 @@
 // unit-testable. Covers ordinary tab switching plus the one non-obvious
 // behavior: tapping Home while inside My Team, Schedule, or Game Day opens the Exit Sheet
 // confirmation instead of navigating straight home (renderExitSheet, ~7413).
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { vi } from "vitest";
 
@@ -64,7 +64,7 @@ describe("App Bottom Nav golden path (#943)", function () {
 
     mockUseAuth.mockReturnValue({
       session: { user: { email: "coach@example.com" }, access_token: "tok" },
-      user: { email: "coach@example.com", profile: { first_name: "Coach" } },
+      user: { id: "user-nav-1", email: "coach@example.com", profile: { first_name: "Coach" } },
       authState: "authenticated",
       setAuthState: vi.fn(),
       sendMagicLink: vi.fn(),
@@ -74,6 +74,10 @@ describe("App Bottom Nav golden path (#943)", function () {
       updateProfileName: vi.fn(),
       refreshMemberships: vi.fn(() => Promise.resolve()),
     });
+  });
+
+  afterEach(function () {
+    delete global.fetch;
   });
 
   it("switches primaryTab through My Team, Schedule, Game Day, and Support", async function () {
@@ -139,6 +143,42 @@ describe("App Bottom Nav golden path (#943)", function () {
 
     expect(screen.queryByRole("heading", { name: "Profile" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Save" })).toBeInTheDocument();
+  });
+
+  it("uses the Account API shell and canonical route for team switching behind API_DRIVEN_ACCOUNT", async function () {
+    localStorage.setItem("flag_API_DRIVEN_ACCOUNT", "true");
+    global.fetch = vi.fn(function (url) {
+      if (String(url).includes("/api/v1/account")) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          headers: new Headers(),
+          json: function () { return Promise.resolve({
+            version: 1,
+            generatedAt: "2026-09-05T12:00:00.000Z",
+            requestId: "account-app-test",
+            identity: { id: "user-nav-1", email: "coach@example.com", displayName: "Coach", firstName: "Coach", lastName: null },
+            memberships: [{
+              team: { id: TEAM.id, name: TEAM.name, displayName: TEAM.name, ageGroup: TEAM.ageGroup, season: "Fall", year: TEAM.year, sport: TEAM.sport },
+              role: { code: "coach", label: "Coach" },
+              capabilities: ["team.view"],
+            }],
+            pendingDestination: null,
+          }); },
+        });
+      }
+      return Promise.resolve({ ok: true, status: 200, headers: new Headers(), json: function () { return Promise.resolve({}); } });
+    });
+
+    render(<App />);
+    fireEvent.click(await screen.findByRole("button", { name: /Support/ }));
+    fireEvent.click(await screen.findByText("Your teams"));
+    fireEvent.click(await screen.findByRole("button", { name: "Open " + TEAM.name }));
+
+    await waitFor(function () {
+      expect(window.location.search).toContain("route=" + encodeURIComponent("/app/teams/" + TEAM.id));
+    });
+    expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining("/api/v1/account"), expect.objectContaining({ method: "GET" }));
   });
 
   it("tapping Home while inside My Team opens the Exit Sheet instead of navigating away", async function () {

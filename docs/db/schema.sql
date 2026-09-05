@@ -306,9 +306,8 @@ CREATE TABLE IF NOT EXISTS public.feature_flags (
   id          uuid                     NOT NULL DEFAULT gen_random_uuid(),
   flag_name   text                     NOT NULL,
   enabled     boolean                  NOT NULL DEFAULT false,
-  -- !! BIGINT. Every other team_id in the schema is TEXT, and team ids include slugs
-  -- !! ('party-animals-8u'). Team-scoped flags CANNOT work for six of the seven teams.
-  team_id     bigint,
+  -- Canonical text team identity; corrected by #1137 migration so slug IDs work.
+  team_id     text,
   created_at  timestamp with time zone NOT NULL DEFAULT now(),
   updated_at  timestamp with time zone NOT NULL DEFAULT now(),
   description text,

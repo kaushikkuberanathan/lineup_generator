@@ -66,9 +66,10 @@ import { SystemStateScreen } from './components/Shared/SystemStateScreen';
 import { readRosterProfileRoute, buildRosterProfileSearch } from './utils/rosterProfileRoute';
 import { getScheduleOverview } from './utils/scheduleOverview';
 import { HomeScreen as ApiHomeScreen } from './features/home/HomeScreen.jsx';
-import { parseAppRoute, buildAppRoute, resolveDestination, savePendingDestination, consumePendingDestination } from './api/routes.js';
+import { parseAppRoute, buildAppRoute, resolveDestination, savePendingDestination, consumePendingDestination, identityCanAccessDestination } from './api/routes.js';
 import { trackHomeDeepLinkResolved, trackHomeDeepLinkDenied } from './features/home/homeAnalytics.js';
 import { getHomeCache } from './api/homeCache.js';
+import { AccountScreen as ApiAccountScreen } from './features/account/AccountScreen.jsx';
 import { MyTeamRosterScreen } from './features/my-team/MyTeamRosterScreen.jsx';
 import { PlayerProfileScreen } from './features/my-team/PlayerProfileScreen.jsx';
 import { ScheduleScreen } from './features/schedule/ScheduleScreen.jsx';
@@ -776,18 +777,6 @@ var S = {
 export default function App() {
 
   var backendHealth = useBackendHealth();
-  var _featureFlags = useFeatureFlags();
-  var runtimeFlags = _featureFlags.flags; var flagsLoading = _featureFlags.loading;
-
-  // Story 30 / #112 — feed the same DB-merged flags this hook already fetches
-  // into isFlagEnabled()'s runtime cache, so every isFlagEnabled()-gated flag
-  // (ACCESSIBILITY_V1, SCORING_SHEET_V2, COMBINED_GAMEMODE_AND_SCORING, etc.)
-  // also becomes DB-driven — previously only VIEWER_MODE/MAINTENANCE_MODE got
-  // that via the runtimeFlags.X reads below. No extra fetch: reuses this
-  // hook's existing result.
-  useEffect(function() {
-    if (!flagsLoading) setRuntimeFlagCache(runtimeFlags);
-  }, [runtimeFlags, flagsLoading]);
 
   var _hydratedTeamIds = useState({});
   var hydratedTeamIds = _hydratedTeamIds[0]; var setHydratedTeamIds = _hydratedTeamIds[1];
@@ -1128,6 +1117,14 @@ export default function App() {
   var teams = _teams[0]; var setTeams = _teams[1];
   var _atid = useState(initActiveId);
   var activeTeamId = _atid[0]; var setActiveTeamId = _atid[1];
+  var _featureFlags = useFeatureFlags(activeTeamId || null);
+  var runtimeFlags = _featureFlags.flags; var flagsLoading = _featureFlags.loading;
+
+  // Feed the global + active-team DB merge into the synchronous flag
+  // evaluator. Team changes trigger useFeatureFlags to rebuild this cache.
+  useEffect(function() {
+    if (!flagsLoading) setRuntimeFlagCache(runtimeFlags);
+  }, [runtimeFlags, flagsLoading]);
   var _liveScoring = useFeatureFlag('live_scoring', activeTeamId);
   var _isAlwaysScoringTeam = (activeTeam && (activeTeam.name === 'Mud Hens' || activeTeam.name === 'Demo All-Stars'));
   // eslint-disable-next-line no-unused-vars -- hook side-effects must run; value orphaned post-COMBINED_GAMEMODE GA
@@ -2155,6 +2152,16 @@ export default function App() {
   // have this limitation — its action came from the just-rendered,
   // already-authorized Home response.
   function enterLegacyScreenForApiRoute(route, trustGameLaunch) {
+    // #1135: the device-local team list is presentation/hydration data, never
+    // authorization. Re-check every authenticated destination against the
+    // memberships returned for the identity that actually signed in. This is
+    // especially important after an auth round trip: a pending Team A route
+    // may have been saved before a different user completed authentication.
+    if (!identityCanAccessDestination(route, memberships)) {
+      trackHomeDeepLinkDenied({ destinationType: route.type, reason: 'team_access_denied' });
+      return false;
+    }
+
     // Authoritative membership/ownership check (section 6.2/17/26.2 of the
     // API-driven architecture doc). Runs for EVERY route carrying a
     // teamId, not just nested game/lineup ones — a real device bug
@@ -2252,6 +2259,10 @@ export default function App() {
     var searchStr = buildApiHomeRouteSearch(window.location.search, path);
     var url = window.location.pathname + searchStr + window.location.hash;
     window.history.pushState({ apiHomeRoute: path, apiHomeReturnTeamId: route.teamId }, '', url);
+  }
+
+  function handleApiAccountTeamSelected(team) {
+    handleApiHomeActionSelected({ href: buildAppRoute({ type: 'team', teamId: team.id }) });
   }
 
   // Refresh / app-restart: once auth resolves, restore whatever
@@ -7726,7 +7737,14 @@ export default function App() {
         />
       ) : null}
       {primaryTab === "more" && moreTab === "account-teams" ? (
-        supportDestination('Your teams', 'Choose a team or review your season access.', 'team', <AccountTeamsSection session={session} memberships={memberships} teams={teams} loadTeam={loadTeam} />, 'account')
+        supportDestination('Your teams', 'Choose a team or review your season access.', 'team', isFlagEnabled('API_DRIVEN_ACCOUNT') ? (
+          <ApiAccountScreen
+            userId={user && user.id}
+            getAccessToken={getAccessTokenForApiHome}
+            isOnline={isOnline}
+            onSelectTeam={handleApiAccountTeamSelected}
+          />
+        ) : <AccountTeamsSection session={session} memberships={memberships} teams={teams} loadTeam={loadTeam} />, 'account')
       ) : null}
       {primaryTab === "more" && moreTab === "account-profile" ? (
         supportDestination('Profile', 'Keep the name your coaching community sees up to date.', 'player', <AccountProfileSection

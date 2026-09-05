@@ -35,6 +35,7 @@ let calls;
 function installStubs({ updateError = null } = {}) {
   calls = {
     flagUpdates: [],
+    flagUpserts: [],
   };
 
   supabaseAdmin.auth.getUser = async () => ({
@@ -63,6 +64,10 @@ function installStubs({ updateError = null } = {}) {
 
     if (table === 'feature_flags') {
       const chain = {
+        upsert: async (payload, options) => {
+          calls.flagUpserts.push({ payload, options });
+          return { error: updateError };
+        },
         update: (payload) => {
           calls.flagUpdates.push(payload);
           const eqChain = {
@@ -172,6 +177,33 @@ describe('PATCH /admin/feature-flags/:flagName — authorized-admin coverage (#7
 
     assert.equal(res.status, 500);
     assert.equal(res.body.error, 'DB_ERROR');
+  });
+
+  test('F7: teamId upserts a team-scoped row instead of changing the global row', async () => {
+    installStubs();
+    const res = await request(app)
+      .patch('/api/v1/feature-flags/api_driven_account')
+      .set('Authorization', `Bearer ${TOKEN}`)
+      .send({ enabled: true, teamId: 'party-animals-8u' });
+
+    assert.equal(res.status, 200);
+    assert.equal(res.body.scope, 'team');
+    assert.equal(res.body.teamId, 'party-animals-8u');
+    assert.equal(calls.flagUpdates.length, 0);
+    assert.deepEqual(calls.flagUpserts[0].payload.flag_name, 'api_driven_account');
+    assert.deepEqual(calls.flagUpserts[0].payload.team_id, 'party-animals-8u');
+    assert.deepEqual(calls.flagUpserts[0].options, { onConflict: 'flag_name,team_id' });
+  });
+
+  test('F8: malformed teamId is rejected before any write', async () => {
+    installStubs();
+    const res = await request(app)
+      .patch('/api/v1/feature-flags/api_driven_account')
+      .set('Authorization', `Bearer ${TOKEN}`)
+      .send({ enabled: true, teamId: '' });
+    assert.equal(res.status, 400);
+    assert.equal(calls.flagUpdates.length, 0);
+    assert.equal(calls.flagUpserts.length, 0);
   });
 
 });
