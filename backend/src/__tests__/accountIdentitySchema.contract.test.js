@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 
 const { validateAccountIdentityResponse } = require('../contracts/validateAccountIdentityResponse');
+const schema = require('../contracts/accountIdentity.v1.schema.json');
 
 const FIXTURES_DIR = path.join(__dirname, '..', 'contracts', 'fixtures', 'account');
 
@@ -46,5 +47,21 @@ describe('Account/Identity fixtures conform to accountIdentity.v1.schema.json', 
     const result = validateAccountIdentityResponse(fixture);
     assert.equal(result.valid, false);
     assert.ok(result.errors.some((error) => error.includes('unexpected key "roster"')));
+  });
+
+  test('declares measurable latency, payload, and query-count budgets', () => {
+    assert.equal(schema['x-budgets'].maxServerLatencyMs, 300);
+    assert.equal(schema['x-budgets'].maxPayloadBytesForTenTeams, 25 * 1024);
+    assert.equal(schema['x-budgets'].maxDatabaseRoundTrips, 1);
+  });
+
+  test('deliberately malformed fixture is rejected', () => {
+    const invalidFixture = JSON.parse(fs.readFileSync(
+      path.join(FIXTURES_DIR, 'invalid', 'unknown-role.json'),
+      'utf8'
+    ));
+    const result = validateAccountIdentityResponse(invalidFixture);
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some((error) => error.includes('role.code')));
   });
 });

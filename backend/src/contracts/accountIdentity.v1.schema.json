@@ -3,6 +3,11 @@
   "$id": "https://dugoutlineup.com/contracts/account-identity.v1.schema.json",
   "title": "GET /api/v1/account response (contract version 1)",
   "description": "Account and team-shell read model for Story #1130. Contains authenticated identity, active memberships, normalized roles/capabilities, and an optional untrusted pending-destination candidate. Roster, schedule, lineup, scoring, and other screen-owned data are deliberately excluded.",
+  "x-budgets": {
+    "maxServerLatencyMs": 300,
+    "maxPayloadBytesForTenTeams": 25600,
+    "maxDatabaseRoundTrips": 1
+  },
   "type": "object",
   "additionalProperties": false,
   "required": ["version", "generatedAt", "requestId", "identity", "memberships", "pendingDestination"],
