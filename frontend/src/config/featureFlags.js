@@ -62,6 +62,8 @@ export const FEATURE_FLAGS = {
   UX_SUPPORT: false,
   UX_ACCOUNT: false,
   UX_SHARE: false,
+  UX_AUTH: false,
+  UX_SYSTEM_STATES: false,
 };
 
 // Story 30 / #112 — DB-driven runtime flag cache. Populated once per app

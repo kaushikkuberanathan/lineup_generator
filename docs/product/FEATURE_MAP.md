@@ -35,11 +35,11 @@
 
 ---
 
-## Feature Registry (46 features)
+## Feature Registry (47 features)
 
 > Row-count corrected 2026-09-04: this header said "42 features" while 43
-> rows already existed pre-row-44. Rows 44-46 now bring the directly counted
-> registry to 46 features.
+> rows already existed pre-row-44. Rows 44-47 now bring the directly counted
+> registry to 47 features.
 
 | # | Feature | Status | Primary Doc | Doc Status | Test File(s) | Test Status | Debt |
 |---|---------|--------|-------------|------------|--------------|-------------|------|
@@ -92,6 +92,7 @@
 | 44 | **More tab regroup (3 grouped card-sections, Account / Get Help / About & Legal)** | MVP | `docs/product/SUPPORT_TAB_REGROUP_PROPOSAL.md`; `ROADMAP.md` § Story 341 | ✅ Current | `MoreLanding.test.jsx` (9), `AccountTeamsSection.test.jsx` (6), `AccountProfileSection.test.jsx` (2) | ✅ Yes | Issue #1099, closed. Merged to `develop` via PR #1103 (regular merge, `cf63d93`); **promoted to `main` 2026-09-04 as part of v3.4.0** (PR #1124, `e37cb06`). Manual signed-in browser QA complete 2026-09-04 (KK, real session on `dev.dugoutlineup.com`) — nothing outstanding on the QA front before promote; see [#1109](https://github.com/kaushikkuberanathan/lineup_generator/issues/1109) for the two flagged-and-confirmed behavior changes. Replaces the flat 7-tab `MORE_SUBTABS` pill bar with a `MoreLanding` landing view holding 3 `Card` groups of `ListRow` chevron rows; tapping a row pushes the exact same detail component App.jsx already rendered (`FAQSection`, `LegalSection`, `LinksTab`, `UpdatesTab`, feedback) — none of those five components changed internally. The old `renderAccount()` (App.jsx) was split into two new destinations: `AccountTeamsSection` ("Your teams" — signed-in-as + membership list, migrated off legacy inline styles onto `Card`/`ListRow`/`Stack`/`Text`) and `AccountProfileSection` (wraps the pre-existing `AccountNameField` unchanged). "Sign out" is a direct-action row on the landing view itself, no navigation, matching the prior single-tap button (no confirm step added). One deliberate behavior change: the old Account tab's quick "Terms of Service" shortcut (`legalInitialDoc="terms"` deep link) was dropped — Terms & Privacy is now its own top-level landing row, equally fast to reach. `moreTab` now defaults to `"landing"` (was `"faq"`); `HomeNameNudge`'s "set your name" CTA now targets `"account-profile"` directly (was the old combined `"account"` screen) since that's what it was always trying to reach. |
 | 45 | **Walk-up Songs workspace** | MVP | `ROADMAP.md` § Game Day Wave C4; `CONTEMPORARY_UX_DESIGN_SYSTEM.md` | ✅ Current | `AppSongsGoldenPath.test.jsx` (4 — active-order filtering, link wiring, flag-on workspace, metadata editing); `features/game-day/WalkUpSongsWorkspace.test.jsx` (4 — configured/empty, editing, absent, finalized/offline) | ✅ Yes | Wave C4/#1097 adds the reusable contemporary display/edit workspace behind default-off `UX_GAMEDAY_SETUP`. Player metadata, first-name display, batting-order sequencing, absence filtering, local/cloud persistence, share/print callbacks, link targets, locked read-only behavior, and the legacy flag-off surface are preserved. |
 | 46 | **Support and Account contemporary workspace** | MVP | `ROADMAP.md` § Support and Account Wave D; `CONTEMPORARY_UX_DESIGN_SYSTEM.md` | ✅ Current | `SupportWorkspace.test.jsx` (2), `MoreLanding.test.jsx` (10), `AccountNameField.test.jsx` (7), `AppBottomNavGoldenPath.test.jsx` (Support/Account flag integration), plus existing Help/Legal/Links/Account suites | ✅ Yes | Wave D/#1091 adds reusable framing and semantic icon discovery behind independent default-off `UX_SUPPORT`/`UX_ACCOUNT` flags. Content ownership, offline Help, legal versions, links, feedback persistence, auth/session behavior, memberships, and legacy fallbacks remain unchanged. |
+| 47 | **Contemporary authentication and system-state workspace** | MVP | `ROADMAP.md` § Contemporary UX Wave F; `CONTEMPORARY_UX_DESIGN_SYSTEM.md` | ✅ Current | `AuthWorkspace.test.jsx` (2), `SystemStateScreen.test.jsx` (2), `LoginScreen.test.jsx`, `RequestAccessScreen.test.jsx`, `PendingApprovalScreen.test.jsx`, `NoMembershipScreen.test.jsx`, `MaintenanceScreen.test.jsx`, `OfflineIndicator.test.jsx`, `AppNoMembershipRouting.test.jsx` | ✅ Yes | Wave F/#1148 adds reusable auth/system framing behind independent default-off `UX_AUTH`/`UX_SYSTEM_STATES`, preserving identity, authorization, role, consent, routing, maintenance, offline, and public-view contracts. |
 
 ---
 
@@ -99,14 +100,14 @@
 
 | Status | Count |
 |--------|-------|
-| ✅ Doc Current | 43 / 46 |
-| ⚠ Doc Stale | 3 / 46 |
-| ❌ Doc Missing | 0 / 46 |
-| ✅ Tests Exist | 22 / 46 |
-| ⚠ Tests Partial | 16 / 46 |
-| ❌ No Tests | 8 / 46 |
+| ✅ Doc Current | 44 / 47 |
+| ⚠ Doc Stale | 3 / 47 |
+| ❌ Doc Missing | 0 / 47 |
+| ✅ Tests Exist | 23 / 47 |
+| ⚠ Tests Partial | 16 / 47 |
+| ❌ No Tests | 8 / 47 |
 
-> **Recounted 2026-09-04** (#1091): row 46 adds the contemporary Support and Account workspace as Doc Current + Tests Exist. Final counts: Doc 43/3/0 and Tests 22/16/8 across 46 rows.
+> **Recounted 2026-09-05** (#1148): row 47 adds the contemporary authentication and system-state workspace as Doc Current + Tests Exist. Final counts: Doc 44/3/0 and Tests 23/16/8 across 47 rows.
 
 > **Recounted 2026-09-04** (#1097): the summary had not absorbed row 44, so the pre-edit table contained 44 rows while its denominator still read 43. Direct reconciliation adds row 44 as Doc Current + Tests Exist, then row 45 (Walk-up Songs) as Doc Current + Tests Exist. Final counts: Doc 42/3/0 and Tests 21/16/8 across 45 rows.
 
