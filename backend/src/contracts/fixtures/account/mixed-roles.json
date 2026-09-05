@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "generatedAt": "2026-09-04T12:00:00.000Z",
+  "requestId": "req-account-roles",
+  "identity": { "id": "user-roles", "email": "multi.role@example.com", "displayName": "Multi Role", "firstName": "Multi", "lastName": "Role" },
+  "memberships": [
+    { "team": { "id": "team-admin", "name": "Owls", "displayName": "Owls", "ageGroup": "8U", "season": "Fall", "year": 2026, "sport": "softball" }, "role": { "code": "admin", "label": "Team Admin / Head Coach" }, "capabilities": ["team.view", "team.manage", "membership.manage", "roster.view", "roster.manage", "schedule.view", "schedule.manage", "lineup.view", "lineup.create", "lineup.manage", "lineup.lock", "game.view_mode", "game.start_mode", "scoring.view", "scoring.claim", "scoring.record", "scoring.finalize"] },
+    { "team": { "id": "team-viewer", "name": "Falcons", "displayName": "Falcons", "ageGroup": "10U", "season": "Spring", "year": 2027, "sport": "baseball" }, "role": { "code": "viewer", "label": "Team Member / Parent" }, "capabilities": ["team.view", "roster.view", "schedule.view", "lineup.view", "game.view_mode", "scoring.view"] }
+  ],
+  "pendingDestination": null
+}

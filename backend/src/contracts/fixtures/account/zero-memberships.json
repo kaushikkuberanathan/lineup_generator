@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "generatedAt": "2026-09-04T12:00:00.000Z",
+  "requestId": "req-account-zero",
+  "identity": { "id": "user-zero", "email": "new.coach@example.com", "displayName": "New Coach", "firstName": "New", "lastName": "Coach" },
+  "memberships": [],
+  "pendingDestination": null
+}

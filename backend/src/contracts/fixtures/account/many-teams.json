@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "generatedAt": "2026-09-04T12:00:00.000Z",
+  "requestId": "req-account-many",
+  "identity": { "id": "user-many", "email": "coach@example.com", "displayName": "Sam Coach", "firstName": "Sam", "lastName": "Coach" },
+  "memberships": [
+    { "team": { "id": "mud-hens-fall", "name": "Mud Hens", "displayName": "Mud Hens (Fall 2026)", "ageGroup": "8U", "season": "Fall", "year": 2026, "sport": "baseball" }, "role": { "code": "coach", "label": "Coach / Coordinator" }, "capabilities": ["team.view", "roster.view", "roster.manage", "schedule.view", "schedule.manage", "lineup.view", "lineup.create", "lineup.manage", "game.view_mode", "game.start_mode", "scoring.view"] },
+    { "team": { "id": "mud-hens-spring", "name": "Mud Hens", "displayName": "Mud Hens (Spring 2026)", "ageGroup": "8U", "season": "Spring", "year": 2026, "sport": "baseball" }, "role": { "code": "viewer", "label": "Team Member / Parent" }, "capabilities": ["team.view", "roster.view", "schedule.view", "lineup.view", "game.view_mode", "scoring.view"] },
+    { "team": { "id": "knights-10u", "name": "Knights", "displayName": "Knights", "ageGroup": "10U", "season": "Fall", "year": 2026, "sport": "baseball" }, "role": { "code": "scorekeeper", "label": "Scorekeeper" }, "capabilities": ["team.view", "roster.view", "schedule.view", "lineup.view", "game.view_mode", "scoring.view", "scoring.claim", "scoring.record", "scoring.finalize"] }
+  ],
+  "pendingDestination": null
+}
