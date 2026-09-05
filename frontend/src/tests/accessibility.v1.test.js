@@ -110,6 +110,7 @@ describe('2 — FEATURE_FLAGS registry', function() {
     expect(FEATURE_FLAGS).toHaveProperty('UX_GAMEDAY_SETUP');
     expect(FEATURE_FLAGS).toHaveProperty('UX_SUPPORT');
     expect(FEATURE_FLAGS).toHaveProperty('UX_ACCOUNT');
+    expect(FEATURE_FLAGS).toHaveProperty('UX_SHARE');
   });
 
   test('2.4 USE_NEW_LINEUP_ENGINE remains true', function() {
@@ -135,6 +136,7 @@ describe('2 — FEATURE_FLAGS registry', function() {
   test('2.9 Support and Account remain independently default-off during Wave D', function() {
     expect(FEATURE_FLAGS['UX_SUPPORT']).toBe(false);
     expect(FEATURE_FLAGS['UX_ACCOUNT']).toBe(false);
+    expect(FEATURE_FLAGS['UX_SHARE']).toBe(false);
   });
 
 });

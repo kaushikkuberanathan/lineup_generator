@@ -2,10 +2,22 @@ import { useState } from "react";
 import { BrandMark } from '../../components/BrandMark';
 import { PlayerFilterToggle } from '../../components/Shared/PlayerFilterToggle';
 import { Card } from '../../components/ui/Card';
+import { Button } from '../../components/ui/Button';
+import { Icon } from '../../components/ui/Icon';
+import { SegmentedControl } from '../../components/ui/SegmentedControl';
+import { Stack } from '../../components/ui/Stack';
+import { StatusPill } from '../../components/ui/StatusPill';
+import { Text } from '../../components/ui/Text';
 import { tokens } from '../../theme/tokens';
 import { firstName } from '../../utils/playerName';
+import './SharedView.css';
 
-export function SharedView({ payload, renderFieldSVG, sectionTitleStyle }) {
+var VIEW_OPTIONS = [
+  { value: 'diamond', label: 'Diamond' },
+  { value: 'table', label: 'Table' },
+];
+
+export function SharedView({ payload, renderFieldSVG, sectionTitleStyle, contemporary = false }) {
   // Derive inning count from grid
   var innCount = 0;
   for (var k in payload.grid) {
@@ -41,12 +53,28 @@ export function SharedView({ payload, renderFieldSVG, sectionTitleStyle }) {
   }
 
   var teamInitial = payload.team ? payload.team.charAt(0).toUpperCase() : "L";
+  var gameLabel = payload.game
+    ? 'vs ' + payload.game.opponent
+      + (payload.game.date ? ' · ' + new Date(payload.game.date+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}) : '')
+      + (payload.game.time ? ' · ' + payload.game.time : '')
+    : 'Game Day Lineup';
+
+  function sectionTitle(title) {
+    return contemporary
+      ? <Text as="h2" variant="sectionTitle" uppercase style={{ margin: 0 }}>{title}</Text>
+      : <div style={sectionTitleStyle}>{title}</div>;
+  }
+
+  var DefenseSection = contemporary ? Card : 'div';
+  var defenseSectionProps = contemporary
+    ? { className: 'shared-view-section', padding: '16px', radius: 'lg', border: true, style: { marginBottom: '16px', background: tokens.color.surface.card } }
+    : { style: { marginBottom: '16px' } };
 
   return (
-    <div style={{ minHeight:"100vh", background:tokens.color.surface.cream, fontFamily:"Georgia,'Times New Roman',serif", color:tokens.color.text.ink }}>
+    <div className={contemporary ? 'shared-view-contemporary' : undefined} data-contemporary={contemporary ? 'true' : 'false'} style={{ minHeight:"100vh", background:tokens.color.surface.cream, fontFamily:contemporary ? tokens.font.family.sans : "Georgia,'Times New Roman',serif", color:tokens.color.text.ink }}>
 
       {/* ── Header ─────────────────────────────────────────────── */}
-      <div style={{ background:"linear-gradient(135deg,"+tokens.color.brand.navy+","+tokens.color.brand.navyLight+")", borderBottom:"4px solid " + tokens.color.brand.red, padding:"14px 20px" }}>
+      <div style={{ background:contemporary ? tokens.color.brand.navy : "linear-gradient(135deg,"+tokens.color.brand.navy+","+tokens.color.brand.navyLight+")", borderBottom:"4px solid " + (contemporary ? tokens.color.brand.gold : tokens.color.brand.red), padding:"14px 20px" }}>
         <div style={{ maxWidth:"800px", margin:"0 auto", display:"flex", alignItems:"center", gap:"12px" }}>
           <BrandMark size={42} />
           <div style={{ width:"30px", height:"30px", borderRadius:"50%", background:tokens.color.brand.navy, border:"2px solid "+tokens.color.brand.gold,
@@ -57,58 +85,63 @@ export function SharedView({ payload, renderFieldSVG, sectionTitleStyle }) {
             <div style={{ fontSize:"17px", fontWeight:"bold", color:tokens.color.brand.gold, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
               {payload.team}
             </div>
-            {payload.game ? (
-              <div style={{ fontSize:"11px", color:"rgba(255,255,255,0.6)", marginTop:"1px" }}>
-                vs {payload.game.opponent}
-                {payload.game.date ? " · " + new Date(payload.game.date+"T12:00:00").toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"}) : ""}
-                {payload.game.time ? " · " + payload.game.time : ""}
-              </div>
-            ) : (
-              <div style={{ fontSize:"11px", color:"rgba(255,255,255,0.45)", marginTop:"1px" }}>Game Day Lineup</div>
-            )}
+            <div style={{ fontSize:"11px", color:payload.game ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.45)", marginTop:"1px" }}>{gameLabel}</div>
           </div>
-          <button onClick={function() { window.print(); }}
+          {contemporary ? <Button className="shared-view-screen-only" typography="contemporary" size="sm" leadingIcon="download" onClick={function() { window.print(); }}>Print</Button> : <button onClick={function() { window.print(); }}
             style={{ padding:"6px 14px", borderRadius:"6px", border:"1px solid rgba(255,255,255,0.25)", background:"rgba(255,255,255,0.1)",
               color:"rgba(255,255,255,0.75)", fontSize:"11px", fontWeight:"bold", fontFamily:"inherit", cursor:"pointer", flexShrink:0 }}>
             Print
-          </button>
+          </button>}
         </div>
       </div>
 
-      <div style={{ maxWidth:"800px", margin:"0 auto", padding:"16px 20px" }}>
+      <div className="shared-view-content" style={{ maxWidth:"800px", margin:"0 auto", padding:contemporary ? "16px 16px 32px" : "16px 20px" }}>
+
+        {contemporary ? (
+          <Card className="shared-view-section" padding="16px" radius="lg" border style={{ marginBottom: tokens.space.md, background: tokens.color.status.successBg }}>
+            <Stack direction="row" justify="between" align="center" gap="md">
+              <Stack direction="col" gap="xs" style={{ minWidth: 0 }}>
+                <Text as="h1" variant="pageTitle" style={{ margin: 0 }}>Tonight&apos;s game plan</Text>
+                <Text size="sm" color="secondary">{gameLabel}</Text>
+              </Stack>
+              <StatusPill status="neutral">View only</StatusPill>
+            </Stack>
+          </Card>
+        ) : null}
 
         {/* ── Player filter pills ──────────────────────────────── */}
         {rosterNames.length > 0 ? (
-          <div style={{ marginBottom:"12px" }}>
+          <div className={contemporary ? 'shared-view-screen-only' : undefined} style={{ marginBottom:"12px" }}>
             <PlayerFilterToggle
               players={payload.absentNames && payload.absentNames.length > 0 ? rosterNames.filter(function(n) { return payload.absentNames.indexOf(n) < 0; }) : rosterNames}
               selected={svPlayer}
               onSelect={setSvPlayer}
+              contemporary={contemporary}
             />
           </div>
         ) : null}
 
         {/* ── Controls row: inning filter + view toggle ───────── */}
-        <div style={{ display:"flex", gap:"8px", alignItems:"center", marginBottom:"16px", flexWrap:"wrap" }}>
+        <div className="shared-view-screen-only" style={{ display:"flex", gap:"8px", alignItems:"center", marginBottom:"16px", flexWrap:"wrap" }}>
           {/* Inning pills */}
           <div style={{ display:"flex", flexWrap:"nowrap", gap:"4px", alignItems:"center", overflowX:"auto", WebkitOverflowScrolling:"touch", flex:1, minWidth:0 }}>
-            <span style={{ fontSize:"9px", color:tokens.color.text.muted, fontWeight:"bold", textTransform:"uppercase", letterSpacing:"0.08em", flexShrink:0 }}>Inn</span>
+            <span style={{ fontSize:contemporary ? tokens.font.size.xs : "9px", color:tokens.color.text.muted, fontWeight:"bold", textTransform:"uppercase", letterSpacing:"0.08em", flexShrink:0 }}>Inn</span>
             <button onClick={function() { setSvInn(null); }}
-              style={{ padding:"3px 8px", borderRadius:"10px", border:"none", cursor:"pointer", fontSize:"11px", fontWeight:"bold", fontFamily:"inherit", flexShrink:0,
-                background: svInn === null ? tokens.color.brand.navy : "rgba(15,31,61,0.08)", color: svInn === null ? "#fff" : tokens.color.text.muted }}>All</button>
+              style={{ padding:contemporary ? "0 12px" : "3px 8px", minHeight:contemporary ? "44px" : undefined, borderRadius:contemporary ? tokens.radius.pill : "10px", border:"none", cursor:"pointer", fontSize:contemporary ? tokens.font.size.sm : "11px", fontWeight:"bold", fontFamily:"inherit", flexShrink:0,
+                background: svInn === null ? (contemporary ? tokens.color.brand.gold : tokens.color.brand.navy) : (contemporary ? tokens.color.surface.page : "rgba(15,31,61,0.08)"), color: svInn === null ? (contemporary ? tokens.color.brand.navy : "#fff") : tokens.color.text.muted }}>All</button>
             {innArr.map(function(i) {
               var active = svInn === i;
               return (
                 <button key={i} onClick={function(idx) { return function() { setSvInn(idx); }; }(i)}
-                  style={{ padding:"3px 8px", borderRadius:"10px", border:"none", cursor:"pointer", fontSize:"11px", fontWeight:"bold", fontFamily:"inherit", flexShrink:0,
-                    background: active ? tokens.color.brand.red : "rgba(15,31,61,0.08)", color: active ? "#fff" : tokens.color.text.muted }}>
+                  style={{ padding:contemporary ? "0 12px" : "3px 8px", minHeight:contemporary ? "44px" : undefined, borderRadius:contemporary ? tokens.radius.pill : "10px", border:"none", cursor:"pointer", fontSize:contemporary ? tokens.font.size.sm : "11px", fontWeight:"bold", fontFamily:"inherit", flexShrink:0,
+                    background: active ? (contemporary ? tokens.color.brand.gold : tokens.color.brand.red) : (contemporary ? tokens.color.surface.page : "rgba(15,31,61,0.08)"), color: active ? (contemporary ? tokens.color.brand.navy : tokens.color.text.onDark) : tokens.color.text.muted }}>
                   {i + 1}
                 </button>
               );
             })}
           </div>
           {/* View toggle */}
-          <div style={{ display:"flex", gap:"3px", background:"rgba(15,31,61,0.06)", borderRadius:"8px", padding:"3px", flexShrink:0 }}>
+          {contemporary ? <SegmentedControl value={svView} options={VIEW_OPTIONS} onChange={setSvView} label="Lineup view" /> : <div style={{ display:"flex", gap:"3px", background:"rgba(15,31,61,0.06)", borderRadius:"8px", padding:"3px", flexShrink:0 }}>
             {[["◆","diamond"],["≡","table"]].map(function(opt) {
               var active = svView === opt[1];
               return (
@@ -121,12 +154,13 @@ export function SharedView({ payload, renderFieldSVG, sectionTitleStyle }) {
                 </button>
               );
             })}
-          </div>
+          </div>}
         </div>
 
         {/* ── Diamond view ─────────────────────────────────────── */}
         {svView === "diamond" ? (
-          <div style={{ marginBottom:"16px" }}>
+          <DefenseSection {...defenseSectionProps}>
+            {contemporary ? <Stack direction="row" align="center" gap="sm" style={{ marginBottom: tokens.space.md }}><Icon name="glove" size="sm" /><Text as="h2" variant="sectionTitle" uppercase style={{ margin: 0 }}>Defense</Text></Stack> : null}
             {renderFieldSVG(getSharedPlayerFn, svInn, innArr)}
                           {/* Bench strip */}
             <div style={{ borderTop:"2px solid rgba(15,31,61,0.12)", paddingTop:"8px" }}>
@@ -190,10 +224,11 @@ export function SharedView({ payload, renderFieldSVG, sectionTitleStyle }) {
                 </table>
               </div>
             </div>
-          </div>
+          </DefenseSection>
         ) : (
           /* ── Table view ──────────────────────────────────────── */
-          <div style={{ marginBottom:"16px" }}>
+          <DefenseSection {...defenseSectionProps}>
+            {contemporary ? <Stack direction="row" align="center" gap="sm" style={{ marginBottom: tokens.space.md }}><Icon name="lineup" size="sm" /><Text as="h2" variant="sectionTitle" uppercase style={{ margin: 0 }}>Defense table</Text></Stack> : null}
             <div style={{ overflowX:"auto" }}>
               <table style={{ width:"100%", borderCollapse:"collapse", fontSize:"12px" }}>
                 <thead>
@@ -231,13 +266,13 @@ export function SharedView({ payload, renderFieldSVG, sectionTitleStyle }) {
                 </tbody>
               </table>
             </div>
-          </div>
+          </DefenseSection>
         )}
 
         {/* ── Batting order ─────────────────────────────────────── */}
         {payload.batting && payload.batting.length > 0 ? (
-          <Card padding="16px 18px" radius="md" style={{ border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px", marginTop:"4px" }}>
-            <div style={sectionTitleStyle}>Batting Order</div>
+          <Card className={contemporary ? 'shared-view-section' : undefined} padding="16px 18px" radius={contemporary ? 'lg' : 'md'} style={{ border:"1px solid " + tokens.color.border.neutral, boxShadow: tokens.shadow.subtleCard, marginBottom:"14px", marginTop:"4px" }}>
+            {sectionTitle('Batting Order')}
             <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))", gap:"6px" }}>
               {payload.batting.map(function(name, idx) {
                 var isSelectedBatter = svPlayer && name === svPlayer;
@@ -304,7 +339,8 @@ export function SharedView({ payload, renderFieldSVG, sectionTitleStyle }) {
         {/* ── Footer ─────────────────────────────────────────────── */}
         <div style={{ textAlign:"center", marginTop:"24px", fontSize:"11px", color:tokens.color.text.muted, borderTop:"1px solid rgba(15,31,61,0.08)", paddingTop:"16px" }}>
           <div style={{ marginBottom:"4px" }}>View-only lineup · Dugout Lineup</div>
-          <div style={{ fontSize:"10px", color:"rgba(15,31,61,0.25)" }}>Tap Print to save as PDF or screenshot this page</div>
+          <div className="shared-view-screen-only" style={{ fontSize:"10px", color:"rgba(15,31,61,0.25)" }}>Tap Print to save as PDF or screenshot this page</div>
+          {contemporary ? <div className="shared-view-print-only">Printed from Dugout Lineup</div> : null}
         </div>
       </div>
     </div>
