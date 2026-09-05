@@ -61,4 +61,12 @@ describe('PlayerFilterToggle — extraction characterization (Story 104 slice 4.
     expect(screen.getByRole('button', { name: 'All Players' })).toBeInTheDocument();
     expect(screen.getAllByRole('button')).toHaveLength(1);
   });
+
+  test('uses contemporary gold, type, and touch sizing only when enabled', function () {
+    render(<PlayerFilterToggle players={players} selected={null} onSelect={() => {}} contemporary />);
+    const allBtn = screen.getByRole('button', { name: 'All Players' });
+    expect(allBtn.style.background).toBe('rgb(245, 200, 66)');
+    expect(allBtn.style.minHeight).toBe('44px');
+    expect(allBtn.style.borderRadius).toBe('9999px');
+  });
 });
